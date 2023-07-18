@@ -3,29 +3,21 @@ package service
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
 	// MinimalCredentialsExpiration which triggers the import.
 	MinimalCredentialsExpiration = time.Hour
-
-	fileSwapTaskType  = "file.swap"
-	sliceSwapTaskType = "slice.swap"
 )
 
 type checker struct {
@@ -207,121 +199,6 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 			}
 		}
 	}()
-}
-
-func (c *checker) swapFile(fileKey key.FileKey, reason string) (err error) {
-	return c.tasks.StartTaskOrErr(task.Config{
-		Type: fileSwapTaskType,
-		Key: task.Key{
-			ProjectID: fileKey.ProjectID,
-			TaskID: task.ID(strings.Join([]string{
-				fileKey.ReceiverID.String(),
-				fileKey.ExportID.String(),
-				fileKey.FileID.String(),
-				fileSwapTaskType,
-			}, "/")),
-		},
-		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), time.Minute)
-		},
-		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			c.logger.Infof(`closing file "%s": %s`, fileKey, reason)
-
-			err := func() (err error) {
-				rb := rollback.New(c.logger)
-				defer rb.InvokeIfErr(ctx, &err)
-
-				// Get export
-				export, err := c.store.GetExport(ctx, fileKey.ExportKey)
-				if err != nil {
-					return errors.Errorf(`cannot close file "%s": %w`, fileKey.String(), err)
-				}
-
-				oldFile := export.OpenedFile
-				if oldFile.FileKey != fileKey {
-					return errors.Errorf(`cannot close file "%s": unexpected export opened file "%s"`, fileKey.String(), oldFile.FileKey)
-				}
-
-				oldSlice := export.OpenedSlice
-				if oldSlice.FileKey != fileKey {
-					return errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
-				}
-
-				api, err := keboola.NewAPI(ctx, c.storageAPIHost, keboola.WithClient(&c.httpClient), keboola.WithToken(export.Token.Token))
-				if err != nil {
-					return err
-				}
-				files := file.NewManager(c.clock, api, nil)
-
-				if err := files.CreateFileForExport(ctx, rb, &export); err != nil {
-					return errors.Errorf(`cannot close file "%s": cannot create new file: %w`, fileKey.String(), err)
-				}
-
-				if err := c.store.SwapFile(ctx, &oldFile, &oldSlice, export.OpenedFile, export.OpenedSlice); err != nil {
-					return errors.Errorf(`cannot close file "%s": cannot swap old and new file: %w`, fileKey.String(), err)
-				}
-
-				return nil
-			}()
-			if err != nil {
-				return task.ErrResult(err)
-			}
-
-			return task.OkResult("new file created, the old is closing")
-		},
-	})
-}
-
-func (c *checker) swapSlice(sliceKey key.SliceKey, reason string) (err error) {
-	return c.tasks.StartTaskOrErr(task.Config{
-		Type: sliceSwapTaskType,
-		Key: task.Key{
-			ProjectID: sliceKey.ProjectID,
-			TaskID: task.ID(strings.Join([]string{
-				sliceKey.ReceiverID.String(),
-				sliceKey.ExportID.String(),
-				sliceKey.FileID.String(),
-				sliceKey.SliceID.String(),
-				sliceSwapTaskType,
-			}, "/")),
-		},
-		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), time.Minute)
-		},
-		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			c.logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
-
-			err := func() (err error) {
-				rb := rollback.New(c.logger)
-				defer rb.InvokeIfErr(ctx, &err)
-
-				// Get export
-				export, err := c.store.GetExport(ctx, sliceKey.ExportKey)
-				if err != nil {
-					return errors.Errorf(`cannot close slice "%s": %w`, sliceKey.String(), err)
-				}
-
-				oldSlice := export.OpenedSlice
-				if oldSlice.SliceKey != sliceKey {
-					return errors.Errorf(`cannot close slice "%s": unexpected export opened slice "%s"`, sliceKey.String(), oldSlice.FileKey)
-				}
-
-				export.OpenedSlice = model.NewSlice(oldSlice.FileKey, c.clock.Now(), oldSlice.Mapping, oldSlice.Number+1, oldSlice.StorageResource)
-				if newSlice, err := c.store.SwapSlice(ctx, &oldSlice); err == nil {
-					export.OpenedSlice = newSlice
-				} else {
-					return errors.Errorf(`cannot close slice "%s": cannot swap old and new slice: %w`, sliceKey.String(), err)
-				}
-
-				return nil
-			}()
-			if err != nil {
-				return task.ErrResult(err)
-			}
-
-			return task.OkResult("new slice created, the old is closing")
-		},
-	})
 }
 
 func getCredentialsExpiration(slice model.Slice) time.Time {

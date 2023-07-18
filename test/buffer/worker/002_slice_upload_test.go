@@ -23,8 +23,8 @@ func (ts *testSuite) test002SliceUpload() {
 	// Periodic condition checks have detected that the UPLOAD conditions for both slices/exports have been met.
 	ts.t.Logf("waiting for upload conditions check ...")
 	if ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%d][bufferWorker][service][conditions]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
-[worker-node-%d][bufferWorker][service][conditions]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
+[worker-node-%d][bufferWorker][task][%s/slice.swap/%s]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
+[worker-node-%d][bufferWorker][task][%s/slice.swap/%s]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
 `) {
 		ts.t.Logf("upload conditions met")
 	}

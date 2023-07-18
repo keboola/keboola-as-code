@@ -3,34 +3,20 @@ package task
 import (
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Result struct {
-	result    string
-	error     error
-	errorType string
-	// applicationError flag is true if the error is an unexpected error that should not occur during normal operation
-	applicationError bool
-	outputs          map[string]any
-}
-
-// UserError marks the wrapped error as expected, so it will not be taken as an error in the metrics.
-// UserError is an error that could occur during normal operation.
-type UserError struct {
-	error
-}
-
-func (e UserError) Unwrap() error {
-	return e.error
+	Result  string
+	Error   error
+	Outputs Outputs
 }
 
 func OkResult(msg string) Result {
 	if strings.TrimSpace(msg) == "" {
 		panic(errors.New("message cannot be empty"))
 	}
-	return Result{result: msg}
+	return Result{Result: msg}
 }
 
 func ErrResult(err error) Result {
@@ -40,56 +26,31 @@ func ErrResult(err error) Result {
 	return (Result{}).withError(err)
 }
 
-// WrapUserError marks the error as the UserError, so it will not be taken as an error in the metrics.
-// UserError is an error that could occur during normal operation.
-func WrapUserError(err error) error {
-	return &UserError{error: err}
-}
-
-func (r Result) Result() string {
-	return r.result
-}
-
-func (r Result) Error() error {
-	return r.error
-}
-
-func (r Result) ErrorType() string {
-	return r.errorType
-}
-
 func (r Result) IsError() bool {
-	return r.error != nil
-}
-
-// IsUserError returns true if the error is an expected error that could occur during normal operation.
-func (r Result) IsUserError() bool {
-	return !r.applicationError
-}
-
-// IsApplicationError returns true if the error is an unexpected error that should not occur during normal operation.
-func (r Result) IsApplicationError() bool {
-	return r.applicationError
+	if r.Error != nil && r.Result != "" {
+		panic(errors.New("both Error and Result cannot be set"))
+	}
+	return r.Error != nil
 }
 
 // WithResult can be used to edit the result message later.
 func (r Result) WithResult(result string) Result {
-	if r.error == nil && r.result == "" {
+	if r.Error == nil && r.Result == "" {
 		panic(errors.New(`result struct is empty, use task.OkResult(msg) or task.ErrResult(err) function instead`))
 	}
-	if r.error != nil {
+	if r.Error != nil {
 		panic(errors.New(`result type is "error", not "ok", it cannot be modified`))
 	}
-	r.result = result
+	r.Result = result
 	return r
 }
 
 // WithError can be used to edit the error message later.
 func (r Result) WithError(err error) Result {
-	if r.error == nil && r.result == "" {
+	if r.Error == nil && r.Result == "" {
 		panic(errors.New(`result struct is empty, use task.OkResult(msg) or task.ErrResult(err) function instead`))
 	}
-	if r.error == nil {
+	if r.Error == nil {
 		panic(errors.New(`result type is "ok", not "error", it cannot be modified`))
 	}
 	return r.withError(err)
@@ -97,30 +58,23 @@ func (r Result) WithError(err error) Result {
 
 // WithOutput adds some task operation output.
 func (r Result) WithOutput(k string, v any) Result {
-	if r.error == nil && r.result == "" {
+	if r.Error == nil && r.Result == "" {
 		panic(errors.New(`result struct is empty, use task.OkResult(msg) or task.ErrResult(err) function first`))
 	}
 
 	// Clone map
-	original := r.outputs
-	r.outputs = make(map[string]any)
+	original := r.Outputs
+	r.Outputs = make(map[string]any)
 	for key, value := range original {
-		r.outputs[key] = value
+		r.Outputs[key] = value
 	}
 
 	// Add new key
-	r.outputs[k] = v
+	r.Outputs[k] = v
 	return r
 }
 
 func (r Result) withError(err error) Result {
-	r.error = err
-	r.errorType = telemetry.ErrorType(err)
-	r.applicationError = isApplicationError(err)
+	r.Error = err
 	return r
-}
-
-func isApplicationError(err error) bool {
-	var expectedErr *UserError
-	return err != nil && !errors.As(err, &expectedErr)
 }

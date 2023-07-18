@@ -32,7 +32,7 @@ type ForTest interface {
 	TraceID(n int) trace.TraceID
 	SpanID(n int) trace.SpanID
 	Reset()
-	SetSpanFilter(f TestSpanFilter)
+	SetSpanFilter(f TestSpanFilter) ForTest
 	Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs
 	Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics
 	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption)
@@ -135,9 +135,10 @@ func NewForTest(t *testing.T) ForTest {
 	}
 }
 
-func (v *forTest) SetSpanFilter(f TestSpanFilter) {
+func (v *forTest) SetSpanFilter(f TestSpanFilter) ForTest {
 	v.traceProvider.filter = f
 	v.Reset()
+	return v
 }
 
 func (v *forTest) TraceID(n int) trace.TraceID {

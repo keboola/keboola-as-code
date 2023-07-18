@@ -26,8 +26,8 @@ func (ts *testSuite) test003FileImport() {
 	// Periodic condition checks have detected that the IMPORT conditions for both files/exports have been met.
 	ts.t.Logf("waiting for import conditions check ...")
 	if ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%d][bufferWorker][service][conditions]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
-[worker-node-%d][bufferWorker][service][conditions]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
+[worker-node-%d][bufferWorker][task][%s/file.swap/%s]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
+[worker-node-%d][bufferWorker][task][%s/file.swap/%s]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
 `) {
 		ts.t.Logf("import conditions met")
 	}

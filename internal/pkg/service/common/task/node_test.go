@@ -46,7 +46,7 @@ func TestSuccessfulTask(t *testing.T) {
 	}
 
 	logs := ioutil.NewAtomicWriter()
-	tel := telemetry.NewForTest(t)
+	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
 	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -297,8 +297,6 @@ task/123/my-receiver/my-export/some.task/%s
 						Attributes: attribute.NewSet(
 							attribute.String("task_type", "some.task"),
 							attribute.Bool("is_success", true),
-							attribute.Bool("is_application_error", false),
-							attribute.String("error_type", ""),
 						),
 					},
 				},
@@ -322,8 +320,9 @@ func TestFailedTask(t *testing.T) {
 		ProjectID: 123,
 		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
+
 	logs := ioutil.NewAtomicWriter()
-	tel := telemetry.NewForTest(t)
+	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
 	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -645,12 +644,16 @@ func TestTaskTimeout(t *testing.T) {
 		ProjectID: 123,
 		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
-	tel := telemetry.NewForTest(t)
 
-	// Create node and start task
+	tel := newTestTelemetryWithFilter(t)
+
+	// Create node and
 	node1, d := createNode(t, etcdCredentials, nil, tel, "node1")
 	logger := d.DebugLogger()
+	logger.Truncate()
 	tel.Reset()
+
+	// Start task
 	_, err := node1.StartTask(task.Config{
 		Key:  tKey,
 		Type: taskType,
@@ -809,10 +812,11 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	}
 
 	logs := ioutil.NewAtomicWriter()
-	tel := telemetry.NewForTest(t)
+	tel := newTestTelemetryWithFilter(t)
 
 	// Create node
 	node1, d := createNode(t, etcdCredentials, logs, tel, "node1")
+	tel.Reset()
 	logs.Truncate()
 
 	// Start a task
@@ -893,6 +897,16 @@ task/123/my-receiver/my-export/some.task/%s
 `, logs.String())
 }
 
+func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
+	t.Helper()
+	return telemetry.
+		NewForTest(t).
+		SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+			// Ignore etcd spans
+			return !strings.HasPrefix(spanName, "etcd")
+		})
+}
+
 func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
@@ -904,11 +918,6 @@ func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 
 func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
 	t.Helper()
-
-	// Ignore etcd spans
-	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
-		return !strings.HasPrefix(spanName, "etcd")
-	})
 
 	d := dependencies.NewMocked(
 		t,

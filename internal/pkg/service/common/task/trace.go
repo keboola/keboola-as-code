@@ -29,12 +29,17 @@ func meterStartAttrs(task *Task) []attribute.KeyValue {
 }
 
 func meterEndAttrs(task *Task, r Result) []attribute.KeyValue {
-	return []attribute.KeyValue{
+	out := []attribute.KeyValue{
 		attribute.String("task_type", task.Type),
 		attribute.Bool("is_success", task.IsSuccessful()),
-		attribute.Bool("is_application_error", r.IsApplicationError()),
-		attribute.String("error_type", r.ErrorType()),
 	}
+	if r.IsError() {
+		out = append(out,
+			attribute.Bool("is_application_error", !isUserError(r.Error)),
+			attribute.String("error_type", telemetry.ErrorType(r.Error)),
+		)
+	}
+	return out
 }
 
 func spanStartAttrs(task *Task) []attribute.KeyValue {
@@ -67,9 +72,9 @@ func spanEndAttrs(task *Task, r Result) []attribute.KeyValue {
 	} else {
 		out = append(
 			out,
-			attribute.Bool("is_application_error", r.IsApplicationError()),
+			attribute.Bool("is_application_error", !isUserError(r.Error)),
 			attribute.String("error", task.Error),
-			attribute.String("error_type", r.ErrorType()),
+			attribute.String("error_type", telemetry.ErrorType(r.Error)),
 		)
 	}
 
