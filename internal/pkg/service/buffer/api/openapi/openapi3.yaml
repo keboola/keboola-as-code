@@ -1571,7 +1571,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Column'
-                    description: List of export column mappings. An export may have a maximum of 50 columns.
+                    description: List of export column mappings. An export may have a maximum of 100 columns.
                     example:
                         - type: body
                           name: column4
@@ -1579,7 +1579,7 @@ components:
                             language: ""
                             content: ""
                     minItems: 1
-                    maxItems: 50
+                    maxItems: 100
                 incremental:
                     type: boolean
                     description: Enables incremental loading to the table.

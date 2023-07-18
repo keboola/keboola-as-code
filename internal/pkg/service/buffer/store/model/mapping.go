@@ -11,5 +11,5 @@ type Mapping struct {
 	key.MappingKey
 	TableID     keboola.TableID `json:"tableId" validate:"required"`
 	Incremental bool            `json:"incremental"`
-	Columns     column.Columns  `json:"columns" validate:"required,min=1,max=50"`
+	Columns     column.Columns  `json:"columns" validate:"required,min=1,max=100"`
 }

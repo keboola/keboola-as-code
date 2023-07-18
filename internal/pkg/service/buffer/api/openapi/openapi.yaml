@@ -2602,7 +2602,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/ColumnRequestBody'
-                description: List of export column mappings. An export may have a maximum of 50 columns.
+                description: List of export column mappings. An export may have a maximum of 100 columns.
                 example:
                     - type: body
                       name: column4
@@ -2610,7 +2610,7 @@ definitions:
                         language: ""
                         content: ""
                 minItems: 1
-                maxItems: 50
+                maxItems: 100
             incremental:
                 type: boolean
                 description: Enables incremental loading to the table.
@@ -2660,7 +2660,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/ColumnResponseBody'
-                description: List of export column mappings. An export may have a maximum of 50 columns.
+                description: List of export column mappings. An export may have a maximum of 100 columns.
                 example:
                     - type: body
                       name: column4
@@ -2668,7 +2668,7 @@ definitions:
                         language: ""
                         content: ""
                 minItems: 1
-                maxItems: 50
+                maxItems: 100
             incremental:
                 type: boolean
                 description: Enables incremental loading to the table.
