@@ -139,12 +139,9 @@ func (s *RevisionSyncer) SyncedRev() int64 {
 // Lock method locks the current revision
 // and the returned UnlockFn callback unlocks the revision.
 func (s *RevisionSyncer) MinRevInUse() int64 {
-	min := s.currentRev
-	for rev := range s.revInUse {
-		if rev < min {
-			min = rev
-		}
-	}
+	s.lock.Lock()
+	min := s.minRevInUse()
+	s.lock.Unlock()
 	return min
 }
 
@@ -166,6 +163,16 @@ func (s *RevisionSyncer) Lock() UnlockFn {
 	}
 }
 
+func (s *RevisionSyncer) minRevInUse() int64 {
+	min := s.currentRev
+	for rev := range s.revInUse {
+		if rev < min {
+			min = rev
+		}
+	}
+	return min
+}
+
 // unlockRevision decrements version usage.
 func (s *RevisionSyncer) unlockRevision(rev int64) {
 	s.lock.Lock()
@@ -185,7 +192,7 @@ func (s *RevisionSyncer) sync(session *concurrency.Session) error {
 
 	// Compare local and synced value
 	s.lock.Lock()
-	minRevInUse, syncedRev := s.MinRevInUse(), s.syncedRev
+	minRevInUse, syncedRev := s.minRevInUse(), s.syncedRev
 	s.lock.Unlock()
 	if minRevInUse == syncedRev {
 		// nop
