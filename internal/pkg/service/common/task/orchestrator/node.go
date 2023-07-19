@@ -84,7 +84,7 @@ func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
 		panic(err)
 	}
 
-	// Delete events are not needed/ignored
+	// Delete events are not needed
 	c.Source.WatchEtcdOps = append(c.Source.WatchEtcdOps, etcd.WithFilterDelete())
 
 	// Setup logger

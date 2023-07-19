@@ -39,7 +39,7 @@ func TestPrefixTree(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, value{field: "value2"}, v)
 
-	// AllFromPrefix - 2 items
+	// AllFromPrefix / FirstFromPrefix / LastFromPrefix - 2 items
 	assert.Len(t, tree.AllFromPrefix("key"), 2)
 	v, found = tree.FirstFromPrefix("key")
 	assert.True(t, found)
@@ -60,7 +60,7 @@ func TestPrefixTree(t *testing.T) {
 	_, found = tree.Get("key/2")
 	assert.False(t, found)
 
-	// AllFromPrefix - 1 item
+	// AllFromPrefix / FirstFromPrefix / LastFromPrefix - 1 item
 	assert.Len(t, tree.AllFromPrefix("key"), 1)
 	v, found = tree.FirstFromPrefix("key")
 	assert.True(t, found)
@@ -76,14 +76,22 @@ func TestPrefixTree(t *testing.T) {
 		t.Insert("key/3", value{field: "foo"})
 		t.Insert("key/4", value{field: "bar"})
 	})
-	_, found = tree.Get("key/1")
-	assert.False(t, found)
-	_, found = tree.Get("key/2")
-	assert.False(t, found)
-	_, found = tree.Get("key/3")
-	assert.True(t, found)
-	_, found = tree.Get("key/4")
-	assert.True(t, found)
+	tree.AtomicReadOnly(func(ro TreeReadOnly[value]) {
+		_, found = ro.Get("key/1")
+		assert.False(t, found)
+		_, found = ro.Get("key/2")
+		assert.False(t, found)
+		_, found = ro.Get("key/3")
+		assert.True(t, found)
+		_, found = ro.Get("key/4")
+		assert.True(t, found)
+	})
+
+	// ToMap
+	assert.Equal(t, map[string]value{
+		"key/3": {field: "foo"},
+		"key/4": {field: "bar"},
+	}, tree.ToMap())
 
 	// Reset
 	tree.Reset()

@@ -14,6 +14,8 @@ type WatchEventT[T any] struct {
 	Kv     *op.KeyValue
 	PrevKv *op.KeyValue
 	Value  T
+	// PrevValue is set only for UpdateEvent if clientv3.WithPrevKV() option is used.
+	PrevValue *T
 }
 
 type WatchStreamT[T any] chan WatchResponseE[WatchEventT[T]]
@@ -85,30 +87,38 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx c
 
 			// Map raw response to typed response.
 			for _, rawEvent := range rawResp.Events {
+				outEvent := WatchEventT[T]{
+					Type:   rawEvent.Type,
+					Kv:     rawEvent.Kv,
+					PrevKv: rawEvent.PrevKv,
+				}
+
 				// Decode value.
-				var value T
 				var ok bool
 				if rawEvent.Type == CreateEvent || rawEvent.Type == UpdateEvent {
 					// Always decode create/update value.
-					value, ok = decode(rawEvent.Kv, rawResp.Header)
-					if !ok {
+					if outEvent.Value, ok = decode(rawEvent.Kv, rawResp.Header); !ok {
 						continue
 					}
 				} else if rawEvent.Type == DeleteEvent && rawEvent.PrevKv != nil {
 					// Decode previous value on delete, if is present.
 					// etcd.WithPrevKV() option must be used to enable it.
-					value, ok = decode(rawEvent.PrevKv, rawResp.Header)
-					if !ok {
+					if outEvent.Value, ok = decode(rawEvent.PrevKv, rawResp.Header); !ok {
 						continue
 					}
 				}
 
-				events = append(events, WatchEventT[T]{
-					Type:   rawEvent.Type,
-					Kv:     rawEvent.Kv,
-					PrevKv: rawEvent.PrevKv,
-					Value:  value,
-				})
+				// Decode previous value on update, if it is present.
+				// etcd.WithPrevKV() option must be used to enable it.
+				if rawEvent.Type == UpdateEvent && rawEvent.PrevKv != nil {
+					if prevValue, ok := decode(rawEvent.PrevKv, rawResp.Header); ok {
+						outEvent.PrevValue = &prevValue
+					} else {
+						continue
+					}
+				}
+
+				events = append(events, outEvent)
 			}
 
 			// Pass the response

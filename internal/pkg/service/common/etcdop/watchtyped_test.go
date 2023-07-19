@@ -178,8 +178,11 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 
 	// Wait for UPDATE event
 	assertDone(t, func() {
+		newValue := fooType("new")
+		oldValue := fooType("foo2")
 		expected := WatchEventT[fooType]{}
-		expected.Value = "new"
+		expected.Value = newValue
+		expected.PrevValue = &oldValue
 		expected.Type = UpdateEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
