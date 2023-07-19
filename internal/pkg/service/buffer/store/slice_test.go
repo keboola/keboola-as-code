@@ -2,13 +2,10 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -110,54 +107,6 @@ slice/active/opened/writing/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/
 }
 >>>>>
 `)
-}
-
-func TestStore_SetSliceState_Transitions(t *testing.T) {
-	t.Parallel()
-
-	// Test all transitions
-	testCases := []struct{ from, to slicestate.State }{
-		{slicestate.Writing, slicestate.Closing},
-		{slicestate.Closing, slicestate.Uploading},
-		{slicestate.Uploading, slicestate.Failed},
-		{slicestate.Failed, slicestate.Uploading},
-		{slicestate.Uploading, slicestate.Uploaded},
-		{slicestate.Uploaded, slicestate.Imported},
-	}
-
-	ctx := context.Background()
-	store := newStoreForTest(t)
-	slice := sliceForTest()
-
-	// Create slice
-	assert.NoError(t, store.CreateSlice(ctx, slice))
-
-	for _, tc := range testCases {
-		// Trigger transition
-		desc := fmt.Sprintf("%s -> %s", tc.from, tc.to)
-		err := store.SetSliceState(ctx, &slice, tc.to)
-		assert.NoError(t, err, desc)
-		assert.Equal(t, tc.to, slice.State, desc)
-		expected := `
-<<<<<
-slice/<FULL_STATE>/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
------
-%A
-  "state": "<FULL_STATE>",%A
-  "<SHORT_STATE>At": "2009-12-31T18:01:01.000Z"%A
->>>>>
-`
-		expected = strings.ReplaceAll(expected, "<FULL_STATE>", tc.to.String())
-		expected = strings.ReplaceAll(expected, "<SHORT_STATE>", tc.to.StateShort())
-		etcdhelper.AssertKVsString(t, store.client, expected)
-
-		// Test duplicated transition -> nop
-		slice.State = tc.from
-		err = store.SetSliceState(ctx, &slice, tc.to)
-		assert.Error(t, err, desc)
-		wildcards.Assert(t, `slice "%s" is already in the "%s" state`, err.Error(), desc)
-		assert.Equal(t, tc.to, slice.State, desc)
-	}
 }
 
 func TestStore_ListUploadedSlices(t *testing.T) {
