@@ -12,6 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -39,10 +40,11 @@ func TestRecordsReader(t *testing.T) {
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(clk.Now())}
 	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(clk.Now())}
 	slice := model.Slice{
-		SliceKey:   sliceKey,
-		Statistics: &model.Stats{RecordsCount: uint64(recordsCount)},
-		IDRange:    &model.SliceIDRange{Start: 1, Count: uint64(recordsCount)},
+		SliceKey: sliceKey,
+		IDRange:  &model.SliceIDRange{Start: 1, Count: uint64(recordsCount)},
 	}
+	receivedStats := statistics.Value{RecordsCount: uint64(recordsCount)}
+	uploadStats := statistics.AfterUpload{}
 
 	// Create records
 	// t.Logf(`write start: %s`, time.Now())
@@ -56,7 +58,7 @@ func TestRecordsReader(t *testing.T) {
 	// Read all
 	// start := time.Now()
 	// t.Logf(`read start: %s`, start)
-	reader := newRecordsReader(ctx, logger, client, sm, slice)
+	reader := newRecordsReader(ctx, logger, client, sm, slice, receivedStats, &uploadStats)
 	rSize, err := io.Copy(io.Discard, reader)
 	assert.NoError(t, err)
 	assert.Equal(t, (recordSize * datasize.ByteSize(recordsCount)).String(), datasize.ByteSize(rSize).String())

@@ -9,6 +9,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -16,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Client, schema *schema.Schema, slice model.Slice) io.Reader {
+func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Client, schema *schema.Schema, slice model.Slice, receivedStats statistics.Value, uploadStats *statistics.AfterUpload) io.Reader {
 	out, in := io.Pipe()
 	go func() {
 		var err error
@@ -26,7 +27,6 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 			}
 		}()
 
-		count := uint64(0)
 		id := slice.IDRange.Start
 		idPlaceholder := []byte(column.IDPlaceholder)
 		if id < 1 {
@@ -47,7 +47,7 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 			if err != nil {
 				return
 			}
-			count++
+			uploadStats.RecordsCount++
 			id++
 		}
 
@@ -58,10 +58,10 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 		}
 
 		// Check records count
-		if count != slice.Statistics.RecordsCount {
+		if uploadStats.RecordsCount != receivedStats.RecordsCount {
 			logger.Errorf(
 				`unexpected number of uploaded records, expected "%d", found "%d"`,
-				slice.Statistics.RecordsCount, count,
+				receivedStats.RecordsCount, uploadStats.RecordsCount,
 			)
 		}
 	}()

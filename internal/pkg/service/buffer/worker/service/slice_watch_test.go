@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -29,7 +30,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	// Create watcher
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))
-	d, mock := bufferDependencies.NewMockedServiceScope(t, dependencies.WithEnabledEtcdClient(), dependencies.WithClock(clk))
+	d, mock := bufferDependencies.NewMockedServiceScope(t, config.NewServiceConfig(), dependencies.WithEnabledEtcdClient(), dependencies.WithClock(clk))
 	logger := mock.DebugLogger()
 
 	// Create 2 slices, in writing and closing state
