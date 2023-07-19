@@ -113,19 +113,92 @@
 package statistics
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/cache"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/collector"
+	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
-type (
-	CollectorNode = collector.Node
-	CacheNode     = cache.Node
+const (
+	Buffered = Category("buffered")
+	Uploaded = Category("uploaded")
+	Imported = Category("imported")
 )
 
-func NewCollectorNode(d collector.Dependencies) *CollectorNode {
-	return collector.NewNode(d)
+//nolint:gochecknoglobals
+var allCategories = []Category{Buffered, Uploaded, Imported}
+
+type Category string
+
+// Value contains statistics for a slice or summarized statistics for a parent object.
+type Value struct {
+	// FirstRecordAt contains the timestamp of the first received record.
+	FirstRecordAt utctime.UTCTime `json:"firstRecordAt" validate:"required"`
+	// LastRecordAt contains the timestamp of the last received record.
+	LastRecordAt utctime.UTCTime `json:"lastRecordAt" validate:"required"`
+	// RecordsCount is count of received records.
+	RecordsCount uint64 `json:"recordsCount" validate:"required"`
+	// RecordsSize is total size of CSV rows.
+	RecordsSize datasize.ByteSize `json:"recordsSize"`
+	// BodySize is total size of all processed request bodies.
+	BodySize datasize.ByteSize `json:"bodySize"`
+	// FileSize is total uploaded size before compression.
+	FileSize datasize.ByteSize `json:"fileSize,omitempty"`
+	// FileSize is total uploaded size after compression.
+	FileGZipSize datasize.ByteSize `json:"fileGZipSize,omitempty"`
 }
 
-func NewCacheNode(d cache.Dependencies) (*CacheNode, error) {
-	return cache.NewNode(d)
+type PerAPINode struct {
+	SliceKey key.SliceKey
+	Value    Value
+}
+
+// Aggregated contains aggregated statistics for an object, such as file or export.
+type Aggregated struct {
+	// Buffered field contains summarized statistics for slices in slicestate.Writing, slicestate.Closing, slicestate.Uploading, slicestate.Failed.
+	Buffered Value
+	// Uploaded field contains summarized statistics for slices in slicestate.Uploaded.
+	Uploaded Value
+	// Imported  field contains summarized statistics for slices in slicestate.Imported.
+	Imported Value
+	// Total field contains summarized statistics for slices in all states, Buffered + Uploaded + Imported.
+	Total Value
+}
+
+// AfterUpload contains statistics after a slice upload.
+// It is used to add information about the size of uploaded file to the Value
+// and to correct potentially inaccurate RecordsCount statistics, see Atomicity section in package docs.
+type AfterUpload struct {
+	// RecordsCount is count of uploaded records.
+	RecordsCount uint64
+	// FileSize is total uploaded size before compression.
+	FileSize datasize.ByteSize
+	// FileSize is total uploaded size after compression.
+	FileGZipSize datasize.ByteSize
+}
+
+func (c Category) String() string {
+	return string(c)
+}
+
+func (v Value) Add(v2 Value) Value {
+	v.RecordsCount += v2.RecordsCount
+	v.RecordsSize += v2.RecordsSize
+	v.BodySize += v2.BodySize
+	v.FileSize += v2.FileSize
+	v.FileGZipSize += v2.FileGZipSize
+	if v.FirstRecordAt.IsZero() || !v2.FirstRecordAt.After(v.FirstRecordAt) {
+		v.FirstRecordAt = v2.FirstRecordAt
+	}
+	if v2.LastRecordAt.After(v.LastRecordAt) {
+		v.LastRecordAt = v2.LastRecordAt
+	}
+	return v
+}
+
+func (v Value) WithAfterUpload(stats AfterUpload) Value {
+	v.RecordsCount = stats.RecordsCount
+	v.FileSize = stats.FileSize
+	v.FileGZipSize = stats.FileGZipSize
+	return v
 }
