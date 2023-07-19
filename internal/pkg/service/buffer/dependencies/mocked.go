@@ -10,10 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
-func NewMockedServiceScope(t *testing.T, opts ...dependencies.MockedOption) (ServiceScope, dependencies.Mocked) {
+func NewMockedServiceScope(t *testing.T, cfg config.ServiceConfig, opts ...dependencies.MockedOption) (ServiceScope, dependencies.Mocked) {
 	t.Helper()
 	mock := dependencies.NewMocked(t, opts...)
-	serviceScp, err := newServiceScope(mock)
+	serviceScp, err := newServiceScope(mock, cfg)
 	require.NoError(t, err)
 	mock.DebugLogger().Truncate()
 	return serviceScp, mock
@@ -23,7 +23,7 @@ func NewMockedWorkerScope(t *testing.T, cfg config.WorkerConfig, opts ...depende
 	t.Helper()
 
 	opts = append(opts, dependencies.WithEnabledTasks(), dependencies.WithEnabledDistribution())
-	serviceScp, mock := NewMockedServiceScope(t, opts...)
+	serviceScp, mock := NewMockedServiceScope(t, cfg.ServiceConfig, opts...)
 
 	var err error
 	cfg.StorageAPIHost = mock.StorageAPIHost()
@@ -41,7 +41,7 @@ func NewMockedWorkerScope(t *testing.T, cfg config.WorkerConfig, opts ...depende
 func NewMockedAPIScope(t *testing.T, cfg config.APIConfig, opts ...dependencies.MockedOption) (APIScope, dependencies.Mocked) {
 	t.Helper()
 	opts = append(opts, dependencies.WithEnabledTasks())
-	serviceScp, mock := NewMockedServiceScope(t, opts...)
+	serviceScp, mock := NewMockedServiceScope(t, cfg.ServiceConfig, opts...)
 
 	var err error
 	cfg.StorageAPIHost = mock.StorageAPIHost()

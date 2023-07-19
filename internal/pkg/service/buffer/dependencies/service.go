@@ -20,9 +20,12 @@ import (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
-	schema     *schema.Schema
-	store      *store.Store
-	statsCache *statistics.CacheNode
+	config          config.ServiceConfig
+	schema          *schema.Schema
+	store           *store.Store
+	statsRepository *statistics.Repository
+	statsL1Cache    *statistics.L1CacheProvider
+	statsL2Cache    *statistics.L2CacheProvider
 }
 
 type parentScopes interface {
@@ -40,6 +43,10 @@ type parentScopesImpl struct {
 	dependencies.DistributionScope
 }
 
+func (v *serviceScope) ServiceConfig() config.ServiceConfig {
+	return v.config
+}
+
 func (v *serviceScope) Schema() *schema.Schema {
 	return v.schema
 }
@@ -48,8 +55,16 @@ func (v *serviceScope) Store() *store.Store {
 	return v.store
 }
 
-func (v *serviceScope) StatsCache() *statistics.CacheNode {
-	return v.statsCache
+func (v *serviceScope) StatisticsRepository() *statistics.Repository {
+	return v.statsRepository
+}
+
+func (v *serviceScope) StatisticsL1Cache() *statistics.L1CacheProvider {
+	return v.statsL1Cache
+}
+
+func (v *serviceScope) StatisticsL2Cache() *statistics.L2CacheProvider {
+	return v.statsL2Cache
 }
 
 func NewServiceScope(ctx context.Context, cfg config.ServiceConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v ServiceScope, err error) {
@@ -59,7 +74,7 @@ func NewServiceScope(ctx context.Context, cfg config.ServiceConfig, proc *servic
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentSc)
+	return newServiceScope(parentSc, cfg)
 }
 
 func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v parentScopes, err error) {
@@ -106,19 +121,28 @@ func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servic
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes) (v ServiceScope, err error) {
+func newServiceScope(parentScp parentScopes, cfg config.ServiceConfig) (v ServiceScope, err error) {
 	d := &serviceScope{}
+
+	d.config = cfg
 
 	d.parentScopes = parentScp
 
 	d.schema = schema.New(d.Validator().Validate)
 
-	d.store = store.New(d)
-
-	d.statsCache, err = statistics.NewCacheNode(d)
+	d.statsL1Cache, err = statistics.NewL1CacheProvider(d)
 	if err != nil {
 		return nil, err
 	}
+
+	d.statsL2Cache, err = statistics.NewL2CacheProvider(d.statsL1Cache, d)
+	if err != nil {
+		return nil, err
+	}
+
+	d.statsRepository = statistics.NewRepository(statistics.NewAtomicProvider(d), d)
+
+	d.store = store.New(d)
 
 	return d, nil
 }

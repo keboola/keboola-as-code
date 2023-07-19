@@ -22,15 +22,15 @@ const (
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope
-	config  config.APIConfig
-	stats   *statistics.CollectorNode
-	watcher *watcher.APINode
+	config         config.APIConfig
+	statsCollector *statistics.Collector
+	watcher        *watcher.APINode
 }
 
 func NewAPIScope(ctx context.Context, cfg config.APIConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry) (v APIScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewAPIScope")
 	defer span.End(&err)
-	serviceScp, err := NewServiceScope(ctx, cfg.ServiceConfig, proc, logger, tel, "")
+	serviceScp, err := NewServiceScope(ctx, cfg.ServiceConfig, proc, logger, tel, apiUserAgent)
 	return newAPIScope(cfg, serviceScp)
 }
 
@@ -41,7 +41,7 @@ func newAPIScope(cfg config.APIConfig, serviceScp ServiceScope) (v APIScope, err
 
 	d.ServiceScope = serviceScp
 
-	d.stats = statistics.NewCollectorNode(d)
+	d.statsCollector = statistics.NewCollector(d)
 
 	d.watcher, err = watcher.NewAPINode(d)
 	if err != nil {
@@ -55,8 +55,8 @@ func (v *apiScope) APIConfig() config.APIConfig {
 	return v.config
 }
 
-func (v *apiScope) StatsCollector() *statistics.CollectorNode {
-	return v.stats
+func (v *apiScope) StatsCollector() *statistics.Collector {
+	return v.statsCollector
 }
 
 func (v *apiScope) WatcherAPINode() *watcher.APINode {
