@@ -35,7 +35,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdCredentials)
 
 	opts := []dependencies.MockedOption{dependencies.WithEtcdCredentials(etcdCredentials)}
-	serviceSp, _ := bufferDependencies.NewMockedServiceScope(t, opts...)
+	serviceSp, _ := bufferDependencies.NewMockedServiceScope(t, config.NewServiceConfig(), opts...)
 	str := store.New(serviceSp)
 
 	createAPINode := func(nodeName string) *watcher.APINode {

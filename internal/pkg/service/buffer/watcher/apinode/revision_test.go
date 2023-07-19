@@ -18,11 +18,11 @@ type statsSyncer struct {
 	logger log.Logger
 }
 
-func (s *statsSyncer) Sync(_ context.Context) <-chan struct{} {
+func (s *statsSyncer) Sync(_ context.Context) <-chan error {
 	s.logger.Debug(">>> statistics sync")
-	done := make(chan struct{})
-	close(done)
-	return done
+	errCh := make(chan error)
+	close(errCh)
+	return errCh
 }
 
 func TestRevisionSyncer(t *testing.T) {

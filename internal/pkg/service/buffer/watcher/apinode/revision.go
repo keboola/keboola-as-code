@@ -55,7 +55,7 @@ type RevisionSyncer struct {
 }
 
 type StatsSyncer interface {
-	Sync(ctx context.Context) <-chan struct{}
+	Sync(ctx context.Context) <-chan error
 }
 
 type UnlockFn func()

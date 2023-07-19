@@ -32,7 +32,7 @@ type Node struct {
 	clock  clock.Clock
 	logger log.Logger
 	client *etcd.Client
-	stats  *statistics.CollectorNode
+	stats  *statistics.Collector
 
 	revision  *RevisionSyncer
 	receivers *stateOf[model.ReceiverBase]
@@ -53,7 +53,7 @@ type Dependencies interface {
 	Schema() *schema.Schema
 	Store() *store.Store
 	EtcdClient() *etcd.Client
-	StatsCollector() *statistics.CollectorNode
+	StatsCollector() *statistics.Collector
 }
 
 type stateOf[T any] struct {
