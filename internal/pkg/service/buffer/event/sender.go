@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -32,10 +33,10 @@ type Params struct {
 	ProjectID  keboola.ProjectID
 	ReceiverID key.ReceiverID
 	ExportID   key.ExportID
-	Stats      model.Stats
+	Stats      statistics.Value
 }
 
-func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, slice model.Slice) {
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, slice model.Slice, stats statistics.Value) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -60,7 +61,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, sta
 		ProjectID:  slice.ProjectID,
 		ReceiverID: slice.ReceiverID,
 		ExportID:   slice.ExportID,
-		Stats:      slice.GetStats(),
+		Stats:      stats,
 	})
 
 	// Throw panic
@@ -69,7 +70,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, sta
 	}
 }
 
-func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, file model.File) {
+func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, file model.File, stats statistics.Value) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -94,7 +95,7 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, star
 		ProjectID:  file.ProjectID,
 		ReceiverID: file.ReceiverID,
 		ExportID:   file.ExportID,
-		Stats:      file.GetStats(),
+		Stats:      stats,
 	})
 
 	// Throw panic
