@@ -85,3 +85,31 @@ slice/active/closed/uploaded/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/
   }
 }
 >>>>>
+
+<<<<<
+stats/uploaded/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s/_nodes_sum
+-----
+{
+  "firstRecordAt": "%s",
+  "lastRecordAt": "%s",
+  "recordsCount": 6,
+  "recordsSize": "%s",
+  "bodySize": "126B",
+  "fileSize": "%s",
+  "fileGZipSize": "%s"
+}
+>>>>>
+
+<<<<<
+stats/uploaded/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/%s/_nodes_sum
+-----
+{
+  "firstRecordAt": "%s",
+  "lastRecordAt": "%s",
+  "recordsCount": 6,
+  "recordsSize": "%s",
+  "bodySize": "126B",
+  "fileSize": "%s",
+  "fileGZipSize": "%s"
+}
+>>>>>

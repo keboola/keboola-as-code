@@ -2,6 +2,8 @@ package worker
 
 import (
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 // test001ImportRecords imports 4 records; 4 < 5 (uploadCountThreshold) - upload is not triggered.
@@ -21,5 +23,6 @@ func (ts *testSuite) test001ImportRecords() {
 	}
 
 	// Check etcd state
-	ts.AssertEtcdState("001-import-records")
+	// Statistics are ignored, because they are tracked per API node and for each request is used a random API node.
+	ts.AssertEtcdState("001-import-records", etcdhelper.WithIgnoredKeyPattern(`^stats/`))
 }
