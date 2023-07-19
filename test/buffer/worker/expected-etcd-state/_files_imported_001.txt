@@ -34,14 +34,6 @@ file/imported/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s
   "closingAt": "%s",
   "importingAt": "%s",
   "importedAt": "%s",
-  "statistics": {
-    "lastRecordAt": "%s",
-    "recordsCount": 10,
-    "recordsSize": "%s",
-    "bodySize": "%s",
-    "fileSize": "%s",
-    "fileGZipSize": "%s"
-  },
   "storageJob": {
     "id": %d,
     "status": "success",
@@ -101,14 +93,6 @@ file/imported/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s
   "closingAt": "%s",
   "importingAt": "%s",
   "importedAt": "%s",
-  "statistics": {
-    "lastRecordAt": "%s",
-    "recordsCount": 10,
-    "recordsSize": "%s",
-    "bodySize": "%s",
-    "fileSize": "%s",
-    "fileGZipSize": "%s"
-  },
   "storageJob": {
     "id": %d,
     "status": "success",
