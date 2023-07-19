@@ -6,6 +6,7 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -136,7 +137,7 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 
 			// Set slice state from "closing" to "uploading"
 			// This also saves the changes.
-			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), &modSlice, slicestate.Uploading, func(stats *model.Stats) {
+			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), &modSlice, slicestate.Uploading, func(stats *statistics.Value) {
 				stats.RecordsCount = recordsCount
 			}); err != nil {
 				return nil, err
@@ -154,11 +155,9 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 }
 
 // MarkSliceUploaded when the upload is finished.
-func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice, uploadStats model.UploadStats) error {
-	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploaded, func(stats *model.Stats) {
-		stats.RecordsCount = uploadStats.RecordsCount
-		stats.FileSize = uploadStats.FileSize
-		stats.FileGZipSize = uploadStats.FileGZipSize
+func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice, uploadStats statistics.AfterUpload) error {
+	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploaded, func(stats *statistics.Value) {
+		*stats = stats.WithAfterUpload(uploadStats)
 	})
 	if err != nil {
 		return err
@@ -232,7 +231,7 @@ func (s *Store) swapSliceOp(ctx context.Context, now time.Time, oldSlice *model.
 	return op.MergeToTxn(createSliceOp, closeSliceOp), nil
 }
 
-func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State, modifyStatsFn func(*model.Stats)) (*op.TxnOpDef, error) { //nolint:dupl
+func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State, modifyStatsFn func(*statistics.Value)) (*op.TxnOpDef, error) { //nolint:dupl
 	from := slice.State
 	clone := *slice
 	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
@@ -282,27 +281,17 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 		}),
 	)
 
-	// Also move statistics
-	oldStatsPfx := s.schema.SliceStats().InState(from).InSlice(slice.SliceKey)
-	newStatsPfx := s.schema.SliceStats().InState(to).InSlice(slice.SliceKey)
-	if oldStatsPfx.Prefix() != newStatsPfx.Prefix() {
-		var stats model.Stats
-		if err := SumStatsOp(oldStatsPfx.GetAll(), &stats).DoOrErr(ctx, s.client); err != nil {
-			return nil, err
-		}
-		if modifyStatsFn != nil {
-			modifyStatsFn(&stats)
-		}
-		if stats.RecordsCount > 0 {
-			ops = append(
-				ops,
-				oldStatsPfx.DeleteAll().WithProcessor(func(ctx context.Context, response etcd.OpResponse, result int64, err error) (int64, error) {
-					return result, nil
-				}),
-				newStatsPfx.AllNodesSum().Put(stats).WithProcessor(func(ctx context.Context, response etcd.OpResponse, result op.NoResult, err error) (op.NoResult, error) {
-					return op.NoResult{}, nil
-				}),
-			)
+	// Move statistics to new category, if changed
+	{
+		fromCat := statistics.SliceStateToCategory(from)
+		toCat := statistics.SliceStateToCategory(to)
+		if fromCat != toCat {
+			moveOp, err := s.stats.MoveOp(ctx, slice.SliceKey, fromCat, toCat, modifyStatsFn)
+			if err == nil {
+				ops = append(ops, moveOp)
+			} else {
+				return nil, err
+			}
 		}
 	}
 

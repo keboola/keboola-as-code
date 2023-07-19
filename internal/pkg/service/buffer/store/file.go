@@ -20,11 +20,11 @@ func (s *Store) CreateFile(ctx context.Context, file model.File) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateFile")
 	defer span.End(&err)
 
-	_, err = s.createFileOp(ctx, file).Do(ctx, s.client)
+	_, err = s.CreateFileOp(ctx, file).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
+func (s *Store) CreateFileOp(_ context.Context, file model.File) op.BoolOp {
 	return s.schema.
 		Files().
 		Opened().
@@ -164,38 +164,31 @@ func (s *Store) CloseFile(ctx context.Context, file *model.File) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CloseFile")
 	defer span.End(&err)
 
-	var stats model.Stats
-	return op.
-		Atomic().
-		Read(func() op.Op {
-			return op.MergeToTxn(
-				SumStatsOp(s.schema.SliceStats().InState(slicestate.Uploaded).InFile(file.FileKey).GetAll(), &stats),
-			)
-		}).
-		WriteOrErr(func() (op.Op, error) {
-			var ops []op.Op
+	// Copy file for modifications
+	modFile := *file
 
-			// Copy slice and do modifications
-			modFile := *file
-			if stats.RecordsCount == 0 {
-				modFile.IsEmpty = true
+	// Get stats and set IsEmpty flag
+	stats, err := s.stats.FileStats(ctx, file.FileKey)
+	if err != nil {
+		return err
+	} else if stats.Total.RecordsCount == 0 {
+		modFile.IsEmpty = true
+	}
+
+	// Set file state from "closing" to "importing"
+	// This also saves the changes.
+	setOp, err := s.setFileStateOp(ctx, s.clock.Now(), &modFile, filestate.Importing)
+	if err != nil {
+		return err
+	}
+
+	return setOp.
+		WithOnResult(func(result op.TxnResult) {
+			if result.Succeeded {
+				*file = modFile
 			}
-
-			// Set file state from "closing" to "importing"
-			// This also saves the changes.
-			if v, err := s.setFileStateOp(ctx, s.clock.Now(), &modFile, filestate.Importing); err != nil {
-				return nil, err
-			} else {
-				ops = append(ops, v)
-			}
-
-			return op.
-				MergeToTxn(ops...).
-				WithOnResult(func(result op.TxnResult) {
-					*file = modFile
-				}), nil
 		}).
-		Do(ctx, s.client)
+		DoOrErr(ctx, s.client)
 }
 
 // SwapFile closes the old slice and creates the new one, in the same file.

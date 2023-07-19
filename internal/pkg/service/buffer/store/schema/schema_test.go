@@ -263,26 +263,6 @@ func TestSchema(t *testing.T) {
 			s.Tasks().ByKey(taskKey).Key(),
 			"task/123/my-receiver/some.task/2006-01-02T08:04:05.000Z_abcdef",
 		},
-		{
-			s.ReceivedStats().InReceiver(receiverKey).Prefix(),
-			"stats/received/123/my-receiver/",
-		},
-		{
-			s.ReceivedStats().InExport(exportKey).Prefix(),
-			"stats/received/123/my-receiver/my-export/",
-		},
-		{
-			s.ReceivedStats().InFile(fileKey).Prefix(),
-			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
-		},
-		{
-			s.ReceivedStats().InSlice(sliceKey).Prefix(),
-			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/",
-		},
-		{
-			s.ReceivedStats().InSlice(sliceKey).ByNodeID("my-node").Key(),
-			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/my-node",
-		},
 	}
 
 	for i, c := range cases {

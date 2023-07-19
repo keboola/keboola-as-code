@@ -54,7 +54,7 @@ func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.Txn
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, export.Token),
-		s.createFileOp(ctx, export.OpenedFile),
+		s.CreateFileOp(ctx, export.OpenedFile),
 		s.createSliceOp(ctx, export.OpenedSlice),
 	)
 }
@@ -283,7 +283,7 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 		s.deleteExportBaseOp(ctx, exportKey),
 		s.deleteExportMappingsOp(ctx, exportKey),
 		s.deleteExportTokenOp(ctx, exportKey),
-		s.schema.ReceivedStats().InExport(exportKey).DeleteAll(),
+		s.stats.DeleteOp(exportKey),
 		s.schema.Files().Opened().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Closing().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Importing().InExport(exportKey).DeleteAll(),
@@ -294,7 +294,6 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 		s.schema.Slices().Uploading().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Uploaded().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Failed().InExport(exportKey).DeleteAll(),
-		s.schema.Slices().Imported().InExport(exportKey).DeleteAll(),
 		s.schema.Records().InExport(exportKey).DeleteAll(),
 		s.schema.Tasks().InExport(exportKey).DeleteAll(),
 		s.schema.Runtime().LastRecordID().ByKey(exportKey).Delete(),

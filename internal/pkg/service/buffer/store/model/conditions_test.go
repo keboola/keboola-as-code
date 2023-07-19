@@ -7,6 +7,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 )
 
@@ -21,7 +22,7 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 	ic := model.DefaultImportConditions()
 
 	// Defaults not met
-	res, desc := ic.Evaluate(now, before01Min, model.Stats{
+	res, desc := ic.Evaluate(now, before01Min, statistics.Value{
 		RecordsCount: 50,
 		RecordsSize:  1 * datasize.KB,
 	})
@@ -29,7 +30,7 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 	assert.Equal(t, "no condition met", desc)
 
 	// Default count met
-	res, desc = ic.Evaluate(now, before01Min, model.Stats{
+	res, desc = ic.Evaluate(now, before01Min, statistics.Value{
 		RecordsCount: 20000,
 		RecordsSize:  1 * datasize.MB,
 	})
@@ -37,7 +38,7 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 	assert.Equal(t, "count threshold met, received: 20000 rows, threshold: 10000 rows", desc)
 
 	// Default size met
-	res, desc = ic.Evaluate(now, before01Min, model.Stats{
+	res, desc = ic.Evaluate(now, before01Min, statistics.Value{
 		RecordsCount: 100,
 		RecordsSize:  10 * datasize.MB,
 	})
@@ -45,7 +46,7 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 	assert.Equal(t, "size threshold met, received: 10.0 MB, threshold: 5.0 MB", desc)
 
 	// Default time met
-	res, desc = ic.Evaluate(now, before20Min, model.Stats{
+	res, desc = ic.Evaluate(now, before20Min, statistics.Value{
 		RecordsCount: 100,
 		RecordsSize:  1 * datasize.KB,
 	})
@@ -67,7 +68,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 		Time:  10 * time.Minute,
 	}
 	// Not met
-	res, desc := ic.Evaluate(now, before01Min, model.Stats{
+	res, desc := ic.Evaluate(now, before01Min, statistics.Value{
 		RecordsCount: 50,
 		RecordsSize:  1 * datasize.MB,
 	})
@@ -75,7 +76,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 	assert.Equal(t, "no condition met", desc)
 
 	// Count met
-	res, desc = ic.Evaluate(now, before01Min, model.Stats{
+	res, desc = ic.Evaluate(now, before01Min, statistics.Value{
 		RecordsCount: 200,
 		RecordsSize:  1 * datasize.MB,
 	})
@@ -83,7 +84,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 	assert.Equal(t, "count threshold met, received: 200 rows, threshold: 100 rows", desc)
 
 	// Size met
-	res, desc = ic.Evaluate(now, before01Min, model.Stats{
+	res, desc = ic.Evaluate(now, before01Min, statistics.Value{
 		RecordsCount: 50,
 		RecordsSize:  10 * datasize.MB,
 	})
@@ -91,7 +92,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 	assert.Equal(t, "size threshold met, received: 10.0 MB, threshold: 5.0 MB", desc)
 
 	// Time met
-	res, desc = ic.Evaluate(now, before20Min, model.Stats{
+	res, desc = ic.Evaluate(now, before20Min, statistics.Value{
 		RecordsCount: 50,
 		RecordsSize:  1 * datasize.MB,
 	})
