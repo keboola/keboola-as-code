@@ -26,7 +26,7 @@ func TestBufferWorkerE2E(t *testing.T) {
 
 		// Run test-cases
 		ts.test000Setup()
-		ts.test001ImportRecords()
+		ts.test001SendPayload()
 		ts.test002SliceUpload()
 		ts.test003FileImport()
 		ts.test004EmptyFileAndSlice()

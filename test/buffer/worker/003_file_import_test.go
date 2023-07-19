@@ -18,9 +18,9 @@ func (ts *testSuite) test003FileImport() {
 [worker-node-%s][service][conditions]INFO checked "2" opened slices
 	`)
 
-	// Import records 7-10
+	// Send records 7-10
 	for i := 7; i <= 10; i++ {
-		ts.Import(i)
+		ts.SendPayload(i)
 	}
 
 	// Periodic condition checks have detected that the IMPORT conditions for both files/exports have been met.
