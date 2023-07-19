@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -37,6 +38,7 @@ type dependencies interface {
 	Store() *store.Store
 	DistributionNode() *distribution.Node
 	TaskNode() *task.Node
+	StatisticsRepository() *statistics.Repository
 }
 
 type Node struct {
