@@ -113,11 +113,13 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check import conditions
-		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total); met {
-			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
-				c.logger.Error(err)
+		if now.Sub(sliceKey.FileKey.OpenedAt()) >= c.config.MinimalImportInterval {
+			if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total); met {
+				if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
+					c.logger.Error(err)
+				}
+				continue
 			}
-			continue
 		}
 
 		// Get slice stats
@@ -128,11 +130,13 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check upload conditions
-		if met, reason := c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.Total); met {
-			if err := c.swapSlice(sliceKey, reason); err != nil {
-				c.logger.Error(err)
+		if now.Sub(sliceKey.OpenedAt()) >= c.config.MinimalUploadInterval {
+			if met, reason := c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.Total); met {
+				if err := c.swapSlice(sliceKey, reason); err != nil {
+					c.logger.Error(err)
+				}
+				continue
 			}
-			continue
 		}
 	}
 	c.logger.Infof(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
