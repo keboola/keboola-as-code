@@ -9,6 +9,8 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -21,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -33,11 +36,18 @@ type Importer struct {
 	watcher        *watcher.APINode
 	statsCollector *statistics.Collector
 	quota          *quota.Checker
+	metrics        metrics
+}
+
+type metrics struct {
+	Count    metric.Int64Counter
+	BodySize metric.Int64Counter
 }
 
 type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
+	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	APIConfig() config.APIConfig
 	Store() *store.Store
@@ -60,11 +70,35 @@ func NewImporter(d dependencies) *Importer {
 		watcher:        d.WatcherAPINode(),
 		statsCollector: d.StatsCollector(),
 		quota:          quota.New(d),
+		metrics: metrics{
+			Count:    d.Telemetry().Meter().Counter("keboola.go.buffer.ingress_records", "Count of received records.", ""),
+			BodySize: d.Telemetry().Meter().Counter("keboola.go.buffer.ingress_bytes", "Sum of all request body bytes.", "bytes"),
+		},
 	}
 }
 
 // CreateRecord in etcd temporal database.
-func (i *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey key.ReceiverKey, secret string, bodyReader io.ReadCloser) error {
+func (i *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey key.ReceiverKey, secret string, bodyReader io.ReadCloser) (err error) {
+	// Metrics
+	var bodySize int64
+	defer func() {
+		attrs := []attribute.KeyValue{
+			attribute.String("projectId", receiverKey.ProjectID.String()),
+			attribute.String("receiverId", receiverKey.ReceiverID.String()),
+			attribute.String("source", "http"),
+			attribute.Bool("is_success", err == nil),
+		}
+		if err != nil {
+			attrs = append(attrs,
+				attribute.Bool("is_application_error", HTTPCodeFrom(err) >= http.StatusInternalServerError),
+				attribute.String("error_type", telemetry.ErrorType(err)),
+			)
+		}
+		attrsOption := metric.WithAttributes(attrs...)
+		i.metrics.Count.Add(ctx, 1, attrsOption)
+		i.metrics.BodySize.Add(ctx, bodySize, attrsOption)
+	}()
+
 	// Get cached receiver from the memory
 	receiver, found, unlock := i.watcher.GetReceiver(receiverKey)
 	if !found {

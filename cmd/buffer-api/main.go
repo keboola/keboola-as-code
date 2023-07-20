@@ -111,10 +111,6 @@ func run() error {
 	// Create service.
 	svc := service.New(apiScp)
 
-	filterImportEndpoint := func(req *http.Request) bool {
-		return !strings.HasPrefix(req.URL.Path, "/v1/import/") || req.URL.RawQuery == "debug=true"
-	}
-
 	// Start HTTP server.
 	logger.Infof("starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(apiScp, httpserver.Config{
@@ -127,11 +123,8 @@ func run() error {
 			middleware.WithPropagators(propagation.TraceContext{}),
 			// Ignore health checks
 			middleware.WithFilter(func(req *http.Request) bool {
-				return req.URL.Path != "/health-check"
+				return req.URL.Path != "/health-check" && !strings.HasPrefix(req.URL.Path, "/v1/import/")
 			}),
-			// Filter out import endpoint traces and logs, but keep metrics
-			middleware.WithFilterTracing(filterImportEndpoint),
-			middleware.WithFilterAccessLog(filterImportEndpoint),
 		},
 		Mount: func(c httpserver.Components) {
 			// Create public request deps for each request
