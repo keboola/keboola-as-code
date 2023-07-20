@@ -139,7 +139,7 @@ func (c *checker) check(ctx context.Context) {
 			}
 		}
 	}
-	c.logger.Infof(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
+	c.logger.Debugf(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
 }
 
 func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup) <-chan error {
