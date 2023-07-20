@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -95,6 +96,15 @@ func run() error {
 	workerScp, err := dependencies.NewWorkerScope(ctx, proc, cfg, logger, tel)
 	if err != nil {
 		return err
+	}
+
+	// TMP
+	resp, err := workerScp.EtcdClient().Delete(ctx, "stats/received/", etcd.WithPrefix())
+	if err != nil {
+		return err
+	}
+	if resp.Deleted > 0 {
+		workerScp.Logger().Infof(`TMP: delete %v old statistics records`, resp.Deleted)
 	}
 
 	// Create service.
