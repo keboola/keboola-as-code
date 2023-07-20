@@ -15,7 +15,7 @@ import (
 const (
 	WorkerEnvPrefix = "BUFFER_WORKER_"
 	// DefaultCheckConditionsInterval defines how often it will be checked upload and import conditions.
-	DefaultCheckConditionsInterval = 30 * time.Second
+	DefaultCheckConditionsInterval = 5 * time.Second
 	// DefaultCleanupInterval defines how often old tasks and files will be checked and deleted.
 	DefaultCleanupInterval = 15 * time.Minute
 )
