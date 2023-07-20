@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -42,18 +44,22 @@ func NewWorkerConfig() WorkerConfig {
 		ServiceConfig:           NewServiceConfig(),
 		UniqueID:                "",
 		CheckConditionsInterval: DefaultCheckConditionsInterval,
-		UploadConditions:        DefaultUploadConditions(),
-		MetricsListenAddress:    "0.0.0.0:9000",
-		ConditionsCheck:         true,
-		CloseSlices:             true,
-		UploadSlices:            true,
-		RetryFailedSlices:       true,
-		CloseFiles:              true,
-		ImportFiles:             true,
-		RetryFailedFiles:        true,
-		TasksCleanup:            true,
-		TasksCleanupInterval:    DefaultCleanupInterval,
-		UploadTransport:         nil, // use default transport
+		UploadConditions: Conditions{
+			Count: 1000,
+			Size:  1 * datasize.MB,
+			Time:  1 * time.Minute,
+		},
+		MetricsListenAddress: "0.0.0.0:9000",
+		ConditionsCheck:      true,
+		CloseSlices:          true,
+		UploadSlices:         true,
+		RetryFailedSlices:    true,
+		CloseFiles:           true,
+		ImportFiles:          true,
+		RetryFailedFiles:     true,
+		TasksCleanup:         true,
+		TasksCleanupInterval: DefaultCleanupInterval,
+		UploadTransport:      nil, // use default transport
 	}
 }
 
