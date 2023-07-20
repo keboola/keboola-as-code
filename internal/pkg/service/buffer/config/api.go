@@ -16,7 +16,7 @@ import (
 const (
 	APIEnvPrefix                  = "BUFFER_API_"
 	DefaultStatisticsSyncInterval = time.Second
-	DefaultReceiverBufferSize     = 50 * datasize.MB
+	DefaultReceiverBufferSize     = 100 * datasize.MB
 )
 
 // APIConfig of the Buffer API.
