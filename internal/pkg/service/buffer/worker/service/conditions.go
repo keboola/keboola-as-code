@@ -90,6 +90,10 @@ func (c *checker) check(ctx context.Context) {
 		default:
 		}
 
+		if !c.Service.dist.MustCheckIsOwner(sliceKey.ReceiverKey.String()) {
+			continue
+		}
+
 		// Check credentials expiration
 		if slice.expiration.Sub(now) <= MinimalCredentialsExpiration {
 			reason := fmt.Sprintf("upload credentials will expire soon, at %s", slice.expiration.UTC().String())
@@ -147,12 +151,6 @@ func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup)
 			defer c.lock.Unlock()
 			for _, event := range events {
 				export := event.Value
-				if !c.Service.dist.MustCheckIsOwner(export.ReceiverKey.String()) {
-					// Another worker node handles the resource.
-					delete(c.importConditions, export.ExportKey)
-					continue
-				}
-
 				switch event.Type {
 				case etcdop.CreateEvent, etcdop.UpdateEvent:
 					c.importConditions[export.ExportKey] = export.ImportConditions
@@ -176,12 +174,6 @@ func (c *checker) watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup) <-c
 			defer c.lock.Unlock()
 			for _, event := range events {
 				slice := event.Value
-				if !c.Service.dist.MustCheckIsOwner(slice.ReceiverKey.String()) {
-					// Another worker node handles the resource.
-					delete(c.openedSlices, slice.SliceKey)
-					continue
-				}
-
 				switch event.Type {
 				case etcdop.CreateEvent, etcdop.UpdateEvent:
 					c.openedSlices[slice.SliceKey] = cachedSlice{
