@@ -1,16 +1,21 @@
 package worker
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/keboola/go-client/pkg/request"
 	"github.com/keboola/go-utils/pkg/wildcards"
+	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
+	"golang.org/x/sync/errgroup"
 
 	apiModel "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
@@ -62,6 +67,43 @@ func (ts *testSuite) AssertEtcdState(expectedFile string, opts ...etcdhelper.Ass
 
 	// Compare
 	etcdhelper.AssertKVs(ts.t, ts.etcdClient, expectedKVs, opts...)
+}
+
+// IterateMetrics scrapes /metrics endpoint for each API node. Parsed metrics are streamed to the channel.
+func (ts *testSuite) IterateMetrics(fn func(<-chan *dto.MetricFamily)) {
+	ch := make(chan *dto.MetricFamily)
+
+	// Scrape /metrics endpoint of all API nodes
+	grp, _ := errgroup.WithContext(ts.ctx)
+	for _, n := range ts.apiNodes {
+		n := n
+		grp.Go(func() error {
+			// Get metrics from the endpoint
+			var resp []byte
+			req := request.NewHTTPRequest(n.MetricsClient).WithGet("/metrics").WithResult(&resp)
+			if err := req.SendOrErr(ts.ctx); err != nil {
+				return err
+			}
+
+			// Parse metrisc
+			var parser expfmt.TextParser
+			metricFamilies, err := parser.TextToMetricFamilies(bytes.NewReader(resp))
+			if err != nil {
+				return err
+			}
+
+			for _, f := range metricFamilies {
+				ch <- f
+			}
+
+			return nil
+		})
+	}
+
+	go fn(ch)
+
+	assert.NoError(ts.t, grp.Wait())
+	close(ch)
 }
 
 // WaitForLogMessages wait until the lines are logged or a timeout occurs.
