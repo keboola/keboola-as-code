@@ -4,11 +4,17 @@ import {sleep, check} from 'k6';
 import { Counter } from 'k6/metrics';
 import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-const TOKEN = __ENV.API_TOKEN;
-const HOST = __ENV.API_HOST || "http://localhost:8001";
-const ITERATIONS = __ENV.K6_ITERATIONS || 100000;
-const PARALLELISM = __ENV.K6_PARALLELISM || 1000;
-const TIMEOUT = __ENV.K6_TIMEOUT || "60s";
+const REQ_PER_SEC = __ENV.K6_REQ_PER_SEC || 10000;
+const DURATION = __ENV.DURATION || "5m";
+const TOKEN = __ENV.BENCHMARK_API_TOKEN;
+const HOST = __ENV.BENCHMARK_API_HOST;
+if (!TOKEN) {
+    throw new Error("please specify BENCHMARK_API_TOKEN env")
+}
+if (!HOST) {
+    throw new Error("please specify BENCHMARK_API_HOST env")
+}
+
 
 const commonHeaders = {
     "Content-Type": "application/json",
@@ -20,10 +26,11 @@ const errors_metrics = new Counter("failed_imports");
 export const options = {
     scenarios: {
         default: {
-            executor: "shared-iterations",
-            vus: PARALLELISM,
-            iterations: ITERATIONS,
-            maxDuration: TIMEOUT,
+            executor: 'constant-arrival-rate',
+            rate: REQ_PER_SEC,
+            timeUnit: '1s',
+            duration: DURATION,
+            preAllocatedVUs: 1000,
         },
     },
     // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
@@ -65,11 +72,13 @@ export function setupReceiver(exports) {
             }
             break
         }
+        console.info(res)
         sleep(1000)
     }
 
     res = get(`v1/receivers/${receiverId}`);
     if (res.status !== 200) {
+        console.error(res)
         throw new Error("failed to get receiver");
     }
 
@@ -87,6 +96,10 @@ export function stripUrlHost(url) {
 }
 
 export function teardownReceiver(receiverId) {
+    // Wait for the last uploads
+    // May be replaced with check of the statistics endpoint in the future.
+    sleep(10000)
+
     const res = del(`v1/receivers/${receiverId}`);
     if (res.status !== 200) {
         console.error(res);

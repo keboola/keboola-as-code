@@ -102,11 +102,6 @@ services:
     image: netdata/netdata:latest
     networks:
       - benchmark
-    cap_add:
-      - SYS_PTRACE
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
     volumes:
       - ./scripts/benchmarks/netdata.conf:/etc/netdata/netdata.conf:ro
       - ./scripts/benchmarks/netdata-cloud.conf:/var/lib/netdata/cloud.d/cloud.conf:ro
