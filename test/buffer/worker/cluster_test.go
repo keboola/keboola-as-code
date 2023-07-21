@@ -89,11 +89,13 @@ type apiNodes []*apiNode
 type workerNodes []*workerNode
 
 type apiNode struct {
-	ID        string
-	Cmd       *exec.Cmd
-	CmdWaitCh <-chan error
-	Address   string
-	Client    client.Client
+	ID             string
+	Cmd            *exec.Cmd
+	CmdWaitCh      <-chan error
+	APIAddress     string
+	APIClient      client.Client
+	MetricsAddress string
+	MetricsClient  client.Client
 }
 
 type workerNode struct {
@@ -214,10 +216,11 @@ func (ts *testSuite) createAPINode(i int) *apiNode {
 
 	apiPort, err := netutils.FreePort()
 	require.NoError(ts.t, err)
-	address := fmt.Sprintf("http://localhost:%d", apiPort)
+	apiAddress := fmt.Sprintf("http://localhost:%d", apiPort)
 
 	metricsPort, err := netutils.FreePort()
 	require.NoError(ts.t, err)
+	metricsAddress := fmt.Sprintf("http://localhost:%d", metricsPort)
 
 	// Configuration, see internal/pkg/service/buffer/api/config/config.go
 	envs := env.Empty()
@@ -232,7 +235,7 @@ func (ts *testSuite) createAPINode(i int) *apiNode {
 	envs.Set("BUFFER_API_STORAGE_API_HOST", ts.project.StorageAPIHost())
 	envs.Set("BUFFER_API_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", apiPort))
 	envs.Set("BUFFER_API_METRICS_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", metricsPort))
-	envs.Set("BUFFER_API_PUBLIC_ADDRESS", address)
+	envs.Set("BUFFER_API_PUBLIC_ADDRESS", apiAddress)
 	envs.Set("BUFFER_API_STATISTICS_SYNC_INTERVAL", statisticsSyncInterval.String())
 	envs.Set("BUFFER_API_RECEIVER_BUFFER_SIZE", receiverBufferSize.String())
 
@@ -257,17 +260,19 @@ func (ts *testSuite) createAPINode(i int) *apiNode {
 
 	// Wait for API
 	ts.t.Logf(`waiting for node "%s"`, nodeID)
-	if err := testhelper.WaitForAPI(ts.ctx, cmdWaitCh, nodeID, address, startupTimeout); err != nil {
+	if err := testhelper.WaitForAPI(ts.ctx, cmdWaitCh, nodeID, apiAddress, startupTimeout); err != nil {
 		ts.fatalCh <- err
 	}
 
 	ts.t.Logf(`started node "%s"`, nodeID)
 	return &apiNode{
-		ID:        nodeID,
-		Cmd:       cmd,
-		CmdWaitCh: cmdWaitCh,
-		Address:   address,
-		Client:    client.NewTestClient().WithBaseURL(address),
+		ID:             nodeID,
+		Cmd:            cmd,
+		CmdWaitCh:      cmdWaitCh,
+		APIAddress:     apiAddress,
+		APIClient:      client.NewTestClient().WithBaseURL(apiAddress),
+		MetricsAddress: metricsAddress,
+		MetricsClient:  client.NewTestClient().WithBaseURL(metricsAddress),
 	}
 }
 

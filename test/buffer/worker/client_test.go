@@ -40,7 +40,7 @@ func newAPIClient(ts *testSuite) *apiClient {
 }
 
 func (c *apiClient) newRequest() request.HTTPRequest {
-	return request.NewHTTPRequest(c.ts.RandomAPINode().Client).WithError(&Error{})
+	return request.NewHTTPRequest(c.ts.RandomAPINode().APIClient).WithError(&Error{})
 }
 
 func (c *apiClient) newRequestWithToken() request.HTTPRequest {
