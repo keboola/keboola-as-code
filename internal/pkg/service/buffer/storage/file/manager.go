@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	gzip "github.com/klauspost/pgzip"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -64,7 +65,7 @@ func (m *Manager) DeleteFile(ctx context.Context, file model.File) error {
 	return m.keboolaProjectAPI.DeleteFileRequest(file.StorageResource.ID).SendOrErr(ctx)
 }
 
-func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader) error {
+func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader, stats *statistics.AfterUpload) error {
 	// Create slice writer
 	sliceWr, err := keboola.NewUploadSliceWriter(ctx, s.StorageResource, s.Filename(), keboola.WithUploadTransport(m.transport))
 	if err != nil {
@@ -89,8 +90,8 @@ func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader
 
 	// Update stats
 	if err == nil {
-		s.Statistics.FileSize += datasize.ByteSize(uncompressed)
-		s.Statistics.FileGZipSize += datasize.ByteSize(sizeWr.Size)
+		stats.FileSize += datasize.ByteSize(uncompressed)
+		stats.FileGZipSize += datasize.ByteSize(sizeWr.Size)
 	}
 
 	return err

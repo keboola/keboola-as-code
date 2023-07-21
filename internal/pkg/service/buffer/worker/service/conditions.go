@@ -25,6 +25,7 @@ type checker struct {
 	logger log.Logger
 
 	lock             *sync.RWMutex
+	uploadConditions model.Conditions
 	importConditions cachedConditions
 	openedSlices     cachedSlices
 }
@@ -43,6 +44,7 @@ func startChecker(s *Service) <-chan error {
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
 		lock:             &sync.RWMutex{},
+		uploadConditions: model.Conditions(s.config.UploadConditions),
 		importConditions: make(cachedConditions),
 		openedSlices:     make(cachedSlices),
 	}
@@ -103,16 +105,30 @@ func (c *checker) check(ctx context.Context) {
 			continue
 		}
 
+		// Get file stats
+		fileStats, err := c.cachedStats.FileStats(ctx, sliceKey.FileKey)
+		if err != nil {
+			c.logger.Error(err)
+			continue
+		}
+
 		// Check import conditions
-		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), c.stats.FileStats(sliceKey.FileKey).Total); met {
+		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total); met {
 			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
 		}
 
+		// Get slice stats
+		sliceStats, err := c.cachedStats.SliceStats(ctx, sliceKey)
+		if err != nil {
+			c.logger.Error(err)
+			continue
+		}
+
 		// Check upload conditions
-		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
+		if met, reason := c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.Total); met {
 			if err := c.swapSlice(sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}

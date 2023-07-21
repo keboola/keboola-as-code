@@ -50,9 +50,12 @@ type ServiceScope interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
+	ServiceConfig() config.ServiceConfig
 	Schema() *schema.Schema
 	Store() *store.Store
-	StatsCache() *statistics.CacheNode
+	StatisticsRepository() *statistics.Repository
+	StatisticsL1Cache() *statistics.L1CacheProvider
+	StatisticsL2Cache() *statistics.L2CacheProvider
 }
 
 type WorkerScope interface {
@@ -67,7 +70,7 @@ type WorkerScope interface {
 type APIScope interface {
 	ServiceScope
 	APIConfig() config.APIConfig
-	StatsCollector() *statistics.CollectorNode
+	StatsCollector() *statistics.Collector
 	WatcherAPINode() *watcher.APINode
 }
 

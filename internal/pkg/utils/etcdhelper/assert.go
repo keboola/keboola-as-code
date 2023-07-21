@@ -112,14 +112,14 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 	}
 }
 
-// ExpectModification waits until the operation makes some change in etcd or a timeout occurs.
-func ExpectModification(t *testing.T, client *etcd.Client, operation func()) *etcdserverpb.ResponseHeader {
+// ExpectModificationInPrefix waits until the operation makes some change in etcd or a timeout occurs.
+func ExpectModificationInPrefix(t *testing.T, client *etcd.Client, pfx string, operation func()) *etcdserverpb.ResponseHeader {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ch := client.Watch(ctx, "", etcd.WithPrefix(), etcd.WithCreatedNotify())
+	ch := client.Watch(ctx, pfx, etcd.WithPrefix(), etcd.WithCreatedNotify())
 
 	resp := <-ch
 	assert.True(t, resp.Created)
@@ -139,4 +139,10 @@ func ExpectModification(t *testing.T, client *etcd.Client, operation func()) *et
 	}
 
 	return nil
+}
+
+// ExpectModification waits until the operation makes some change in etcd or a timeout occurs.
+func ExpectModification(t *testing.T, client *etcd.Client, operation func()) *etcdserverpb.ResponseHeader {
+	t.Helper()
+	return ExpectModificationInPrefix(t, client, "", operation)
 }

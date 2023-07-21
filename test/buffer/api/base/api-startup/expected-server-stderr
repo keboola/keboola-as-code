@@ -1,4 +1,4 @@
-[bufferApi]INFO Configuration: debug-log=false; debug-etcd=false; debug-http=false; datadog-enabled=false; datadog-debug=false; cpu-profile=; storage-api-host=%s; etcd-endpoint=%s; etcd-namespace=%s; etcd-username=%s; etcd-connect-timeout=30s; unique-id=; public-address=https://buffer.keboola.local; listen-address=localhost:%d; metrics-listen-address=localhost:%d; statistics-sync-interval=1s; receiver-buffer-size=50MB; receiver-buffer-size-cache-ttl=1s;
+[bufferApi]INFO Configuration: debug-log=false; debug-etcd=false; debug-http=false; datadog-enabled=false; datadog-debug=false; cpu-profile=; storage-api-host=%s; etcd-endpoint=%s; etcd-namespace=%s; etcd-username=%s; etcd-connect-timeout=30s; statistics-l2-cache-ttl=1s; unique-id=; public-address=https://buffer.keboola.local; listen-address=localhost:%d; metrics-listen-address=localhost:%d; statistics-sync-interval=1s; receiver-buffer-size=50MB;
 [bufferApi]INFO process unique id "%s"
 [bufferApi][metrics]INFO HTTP server listening on "localhost:%d/metrics"
 [bufferApi]INFO loading Storage API index without components
@@ -7,7 +7,6 @@
 [bufferApi][etcd-client]INFO connected to etcd cluster "%s" | %s
 [bufferApi][task][etcd-session]INFO creating etcd session
 [bufferApi][task][etcd-session]INFO created etcd session | %s
-[bufferApi][stats-cache]INFO initialized | %s
 [bufferApi][api][watcher][etcd-session]INFO creating etcd session
 [bufferApi][api][watcher][etcd-session]INFO created etcd session | %s
 [bufferApi][api][watcher]INFO reported revision "1"
@@ -24,10 +23,12 @@
 [bufferApi][api][watcher][etcd-session]INFO closing etcd session
 [bufferApi][api][watcher][etcd-session]INFO closed etcd session | %s
 [bufferApi][api][watcher]INFO shutdown done
-[bufferApi][stats]INFO received shutdown request
-[bufferApi][stats]INFO shutdown done
-[bufferApi][stats-cache]INFO received shutdown request
-[bufferApi][stats-cache]INFO shutdown done
+[bufferApi][stats-collector]INFO received shutdown request
+[bufferApi][stats-collector]INFO shutdown done
+[bufferApi][stats-cache-L2]INFO received shutdown request
+[bufferApi][stats-cache-L2]INFO shutdown done
+[bufferApi][stats-cache-L1]INFO received shutdown request
+[bufferApi][stats-cache-L1]INFO shutdown done
 [bufferApi][task]INFO received shutdown request
 [bufferApi][task][etcd-session]INFO closing etcd session
 [bufferApi][task][etcd-session]INFO closed etcd session | %s

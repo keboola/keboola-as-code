@@ -36,7 +36,8 @@ type Service struct {
 	schema         *schema.Schema
 	watcher        *watcher.WorkerNode
 	dist           *distribution.Node
-	stats          *statistics.CacheNode
+	realtimeStats  *statistics.AtomicProvider
+	cachedStats    *statistics.L1CacheProvider
 	tasks          *task.Node
 	events         *event.Sender
 	config         config.WorkerConfig
@@ -56,7 +57,8 @@ type dependencies interface {
 	Store() *store.Store
 	WatcherWorkerNode() *watcher.WorkerNode
 	DistributionNode() *distribution.Node
-	StatsCache() *statistics.CacheNode
+	StatisticsRepository() *statistics.Repository
+	StatisticsL1Cache() *statistics.L1CacheProvider
 	TaskNode() *task.Node
 	OrchestratorNode() *orchestrator.Node
 	EventSender() *event.Sender
@@ -73,6 +75,8 @@ func New(d dependencies) (*Service, error) {
 		schema:         d.Schema(),
 		events:         d.EventSender(),
 		config:         d.WorkerConfig(),
+		realtimeStats:  d.StatisticsRepository().AtomicProvider(),
+		cachedStats:    d.StatisticsL1Cache(),
 		tasks:          d.TaskNode(),
 	}
 
@@ -94,7 +98,6 @@ func New(d dependencies) (*Service, error) {
 		s.dist = d.DistributionNode()
 	}
 	if s.config.ConditionsCheck {
-		s.stats = d.StatsCache()
 		init = append(init, s.checkConditions())
 	}
 	if s.config.CloseSlices {

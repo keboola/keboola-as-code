@@ -9,6 +9,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -25,6 +27,7 @@ type Task struct {
 	clock       clock.Clock
 	logger      log.Logger
 	schema      *schema.Schema
+	stats       *statistics.Repository
 	client      *etcd.Client
 	receiverKey key.ReceiverKey
 }
@@ -34,6 +37,7 @@ func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task 
 		clock:       d.Clock(),
 		logger:      logger,
 		schema:      d.Schema(),
+		stats:       d.StatisticsRepository(),
 		client:      d.EtcdClient(),
 		receiverKey: k,
 	}
@@ -134,16 +138,20 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 		}
 	}
 
-	// Delete received statistics
-	err = t.schema.ReceivedStats().InFile(file.FileKey).DeleteAll().DoOrErr(ctx, t.client)
-	if err != nil {
-		return 0, 0, err
+	// Rollup statistics to keep imported stats per export
+	if file.State == filestate.Imported {
+		if err := t.stats.RollupImportedOnCleanupOp(file.FileKey).Do(ctx, t.client); err != nil {
+			return slicesCount, recordsCount, err
+		}
 	}
 
-	// Delete the file
-	err = t.schema.Files().InState(file.State).ByKey(file.FileKey).Delete().DoOrErr(ctx, t.client)
+	// Delete file and statistics (in Buffered and Uploaded category, Imported category are deleted above)
+	err = op.NewTxnOp().
+		Then(t.schema.Files().InState(file.State).ByKey(file.FileKey).Delete()).
+		Then(t.stats.DeleteOp(file.FileKey)).
+		DoOrErr(ctx, t.client)
 	if err != nil {
-		return 0, 0, err
+		return slicesCount, recordsCount, err
 	}
 
 	t.logger.Debugf(`deleted file "%s"`, file.FileKey.String())

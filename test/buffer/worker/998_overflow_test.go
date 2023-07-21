@@ -15,7 +15,7 @@ func (ts *testSuite) test998BufferSizeOverflow() {
 	ts.t.Logf("-------------------------")
 
 	// Wait for cache invalidation
-	time.Sleep(statisticsSyncInterval + receiverBufferSizeCacheTTL + time.Millisecond)
+	time.Sleep(statisticsSyncInterval + statisticsL2CacheTTL + time.Millisecond)
 
 	// Fill buffer size over the maximum (size is checked before import).
 	// Maximum record size (1MB) is not exceeded.
@@ -23,7 +23,7 @@ func (ts *testSuite) test998BufferSizeOverflow() {
 	assert.NoError(ts.t, ts.ImportWithPayload(`{"key": "`+bytes+`"}`))
 
 	// Wait for cache invalidation
-	time.Sleep(statisticsSyncInterval + receiverBufferSizeCacheTTL + time.Millisecond)
+	time.Sleep(statisticsSyncInterval + statisticsL2CacheTTL + time.Millisecond)
 
 	// Next request is rejected.
 	err := ts.ImportWithPayload(`{"key": "foo"}`)

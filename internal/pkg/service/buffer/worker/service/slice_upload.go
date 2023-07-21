@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -24,8 +25,9 @@ const (
 	// This re-check mechanism provides retries for failed tasks or failed worker nodes.
 	// In normal operation, switch to the "uploading" state is processed immediately, we are notified via the Watch API.
 	UploadingSlicesCheckInterval = time.Minute
-
-	sliceUploadTaskType = "slice.upload"
+	sliceUploadTaskType          = "slice.upload"
+	sliceMarkAsFailedTimeout     = 30 * time.Second
+	uploadEventSendTimeout       = 10 * time.Second
 )
 
 // uploadSlices watches for slices switched to the uploading state.
@@ -65,6 +67,8 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				defer checkAndWrapUserError(&result.Error)
 				defer func() {
 					if result.IsError() {
+						ctx, cancel := context.WithTimeout(context.Background(), fileMarkAsFailedTimeout)
+						defer cancel()
 						attempt := slice.RetryAttempt + 1
 						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						slice.RetryAttempt = attempt
@@ -78,7 +82,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 
 				// Skip empty
 				if slice.IsEmpty {
-					if err := s.store.MarkSliceUploaded(ctx, &slice); err != nil {
+					if err := s.store.MarkSliceUploaded(ctx, &slice, statistics.AfterUpload{}); err != nil {
 						return task.ErrResult(err)
 					}
 					return task.OkResult("skipped upload of the empty slice")
@@ -95,14 +99,33 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 					return task.ErrResult(err)
 				}
 
-				defer s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice)
+				// Generate Storage API event after the operation
+				defer func() {
+					ctx, cancel := context.WithTimeout(context.Background(), uploadEventSendTimeout)
+					defer cancel()
+
+					stats, statsErr := s.realtimeStats.SliceStats(ctx, slice.SliceKey)
+					if statsErr != nil {
+						s.logger.Errorf(`cannot send upload event: cannot get slice "%s" stats: %s`, slice.SliceKey, statsErr)
+						return
+					}
+
+					s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice, stats.Uploaded)
+				}()
 
 				// Create file manager
 				files := file.NewManager(d.Clock(), api, s.config.UploadTransport)
 
+				// Get slice statistics
+				stats, err := s.cachedStats.SliceStats(ctx, slice.SliceKey)
+				if err != nil {
+					return task.ErrResult(errors.Errorf(`cannot get slice "%s" stats: %w`, slice.SliceKey, err))
+				}
+
 				// Upload slice, set statistics
-				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice)
-				if err := files.UploadSlice(ctx, &slice, reader); err != nil {
+				uploadStats := statistics.AfterUpload{}
+				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice, stats.Total, &uploadStats)
+				if err := files.UploadSlice(ctx, &slice, reader, &uploadStats); err != nil {
 					return task.ErrResult(errors.Errorf(`file upload failed: %w`, err))
 				}
 
@@ -125,7 +148,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				}
 
 				// Mark slice uploaded
-				if err := s.store.MarkSliceUploaded(ctx, &slice); err != nil {
+				if err := s.store.MarkSliceUploaded(ctx, &slice, uploadStats); err != nil {
 					return task.ErrResult(err)
 				}
 

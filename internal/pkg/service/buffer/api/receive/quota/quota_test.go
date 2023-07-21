@@ -2,7 +2,6 @@ package quota_test
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestQuota_Check(t *testing.T) {
@@ -36,33 +36,38 @@ func TestQuota_Check(t *testing.T) {
 
 	limit := 1000 * datasize.KB
 	cfg := config.NewAPIConfig()
+	cfg.StatisticsSyncInterval = 50 * time.Millisecond
 	cfg.ReceiverBufferSize = limit
 
 	apiScope, mock := dependencies.NewMockedAPIScope(t, cfg)
-	logger := mock.DebugLogger()
+	client := mock.TestEtcdClient()
 	statsCollector := apiScope.StatsCollector()
-	quoteChecker := quota.New(ctx, wg, apiScope)
-
+	quoteChecker := quota.New(apiScope)
 	notifyReceivedData := func(sliceKey key.SliceKey, recordSize datasize.ByteSize) {
-		statsCollector.Notify(sliceKey, recordSize, 123)
-		<-statsCollector.Sync(ctx)
+		// Notify statistics collector
+		header := etcdhelper.ExpectModificationInPrefix(t, client, "stats/", func() {
+			statsCollector.Notify(now, sliceKey, recordSize, 123)
+		})
+
+		// Wait for L1 cache update
 		assert.Eventually(t, func() bool {
-			return strings.Contains(logger.AllMessages(), "[stats-cache]DEBUG  synced to revision")
-		}, 5*time.Second, 100*time.Millisecond)
-		logger.Truncate()
-		quoteChecker.ClearCache()
+			return apiScope.StatisticsL1Cache().Revision() == header.Revision
+		}, 1*time.Second, 100*time.Millisecond)
+
+		// Clear L2 cache
+		apiScope.StatisticsL2Cache().ClearCache()
 	}
 
 	// No data, no error
-	assert.NoError(t, quoteChecker.Check(receiverKey))
+	assert.NoError(t, quoteChecker.Check(ctx, receiverKey))
 
 	// Received some data under limit: 600kB < 1000kB limit, no error
 	notifyReceivedData(slice1Key, 600*datasize.KB)
-	assert.NoError(t, quoteChecker.Check(receiverKey))
+	assert.NoError(t, quoteChecker.Check(ctx, receiverKey))
 
 	// Received some data over limit: 1200kB > 1000kB limit, error
 	notifyReceivedData(slice2Key, 600*datasize.KB)
-	err := quoteChecker.Check(receiverKey)
+	err := quoteChecker.Check(ctx, receiverKey)
 	if assert.Error(t, err) {
 		assert.Equal(t, `no free space in the buffer: receiver "my-receiver" has "1.2 MB" buffered for upload, limit is "1000.0 KB"`, err.Error())
 		errValue, ok := err.(errors.WithErrorLogEnabled)
@@ -72,7 +77,7 @@ func TestQuota_Check(t *testing.T) {
 	}
 
 	// Error is not logged on second error
-	err = quoteChecker.Check(receiverKey)
+	err = quoteChecker.Check(ctx, receiverKey)
 	if assert.Error(t, err) {
 		assert.Equal(t, `no free space in the buffer: receiver "my-receiver" has "1.2 MB" buffered for upload, limit is "1000.0 KB"`, err.Error())
 		errValue, ok := err.(errors.WithErrorLogEnabled)

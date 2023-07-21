@@ -7,6 +7,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -17,6 +18,7 @@ type Store struct {
 	client    *etcd.Client
 	telemetry telemetry.Telemetry
 	schema    *schema.Schema
+	stats     *statistics.Repository
 }
 
 type dependencies interface {
@@ -25,18 +27,16 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	Schema() *schema.Schema
 	EtcdClient() *etcd.Client
+	StatisticsRepository() *statistics.Repository
 }
 
 func New(d dependencies) *Store {
-	return newFrom(d.Clock(), d.Logger(), d.Telemetry(), d.EtcdClient(), d.Schema())
-}
-
-func newFrom(clock clock.Clock, logger log.Logger, tel telemetry.Telemetry, etcdClient *etcd.Client, schema *schema.Schema) *Store {
 	return &Store{
-		clock:     clock,
-		logger:    logger,
-		telemetry: tel,
-		client:    etcdClient,
-		schema:    schema,
+		clock:     d.Clock(),
+		logger:    d.Logger(),
+		telemetry: d.Telemetry(),
+		client:    d.EtcdClient(),
+		schema:    d.Schema(),
+		stats:     d.StatisticsRepository(),
 	}
 }

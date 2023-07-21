@@ -16,7 +16,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
+func (s *Store) CreateFile(ctx context.Context, file model.File) (err error) {
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateFile")
+	defer span.End(&err)
+
+	_, err = s.CreateFileOp(ctx, file).Do(ctx, s.client)
+	return err
+}
+
+func (s *Store) CreateFileOp(_ context.Context, file model.File) op.BoolOp {
 	return s.schema.
 		Files().
 		Opened().
@@ -118,7 +126,7 @@ func (s *Store) MarkFileImported(ctx context.Context, file *model.File) (err err
 			ops := []op.Op{fileStateOp}
 			for _, slice := range slices {
 				slice := slice
-				sliceStateOp, err := s.setSliceStateOp(ctx, now, &slice, slicestate.Imported)
+				sliceStateOp, err := s.setSliceStateOp(ctx, now, &slice, slicestate.Imported, nil)
 				if err != nil {
 					return nil, err
 				}
@@ -156,40 +164,31 @@ func (s *Store) CloseFile(ctx context.Context, file *model.File) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CloseFile")
 	defer span.End(&err)
 
-	var stats model.Stats
-	return op.
-		Atomic().
-		Read(func() op.Op {
-			return op.MergeToTxn(
-				sumStatsOp(s.schema.Slices().Uploaded().InFile(file.FileKey).GetAll(), &stats),
-			)
-		}).
-		WriteOrErr(func() (op.Op, error) {
-			var ops []op.Op
+	// Copy file for modifications
+	modFile := *file
 
-			// Copy slice and do modifications
-			modFile := *file
-			if stats.RecordsCount > 0 {
-				modFile.Statistics = &stats
-			} else {
-				modFile.IsEmpty = true
+	// Get stats and set IsEmpty flag
+	stats, err := s.stats.FileStats(ctx, file.FileKey)
+	if err != nil {
+		return err
+	} else if stats.Total.RecordsCount == 0 {
+		modFile.IsEmpty = true
+	}
+
+	// Set file state from "closing" to "importing"
+	// This also saves the changes.
+	setOp, err := s.setFileStateOp(ctx, s.clock.Now(), &modFile, filestate.Importing)
+	if err != nil {
+		return err
+	}
+
+	return setOp.
+		WithOnResult(func(result op.TxnResult) {
+			if result.Succeeded {
+				*file = modFile
 			}
-
-			// Set file state from "closing" to "importing"
-			// This also saves the changes.
-			if v, err := s.setFileStateOp(ctx, s.clock.Now(), &modFile, filestate.Importing); err != nil {
-				return nil, err
-			} else {
-				ops = append(ops, v)
-			}
-
-			return op.
-				MergeToTxn(ops...).
-				WithOnResult(func(result op.TxnResult) {
-					*file = modFile
-				}), nil
 		}).
-		Do(ctx, s.client)
+		DoOrErr(ctx, s.client)
 }
 
 // SwapFile closes the old slice and creates the new one, in the same file.
@@ -214,7 +213,7 @@ func (s *Store) swapFileOp(ctx context.Context, now time.Time, oldFile *model.Fi
 	if newFile.ExportKey != oldFile.ExportKey {
 		panic(errors.Errorf(`new file "%s" is not from the export "%s"`, newFile.FileKey, oldFile.ExportKey))
 	}
-	createFileOp := s.createFileOp(ctx, newFile)
+	createFileOp := s.CreateFileOp(ctx, newFile)
 	closeFileOp, err := s.setFileStateOp(ctx, now, oldFile, filestate.Closing)
 	if err != nil {
 		return nil, err
@@ -253,9 +252,22 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 	}
 
 	// Atomically swap keys in the transaction
+	alreadyInState := false
 	ops := []op.Op{
-		s.schema.Files().InState(from).ByKey(file.FileKey).DeleteIfExists(),
-		s.schema.Files().InState(to).ByKey(file.FileKey).PutIfNotExists(clone),
+		s.schema.Files().InState(to).ByKey(file.FileKey).PutIfNotExists(clone).WithOnResultOrErr(func(ok bool) error {
+			alreadyInState = !ok
+			if !ok {
+				file.State = to
+				return errors.Errorf(`file "%s" is already in the "%s" state`, file.FileKey, to)
+			}
+			return nil
+		}),
+		s.schema.Files().InState(from).ByKey(file.FileKey).DeleteIfExists().WithOnResultOrErr(func(ok bool) error {
+			if !ok && !alreadyInState {
+				return errors.Errorf(`file "%s" not found in the "%s" state`, file.FileKey, file.State)
+			}
+			return nil
+		}),
 	}
 
 	// Create transaction

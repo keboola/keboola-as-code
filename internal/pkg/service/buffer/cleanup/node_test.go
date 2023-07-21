@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -31,6 +32,7 @@ func TestCleanup(t *testing.T) {
 	workerScp, mock := bufferDependencies.NewMockedWorkerScope(t, config.NewWorkerConfig())
 	client := mock.TestEtcdClient()
 	schema := workerScp.Schema()
+	statsRepo := workerScp.StatisticsRepository()
 	node := cleanup.NewNode(workerScp, workerScp.Logger().AddPrefix("[cleanup]"))
 
 	// Create receiver and 3 exports
@@ -63,101 +65,185 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey2).Put(export2).Do(ctx, client))
 	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey3).Put(export3).Do(ctx, client))
 
-	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	createdAt := utctime.UTCTime(createdAtRaw)
-	timeNow := time.Now()
-
-	// Add file with a Closing state and created in the past - will be deleted
-	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(createdAt)}
-	file1 := model.File{
-		FileKey: fileKey1,
-		State:   filestate.Closing,
-		Mapping: model.Mapping{
-			MappingKey:  key.MappingKey{ExportKey: exportKey1, RevisionID: 1},
+	mapping := func(exportKey key.ExportKey) model.Mapping {
+		return model.Mapping{
+			MappingKey:  key.MappingKey{ExportKey: exportKey, RevisionID: 1},
 			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
 			Incremental: false,
 			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
-		},
+		}
+	}
+
+	oldTimeRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+	oldTime := utctime.From(oldTimeRaw)
+	timeNow := time.Now()
+
+	// File 1 ----------------------------------------------------------------------------------------------------------
+	// State:
+	//     An old broken file AFTER EXPIRATION, in Closing state, the slice is Uploaded but not Imported.
+	// Expected result:
+	//     File, slice, records and statistics are deleted.
+
+	// Add file with a Closing state and created in the past
+	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(oldTime)}
+	file1 := model.File{
+		FileKey:         fileKey1,
+		State:           filestate.Closing,
+		Mapping:         mapping(exportKey1),
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	assert.NoError(t, schema.Files().InState(filestate.Closing).ByKey(fileKey1).Put(file1).Do(ctx, client))
 
-	// Add file with a Closing state and created recently - will be ignored
-	fileKey2 := key.FileKey{ExportKey: exportKey3, FileID: key.FileID(timeNow)}
-	file2 := model.File{
-		FileKey: fileKey2,
-		State:   filestate.Closing,
-		Mapping: model.Mapping{
-			MappingKey:  key.MappingKey{ExportKey: exportKey3, RevisionID: 1},
-			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
-			Incremental: false,
-			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
-		},
-		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
-	}
-	assert.NoError(t, schema.Files().InState(filestate.Closing).ByKey(fileKey2).Put(file2).Do(ctx, client))
-
-	// Add slice for the cleaned-up file - will be deleted
-	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(createdAt)}
+	// Add slice for the cleaned-up file
+	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(oldTime)}
 	slice1 := model.Slice{
-		SliceKey: sliceKey1,
-		Number:   1,
-		State:    slicestate.Uploaded,
-		Mapping: model.Mapping{
-			MappingKey:  key.MappingKey{ExportKey: exportKey1, RevisionID: 1},
-			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
-			Incremental: false,
-			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
-		},
+		SliceKey:        sliceKey1,
+		Number:          1,
+		State:           slicestate.Uploaded,
+		Mapping:         mapping(exportKey1),
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	assert.NoError(t, schema.Slices().InState(slicestate.Uploaded).ByKey(sliceKey1).Put(slice1).Do(ctx, client))
 
-	// Add slice for the ignored file - will be ignored
+	// Add record for the cleaned-up slice
+	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(oldTime), RandomSuffix: "abcd"}
+	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
+
+	// Add received stats for the cleaned-up slice
+	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+		{
+			SliceKey: sliceKey1,
+			Value: statistics.Value{
+				FirstRecordAt: oldTime,
+				LastRecordAt:  oldTime,
+				RecordsCount:  123,
+				RecordsSize:   1 * datasize.KB,
+				BodySize:      1 * datasize.KB,
+			},
+		},
+	}))
+	moveOp, err := statsRepo.MoveOp(ctx, sliceKey1, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+		*value = value.WithAfterUpload(statistics.AfterUpload{
+			RecordsCount: 456,
+			FileSize:     1 * datasize.KB,
+			FileGZipSize: 500 * datasize.B,
+		})
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, moveOp.DoOrErr(ctx, client))
+
+	// File 2 ----------------------------------------------------------------------------------------------------------
+	// State:
+	//    An file BEFORE EXPIRATION, in Closing state, the slice is Uploaded but not Imported.
+	// Expected result:
+	//    The file is excluded from the cleanup, nothing is deleted.
+
+	// Add file with a Closing state and created recently
+	fileKey2 := key.FileKey{ExportKey: exportKey2, FileID: key.FileID(timeNow)}
+	file2 := model.File{
+		FileKey:         fileKey2,
+		State:           filestate.Closing,
+		Mapping:         mapping(exportKey2),
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
+	}
+	assert.NoError(t, schema.Files().InState(filestate.Closing).ByKey(fileKey2).Put(file2).Do(ctx, client))
+
+	// Add slice for the ignored file
 	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(timeNow)}
 	slice2 := model.Slice{
-		SliceKey: sliceKey2,
-		Number:   1,
-		State:    slicestate.Uploaded,
-		Mapping: model.Mapping{
-			MappingKey:  key.MappingKey{ExportKey: exportKey3, RevisionID: 1},
-			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
-			Incremental: false,
-			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
-		},
+		SliceKey:        sliceKey2,
+		Number:          1,
+		State:           slicestate.Uploaded,
+		Mapping:         mapping(exportKey2),
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	assert.NoError(t, schema.Slices().InState(slicestate.Uploaded).ByKey(sliceKey2).Put(slice2).Do(ctx, client))
 
-	// Add record for the cleaned-up slice - will be deleted
-	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(createdAt), RandomSuffix: "abcd"}
-	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
-
-	// Add record for the ignored slice - will be ignored
+	// Add record for the ignored slice
 	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(timeNow), RandomSuffix: "efgh"}
 	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
 
-	// Add received stats for the cleaned-up slice - will be deleted
-	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey1).ByNodeID("node-123").Put(model.SliceStats{
-		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey1, NodeID: "node-123"},
-		Stats: model.Stats{
-			LastRecordAt: utctime.UTCTime(timeNow),
-			RecordsCount: 123,
-			RecordsSize:  1 * datasize.KB,
-			BodySize:     1 * datasize.KB,
+	// Add received stats for the ignored slice
+	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+		{
+			SliceKey: sliceKey2,
+			Value: statistics.Value{
+				FirstRecordAt: utctime.UTCTime(timeNow),
+				LastRecordAt:  utctime.UTCTime(timeNow),
+				RecordsCount:  456,
+				RecordsSize:   2 * datasize.KB,
+				BodySize:      2 * datasize.KB,
+			},
 		},
-	}).Do(ctx, client))
-
-	// Add received stats for the ignored slice - will be ignored
-	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey2).ByNodeID("node-123").Put(model.SliceStats{
-		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey2, NodeID: "node-123"},
-		Stats: model.Stats{
-			LastRecordAt: utctime.UTCTime(timeNow),
+	}))
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey2, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
-			RecordsSize:  2 * datasize.KB,
-			BodySize:     2 * datasize.KB,
+			FileSize:     1 * datasize.KB,
+			FileGZipSize: 500 * datasize.B,
+		})
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, moveOp.DoOrErr(ctx, client))
+
+	// File 3 ----------------------------------------------------------------------------------------------------------
+	// State:
+	//     An old imported file AFTER EXPIRATION, in Imported state, the slice is Imported.
+	// Expected result:
+	//     File, slice, records and statistics are deleted,
+	//     but statistics are rolled-up and stored to export prefix.
+
+	// Add file with a Closing state and created recently
+	fileKey3 := key.FileKey{ExportKey: exportKey3, FileID: key.FileID(oldTime)}
+	file3 := model.File{
+		FileKey:         fileKey3,
+		State:           filestate.Imported,
+		Mapping:         mapping(exportKey3),
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
+	}
+	assert.NoError(t, schema.Files().InState(filestate.Imported).ByKey(fileKey3).Put(file3).Do(ctx, client))
+
+	// Add slice for the ignored file
+	sliceKey3 := key.SliceKey{FileKey: fileKey3, SliceID: key.SliceID(oldTime)}
+	slice3 := model.Slice{
+		SliceKey:        sliceKey3,
+		Number:          1,
+		State:           slicestate.Imported,
+		Mapping:         mapping(exportKey3),
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
+	}
+	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey3).Put(slice3).Do(ctx, client))
+
+	// Add record for the ignored slice
+	recordKey3 := key.RecordKey{SliceKey: sliceKey3, ReceivedAt: key.ReceivedAt(oldTime), RandomSuffix: "efgh"}
+	assert.NoError(t, schema.Records().ByKey(recordKey3).Put("rec").Do(ctx, client))
+
+	// Add received stats for the ignored slice
+	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+		{
+			SliceKey: sliceKey3,
+			Value: statistics.Value{
+				FirstRecordAt: oldTime,
+				LastRecordAt:  oldTime,
+				RecordsCount:  789,
+				RecordsSize:   2 * datasize.KB,
+				BodySize:      2 * datasize.KB,
+			},
 		},
-	}).Do(ctx, client))
+	}))
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+		*value = value.WithAfterUpload(statistics.AfterUpload{
+			RecordsCount: 456,
+			FileSize:     1 * datasize.KB,
+			FileGZipSize: 500 * datasize.B,
+		})
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, moveOp.DoOrErr(ctx, client))
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Uploaded, statistics.Imported, nil)
+	assert.NoError(t, err)
+	assert.NoError(t, moveOp.DoOrErr(ctx, client))
+	// -----------------------------------------------------------------------------------------------------------------
 
 	// Run the cleanup
 	assert.NoError(t, node.Check(ctx))
@@ -170,9 +256,11 @@ func TestCleanup(t *testing.T) {
 	wildcards.Assert(t, `
 [task][1000/github/receiver.cleanup/%s]INFO  started task
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/first/2006-01-02T08:04:05.000Z"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/first/2006-01-02T08:04:05.000Z"
-[task][1000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
+[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/first/%s"
+[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/first/%s"
+[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/third/%s"
+[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/third/%s"
+[task][1000/github/receiver.cleanup/%s]INFO  deleted "2" files, "2" slices, "2" records
 [task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
 `, strhelper.FilterLines(`^\[task\]\[1000/`, mock.DebugLogger().AllMessages()))
@@ -204,97 +292,66 @@ config/export/1000/github/third
 >>>>>
 
 <<<<<
-file/closing/1000/github/third/%s
+file/closing/1000/github/second/%s
 -----
 {
   "projectId": 1000,
   "receiverId": "github",
-  "exportId": "third",
+  "exportId": "second",
   "fileId": "%s",
   "state": "closing",
-  "mapping": {
-    "projectId": 1000,
-    "receiverId": "github",
-    "exportId": "third",
-    "revisionId": 1,
-    "tableId": "in.test.test",
-    "incremental": false,
-    "columns": [
-      {
-        "type": "id",
-        "name": "id"
-      }
-    ]
-  },
-  "storageResource": {
-    "id": 123,
-    "created": "0001-01-01T00:00:00Z",
-    "name": "file1.csv",
-    "url": "",
-    "provider": "",
-    "region": "",
-    "maxAgeDays": 0
-  }
+  "mapping": %A,
+  "storageResource": %A
 }
 >>>>>
 
 <<<<<
-record/1000/github/third/%s_efgh
+record/1000/github/second/%s_efgh
 -----
 rec
 >>>>>
 
 <<<<<
-slice/active/closed/uploaded/1000/github/third/%s/%s
+slice/active/closed/uploaded/1000/github/second/%s/%s
 -----
 {
   "projectId": 1000,
   "receiverId": "github",
-  "exportId": "third",
+  "exportId": "second",
   "fileId": "%s",
   "sliceId": "%s",
   "state": "active/closed/uploaded",
-  "mapping": {
-    "projectId": 1000,
-    "receiverId": "github",
-    "exportId": "third",
-    "revisionId": 1,
-    "tableId": "in.test.test",
-    "incremental": false,
-    "columns": [
-      {
-        "type": "id",
-        "name": "id"
-      }
-    ]
-  },
-  "storageResource": {
-    "id": 123,
-    "created": "0001-01-01T00:00:00Z",
-    "name": "file1.csv",
-    "url": "",
-    "provider": "",
-    "region": "",
-    "maxAgeDays": 0
-  },
+  "mapping": %A,
+  "storageResource": %A,
   "sliceNumber": 1
 }
 >>>>>
 
 <<<<<
-stats/received/1000/github/third/%s/%s/node-123
+stats/uploaded/1000/github/second/%s/%s/_nodes_sum
 -----
- {
-  "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "third",
-  "fileId": "%s",
-  "sliceId": "%s",
-  "nodeId": "node-123",
+{
+  "firstRecordAt": "%s",
   "lastRecordAt": "%s",
   "recordsCount": 456,
   "recordsSize": "2KB",
-  "bodySize": "2KB"
+  "bodySize": "2KB",
+  "fileSize": "1KB",
+  "fileGZipSize": "500B"
+}
+>>>>>
+
+<<<<<
+stats/imported/1000/github/third/_cleanup_sum
+-----
+{
+  "firstRecordAt": "%s",
+  "lastRecordAt": "%s",
+  "recordsCount": 456,
+  "recordsSize": "2KB",
+  "bodySize": "2KB",
+  "fileSize": "1KB",
+  "fileGZipSize": "500B"
 }
 >>>>>
 

@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -32,9 +31,7 @@ type Slice struct {
 	LastError       string                         `json:"lastError,omitempty"`
 	RetryAttempt    int                            `json:"retryAttempt,omitempty"`
 	RetryAfter      *utctime.UTCTime               `json:"retryAfter,omitempty"`
-	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
-	Statistics *Stats `json:"statistics,omitempty"`
-	IsEmpty    bool   `json:"isEmpty,omitempty"`
+	IsEmpty         bool                           `json:"isEmpty,omitempty"`
 	// IDRange is assigned during the "slice close" operation, it defines the assigned auto-increment value.
 	IDRange *SliceIDRange `json:"idRange,omitempty"`
 }
@@ -56,18 +53,4 @@ func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, r
 
 func (v Slice) Filename() string {
 	return v.OpenedAt().Format(SliceFilenameDateFormat) + ".gz"
-}
-
-func (v Slice) GetStats() Stats {
-	if v.State == slicestate.Writing || v.State == slicestate.Closing {
-		panic(errors.Errorf(
-			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploading, failed or uploaded`,
-			v.SliceKey, v.State,
-		))
-	}
-	// Statistics are not set for an empty slice.
-	if v.Statistics == nil {
-		return Stats{}
-	}
-	return *v.Statistics
 }

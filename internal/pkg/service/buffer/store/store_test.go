@@ -19,5 +19,11 @@ func newStoreForTest(t *testing.T) *Store {
 	clk := clock.NewMock()
 	clk.Set(now)
 	etcdClient := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
-	return newFrom(clk, log.NewNopLogger(), telemetry.NewNop(), etcdClient, schema.New(validator.New().Validate))
+	return &Store{
+		clock:     clk,
+		logger:    log.NewNopLogger(),
+		telemetry: telemetry.NewNop(),
+		client:    etcdClient,
+		schema:    schema.New(validator.New().Validate),
+	}
 }
