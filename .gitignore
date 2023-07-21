@@ -29,7 +29,6 @@ target
 
 # Environment
 /.env
-/scripts/k6/.env
 
 # Integration tests output
 /src/tests/**/.out/*

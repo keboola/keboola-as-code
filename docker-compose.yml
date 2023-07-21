@@ -1,6 +1,7 @@
 version: '3'
 services:
   dev:
+    &dev
     image: keboolabot/keboola-as-code-dev
     build:
       context: .
@@ -79,17 +80,47 @@ services:
       ETCD_DISABLE_STORE_MEMBER_ID: "true"
       ETCD_QUOTA_BACKEND_BYTES: "21474836480" # 20GB
   k6:
+  benchmark-go:
+    << : *dev
+    networks:
+      - default
+      - benchmark
+  benchmark-k6:
+    image: grafana/k6:latest
+    networks:
+      - benchmark
+    depends_on:
+      - benchmark-dashboard
     volumes:
-      - ./scripts:/scripts
-    image: grafana/k6
-    network_mode: host
+      - ./scripts/benchmarks:/benchmarks
     environment:
-      - API_USE_HTTPS
-      - API_HOST
-      - API_PORT
-      - API_TOKEN
-      - K6_USERS
-      - K6_DURATION
+      - K6_STATSD_ENABLE_TAGS=true
+      - K6_STATSD_ADDR=benchmark-dashboard:8125
+      - BENCHMARK_API_HOST
+      - BENCHMARK_API_TOKEN
+  benchmark-dashboard:
+    image: netdata/netdata:latest
+    networks:
+      - benchmark
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - ./scripts/benchmarks/netdata.conf:/etc/netdata/netdata.conf:ro
+      - ./scripts/benchmarks/netdata-cloud.conf:/var/lib/netdata/cloud.d/cloud.conf:ro
+      - benchmark-dashboard-lib:/var/lib/netdata
+      - benchmark-dashboard-cache:/var/cache/netdata
+    environment:
+      - DISABLE_TELEMETRY=1
+    ports:
+        - "19999:19999"
 
 volumes:
   cache:
+  benchmark-dashboard-lib:
+  benchmark-dashboard-cache:
+
+networks:
+  benchmark:

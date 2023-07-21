@@ -53,4 +53,4 @@ The Service uses an [etcd](https://etcd.io/) database to buffer incoming data un
 
 ## Other information
 
-- [API Benchmarks](./benchmarks.md)
+- [API Benchmarks](../../scripts/benchmarks/buffer-api/README.md)

@@ -46,6 +46,9 @@ run-buffer-api-once: build-buffer-api
 run-buffer-worker:
 	air -c ./provisioning/buffer/dev/.air-worker.toml
 
+run-buffer-worker-once: build-buffer-worker
+	./target/buffer/worker
+
 tests:
 	TEST_PACKAGE=./... bash ./scripts/tests.sh
 
