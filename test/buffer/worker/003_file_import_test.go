@@ -15,7 +15,7 @@ func (ts *testSuite) test003FileImport() {
 
 	// Run imports immediately after the last check to prevent the check during imports.
 	ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%s][service][conditions]INFO checked "2" opened slices
+[worker-node-%s][service][conditions]DEBUG checked "2" opened slices
 	`)
 
 	// Send records 7-10

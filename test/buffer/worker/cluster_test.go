@@ -41,7 +41,9 @@ const (
 	importConditionsSize    = datasize.MB
 	importConditionsTime    = time.Hour
 	statisticsSyncInterval  = 500 * time.Millisecond
-	conditionsCheckInterval = 2000 * time.Millisecond
+	conditionsCheckInterval = 1000 * time.Millisecond
+	minUploadInterval       = 1000 * time.Millisecond
+	minImportInterval       = 2000 * time.Millisecond
 	statisticsL2CacheTTL    = 500 * time.Millisecond
 	receiverBufferSize      = 100 * datasize.KB
 	startupTimeout          = 30 * time.Second
@@ -287,6 +289,8 @@ func (ts *testSuite) createWorkerNode(i int) *workerNode {
 	envs.Set("BUFFER_WORKER_STORAGE_API_HOST", ts.project.StorageAPIHost())
 	envs.Set("BUFFER_WORKER_METRICS_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", metricsPort))
 	envs.Set("BUFFER_WORKER_CHECK_CONDITIONS_INTERVAL", conditionsCheckInterval.String())
+	envs.Set("BUFFER_WORKER_MIN_UPLOAD_INTERVAL", minUploadInterval.String())
+	envs.Set("BUFFER_WORKER_MIN_IMPORT_INTERVAL", minImportInterval.String())
 	envs.Set("BUFFER_WORKER_UPLOAD_CONDITIONS_COUNT", cast.ToString(uploadConditionsCount))
 	envs.Set("BUFFER_WORKER_UPLOAD_CONDITIONS_SIZE", uploadConditionsSize.String())
 	envs.Set("BUFFER_WORKER_UPLOAD_CONDITIONS_TIME", uploadConditionsTime.String())
