@@ -62,11 +62,10 @@ func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd
 
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
 func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *WatchStreamT[T] {
-	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEventT[T]])}
+	ctx, cancel := context.WithCancel(ctx)
+	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEventT[T]]), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
-
-		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
 		// Decode value, if an error occurs, send it through the channel.

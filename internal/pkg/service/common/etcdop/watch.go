@@ -56,6 +56,7 @@ type WatcherStatus struct {
 
 type WatchStreamE[E any] struct {
 	channel chan WatchResponseE[E]
+	cancel  context.CancelFunc
 }
 
 type WatchStream = WatchStreamE[WatchEvent]
@@ -102,11 +103,10 @@ func (s *WatchStreamE[E]) SetupConsumer(logger log.Logger) WatchConsumer[E] {
 // See WatchResponse for details.
 func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) *WatchStream {
 	return wrapStreamWithRestart(ctx, func(ctx context.Context) *WatchStream {
-		stream := &WatchStream{channel: make(chan WatchResponse)}
+		ctx, cancel := context.WithCancel(ctx)
+		stream := &WatchStream{channel: make(chan WatchResponse), cancel: cancel}
 		go func() {
 			defer close(stream.channel)
-
-			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
 			// GetAll phase
@@ -165,11 +165,10 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 
 // WatchWithoutRestart is same as the Watch, but watcher is not restarted on a fatal error.
 func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStream {
-	stream := &WatchStream{channel: make(chan WatchResponse)}
+	ctx, cancel := context.WithCancel(ctx)
+	stream := &WatchStream{channel: make(chan WatchResponse), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
-
-		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
 		// The initialization phase lasts until etcd sends the "created" event.
@@ -265,11 +264,10 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 
 func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *WatchStream {
 	b := backoff.WithContext(newWatchBackoff(), ctx)
-	stream := &WatchStream{channel: make(chan WatchResponse)}
+	ctx, cancel := context.WithCancel(ctx)
+	stream := &WatchStream{channel: make(chan WatchResponse), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
-
-		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
 		// The initialization phase lasts until the first "created" event.
