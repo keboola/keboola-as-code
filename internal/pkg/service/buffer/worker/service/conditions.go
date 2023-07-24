@@ -90,56 +90,82 @@ func (c *checker) check(ctx context.Context) {
 		default:
 		}
 
-		// Check credentials expiration
-		if slice.expiration.Sub(now) <= MinimalCredentialsExpiration {
-			reason := fmt.Sprintf("upload credentials will expire soon, at %s", slice.expiration.UTC().String())
+		// Import file after upload of the last slice
+		if met, reason, err := c.shouldImport(ctx, now, sliceKey, slice.expiration); err != nil {
+			c.logger.Error(err)
+			continue
+		} else if met {
 			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
+		} else if reason != "" {
+			c.logger.Debugf(`skipped import of the file "%s": %s`, sliceKey.FileKey, reason)
 		}
 
-		// Get import conditions
-		cdn, found := c.importConditions[sliceKey.ExportKey]
-		if !found {
-			continue
-		}
-
-		// Get file stats
-		fileStats, err := c.cachedStats.FileStats(ctx, sliceKey.FileKey)
-		if err != nil {
+		// Upload slice
+		if met, reason, err := c.shouldUpload(ctx, now, sliceKey); err != nil {
 			c.logger.Error(err)
 			continue
-		}
-
-		// Check import conditions
-		if now.Sub(sliceKey.FileKey.OpenedAt()) >= c.config.MinimalImportInterval {
-			if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total); met {
-				if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
-					c.logger.Error(err)
-				}
-				continue
+		} else if met {
+			if err := c.swapSlice(sliceKey, reason); err != nil {
+				c.logger.Error(err)
 			}
-		}
-
-		// Get slice stats
-		sliceStats, err := c.cachedStats.SliceStats(ctx, sliceKey)
-		if err != nil {
-			c.logger.Error(err)
 			continue
-		}
-
-		// Check upload conditions
-		if now.Sub(sliceKey.OpenedAt()) >= c.config.MinimalUploadInterval {
-			if met, reason := c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.Total); met {
-				if err := c.swapSlice(sliceKey, reason); err != nil {
-					c.logger.Error(err)
-				}
-				continue
-			}
+		} else if reason != "" {
+			c.logger.Debugf(`skipped upload of the slice "%s": %s`, sliceKey, reason)
 		}
 	}
 	c.logger.Debugf(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
+}
+
+func (c *checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.SliceKey, uploadCredExp time.Time) (ok bool, reason string, err error) {
+	// Check minimal interval
+	if interval := now.Sub(sliceKey.FileKey.OpenedAt()); interval < c.config.MinimalImportInterval {
+		reason = fmt.Sprintf(`interval "%s" is less than the MinimalImportInterval "%s"`, interval, c.config.MinimalImportInterval)
+		return false, reason, nil
+	}
+
+	// Check credentials expiration
+	if uploadCredExp.Sub(now) <= MinimalCredentialsExpiration {
+		reason = fmt.Sprintf("upload credentials will expire soon, at %s", uploadCredExp.UTC().String())
+		return true, reason, nil
+	}
+
+	// Get import conditions
+	cdn, found := c.importConditions[sliceKey.ExportKey]
+	if !found {
+		reason = "import conditions not found"
+		return false, reason, nil
+	}
+
+	// Get file stats
+	fileStats, err := c.cachedStats.FileStats(ctx, sliceKey.FileKey)
+	if err != nil {
+		return false, "", err
+	}
+
+	// Evaluate import conditions
+	ok, reason = cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total)
+	return ok, reason, nil
+}
+
+func (c *checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.SliceKey) (ok bool, reason string, err error) {
+	// Check minimal interval
+	if interval := now.Sub(sliceKey.OpenedAt()); interval < c.config.MinimalUploadInterval {
+		reason = fmt.Sprintf(`interval "%s" is less than the MinimalUploadInterval "%s"`, interval, c.config.MinimalUploadInterval)
+		return false, reason, nil
+	}
+
+	// Get slice stats
+	sliceStats, err := c.cachedStats.SliceStats(ctx, sliceKey)
+	if err != nil {
+		return false, "", err
+	}
+
+	// Evaluate upload conditions
+	ok, reason = c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.Total)
+	return ok, reason, nil
 }
 
 func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup) <-chan error {
