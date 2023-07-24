@@ -40,6 +40,8 @@ require (
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/prometheus/client_golang v1.15.1
+	github.com/prometheus/client_model v0.4.0
+	github.com/prometheus/common v0.42.0
 	github.com/qmuntal/stateless v1.6.3
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
 	github.com/schollz/progressbar/v3 v3.13.1
@@ -216,8 +218,6 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.4.0 // indirect
-	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/relvacode/iso8601 v1.3.0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
