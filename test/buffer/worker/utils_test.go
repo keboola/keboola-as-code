@@ -19,7 +19,7 @@ import (
 )
 
 //nolint:forbidigo
-func (ts *testSuite) AssertEtcdState(expectedFile string) {
+func (ts *testSuite) AssertEtcdState(expectedFile string, opts ...etcdhelper.AssertOption) {
 	dump, err := etcdhelper.DumpAllToString(ts.ctx, ts.etcdClient)
 	require.NoError(ts.t, err)
 
@@ -61,7 +61,7 @@ func (ts *testSuite) AssertEtcdState(expectedFile string) {
 	}
 
 	// Compare
-	etcdhelper.AssertKVs(ts.t, ts.etcdClient, expectedKVs, etcdhelper.WithIgnoredKeyPattern(`^stats/`))
+	etcdhelper.AssertKVs(ts.t, ts.etcdClient, expectedKVs, opts...)
 }
 
 // WaitForLogMessages wait until the lines are logged or a timeout occurs.

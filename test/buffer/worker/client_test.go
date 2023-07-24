@@ -77,15 +77,15 @@ func (c *apiClient) TablePreview(tableID, sortBy string) *keboola.TablePreview {
 	return preview
 }
 
-func (c *apiClient) Import(id int) {
+func (c *apiClient) SendPayload(id int) {
 	c.t.Helper()
-	assert.NoError(c.t, c.ImportWithPayload(fmt.Sprintf(`{"key": "payload%03d"}`, id)))
+	assert.NoError(c.t, c.SendPayloadBody(fmt.Sprintf(`{"key": "payload%03d"}`, id)))
 }
 
-func (c *apiClient) ImportWithPayload(body string) error {
+func (c *apiClient) SendPayloadBody(body string) error {
 	c.t.Helper()
 	size := datasize.ByteSize(len(body)).HumanReadable()
-	c.t.Logf(`importing record %s (%s) ...`, strhelper.Truncate(body, 40, "…"), size)
+	c.t.Logf(`sending payload %s (%s) ...`, strhelper.Truncate(body, 40, "…"), size)
 
 	time.Sleep(time.Millisecond) // prevent order issues
 	err := c.newRequest().

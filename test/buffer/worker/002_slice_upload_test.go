@@ -15,9 +15,9 @@ func (ts *testSuite) test002SliceUpload() {
 [worker-node-%s][bufferWorker][service][conditions]INFO checked "2" opened slices
 	`)
 
-	// Import records 5-6
+	// Send records 5-6
 	for i := 5; i <= 6; i++ {
-		ts.Import(i)
+		ts.SendPayload(i)
 	}
 
 	// Periodic condition checks have detected that the UPLOAD conditions for both slices/exports have been met.
