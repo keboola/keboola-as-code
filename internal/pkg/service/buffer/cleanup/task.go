@@ -74,7 +74,7 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 		GetAll().
 		Do(ctx, t.client).
 		ForEachValue(func(v model.ExportBase, header *iterator.Header) error {
-			// Iterate all file states expect opened.
+			// Iterate all file states except opened.
 			for _, state := range []filestate.State{filestate.Closing, filestate.Imported, filestate.Failed} {
 				err := t.schema.
 					Files().
