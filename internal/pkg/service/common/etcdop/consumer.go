@@ -30,15 +30,13 @@ import (
 // The WatchConsumer can be canceled by cancelling the context passed to the Watch/GetAllAndWatch method.
 type WatchConsumer[E any] struct {
 	logger      log.Logger
-	stream      <-chan WatchResponseE[E]
+	stream      *WatchStreamE[E]
 	forEachFn   func(events []E, header *Header, restart bool)
 	onCreated   onWatcherCreated
 	onRestarted onWatcherRestarted
 	onError     onWatcherError
 	onClose     onWatcherClose
 }
-
-type WatchStreamE[E any] <-chan WatchResponseE[E]
 
 type (
 	onWatcherCreated   func(header *Header)
@@ -47,15 +45,11 @@ type (
 	onWatcherClose     func(err error)
 )
 
-func newConsumer[E any](logger log.Logger, stream <-chan WatchResponseE[E]) WatchConsumer[E] {
+func newConsumer[E any](logger log.Logger, stream *WatchStreamE[E]) WatchConsumer[E] {
 	return WatchConsumer[E]{
 		logger: logger,
 		stream: stream,
 	}
-}
-
-func (s WatchStreamE[E]) SetupConsumer(logger log.Logger) WatchConsumer[E] {
-	return newConsumer[E](logger, s)
 }
 
 func (c WatchConsumer[E]) WithForEach(v func(events []E, header *Header, restart bool)) WatchConsumer[E] {
@@ -98,7 +92,7 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 
 		// Channel is closed when the watcher context is cancelled,
 		// so the context does not have to be checked here.
-		for resp := range c.stream {
+		for resp := range c.stream.channel {
 			switch {
 			case resp.InitErr != nil:
 				// Initialization error, the channel will be closed in the beginning of the next iteration.

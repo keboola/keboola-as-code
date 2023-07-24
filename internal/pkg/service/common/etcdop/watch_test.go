@@ -28,7 +28,8 @@ func TestPrefix_Watch(t *testing.T) {
 	pfx := prefixForTest()
 
 	// Create watcher
-	ch := pfx.Watch(ctx, c)
+	stream := pfx.Watch(ctx, c)
+	ch := stream.Channel()
 
 	// Wait for watcher created event
 	assertDone(t, func() {
@@ -125,7 +126,8 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assert.NoError(t, pfx.Key("key1").Put("foo1").Do(ctx, c))
 
 	// Create watcher
-	ch := pfx.GetAllAndWatch(ctx, c)
+	stream := pfx.GetAllAndWatch(ctx, c)
+	ch := stream.Channel()
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
@@ -242,7 +244,8 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 
 	// Create watcher
 	pfx := prefixForTest()
-	ch := pfx.GetAllAndWatch(ctx, watchClient)
+	stream := pfx.GetAllAndWatch(ctx, watchClient)
+	ch := stream.Channel()
 	receive := func(expectedLen int) WatchResponse {
 		resp, ok := <-ch
 		assert.True(t, ok)

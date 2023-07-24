@@ -18,10 +18,15 @@ type WatchEventT[T any] struct {
 	PrevValue *T
 }
 
-type WatchStreamT[T any] chan WatchResponseE[WatchEventT[T]]
+type WatchStreamT[T any] WatchStreamE[WatchEventT[T]]
 
-func (s WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEventT[T]] {
-	return newConsumer(logger, s)
+func (s *WatchStreamT[T]) Channel() <-chan WatchResponseE[WatchEventT[T]] {
+	return s.channel
+}
+
+func (s *WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEventT[T]] {
+	stream := WatchStreamE[WatchEventT[T]](*s)
+	return newConsumer[WatchEventT[T]](logger, &stream)
 }
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
@@ -32,8 +37,8 @@ func (s WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEve
 // Then, the following events are streamed from the beginning.
 //
 // See WatchResponse for details.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out WatchStreamT[T]) {
-	return v.decodeChannel(ctx, func(ctx context.Context) WatchStream {
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out *WatchStreamT[T]) {
+	return v.decodeChannel(ctx, func(ctx context.Context) *WatchStream {
 		return v.prefix.GetAllAndWatch(ctx, client, opts...)
 	})
 }
@@ -49,17 +54,17 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opt
 // the operation is stopped and the restart is not performed.
 //
 // See WatchResponse for details.
-func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) WatchStreamT[T] {
-	return v.decodeChannel(ctx, func(ctx context.Context) WatchStream {
+func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStreamT[T] {
+	return v.decodeChannel(ctx, func(ctx context.Context) *WatchStream {
 		return v.prefix.Watch(ctx, client, opts...)
 	})
 }
 
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
-func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) WatchStream) WatchStreamT[T] {
-	outCh := make(chan WatchResponseE[WatchEventT[T]])
+func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *WatchStreamT[T] {
+	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEventT[T]])}
 	go func() {
-		defer close(outCh)
+		defer close(stream.channel)
 
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -71,15 +76,15 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx c
 				resp := WatchResponseE[WatchEventT[T]]{}
 				resp.Header = header
 				resp.Err = err
-				outCh <- resp
+				stream.channel <- resp
 				return target, false
 			}
 			return target, true
 		}
 
 		// Channel is closed by the context, so the context does not have to be checked here again.
-		rawCh := channelFactory(ctx)
-		for rawResp := range rawCh {
+		rawStream := channelFactory(ctx)
+		for rawResp := range rawStream.channel {
 			var events []WatchEventT[T]
 			if len(rawResp.Events) > 0 {
 				events = make([]WatchEventT[T], 0, len(rawResp.Events))
@@ -122,12 +127,12 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx c
 			}
 
 			// Pass the response
-			outCh <- WatchResponseE[WatchEventT[T]]{
+			stream.channel <- WatchResponseE[WatchEventT[T]]{
 				WatcherStatus: rawResp.WatcherStatus,
 				Events:        events,
 			}
 		}
 	}()
 
-	return outCh
+	return stream
 }
