@@ -49,7 +49,6 @@ type WatcherStatus struct {
 	Created bool
 	// Restarted is used to indicate re-creation of the watcher, the following events are streamed from the beginning.
 	// It is used in case of a fatal error (etcd ErrCompacted) from which it is not possible to recover.
-	// Restarted is supported only by the GetAllAndWatch methods, for both, untyped and typed prefix.
 	Restarted     bool
 	RestartReason string
 	RestartDelay  time.Duration
@@ -102,7 +101,7 @@ func (s *WatchStreamE[E]) SetupConsumer(logger log.Logger) WatchConsumer[E] {
 //
 // See WatchResponse for details.
 func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) *WatchStream {
-	return wrapWatchWithRestart(ctx, func(ctx context.Context) *WatchStream {
+	return wrapStreamWithRestart(ctx, func(ctx context.Context) *WatchStream {
 		stream := &WatchStream{channel: make(chan WatchResponse)}
 		go func() {
 			defer close(stream.channel)
@@ -145,7 +144,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 			}
 
 			// Watch phase, continue  where the GetAll operation ended (revision + 1)
-			rawStream := v.Watch(ctx, client, append([]etcd.OpOption{etcd.WithRev(itr.Header().Revision + 1)}, opts...)...)
+			rawStream := v.WatchWithoutRestart(ctx, client, append([]etcd.OpOption{etcd.WithRev(itr.Header().Revision + 1)}, opts...)...)
 			for resp := range rawStream.channel {
 				stream.channel <- resp
 			}
@@ -159,6 +158,13 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 // Operation can be cancelled by the context or a fatal error (etcd ErrCompacted).
 // Otherwise, Watch will retry on other recoverable errors forever until reconnected.
 func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStream {
+	return wrapStreamWithRestart(ctx, func(ctx context.Context) *WatchStream {
+		return v.WatchWithoutRestart(ctx, client, opts...)
+	})
+}
+
+// WatchWithoutRestart is same as the Watch, but watcher is not restarted on a fatal error.
+func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStream {
 	stream := &WatchStream{channel: make(chan WatchResponse)}
 	go func() {
 		defer close(stream.channel)
@@ -257,7 +263,7 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 	return stream
 }
 
-func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *WatchStream {
+func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *WatchStream {
 	b := backoff.WithContext(newWatchBackoff(), ctx)
 	stream := &WatchStream{channel: make(chan WatchResponse)}
 	go func() {
