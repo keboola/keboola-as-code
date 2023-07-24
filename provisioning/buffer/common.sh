@@ -56,3 +56,11 @@ kubectl apply -f ./kubernetes/deploy/worker/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/worker/pdb.yaml
 kubectl apply -f ./kubernetes/deploy/worker/network-policy.yaml
 kubectl apply -f ./kubernetes/deploy/worker/deployment.yaml
+
+# Benchmark
+CREATE_BUFFER_BENCHMARK="${CREATE_BUFFER_BENCHMARK:=false}"
+if [[ "$CREATE_BUFFER_BENCHMARK" == "true" ]]; then
+  kubectl apply -f ./kubernetes/deploy/benchmark/namespace.yaml
+  kubectl apply -f ./kubernetes/deploy/benchmark/secret.yaml
+  kubectl apply -f ./kubernetes/deploy/benchmark/job.yaml
+fi

@@ -4,10 +4,24 @@ import {sleep, check} from 'k6';
 import { Counter } from 'k6/metrics';
 import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-const REQ_PER_SEC = __ENV.K6_REQ_PER_SEC || 10000;
-const DURATION = __ENV.DURATION || "5m";
-const TOKEN = __ENV.BENCHMARK_API_TOKEN;
+// MAX_VIRTUAL_USERS is maximum number of connections.
+const MAX_VIRTUAL_USERS = __ENV.BENCHMARK_MAX_VIRTUAL_USERS || 100;
+
+// PARALLEL_REQS_PER_USER is number of parallel requests per VU/connection.
+const PARALLEL_REQS_PER_USER = __ENV.BENCHMARK_PARALLEL_REQS_PER_USER || 10;
+
+// RAMPING_DURATION defines the duration of initial increasing and final decreasing of the rate.
+const RAMPING_DURATION = __ENV.BENCHMARK_RAMPING_DURATION || "2m";
+
+// STABLE_RATE_DURATION defines the duration of the maximum rate.
+const STABLE_RATE_DURATION = __ENV.BENCHMARK_STABLE_RATE_DURATION || "2m";
+
+// HOST - Storage API host
 const HOST = __ENV.BENCHMARK_API_HOST;
+
+// TOKEN - Storage API token
+const TOKEN = __ENV.BENCHMARK_API_TOKEN;
+
 if (!TOKEN) {
     throw new Error("please specify BENCHMARK_API_TOKEN env")
 }
@@ -24,13 +38,19 @@ const commonHeaders = {
 const errors_metrics = new Counter("failed_imports");
 
 export const options = {
+    teardownTimeout: '120s',
+    batch: PARALLEL_REQS_PER_USER,
+    batchPerHost: PARALLEL_REQS_PER_USER,
     scenarios: {
         default: {
-            executor: 'constant-arrival-rate',
-            rate: REQ_PER_SEC,
-            timeUnit: '1s',
-            duration: DURATION,
-            preAllocatedVUs: 1000,
+            executor: 'ramping-vus',
+            startVUs: 0,
+            stages: [
+                { target: MAX_VIRTUAL_USERS, duration: RAMPING_DURATION },
+                { target: MAX_VIRTUAL_USERS, duration: STABLE_RATE_DURATION },
+                { target: 0, duration: RAMPING_DURATION },
+                { target: 0, duration: '10s' },
+            ],
         },
     },
     // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
@@ -47,7 +67,9 @@ export const options = {
 export function setupReceiver(exports) {
     if (!TOKEN) throw new Error("Please set the `API_TOKEN` env var.");
 
+    // Create receiver
     const receiverId = "buffer-" + randomString(8)
+    console.info(`Creating receiver ${receiverId}...`)
     let res = post("v1/receivers", {
         id: receiverId,
         name: "Buffer API Static Benchmark",
@@ -55,36 +77,41 @@ export function setupReceiver(exports) {
     });
     if (res.status !== 202) {
         console.error(res);
-        throw new Error("failed to create receiver task");
+        throw new Error("Failed to create receiver task");
     }
 
+    // Wait for create receiver task
     const createReceiverTimeoutSec = 60
     const taskUrl = stripUrlHost(res.json().url)
     for (let retries = createReceiverTimeoutSec; retries > 0; retries--) {
         res = get(taskUrl)
         if (res.status !== 200) {
             console.error(res);
-            throw new Error("failed to get receiver task");
+            throw new Error("Failed to get receiver task");
         }
-        if (res.status !== "processing") {
+        if (res.json().status === "processing") {
+            console.info("Waiting for create receiver task ...")
+        } else {
+            console.info("Create receiver task done")
             if (res.error) {
-                throw new Error("failed to create receiver: " + res.error);
+                throw new Error("Failed to create receiver: " + res.error);
             }
             break
         }
-        console.info(res)
-        sleep(1000)
+        sleep(1)
     }
 
+    // Get receiver URL
+    console.info("Loading receiver detail ...")
     res = get(`v1/receivers/${receiverId}`);
     if (res.status !== 200) {
         console.error(res)
-        throw new Error("failed to get receiver");
+        throw new Error("Failed to get receiver");
     }
 
     const receiverUrl = stripUrlHost(res.json().url)
     if (!receiverUrl) {
-        throw new Error("receiver url is not set");
+        throw new Error("Receiver url is not set");
     }
 
     console.log("Receiver url: " + receiverUrl)
@@ -96,14 +123,10 @@ export function stripUrlHost(url) {
 }
 
 export function teardownReceiver(receiverId) {
-    // Wait for the last uploads
-    // May be replaced with check of the statistics endpoint in the future.
-    sleep(10000)
-
     const res = del(`v1/receivers/${receiverId}`);
     if (res.status !== 200) {
         console.error(res);
-        throw new Error("failed to delete receiver");
+        throw new Error("Failed to delete receiver");
     }
 }
 
@@ -125,6 +148,13 @@ export function del(url, headers = {}) {
     });
 }
 
+export function batchWithCheckResponse(req) {
+    req.url = normalizeUrl(req.url)
+    const requests = Array.from({length: PARALLEL_REQS_PER_USER}, () => req)
+    const responses = http.batch(requests);
+    responses.forEach((res) => checkResponse(res))
+}
+
 export function normalizeUrl(url) {
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
         url = `${HOST}/${url.replace(/^\//, '')}`
@@ -137,7 +167,7 @@ export function checkResponse(res) {
         "status is 200": (r) => r.status === 200,
     })
     if (!passed) {
-        console.error(`Request to ${res.request.url} with status ${res.status} failed the checks!`, res);
+        console.error(`Request to ${res.request.url} with status ${res.status} failed the checks!`);
         errors_metrics.add(1, {url: res.request.url});
     }
 }

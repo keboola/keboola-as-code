@@ -1,5 +1,5 @@
 import * as common from "./common.js";
-import {checkResponse, post} from "./common.js";
+import {batchWithCheckResponse, checkResponse, post} from "./common.js";
 
 export const options = common.options;
 
@@ -39,5 +39,10 @@ export function teardown(data) {
 }
 
 export default function (data) {
-  checkResponse(post(data.receiver.url, data.payload, data.headers));
+  batchWithCheckResponse({
+    method: 'POST',
+    url: data.receiver.url,
+    body: data.payload,
+    params: {headers: data.headers,},
+  });
 }

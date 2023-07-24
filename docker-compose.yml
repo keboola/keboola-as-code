@@ -47,6 +47,7 @@ services:
       - BUFFER_API_ETCD_USERNAME=root
       - BUFFER_API_ETCD_PASSWORD=toor
       - BUFFER_API_ETCD_NAMESPACE=buffer
+      - BUFFER_API_RECEIVER_BUFFER_SIZE
       # Etcd for the Buffer Worker
       - BUFFER_WORKER_ETCD_ENDPOINT=etcd:2379
       - BUFFER_WORKER_ETCD_USERNAME=root
@@ -79,14 +80,23 @@ services:
       ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
       ETCD_DISABLE_STORE_MEMBER_ID: "true"
       ETCD_QUOTA_BACKEND_BYTES: "21474836480" # 20GB
-  k6:
   benchmark-go:
     << : *dev
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
     networks:
       - default
       - benchmark
   benchmark-k6:
-    image: grafana/k6:latest
+    build:
+      context: .
+      dockerfile: ./provisioning/benchmark/docker/Dockerfile
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
     networks:
       - benchmark
     depends_on:
@@ -98,17 +108,19 @@ services:
       - K6_STATSD_ADDR=benchmark-dashboard:8125
       - BENCHMARK_API_HOST
       - BENCHMARK_API_TOKEN
+      - BENCHMARK_MAX_VIRTUAL_USERS
+      - BENCHMARK_PARALLEL_REQS_PER_USER
+      - BENCHMARK_RAMPING_DURATION
+      - BENCHMARK_STABLE_RATE_DURATION
   benchmark-dashboard:
-    image: netdata/netdata:latest
+    build:
+      context: .
+      dockerfile: ./provisioning/benchmark-dashboard/docker/Dockerfile
     networks:
       - benchmark
     volumes:
-      - ./scripts/benchmarks/netdata.conf:/etc/netdata/netdata.conf:ro
-      - ./scripts/benchmarks/netdata-cloud.conf:/var/lib/netdata/cloud.d/cloud.conf:ro
       - benchmark-dashboard-lib:/var/lib/netdata
       - benchmark-dashboard-cache:/var/cache/netdata
-    environment:
-      - DISABLE_TELEMETRY=1
     ports:
         - "19999:19999"
 
