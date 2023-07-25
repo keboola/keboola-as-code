@@ -134,6 +134,10 @@ func (m *Mirror[T, V]) WalkPrefix(key string, fn func(key string, value V) (stop
 	m.tree.WalkPrefix(key, fn)
 }
 
+func (m *Mirror[T, V]) WalkAll(fn func(key string, value V) (stop bool)) {
+	m.tree.WalkAll(fn)
+}
+
 func (m *Mirror[T, V]) ToMap() map[string]V {
 	return m.tree.ToMap()
 }

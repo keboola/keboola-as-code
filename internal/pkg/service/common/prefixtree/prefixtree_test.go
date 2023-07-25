@@ -39,7 +39,8 @@ func TestPrefixTree(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, value{field: "value2"}, v)
 
-	// AllFromPrefix / FirstFromPrefix / LastFromPrefix - 2 items
+	// All/ AllFromPrefix / FirstFromPrefix / LastFromPrefix - 2 items
+	assert.Len(t, tree.All(), 2)
 	assert.Len(t, tree.AllFromPrefix("key"), 2)
 	v, found = tree.FirstFromPrefix("key")
 	assert.True(t, found)
