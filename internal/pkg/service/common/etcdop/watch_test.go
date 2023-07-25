@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -128,8 +129,8 @@ func TestPrefix_Watch(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 func TestPrefix_GetAllAndWatch(t *testing.T) {
@@ -266,8 +267,8 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 // nolint:paralleltest // etcd integration tests cannot run in parallel, see integration.BeforeTestExternal
@@ -342,7 +343,7 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	// Expect "restarted" event
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 
 	// After the restart, Watch is waiting for new events, put and expected the key
 	assert.NoError(t, pfx.Key("key04").Put(value).Do(ctx, testClient))
@@ -366,7 +367,7 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 
 	// After the restart, Watch is streaming new events, put and receive the key
 	assert.NoError(t, pfx.Key("key07").Put(value).Do(ctx, testClient))
@@ -374,8 +375,8 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 // nolint:paralleltest // etcd integration tests cannot run in parallel, see integration.BeforeTestExternal
@@ -450,7 +451,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	// Expect "restarted" event
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 
 	// Read keys, watcher was restarted, it is now in the GetAll phase,
 	// so all keys are received at once
@@ -483,7 +484,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 	resp = receive(6)
 	assert.Equal(t, []byte("my/prefix/key01"), resp.Events[0].Kv.Key)
 	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[1].Kv.Key)
@@ -494,8 +495,8 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 func TestWatchBackoff(t *testing.T) {

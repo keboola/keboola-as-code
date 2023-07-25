@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -105,8 +106,8 @@ func TestPrefixT_Watch(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 func TestPrefixT_GetAllAndWatch(t *testing.T) {
@@ -232,8 +233,8 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 func clearResponseT(resp WatchResponseE[WatchEventT[fooType]]) WatchResponseE[WatchEventT[fooType]] {
