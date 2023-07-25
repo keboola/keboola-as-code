@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -22,31 +23,30 @@ const (
 
 type checker struct {
 	*Service
-	logger log.Logger
-
-	checkLock        *sync.Mutex
+	logger           log.Logger
 	uploadConditions model.Conditions
-	importConditions cachedConditions
-	openedSlices     cachedSlices
+
+	checkLock    *sync.Mutex
+	exports      *etcdop.Mirror[model.ExportBase, cachedExport]
+	activeSlices *etcdop.Mirror[model.Slice, cachedSlice]
 }
 
-type cachedConditions map[key.ExportKey]model.Conditions
-
-type cachedSlices map[key.SliceKey]cachedSlice
+type cachedExport struct {
+	key.ExportKey
+	ImportConditions model.Conditions
+}
 
 type cachedSlice struct {
-	// expiration of the slice upload credentials.
-	expiration time.Time
+	key.SliceKey
+	CredExpiration time.Time
 }
 
 func startChecker(s *Service) <-chan error {
 	c := &checker{
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
-		checkLock:        &sync.Mutex{},
 		uploadConditions: model.Conditions(s.config.UploadConditions),
-		importConditions: make(cachedConditions),
-		openedSlices:     make(cachedSlices),
+		checkLock:        &sync.Mutex{},
 	}
 
 	// Start watchers and ticker
@@ -57,12 +57,12 @@ func startChecker(s *Service) <-chan error {
 		defer close(initDone)
 		startTime := c.clock.Now()
 
-		if err := <-c.watchImportConditions(c.Service.ctx, c.Service.wg); err != nil {
+		if err := <-c.watchExports(c.Service.ctx, c.Service.wg); err != nil {
 			initDone <- err
 			return
 		}
 
-		if err := <-c.watchOpenedSlices(c.Service.ctx, c.Service.wg); err != nil {
+		if err := <-c.watchActiveSlices(c.Service.ctx, c.Service.wg); err != nil {
 			initDone <- err
 			return
 		}
@@ -83,40 +83,45 @@ func (c *checker) check(ctx context.Context) {
 	defer c.checkLock.Unlock()
 
 	now := c.clock.Now()
-	for sliceKey, slice := range c.openedSlices {
+	checked := 0
+	c.activeSlices.WalkAll(func(_ string, slice cachedSlice) (stop bool) {
 		select {
 		case <-ctx.Done():
-			return
+			return true
 		default:
 		}
 
-		// Import file after upload of the last slice
-		if met, reason, err := c.shouldImport(ctx, now, sliceKey, slice.expiration); err != nil {
+		// Try swap the file, it includes also swap of the slice
+		importOk, reason, err := c.shouldImport(ctx, now, slice.SliceKey, slice.CredExpiration)
+		if err != nil {
 			c.logger.Error(err)
-			continue
-		} else if met {
-			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
+		} else if importOk {
+			if err := c.swapFile(slice.SliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
-			continue
 		} else if reason != "" {
-			c.logger.Debugf(`skipped import of the file "%s": %s`, sliceKey.FileKey, reason)
+			c.logger.Debugf(`skipped import of the file "%s": %s`, slice.SliceKey.FileKey, reason)
 		}
 
-		// Upload slice
-		if met, reason, err := c.shouldUpload(ctx, now, sliceKey); err != nil {
-			c.logger.Error(err)
-			continue
-		} else if met {
-			if err := c.swapSlice(sliceKey, reason); err != nil {
+		// Try swap e slice, if it didn't already happen during import
+		if !importOk {
+			uploadOk, reason, err := c.shouldUpload(ctx, now, slice.SliceKey)
+			if err != nil {
 				c.logger.Error(err)
+			} else if uploadOk {
+				if err := c.swapSlice(slice.SliceKey, reason); err != nil {
+					c.logger.Error(err)
+				}
+			} else if reason != "" {
+				c.logger.Debugf(`skipped upload of the slice "%s": %s`, slice.SliceKey, reason)
 			}
-			continue
-		} else if reason != "" {
-			c.logger.Debugf(`skipped upload of the slice "%s": %s`, sliceKey, reason)
 		}
-	}
-	c.logger.Debugf(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
+
+		checked++
+		return false
+	})
+
+	c.logger.Debugf(`checked "%d" opened slices | %s`, checked, c.clock.Since(now))
 }
 
 func (c *checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.SliceKey, uploadCredExp time.Time) (ok bool, reason string, err error) {
@@ -126,14 +131,14 @@ func (c *checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.
 		return false, reason, nil
 	}
 
-	// Check credentials expiration
+	// Check credentials CredExpiration
 	if uploadCredExp.Sub(now) <= MinimalCredentialsExpiration {
 		reason = fmt.Sprintf("upload credentials will expire soon, at %s", uploadCredExp.UTC().String())
 		return true, reason, nil
 	}
 
 	// Get import conditions
-	cdn, found := c.importConditions[sliceKey.ExportKey]
+	export, found := c.exports.Get(sliceKey.ExportKey.String())
 	if !found {
 		reason = "import conditions not found"
 		return false, reason, nil
@@ -146,7 +151,7 @@ func (c *checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.
 	}
 
 	// Evaluate import conditions
-	ok, reason = cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total)
+	ok, reason = export.ImportConditions.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total)
 	return ok, reason, nil
 }
 
@@ -168,63 +173,48 @@ func (c *checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.
 	return ok, reason, nil
 }
 
-func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	return c.schema.Configs().Exports().
-		GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()).
-		SetupConsumer(c.logger).
-		WithForEach(func(events []etcdop.WatchEventT[model.ExportBase], header *etcdop.Header, restart bool) {
-			c.lock.Lock()
-			defer c.lock.Unlock()
-			for _, event := range events {
-				export := event.Value
-				if !c.Service.dist.MustCheckIsOwner(export.ReceiverKey.String()) {
-					// Another worker node handles the resource.
-					delete(c.importConditions, export.ExportKey)
-					continue
+func (c *checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
+	c.exports, errCh = etcdop.
+		SetupMirror(
+			c.logger,
+			c.schema.Configs().Exports().GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()),
+			func(_ *op.KeyValue, export model.ExportBase) string {
+				return export.ExportKey.String()
+			},
+			func(_ *op.KeyValue, export model.ExportBase) cachedExport {
+				return cachedExport{
+					ExportKey:        export.ExportKey,
+					ImportConditions: export.ImportConditions,
 				}
-
-				switch event.Type {
-				case etcdop.CreateEvent, etcdop.UpdateEvent:
-					c.importConditions[export.ExportKey] = export.ImportConditions
-				case etcdop.DeleteEvent:
-					delete(c.importConditions, export.ExportKey)
-				default:
-					panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
-				}
-			}
+			},
+		).
+		WithFilter(func(event etcdop.WatchEventT[model.ExportBase]) bool {
+			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartConsumer(wg)
+		StartMirroring(wg)
+	return errCh
 }
 
-func (c *checker) watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	// Watch opened slices
-	return c.schema.Slices().Writing().
-		GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()).
-		SetupConsumer(c.logger).
-		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *etcdop.Header, restart bool) {
-			c.lock.Lock()
-			defer c.lock.Unlock()
-			for _, event := range events {
-				slice := event.Value
-				if !c.Service.dist.MustCheckIsOwner(slice.ReceiverKey.String()) {
-					// Another worker node handles the resource.
-					delete(c.openedSlices, slice.SliceKey)
-					continue
+func (c *checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
+	c.activeSlices, errCh = etcdop.
+		SetupMirror(
+			c.logger,
+			c.schema.Slices().Writing().GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()),
+			func(_ *op.KeyValue, slice model.Slice) string {
+				return slice.SliceKey.String()
+			},
+			func(_ *op.KeyValue, slice model.Slice) cachedSlice {
+				return cachedSlice{
+					SliceKey:       slice.SliceKey,
+					CredExpiration: getCredentialsExpiration(slice),
 				}
-
-				switch event.Type {
-				case etcdop.CreateEvent, etcdop.UpdateEvent:
-					c.openedSlices[slice.SliceKey] = cachedSlice{
-						expiration: getCredentialsExpiration(slice),
-					}
-				case etcdop.DeleteEvent:
-					delete(c.openedSlices, slice.SliceKey)
-				default:
-					panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
-				}
-			}
+			},
+		).
+		WithFilter(func(event etcdop.WatchEventT[model.Slice]) bool {
+			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartConsumer(wg)
+		StartMirroring(wg)
+	return errCh
 }
 
 // startTicker to check conditions periodically.
