@@ -24,7 +24,7 @@ type checker struct {
 	*Service
 	logger log.Logger
 
-	lock             *sync.RWMutex
+	checkLock        *sync.Mutex
 	uploadConditions model.Conditions
 	importConditions cachedConditions
 	openedSlices     cachedSlices
@@ -43,7 +43,7 @@ func startChecker(s *Service) <-chan error {
 	c := &checker{
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
-		lock:             &sync.RWMutex{},
+		checkLock:        &sync.Mutex{},
 		uploadConditions: model.Conditions(s.config.UploadConditions),
 		importConditions: make(cachedConditions),
 		openedSlices:     make(cachedSlices),
@@ -79,8 +79,8 @@ func (s *Service) checkConditions() <-chan error {
 }
 
 func (c *checker) check(ctx context.Context) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.checkLock.Lock()
+	defer c.checkLock.Unlock()
 
 	now := c.clock.Now()
 	for sliceKey, slice := range c.openedSlices {
