@@ -192,6 +192,22 @@ func (c *checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
 		StartMirroring(wg)
+
+	// Invalidate cache on distribution cache.
+	// See WithFilter above, ownership is changed on distribution change, so cache must be re-generated.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-c.dist.OnChangeListener().C:
+				c.exports.Restart()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return errCh
 }
 
@@ -214,6 +230,22 @@ func (c *checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (er
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
 		StartMirroring(wg)
+
+	// Invalidate cache on distribution change.
+	// See WithFilter above, ownership is changed on distribution change, so cache must be re-generated.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-c.dist.OnChangeListener().C:
+				c.activeSlices.Restart()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return errCh
 }
 
