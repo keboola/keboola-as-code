@@ -103,6 +103,26 @@ func TestPrefix_Watch(t *testing.T) {
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "DELETE timeout")
 
+	// Manual RESTART
+	assertDone(t, func() {
+		// Trigger manual restart
+		stream.Restart()
+
+		// Receive the restarted event
+		resp := <-ch
+		assert.True(t, resp.Restarted)
+		wildcards.Assert(t, "manual restart", resp.RestartReason)
+
+		// Add a new key
+		assert.NoError(t, pfx.Key("key3").Put("new").Do(ctx, c))
+
+		// Receive the new key
+		resp = <-ch
+		if assert.Len(t, resp.Events, 1) {
+			assert.Equal(t, []byte("my/prefix/key3"), resp.Events[0].Kv.Key)
+		}
+	}, "RESTART timeout")
+
 	// Wait for all goroutines
 	wg.Wait()
 
@@ -214,6 +234,32 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		assert.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "DELETE timeout")
+
+	// Manual RESTART
+	assertDone(t, func() {
+		// Trigger manual restart
+		stream.Restart()
+
+		// Receive the restart event
+		resp := <-ch
+		assert.True(t, resp.Restarted)
+		assert.Equal(t, "manual restart", resp.RestartReason)
+
+		// Receive all keys
+		resp = <-ch
+		if assert.Len(t, resp.Events, 1) {
+			assert.Equal(t, []byte("my/prefix/key2"), resp.Events[0].Kv.Key)
+		}
+
+		// Add a new key
+		assert.NoError(t, pfx.Key("key3").Put("new").Do(ctx, c))
+
+		// Receive the new key
+		resp = <-ch
+		if assert.Len(t, resp.Events, 1) {
+			assert.Equal(t, []byte("my/prefix/key3"), resp.Events[0].Kv.Key)
+		}
+	}, "RESTART timeout")
 
 	// Wait for all goroutines
 	wg.Wait()
