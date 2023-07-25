@@ -18,7 +18,14 @@ type WatchEventT[T any] struct {
 	PrevValue *T
 }
 
+// WatchStreamT streams events of the WatchEventT[T] type.
 type WatchStreamT[T any] WatchStreamE[WatchEventT[T]]
+
+// RestartableWatchStreamT is restarted on a fatal error, or manually by the Restart method.
+type RestartableWatchStreamT[T any] struct {
+	*WatchStreamT[T]
+	rawStream *RestartableWatchStream
+}
 
 func (s *WatchStreamT[T]) Channel() <-chan WatchResponseE[WatchEventT[T]] {
 	return s.channel
@@ -29,39 +36,57 @@ func (s *WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEv
 	return newConsumer[WatchEventT[T]](logger, &stream)
 }
 
-// GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
-// Values are decoded to the type T.
-//
-// If a fatal error occurs, the watcher is restarted.
-// The "restarted" event is emitted before the restart.
-// Then, the following events are streamed from the beginning.
-//
-// See WatchResponse for details.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out *WatchStreamT[T]) {
-	return v.decodeChannel(ctx, func(ctx context.Context) *WatchStream {
-		return v.prefix.GetAllAndWatch(ctx, client, opts...)
-	})
+// Restart cancels the current stream, so a new stream is created.
+func (s RestartableWatchStreamT[T]) Restart() {
+	s.rawStream.Restart()
 }
 
-// Watch method wraps low-level etcd watcher.
-// Values are decoded to the type T.
-//
-// In addition, if a fatal error occurs, the watcher is restarted.
-// The "restarted" event is emitted before the restart.
-// Then, the following events are streamed from the beginning.
-//
-// If the InitErr occurs during the first attempt to create the watcher,
-// the operation is stopped and the restart is not performed.
-//
-// See WatchResponse for details.
-func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStreamT[T] {
-	return v.decodeChannel(ctx, func(ctx context.Context) *WatchStream {
-		return v.prefix.Watch(ctx, client, opts...)
-	})
+// GetAllAndWatch loads all keys in the prefix by the iterator and then Watch for changes.
+//   - Connection of GetAll and Watch phase is atomic, the etcd.WithRev option is used.
+//   - If an error occurs during initialization, the operation is halted, it is signalized by the WatcherStatus.InitErr field.
+//   - After successful initialization, the WatcherStatus.Created = true event is emitted.
+//   - Recoverable errors are automatically retried in the background by the low-level etcd client.
+//   - If a fatal error occurs after initialization (such as ErrCompacted), the watcher is automatically restarted.
+//   - The retry mechanism uses exponential backoff for subsequent attempts.
+//   - When a restart occurs, the WatcherStatus.Restarted = true is emitted.
+//   - Then, the following events are streamed from the beginning.
+//   - Restart can be triggered also manually by the RestartableWatchStream.Restart method.
+//   - The operation can be cancelled using the context.
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) *RestartableWatchStreamT[T] {
+	rawStream := v.prefix.GetAllAndWatch(ctx, client, opts...)
+	decodedStream := v.decodeChannel(ctx, &rawStream.WatchStreamE)
+	return &RestartableWatchStreamT[T]{
+		WatchStreamT: decodedStream,
+		rawStream:    rawStream,
+	}
+}
+
+// Watch method wraps the low-level etcd watcher to watch for changes in the prefix.
+//   - If an error occurs during initialization, the operation is halted, and it is signalized by the event.InitErr field.
+//   - After successful initialization, the WatcherStatus.Created = true event is emitted.
+//   - Recoverable errors are automatically retried in the background by the low-level etcd client.
+//   - If a fatal error occurs after initialization (such as etcd ErrCompacted), the watcher is automatically restarted.
+//   - The retry mechanism uses exponential backoff for subsequent attempts.
+//   - When a restart occurs, the WatcherStatus.Restarted = true is emitted.
+//   - Restart can be triggered also manually by the RestartableWatchStream.Restart method.
+//   - The operation can be cancelled using the context.
+func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) RestartableWatchStreamT[T] {
+	rawStream := v.prefix.Watch(ctx, client, opts...)
+	decodedStream := v.decodeChannel(ctx, &rawStream.WatchStreamE)
+	return RestartableWatchStreamT[T]{
+		WatchStreamT: decodedStream,
+		rawStream:    rawStream,
+	}
+}
+
+// WatchWithoutRestart is same as the Watch, but watcher is not restarted on a fatal error.
+func (v PrefixT[T]) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStreamT[T] {
+	rawStream := v.prefix.WatchWithoutRestart(ctx, client, opts...)
+	return v.decodeChannel(ctx, rawStream)
 }
 
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
-func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *WatchStreamT[T] {
+func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStream) *WatchStreamT[T] {
 	ctx, cancel := context.WithCancel(ctx)
 	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEventT[T]]), cancel: cancel}
 	go func() {
@@ -82,7 +107,6 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx c
 		}
 
 		// Channel is closed by the context, so the context does not have to be checked here again.
-		rawStream := channelFactory(ctx)
 		for rawResp := range rawStream.channel {
 			var events []WatchEventT[T]
 			if len(rawResp.Events) > 0 {
