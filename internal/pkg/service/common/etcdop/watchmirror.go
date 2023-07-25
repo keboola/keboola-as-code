@@ -14,6 +14,7 @@ import (
 // Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorSetup.
 // Start with SetupMirror function.
 type Mirror[T any, V any] struct {
+	stream       *RestartableWatchStreamT[T]
 	tree         *prefixtree.AtomicTree[V]
 	revisionLock *sync.Mutex
 	revision     int64
@@ -43,6 +44,7 @@ func SetupMirror[T any, V any](
 
 func (s MirrorSetup[T, V]) StartMirroring(wg *sync.WaitGroup) (mirror *Mirror[T, V], initErr <-chan error) {
 	mirror = &Mirror[T, V]{
+		stream:       s.stream,
 		tree:         prefixtree.New[V](),
 		revisionLock: &sync.Mutex{},
 	}
@@ -102,6 +104,10 @@ func (s MirrorSetup[T, V]) StartMirroring(wg *sync.WaitGroup) (mirror *Mirror[T,
 func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) MirrorSetup[T, V] {
 	s.filter = fn
 	return s
+}
+
+func (m *Mirror[T, V]) Restart() {
+	m.stream.Restart()
 }
 
 func (m *Mirror[T, V]) Revision() int64 {
