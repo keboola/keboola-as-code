@@ -1,4 +1,5 @@
-package service
+// Package usererror provides functions to detect user error (expected error) and application error (unexpected error).
+package usererror
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
@@ -7,21 +8,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// checkAndWrapUserError checks the error with isUserError function.
+// CheckAndWrap checks the error with Is function.
 // If the error is a user error, then the error is wrapped using task.WrapUserError function.
-func checkAndWrapUserError(errPtr *error) {
+func CheckAndWrap(errPtr *error) {
 	if errPtr == nil || *errPtr == nil {
 		return
 	}
 
-	if err := *errPtr; isUserError(err) {
+	if err := *errPtr; Is(err) {
 		*errPtr = task.WrapUserError(err)
 	}
 }
 
-// isUserError returns true if the error is a user error, not an app error.
+// Is returns true if the error is a user error, not an app error.
 // For example "storage.invalidToken" error need a user action and cannot be handled by the app code.
-func isUserError(err error) bool {
+func Is(err error) bool {
 	var storageAPIErr *keboola.StorageError
 	if errors.As(err, &storageAPIErr) && storageAPIErr.ErrCode == "storage.tokenInvalid" {
 		return true
