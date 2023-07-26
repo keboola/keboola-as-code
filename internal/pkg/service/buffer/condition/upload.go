@@ -3,9 +3,18 @@ package condition
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+)
+
+const (
+	sliceSwapTaskType = "slice.swap"
 )
 
 func (c *Checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.SliceKey) (ok bool, reason string, err error) {
@@ -24,4 +33,33 @@ func (c *Checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.
 	// Evaluate upload conditions
 	ok, reason = evaluate(c.config.UploadConditions, now, sliceKey.OpenedAt(), sliceStats.Total)
 	return ok, reason, nil
+}
+
+func (c *Checker) StartSwapSliceTask(fileManager *file.AuthorizedManager, sliceKey key.SliceKey, reason string) error {
+	return c.tasks.StartTaskOrErr(task.Config{
+		Type: sliceSwapTaskType,
+		Key: task.Key{
+			ProjectID: sliceKey.ProjectID,
+			TaskID: task.ID(strings.Join([]string{
+				sliceKey.ReceiverID.String(),
+				sliceKey.ExportID.String(),
+				sliceKey.FileID.String(),
+				sliceKey.SliceID.String(),
+				sliceSwapTaskType,
+			}, "/")),
+		},
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (result task.Result) {
+			defer usererror.CheckAndWrap(&result.Error)
+
+			logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
+			if err := fileManager.SwapSlice(ctx, sliceKey); err != nil {
+				return task.ErrResult(err)
+			}
+
+			return task.OkResult("new slice created, the old is closing")
+		},
+	})
 }

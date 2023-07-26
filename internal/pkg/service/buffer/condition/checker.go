@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -34,6 +35,7 @@ type Checker struct {
 	client      *etcd.Client
 	schema      *schema.Schema
 	fileManager *file.Manager
+	tasks       *task.Node
 	dist        *distribution.Node
 	cachedStats *statistics.L1CacheProvider
 
@@ -61,6 +63,7 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 	Schema() *schema.Schema
 	FileManager() *file.Manager
+	TaskNode() *task.Node
 	DistributionNode() *distribution.Node
 	StatisticsL1Cache() *statistics.L1CacheProvider
 }
@@ -73,6 +76,7 @@ func NewChecker(d dependencies) <-chan error {
 		client:      d.EtcdClient(),
 		schema:      d.Schema(),
 		fileManager: d.FileManager(),
+		tasks:       d.TaskNode(),
 		dist:        d.DistributionNode(),
 		cachedStats: d.StatisticsL1Cache(),
 		checkLock:   &sync.Mutex{},
@@ -145,7 +149,7 @@ func (c *Checker) check(ctx context.Context) {
 		if err != nil {
 			c.logger.Error(err)
 		} else if importOk {
-			if err := fileManager.SwapFile(slice.SliceKey.FileKey, reason); err != nil {
+			if err := c.startSwapFileTask(fileManager, slice.SliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 		} else if reason != "" {
@@ -158,7 +162,7 @@ func (c *Checker) check(ctx context.Context) {
 			if err != nil {
 				c.logger.Error(err)
 			} else if uploadOk {
-				if err := fileManager.SwapSlice(slice.SliceKey, reason); err != nil {
+				if err := c.StartSwapSliceTask(fileManager, slice.SliceKey, reason); err != nil {
 					c.logger.Error(err)
 				}
 			} else if reason != "" {
