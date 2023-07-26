@@ -183,7 +183,7 @@ func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *s
 	fileKey2 := key.FileKey{ExportKey: exportKey, FileID: key.FileID(now.Add(time.Hour))}
 	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(now.Add(time.Hour))}
 
-	header := etcdhelper.ExpectModification(t, client, func() {
+	header := etcdhelper.ExpectModificationInPrefix(t, client, "config/export", func() {
 		assert.NoError(t, str.UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
 			newMapping := export.Mapping
 			newMapping.Columns = []column.Column{column.ID{Name: "id"}, column.Body{Name: "body"}, column.IP{Name: "ip"}}
