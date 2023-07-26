@@ -51,7 +51,7 @@ func NewWorkerConfig() WorkerConfig {
 		CheckConditionsInterval: DefaultCheckConditionsInterval,
 		MinimalUploadInterval:   DefaultMinimalUploadInterval,
 		MinimalImportInterval:   DefaultMinimalImportInterval,
-		UploadConditions: Conditions{
+		UploadConditions: model.Conditions{
 			Count: 1000,
 			Size:  1 * datasize.MB,
 			Time:  1 * time.Minute,
@@ -150,7 +150,7 @@ func WithCheckConditionsInterval(v time.Duration) WorkerOption {
 	}
 }
 
-func WithUploadConditions(v Conditions) WorkerOption {
+func WithUploadConditions(v model.Conditions) WorkerOption {
 	return func(c *WorkerConfig) {
 		c.UploadConditions = v
 	}
