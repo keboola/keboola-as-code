@@ -1,4 +1,4 @@
-package service
+package condition
 
 import (
 	"context"
@@ -6,13 +6,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -21,19 +28,25 @@ const (
 	MinimalCredentialsExpiration = time.Hour
 )
 
-type checker struct {
-	*Service
-	logger           log.Logger
-	uploadConditions model.Conditions
+type Checker struct {
+	config      config.WorkerConfig
+	clock       clock.Clock
+	logger      log.Logger
+	client      *etcd.Client
+	schema      *schema.Schema
+	fileManager *file.Manager
+	dist        *distribution.Node
+	cachedStats *statistics.L1CacheProvider
 
 	checkLock    *sync.Mutex
 	exports      *etcdop.Mirror[model.ExportBase, cachedExport]
+	tokens       *etcdop.Mirror[model.Token, string]
 	activeSlices *etcdop.Mirror[model.Slice, cachedSlice]
 }
 
 type cachedExport struct {
 	key.ExportKey
-	ImportConditions model.Conditions
+	ImportConditions Conditions
 }
 
 type cachedSlice struct {
@@ -41,44 +54,71 @@ type cachedSlice struct {
 	CredExpiration time.Time
 }
 
-func startChecker(s *Service) <-chan error {
-	c := &checker{
-		Service:          s,
-		logger:           s.logger.AddPrefix("[conditions]"),
-		uploadConditions: model.Conditions(s.config.UploadConditions),
-		checkLock:        &sync.Mutex{},
+type dependencies interface {
+	WorkerConfig() config.WorkerConfig
+	Clock() clock.Clock
+	Logger() log.Logger
+	Process() *servicectx.Process
+	EtcdClient() *etcd.Client
+	Schema() *schema.Schema
+	FileManager() *file.Manager
+	DistributionNode() *distribution.Node
+	StatisticsL1Cache() *statistics.L1CacheProvider
+}
+
+func NewChecker(d dependencies) (errCh <-chan error) {
+	c := &Checker{
+		config:      d.WorkerConfig(),
+		clock:       d.Clock(),
+		logger:      d.Logger().AddPrefix("[conditions]"),
+		client:      d.EtcdClient(),
+		schema:      d.Schema(),
+		fileManager: d.FileManager(),
+		dist:        d.DistributionNode(),
+		cachedStats: d.StatisticsL1Cache(),
+		checkLock:   &sync.Mutex{},
 	}
+
+	// Graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	d.Process().OnShutdown(func() {
+		c.logger.Info("received shutdown request")
+		cancel()
+		wg.Wait()
+		c.logger.Info("shutdown done")
+	})
 
 	// Start watchers and ticker
 	initDone := make(chan error, 1)
-	c.Service.wg.Add(1)
+	wg.Add(1)
 	go func() {
-		defer c.Service.wg.Done()
+		defer wg.Done()
 		defer close(initDone)
 		startTime := c.clock.Now()
 
-		if err := <-c.watchExports(c.Service.ctx, c.Service.wg); err != nil {
+		if err := <-c.watchExports(ctx, wg); err != nil {
 			initDone <- err
 			return
 		}
 
-		if err := <-c.watchActiveSlices(c.Service.ctx, c.Service.wg); err != nil {
+		if err := <-c.watchTokens(ctx, wg); err != nil {
 			initDone <- err
 			return
 		}
 
-		c.startTicker(c.Service.ctx, c.Service.wg)
+		if err := <-c.watchActiveSlices(ctx, wg); err != nil {
+			initDone <- err
+			return
+		}
+
+		c.startTicker(ctx, wg)
 		c.logger.Infof(`initialized | %s`, c.clock.Since(startTime))
 	}()
 	return initDone
 }
 
-// checkConditions periodically check file import and slice upload conditions.
-func (s *Service) checkConditions() <-chan error {
-	return startChecker(s)
-}
-
-func (c *checker) check(ctx context.Context) {
+func (c *Checker) check(ctx context.Context) {
 	c.checkLock.Lock()
 	defer c.checkLock.Unlock()
 
@@ -91,25 +131,33 @@ func (c *checker) check(ctx context.Context) {
 		default:
 		}
 
+		// Authorize file manager
+		var fileManager *file.AuthorizedManager
+		if token, found := c.tokens.Get(slice.ExportKey.String()); found {
+			fileManager = c.fileManager.WithToken(token)
+		} else {
+			return false
+		}
+
 		// Try swap the file, it includes also swap of the slice
 		importOk, reason, err := c.shouldImport(ctx, now, slice.SliceKey, slice.CredExpiration)
 		if err != nil {
 			c.logger.Error(err)
 		} else if importOk {
-			if err := c.swapFile(slice.SliceKey.FileKey, reason); err != nil {
+			if err := fileManager.SwapFile(slice.SliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 		} else if reason != "" {
 			c.logger.Debugf(`skipped import of the file "%s": %s`, slice.SliceKey.FileKey, reason)
 		}
 
-		// Try swap e slice, if it didn't already happen during import
+		// Try swap the slice, if it didn't already happen during import
 		if !importOk {
 			uploadOk, reason, err := c.shouldUpload(ctx, now, slice.SliceKey)
 			if err != nil {
 				c.logger.Error(err)
 			} else if uploadOk {
-				if err := c.swapSlice(slice.SliceKey, reason); err != nil {
+				if err := fileManager.SwapSlice(slice.SliceKey, reason); err != nil {
 					c.logger.Error(err)
 				}
 			} else if reason != "" {
@@ -124,7 +172,7 @@ func (c *checker) check(ctx context.Context) {
 	c.logger.Debugf(`checked "%d" opened slices | %s`, checked, c.clock.Since(now))
 }
 
-func (c *checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.SliceKey, uploadCredExp time.Time) (ok bool, reason string, err error) {
+func (c *Checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.SliceKey, uploadCredExp time.Time) (ok bool, reason string, err error) {
 	// Check minimal interval
 	if interval := now.Sub(sliceKey.FileKey.OpenedAt()); interval < c.config.MinimalImportInterval {
 		reason = fmt.Sprintf(`interval "%s" is less than the MinimalImportInterval "%s"`, interval, c.config.MinimalImportInterval)
@@ -151,11 +199,11 @@ func (c *checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.
 	}
 
 	// Evaluate import conditions
-	ok, reason = export.ImportConditions.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.Total)
+	ok, reason = evaluate(export.ImportConditions, now, sliceKey.FileKey.OpenedAt(), fileStats.Total)
 	return ok, reason, nil
 }
 
-func (c *checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.SliceKey) (ok bool, reason string, err error) {
+func (c *Checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.SliceKey) (ok bool, reason string, err error) {
 	// Check minimal interval
 	if interval := now.Sub(sliceKey.OpenedAt()); interval < c.config.MinimalUploadInterval {
 		reason = fmt.Sprintf(`interval "%s" is less than the MinimalUploadInterval "%s"`, interval, c.config.MinimalUploadInterval)
@@ -169,15 +217,15 @@ func (c *checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.
 	}
 
 	// Evaluate upload conditions
-	ok, reason = c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.Total)
+	ok, reason = evaluate(c.config.UploadConditions, now, sliceKey.OpenedAt(), sliceStats.Total)
 	return ok, reason, nil
 }
 
-func (c *checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
+func (c *Checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
 	c.exports, errCh = etcdop.
 		SetupMirror(
 			c.logger,
-			c.schema.Configs().Exports().GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()),
+			c.schema.Configs().Exports().GetAllAndWatch(ctx, c.client, etcd.WithPrevKV()),
 			func(_ *op.KeyValue, export model.ExportBase) string {
 				return export.ExportKey.String()
 			},
@@ -211,11 +259,46 @@ func (c *checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <
 	return errCh
 }
 
-func (c *checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
+func (c *Checker) watchTokens(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
+	c.tokens, errCh = etcdop.
+		SetupMirror(
+			c.logger,
+			c.schema.Secrets().Tokens().GetAllAndWatch(ctx, c.client, etcd.WithPrevKV()),
+			func(_ *op.KeyValue, token model.Token) string {
+				return token.ExportKey.String()
+			},
+			func(_ *op.KeyValue, token model.Token) string {
+				return token.Token
+			},
+		).
+		WithFilter(func(event etcdop.WatchEventT[model.Token]) bool {
+			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
+		}).
+		StartMirroring(wg)
+
+	// Invalidate cache on distribution cache.
+	// See WithFilter above, ownership is changed on distribution change, so cache must be re-generated.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-c.dist.OnChangeListener().C:
+				c.tokens.Restart()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return errCh
+}
+
+func (c *Checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
 	c.activeSlices, errCh = etcdop.
 		SetupMirror(
 			c.logger,
-			c.schema.Slices().Writing().GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()),
+			c.schema.Slices().Writing().GetAllAndWatch(ctx, c.client, etcd.WithPrevKV()),
 			func(_ *op.KeyValue, slice model.Slice) string {
 				return slice.SliceKey.String()
 			},
@@ -250,7 +333,7 @@ func (c *checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (er
 }
 
 // startTicker to check conditions periodically.
-func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
+func (c *Checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
