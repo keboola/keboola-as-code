@@ -124,6 +124,11 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 
 	out = &Templates{Repository: RepositoryResponse(ctx, d, repo), Templates: make([]*Template, 0)}
 	for _, tmpl := range templates {
+		// Exclude deprecated templates from the list
+		if tmpl.Deprecated {
+			continue
+		}
+
 		tmpl := tmpl
 		tmplResponse, err := TemplateResponse(ctx, d, &tmpl, out.Repository.Author)
 		if err != nil {
