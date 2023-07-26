@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
@@ -24,6 +25,7 @@ type ServiceConfig struct {
 	Etcd                 etcdclient.Credentials `mapstructure:",squash" usage:"etcd client credentials."`
 	EtcdConnectTimeout   time.Duration          `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
 	StatisticsL2CacheTTL time.Duration          `mapstructure:"statistics-l2-cache-ttl" usage:"Invalidation interval fast L2 statistics cache."`
+	UploadTransport      http.RoundTripper      `json:"-"`
 }
 
 func NewServiceConfig() ServiceConfig {
@@ -43,6 +45,7 @@ func NewServiceConfig() ServiceConfig {
 		},
 		EtcdConnectTimeout:   30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API/Worker
 		StatisticsL2CacheTTL: DefaultStatisticsL2CacheTTL,
+		UploadTransport:      nil, // use default transport
 	}
 }
 
