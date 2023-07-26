@@ -5,10 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	filePkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
@@ -82,11 +79,6 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 					return task.ErrResult(errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err))
 				}
 
-				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
-				if err != nil {
-					return task.ErrResult(err)
-				}
-
 				// Generate Storage API event after the operation
 				defer func() {
 					ctx, cancel := context.WithTimeout(context.Background(), importEventSendTimeout)
@@ -98,20 +90,15 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 						return
 					}
 
-					s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes, stats.Imported)
+					s.events.SendFileImportEvent(ctx, s.publicAPI.WithToken(token.Token), time.Now(), &err, fileRes, stats.Imported)
 				}()
 
 				// Skip empty
 				if fileRes.IsEmpty {
-					// Create file manager
-					api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
-					if err != nil {
-						return task.ErrResult(err)
-					}
-					files := filePkg.NewManager(d.Clock(), api, s.config.UploadTransport)
+					fileManager := s.fileManager.WithToken(token.Token)
 
 					// Delete the empty file resource
-					if err := files.DeleteFile(ctx, fileRes); err != nil {
+					if err := fileManager.DeleteFile(ctx, fileRes); err != nil {
 						// The error is not critical
 						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err))
 					}
@@ -123,7 +110,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 					return task.OkResult("skipped import of the empty file")
 				} else {
 					// Create table manager
-					tables := table.NewManager(api)
+					tables := table.NewManager(s.publicAPI.WithToken(token.Token))
 
 					// StorageJob may exist if the previous worker unexpectedly failed
 					if fileRes.StorageJob == nil {

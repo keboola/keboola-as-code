@@ -5,11 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -95,11 +92,6 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 					return task.ErrResult(errors.Errorf(`cannot load token for export "%s": %w`, slice.ExportKey, err))
 				}
 
-				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
-				if err != nil {
-					return task.ErrResult(err)
-				}
-
 				// Generate Storage API event after the operation
 				defer func() {
 					ctx, cancel := context.WithTimeout(context.Background(), uploadEventSendTimeout)
@@ -111,11 +103,11 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 						return
 					}
 
-					s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice, stats.Uploaded)
+					s.events.SendSliceUploadEvent(ctx, s.publicAPI.WithToken(token.Token), time.Now(), &err, slice, stats.Uploaded)
 				}()
 
 				// Create file manager
-				files := file.NewManager(d.Clock(), api, s.config.UploadTransport)
+				fileManager := s.fileManager.WithToken(token.Token)
 
 				// Get slice statistics
 				stats, err := s.cachedStats.SliceStats(ctx, slice.SliceKey)
@@ -126,7 +118,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				// Upload slice, set statistics
 				uploadStats := statistics.AfterUpload{}
 				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice, stats.Total, &uploadStats)
-				if err := files.UploadSlice(ctx, &slice, reader, &uploadStats); err != nil {
+				if err := fileManager.UploadSlice(ctx, &slice, reader, &uploadStats); err != nil {
 					return task.ErrResult(errors.Errorf(`file upload failed: %w`, err))
 				}
 
@@ -144,7 +136,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 
 				// Update manifest, so the file is always importable.
 				allSlices = append(allSlices, slice)
-				if err := files.UploadManifest(ctx, slice.StorageResource, allSlices); err != nil {
+				if err := fileManager.UploadManifest(ctx, slice.StorageResource, allSlices); err != nil {
 					return task.ErrResult(errors.Errorf(`manifest upload failed: %w`, err))
 				}
 
