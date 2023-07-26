@@ -122,11 +122,17 @@ func (s *service) createResourcesForReceiver(ctx context.Context, d dependencies
 		return err
 	}
 
+	// Create tokens
+	if err := d.TokenManager().CreateTokens(ctx, rb, receiver); err != nil {
+		return err
+	}
+
 	// The following operations can be performed in parallel
 	rb = rb.AddParallel()
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
 
+	// Create tables
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -135,14 +141,7 @@ func (s *service) createResourcesForReceiver(ctx context.Context, d dependencies
 		}
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := d.TokenManager().CreateTokens(ctx, rb, receiver); err != nil {
-			errs.Append(err)
-		}
-	}()
-
+	// Create files
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
