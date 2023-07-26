@@ -2,6 +2,8 @@ package load
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -15,6 +17,26 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 }
 
+type DeprecatedTemplateError struct {
+	templateID string
+}
+
+func (e DeprecatedTemplateError) Error() string {
+	return fmt.Sprintf(`template "%s" is deprecated, cannot be used`, e.templateID)
+}
+
+func (e DeprecatedTemplateError) ErrorName() string {
+	return "template.deprecated"
+}
+
+func (e DeprecatedTemplateError) ErrorUserMessage() string {
+	return fmt.Sprintf(`Template "%s" is deprecated, cannot be used.`, e.templateID)
+}
+
+func (e DeprecatedTemplateError) StatusCode() int {
+	return http.StatusBadRequest
+}
+
 func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef) (tmpl *template.Template, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.load")
 	defer span.End(&err)
@@ -23,6 +45,11 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	templateRecord, err := repository.RecordByIDOrErr(reference.TemplateID())
 	if err != nil {
 		return nil, err
+	}
+
+	// Is deprecated?
+	if templateRecord.Deprecated {
+		return nil, DeprecatedTemplateError{templateID: templateRecord.ID}
 	}
 
 	// Get template version
