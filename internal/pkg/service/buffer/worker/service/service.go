@@ -96,11 +96,11 @@ func New(d dependencies) (*Service, error) {
 
 	// Create orchestrators
 	var init []<-chan error
-	if s.config.ConditionsCheck || s.config.TasksCleanup {
+	if s.config.TasksCleanup {
 		s.dist = d.DistributionNode()
 	}
 	if s.config.ConditionsCheck {
-		init = append(init, s.checkConditions())
+		init = append(init, condition.NewChecker(d))
 	}
 	if s.config.CloseSlices {
 		s.watcher = d.WatcherWorkerNode()
