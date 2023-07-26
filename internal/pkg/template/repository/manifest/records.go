@@ -14,6 +14,7 @@ type TemplateRecord struct {
 	Name          string   `json:"name" validate:"required,min=1,max=40"`
 	Description   string   `json:"description" validate:"required,min=1,max=200"`
 	Categories    []string `json:"categories,omitempty"`
+	Deprecated    bool     `json:"deprecated,omitempty"`
 	model.AbsPath `validate:"dive"`
 	Versions      []VersionRecord `json:"versions" validate:"required,min=1,dive"`
 }
