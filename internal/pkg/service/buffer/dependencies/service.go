@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -23,6 +24,7 @@ type serviceScope struct {
 	config          config.ServiceConfig
 	schema          *schema.Schema
 	store           *store.Store
+	fileManager     *file.Manager
 	statsRepository *statistics.Repository
 	statsL1Cache    *statistics.L1CacheProvider
 	statsL2Cache    *statistics.L2CacheProvider
@@ -53,6 +55,10 @@ func (v *serviceScope) Schema() *schema.Schema {
 
 func (v *serviceScope) Store() *store.Store {
 	return v.store
+}
+
+func (v *serviceScope) FileManager() *file.Manager {
+	return v.fileManager
 }
 
 func (v *serviceScope) StatisticsRepository() *statistics.Repository {
@@ -143,6 +149,8 @@ func newServiceScope(parentScp parentScopes, cfg config.ServiceConfig) (v Servic
 	d.statsRepository = statistics.NewRepository(statistics.NewAtomicProvider(d), d)
 
 	d.store = store.New(d)
+
+	d.fileManager = file.NewManager(d)
 
 	return d, nil
 }
