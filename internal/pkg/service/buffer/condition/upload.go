@@ -35,7 +35,7 @@ func (c *Checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.
 	return ok, reason, nil
 }
 
-func (c *Checker) StartSwapSliceTask(fileManager *file.AuthorizedManager, sliceKey key.SliceKey, reason string) error {
+func (c *Checker) StartSwapSliceTask(fileManager *file.AuthorizedManager, sliceKey key.SliceKey) error {
 	return c.tasks.StartTaskOrErr(task.Config{
 		Type: sliceSwapTaskType,
 		Key: task.Key{
@@ -54,7 +54,6 @@ func (c *Checker) StartSwapSliceTask(fileManager *file.AuthorizedManager, sliceK
 		Operation: func(ctx context.Context, logger log.Logger) (result task.Result) {
 			defer usererror.CheckAndWrap(&result.Error)
 
-			logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 			if err := fileManager.SwapSlice(ctx, sliceKey); err != nil {
 				return task.ErrResult(err)
 			}

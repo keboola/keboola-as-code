@@ -49,7 +49,7 @@ func (c *Checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.
 	return ok, reason, nil
 }
 
-func (c *Checker) startSwapFileTask(fileManager *file.AuthorizedManager, fileKey key.FileKey, reason string) error {
+func (c *Checker) startSwapFileTask(fileManager *file.AuthorizedManager, fileKey key.FileKey) error {
 	return c.tasks.StartTaskOrErr(task.Config{
 		Type: fileSwapTaskType,
 		Key: task.Key{
@@ -70,7 +70,6 @@ func (c *Checker) startSwapFileTask(fileManager *file.AuthorizedManager, fileKey
 			rb := rollback.New(logger)
 			defer rb.InvokeIfErr(ctx, &result.Error)
 
-			logger.Infof(`closing file "%s": %s`, fileKey, reason)
 			if err := fileManager.SwapFile(ctx, rb, fileKey); err != nil {
 				return task.ErrResult(err)
 			}
