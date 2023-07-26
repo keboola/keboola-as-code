@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -23,7 +24,8 @@ func TestPrefixT_Watch(t *testing.T) {
 	pfx := typedPrefixForTest()
 
 	// Create watcher
-	ch := pfx.Watch(ctx, c)
+	stream := pfx.Watch(ctx, c)
+	ch := stream.Channel()
 
 	// Wait for watcher created event
 	assertDone(t, func() {
@@ -104,8 +106,8 @@ func TestPrefixT_Watch(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 func TestPrefixT_GetAllAndWatch(t *testing.T) {
@@ -122,7 +124,8 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	assert.NoError(t, pfx.Key("key1").Put("foo1").Do(ctx, c))
 
 	// Create watcher
-	ch := pfx.GetAllAndWatch(ctx, c, etcd.WithPrevKV())
+	stream := pfx.GetAllAndWatch(ctx, c, etcd.WithPrevKV())
+	ch := stream.Channel()
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
@@ -230,8 +233,8 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 
 	// Channel should be closed by the context
 	cancel()
-	_, ok := <-ch
-	assert.False(t, ok)
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
 }
 
 func clearResponseT(resp WatchResponseE[WatchEventT[fooType]]) WatchResponseE[WatchEventT[fooType]] {

@@ -27,8 +27,9 @@
 // - Prefix[T].GetAllAndWatch - get all KVs and then watch for updates, restart on a fatal error, values are deserialized to the type T.
 //
 // Watch layers:
-// - Prefix.Watch wraps low-level client.Watch
-// - Prefix.GetAllAndWatch calls wrapWatchWithRestart, Prefix.GetAll and Prefix.Watch
+// - Prefix.WatchWithoutRestart wraps low-level client.Watch
+// - Prefix.Watch calls wrapStreamWithRestart.
+// - Prefix.GetAllAndWatch calls wrapStreamWithRestart, Prefix.GetAll and Prefix.WatchWithoutRestart
 // - Prefix[T].Watch calls Prefix.Watch and Prefix[T].decodeChannel
 // - Prefix[T].GetAllAndWatch calls Prefix.GetAllAndWatch and Prefix[T].decodeChannel
 package etcdop

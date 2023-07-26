@@ -21,7 +21,7 @@ type Mirror[T any, V any] struct {
 
 type MirrorSetup[T any, V any] struct {
 	logger   log.Logger
-	stream   WatchStreamT[T]
+	stream   *RestartableWatchStreamT[T]
 	filter   func(t WatchEventT[T]) bool
 	mapKey   func(kv *op.KeyValue, value T) string
 	mapValue func(kv *op.KeyValue, value T) V
@@ -29,7 +29,7 @@ type MirrorSetup[T any, V any] struct {
 
 func SetupMirror[T any, V any](
 	logger log.Logger,
-	stream WatchStreamT[T],
+	stream *RestartableWatchStreamT[T],
 	mapKey func(kv *op.KeyValue, value T) string,
 	mapValue func(kv *op.KeyValue, value T) V,
 ) MirrorSetup[T, V] {
