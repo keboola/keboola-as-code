@@ -65,7 +65,7 @@ type dependencies interface {
 	StatisticsL1Cache() *statistics.L1CacheProvider
 }
 
-func NewChecker(d dependencies) (errCh <-chan error) {
+func NewChecker(d dependencies) <-chan error {
 	c := &Checker{
 		config:      d.WorkerConfig(),
 		clock:       d.Clock(),
@@ -88,33 +88,35 @@ func NewChecker(d dependencies) (errCh <-chan error) {
 		c.logger.Info("shutdown done")
 	})
 
-	// Start watchers and ticker
-	initDone := make(chan error, 1)
+	// Initialize
+	errCh := make(chan error, 1)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		defer close(initDone)
+
+		// Initialize watchers
 		startTime := c.clock.Now()
-
-		if err := <-c.watchExports(ctx, wg); err != nil {
-			initDone <- err
+		if err := c.watch(ctx, wg); err != nil {
+			errCh <- err
+			close(errCh)
 			return
 		}
-
-		if err := <-c.watchTokens(ctx, wg); err != nil {
-			initDone <- err
-			return
-		}
-
-		if err := <-c.watchActiveSlices(ctx, wg); err != nil {
-			initDone <- err
-			return
-		}
-
-		c.startTicker(ctx, wg)
 		c.logger.Infof(`initialized | %s`, c.clock.Since(startTime))
+
+		// Start ticker
+		ticker := c.clock.Ticker(c.config.CheckConditionsInterval)
+		defer ticker.Stop()
+		close(errCh)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				c.check(ctx)
+			}
+		}
 	}()
-	return initDone
+	return errCh
 }
 
 func (c *Checker) check(ctx context.Context) {
@@ -171,8 +173,13 @@ func (c *Checker) check(ctx context.Context) {
 	c.logger.Debugf(`checked "%d" opened slices | %s`, checked, c.clock.Since(now))
 }
 
-func (c *Checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
-	c.exports, errCh = etcdop.
+func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
+	var exportsErrCh <-chan error
+	var tokensErrCh <-chan error
+	var slicesErrCh <-chan error
+
+	// Mirror exports
+	c.exports, exportsErrCh = etcdop.
 		SetupMirror(
 			c.logger,
 			c.schema.Configs().Exports().GetAllAndWatch(ctx, c.client, etcd.WithPrevKV()),
@@ -191,26 +198,8 @@ func (c *Checker) watchExports(ctx context.Context, wg *sync.WaitGroup) (errCh <
 		}).
 		StartMirroring(wg)
 
-	// Invalidate cache on distribution cache.
-	// See WithFilter above, ownership is changed on distribution change, so cache must be re-generated.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-c.dist.OnChangeListener().C:
-				c.exports.Restart()
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return errCh
-}
-
-func (c *Checker) watchTokens(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
-	c.tokens, errCh = etcdop.
+	// Mirror tokens
+	c.tokens, tokensErrCh = etcdop.
 		SetupMirror(
 			c.logger,
 			c.schema.Secrets().Tokens().GetAllAndWatch(ctx, c.client, etcd.WithPrevKV()),
@@ -226,26 +215,8 @@ func (c *Checker) watchTokens(ctx context.Context, wg *sync.WaitGroup) (errCh <-
 		}).
 		StartMirroring(wg)
 
-	// Invalidate cache on distribution cache.
-	// See WithFilter above, ownership is changed on distribution change, so cache must be re-generated.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-c.dist.OnChangeListener().C:
-				c.tokens.Restart()
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return errCh
-}
-
-func (c *Checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (errCh <-chan error) {
-	c.activeSlices, errCh = etcdop.
+	// Mirror slices
+	c.activeSlices, slicesErrCh = etcdop.
 		SetupMirror(
 			c.logger,
 			c.schema.Slices().Writing().GetAllAndWatch(ctx, c.client, etcd.WithPrevKV()),
@@ -264,14 +235,27 @@ func (c *Checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (er
 		}).
 		StartMirroring(wg)
 
+	// Wait for initialization
+	for _, errCh := range []<-chan error{exportsErrCh, tokensErrCh, slicesErrCh} {
+		errs := errors.NewMultiError()
+		if err := <-errCh; err != nil {
+			errs.Append(err)
+		}
+		if errs.Len() > 0 {
+			return errs
+		}
+	}
+
 	// Invalidate cache on distribution change.
-	// See WithFilter above, ownership is changed on distribution change, so cache must be re-generated.
+	// See WithFilter methods above, ownership is changed on distribution change, so cache must be re-generated.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
 			select {
 			case <-c.dist.OnChangeListener().C:
+				c.exports.Restart()
+				c.tokens.Restart()
 				c.activeSlices.Restart()
 			case <-ctx.Done():
 				return
@@ -279,27 +263,7 @@ func (c *Checker) watchActiveSlices(ctx context.Context, wg *sync.WaitGroup) (er
 		}
 	}()
 
-	return errCh
-}
-
-// startTicker to check conditions periodically.
-func (c *Checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		ticker := c.clock.Ticker(c.config.CheckConditionsInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				c.check(ctx)
-			}
-		}
-	}()
+	return nil
 }
 
 func getCredentialsExpiration(slice model.Slice) time.Time {

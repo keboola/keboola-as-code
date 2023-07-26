@@ -3,8 +3,9 @@ package condition
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 )
 
 func (c *Checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.SliceKey, uploadCredExp time.Time) (ok bool, reason string, err error) {
