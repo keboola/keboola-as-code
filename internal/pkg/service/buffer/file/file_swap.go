@@ -1,15 +1,13 @@
-package service
+package file
 
 import (
 	"context"
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -19,8 +17,8 @@ const (
 	fileSwapTaskType = "file.swap"
 )
 
-func (s *Service) swapFile(fileKey key.FileKey, reason string) (err error) {
-	return s.tasks.StartTaskOrErr(task.Config{
+func (m *AuthorizedManager) SwapFile(fileKey key.FileKey, reason string) (err error) {
+	return m.tasks.StartTaskOrErr(task.Config{
 		Type: fileSwapTaskType,
 		Key: task.Key{
 			ProjectID: fileKey.ProjectID,
@@ -35,7 +33,7 @@ func (s *Service) swapFile(fileKey key.FileKey, reason string) (err error) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		Operation: func(ctx context.Context, logger log.Logger) (result task.Result) {
-			defer checkAndWrapUserError(&result.Error)
+			defer usererror.CheckAndWrap(&result.Error)
 
 			rb := rollback.New(logger)
 			defer rb.InvokeIfErr(ctx, &result.Error)
@@ -43,7 +41,7 @@ func (s *Service) swapFile(fileKey key.FileKey, reason string) (err error) {
 			logger.Infof(`closing file "%s": %s`, fileKey, reason)
 
 			// Get export
-			export, err := s.store.GetExport(ctx, fileKey.ExportKey)
+			export, err := m.store.GetExport(ctx, fileKey.ExportKey)
 			if err != nil {
 				return task.ErrResult(errors.Errorf(`cannot close file "%s": %w`, fileKey.String(), err))
 			}
@@ -58,17 +56,11 @@ func (s *Service) swapFile(fileKey key.FileKey, reason string) (err error) {
 				return task.ErrResult(errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey))
 			}
 
-			api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(export.Token.Token))
-			if err != nil {
-				return task.ErrResult(err)
-			}
-			files := file.NewManager(s.clock, api, nil)
-
-			if err := files.CreateFileForExport(ctx, rb, &export); err != nil {
+			if err := m.CreateFileForExport(ctx, rb, &export); err != nil {
 				return task.ErrResult(errors.Errorf(`cannot close file "%s": cannot create new file: %w`, fileKey.String(), err))
 			}
 
-			if err := s.store.SwapFile(ctx, &oldFile, &oldSlice, export.OpenedFile, export.OpenedSlice); err != nil {
+			if err := m.store.SwapFile(ctx, &oldFile, &oldSlice, export.OpenedFile, export.OpenedSlice); err != nil {
 				return task.ErrResult(errors.Errorf(`cannot close file "%s": cannot swap old and new file: %w`, fileKey.String(), err))
 			}
 

@@ -9,7 +9,8 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -18,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
-func TestManager_CreateFile(t *testing.T) {
+func TestAuthorizedManager_CreateFile(t *testing.T) {
 	t.Parallel()
 
 	now, _ := time.Parse(time.RFC3339, "2006-01-01T08:04:05.000Z")
@@ -27,8 +28,9 @@ func TestManager_CreateFile(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := dependencies.NewMocked(t, dependencies.WithClock(clk), dependencies.WithTestProject(p))
-	m := NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
+	d, mock := bufferDependencies.NewMockedServiceScope(t, config.NewServiceConfig(), dependencies.WithClock(clk), dependencies.WithTestProject(p))
+	m := d.FileManager().WithToken(p.StorageAPIToken().Token)
+
 	rb := rollback.New(d.Logger())
 	client := p.KeboolaProjectAPI()
 
@@ -58,7 +60,7 @@ func TestManager_CreateFile(t *testing.T) {
 
 	// Test rollback
 	rb.Invoke(ctx)
-	assert.Empty(t, d.DebugLogger().WarnMessages())
+	assert.Empty(t, mock.DebugLogger().WarnMessages())
 	_, err = client.GetFileRequest(export.OpenedFile.StorageResource.ID).Send(ctx)
 	assert.Error(t, err)
 	assert.Equal(t, "storage.files.notFound", err.(*keboola.StorageError).ErrCode)
