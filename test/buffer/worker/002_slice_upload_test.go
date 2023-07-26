@@ -12,7 +12,7 @@ func (ts *testSuite) test002SliceUpload() {
 
 	// Run imports immediately after the last check to prevent the check during imports.
 	ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%s][bufferWorker][service][conditions]DEBUG checked "2" opened slices
+[worker-node-%s][bufferWorker][conditions]DEBUG checked "2" opened slices
 	`)
 
 	// Send records 5-6
@@ -23,8 +23,8 @@ func (ts *testSuite) test002SliceUpload() {
 	// Periodic condition checks have detected that the UPLOAD conditions for both slices/exports have been met.
 	ts.t.Logf("waiting for upload conditions check ...")
 	if ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%d][bufferWorker][task][%s/slice.swap/%s]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
-[worker-node-%d][bufferWorker][task][%s/slice.swap/%s]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
+[worker-node-%d][bufferWorker][conditions]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
+[worker-node-%d][bufferWorker][conditions]INFO closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
 `) {
 		ts.t.Logf("upload conditions met")
 	}

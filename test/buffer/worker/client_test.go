@@ -97,7 +97,7 @@ func (c *apiClient) SendPayloadBody(body string) error {
 		WithBody(body).
 		SendOrErr(c.ctx)
 	if err != nil {
-		c.t.Logf(`imported failed: %s`, err)
+		c.t.Logf(`send payload failed: %s`, err)
 	}
 
 	return err
