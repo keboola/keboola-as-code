@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -64,7 +65,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				slice := event.Value
 
 				// Handle error
-				defer checkAndWrapUserError(&result.Error)
+				defer usererror.CheckAndWrap(&result.Error)
 				defer func() {
 					if result.IsError() {
 						ctx, cancel := context.WithTimeout(context.Background(), fileMarkAsFailedTimeout)

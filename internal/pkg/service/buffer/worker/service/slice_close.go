@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
@@ -53,7 +54,7 @@ func (s *Service) closeSlices(d dependencies) <-chan error {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result task.Result) {
-				defer checkAndWrapUserError(&result.Error)
+				defer usererror.CheckAndWrap(&result.Error)
 
 				// Wait until all API nodes switch to a new slice.
 				waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
