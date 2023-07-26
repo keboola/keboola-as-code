@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -106,19 +106,22 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 
 	// The new revision Rev2 will be reported by API nodes ONLY AFTER
 	// all the work with the older Rev1 is completed (unlock1Rev1, unlock2Rev1).
-	logger := log.NewDebugLogger()
+	var logs strings.Builder
+	lock := &sync.Mutex{}
 	done1, done2, done3, done4 := make(chan struct{}), make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(done1)
 		assert.NoError(t, workerNode1.WaitForRevision(ctx, rev2))
-		logger.Info("unblocked")
-		assert.NoError(t, logger.Sync())
+		lock.Lock()
+		logs.WriteString("unblocked\n")
+		lock.Unlock()
 	}()
 	go func() {
 		defer close(done2)
 		assert.NoError(t, workerNode2.WaitForRevision(ctx, rev2))
-		logger.Info("unblocked")
-		assert.NoError(t, logger.Sync())
+		lock.Lock()
+		logs.WriteString("unblocked\n")
+		lock.Unlock()
 	}()
 
 	// Goroutines above are blocked until work on the previous revision Rev1 is completed.
@@ -126,15 +129,17 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	go func() {
 		defer close(done3)
 		time.Sleep(100 * time.Millisecond)
-		logger.Info("work1 in API node done")
-		assert.NoError(t, logger.Sync())
+		lock.Lock()
+		logs.WriteString("work1 in API node done\n")
+		lock.Unlock()
 		unlock1Rev1()
 	}()
 	go func() {
 		defer close(done4)
-		time.Sleep(200 * time.Millisecond)
-		logger.Info("work2 in API node done")
-		assert.NoError(t, logger.Sync())
+		time.Sleep(500 * time.Millisecond)
+		lock.Lock()
+		logs.WriteString("work2 in API node done\n")
+		lock.Unlock()
 		unlock2Rev1()
 	}()
 	// Wait
@@ -149,12 +154,12 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 
 	// Check order of the operations
 	expected := `
-INFO  work1 in API node done
-INFO  work2 in API node done
-INFO  unblocked
-INFO  unblocked
+work1 in API node done
+work2 in API node done
+unblocked
+unblocked
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(logger.AllMessages()))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(logs.String()))
 
 	// Work with Rev2 revision is also done
 	unlock1Rev2()
