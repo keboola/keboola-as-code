@@ -181,6 +181,7 @@ func TemplateDetailResponse(ctx context.Context, d dependencies.ProjectRequestSc
 		Repository:     repoResponse,
 		ID:             tmpl.ID,
 		Name:           tmpl.Name,
+		Deprecated:     tmpl.Deprecated,
 		Categories:     CategoriesResponse(tmpl.Categories),
 		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
@@ -203,7 +204,7 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 	}
 }
 
-func VersionDetailResponse(d dependencies.ProjectRequestScope, versionRecord repository.VersionRecord, template *template.Template) *VersionDetail {
+func VersionDetailResponse(d dependencies.ProjectRequestScope, t *repository.TemplateRecord, v repository.VersionRecord, template *template.Template) *VersionDetail {
 	var longDescription string
 	var readme string
 	if template != nil {
@@ -212,10 +213,11 @@ func VersionDetailResponse(d dependencies.ProjectRequestScope, versionRecord rep
 	}
 
 	return &VersionDetail{
-		Version:         versionRecord.Version.String(),
-		Stable:          versionRecord.Stable,
-		Description:     versionRecord.Description,
-		Components:      ComponentsResponse(d, versionRecord.Components),
+		Version:         v.Version.String(),
+		Stable:          v.Stable,
+		Description:     v.Description,
+		Deprecated:      t.Deprecated,
+		Components:      ComponentsResponse(d, v.Components),
 		LongDescription: longDescription,
 		Readme:          readme,
 	}
@@ -518,5 +520,5 @@ func instanceVersionDetail(ctx context.Context, d dependencies.ProjectRequestSco
 	// Tmpl may be nil, if the template is deprecated, it cannot be loaded.
 	tmpl, _ := d.Template(ctx, model.NewTemplateRef(repo.Definition(), instance.TemplateID, versionRecord.Version.String()))
 
-	return VersionDetailResponse(d, versionRecord, tmpl)
+	return VersionDetailResponse(d, tmplRecord, versionRecord, tmpl)
 }
