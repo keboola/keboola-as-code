@@ -115,6 +115,92 @@ repository manifest is not valid:
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
+func TestManifestContentValidateRequiredTemplatePath(t *testing.T) {
+	t.Parallel()
+	manifestContent := &file{
+		Version: 2,
+		Author: Author{
+			Name: "Author",
+			URL:  "https://example.com",
+		},
+		Templates: []TemplateRecord{
+			{
+				ID:          "template-1",
+				Name:        `Template 1`,
+				Description: `My Template 1`,
+				Path:        "",
+				Versions: []VersionRecord{
+					{
+						Version:     version(`0.0.1`),
+						Stable:      false,
+						Components:  []string{},
+						Description: `SemVersion 0`,
+						Path:        "v0",
+					},
+					{
+						Version:     version(`1.2.3`),
+						Stable:      true,
+						Components:  []string{"foo", "bar"},
+						Description: `SemVersion 1`,
+						Path:        "",
+					},
+				},
+			},
+		},
+	}
+	err := manifestContent.validate()
+	assert.Error(t, err)
+	expected := `
+repository manifest is not valid:
+- "templates[0].path" is a required field
+- "templates[0].version[1].path" is a required field
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestManifestContentValidateExcludedTemplatePath(t *testing.T) {
+	t.Parallel()
+	manifestContent := &file{
+		Version: 2,
+		Author: Author{
+			Name: "Author",
+			URL:  "https://example.com",
+		},
+		Templates: []TemplateRecord{
+			{
+				ID:          "template-1",
+				Name:        `Template 1`,
+				Description: `My Template 1`,
+				Path:        "unexpected",
+				Deprecated:  true,
+				Versions: []VersionRecord{
+					{
+						Version:     version(`0.0.1`),
+						Stable:      false,
+						Components:  []string{},
+						Description: `SemVersion 0`,
+					},
+					{
+						Version:     version(`1.2.3`),
+						Stable:      true,
+						Components:  []string{"foo", "bar"},
+						Description: `SemVersion 1`,
+						Path:        "unexpected",
+					},
+				},
+			},
+		},
+	}
+	err := manifestContent.validate()
+	assert.Error(t, err)
+	expected := `
+repository manifest is not valid:
+- "templates[0].path" is not expected for the deprecated template
+- "templates[0].version[1].path" is not expected for the deprecated template
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
 func TestManifestBadRecordSemanticVersion(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()

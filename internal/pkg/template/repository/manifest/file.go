@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -91,9 +92,35 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 }
 
 func (f *file) validate() error {
+	errs := errors.NewMultiError()
 	if err := validator.New().Validate(context.Background(), f); err != nil {
-		return errors.PrefixError(err, "repository manifest is not valid")
+		errs.Append(err)
 	}
+
+	// Validate path. It should be set for template and version, except deprecated templates.
+	for i, t := range f.Templates {
+		tPathEmpty := strings.TrimSpace(t.Path) == ""
+		if tPathEmpty && !t.Deprecated {
+			errs.Append(errors.Errorf(`"templates[%d].path" is a required field`, i))
+		}
+		if !tPathEmpty && t.Deprecated {
+			errs.Append(errors.Errorf(`"templates[%d].path" is not expected for the deprecated template`, i))
+		}
+		for j, v := range t.Versions {
+			vPathEmpty := strings.TrimSpace(v.Path) == ""
+			if vPathEmpty && !t.Deprecated {
+				errs.Append(errors.Errorf(`"templates[%d].version[%d].path" is a required field`, i, j))
+			}
+			if !vPathEmpty && t.Deprecated {
+				errs.Append(errors.Errorf(`"templates[%d].version[%d].path" is not expected for the deprecated template`, i, j))
+			}
+		}
+	}
+
+	if errs.Len() > 0 {
+		return errors.PrefixError(errs, "repository manifest is not valid")
+	}
+
 	return nil
 }
 

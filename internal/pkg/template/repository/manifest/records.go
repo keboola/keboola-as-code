@@ -15,7 +15,7 @@ type TemplateRecord struct {
 	Description string          `json:"description" validate:"required,min=1,max=200"`
 	Categories  []string        `json:"categories,omitempty"`
 	Deprecated  bool            `json:"deprecated,omitempty"`
-	Path        string          `json:"path" validate:"required"`
+	Path        string          `json:"path,omitempty"`
 	Versions    []VersionRecord `json:"versions" validate:"required,min=1,dive"`
 }
 
@@ -24,7 +24,7 @@ type VersionRecord struct {
 	Description string           `json:"description" validate:"min=0,max=40"`
 	Stable      bool             `json:"stable" validate:""`
 	Components  []string         `json:"components,omitempty"`
-	Path        string           `json:"path" validate:"required"`
+	Path        string           `json:"path,omitempty"`
 }
 
 func (v *TemplateRecord) AllVersions() (out []VersionRecord) {
