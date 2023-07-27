@@ -10,6 +10,7 @@
   },
   "id": "my-template-id",
   "name": "My Template",
+  "deprecated": false,
   "categories": [
     "Data Extraction",
     "E-commerce"

@@ -10,6 +10,7 @@
   },
   "id": "deprecated-template-id",
   "name": "Deprecated Template",
+  "deprecated": true,
   "categories": [
     "Other"
   ],

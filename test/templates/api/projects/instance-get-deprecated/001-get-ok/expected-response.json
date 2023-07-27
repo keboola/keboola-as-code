@@ -1,5 +1,6 @@
 {
   "versionDetail": {
+    "deprecated": true,
     "components": [
       "keboola.wr-%s",
       "foo.bar"

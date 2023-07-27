@@ -1,5 +1,6 @@
 {
   "versionDetail": {
+    "deprecated": false,
     "components": [],
     "longDescription": "",
     "readme": "### My Template\n\nFull workflow to ...\n\n",
