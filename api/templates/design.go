@@ -747,6 +747,7 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("My Template")
 	})
+	Attribute("deprecated", Boolean, "Deprecated template cannot be used.")
 	Attribute("categories", ArrayOf(String), "List of categories the template belongs to.", func() {
 		Example([]string{"E-commerce", "Other", "Social Media"})
 	})
@@ -769,7 +770,7 @@ var Template = Type("Template", func() {
 	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
 		Example(ExampleVersions1())
 	})
-	Required("id", "name", "categories", "components", "author", "description", "defaultVersion", "versions")
+	Required("id", "name", "deprecated", "categories", "components", "author", "description", "defaultVersion", "versions")
 })
 
 var VersionDetail = Type("VersionDetail", func() {
@@ -1121,6 +1122,7 @@ type ExampleAuthorData struct {
 type ExampleTemplateData struct {
 	ID             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
+	Deprecated     bool                 `json:"deprecated" yaml:"deprecated"`
 	Categories     []string             `json:"categories" yaml:"categories"`
 	Components     []string             `json:"components" yaml:"components"`
 	Author         ExampleAuthorData    `json:"author" yaml:"author"`
@@ -1253,6 +1255,7 @@ func ExampleTemplate1() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "my-template",
 		Name:           "My Template",
+		Deprecated:     false,
 		Categories:     ExampleCategories(),
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
@@ -1266,6 +1269,7 @@ func ExampleTemplate2() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
+		Deprecated:     false,
 		Categories:     ExampleCategories(),
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
