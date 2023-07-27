@@ -775,6 +775,7 @@ var Template = Type("Template", func() {
 
 var VersionDetail = Type("VersionDetail", func() {
 	Extend(TemplateVersion)
+	Attribute("deprecated", Boolean, "Deprecated template cannot be used.")
 	Attribute("components", ArrayOf(String), "List of components used in the template version.", func() {
 		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
@@ -786,7 +787,7 @@ var VersionDetail = Type("VersionDetail", func() {
 		MinLength(1)
 		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
 	})
-	Required("components", "longDescription", "readme")
+	Required("deprecated", "components", "longDescription", "readme")
 	Example(ExampleVersionDetail())
 })
 
@@ -1149,6 +1150,7 @@ type ExampleVersionData struct {
 
 type ExampleVersionDetailData struct {
 	ExampleVersionData
+	Deprecated      bool     `json:"deprecated" yaml:"deprecated"`
 	Components      []string `json:"components" yaml:"components"`
 	LongDescription string   `json:"longDescription" yaml:"longDescription"`
 	Readme          string   `json:"readme" yaml:"readme"`
@@ -1289,6 +1291,7 @@ func ExampleVersion1() ExampleVersionData {
 
 func ExampleVersionDetail() ExampleVersionDetailData {
 	return ExampleVersionDetailData{
+		Deprecated:         false,
 		Components:         ExampleComponents(),
 		LongDescription:    "Maximum length template **description** dolor sit amet, consectetuer adipiscing elit",
 		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
