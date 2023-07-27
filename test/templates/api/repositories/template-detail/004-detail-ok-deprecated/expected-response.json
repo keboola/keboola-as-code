@@ -1,0 +1,32 @@
+{
+  "repository": {
+    "name": "keboola",
+    "url": "%s",
+    "ref": "",
+    "author": {
+      "name": "Example Author",
+      "url": "https://example.com"
+    }
+  },
+  "id": "deprecated-template-id",
+  "name": "Deprecated Template",
+  "categories": [
+    "Other"
+  ],
+  "components": [
+    "foo.bar"
+  ],
+  "author": {
+    "name": "Example Author",
+    "url": "https://example.com"
+  },
+  "description": "Full workflow to ...",
+  "defaultVersion": "1.2.3",
+  "versions": [
+    {
+      "version": "1.2.3",
+      "stable": false,
+      "description": ""
+    }
+  ]
+}
