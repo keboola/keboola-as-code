@@ -165,7 +165,7 @@ func TestManifest_Records(t *testing.T) {
 	v = m.GetOrCreate("foo-bar")
 	assert.NotEmpty(t, v)
 	assert.Equal(t, "foo-bar", v.ID)
-	assert.Equal(t, "foo-bar", v.Path())
+	assert.Equal(t, "foo-bar", v.Path)
 
 	// Persist
 	m.Persist(v)
@@ -184,16 +184,16 @@ func TestManifest_Records(t *testing.T) {
 	m.Persist(m.GetOrCreate("abc"))
 	assert.Equal(t, []TemplateRecord{
 		{
-			ID:      "abc",
-			AbsPath: model.NewAbsPath("", "abc"),
+			ID:   "abc",
+			Path: "abc",
 		},
 		{
-			ID:      "foo-bar",
-			AbsPath: model.NewAbsPath("", "foo-bar"),
+			ID:   "foo-bar",
+			Path: "foo-bar",
 		},
 		{
-			ID:      "xyz",
-			AbsPath: model.NewAbsPath("", "xyz"),
+			ID:   "xyz",
+			Path: "xyz",
 		},
 	}, m.AllTemplates())
 }
@@ -209,9 +209,9 @@ func TestManifest_GetByPath_NotFound(t *testing.T) {
 func TestManifest_GetByPath_Found(t *testing.T) {
 	t.Parallel()
 	m := New()
-	record1 := TemplateRecord{ID: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	record1 := TemplateRecord{ID: "foo", Path: "foo"}
 	m.Persist(record1)
-	record2 := TemplateRecord{ID: "bar", AbsPath: model.NewAbsPath("parent", "bar")}
+	record2 := TemplateRecord{ID: "bar", Path: "bar"}
 	m.Persist(record2)
 	record, found := m.GetByPath(`foo`)
 	assert.Equal(t, record1, record)
@@ -221,7 +221,7 @@ func TestManifest_GetByPath_Found(t *testing.T) {
 func TestManifest_GetVersion(t *testing.T) {
 	t.Parallel()
 	m := New()
-	record := TemplateRecord{ID: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	record := TemplateRecord{ID: "foo", Path: "foo"}
 	record.AddVersion(version("1.2.3"), []string{})
 	m.Persist(record)
 
@@ -310,24 +310,24 @@ func fullStruct() *file {
 		},
 		Templates: []TemplateRecord{
 			{
-				AbsPath:     model.NewAbsPath(``, `template-1`),
 				ID:          "template-1",
 				Name:        `Template 1`,
 				Description: `My Template 1`,
+				Path:        "template-1",
 				Versions: []VersionRecord{
 					{
-						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
 						Version:     version(`0.0.1`),
 						Stable:      false,
 						Components:  []string{},
 						Description: `SemVersion 0`,
+						Path:        "v0",
 					},
 					{
-						AbsPath:     model.NewAbsPath(`template-1`, `v1`),
 						Version:     version(`1.2.3`),
 						Stable:      true,
 						Components:  []string{"foo", "bar"},
 						Description: `SemVersion 1`,
+						Path:        "v1",
 					},
 				},
 			},

@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -137,7 +136,7 @@ func (m *Manifest) GetByIDOrErr(id string) (TemplateRecord, error) {
 
 func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
 	for _, record := range m.records {
-		if record.GetRelativePath() == path {
+		if record.Path == path {
 			return record, true
 		}
 	}
@@ -154,6 +153,6 @@ func (m *Manifest) GetOrCreate(templateID string) TemplateRecord {
 
 func newRecord(templateID string) TemplateRecord {
 	record := TemplateRecord{ID: templateID}
-	record.AbsPath = model.NewAbsPath("", strhelper.NormalizeName(templateID))
+	record.Path = strhelper.NormalizeName(templateID)
 	return record
 }

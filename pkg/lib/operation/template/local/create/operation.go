@@ -67,7 +67,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Init template directory
 	versionRecord := templateRecord.AddVersion(version, o.Components)
-	if _, err := createDir(ctx, o, d, repo.Fs(), versionRecord); err != nil {
+	if _, err := createDir(ctx, o, d, repo.Fs(), templateRecord, versionRecord); err != nil {
 		return err
 	}
 
@@ -100,14 +100,16 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	// Done
-	d.Logger().Infof(`Template "%s" has been created.`, versionRecord.Path())
+	templatePath := filesystem.Join(templateRecord.Path, versionRecord.Path)
+	d.Logger().Infof(`Template "%s" has been created.`, templatePath)
 
 	return nil
 }
 
-func createDir(ctx context.Context, o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) (filesystem.Fs, error) {
+func createDir(ctx context.Context, o Options, d dependencies, repositoryDir filesystem.Fs, templateRecord repositoryManifest.TemplateRecord, versionRecord repositoryManifest.VersionRecord) (filesystem.Fs, error) {
 	// Create directory
-	fs, err := createTemplateDir.Run(ctx, repositoryDir, createTemplateDir.Options{Path: record.Path()}, d)
+	templatePath := filesystem.Join(templateRecord.Path, versionRecord.Path)
+	fs, err := createTemplateDir.Run(ctx, repositoryDir, createTemplateDir.Options{Path: templatePath}, d)
 	if err != nil {
 		return nil, err
 	}

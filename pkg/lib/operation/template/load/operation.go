@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -59,7 +60,7 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	}
 
 	// Check if template dir exists
-	templatePath := versionRecord.Path()
+	templatePath := filesystem.Join(templateRecord.Path, versionRecord.Path)
 	if !repository.Fs().IsDir(templatePath) {
 		return nil, errors.Errorf(`template dir "%s" not found`, templatePath)
 	}

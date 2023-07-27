@@ -23,13 +23,13 @@ func initTemplate(t *testing.T, fs filesystem.Fs) *Template {
 		Description: "",
 		Stable:      true,
 		Components:  []string{},
-		AbsPath:     model.NewAbsPath("", "v1"),
+		Path:        "v1",
 	}
 	tmplRec := repository.TemplateRecord{
 		ID:          tmplRef.TemplateID(),
 		Name:        "Template 1",
 		Description: "",
-		AbsPath:     model.NewAbsPath("", "tmpl1"),
+		Path:        "tmpl1",
 		Versions:    []repository.VersionRecord{versionRec},
 	}
 	return &Template{_reference: tmplRef, template: tmplRec, version: versionRec, fs: fs}
