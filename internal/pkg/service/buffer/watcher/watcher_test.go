@@ -112,11 +112,13 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 		defer close(done1)
 		assert.NoError(t, workerNode1.WaitForRevision(ctx, rev2))
 		logger.Info("unblocked")
+		assert.NoError(t, logger.Sync())
 	}()
 	go func() {
 		defer close(done2)
 		assert.NoError(t, workerNode2.WaitForRevision(ctx, rev2))
 		logger.Info("unblocked")
+		assert.NoError(t, logger.Sync())
 	}()
 
 	// Goroutines above are blocked until work on the previous revision Rev1 is completed.
@@ -125,12 +127,14 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 		defer close(done3)
 		time.Sleep(100 * time.Millisecond)
 		logger.Info("work1 in API node done")
+		assert.NoError(t, logger.Sync())
 		unlock1Rev1()
 	}()
 	go func() {
 		defer close(done4)
 		time.Sleep(200 * time.Millisecond)
 		logger.Info("work2 in API node done")
+		assert.NoError(t, logger.Sync())
 		unlock2Rev1()
 	}()
 	// Wait

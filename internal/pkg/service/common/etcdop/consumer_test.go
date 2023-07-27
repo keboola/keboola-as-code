@@ -115,7 +115,7 @@ INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
 	}, 5*time.Second, 10*time.Millisecond)
 	wildcards.Assert(t, `
 WARN  watch error: etcdserver: mvcc: required revision has been compacted
-WARN  restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
+INFO  restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
 INFO  OnRestarted: backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
 INFO  ForEach: restart=true, events(3): create "my/prefix/key1", create "my/prefix/key2", create "my/prefix/key3"
 `, logger.AllMessages())
