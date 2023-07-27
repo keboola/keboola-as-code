@@ -101,6 +101,8 @@ type TemplateIndexResponseBody struct {
 	ID         string                  `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Deprecated template cannot be used.
+	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
 	// List of categories the template belongs to.
 	Categories []string `form:"categories" json:"categories" xml:"categories"`
 	// List of components used in the template.
@@ -121,6 +123,8 @@ type VersionIndexResponseBody struct {
 	Repository *RepositoryResponseBody `form:"repository" json:"repository" xml:"repository"`
 	// Information about the template.
 	Template *TemplateResponseBody `form:"template" json:"template" xml:"template"`
+	// Deprecated template cannot be used.
+	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
 	// List of components used in the template version.
 	Components []string `form:"components" json:"components" xml:"components"`
 	// Extended description of the template in Markdown format.
@@ -837,6 +841,8 @@ type TemplateResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Deprecated template cannot be used.
+	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
 	// List of categories the template belongs to.
 	Categories []string `form:"categories" json:"categories" xml:"categories"`
 	// List of components used in the template.
@@ -1010,6 +1016,8 @@ type MainConfigResponseBody struct {
 
 // VersionDetailResponseBody is used to define fields on response body types.
 type VersionDetailResponseBody struct {
+	// Deprecated template cannot be used.
+	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
 	// List of components used in the template version.
 	Components []string `form:"components" json:"components" xml:"components"`
 	// Extended description of the template in Markdown format.
@@ -1109,6 +1117,7 @@ func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexR
 	body := &TemplateIndexResponseBody{
 		ID:             string(res.ID),
 		Name:           res.Name,
+		Deprecated:     res.Deprecated,
 		Description:    res.Description,
 		DefaultVersion: res.DefaultVersion,
 	}
@@ -1143,6 +1152,7 @@ func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexR
 // the "VersionIndex" endpoint of the "templates" service.
 func NewVersionIndexResponseBody(res *templates.VersionDetailExtended) *VersionIndexResponseBody {
 	body := &VersionIndexResponseBody{
+		Deprecated:      res.Deprecated,
 		LongDescription: res.LongDescription,
 		Readme:          res.Readme,
 		Version:         res.Version,

@@ -108,13 +108,13 @@ paths:
                                       created:
                                         date: "2022-04-28T14:20:04+00:00"
                                         tokenId: "245941"
-                                      instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
+                                      instanceId: Et sunt qui adipisci harum.
                                       mainConfig:
                                         componentId: keboola.orchestrator
                                         configId: "7954825835"
                                       name: My Instance
                                       repositoryName: keboola
-                                      templateId: h2o
+                                      templateId: x
                                       updated:
                                         date: "2022-04-28T14:20:04+00:00"
                                         tokenId: "245941"
@@ -123,13 +123,13 @@ paths:
                                       created:
                                         date: "2022-04-28T14:20:04+00:00"
                                         tokenId: "245941"
-                                      instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
+                                      instanceId: Et sunt qui adipisci harum.
                                       mainConfig:
                                         componentId: keboola.orchestrator
                                         configId: "7954825835"
                                       name: My Instance
                                       repositoryName: keboola
-                                      templateId: h2o
+                                      templateId: x
                                       updated:
                                         date: "2022-04-28T14:20:04+00:00"
                                         tokenId: "245941"
@@ -232,13 +232,13 @@ paths:
                                 created:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
-                                instanceId: Qui qui vel et esse ipsum.
+                                instanceId: Nisi voluptas voluptatem aut est.
                                 mainConfig:
                                     componentId: keboola.orchestrator
                                     configId: "7954825835"
                                 name: My Instance
                                 repositoryName: keboola
-                                templateId: h
+                                templateId: g8g
                                 updated:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
@@ -248,6 +248,7 @@ paths:
                                         version: v1.2.3
                                         stable: true
                                         description: Stable version.
+                                    deprecated: false
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -307,19 +308,16 @@ paths:
                                     - componentId: keboola.ex-db-mysql
                                       configId: "7954825835"
                                       name: My Extractor
-                                    - componentId: keboola.ex-db-mysql
-                                      configId: "7954825835"
-                                      name: My Extractor
                                 created:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
-                                instanceId: Distinctio nulla alias explicabo inventore.
+                                instanceId: Nulla alias explicabo inventore provident dolorum totam.
                                 mainConfig:
                                     componentId: keboola.orchestrator
                                     configId: "7954825835"
                                 name: My Instance
                                 repositoryName: keboola
-                                templateId: x
+                                templateId: h
                                 updated:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
@@ -329,6 +327,7 @@ paths:
                                         version: v1.2.3
                                         stable: true
                                         description: Stable version.
+                                    deprecated: false
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -901,6 +900,7 @@ paths:
                                 templates:
                                     - id: my-template
                                       name: My Template
+                                      deprecated: false
                                       categories:
                                         - E-commerce
                                         - Other
@@ -928,6 +928,7 @@ paths:
                                           description: Experimental support for new API.
                                     - id: maximum-length-template-id-dolor-sit-an
                                       name: Maximum length template name ipsum dolo
+                                      deprecated: false
                                       categories:
                                         - E-commerce
                                         - Other
@@ -989,6 +990,7 @@ paths:
                                 exampletemplatedata:
                                     id: my-template
                                     name: My Template
+                                    deprecated: false
                                     categories:
                                         - E-commerce
                                         - Other
@@ -1077,6 +1079,7 @@ paths:
                                         version: v1.2.3
                                         stable: true
                                         description: Stable version.
+                                    deprecated: false
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -1092,6 +1095,7 @@ paths:
                                 template:
                                     id: my-template
                                     name: My Template
+                                    deprecated: false
                                     categories:
                                         - E-commerce
                                         - Other
@@ -2293,7 +2297,7 @@ components:
                     $ref: '#/components/schemas/ChangeInfo'
                 instanceId:
                     type: string
-                    example: Ipsam deserunt unde.
+                    example: Non sequi et ea molestiae eos.
                 mainConfig:
                     $ref: '#/components/schemas/MainConfig'
                 name:
@@ -2306,7 +2310,7 @@ components:
                     example: keboola
                 templateId:
                     type: string
-                    example: f0a
+                    example: oa9
                     minLength: 1
                     maxLength: 40
                 updated:
@@ -2321,13 +2325,13 @@ components:
                 created:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
-                instanceId: Aut quia quisquam aspernatur et.
+                instanceId: Vitae blanditiis dolorem.
                 mainConfig:
                     componentId: keboola.orchestrator
                     configId: "7954825835"
                 name: My Instance
                 repositoryName: keboola
-                templateId: s
+                templateId: i7z
                 updated:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
@@ -2360,11 +2364,17 @@ components:
                         - componentId: keboola.ex-db-mysql
                           configId: "7954825835"
                           name: My Extractor
+                        - componentId: keboola.ex-db-mysql
+                          configId: "7954825835"
+                          name: My Extractor
+                        - componentId: keboola.ex-db-mysql
+                          configId: "7954825835"
+                          name: My Extractor
                 created:
                     $ref: '#/components/schemas/ChangeInfo'
                 instanceId:
                     type: string
-                    example: Suscipit delectus.
+                    example: Suscipit quia ab.
                 mainConfig:
                     $ref: '#/components/schemas/MainConfig'
                 name:
@@ -2377,7 +2387,7 @@ components:
                     example: keboola
                 templateId:
                     type: string
-                    example: vm
+                    example: 0nd
                     minLength: 1
                     maxLength: 40
                 updated:
@@ -2400,19 +2410,16 @@ components:
                     - componentId: keboola.ex-db-mysql
                       configId: "7954825835"
                       name: My Extractor
-                    - componentId: keboola.ex-db-mysql
-                      configId: "7954825835"
-                      name: My Extractor
                 created:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
-                instanceId: Ut harum eum.
+                instanceId: Nihil ut nulla quasi voluptatibus vel aut.
                 mainConfig:
                     componentId: keboola.orchestrator
                     configId: "7954825835"
                 name: My Instance
                 repositoryName: keboola
-                templateId: k1
+                templateId: "4"
                 updated:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
@@ -2422,6 +2429,7 @@ components:
                         version: v1.2.3
                         stable: true
                         description: Stable version.
+                    deprecated: false
                     components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
@@ -2450,13 +2458,13 @@ components:
                           created:
                             date: "2022-04-28T14:20:04+00:00"
                             tokenId: "245941"
-                          instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
+                          instanceId: Et sunt qui adipisci harum.
                           mainConfig:
                             componentId: keboola.orchestrator
                             configId: "7954825835"
                           name: My Instance
                           repositoryName: keboola
-                          templateId: h2o
+                          templateId: x
                           updated:
                             date: "2022-04-28T14:20:04+00:00"
                             tokenId: "245941"
@@ -2465,43 +2473,13 @@ components:
                           created:
                             date: "2022-04-28T14:20:04+00:00"
                             tokenId: "245941"
-                          instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
+                          instanceId: Et sunt qui adipisci harum.
                           mainConfig:
                             componentId: keboola.orchestrator
                             configId: "7954825835"
                           name: My Instance
                           repositoryName: keboola
-                          templateId: h2o
-                          updated:
-                            date: "2022-04-28T14:20:04+00:00"
-                            tokenId: "245941"
-                          version: v1.1.0
-                        - branch: "5876"
-                          created:
-                            date: "2022-04-28T14:20:04+00:00"
-                            tokenId: "245941"
-                          instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
-                          mainConfig:
-                            componentId: keboola.orchestrator
-                            configId: "7954825835"
-                          name: My Instance
-                          repositoryName: keboola
-                          templateId: h2o
-                          updated:
-                            date: "2022-04-28T14:20:04+00:00"
-                            tokenId: "245941"
-                          version: v1.1.0
-                        - branch: "5876"
-                          created:
-                            date: "2022-04-28T14:20:04+00:00"
-                            tokenId: "245941"
-                          instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
-                          mainConfig:
-                            componentId: keboola.orchestrator
-                            configId: "7954825835"
-                          name: My Instance
-                          repositoryName: keboola
-                          templateId: h2o
+                          templateId: x
                           updated:
                             date: "2022-04-28T14:20:04+00:00"
                             tokenId: "245941"
@@ -2512,13 +2490,13 @@ components:
                       created:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
-                      instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
+                      instanceId: Et sunt qui adipisci harum.
                       mainConfig:
                         componentId: keboola.orchestrator
                         configId: "7954825835"
                       name: My Instance
                       repositoryName: keboola
-                      templateId: h2o
+                      templateId: x
                       updated:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
@@ -2527,13 +2505,43 @@ components:
                       created:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
-                      instanceId: Possimus temporibus praesentium explicabo laudantium repellendus expedita.
+                      instanceId: Et sunt qui adipisci harum.
                       mainConfig:
                         componentId: keboola.orchestrator
                         configId: "7954825835"
                       name: My Instance
                       repositoryName: keboola
-                      templateId: h2o
+                      templateId: x
+                      updated:
+                        date: "2022-04-28T14:20:04+00:00"
+                        tokenId: "245941"
+                      version: v1.1.0
+                    - branch: "5876"
+                      created:
+                        date: "2022-04-28T14:20:04+00:00"
+                        tokenId: "245941"
+                      instanceId: Et sunt qui adipisci harum.
+                      mainConfig:
+                        componentId: keboola.orchestrator
+                        configId: "7954825835"
+                      name: My Instance
+                      repositoryName: keboola
+                      templateId: x
+                      updated:
+                        date: "2022-04-28T14:20:04+00:00"
+                        tokenId: "245941"
+                      version: v1.1.0
+                    - branch: "5876"
+                      created:
+                        date: "2022-04-28T14:20:04+00:00"
+                        tokenId: "245941"
+                      instanceId: Et sunt qui adipisci harum.
+                      mainConfig:
+                        componentId: keboola.orchestrator
+                        configId: "7954825835"
+                      name: My Instance
+                      repositoryName: keboola
+                      templateId: x
                       updated:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
@@ -3048,7 +3056,7 @@ components:
                         $ref: '#/components/schemas/StepValidationResult'
                     description: List of Details for the steps.
                     example:
-                        - configured: false
+                        - configured: true
                           id: g01-s01
                           inputs:
                             - error: API token cannot be empty.
@@ -3060,8 +3068,8 @@ components:
                             - error: API token cannot be empty.
                               id: api-token
                               visible: true
-                          valid: true
-                        - configured: false
+                          valid: false
+                        - configured: true
                           id: g01-s01
                           inputs:
                             - error: API token cannot be empty.
@@ -3073,8 +3081,8 @@ components:
                             - error: API token cannot be empty.
                               id: api-token
                               visible: true
-                          valid: true
-                        - configured: false
+                          valid: false
+                        - configured: true
                           id: g01-s01
                           inputs:
                             - error: API token cannot be empty.
@@ -3086,7 +3094,20 @@ components:
                             - error: API token cannot be empty.
                               id: api-token
                               visible: true
-                          valid: true
+                          valid: false
+                        - configured: true
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: false
                 valid:
                     type: boolean
                     description: True if the required number of steps is configured and all inputs are valid.
@@ -3096,7 +3117,7 @@ components:
                 error: All steps must be configured.
                 id: g01
                 steps:
-                    - configured: false
+                    - configured: true
                       id: g01-s01
                       inputs:
                         - error: API token cannot be empty.
@@ -3108,8 +3129,8 @@ components:
                         - error: API token cannot be empty.
                           id: api-token
                           visible: true
-                      valid: true
-                    - configured: false
+                      valid: false
+                    - configured: true
                       id: g01-s01
                       inputs:
                         - error: API token cannot be empty.
@@ -3121,7 +3142,7 @@ components:
                         - error: API token cannot be empty.
                           id: api-token
                           visible: true
-                      valid: true
+                      valid: false
                 valid: false
             required:
                 - id
@@ -3162,7 +3183,7 @@ components:
                 configured:
                     type: boolean
                     description: True if the step was part of the sent payload.
-                    example: false
+                    example: true
                 id:
                     type: string
                     description: Step ID.
@@ -3194,13 +3215,7 @@ components:
                     - error: API token cannot be empty.
                       id: api-token
                       visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                valid: true
+                valid: false
             required:
                 - id
                 - configured
@@ -3221,7 +3236,7 @@ components:
                     format: int64
                 error:
                     type: string
-                    example: Debitis vero.
+                    example: Qui voluptatem.
                 finishedAt:
                     type: string
                     description: Date and time of the task end.
@@ -3229,7 +3244,7 @@ components:
                     format: date-time
                 id:
                     type: string
-                    example: Voluptates at.
+                    example: Neque ipsam.
                 isFinished:
                     type: boolean
                     description: Shortcut for status != "processing".
@@ -3238,11 +3253,11 @@ components:
                     $ref: '#/components/schemas/TaskOutputs'
                 result:
                     type: string
-                    example: Dignissimos alias consequatur.
+                    example: Vel consequatur aut deserunt.
                 status:
                     type: string
                     description: 'Task status, one of: processing, success, error'
-                    example: success
+                    example: processing
                     enum:
                         - processing
                         - success
@@ -3250,11 +3265,11 @@ components:
                 type:
                     type: string
                     description: Task type.
-                    example: Fugiat consequuntur adipisci.
+                    example: Unde adipisci.
                 url:
                     type: string
                     description: URL of the task.
-                    example: Quidem est est.
+                    example: Iusto aut quia quisquam aspernatur et distinctio.
             example:
                 id: task-1
                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -3279,10 +3294,10 @@ components:
                 instanceId:
                     type: string
                     description: ID of the created/updated template instance.
-                    example: Aspernatur enim atque quod explicabo aperiam sit.
+                    example: Blanditiis sit suscipit delectus voluptas.
             description: Outputs generated by the task.
             example:
-                instanceId: Aspernatur pariatur aliquam et quia placeat.
+                instanceId: Et eaque sed.
         Template:
             type: object
             properties:
@@ -3292,7 +3307,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Porro libero sed aspernatur.
+                        example: Doloremque quia ut quaerat.
                     description: List of categories the template belongs to.
                     example:
                         - E-commerce
@@ -3302,7 +3317,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Odit beatae est accusantium facere modi.
+                        example: Sed ratione sit architecto ipsam.
                     description: List of components used in the template.
                     example:
                         - ex-generic-v2
@@ -3313,6 +3328,10 @@ components:
                     example: v1.2.3
                     minLength: 1
                     maxLength: 20
+                deprecated:
+                    type: boolean
+                    description: Deprecated template cannot be used.
+                    example: false
                 description:
                     type: string
                     description: Short description of the template.
@@ -3321,7 +3340,7 @@ components:
                     maxLength: 200
                 id:
                     type: string
-                    example: 8o
+                    example: a
                     minLength: 1
                     maxLength: 40
                 name:
@@ -3361,8 +3380,9 @@ components:
                     - ex-generic-v2
                     - keboola.snowflake-transformation
                 defaultVersion: v1.2.3
+                deprecated: true
                 description: Full workflow to load all user accounts from the Service.
-                id: 2jh
+                id: 79i
                 name: My Template
                 versions:
                     - version: v0.1.1
@@ -3380,6 +3400,7 @@ components:
             required:
                 - id
                 - name
+                - deprecated
                 - categories
                 - components
                 - author
@@ -3395,7 +3416,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Dolores porro temporibus nihil.
+                        example: Commodi illo.
                     description: List of categories the template belongs to.
                     example:
                         - E-commerce
@@ -3405,7 +3426,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Quis est odio rerum deleniti.
+                        example: Alias consequatur dolores debitis.
                     description: List of components used in the template.
                     example:
                         - ex-generic-v2
@@ -3416,6 +3437,10 @@ components:
                     example: v1.2.3
                     minLength: 1
                     maxLength: 20
+                deprecated:
+                    type: boolean
+                    description: Deprecated template cannot be used.
+                    example: true
                 description:
                     type: string
                     description: Short description of the template.
@@ -3424,7 +3449,7 @@ components:
                     maxLength: 200
                 id:
                     type: string
-                    example: p
+                    example: pb
                     minLength: 1
                     maxLength: 40
                 name:
@@ -3457,6 +3482,7 @@ components:
                 exampletemplatedata:
                     id: my-template
                     name: My Template
+                    deprecated: false
                     categories:
                         - E-commerce
                         - Other
@@ -3493,6 +3519,7 @@ components:
                 - repository
                 - id
                 - name
+                - deprecated
                 - categories
                 - components
                 - author
@@ -3521,6 +3548,7 @@ components:
                             - ex-generic-v2
                             - keboola.snowflake-transformation
                           defaultVersion: v1.2.3
+                          deprecated: true
                           description: Full workflow to load all user accounts from the Service.
                           id: 8zq
                           name: My Template
@@ -3548,6 +3576,7 @@ components:
                             - ex-generic-v2
                             - keboola.snowflake-transformation
                           defaultVersion: v1.2.3
+                          deprecated: true
                           description: Full workflow to load all user accounts from the Service.
                           id: 8zq
                           name: My Template
@@ -3575,6 +3604,35 @@ components:
                             - ex-generic-v2
                             - keboola.snowflake-transformation
                           defaultVersion: v1.2.3
+                          deprecated: true
+                          description: Full workflow to load all user accounts from the Service.
+                          id: 8zq
+                          name: My Template
+                          versions:
+                            - version: v0.1.1
+                              stable: false
+                              description: Initial version.
+                            - version: v1.1.1
+                              stable: true
+                              description: ""
+                            - version: v1.2.3
+                              stable: true
+                              description: ""
+                            - version: v2.0.0
+                              stable: false
+                              description: Experimental support for new API.
+                        - author:
+                            name: Keboola
+                            url: https://www.keboola.com
+                          categories:
+                            - E-commerce
+                            - Other
+                            - Social Media
+                          components:
+                            - ex-generic-v2
+                            - keboola.snowflake-transformation
+                          defaultVersion: v1.2.3
+                          deprecated: true
                           description: Full workflow to load all user accounts from the Service.
                           id: 8zq
                           name: My Template
@@ -3602,6 +3660,7 @@ components:
                 templates:
                     - id: my-template
                       name: My Template
+                      deprecated: false
                       categories:
                         - E-commerce
                         - Other
@@ -3629,6 +3688,7 @@ components:
                           description: Experimental support for new API.
                     - id: maximum-length-template-id-dolor-sit-an
                       name: Maximum length template name ipsum dolo
+                      deprecated: false
                       categories:
                         - E-commerce
                         - Other
@@ -3786,7 +3846,7 @@ components:
                         - error: All steps must be configured.
                           id: g01
                           steps:
-                            - configured: false
+                            - configured: true
                               id: g01-s01
                               inputs:
                                 - error: API token cannot be empty.
@@ -3798,8 +3858,8 @@ components:
                                 - error: API token cannot be empty.
                                   id: api-token
                                   visible: true
-                              valid: true
-                            - configured: false
+                              valid: false
+                            - configured: true
                               id: g01-s01
                               inputs:
                                 - error: API token cannot be empty.
@@ -3811,8 +3871,8 @@ components:
                                 - error: API token cannot be empty.
                                   id: api-token
                                   visible: true
-                              valid: true
-                            - configured: false
+                              valid: false
+                            - configured: true
                               id: g01-s01
                               inputs:
                                 - error: API token cannot be empty.
@@ -3824,12 +3884,12 @@ components:
                                 - error: API token cannot be empty.
                                   id: api-token
                                   visible: true
-                              valid: true
+                              valid: false
                           valid: false
                         - error: All steps must be configured.
                           id: g01
                           steps:
-                            - configured: false
+                            - configured: true
                               id: g01-s01
                               inputs:
                                 - error: API token cannot be empty.
@@ -3841,8 +3901,8 @@ components:
                                 - error: API token cannot be empty.
                                   id: api-token
                                   visible: true
-                              valid: true
-                            - configured: false
+                              valid: false
+                            - configured: true
                               id: g01-s01
                               inputs:
                                 - error: API token cannot be empty.
@@ -3854,8 +3914,8 @@ components:
                                 - error: API token cannot be empty.
                                   id: api-token
                                   visible: true
-                              valid: true
-                            - configured: false
+                              valid: false
+                            - configured: true
                               id: g01-s01
                               inputs:
                                 - error: API token cannot be empty.
@@ -3867,98 +3927,12 @@ components:
                                 - error: API token cannot be empty.
                                   id: api-token
                                   visible: true
-                              valid: true
-                          valid: false
-                        - error: All steps must be configured.
-                          id: g01
-                          steps:
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                          valid: false
-                        - error: All steps must be configured.
-                          id: g01
-                          steps:
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
+                              valid: false
                           valid: false
                 valid:
                     type: boolean
                     description: True if all groups and inputs are valid.
-                    example: true
+                    example: false
             description: Detail of the inputs validation.
             example:
                 valid: false
@@ -4030,11 +4004,15 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Impedit vel consequatur aut deserunt veritatis.
+                        example: Quis iste placeat reiciendis quis.
                     description: List of components used in the template version.
                     example:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
+                deprecated:
+                    type: boolean
+                    description: Deprecated template cannot be used.
+                    example: false
                 description:
                     type: string
                     description: Optional short description of the version. Can be empty.
@@ -4066,12 +4044,14 @@ components:
                     version: v1.2.3
                     stable: true
                     description: Stable version.
+                deprecated: false
                 components:
                     - ex-generic-v2
                     - keboola.snowflake-transformation
                 longDescription: Maximum length template **description** dolor sit amet, consectetuer adipiscing elit
                 readme: Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)
             required:
+                - deprecated
                 - components
                 - longDescription
                 - readme
@@ -4085,11 +4065,15 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Earum deleniti.
+                        example: Aspernatur enim atque quod explicabo aperiam sit.
                     description: List of components used in the template version.
                     example:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
+                deprecated:
+                    type: boolean
+                    description: Deprecated template cannot be used.
+                    example: true
                 description:
                     type: string
                     description: Optional short description of the version. Can be empty.
@@ -4126,6 +4110,7 @@ components:
                         version: v1.2.3
                         stable: true
                         description: Stable version.
+                    deprecated: false
                     components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
@@ -4141,6 +4126,7 @@ components:
                 template:
                     id: my-template
                     name: My Template
+                    deprecated: false
                     categories:
                         - E-commerce
                         - Other
@@ -4169,6 +4155,7 @@ components:
             required:
                 - repository
                 - template
+                - deprecated
                 - components
                 - longDescription
                 - readme

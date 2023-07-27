@@ -1730,6 +1730,7 @@ func marshalTemplatesTemplateToTemplateResponseBody(v *templates.Template) *Temp
 	res := &TemplateResponseBody{
 		ID:             string(v.ID),
 		Name:           v.Name,
+		Deprecated:     v.Deprecated,
 		Description:    v.Description,
 		DefaultVersion: v.DefaultVersion,
 	}
@@ -2011,6 +2012,7 @@ func marshalTemplatesVersionDetailToVersionDetailResponseBody(v *templates.Versi
 		return nil
 	}
 	res := &VersionDetailResponseBody{
+		Deprecated:      v.Deprecated,
 		LongDescription: v.LongDescription,
 		Readme:          v.Readme,
 		Version:         v.Version,
