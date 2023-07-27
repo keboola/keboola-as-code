@@ -1,0 +1,17 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"inst-001\",\"instanceName\":\"Inst 001\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"2022-01-01T07:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-01T07:00:00Z\",\"tokenId\":\"123\"}},{\"instanceId\":\"inst-002\",\"instanceName\":\"Inst 002\",\"templateId\":\"other-template\",\"repositoryName\":\"missing-repository\",\"version\":\"1.2.3\",\"created\":{\"date\":\"2022-01-02T07:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-03T07:00:00Z\",\"tokenId\":\"123\"}}]"
+        }
+      },
+      "configs": [
+        "from-template"
+      ]
+    }
+  ]
+}
