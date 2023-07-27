@@ -39,6 +39,41 @@ func TestPrefixTree(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, value{field: "value2"}, v)
 
+	// WalkPrefix
+	walkPrefixCount := 0
+	tree.WalkPrefix("key", func(k string, v value) (stop bool) {
+		if walkPrefixCount == 0 {
+			assert.Equal(t, "key/1", k)
+			assert.Equal(t, value{field: "value1"}, v)
+		} else if walkPrefixCount == 1 {
+			assert.Equal(t, "key/2", k)
+			assert.Equal(t, value{field: "value2"}, v)
+		}
+		walkPrefixCount++
+		return false
+	})
+	walkPrefixCountEmpty := 0
+	tree.WalkPrefix("foo", func(k string, v value) (stop bool) {
+		walkPrefixCountEmpty++
+		return false
+	})
+	assert.Equal(t, 0, walkPrefixCountEmpty)
+
+	// WalkAll
+	walkAllCount := 0
+	tree.WalkAll(func(k string, v value) (stop bool) {
+		if walkAllCount == 0 {
+			assert.Equal(t, "key/1", k)
+			assert.Equal(t, value{field: "value1"}, v)
+		} else if walkAllCount == 1 {
+			assert.Equal(t, "key/2", k)
+			assert.Equal(t, value{field: "value2"}, v)
+		}
+		walkAllCount++
+		return false
+	})
+	assert.Equal(t, 2, walkAllCount)
+
 	// All/ AllFromPrefix / FirstFromPrefix / LastFromPrefix - 2 items
 	assert.Len(t, tree.All(), 2)
 	assert.Len(t, tree.AllFromPrefix("key"), 2)
