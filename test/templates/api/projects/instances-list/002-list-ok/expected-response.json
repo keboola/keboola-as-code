@@ -1,11 +1,11 @@
 {
   "instances": [
     {
-      "templateId": "my-template-id",
       "instanceId": "inst-001",
-      "branch": "%%TEST_BRANCH_MAIN_ID%%",
-      "repositoryName": "keboola",
+      "templateId": "my-template-id",
       "version": "1.2.3",
+      "repositoryName": "keboola",
+      "branch": "%%TEST_BRANCH_MAIN_ID%%",
       "name": "Inst 001",
       "created": {
         "date": "2022-01-01T07:00:00Z",

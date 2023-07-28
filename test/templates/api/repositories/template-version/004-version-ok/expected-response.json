@@ -1,4 +1,14 @@
 {
+  "version": "1.2.3",
+  "stable": false,
+  "description": "",
+  "components": [
+    "keboola.wr-%s",
+    "keboola.ex-aws-s3",
+    "keboola.ex-facebook"
+  ],
+  "longDescription": "A long **description**.\n",
+  "readme": "### My Template\n\nFull workflow to ...\n\n",
   "repository": {
     "name": "keboola",
     "url": "%s/test/templates/api/repositories/template-version/repository",
@@ -12,6 +22,12 @@
     "id": "my-template-id",
     "name": "My Template",
     "deprecated": false,
+    "author": {
+      "name": "Example Author",
+      "url": "https://example.com"
+    },
+    "description": "Full workflow to ...",
+    "defaultVersion": "1.2.3",
     "categories": [
       "Other"
     ],
@@ -20,12 +36,6 @@
       "keboola.ex-aws-s3",
       "keboola.ex-facebook"
     ],
-    "author": {
-      "name": "Example Author",
-      "url": "https://example.com"
-    },
-    "description": "Full workflow to ...",
-    "defaultVersion": "1.2.3",
     "versions": [
       {
         "version": "1.2.3",
@@ -33,16 +43,5 @@
         "description": ""
       }
     ]
-  },
-  "deprecated": false,
-  "components": [
-    "keboola.wr-%s",
-    "keboola.ex-aws-s3",
-    "keboola.ex-facebook"
-  ],
-  "longDescription": "A long **description**.\n",
-  "readme": "### My Template\n\nFull workflow to ...\n\n",
-  "version": "1.2.3",
-  "stable": false,
-  "description": ""
+  }
 }
