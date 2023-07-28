@@ -1734,6 +1734,9 @@ func marshalTemplatesTemplateToTemplateResponseBody(v *templates.Template) *Temp
 		Description:    v.Description,
 		DefaultVersion: v.DefaultVersion,
 	}
+	if v.Author != nil {
+		res.Author = marshalTemplatesAuthorToAuthorResponseBody(v.Author)
+	}
 	if v.Categories != nil {
 		res.Categories = make([]string, len(v.Categories))
 		for i, val := range v.Categories {
@@ -1745,9 +1748,6 @@ func marshalTemplatesTemplateToTemplateResponseBody(v *templates.Template) *Temp
 		for i, val := range v.Components {
 			res.Components[i] = val
 		}
-	}
-	if v.Author != nil {
-		res.Author = marshalTemplatesAuthorToAuthorResponseBody(v.Author)
 	}
 	if v.Versions != nil {
 		res.Versions = make([]*VersionResponseBody, len(v.Versions))
@@ -1959,11 +1959,11 @@ func marshalTemplatesTaskOutputsToTaskOutputsResponseBody(v *templates.TaskOutpu
 // *InstanceResponseBody from a value of type *templates.Instance.
 func marshalTemplatesInstanceToInstanceResponseBody(v *templates.Instance) *InstanceResponseBody {
 	res := &InstanceResponseBody{
-		TemplateID:     string(v.TemplateID),
 		InstanceID:     string(v.InstanceID),
-		Branch:         v.Branch,
-		RepositoryName: v.RepositoryName,
+		TemplateID:     string(v.TemplateID),
 		Version:        v.Version,
+		RepositoryName: v.RepositoryName,
+		Branch:         v.Branch,
 		Name:           v.Name,
 	}
 	if v.Created != nil {
@@ -2004,20 +2004,33 @@ func marshalTemplatesMainConfigToMainConfigResponseBody(v *templates.MainConfig)
 	return res
 }
 
+// marshalTemplatesTemplateBaseToTemplateBaseResponseBody builds a value of
+// type *TemplateBaseResponseBody from a value of type *templates.TemplateBase.
+func marshalTemplatesTemplateBaseToTemplateBaseResponseBody(v *templates.TemplateBase) *TemplateBaseResponseBody {
+	res := &TemplateBaseResponseBody{
+		ID:             string(v.ID),
+		Name:           v.Name,
+		Deprecated:     v.Deprecated,
+		Description:    v.Description,
+		DefaultVersion: v.DefaultVersion,
+	}
+	if v.Author != nil {
+		res.Author = marshalTemplatesAuthorToAuthorResponseBody(v.Author)
+	}
+
+	return res
+}
+
 // marshalTemplatesVersionDetailToVersionDetailResponseBody builds a value of
 // type *VersionDetailResponseBody from a value of type
 // *templates.VersionDetail.
 func marshalTemplatesVersionDetailToVersionDetailResponseBody(v *templates.VersionDetail) *VersionDetailResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &VersionDetailResponseBody{
-		Deprecated:      v.Deprecated,
-		LongDescription: v.LongDescription,
-		Readme:          v.Readme,
 		Version:         v.Version,
 		Stable:          v.Stable,
 		Description:     v.Description,
+		LongDescription: v.LongDescription,
+		Readme:          v.Readme,
 	}
 	if v.Components != nil {
 		res.Components = make([]string, len(v.Components))
