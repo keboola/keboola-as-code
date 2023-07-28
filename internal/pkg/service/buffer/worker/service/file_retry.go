@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
@@ -62,7 +63,7 @@ func (s *Service) retryFailedImports(d dependencies) <-chan error {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result task.Result) {
-				defer checkAndWrapUserError(&result.Error)
+				defer usererror.CheckAndWrap(&result.Error)
 
 				file := event.Value
 				file.StorageJob = nil

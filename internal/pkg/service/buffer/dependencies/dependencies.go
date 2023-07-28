@@ -35,8 +35,8 @@ package dependencies
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -53,6 +53,7 @@ type ServiceScope interface {
 	ServiceConfig() config.ServiceConfig
 	Schema() *schema.Schema
 	Store() *store.Store
+	FileManager() *file.Manager
 	StatisticsRepository() *statistics.Repository
 	StatisticsL1Cache() *statistics.L1CacheProvider
 	StatisticsL2Cache() *statistics.L2CacheProvider
@@ -84,5 +85,4 @@ type ProjectRequestScope interface {
 	dependencies.ProjectScope
 	TokenManager() *token.Manager
 	TableManager() *table.Manager
-	FileManager() *file.Manager
 }

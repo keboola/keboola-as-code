@@ -176,11 +176,17 @@ func (s *service) createResourcesForExport(ctx context.Context, d dependencies.P
 		return err
 	}
 
+	// Create token
+	if err := d.TokenManager().CreateToken(ctx, rb, export); err != nil {
+		return err
+	}
+
 	// The following operations can be performed in parallel
-	rb = rb.AddParallel()
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
+	rb = rb.AddParallel()
 
+	// Create table
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -189,18 +195,11 @@ func (s *service) createResourcesForExport(ctx context.Context, d dependencies.P
 		}
 	}()
 
+	// Create file
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := d.TokenManager().CreateToken(ctx, rb, export); err != nil {
-			errs.Append(err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := d.FileManager().CreateFileForExport(ctx, rb, export); err != nil {
+		if err := d.FileManager().WithToken(export.Token.Token).CreateFileForExport(ctx, rb, export); err != nil {
 			errs.Append(err)
 		}
 	}()

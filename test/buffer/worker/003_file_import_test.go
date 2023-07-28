@@ -15,7 +15,7 @@ func (ts *testSuite) test003FileImport() {
 
 	// Run imports immediately after the last check to prevent the check during imports.
 	ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%s][service][conditions]DEBUG checked "2" opened slices
+[worker-node-%s][conditions]DEBUG checked "2" opened slices
 	`)
 
 	// Send records 7-10
@@ -26,8 +26,8 @@ func (ts *testSuite) test003FileImport() {
 	// Periodic condition checks have detected that the IMPORT conditions for both files/exports have been met.
 	ts.t.Logf("waiting for import conditions check ...")
 	if ts.WaitForLogMessages(15*time.Second, `
-[worker-node-%d][bufferWorker][task][%s/file.swap/%s]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
-[worker-node-%d][bufferWorker][task][%s/file.swap/%s]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
+[worker-node-%d][bufferWorker][conditions]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
+[worker-node-%d][bufferWorker][conditions]INFO closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
 `) {
 		ts.t.Logf("import conditions met")
 	}

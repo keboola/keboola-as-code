@@ -41,9 +41,9 @@ const (
 	importConditionsSize    = datasize.MB
 	importConditionsTime    = time.Hour
 	statisticsSyncInterval  = 500 * time.Millisecond
-	conditionsCheckInterval = 1000 * time.Millisecond
-	minUploadInterval       = 1000 * time.Millisecond
-	minImportInterval       = 2000 * time.Millisecond
+	conditionsCheckInterval = 2000 * time.Millisecond
+	minUploadInterval       = 2000 * time.Millisecond
+	minImportInterval       = 4000 * time.Millisecond
 	statisticsL2CacheTTL    = 500 * time.Millisecond
 	receiverBufferSize      = 100 * datasize.KB
 	startupTimeout          = 30 * time.Second

@@ -5,12 +5,14 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/condition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -25,22 +27,22 @@ import (
 )
 
 type Service struct {
-	ctx            context.Context
-	wg             *sync.WaitGroup
-	clock          clock.Clock
-	logger         log.Logger
-	store          *store.Store
-	etcdClient     *etcd.Client
-	httpClient     client.Client
-	storageAPIHost string
-	schema         *schema.Schema
-	watcher        *watcher.WorkerNode
-	dist           *distribution.Node
-	realtimeStats  *statistics.AtomicProvider
-	cachedStats    *statistics.L1CacheProvider
-	tasks          *task.Node
-	events         *event.Sender
-	config         config.WorkerConfig
+	ctx           context.Context
+	wg            *sync.WaitGroup
+	clock         clock.Clock
+	logger        log.Logger
+	publicAPI     *keboola.API
+	store         *store.Store
+	fileManager   *file.Manager
+	etcdClient    *etcd.Client
+	schema        *schema.Schema
+	watcher       *watcher.WorkerNode
+	dist          *distribution.Node
+	realtimeStats *statistics.AtomicProvider
+	cachedStats   *statistics.L1CacheProvider
+	tasks         *task.Node
+	events        *event.Sender
+	config        config.WorkerConfig
 }
 
 type dependencies interface {
@@ -49,12 +51,12 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	WorkerConfig() config.WorkerConfig
+	KeboolaPublicAPI() *keboola.API
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	HTTPClient() client.Client
-	StorageAPIHost() string
 	Schema() *schema.Schema
 	Store() *store.Store
+	FileManager() *file.Manager
 	WatcherWorkerNode() *watcher.WorkerNode
 	DistributionNode() *distribution.Node
 	StatisticsRepository() *statistics.Repository
@@ -66,18 +68,18 @@ type dependencies interface {
 
 func New(d dependencies) (*Service, error) {
 	s := &Service{
-		clock:          d.Clock(),
-		logger:         d.Logger().AddPrefix("[service]"),
-		store:          d.Store(),
-		etcdClient:     d.EtcdClient(),
-		httpClient:     d.HTTPClient(),
-		storageAPIHost: d.StorageAPIHost(),
-		schema:         d.Schema(),
-		events:         d.EventSender(),
-		config:         d.WorkerConfig(),
-		realtimeStats:  d.StatisticsRepository().AtomicProvider(),
-		cachedStats:    d.StatisticsL1Cache(),
-		tasks:          d.TaskNode(),
+		clock:         d.Clock(),
+		logger:        d.Logger().AddPrefix("[service]"),
+		store:         d.Store(),
+		fileManager:   d.FileManager(),
+		etcdClient:    d.EtcdClient(),
+		publicAPI:     d.KeboolaPublicAPI(),
+		schema:        d.Schema(),
+		events:        d.EventSender(),
+		config:        d.WorkerConfig(),
+		realtimeStats: d.StatisticsRepository().AtomicProvider(),
+		cachedStats:   d.StatisticsL1Cache(),
+		tasks:         d.TaskNode(),
 	}
 
 	// Graceful shutdown
@@ -94,11 +96,11 @@ func New(d dependencies) (*Service, error) {
 
 	// Create orchestrators
 	var init []<-chan error
-	if s.config.ConditionsCheck || s.config.TasksCleanup {
+	if s.config.TasksCleanup {
 		s.dist = d.DistributionNode()
 	}
 	if s.config.ConditionsCheck {
-		init = append(init, s.checkConditions())
+		init = append(init, condition.NewChecker(d))
 	}
 	if s.config.CloseSlices {
 		s.watcher = d.WatcherWorkerNode()

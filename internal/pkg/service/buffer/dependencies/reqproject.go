@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -18,7 +17,6 @@ type projectRequestScope struct {
 	logger       log.Logger
 	tokenManager *token.Manager
 	tableManager *table.Manager
-	fileManager  *file.Manager
 }
 
 func NewProjectRequestScope(ctx context.Context, pubReqScp PublicRequestScope, tokenStr string) (v ProjectRequestScope, err error) {
@@ -47,8 +45,6 @@ func newProjectRequestScope(pubReqScp PublicRequestScope, prjScp dependencies.Pr
 
 	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
 
-	d.fileManager = file.NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
-
 	return d
 }
 
@@ -62,8 +58,4 @@ func (v *projectRequestScope) TokenManager() *token.Manager {
 
 func (v *projectRequestScope) TableManager() *table.Manager {
 	return v.tableManager
-}
-
-func (v *projectRequestScope) FileManager() *file.Manager {
-	return v.fileManager
 }

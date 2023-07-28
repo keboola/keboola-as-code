@@ -111,9 +111,13 @@ func (ts *testSuite) IterateMetrics(fn func(<-chan *dto.MetricFamily)) {
 // there can be another line between them, but the order must be preserved.
 func (ts *testSuite) WaitForLogMessages(timeout time.Duration, lines string) bool {
 	expected := `%A` + strings.ReplaceAll(strings.TrimSpace(lines), "\n", "\n%A") + `%A`
-	return assert.Eventually(ts.t, func() bool {
+	ok := assert.Eventually(ts.t, func() bool {
 		return wildcards.Compare(expected, ts.logsOut.String()) == nil
-	}, timeout, 100*time.Millisecond, ts.logsOut.String())
+	}, timeout, 100*time.Millisecond, "see all log messaged bellow")
+	if !ok {
+		ts.t.Logf("all log messages that were searched for:\n%s", ts.logsOut.String())
+	}
+	return ok
 }
 
 func (ts *testSuite) AssertNoLoggedWarning() {

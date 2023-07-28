@@ -77,28 +77,27 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	createRecords(t, ctx, clk, apiScp, sliceKey.ReceiverKey, 1, 5)
 	clk.Add(time.Minute)
 
+	// Enable only WithCloseSlices, WithUploadSlices
+	workerConfig := config.NewWorkerConfig().Apply(
+		config.WithConditionsCheck(false),
+		config.WithCleanup(false),
+		config.WithCloseSlices(true),
+		config.WithUploadSlices(true),
+		config.WithRetryFailedSlices(true),
+		config.WithCloseFiles(false),
+		config.WithImportFiles(false),
+		config.WithRetryFailedFiles(false),
+	)
+
 	// Requests to the file storage will fail
 	uploadTransport := httpmock.NewMockTransport()
 	uploadTransport.RegisterNoResponder(func(request *http.Request) (*http.Response, error) {
 		return nil, notRetryableError{error: errors.New("some network error")}
 	})
+	workerConfig.UploadTransport = uploadTransport
 
 	// Start worker node
-	workerScp, workerMock := bufferDependencies.NewMockedWorkerScope(
-		t,
-		config.NewWorkerConfig().Apply(
-			config.WithUploadTransport(uploadTransport),
-			config.WithConditionsCheck(false),
-			config.WithCleanup(false),
-			config.WithCloseSlices(true),
-			config.WithUploadSlices(true),
-			config.WithRetryFailedSlices(true),
-			config.WithCloseFiles(false),
-			config.WithImportFiles(false),
-			config.WithRetryFailedFiles(false),
-		),
-		append(opts, dependencies.WithUniqueID("my-worker"))...,
-	)
+	workerScp, workerMock := bufferDependencies.NewMockedWorkerScope(t, workerConfig, append(opts, dependencies.WithUniqueID("my-worker"))...)
 	_, err := service.New(workerScp)
 	assert.NoError(t, err)
 
