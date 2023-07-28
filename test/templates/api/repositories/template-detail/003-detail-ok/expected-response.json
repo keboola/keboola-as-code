@@ -1,4 +1,13 @@
 {
+  "id": "my-template-id",
+  "name": "My Template",
+  "deprecated": false,
+  "author": {
+    "name": "Example Author",
+    "url": "https://example.com"
+  },
+  "description": "Full workflow to ...",
+  "defaultVersion": "1.2.3",
   "repository": {
     "name": "keboola",
     "url": "%s/test/templates/api/repositories/template-detail/repository",
@@ -8,9 +17,6 @@
       "url": "https://example.com"
     }
   },
-  "id": "my-template-id",
-  "name": "My Template",
-  "deprecated": false,
   "categories": [
     "Data Extraction",
     "E-commerce"
@@ -18,12 +24,6 @@
   "components": [
     "keboola.ex-aws-s3"
   ],
-  "author": {
-    "name": "Example Author",
-    "url": "https://example.com"
-  },
-  "description": "Full workflow to ...",
-  "defaultVersion": "1.2.3",
   "versions": [
     {
       "version": "1.2.3",

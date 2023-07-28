@@ -1,25 +1,9 @@
 {
-  "versionDetail": {
-    "deprecated": false,
-    "components": [],
-    "longDescription": "",
-    "readme": "### My Template\n\nFull workflow to ...\n\n",
-    "version": "1.2.3",
-    "stable": false,
-    "description": ""
-  },
-  "configurations": [
-    {
-      "componentId": "keboola.ex-instagram",
-      "configId": "%%TEST_BRANCH_MAIN_CONFIG_INSTAGRAM_ID%%",
-      "name": "instagram"
-    }
-  ],
-  "templateId": "my-template-id",
   "instanceId": "inst-001",
-  "branch": "%%TEST_BRANCH_MAIN_ID%%",
-  "repositoryName": "keboola",
+  "templateId": "my-template-id",
   "version": "1.2.3",
+  "repositoryName": "keboola",
+  "branch": "%%TEST_BRANCH_MAIN_ID%%",
   "name": "New Name",
   "created": {
     "date": "2022-01-01T07:00:00Z",
@@ -28,5 +12,31 @@
   "updated": {
     "date": "%s",
     "tokenId": "%s"
-  }
+  },
+  "templateDetail": {
+    "id": "my-template-id",
+    "name": "My Template",
+    "deprecated": false,
+    "author": {
+      "name": "Example Author",
+      "url": "https://example.com"
+    },
+    "description": "Full workflow to ...",
+    "defaultVersion": "1.2.3"
+  },
+  "versionDetail": {
+    "version": "1.2.3",
+    "stable": false,
+    "description": "",
+    "components": [],
+    "longDescription": "",
+    "readme": "### My Template\n\nFull workflow to ...\n\n"
+  },
+  "configurations": [
+    {
+      "componentId": "keboola.ex-instagram",
+      "configId": "%%TEST_BRANCH_MAIN_CONFIG_INSTAGRAM_ID%%",
+      "name": "instagram"
+    }
+  ]
 }

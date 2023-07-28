@@ -96,22 +96,22 @@ type TemplatesIndexResponseBody struct {
 // TemplateIndexResponseBody is the type of the "templates" service
 // "TemplateIndex" endpoint HTTP response body.
 type TemplateIndexResponseBody struct {
-	// Information about the repository.
-	Repository *RepositoryResponseBody `form:"repository" json:"repository" xml:"repository"`
-	ID         string                  `form:"id" json:"id" xml:"id"`
+	ID string `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Deprecated template cannot be used.
-	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
-	// List of categories the template belongs to.
-	Categories []string `form:"categories" json:"categories" xml:"categories"`
-	// List of components used in the template.
-	Components []string            `form:"components" json:"components" xml:"components"`
+	Deprecated bool                `form:"deprecated" json:"deprecated" xml:"deprecated"`
 	Author     *AuthorResponseBody `form:"author" json:"author" xml:"author"`
 	// Short description of the template.
 	Description string `form:"description" json:"description" xml:"description"`
 	// Recommended version of the template.
 	DefaultVersion string `form:"defaultVersion" json:"defaultVersion" xml:"defaultVersion"`
+	// Information about the repository.
+	Repository *RepositoryResponseBody `form:"repository" json:"repository" xml:"repository"`
+	// List of categories the template belongs to.
+	Categories []string `form:"categories" json:"categories" xml:"categories"`
+	// List of components used in the template.
+	Components []string `form:"components" json:"components" xml:"components"`
 	// All available versions of the template.
 	Versions []*VersionResponseBody `form:"versions" json:"versions" xml:"versions"`
 }
@@ -119,24 +119,22 @@ type TemplateIndexResponseBody struct {
 // VersionIndexResponseBody is the type of the "templates" service
 // "VersionIndex" endpoint HTTP response body.
 type VersionIndexResponseBody struct {
-	// Information about the repository.
-	Repository *RepositoryResponseBody `form:"repository" json:"repository" xml:"repository"`
-	// Information about the template.
-	Template *TemplateResponseBody `form:"template" json:"template" xml:"template"`
-	// Deprecated template cannot be used.
-	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
-	// List of components used in the template version.
-	Components []string `form:"components" json:"components" xml:"components"`
-	// Extended description of the template in Markdown format.
-	LongDescription string `form:"longDescription" json:"longDescription" xml:"longDescription"`
-	// Readme of the template version in Markdown format.
-	Readme string `form:"readme" json:"readme" xml:"readme"`
 	// Semantic version.
 	Version string `form:"version" json:"version" xml:"version"`
 	// If true, then the version is ready for production use.
 	Stable bool `form:"stable" json:"stable" xml:"stable"`
 	// Optional short description of the version. Can be empty.
 	Description string `form:"description" json:"description" xml:"description"`
+	// List of components used in the template version.
+	Components []string `form:"components" json:"components" xml:"components"`
+	// Extended description of the template in Markdown format.
+	LongDescription string `form:"longDescription" json:"longDescription" xml:"longDescription"`
+	// Readme of the template version in Markdown format.
+	Readme string `form:"readme" json:"readme" xml:"readme"`
+	// Information about the repository.
+	Repository *RepositoryResponseBody `form:"repository" json:"repository" xml:"repository"`
+	// Information about the template.
+	Template *TemplateResponseBody `form:"template" json:"template" xml:"template"`
 }
 
 // InputsIndexResponseBody is the type of the "templates" service "InputsIndex"
@@ -190,20 +188,12 @@ type InstancesIndexResponseBody struct {
 // InstanceIndexResponseBody is the type of the "templates" service
 // "InstanceIndex" endpoint HTTP response body.
 type InstanceIndexResponseBody struct {
-	// Information about the template version. Can be null if the repository or
-	// template no longer exists. If the exact version is not found, the nearest
-	// one is used.
-	VersionDetail *VersionDetailResponseBody `form:"versionDetail,omitempty" json:"versionDetail,omitempty" xml:"versionDetail,omitempty"`
-	// All configurations from the instance.
-	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
-	TemplateID     string                `form:"templateId" json:"templateId" xml:"templateId"`
-	InstanceID     string                `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	InstanceID     string `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	TemplateID     string `form:"templateId" json:"templateId" xml:"templateId"`
+	Version        string `form:"version" json:"version" xml:"version"`
+	RepositoryName string `form:"repositoryName" json:"repositoryName" xml:"repositoryName"`
 	// ID of the branch.
 	Branch string `form:"branch" json:"branch" xml:"branch"`
-	// Name of the template repository.
-	RepositoryName string `form:"repositoryName" json:"repositoryName" xml:"repositoryName"`
-	// Semantic version of the template.
-	Version string `form:"version" json:"version" xml:"version"`
 	// Name of the instance.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Instance creation date and token.
@@ -211,25 +201,26 @@ type InstanceIndexResponseBody struct {
 	// Instance update date and token.
 	Updated    *ChangeInfoResponseBody `form:"updated" json:"updated" xml:"updated"`
 	MainConfig *MainConfigResponseBody `form:"mainConfig,omitempty" json:"mainConfig,omitempty" xml:"mainConfig,omitempty"`
+	// Information about the template. Can be null if the repository or template no
+	// longer exists.
+	TemplateDetail *TemplateBaseResponseBody `form:"templateDetail" json:"templateDetail" xml:"templateDetail"`
+	// Information about the template version. Can be null if the repository or
+	// template no longer exists. If the exact version is not found, the nearest
+	// one is used.
+	VersionDetail *VersionDetailResponseBody `form:"versionDetail" json:"versionDetail" xml:"versionDetail"`
+	// All configurations from the instance.
+	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
 }
 
 // UpdateInstanceResponseBody is the type of the "templates" service
 // "UpdateInstance" endpoint HTTP response body.
 type UpdateInstanceResponseBody struct {
-	// Information about the template version. Can be null if the repository or
-	// template no longer exists. If the exact version is not found, the nearest
-	// one is used.
-	VersionDetail *VersionDetailResponseBody `form:"versionDetail,omitempty" json:"versionDetail,omitempty" xml:"versionDetail,omitempty"`
-	// All configurations from the instance.
-	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
-	TemplateID     string                `form:"templateId" json:"templateId" xml:"templateId"`
-	InstanceID     string                `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	InstanceID     string `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	TemplateID     string `form:"templateId" json:"templateId" xml:"templateId"`
+	Version        string `form:"version" json:"version" xml:"version"`
+	RepositoryName string `form:"repositoryName" json:"repositoryName" xml:"repositoryName"`
 	// ID of the branch.
 	Branch string `form:"branch" json:"branch" xml:"branch"`
-	// Name of the template repository.
-	RepositoryName string `form:"repositoryName" json:"repositoryName" xml:"repositoryName"`
-	// Semantic version of the template.
-	Version string `form:"version" json:"version" xml:"version"`
 	// Name of the instance.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Instance creation date and token.
@@ -237,6 +228,15 @@ type UpdateInstanceResponseBody struct {
 	// Instance update date and token.
 	Updated    *ChangeInfoResponseBody `form:"updated" json:"updated" xml:"updated"`
 	MainConfig *MainConfigResponseBody `form:"mainConfig,omitempty" json:"mainConfig,omitempty" xml:"mainConfig,omitempty"`
+	// Information about the template. Can be null if the repository or template no
+	// longer exists.
+	TemplateDetail *TemplateBaseResponseBody `form:"templateDetail" json:"templateDetail" xml:"templateDetail"`
+	// Information about the template version. Can be null if the repository or
+	// template no longer exists. If the exact version is not found, the nearest
+	// one is used.
+	VersionDetail *VersionDetailResponseBody `form:"versionDetail" json:"versionDetail" xml:"versionDetail"`
+	// All configurations from the instance.
+	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
 }
 
 // UpgradeInstanceResponseBody is the type of the "templates" service
@@ -842,16 +842,16 @@ type TemplateResponseBody struct {
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Deprecated template cannot be used.
-	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
-	// List of categories the template belongs to.
-	Categories []string `form:"categories" json:"categories" xml:"categories"`
-	// List of components used in the template.
-	Components []string            `form:"components" json:"components" xml:"components"`
+	Deprecated bool                `form:"deprecated" json:"deprecated" xml:"deprecated"`
 	Author     *AuthorResponseBody `form:"author" json:"author" xml:"author"`
 	// Short description of the template.
 	Description string `form:"description" json:"description" xml:"description"`
 	// Recommended version of the template.
 	DefaultVersion string `form:"defaultVersion" json:"defaultVersion" xml:"defaultVersion"`
+	// List of categories the template belongs to.
+	Categories []string `form:"categories" json:"categories" xml:"categories"`
+	// List of components used in the template.
+	Components []string `form:"components" json:"components" xml:"components"`
 	// All available versions of the template.
 	Versions []*VersionResponseBody `form:"versions" json:"versions" xml:"versions"`
 }
@@ -981,14 +981,14 @@ type TaskOutputsResponseBody struct {
 
 // InstanceResponseBody is used to define fields on response body types.
 type InstanceResponseBody struct {
-	TemplateID string `form:"templateId" json:"templateId" xml:"templateId"`
 	InstanceID string `form:"instanceId" json:"instanceId" xml:"instanceId"`
-	// ID of the branch.
-	Branch string `form:"branch" json:"branch" xml:"branch"`
-	// Name of the template repository.
-	RepositoryName string `form:"repositoryName" json:"repositoryName" xml:"repositoryName"`
+	TemplateID string `form:"templateId" json:"templateId" xml:"templateId"`
 	// Semantic version of the template.
 	Version string `form:"version" json:"version" xml:"version"`
+	// Name of the template repository.
+	RepositoryName string `form:"repositoryName" json:"repositoryName" xml:"repositoryName"`
+	// ID of the branch.
+	Branch string `form:"branch" json:"branch" xml:"branch"`
 	// Name of the instance.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Instance creation date and token.
@@ -1014,22 +1014,34 @@ type MainConfigResponseBody struct {
 	ConfigID string `form:"configId" json:"configId" xml:"configId"`
 }
 
+// TemplateBaseResponseBody is used to define fields on response body types.
+type TemplateBaseResponseBody struct {
+	ID string `form:"id" json:"id" xml:"id"`
+	// Template name.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Deprecated template cannot be used.
+	Deprecated bool                `form:"deprecated" json:"deprecated" xml:"deprecated"`
+	Author     *AuthorResponseBody `form:"author" json:"author" xml:"author"`
+	// Short description of the template.
+	Description string `form:"description" json:"description" xml:"description"`
+	// Recommended version of the template.
+	DefaultVersion string `form:"defaultVersion" json:"defaultVersion" xml:"defaultVersion"`
+}
+
 // VersionDetailResponseBody is used to define fields on response body types.
 type VersionDetailResponseBody struct {
-	// Deprecated template cannot be used.
-	Deprecated bool `form:"deprecated" json:"deprecated" xml:"deprecated"`
-	// List of components used in the template version.
-	Components []string `form:"components" json:"components" xml:"components"`
-	// Extended description of the template in Markdown format.
-	LongDescription string `form:"longDescription" json:"longDescription" xml:"longDescription"`
-	// Readme of the template version in Markdown format.
-	Readme string `form:"readme" json:"readme" xml:"readme"`
 	// Semantic version.
 	Version string `form:"version" json:"version" xml:"version"`
 	// If true, then the version is ready for production use.
 	Stable bool `form:"stable" json:"stable" xml:"stable"`
 	// Optional short description of the version. Can be empty.
 	Description string `form:"description" json:"description" xml:"description"`
+	// List of components used in the template version.
+	Components []string `form:"components" json:"components" xml:"components"`
+	// Extended description of the template in Markdown format.
+	LongDescription string `form:"longDescription" json:"longDescription" xml:"longDescription"`
+	// Readme of the template version in Markdown format.
+	Readme string `form:"readme" json:"readme" xml:"readme"`
 }
 
 // ConfigResponseBody is used to define fields on response body types.
@@ -1121,6 +1133,9 @@ func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexR
 		Description:    res.Description,
 		DefaultVersion: res.DefaultVersion,
 	}
+	if res.Author != nil {
+		body.Author = marshalTemplatesAuthorToAuthorResponseBody(res.Author)
+	}
 	if res.Repository != nil {
 		body.Repository = marshalTemplatesRepositoryToRepositoryResponseBody(res.Repository)
 	}
@@ -1136,9 +1151,6 @@ func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexR
 			body.Components[i] = val
 		}
 	}
-	if res.Author != nil {
-		body.Author = marshalTemplatesAuthorToAuthorResponseBody(res.Author)
-	}
 	if res.Versions != nil {
 		body.Versions = make([]*VersionResponseBody, len(res.Versions))
 		for i, val := range res.Versions {
@@ -1152,24 +1164,23 @@ func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexR
 // the "VersionIndex" endpoint of the "templates" service.
 func NewVersionIndexResponseBody(res *templates.VersionDetailExtended) *VersionIndexResponseBody {
 	body := &VersionIndexResponseBody{
-		Deprecated:      res.Deprecated,
-		LongDescription: res.LongDescription,
-		Readme:          res.Readme,
 		Version:         res.Version,
 		Stable:          res.Stable,
 		Description:     res.Description,
-	}
-	if res.Repository != nil {
-		body.Repository = marshalTemplatesRepositoryToRepositoryResponseBody(res.Repository)
-	}
-	if res.Template != nil {
-		body.Template = marshalTemplatesTemplateToTemplateResponseBody(res.Template)
+		LongDescription: res.LongDescription,
+		Readme:          res.Readme,
 	}
 	if res.Components != nil {
 		body.Components = make([]string, len(res.Components))
 		for i, val := range res.Components {
 			body.Components[i] = val
 		}
+	}
+	if res.Repository != nil {
+		body.Repository = marshalTemplatesRepositoryToRepositoryResponseBody(res.Repository)
+	}
+	if res.Template != nil {
+		body.Template = marshalTemplatesTemplateToTemplateResponseBody(res.Template)
 	}
 	return body
 }
@@ -1243,21 +1254,12 @@ func NewInstancesIndexResponseBody(res *templates.Instances) *InstancesIndexResp
 // of the "InstanceIndex" endpoint of the "templates" service.
 func NewInstanceIndexResponseBody(res *templates.InstanceDetail) *InstanceIndexResponseBody {
 	body := &InstanceIndexResponseBody{
-		TemplateID:     string(res.TemplateID),
 		InstanceID:     string(res.InstanceID),
-		Branch:         res.Branch,
-		RepositoryName: res.RepositoryName,
+		TemplateID:     res.TemplateID,
 		Version:        res.Version,
+		RepositoryName: res.RepositoryName,
+		Branch:         res.Branch,
 		Name:           res.Name,
-	}
-	if res.VersionDetail != nil {
-		body.VersionDetail = marshalTemplatesVersionDetailToVersionDetailResponseBody(res.VersionDetail)
-	}
-	if res.Configurations != nil {
-		body.Configurations = make([]*ConfigResponseBody, len(res.Configurations))
-		for i, val := range res.Configurations {
-			body.Configurations[i] = marshalTemplatesConfigToConfigResponseBody(val)
-		}
 	}
 	if res.Created != nil {
 		body.Created = marshalTemplatesChangeInfoToChangeInfoResponseBody(res.Created)
@@ -1267,6 +1269,18 @@ func NewInstanceIndexResponseBody(res *templates.InstanceDetail) *InstanceIndexR
 	}
 	if res.MainConfig != nil {
 		body.MainConfig = marshalTemplatesMainConfigToMainConfigResponseBody(res.MainConfig)
+	}
+	if res.TemplateDetail != nil {
+		body.TemplateDetail = marshalTemplatesTemplateBaseToTemplateBaseResponseBody(res.TemplateDetail)
+	}
+	if res.VersionDetail != nil {
+		body.VersionDetail = marshalTemplatesVersionDetailToVersionDetailResponseBody(res.VersionDetail)
+	}
+	if res.Configurations != nil {
+		body.Configurations = make([]*ConfigResponseBody, len(res.Configurations))
+		for i, val := range res.Configurations {
+			body.Configurations[i] = marshalTemplatesConfigToConfigResponseBody(val)
+		}
 	}
 	return body
 }
@@ -1275,21 +1289,12 @@ func NewInstanceIndexResponseBody(res *templates.InstanceDetail) *InstanceIndexR
 // of the "UpdateInstance" endpoint of the "templates" service.
 func NewUpdateInstanceResponseBody(res *templates.InstanceDetail) *UpdateInstanceResponseBody {
 	body := &UpdateInstanceResponseBody{
-		TemplateID:     string(res.TemplateID),
 		InstanceID:     string(res.InstanceID),
-		Branch:         res.Branch,
-		RepositoryName: res.RepositoryName,
+		TemplateID:     res.TemplateID,
 		Version:        res.Version,
+		RepositoryName: res.RepositoryName,
+		Branch:         res.Branch,
 		Name:           res.Name,
-	}
-	if res.VersionDetail != nil {
-		body.VersionDetail = marshalTemplatesVersionDetailToVersionDetailResponseBody(res.VersionDetail)
-	}
-	if res.Configurations != nil {
-		body.Configurations = make([]*ConfigResponseBody, len(res.Configurations))
-		for i, val := range res.Configurations {
-			body.Configurations[i] = marshalTemplatesConfigToConfigResponseBody(val)
-		}
 	}
 	if res.Created != nil {
 		body.Created = marshalTemplatesChangeInfoToChangeInfoResponseBody(res.Created)
@@ -1299,6 +1304,18 @@ func NewUpdateInstanceResponseBody(res *templates.InstanceDetail) *UpdateInstanc
 	}
 	if res.MainConfig != nil {
 		body.MainConfig = marshalTemplatesMainConfigToMainConfigResponseBody(res.MainConfig)
+	}
+	if res.TemplateDetail != nil {
+		body.TemplateDetail = marshalTemplatesTemplateBaseToTemplateBaseResponseBody(res.TemplateDetail)
+	}
+	if res.VersionDetail != nil {
+		body.VersionDetail = marshalTemplatesVersionDetailToVersionDetailResponseBody(res.VersionDetail)
+	}
+	if res.Configurations != nil {
+		body.Configurations = make([]*ConfigResponseBody, len(res.Configurations))
+		for i, val := range res.Configurations {
+			body.Configurations[i] = marshalTemplatesConfigToConfigResponseBody(val)
+		}
 	}
 	return body
 }

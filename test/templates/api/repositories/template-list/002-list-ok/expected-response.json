@@ -13,6 +13,12 @@
       "id": "my-template-id",
       "name": "My Template",
       "deprecated": false,
+      "author": {
+        "name": "Example Author",
+        "url": "https://example.com"
+      },
+      "description": "Full workflow to ...",
+      "defaultVersion": "1.2.3",
       "categories": [
         "Other"
       ],
@@ -20,12 +26,6 @@
         "keboola.wr-%s",
         "foo.bar"
       ],
-      "author": {
-        "name": "Example Author",
-        "url": "https://example.com"
-      },
-      "description": "Full workflow to ...",
-      "defaultVersion": "1.2.3",
       "versions": [
         {
           "version": "1.2.3",

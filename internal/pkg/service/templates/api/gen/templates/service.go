@@ -196,16 +196,16 @@ type InputsIndexPayload struct {
 	Repository string
 }
 
-// ID of the template.
+// Template instance.
 type Instance struct {
-	TemplateID TemplateID
 	InstanceID InstanceID
-	// ID of the branch.
-	Branch string
-	// Name of the template repository.
-	RepositoryName string
+	TemplateID TemplateID
 	// Semantic version of the template.
 	Version string
+	// Name of the template repository.
+	RepositoryName string
+	// ID of the branch.
+	Branch string
 	// Name of the instance.
 	Name string
 	// Instance creation date and token.
@@ -218,20 +218,12 @@ type Instance struct {
 // InstanceDetail is the result type of the templates service InstanceIndex
 // method.
 type InstanceDetail struct {
-	// Information about the template version. Can be null if the repository or
-	// template no longer exists. If the exact version is not found, the nearest
-	// one is used.
-	VersionDetail *VersionDetail
-	// All configurations from the instance.
-	Configurations []*Config
-	TemplateID     TemplateID
 	InstanceID     InstanceID
+	TemplateID     string
+	Version        string
+	RepositoryName string
 	// ID of the branch.
 	Branch string
-	// Name of the template repository.
-	RepositoryName string
-	// Semantic version of the template.
-	Version string
 	// Name of the instance.
 	Name string
 	// Instance creation date and token.
@@ -239,6 +231,15 @@ type InstanceDetail struct {
 	// Instance update date and token.
 	Updated    *ChangeInfo
 	MainConfig *MainConfig
+	// Information about the template. Can be null if the repository or template no
+	// longer exists.
+	TemplateDetail *TemplateBase
+	// Information about the template version. Can be null if the repository or
+	// template no longer exists. If the exact version is not found, the nearest
+	// one is used.
+	VersionDetail *VersionDetail
+	// All configurations from the instance.
+	Configurations []*Config
 }
 
 // ID of the template instance.
@@ -433,38 +434,52 @@ type Template struct {
 	Name string
 	// Deprecated template cannot be used.
 	Deprecated bool
-	// List of categories the template belongs to.
-	Categories []string
-	// List of components used in the template.
-	Components []string
 	Author     *Author
 	// Short description of the template.
 	Description string
 	// Recommended version of the template.
 	DefaultVersion string
+	// List of categories the template belongs to.
+	Categories []string
+	// List of components used in the template.
+	Components []string
 	// All available versions of the template.
 	Versions []*Version
+}
+
+// Template base information.
+type TemplateBase struct {
+	ID TemplateID
+	// Template name.
+	Name string
+	// Deprecated template cannot be used.
+	Deprecated bool
+	Author     *Author
+	// Short description of the template.
+	Description string
+	// Recommended version of the template.
+	DefaultVersion string
 }
 
 // TemplateDetail is the result type of the templates service TemplateIndex
 // method.
 type TemplateDetail struct {
-	// Information about the repository.
-	Repository *Repository
-	ID         TemplateID
+	ID TemplateID
 	// Template name.
 	Name string
 	// Deprecated template cannot be used.
 	Deprecated bool
-	// List of categories the template belongs to.
-	Categories []string
-	// List of components used in the template.
-	Components []string
 	Author     *Author
 	// Short description of the template.
 	Description string
 	// Recommended version of the template.
 	DefaultVersion string
+	// Information about the repository.
+	Repository *Repository
+	// List of categories the template belongs to.
+	Categories []string
+	// List of components used in the template.
+	Components []string
 	// All available versions of the template.
 	Versions []*Version
 }
@@ -607,43 +622,39 @@ type Version struct {
 }
 
 type VersionDetail struct {
-	// Deprecated template cannot be used.
-	Deprecated bool
-	// List of components used in the template version.
-	Components []string
-	// Extended description of the template in Markdown format.
-	LongDescription string
-	// Readme of the template version in Markdown format.
-	Readme string
 	// Semantic version.
 	Version string
 	// If true, then the version is ready for production use.
 	Stable bool
 	// Optional short description of the version. Can be empty.
 	Description string
+	// List of components used in the template version.
+	Components []string
+	// Extended description of the template in Markdown format.
+	LongDescription string
+	// Readme of the template version in Markdown format.
+	Readme string
 }
 
 // VersionDetailExtended is the result type of the templates service
 // VersionIndex method.
 type VersionDetailExtended struct {
-	// Information about the repository.
-	Repository *Repository
-	// Information about the template.
-	Template *Template
-	// Deprecated template cannot be used.
-	Deprecated bool
-	// List of components used in the template version.
-	Components []string
-	// Extended description of the template in Markdown format.
-	LongDescription string
-	// Readme of the template version in Markdown format.
-	Readme string
 	// Semantic version.
 	Version string
 	// If true, then the version is ready for production use.
 	Stable bool
 	// Optional short description of the version. Can be empty.
 	Description string
+	// List of components used in the template version.
+	Components []string
+	// Extended description of the template in Markdown format.
+	LongDescription string
+	// Readme of the template version in Markdown format.
+	Readme string
+	// Information about the repository.
+	Repository *Repository
+	// Information about the template.
+	Template *Template
 }
 
 // VersionIndexPayload is the payload type of the templates service
