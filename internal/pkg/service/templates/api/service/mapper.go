@@ -152,6 +152,7 @@ func TemplateResponse(ctx context.Context, d dependencies.ProjectRequestScope, t
 	out = &Template{
 		ID:             tmpl.ID,
 		Name:           tmpl.Name,
+		Deprecated:     tmpl.Deprecated,
 		Categories:     CategoriesResponse(tmpl.Categories),
 		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
@@ -204,7 +205,7 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 	}
 }
 
-func VersionDetailResponse(d dependencies.ProjectRequestScope, t *repository.TemplateRecord, v repository.VersionRecord, template *template.Template) *VersionDetail {
+func VersionDetailResponse(d dependencies.ProjectRequestScope, version repository.VersionRecord, template *template.Template) *VersionDetail {
 	var longDescription string
 	var readme string
 	if template != nil {
@@ -213,11 +214,10 @@ func VersionDetailResponse(d dependencies.ProjectRequestScope, t *repository.Tem
 	}
 
 	return &VersionDetail{
-		Version:         v.Version.String(),
-		Stable:          v.Stable,
-		Description:     v.Description,
-		Deprecated:      t.Deprecated,
-		Components:      ComponentsResponse(d, v.Components),
+		Version:         version.Version.String(),
+		Stable:          version.Stable,
+		Description:     version.Description,
+		Components:      ComponentsResponse(d, version.Components),
 		LongDescription: longDescription,
 		Readme:          readme,
 	}
@@ -394,10 +394,10 @@ func InstancesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		}
 
 		outInstance := &Instance{
-			TemplateID:     instance.TemplateID,
 			InstanceID:     instance.InstanceID,
-			Branch:         cast.ToString(branch.ID),
+			TemplateID:     instance.TemplateID,
 			RepositoryName: instance.RepositoryName,
+			Branch:         cast.ToString(branch.ID),
 			Version:        instance.Version,
 			Name:           instance.InstanceName,
 			Created: &ChangeInfo{
@@ -470,13 +470,13 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 	}
 
 	// Map response
+	tmplResponse, versionResponse := instanceDetails(ctx, d, instance)
 	out = &InstanceDetail{
-		VersionDetail:  instanceVersionDetail(ctx, d, instance),
-		TemplateID:     instance.TemplateID,
 		InstanceID:     instance.InstanceID,
-		Branch:         cast.ToString(branch.ID),
-		RepositoryName: instance.RepositoryName,
+		TemplateID:     instance.TemplateID,
 		Version:        instance.Version,
+		RepositoryName: instance.RepositoryName,
+		Branch:         cast.ToString(branch.ID),
 		Name:           instance.InstanceName,
 		Created: &ChangeInfo{
 			Date:    instance.Created.Date.Format(time.RFC3339),
@@ -486,6 +486,8 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 			Date:    instance.Updated.Date.Format(time.RFC3339),
 			TokenID: instance.Updated.TokenID,
 		},
+		TemplateDetail: tmplResponse,
+		VersionDetail:  versionResponse,
 		Configurations: outConfigs,
 	}
 
@@ -503,22 +505,51 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 	return out, nil
 }
 
-func instanceVersionDetail(ctx context.Context, d dependencies.ProjectRequestScope, instance *model.TemplateInstance) *VersionDetail {
+func templateBaseResponse(ctx context.Context, d dependencies.ProjectRequestScope, tmpl *repository.TemplateRecord, author *Author) (out *TemplateBase, err error) {
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.templateBaseResponse")
+	defer span.End(&err)
+
+	defaultVersion, err := tmpl.DefaultVersionOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	return &TemplateBase{
+		ID:             tmpl.ID,
+		Name:           tmpl.Name,
+		Deprecated:     tmpl.Deprecated,
+		Description:    tmpl.Description,
+		DefaultVersion: defaultVersion.Version.String(),
+		Author:         author,
+	}, nil
+}
+
+func instanceDetails(ctx context.Context, d dependencies.ProjectRequestScope, instance *model.TemplateInstance) (*TemplateBase, *VersionDetail) {
 	repo, tmplRecord, err := templateRecord(ctx, d, instance.RepositoryName, instance.TemplateID)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	semVer, err := model.NewSemVersion(instance.Version)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	versionRecord, found := tmplRecord.GetClosestVersion(semVer)
 	if !found {
-		return nil
+		return nil, nil
 	}
 
 	// Tmpl may be nil, if the template is deprecated, it cannot be loaded.
 	tmpl, _ := d.Template(ctx, model.NewTemplateRef(repo.Definition(), instance.TemplateID, versionRecord.Version.String()))
 
-	return VersionDetailResponse(d, tmplRecord, versionRecord, tmpl)
+	// Template info
+	author := repo.Manifest().Author()
+	tmplResponse, err := templateBaseResponse(ctx, d, tmplRecord, &Author{Name: author.Name, URL: author.URL})
+	if err != nil {
+		return nil, nil
+	}
+
+	// Version info
+	versionResponse := VersionDetailResponse(d, versionRecord, tmpl)
+
+	return tmplResponse, versionResponse
 }
