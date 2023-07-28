@@ -41,13 +41,13 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		Description: "",
 		Stable:      true,
 		Components:  []string{},
-		AbsPath:     model.NewAbsPath("", "v1"),
+		Path:        "v1",
 	}
 	tmplRec := repository.TemplateRecord{
 		ID:          tmplRef.TemplateID(),
 		Name:        "Template 1",
 		Description: "",
-		AbsPath:     model.NewAbsPath("", "tmpl1"),
+		Path:        "tmpl1",
 		Versions:    []repository.VersionRecord{versionRec},
 	}
 

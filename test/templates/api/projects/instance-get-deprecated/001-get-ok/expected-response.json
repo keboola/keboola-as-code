@@ -1,9 +1,12 @@
 {
   "versionDetail": {
-    "deprecated": false,
-    "components": [],
+    "deprecated": true,
+    "components": [
+      "keboola.wr-%s",
+      "foo.bar"
+    ],
     "longDescription": "",
-    "readme": "### My Template\n\nFull workflow to ...\n\n",
+    "readme": "",
     "version": "1.2.3",
     "stable": false,
     "description": ""

@@ -431,6 +431,8 @@ type Template struct {
 	ID TemplateID
 	// Template name.
 	Name string
+	// Deprecated template cannot be used.
+	Deprecated bool
 	// List of categories the template belongs to.
 	Categories []string
 	// List of components used in the template.
@@ -452,6 +454,8 @@ type TemplateDetail struct {
 	ID         TemplateID
 	// Template name.
 	Name string
+	// Deprecated template cannot be used.
+	Deprecated bool
 	// List of categories the template belongs to.
 	Categories []string
 	// List of components used in the template.
@@ -603,6 +607,8 @@ type Version struct {
 }
 
 type VersionDetail struct {
+	// Deprecated template cannot be used.
+	Deprecated bool
 	// List of components used in the template version.
 	Components []string
 	// Extended description of the template in Markdown format.
@@ -624,6 +630,8 @@ type VersionDetailExtended struct {
 	Repository *Repository
 	// Information about the template.
 	Template *Template
+	// Deprecated template cannot be used.
+	Deprecated bool
 	// List of components used in the template version.
 	Components []string
 	// Extended description of the template in Markdown format.

@@ -10,20 +10,21 @@ import (
 )
 
 type TemplateRecord struct {
-	ID            string   `json:"id" validate:"required,alphanumdash,min=1,max=40"`
-	Name          string   `json:"name" validate:"required,min=1,max=40"`
-	Description   string   `json:"description" validate:"required,min=1,max=200"`
-	Categories    []string `json:"categories,omitempty"`
-	model.AbsPath `validate:"dive"`
-	Versions      []VersionRecord `json:"versions" validate:"required,min=1,dive"`
+	ID          string          `json:"id" validate:"required,alphanumdash,min=1,max=40"`
+	Name        string          `json:"name" validate:"required,min=1,max=40"`
+	Description string          `json:"description" validate:"required,min=1,max=200"`
+	Categories  []string        `json:"categories,omitempty"`
+	Deprecated  bool            `json:"deprecated,omitempty"`
+	Path        string          `json:"path,omitempty"`
+	Versions    []VersionRecord `json:"versions" validate:"required,min=1,dive"`
 }
 
 type VersionRecord struct {
-	Version       model.SemVersion `json:"version" validate:"required,semver,min=1,max=20"`
-	Description   string           `json:"description" validate:"min=0,max=40"`
-	Stable        bool             `json:"stable" validate:""`
-	Components    []string         `json:"components,omitempty"`
-	model.AbsPath `validate:"dive"`
+	Version     model.SemVersion `json:"version" validate:"required,semver,min=1,max=20"`
+	Description string           `json:"description" validate:"min=0,max=40"`
+	Stable      bool             `json:"stable" validate:""`
+	Components  []string         `json:"components,omitempty"`
+	Path        string           `json:"path,omitempty"`
 }
 
 func (v *TemplateRecord) AllVersions() (out []VersionRecord) {
@@ -46,7 +47,7 @@ func (v *TemplateRecord) AddVersion(version model.SemVersion, components []strin
 		Version:    version,
 		Stable:     false,
 		Components: components,
-		AbsPath:    model.NewAbsPath(v.Path(), fmt.Sprintf(`v%d`, version.Major())),
+		Path:       fmt.Sprintf(`v%d`, version.Major()),
 	}
 	v.Versions = append(v.Versions, record)
 	return record
@@ -117,7 +118,7 @@ func (v *TemplateRecord) GetClosestVersion(wanted model.SemVersion) (VersionReco
 
 func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 	for _, record := range v.Versions {
-		if record.GetRelativePath() == path {
+		if record.Path == path {
 			return record, true
 		}
 	}

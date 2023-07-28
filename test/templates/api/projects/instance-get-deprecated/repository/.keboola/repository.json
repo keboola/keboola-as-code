@@ -6,8 +6,8 @@
   },
   "templates": [
     {
-      "id": "deprecated-template-id",
-      "name": "Deprecated Template",
+      "id": "my-template-id",
+      "name": "My Template",
       "description": "Full workflow to ...",
       "deprecated": true,
       "versions": [
@@ -15,23 +15,6 @@
           "version": "1.2.3",
           "description": "",
           "stable": false,
-          "components": [
-            "foo.bar"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "my-template-id",
-      "name": "My Template",
-      "description": "Full workflow to ...",
-      "path": "my-template",
-      "versions": [
-        {
-          "version": "1.2.3",
-          "description": "",
-          "stable": false,
-          "path": "v1",
           "components": [
             "<keboola.wr-snowflake>",
             "foo.bar"

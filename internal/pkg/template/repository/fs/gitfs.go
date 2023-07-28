@@ -61,7 +61,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 
 		// Get version record
 		tmpl := config.onlyForTemplate
-		_, version, err := repoManifest.GetVersion(tmpl.TemplateID(), tmpl.Version())
+		templateRecord, versionRecord, err := repoManifest.GetVersion(tmpl.TemplateID(), tmpl.Version())
 		if err != nil {
 			// version or template not found
 			return nil, errors.NewNestedError(
@@ -72,7 +72,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 		}
 
 		// Load template src directory
-		srcDir := filesystem.Join(version.Path(), template.SrcDirectory)
+		srcDir := filesystem.Join(templateRecord.Path, versionRecord.Path, template.SrcDirectory)
 		if err := gitRepository.Load(ctx, srcDir); err != nil {
 			return nil, err
 		}

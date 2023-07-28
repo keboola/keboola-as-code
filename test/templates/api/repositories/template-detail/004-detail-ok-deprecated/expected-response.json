@@ -1,22 +1,21 @@
 {
   "repository": {
     "name": "keboola",
-    "url": "%s/test/templates/api/repositories/template-detail/repository",
+    "url": "%s",
     "ref": "",
     "author": {
       "name": "Example Author",
       "url": "https://example.com"
     }
   },
-  "id": "my-template-id",
-  "name": "My Template",
-  "deprecated": false,
+  "id": "deprecated-template-id",
+  "name": "Deprecated Template",
+  "deprecated": true,
   "categories": [
-    "Data Extraction",
-    "E-commerce"
+    "Other"
   ],
   "components": [
-    "keboola.ex-aws-s3"
+    "foo.bar"
   ],
   "author": {
     "name": "Example Author",

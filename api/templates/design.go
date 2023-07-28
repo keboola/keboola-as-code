@@ -747,6 +747,7 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("My Template")
 	})
+	Attribute("deprecated", Boolean, "Deprecated template cannot be used.")
 	Attribute("categories", ArrayOf(String), "List of categories the template belongs to.", func() {
 		Example([]string{"E-commerce", "Other", "Social Media"})
 	})
@@ -769,11 +770,12 @@ var Template = Type("Template", func() {
 	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
 		Example(ExampleVersions1())
 	})
-	Required("id", "name", "categories", "components", "author", "description", "defaultVersion", "versions")
+	Required("id", "name", "deprecated", "categories", "components", "author", "description", "defaultVersion", "versions")
 })
 
 var VersionDetail = Type("VersionDetail", func() {
 	Extend(TemplateVersion)
+	Attribute("deprecated", Boolean, "Deprecated template cannot be used.")
 	Attribute("components", ArrayOf(String), "List of components used in the template version.", func() {
 		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
@@ -785,7 +787,7 @@ var VersionDetail = Type("VersionDetail", func() {
 		MinLength(1)
 		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
 	})
-	Required("components", "longDescription", "readme")
+	Required("deprecated", "components", "longDescription", "readme")
 	Example(ExampleVersionDetail())
 })
 
@@ -1121,6 +1123,7 @@ type ExampleAuthorData struct {
 type ExampleTemplateData struct {
 	ID             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
+	Deprecated     bool                 `json:"deprecated" yaml:"deprecated"`
 	Categories     []string             `json:"categories" yaml:"categories"`
 	Components     []string             `json:"components" yaml:"components"`
 	Author         ExampleAuthorData    `json:"author" yaml:"author"`
@@ -1147,6 +1150,7 @@ type ExampleVersionData struct {
 
 type ExampleVersionDetailData struct {
 	ExampleVersionData
+	Deprecated      bool     `json:"deprecated" yaml:"deprecated"`
 	Components      []string `json:"components" yaml:"components"`
 	LongDescription string   `json:"longDescription" yaml:"longDescription"`
 	Readme          string   `json:"readme" yaml:"readme"`
@@ -1253,6 +1257,7 @@ func ExampleTemplate1() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "my-template",
 		Name:           "My Template",
+		Deprecated:     false,
 		Categories:     ExampleCategories(),
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
@@ -1266,6 +1271,7 @@ func ExampleTemplate2() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
+		Deprecated:     false,
 		Categories:     ExampleCategories(),
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
@@ -1285,6 +1291,7 @@ func ExampleVersion1() ExampleVersionData {
 
 func ExampleVersionDetail() ExampleVersionDetailData {
 	return ExampleVersionDetailData{
+		Deprecated:         false,
 		Components:         ExampleComponents(),
 		LongDescription:    "Maximum length template **description** dolor sit amet, consectetuer adipiscing elit",
 		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",

@@ -12,6 +12,7 @@
     {
       "id": "my-template-id",
       "name": "My Template",
+      "deprecated": false,
       "categories": [
         "Other"
       ],

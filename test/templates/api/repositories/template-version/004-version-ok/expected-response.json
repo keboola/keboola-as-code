@@ -11,6 +11,7 @@
   "template": {
     "id": "my-template-id",
     "name": "My Template",
+    "deprecated": false,
     "categories": [
       "Other"
     ],
@@ -33,6 +34,7 @@
       }
     ]
   },
+  "deprecated": false,
   "components": [
     "keboola.wr-%s",
     "keboola.ex-aws-s3",
