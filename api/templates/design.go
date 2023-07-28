@@ -722,9 +722,20 @@ var Templates = Type("Templates", func() {
 })
 
 var TemplateDetail = Type("TemplateDetail", func() {
-	Extend(Template)
+	Reference(Template)
+	Attribute("id")
+	Attribute("name")
+	Attribute("deprecated")
+	Attribute("author")
+	Attribute("description")
+	Attribute("defaultVersion")
 	Attribute("repository", Repository, "Information about the repository.")
-	Required("repository")
+	Attribute("categories")
+	Attribute("components")
+	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
+		Example(ExampleVersions1())
+	})
+	Required("id", "name", "deprecated", "author", "description", "defaultVersion", "repository", "categories", "components", "versions")
 	Example(ExampleTemplateDetailData{
 		ExampleTemplateData: ExampleTemplate1(),
 		Repository:          ExampleRepository(),
@@ -739,8 +750,8 @@ var TemplateID = Type("templateId", String, func() {
 	Description("ID of the template.")
 })
 
-var Template = Type("Template", func() {
-	Description("Template.")
+var TemplateBase = Type("TemplateBase", func() {
+	Description("Template base information.")
 	Attribute("id", TemplateID)
 	Attribute("name", String, "Template name.", func() {
 		MinLength(1)
@@ -748,12 +759,6 @@ var Template = Type("Template", func() {
 		Example("My Template")
 	})
 	Attribute("deprecated", Boolean, "Deprecated template cannot be used.")
-	Attribute("categories", ArrayOf(String), "List of categories the template belongs to.", func() {
-		Example([]string{"E-commerce", "Other", "Social Media"})
-	})
-	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
-		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
-	})
 	Attribute("author", Author, func() {
 		Example(ExampleAuthor())
 	})
@@ -767,40 +772,28 @@ var Template = Type("Template", func() {
 		MaxLength(20)
 		Example("v1.2.3")
 	})
+	Required("id", "name", "deprecated", "author", "description", "defaultVersion")
+})
+
+var Template = Type("Template", func() {
+	Reference(TemplateBase)
+	Description("Template.")
+	Attribute("id")
+	Attribute("name")
+	Attribute("deprecated")
+	Attribute("author")
+	Attribute("description")
+	Attribute("defaultVersion")
+	Attribute("categories", ArrayOf(String), "List of categories the template belongs to.", func() {
+		Example([]string{"E-commerce", "Other", "Social Media"})
+	})
+	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
+		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
+	})
 	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
 		Example(ExampleVersions1())
 	})
-	Required("id", "name", "deprecated", "categories", "components", "author", "description", "defaultVersion", "versions")
-})
-
-var VersionDetail = Type("VersionDetail", func() {
-	Extend(TemplateVersion)
-	Attribute("deprecated", Boolean, "Deprecated template cannot be used.")
-	Attribute("components", ArrayOf(String), "List of components used in the template version.", func() {
-		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
-	})
-	Attribute("longDescription", String, "Extended description of the template in Markdown format.", func() {
-		MinLength(1)
-		Example("**Full workflow** to load all user accounts from [the Service](https://service.com). With *extended* explanation ...")
-	})
-	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
-		MinLength(1)
-		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
-	})
-	Required("deprecated", "components", "longDescription", "readme")
-	Example(ExampleVersionDetail())
-})
-
-var VersionDetailExtended = Type("VersionDetailExtended", func() {
-	Extend(VersionDetail)
-	Attribute("repository", Repository, "Information about the repository.")
-	Attribute("template", Template, "Information about the template.")
-	Required("repository", "template")
-	Example(ExampleVersionDetailExtendedData{
-		ExampleVersionDetailData: ExampleVersionDetail(),
-		Repository:               ExampleRepository(),
-		Template:                 ExampleTemplate1(),
-	})
+	Required("id", "name", "deprecated", "author", "description", "defaultVersion", "categories", "components", "versions")
 })
 
 var TemplateVersion = Type("Version", func() {
@@ -820,6 +813,44 @@ var TemplateVersion = Type("Version", func() {
 	})
 	Required("version", "stable", "description")
 	Example(ExampleVersion1())
+})
+
+var VersionDetail = Type("VersionDetail", func() {
+	Reference(TemplateVersion)
+	Attribute("version")
+	Attribute("stable")
+	Attribute("description")
+	Attribute("components", ArrayOf(String), "List of components used in the template version.", func() {
+		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
+	})
+	Attribute("longDescription", String, "Extended description of the template in Markdown format.", func() {
+		MinLength(1)
+		Example("**Full workflow** to load all user accounts from [the Service](https://service.com). With *extended* explanation ...")
+	})
+	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
+		MinLength(1)
+		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
+	})
+	Required("version", "stable", "description", "components", "longDescription", "readme")
+	Example(ExampleVersionDetail())
+})
+
+var VersionDetailExtended = Type("VersionDetailExtended", func() {
+	Reference(VersionDetail)
+	Attribute("version")
+	Attribute("stable")
+	Attribute("description")
+	Attribute("components")
+	Attribute("longDescription")
+	Attribute("readme")
+	Attribute("repository", Repository, "Information about the repository.")
+	Attribute("template", Template, "Information about the template.")
+	Required("version", "stable", "description", "components", "longDescription", "readme", "repository", "template")
+	Example(ExampleVersionDetailExtendedData{
+		ExampleVersionDetailData: ExampleVersionDetail(),
+		Repository:               ExampleRepository(),
+		Template:                 ExampleTemplateBase(),
+	})
 })
 
 var ValidationError = Type("ValidationError", func() {
@@ -1018,27 +1049,18 @@ var Instances = Type("Instances", func() {
 	Required("instances")
 })
 
-var InstanceID = Type("instanceId", String, func() {
+var InstanceID = Type("InstanceId", String, func() {
 	Meta("struct:field:type", "= string")
 	Example("V1StGXR8IZ5jdHi6BAmyT")
 	Description("ID of the template instance.")
 })
 
-var Instance = Type("instance", func() {
-	Description("ID of the template.")
-	Attribute("templateId", TemplateID)
+var InstanceBase = Type("InstanceBase", func() {
+	Description("Instance base information.")
 	Attribute("instanceId", InstanceID)
 	Attribute("branch", String, func() {
 		Example("5876")
 		Description("ID of the branch.")
-	})
-	Attribute("repositoryName", String, func() {
-		Example("keboola")
-		Description("Name of the template repository.")
-	})
-	Attribute("version", String, func() {
-		Example("v1.1.0")
-		Description("Semantic version of the template.")
 	})
 	Attribute("name", String, func() {
 		Example("My Instance")
@@ -1051,17 +1073,48 @@ var Instance = Type("instance", func() {
 		Description("Instance update date and token.")
 	})
 	Attribute("mainConfig", MainConfig)
-	Required("templateId", "instanceId", "branch", "repositoryName", "version", "name", "created", "updated")
+	Required("instanceId", "branch", "name", "created", "updated")
 })
 
-var InstanceDetail = Type("instanceDetail", func() {
-	Extend(Instance)
+var Instance = Type("Instance", func() {
+	Description("Template instance.")
+	Reference(InstanceBase)
+	Attribute("instanceId")
+	Attribute("templateId", TemplateID)
+	Attribute("version", String, func() {
+		Example("v1.1.0")
+		Description("Semantic version of the template.")
+	})
+	Attribute("repositoryName", String, func() {
+		Example("keboola")
+		Description("Name of the template repository.")
+	})
+	Attribute("branch")
+	Attribute("name")
+	Attribute("created")
+	Attribute("updated")
+	Attribute("mainConfig", MainConfig)
+	Required("instanceId", "templateId", "version", "repositoryName", "branch", "name", "created", "updated")
+})
+
+var InstanceDetail = Type("InstanceDetail", func() {
+	Reference(InstanceBase)
+	Attribute("instanceId")
+	Attribute("templateId")
+	Attribute("version")
+	Attribute("repositoryName")
+	Attribute("branch")
+	Attribute("name")
+	Attribute("created")
+	Attribute("updated")
+	Attribute("mainConfig", MainConfig)
+	Attribute("templateDetail", TemplateBase, "Information about the template. Can be null if the repository or template no longer exists.")
 	Attribute("versionDetail", VersionDetail, "Information about the template version. Can be null if the repository or template no longer exists. If the exact version is not found, the nearest one is used.")
 	Attribute("configurations", ArrayOf(Config), "All configurations from the instance.")
-	Required("configurations")
+	Required("instanceId", "templateId", "version", "repositoryName", "branch", "name", "created", "updated", "templateDetail", "versionDetail", "configurations")
 })
 
-var MainConfig = Type("mainConfig", func() {
+var MainConfig = Type("MainConfig", func() {
 	Description("Main config of the instance, usually an orchestration. Optional.")
 	Attribute("componentId", String, "Component ID.", func() {
 		Example("keboola.orchestrator")
@@ -1072,7 +1125,7 @@ var MainConfig = Type("mainConfig", func() {
 	Required("componentId", "configId")
 })
 
-var Config = Type("config", func() {
+var Config = Type("Config", func() {
 	Description("The configuration that is part of the template instance.")
 	Attribute("componentId", String, "Component ID.", func() {
 		Example("keboola.ex-db-mysql")
@@ -1086,7 +1139,7 @@ var Config = Type("config", func() {
 	Required("componentId", "configId", "name")
 })
 
-var ChangeInfo = Type("changeInfo", func() {
+var ChangeInfo = Type("ChangeInfo", func() {
 	Description("Date of change and who made it.")
 	Attribute("date", String, func() {
 		Description("Date and time of the change.")
@@ -1120,6 +1173,15 @@ type ExampleAuthorData struct {
 	URL  string `json:"url" yaml:"url"`
 }
 
+type ExampleTemplateBaseData struct {
+	ID             string            `json:"id" yaml:"id"`
+	Name           string            `json:"name" yaml:"name"`
+	Deprecated     bool              `json:"deprecated" yaml:"deprecated"`
+	Author         ExampleAuthorData `json:"author" yaml:"author"`
+	Description    string            `json:"description" yaml:"description"`
+	DefaultVersion string            `json:"defaultVersion" yaml:"defaultVersion"`
+}
+
 type ExampleTemplateData struct {
 	ID             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
@@ -1150,7 +1212,6 @@ type ExampleVersionData struct {
 
 type ExampleVersionDetailData struct {
 	ExampleVersionData
-	Deprecated      bool     `json:"deprecated" yaml:"deprecated"`
 	Components      []string `json:"components" yaml:"components"`
 	LongDescription string   `json:"longDescription" yaml:"longDescription"`
 	Readme          string   `json:"readme" yaml:"readme"`
@@ -1158,8 +1219,8 @@ type ExampleVersionDetailData struct {
 
 type ExampleVersionDetailExtendedData struct {
 	ExampleVersionDetailData
-	Repository ExampleRepositoryData `json:"repository" yaml:"repository"`
-	Template   ExampleTemplateData   `json:"template" yaml:"template"`
+	Repository ExampleRepositoryData   `json:"repository" yaml:"repository"`
+	Template   ExampleTemplateBaseData `json:"template" yaml:"template"`
 }
 
 type ExampleStepGroupData struct {
@@ -1253,6 +1314,17 @@ func ExampleAuthor() ExampleAuthorData {
 	}
 }
 
+func ExampleTemplateBase() ExampleTemplateBaseData {
+	return ExampleTemplateBaseData{
+		ID:             "my-template",
+		Name:           "My Template",
+		Deprecated:     false,
+		Author:         ExampleAuthor(),
+		Description:    "Full workflow to load all user accounts from the Service.",
+		DefaultVersion: "v1.2.3",
+	}
+}
+
 func ExampleTemplate1() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "my-template",
@@ -1291,7 +1363,6 @@ func ExampleVersion1() ExampleVersionData {
 
 func ExampleVersionDetail() ExampleVersionDetailData {
 	return ExampleVersionDetailData{
-		Deprecated:         false,
 		Components:         ExampleComponents(),
 		LongDescription:    "Maximum length template **description** dolor sit amet, consectetuer adipiscing elit",
 		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
