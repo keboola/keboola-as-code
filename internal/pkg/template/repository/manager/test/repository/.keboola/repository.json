@@ -1,8 +1,36 @@
 {
   "version": 2,
   "author": {
-    "name": "Foo Bar",
-    "url": "https://foo.bar"
+    "name": "Example Author",
+    "url": "https://example.com"
   },
-  "templates": []
+  "templates": [
+    {
+      "id": "template1",
+      "name": "Template 1",
+      "description": "My Template Description",
+      "path": "template1",
+      "versions": [
+        {
+          "version": "1.0.3",
+          "description": "Version 1",
+          "stable": true,
+          "path": "v1"
+        }
+      ]
+    },
+    {
+      "id": "deprecated-template",
+      "name": "Deprecated Template",
+      "description": "Deprecated Template",
+      "deprecated": true,
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "Deprecated Version",
+          "stable": true
+        }
+      ]
+    }
+  ]
 }

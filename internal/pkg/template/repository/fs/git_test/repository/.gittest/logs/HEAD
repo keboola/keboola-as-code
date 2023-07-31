@@ -24,3 +24,22 @@ f4bf236227116803d28fa2f931f28059a5ab588f 6a406dfaaa48848fcd0c8962914b1c465e49e5b
 c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 Michal Jurečko <michal.jurecko@gmail.com> 1651218385 +0200	checkout: moving from main to b1
 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 db2c26cc2f75b730f034378031d43df445dd6bec Michal Jurečko <michal.jurecko@gmail.com> 1651218393 +0200	commit: Add repository author
 db2c26cc2f75b730f034378031d43df445dd6bec c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 Michal Jurečko <michal.jurecko@gmail.com> 1651218397 +0200	checkout: moving from b1 to main
+c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 1d2ed9cb419254947d215e41dd6f6f4a996c20c5 Michal Jurečko <michal.jurecko@gmail.com> 1690789685 +0200	commit: Add deprecated template
+1d2ed9cb419254947d215e41dd6f6f4a996c20c5 db2c26cc2f75b730f034378031d43df445dd6bec Michal Jurečko <michal.jurecko@gmail.com> 1690789693 +0200	checkout: moving from main to b1
+db2c26cc2f75b730f034378031d43df445dd6bec 1d2ed9cb419254947d215e41dd6f6f4a996c20c5 Michal Jurečko <michal.jurecko@gmail.com> 1690789703 +0200	rebase (start): checkout main
+1d2ed9cb419254947d215e41dd6f6f4a996c20c5 45825b562ac46a2962317e7105027db2d1345472 Michal Jurečko <michal.jurecko@gmail.com> 1690789743 +0200	rebase (continue): Init
+45825b562ac46a2962317e7105027db2d1345472 2c2da1a985f5d5bc7f4e3e982f45cd0546b3ffa0 Michal Jurečko <michal.jurecko@gmail.com> 1690789745 +0200	rebase (pick): Remove src folder of template2/v1
+2c2da1a985f5d5bc7f4e3e982f45cd0546b3ffa0 d5cdb6d1de15ab51692b1354efa4b0eb3bea1c9b Michal Jurečko <michal.jurecko@gmail.com> 1690789745 +0200	rebase (pick): Add template icon
+d5cdb6d1de15ab51692b1354efa4b0eb3bea1c9b d5cdb6d1de15ab51692b1354efa4b0eb3bea1c9b Michal Jurečko <michal.jurecko@gmail.com> 1690789745 +0200	rebase (finish): returning to refs/heads/b1
+d5cdb6d1de15ab51692b1354efa4b0eb3bea1c9b 1d2ed9cb419254947d215e41dd6f6f4a996c20c5 Michal Jurečko <michal.jurecko@gmail.com> 1690789749 +0200	checkout: moving from b1 to main
+1d2ed9cb419254947d215e41dd6f6f4a996c20c5 d5cdb6d1de15ab51692b1354efa4b0eb3bea1c9b Michal Jurečko <michal.jurecko@gmail.com> 1690789884 +0200	checkout: moving from main to b1
+d5cdb6d1de15ab51692b1354efa4b0eb3bea1c9b c7a4bda7ee0d30792a6fa498b2725ea8ed58ae3e Michal Jurečko <michal.jurecko@gmail.com> 1690789931 +0200	commit: f
+c7a4bda7ee0d30792a6fa498b2725ea8ed58ae3e 2c2da1a985f5d5bc7f4e3e982f45cd0546b3ffa0 Michal Jurečko <michal.jurecko@gmail.com> 1690789945 +0200	rebase (start): checkout HEAD~5
+2c2da1a985f5d5bc7f4e3e982f45cd0546b3ffa0 2ba9de7e695c650a3d24f2b99cbc39b41946c35c Michal Jurečko <michal.jurecko@gmail.com> 1690789945 +0200	rebase (fixup): # This is a combination of 2 commits.
+2ba9de7e695c650a3d24f2b99cbc39b41946c35c e56c908a8cc2395d240e1303001b8d2313d4928d Michal Jurečko <michal.jurecko@gmail.com> 1690789945 +0200	rebase (fixup): Remove src folder of template2/v1
+e56c908a8cc2395d240e1303001b8d2313d4928d e56c908a8cc2395d240e1303001b8d2313d4928d Michal Jurečko <michal.jurecko@gmail.com> 1690789945 +0200	rebase (finish): returning to refs/heads/b1
+e56c908a8cc2395d240e1303001b8d2313d4928d 45825b562ac46a2962317e7105027db2d1345472 Michal Jurečko <michal.jurecko@gmail.com> 1690789950 +0200	rebase (start): checkout HEAD~5
+45825b562ac46a2962317e7105027db2d1345472 e56c908a8cc2395d240e1303001b8d2313d4928d Michal Jurečko <michal.jurecko@gmail.com> 1690789950 +0200	rebase: fast-forward
+e56c908a8cc2395d240e1303001b8d2313d4928d 40cc36b8406cff18929b130839ab6f76e85d4276 Michal Jurečko <michal.jurecko@gmail.com> 1690789950 +0200	rebase (reword): Remove template1, add template2
+40cc36b8406cff18929b130839ab6f76e85d4276 40cc36b8406cff18929b130839ab6f76e85d4276 Michal Jurečko <michal.jurecko@gmail.com> 1690789950 +0200	rebase (finish): returning to refs/heads/b1
+40cc36b8406cff18929b130839ab6f76e85d4276 1d2ed9cb419254947d215e41dd6f6f4a996c20c5 Michal Jurečko <michal.jurecko@gmail.com> 1690789965 +0200	checkout: moving from b1 to main
