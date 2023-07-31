@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 	defer unlockFn()
 
-	assert.True(t, repo.Fs().Exists("example-file.txt"))
+	assert.True(t, repo.Fs().Exists("template1"))
 }
 
 func TestRepository(t *testing.T) {
@@ -217,7 +217,7 @@ func TestDefaultRepositories(t *testing.T) {
 
 	// Define default repositories
 	gitURL := fmt.Sprintf("file://%s", tmpDir)
-	commitHash := "92d0b5f200129303e31feaf201fa0f46b2739782"
+	commitHash := "1d2ed9cb419254947d215e41dd6f6f4a996c20c5"
 	defaultRepositories := []model.TemplateRepository{
 		{
 			Type: model.RepositoryTypeGit,
