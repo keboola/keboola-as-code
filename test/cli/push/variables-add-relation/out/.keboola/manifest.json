@@ -12,7 +12,8 @@
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_name}",
     "variablesConfig": "variables",
-    "variablesValuesRow": "values/{config_row_name}"
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "apps/{component_id}/{config_name}"
   },
   "allowedBranches": [
     "__all__"
