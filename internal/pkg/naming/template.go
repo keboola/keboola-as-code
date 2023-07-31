@@ -18,6 +18,7 @@ type Template struct {
 	SharedCodeConfigRow PathTemplate `json:"sharedCodeConfigRow" validate:"required"`
 	VariablesConfig     PathTemplate `json:"variablesConfig" validate:"required"`
 	VariablesValuesRow  PathTemplate `json:"variablesValuesRow" validate:"required"`
+	DataAppConfig       PathTemplate `json:"dataAppConfig" validate:"required"`
 }
 
 type PathTemplate string
@@ -71,6 +72,7 @@ func ForTemplate() Template {
 		SharedCodeConfigRow: "codes/{config_row_id}",
 		VariablesConfig:     "variables",
 		VariablesValuesRow:  "values/{config_row_id}",
+		DataAppConfig:       "apps/{component_id}/{config_name}",
 	}
 }
 
@@ -84,6 +86,7 @@ func TemplateWithoutIds() Template {
 		SharedCodeConfigRow: "codes/{config_row_name}",
 		VariablesConfig:     "variables",
 		VariablesValuesRow:  "values/{config_row_name}",
+		DataAppConfig:       "apps/{component_id}/{config_name}",
 	}
 }
 
@@ -97,5 +100,6 @@ func TemplateWithIds() Template {
 		SharedCodeConfigRow: "codes/{config_row_id}-{config_row_name}",
 		VariablesConfig:     "variables",
 		VariablesValuesRow:  "values/{config_row_id}-{config_row_name}",
+		DataAppConfig:       "apps/{component_id}/{config_id}-{config_name}",
 	}
 }
