@@ -231,6 +231,25 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 		).Path())
 
+	// DataAppConfig values
+	assert.Equal(
+		t,
+		"my-branch/apps/keboola.data-apps/456-some-data-app",
+		g.ConfigPath(
+			"my-branch",
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{ID: keboola.DataAppsComponentID},
+			},
+			&Config{
+				ConfigKey: ConfigKey{
+					BranchID:    1234,
+					ComponentID: keboola.DataAppsComponentID,
+					ID:          "456",
+				},
+				Name: "Some Data App",
+			},
+		).Path())
+
 	// VariablesConfig values
 	assert.Equal(
 		t,
