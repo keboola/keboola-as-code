@@ -6,7 +6,19 @@
         "description": "",
         "isDefault": true
       },
-      "configs": []
+      "configs": [
+        {
+          "componentId": "keboola.data-apps",
+          "name": "Data App",
+          "description": "test fixture",
+          "changeDescription": "my change description",
+          "configuration": {
+            "foo": "modified"
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
     },
     {
       "branch": {
