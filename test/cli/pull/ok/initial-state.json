@@ -7,7 +7,10 @@
       "branch": {
         "name": "Main",
         "isDefault": true
-      }
+      },
+      "configs": [
+        "data-app"
+      ]
     },
     {
       "branch": {

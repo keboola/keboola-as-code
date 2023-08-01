@@ -1,0 +1,8 @@
+{
+  "componentId": "keboola.data-apps",
+  "name": "Data App",
+  "configuration": {
+    "foo": "bar"
+  },
+  "rows": null
+}
