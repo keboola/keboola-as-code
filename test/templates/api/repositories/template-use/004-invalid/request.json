@@ -11,9 +11,11 @@
     "steps": [
       {
         "id": "g01-s01",
-        "inputs": [
-
-        ]
+        "inputs": []
+      },
+      {
+        "id": "g01-s02",
+        "inputs": []
       }
     ]
   }
