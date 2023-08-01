@@ -1,6 +1,7 @@
 %A
 DEBUG	Project state has been successfully loaded.
 INFO	Plan for "persist" operation:
+INFO	  + C main/app/keboola.data-apps/new
 INFO	  + C main/extractor/ex-generic-v2/new
 INFO	  + C main/extractor/keboola.ex-db-mysql/with-rows
 INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
@@ -9,10 +10,13 @@ INFO	  - C main/extractor/keboola.ex-db-mysql/missing
 INFO	  - R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
 %A
 INFO	Plan for "rename" operation:
+INFO	  - main/app/keboola.data-apps/{new -> new-data-app}
 INFO	  - main/extractor/ex-generic-v2/{new -> new-config-name}
-DEBUG	Starting renaming of the 1 paths.
+DEBUG	Starting renaming of the 2 paths.
+DEBUG	Copied "main/app/keboola.data-apps/{new -> new-data-app}"
 DEBUG	Copied "main/extractor/ex-generic-v2/{new -> new-config-name}"
 DEBUG	Removing old paths.
+DEBUG	Removed "main/app/keboola.data-apps/new"
 DEBUG	Removed "main/extractor/ex-generic-v2/new"
 DEBUG	Saved ".keboola/manifest.json"
 INFO	Rename done.
