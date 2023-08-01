@@ -1,0 +1,21 @@
+{
+  "componentId": "keboola.data-apps",
+  "name": "My Data App",
+  "description": "test fixture",
+  "changeDescription": "From template keboola/my-template-id/1.2.3",
+  "configuration": {
+    "parameters": {
+      "param1": "value1",
+      "param2": "value2"
+    }
+  },
+  "rows": [],
+  "metadata": {
+    "KBC.KAC.templates.configId": "{\"idInTemplate\":\"my-app\"}",
+    "KBC.KAC.templates.configInputs": "[{\"input\":\"data-app-param1\",\"key\":\"parameters.param1\"}]",
+    "KBC.KAC.templates.instanceId": "inst-001",
+    "KBC.KAC.templates.repository": "keboola",
+    "KBC.KAC.templates.templateId": "my-template-id"
+  },
+  "isDisabled": false
+}

@@ -23,6 +23,18 @@
                 "error": "Shopify shop name is a required field."
               }
             ]
+          },
+          {
+            "id": "g01-s02",
+            "configured": true,
+            "valid": false,
+            "inputs": [
+              {
+                "id": "data-app-param1",
+                "visible": true,
+                "error": "Param 1 is a required field."
+              }
+            ]
           }
         ]
       }
