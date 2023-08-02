@@ -185,6 +185,10 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 	wg := &sync.WaitGroup{}
 	errs := errors.NewMultiError()
 	for _, t := range r.repo.Templates() {
+		if t.Deprecated {
+			continue
+		}
+
 		t := t
 		for _, v := range t.AllVersions() {
 			v := v

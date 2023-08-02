@@ -1,5 +1,7 @@
-0000000000000000000000000000000000000000 954e7e464775d61f5c5768bebc4e2c0e1bb07a17 Michal Jurečko <michal.jurecko@gmail.com> 1654256294 +0200	commit (initial): Example
-954e7e464775d61f5c5768bebc4e2c0e1bb07a17 3c2873d3049208e195e3e82ceea76cb557963042 Michal Jurečko <michal.jurecko@gmail.com> 1654257056 +0200	commit: Add dir
-3c2873d3049208e195e3e82ceea76cb557963042 6b0004fd1fc27b1671794e6810f4b017acdb0a3e Michal Jurečko <michal.jurecko@gmail.com> 1662988088 +0200	commit: Add keboola/.repository.json
-6b0004fd1fc27b1671794e6810f4b017acdb0a3e c02d79673726e647397849da25488d66bcfc3275 Michal Jurečko <michal.jurecko@gmail.com> 1662989415 +0200	commit: Update url
-c02d79673726e647397849da25488d66bcfc3275 92d0b5f200129303e31feaf201fa0f46b2739782 Michal Jurečko <michal.jurecko@gmail.com> 1662989729 +0200	commit: Update author
+0000000000000000000000000000000000000000 e539348305ec466e80a982b449f9d9f3109a091b Jakub Matějka <jakub@keboola.com> 1643898938 +0100	branch: Created from HEAD
+e539348305ec466e80a982b449f9d9f3109a091b 5650c66dd29e8d3cfd046dcac5544f514ccfb06c Jakub Matějka <jakub@keboola.com> 1643898964 +0100	commit: Remove template2
+5650c66dd29e8d3cfd046dcac5544f514ccfb06c 1054ce00e272e6570d0b619cc10b474c26172c94 Jakub Matějka <jakub@keboola.com> 1644237365 +0100	commit (amend): Remove template2
+1054ce00e272e6570d0b619cc10b474c26172c94 5b127a4f79184fd0b504c70c02da511cec737d72 Michal Jurečko <michal.jurecko@gmail.com> 1649872111 +0200	commit: Add template icon
+5b127a4f79184fd0b504c70c02da511cec737d72 6755031f6c52e9151965fd1ac7f40ef1c18db6ce Michal Jurečko <michal.jurecko@gmail.com> 1649936805 +0200	commit: Add _common directory
+6755031f6c52e9151965fd1ac7f40ef1c18db6ce c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 Michal Jurečko <michal.jurecko@gmail.com> 1651218382 +0200	commit: Add repository author
+c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 1d2ed9cb419254947d215e41dd6f6f4a996c20c5 Michal Jurečko <michal.jurecko@gmail.com> 1690789685 +0200	commit: Add deprecated template

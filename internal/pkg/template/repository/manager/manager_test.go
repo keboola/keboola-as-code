@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 	defer unlockFn()
 
-	assert.True(t, repo.Fs().Exists("example-file.txt"))
+	assert.True(t, repo.Fs().Exists("template1"))
 }
 
 func TestRepository(t *testing.T) {
@@ -114,14 +114,32 @@ func TestRepositoryUpdate(t *testing.T) {
 	m, err := manager.New(ctx, d, []model.TemplateRepository{repo})
 	assert.NoError(t, err)
 
+	// Check FS
+	repoInst, unlock, err := m.Repository(ctx, repo)
+	assert.NoError(t, err)
+	assert.True(t, repoInst.Fs().Exists(".keboola"))
+	assert.True(t, repoInst.Fs().Exists("_common"))
+	assert.True(t, repoInst.Fs().Exists("template1"))
+	assert.False(t, repoInst.Fs().Exists("template2"))
+	unlock()
+
 	// 1. update - no change
 	assert.NoError(t, <-m.Update(ctx))
 
 	// Modify git repository
-	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~1")
+	runGitCommand(t, tmpDir, "reset", "--hard", "b1")
 
 	// 2. update - change
 	assert.NoError(t, <-m.Update(ctx))
+
+	// Check FS
+	repoInst, unlock, err = m.Repository(ctx, repo)
+	assert.NoError(t, err)
+	assert.True(t, repoInst.Fs().Exists(".keboola"))
+	assert.False(t, repoInst.Fs().Exists("_common"))
+	assert.False(t, repoInst.Fs().Exists("template1"))
+	assert.True(t, repoInst.Fs().Exists("template2"))
+	unlock()
 
 	// Check metrics
 	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
@@ -217,7 +235,7 @@ func TestDefaultRepositories(t *testing.T) {
 
 	// Define default repositories
 	gitURL := fmt.Sprintf("file://%s", tmpDir)
-	commitHash := "92d0b5f200129303e31feaf201fa0f46b2739782"
+	commitHash := "1d2ed9cb419254947d215e41dd6f6f4a996c20c5"
 	defaultRepositories := []model.TemplateRepository{
 		{
 			Type: model.RepositoryTypeGit,

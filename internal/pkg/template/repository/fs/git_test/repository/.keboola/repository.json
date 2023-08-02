@@ -18,6 +18,19 @@
           "path": "v1"
         }
       ]
+    },
+    {
+      "id": "deprecated-template",
+      "name": "Deprecated Template",
+      "description": "Deprecated Template",
+      "deprecated": true,
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "Deprecated Version",
+          "stable": true
+        }
+      ]
     }
   ]
 }
