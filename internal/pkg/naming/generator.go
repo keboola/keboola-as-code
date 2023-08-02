@@ -82,13 +82,22 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 	// Shared code is handled differently
 	var template, targetComponentID string
 	switch {
-	case (parentKind.IsEmpty() || parentKind.IsBranch()) && component.IsSharedCode():
-		if config.SharedCode == nil {
-			panic(errors.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
+	case parentKind.IsEmpty() || parentKind.IsBranch():
+		switch {
+		case component.IsSharedCode():
+			// Shared code
+			if config.SharedCode == nil {
+				panic(errors.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
+			}
+			template = string(g.template.SharedCodeConfig)
+			targetComponentID = config.SharedCode.Target.String()
+		case component.ComponentKey.ID == keboola.DataAppsComponentID:
+			// DataApp
+			template = string(g.template.DataAppConfig)
+		default:
+			// Ordinary config
+			template = string(g.template.Config)
 		}
-		// Shared code
-		template = string(g.template.SharedCodeConfig)
-		targetComponentID = config.SharedCode.Target.String()
 	case parentKind.IsConfig() && component.IsScheduler():
 		template = string(g.template.SchedulerConfig)
 	case parentKind.IsConfig() && component.IsVariables():
@@ -97,9 +106,6 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentID == keboola.SharedCodeComponentID:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsEmpty() || parentKind.IsBranch():
-		// Ordinary config
-		template = string(g.template.Config)
 	default:
 		panic(errors.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}

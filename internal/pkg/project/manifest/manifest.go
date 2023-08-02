@@ -50,7 +50,7 @@ func New(projectID keboola.ProjectID, apiHost string) *Manifest {
 	return &Manifest{
 		records:      manifest.NewRecords(model.SortByID),
 		project:      Project{ID: projectID, APIHost: apiHost},
-		naming:       naming.TemplateWithIds(),
+		naming:       naming.TemplateWithoutIds(),
 		filter:       model.NoFilter(),
 		repositories: []model.TemplateRepository{repository.DefaultRepository()},
 	}

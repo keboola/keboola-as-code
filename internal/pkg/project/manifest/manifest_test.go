@@ -122,6 +122,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 - "naming.sharedCodeConfigRow" is a required field
 - "naming.variablesConfig" is a required field
 - "naming.variablesValuesRow" is a required field
+- "naming.dataAppConfig" is a required field
 - "allowedBranches" is a required field`
 	assert.Equal(t, expected, err.Error())
 }
@@ -201,7 +202,8 @@ func minimalJSON() string {
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
     "variablesConfig": "variables",
-    "variablesValuesRow": "values/{config_row_id}-{config_row_name}"
+    "variablesValuesRow": "values/{config_row_id}-{config_row_name}",
+    "dataAppConfig": "apps/{component_id}/{config_id}-{config_name}"
   },
   "allowedBranches": [
     "*"
@@ -243,7 +245,8 @@ func fullJSON() string {
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_name}",
     "variablesConfig": "variables",
-    "variablesValuesRow": "values/{config_row_name}"
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "apps/{component_id}/{config_name}"
   },
   "allowedBranches": [
     "foo",
