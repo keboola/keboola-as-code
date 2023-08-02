@@ -14,7 +14,7 @@
     "sharedCodeConfigRow": "codes/{config_row_name}",
     "variablesConfig": "variables",
     "variablesValuesRow": "values/{config_row_name}",
-    "dataAppConfig": "apps/{component_id}/{config_name}"
+    "dataAppConfig": "app/{component_id}/{config_name}"
   },
   "allowedBranches": [
     "__main__",

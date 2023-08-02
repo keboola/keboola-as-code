@@ -234,7 +234,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 	// DataAppConfig values
 	assert.Equal(
 		t,
-		"my-branch/apps/keboola.data-apps/456-some-data-app",
+		"my-branch/app/keboola.data-apps/456-some-data-app",
 		g.ConfigPath(
 			"my-branch",
 			&keboola.Component{
