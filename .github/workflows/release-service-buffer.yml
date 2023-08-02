@@ -14,11 +14,15 @@ env:
   IMAGE_TAG: ${{ github.ref_name }}
   ECR_REGION: "us-east-1"
   ACR_REGISTRY: "keboola.azurecr.io"
+  GCP_REGISTRY: "us-central1-docker.pkg.dev"
+  GCP_IDENTITY_PROVIDER: "projects/keboola-prod-artifacts/locations/global/workloadIdentityPools/github/providers/github"
+  GCP_SERVICE_ACCOUNT: "keboola-as-code-ci-push@keboola-prod-artifacts.iam.gserviceaccount.com"
 
   # API image
   API_IMAGE_NAME: "keboola/buffer-api"
   API_ECR_REPOSITORY: "keboola/buffer-api"
   API_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-BufferApiPushRole-8SI5TUN6TV99"
+  API_GCP_REPOSITORY: "keboola-prod-artifacts/buffer-api"
   API_ACR_REPOSITORY: "buffer-api"
   API_ACR_USERNAME: "buffer-api-push"
 
@@ -26,6 +30,7 @@ env:
   WORKER_IMAGE_NAME: "keboola/buffer-worker"
   WORKER_ECR_REPOSITORY: "keboola/buffer-worker"
   WORKER_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-BufferWorkerPushRole-15AMFOJ64KHB9"
+  WORKER_GCP_REPOSITORY: "keboola-prod-artifacts/buffer-worker"
   WORKER_ACR_REPOSITORY: "buffer-worker"
   WORKER_ACR_USERNAME: "buffer-worker-push"
 
@@ -85,27 +90,35 @@ jobs:
           context: .
           file: provisioning/buffer/docker/worker/Dockerfile
 
-      - name: Push API image to Amazon ECR and Azure ACR
-        uses: ./.github/actions/push-image-aws-azure
+      - name: Push API image to Amazon ECR, Azure ACR and GCP GAR
+        uses: ./.github/actions/push-image-aws-azure-gcp
         with:
           imageName: ${{ env.API_IMAGE_NAME }}
           imageTag: ${{ env.IMAGE_TAG }}
           ecrRegion: ${{ env.ECR_REGION }}
           ecrRepository: ${{ env.API_ECR_REPOSITORY }}
           ecrPushRole: ${{ env.API_ECR_PUSH_ROLE }}
+          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          gcpRepository: ${{ env.API_GCP_REPOSITORY }}
+          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrRepository: ${{ env.API_ACR_REPOSITORY }}
           acrUsername: ${{ env.API_ACR_USERNAME }}
           acrPassword: ${{ secrets.BUFFER_API_ACR_PASSWORD }}
 
-      - name: Push Worker image to Amazon ECR and Azure ACR
-        uses: ./.github/actions/push-image-aws-azure
+      - name: Push Worker image to Amazon ECR, Azure ACR and GCP GAR
+        uses: ./.github/actions/push-image-aws-azure-gcp
         with:
           imageName: ${{ env.WORKER_IMAGE_NAME }}
           imageTag: ${{ env.IMAGE_TAG }}
           ecrRegion: ${{ env.ECR_REGION }}
           ecrRepository: ${{ env.WORKER_ECR_REPOSITORY }}
           ecrPushRole: ${{ env.WORKER_ECR_PUSH_ROLE }}
+          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          gcpRepository: ${{ env.WORKER_GCP_REPOSITORY }}
+          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrRepository: ${{ env.WORKER_ACR_REPOSITORY }}
           acrUsername: ${{ env.WORKER_ACR_USERNAME }}
