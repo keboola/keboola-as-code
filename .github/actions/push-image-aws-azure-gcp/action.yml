@@ -64,31 +64,31 @@ runs:
         docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
         docker push $REGISTRY/$REPOSITORY:$TAG
 
-    - name: Authenticate to GCP
-      uses: google-github-actions/auth@v1
-      with:
-        token_format: access_token
-        create_credentials_file: true
-        workload_identity_provider: ${{ inputs.gcpIdentityProvider }}
-        service_account: ${{ inputs.gcpServiceAccount }}
-
-    - name: Login to GCP GAR
-      uses: docker/login-action@v1
-      with:
-        registry: ${{ inputs.gcpRegistry }}
-        username: oauth2accesstoken
-        password: ${{ steps.auth.outputs.access_token }}
-
-    - name: Push image to GCP GAR
-      shell: bash
-      env:
-        IMAGE: ${{ inputs.imageName }}
-        TAG: ${{ inputs.imageTag }}
-        REGISTRY: ${{ inputs.gcpRegistry }}
-        REPOSITORY: ${{ inputs.gcpRepository }}
-      run: |
-        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
-        docker push $REGISTRY/$REPOSITORY:$TAG
+#    - name: Authenticate to GCP
+#      uses: google-github-actions/auth@v1
+#      with:
+#        token_format: access_token
+#        create_credentials_file: true
+#        workload_identity_provider: ${{ inputs.gcpIdentityProvider }}
+#        service_account: ${{ inputs.gcpServiceAccount }}
+#
+#    - name: Login to GCP GAR
+#      uses: docker/login-action@v1
+#      with:
+#        registry: ${{ inputs.gcpRegistry }}
+#        username: oauth2accesstoken
+#        password: ${{ steps.auth.outputs.access_token }}
+#
+#    - name: Push image to GCP GAR
+#      shell: bash
+#      env:
+#        IMAGE: ${{ inputs.imageName }}
+#        TAG: ${{ inputs.imageTag }}
+#        REGISTRY: ${{ inputs.gcpRegistry }}
+#        REPOSITORY: ${{ inputs.gcpRepository }}
+#      run: |
+#        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
+#        docker push $REGISTRY/$REPOSITORY:$TAG
 
     - name: Login to Azure ACR
       uses: azure/docker-login@v1
