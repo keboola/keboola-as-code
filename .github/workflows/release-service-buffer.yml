@@ -22,7 +22,7 @@ env:
   API_IMAGE_NAME: "keboola/buffer-api"
   API_ECR_REPOSITORY: "keboola/buffer-api"
   API_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-BufferApiPushRole-8SI5TUN6TV99"
-  API_GCP_REPOSITORY: "keboola-prod-artifacts/buffer-api"
+  API_GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/buffer-api"
   API_ACR_REPOSITORY: "buffer-api"
   API_ACR_USERNAME: "buffer-api-push"
 
@@ -30,7 +30,7 @@ env:
   WORKER_IMAGE_NAME: "keboola/buffer-worker"
   WORKER_ECR_REPOSITORY: "keboola/buffer-worker"
   WORKER_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-BufferWorkerPushRole-15AMFOJ64KHB9"
-  WORKER_GCP_REPOSITORY: "keboola-prod-artifacts/buffer-worker"
+  WORKER_GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/buffer-worker"
   WORKER_ACR_REPOSITORY: "buffer-worker"
   WORKER_ACR_USERNAME: "buffer-worker-push"
 
