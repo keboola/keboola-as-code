@@ -16,6 +16,10 @@ env:
   ECR_REGION: "us-east-1"
   ECR_REPOSITORY: "keboola/templates-api"
   ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-TemplatesApiPushRole-1HHHR3LGXWRZN"
+  GCP_REGISTRY: "us-central1-docker.pkg.dev"
+  GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/templates-api"
+  GCP_IDENTITY_PROVIDER: "projects/keboola-prod-artifacts/locations/global/workloadIdentityPools/github/providers/github"
+  GCP_SERVICE_ACCOUNT: "keboola-as-code-ci-push@keboola-prod-artifacts.iam.gserviceaccount.com"
   ACR_REPOSITORY: "templates-api"
   ACR_REGISTRY: "keboola.azurecr.io"
   ACR_USERNAME: "templates-api-push"
@@ -68,14 +72,18 @@ jobs:
           context: .
           file: provisioning/templates-api/docker/Dockerfile
 
-      - name: Push image to Amazon ECR and Azure ACR
-        uses: ./.github/actions/push-image-aws-azure
+      - name: Push image to Amazon ECR, Azure ACR and GCP GAR
+        uses: ./.github/actions/push-image-aws-azure-gcp
         with:
           imageName: ${{ env.IMAGE_NAME }}
           imageTag: ${{ env.IMAGE_TAG }}
           ecrRegion: ${{ env.ECR_REGION }}
           ecrRepository: ${{ env.ECR_REPOSITORY }}
           ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          gcpRepository: ${{ env.GCP_REPOSITORY }}
+          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
           acrRepository: ${{ env.ACR_REPOSITORY }}
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrUsername: ${{ env.ACR_USERNAME }}
