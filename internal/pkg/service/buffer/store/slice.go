@@ -316,8 +316,9 @@ func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
 
 func assertNoPreviousSliceInState(schema *schema.Schema, k key.SliceKey, state slicestate.State) op.Op {
 	prefix := schema.Slices().InState(state)
+	start := prefix.InFile(k.FileKey)
 	end := etcd.WithRange(prefix.ByKey(k).Key())
-	return prefix.InExport(k.ExportKey).Count(end).WithOnResultOrErr(func(v int64) error {
+	return start.Count(end).WithOnResultOrErr(func(v int64) error {
 		if v > 0 {
 			return errors.Errorf(`no slice in the state "%s" expected before the "%s", found %v`, state, k, v)
 		}
