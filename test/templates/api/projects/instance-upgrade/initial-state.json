@@ -11,7 +11,7 @@
       },
       "configs": [
         "from-template",
-        "from-template-data-app"
+        "from-template-data-app-with-id"
       ]
     }
   ]
