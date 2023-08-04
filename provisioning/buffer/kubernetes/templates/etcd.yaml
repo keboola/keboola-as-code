@@ -8,7 +8,7 @@ resources:
   limits:
     memory: "2000Mi"
 
-# Run defragmentation each 2 hours
+# Run defragmentation each 30 minutes
 defragmentation:
   cronjob:
-    schedule: "0 */2 * * *"
+    schedule: "*/30 * * * *"
