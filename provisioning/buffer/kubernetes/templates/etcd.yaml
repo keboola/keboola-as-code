@@ -8,6 +8,17 @@ resources:
   limits:
     memory: "2000Mi"
 
+extraEnvVars:
+  # Set max DB size to 80GB
+  # 8GB is the recommended maximum, but we want to test how it works for our use-case.
+  # It's better to let it slow down than stop working at all.
+  - name: ETCD_QUOTA_BACKEND_BYTES
+    value: "85899345920"
+
+# Set disk size
+persistence:
+  size: 100Gi
+
 # Run defragmentation each 30 minutes
 defragmentation:
   cronjob:
