@@ -111,6 +111,13 @@
           "path": "rows/old-transformation-snfk"
         }
       ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.data-apps",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_DATA_APP_ID%%",
+      "path": "app/keboola.data-apps/data-app",
+      "rows": []
     }
   ]
 }
