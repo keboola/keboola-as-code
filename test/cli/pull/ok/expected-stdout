@@ -24,6 +24,7 @@ INFO	  + C foo/extractor/ex-generic-v2/without-rows
 INFO	  + C foo/other/transformation/old-transformation
 INFO	  + R foo/other/transformation/old-transformation/rows/old-transformation-snfk
 INFO	  + B main
+INFO	  + C main/app/keboola.data-apps/data-app
 INFO	  + C main/extractor/ex-generic-v2/empty
 %A
 DEBUG	Saved ".keboola/manifest.json"

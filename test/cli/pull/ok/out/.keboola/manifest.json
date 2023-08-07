@@ -186,6 +186,13 @@
     },
     {
       "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.data-apps",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_DATA_APP_ID%%",
+      "path": "app/keboola.data-apps/data-app",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",
