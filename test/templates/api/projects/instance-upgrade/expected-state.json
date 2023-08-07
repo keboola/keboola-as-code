@@ -11,6 +11,28 @@
       },
       "configs": [
         {
+          "componentId": "keboola.data-apps",
+          "name": "My Data App",
+          "description": "test fixture",
+          "changeDescription": "Upgraded from template keboola/my-template-id/2.0.0",
+          "configuration": {
+            "parameters": {
+              "param1": "modified",
+              "param2": "value2",
+              "param3": "value3"
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"my-app\"}",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"data-app-param1\",\"key\":\"parameters.param1\"}]",
+            "KBC.KAC.templates.instanceId": "inst-001",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        },
+        {
           "componentId": "ex-generic-v2",
           "name": "shopify",
           "description": "test fixture",

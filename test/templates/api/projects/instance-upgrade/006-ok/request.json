@@ -19,6 +19,15 @@
             "value": "shop"
           }
         ]
+      },
+      {
+        "id": "g01-s02",
+        "inputs": [
+          {
+            "id": "data-app-param1",
+            "value": "modified"
+          }
+        ]
       }
     ]
   }

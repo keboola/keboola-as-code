@@ -10,7 +10,8 @@
         }
       },
       "configs": [
-        "from-template"
+        "from-template",
+        "from-template-data-app"
       ]
     }
   ]

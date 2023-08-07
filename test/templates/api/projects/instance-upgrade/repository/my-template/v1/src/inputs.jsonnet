@@ -19,6 +19,21 @@
             },
           ],
         },
+        {
+          icon: "common:settings",
+          name: "Data App",
+          description: "Visualize your data.",
+          inputs: [
+            {
+              id: "data-app-param1",
+              name: "Param 1",
+              description: "Please enter param 1",
+              type: "string",
+              kind: "input",
+              rules: "required",
+            },
+          ],
+        },
       ],
     },
   ],

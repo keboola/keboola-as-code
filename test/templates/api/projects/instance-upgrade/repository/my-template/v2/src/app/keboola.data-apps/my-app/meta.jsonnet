@@ -1,0 +1,3 @@
+{
+  name: "My Data App",
+}
