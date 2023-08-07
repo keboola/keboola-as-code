@@ -39,6 +39,13 @@
   "configurations": [
     {
       "branchId": 111,
+      "componentId": "keboola.data-apps",
+      "id": "%s",
+      "path": "app/keboola.data-apps/new-data-app",
+      "rows": []
+    },
+    {
+      "branchId": 111,
       "componentId": "ex-generic-v2",
       "id": "22222",
       "path": "extractor/ex-generic-v2/empty",
