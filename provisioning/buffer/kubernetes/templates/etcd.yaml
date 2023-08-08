@@ -3,10 +3,10 @@
 # Resources limits
 resources:
   requests:
-    cpu: "200m"
-    memory: "2000Mi"
+    cpu: "1"
+    memory: "8000Mi"
   limits:
-    memory: "2000Mi"
+    memory: "16000Mi"
 
 extraEnvVars:
   # Set max DB size to 80GB
