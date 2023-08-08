@@ -30,6 +30,9 @@ ETCD_HELM_CHART_VERSION="8.5.8"
 # Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
+# Manualy deploy storage class
+kubectl apply -f ./kubernetes/deploy/cloud/aws/storage-class.yaml
+
 # Get etcd root password, if it is already present
 export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" buffer-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
 

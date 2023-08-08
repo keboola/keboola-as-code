@@ -12,4 +12,3 @@ parameters:
   iops: "12000"
   throughput: "250"
   encrypted: "true"
----
