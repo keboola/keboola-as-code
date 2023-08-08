@@ -27,10 +27,8 @@ spec:
           args: ["run", "--out", "statsd", "/benchmarks/buffer-api/cases/groupon.js"]
           resources:
             requests:
-              cpu: "200m"
-              memory: "512Mi"
-            limits:
-              memory: "512Mi"
+              cpu: "1"
+              memory: "2Gi"
           env:
             # 80% of the resources.limits.memory 8125
             - name: GOMEMLIMIT

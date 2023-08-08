@@ -19,6 +19,8 @@ extraEnvVars:
 persistence:
   size: 100Gi
 
+autoCompactionRetention: "1m"
+
 # Run defragmentation each 30 minutes
 defragmentation:
   cronjob:
