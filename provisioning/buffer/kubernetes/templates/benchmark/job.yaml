@@ -51,9 +51,9 @@ spec:
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
             - name: BENCHMARK_MAX_VIRTUAL_USERS
-              value: "100"
+              value: "150"
             - name: BENCHMARK_PARALLEL_REQS_PER_USER
-              value: "10"
+              value: "15"
             - name: BENCHMARK_RAMPING_DURATION
               value: "5m"
             - name: BENCHMARK_STABLE_RATE_DURATION

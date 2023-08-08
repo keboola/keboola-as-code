@@ -196,29 +196,29 @@ extraDeploy:
                     - |-
                       #!/usr/bin/env bash
                       set -eo pipefail
-                      
+
                       # Include library
                       . /opt/bitnami/scripts/libetcd.sh
-                      
+
                       # Common flags
                       read -r -a flags <<<"$(etcdctl_auth_flags)"
                       cmd="etcdctl ${flags[@]}"
-                      
+
                       # Sequentially run defragmentation for each node
                       for (( index=0; index<$ETCD_REPLICAS; index++ )); do
                         endpoint="${ETCD_HOST_PREFIX}-${index}.${ETCD_CLUSTER_DOMAIN}:${ETCD_CLIENT_PORT}"
                         echo "Processing \"$endpoint\"..."
-                      
+
                         # Run defragmentation
-                        $cmd --endpoints "$endpoint" defrag
+                        $cmd --endpoints "$endpoint" defrag --command-timeout=60s
                         echo "OK"
                         echo
-                      
+
                         # Print cluster status
                         $cmd --endpoints "$endpoint" --write-out=table endpoint status
                         echo
                       done
-    
+
                       # Clear alarms (use the latest endpoint)
                       $cmd --endpoints "$endpoint" alarm disarm
                       $cmd --endpoints "$endpoint" alarm list
