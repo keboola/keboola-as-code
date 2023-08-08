@@ -12,3 +12,20 @@ parameters:
   iops: "12000"
   throughput: "250"
   encrypted: "true"
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: etcd-io2
+provisioner: kubernetes.io/aws-ebs
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  tagSpecification_1: "KeboolaStack=${KEBOOLA_STACK}"
+  tagSpecification_2: "KeboolaRole=etcd-io2"
+  type: io2
+  fsType: ext4
+  iops: "20000"
+  throughput: "1000"
+  encrypted: "true"
+  blockExpress: "true"
+---
