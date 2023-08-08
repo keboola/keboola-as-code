@@ -97,6 +97,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
+            - name: BUFFER_WORKER_MIN_UPLOAD_INTERVAL
+              value: "5s"
+            - name: BUFFER_API_RECEIVER_BUFFER_SIZE
+              value: "1G"
           startupProbe:
             httpGet:
               path: /health-check

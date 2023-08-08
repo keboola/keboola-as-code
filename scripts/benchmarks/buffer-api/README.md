@@ -1,6 +1,6 @@
 ## Buffer API Benchmarks
 
-### Testing on a local machine 
+### Testing on a local machine
 
 #### 1. Clear containers
 
@@ -67,7 +67,7 @@ Build docker image:
 ```
 docker login --username keboolabot --password <1Password> docker.io
 docker build -f ./provisioning/benchmark/docker/Dockerfile -t keboolabot/buffer-benchmark:latest .
-docker push keboolabot/buffer-benchmark:latest 
+docker push keboolabot/buffer-benchmark:latest
 ```
 
 Generate files:
@@ -77,10 +77,11 @@ export CLOUD_PROVIDER=aws
 export KEBOOLA_STACK=eu-west-1.aws.keboola.dev
 export HOSTNAME_SUFFIX=eu-west-1.aws.keboola.dev
 export BENCHMARK_API_TOKEN=.....
+export BENCHMARK_API_TOKEN_BASE64=$(echo -n $BENCHMARK_API_TOKEN | base64)
 
 ./provisioning/buffer/kubernetes/build.sh
 
-kubectl apply -f ./kubernetes/deploy/benchmark/namespace.yaml
-kubectl apply -f ./kubernetes/deploy/benchmark/secret.yaml
-kubectl apply -f ./kubernetes/deploy/benchmark/job.yaml
+kubectl apply -f ./provisioning/buffer/kubernetes/deploy/benchmark/namespace.yaml
+kubectl apply -f ./provisioning/buffer/kubernetes/deploy/benchmark/secret.yaml
+kubectl apply -f ./provisioning/buffer/kubernetes/deploy/benchmark/job.yaml
 ```

@@ -19,6 +19,7 @@ spec:
         log: "true"
     spec:
       terminationGracePeriodSeconds: 300
+      restartPolicy: Never
       containers:
         - name: benchmark
           image: docker.io/keboolabot/buffer-benchmark:latest
