@@ -15,8 +15,11 @@ fi
 # Get credentials to the Amazon Elastic Kubernetes Service
 aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
+# Manualy deploy storage class
+kubectl apply -f ./kubernetes/deploy/cloud/aws/storage-class.yaml
+
 # Common part of the deploy
-export ETCD_STORAGE_CLASS_NAME="etcd-gp3"
+export ETCD_STORAGE_CLASS_NAME="etcd-gp3-max"
 . ./common.sh
 
 # AWS specific part of the deploy
