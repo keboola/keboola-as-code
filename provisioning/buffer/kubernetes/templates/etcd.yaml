@@ -17,9 +17,10 @@ extraEnvVars:
 
 # Set disk size
 persistence:
-  size: 100Gi
+  size: 2000Gi
 
 # Run defragmentation each 30 minutes
 defragmentation:
   cronjob:
     schedule: "*/30 * * * *"
+
