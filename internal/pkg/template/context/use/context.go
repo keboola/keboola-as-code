@@ -75,6 +75,10 @@ type Placeholder struct {
 	asValue  interface{} // eg. ConfigId, RowID, eg. ConfigId("<<~~placeholder:1~~>>)
 }
 
+func (v Placeholder) Value() any {
+	return v.asValue
+}
+
 type PlaceholderResolver func(p Placeholder, cb ResolveCallback)
 
 type ResolveCallback func(newID interface{})
@@ -151,6 +155,15 @@ func (c *Context) InstanceID() string {
 
 func (c *Context) JsonnetContext() *jsonnet.Context {
 	return c.jsonnetCtx
+}
+
+// ReplaceContentField sets nested value in config/row.Content ordered map.
+func (c *Context) ReplaceContentField(objectKey model.Key, fieldPath orderedmap.Path, replace any) {
+	c.replacements.AddContentField(objectKey, fieldPath, replace)
+}
+
+func (c *Context) Placeholders() PlaceholdersMap {
+	return c.placeholders
 }
 
 func (c *Context) Replacements() (*replacevalues.Values, error) {

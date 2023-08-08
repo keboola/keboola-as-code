@@ -33,7 +33,7 @@ func (m *replaceKeysMapper) AfterRemoteOperation(_ context.Context, changes *mod
 }
 
 func (m *replaceKeysMapper) afterOperation(changes changes) error {
-	// Replace keys in the loaded remote objects
+	// Replace keys in the loaded objects
 	replaced := make(map[string]model.ObjectState)
 	errs := errors.NewMultiError()
 	for _, original := range changes.Loaded() {
