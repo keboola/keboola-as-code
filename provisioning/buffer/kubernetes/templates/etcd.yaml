@@ -17,7 +17,7 @@ extraEnvVars:
 
 # Set disk size
 persistence:
-  size: 2000Gi
+  size: 100Gi
 
 # Run defragmentation each 30 minutes
 defragmentation:
