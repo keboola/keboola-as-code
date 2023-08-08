@@ -100,7 +100,7 @@ spec:
             - name: BUFFER_WORKER_MIN_UPLOAD_INTERVAL
               value: "5s"
             - name: BUFFER_API_RECEIVER_BUFFER_SIZE
-              value: "1G"
+              value: "10G"
           startupProbe:
             httpGet:
               path: /health-check
