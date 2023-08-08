@@ -32,7 +32,7 @@ spec:
           env:
             # 80% of the resources.limits.memory 8125
             - name: GOMEMLIMIT
-              value: "400MiB"
+              value: "1600MiB"
             - name: BENCHMARK_API_HOST
               value: "https://buffer.$HOSTNAME_SUFFIX"
             - name: BENCHMARK_API_TOKEN
