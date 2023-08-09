@@ -58,7 +58,7 @@ func TestRecordsReader(t *testing.T) {
 	// Read all
 	// start := time.Now()
 	// t.Logf(`read start: %s`, start)
-	reader := newRecordsReader(ctx, logger, client, sm, slice, receivedStats, &uploadStats)
+	reader := newRecordsReader(ctx, logger, client, sm, slice, receivedStats, &uploadStats, 100)
 	rSize, err := io.Copy(io.Discard, reader)
 	assert.NoError(t, err)
 	assert.Equal(t, (recordSize * datasize.ByteSize(recordsCount)).String(), datasize.ByteSize(rSize).String())
