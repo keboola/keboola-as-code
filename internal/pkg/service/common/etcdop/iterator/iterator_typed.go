@@ -47,7 +47,7 @@ func (v *ForEachOpT[T]) Op(ctx context.Context) (etcd.Op, error) {
 	// Other pages are loaded within MapResponse method, see below.
 	// Iterator always load next pages WithRevision,
 	// so all results, from all pages, are from the same revision.
-	return firstPageOp(v.def.prefix, v.def.end, v.def.pageSize, v.def.revision).Op(ctx)
+	return getPageOp(v.def.prefix, v.def.end, v.def.pageSize, v.def.revision, v.def.serializable).Op(ctx)
 }
 
 func (v *ForEachOpT[T]) MapResponse(ctx context.Context, response op.Response) (result any, err error) {
