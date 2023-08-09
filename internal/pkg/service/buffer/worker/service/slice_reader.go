@@ -38,7 +38,13 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 		// Therefore, the WithFromSameRev(false) is used.
 		// This also prevents ErrCompacted, because we are not requesting a specific version.
 		records := schema.Records().InSlice(slice.SliceKey)
-		itr := records.GetAll(iterator.WithPageSize(pageSize), iterator.WithFromSameRev(false)).Do(ctx, client)
+		itr := records.
+			GetAll(
+				iterator.WithPageSize(pageSize),
+				iterator.WithFromSameRev(false),
+				iterator.WithSerializable(),
+			).
+			Do(ctx, client)
 		for itr.Next() {
 			row := itr.Value().Value
 			row = bytes.ReplaceAll(row, idPlaceholder, []byte(strconv.FormatUint(id, 10)))
