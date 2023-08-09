@@ -29,6 +29,7 @@ const (
 type config struct {
 	credentials       Credentials
 	debugOpLogs       bool
+	targetLeader      bool
 	connectTimeout    time.Duration
 	keepAliveTimeout  time.Duration
 	keepAliveInterval time.Duration
@@ -47,6 +48,13 @@ func UseNamespace(c *etcd.Client, prefix string) {
 func WithDebugOpLogs(v bool) Option {
 	return func(c *config) {
 		c.debugOpLogs = v
+	}
+}
+
+// WithTargetLeader creates connections only to the leader node.
+func WithTargetLeader(v bool) Option {
+	return func(c *config) {
+		c.targetLeader = v
 	}
 }
 
@@ -184,6 +192,15 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
 	}
 
+	// Connect only to the leader node, if enabled
+	if cfg.targetLeader {
+		if eps, err := findLeaderEndpoints(ctx, c); err == nil {
+			c.SetEndpoints(eps...)
+		} else {
+			return nil, err
+		}
+	}
+
 	// Connection check: get cluster members
 	if _, err := c.MemberList(connectCtx); err != nil {
 		_ = c.Close()
@@ -203,4 +220,29 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	logger.Infof(`connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
 	return c, nil
+}
+
+// findLeaderEndpoints inspired by https://github.com/etcd-io/etcd/blob/43f10cbd57b8b1c3f79f6efce99dd3b0b6a9e557/tools/benchmark/cmd/util.go#L44C6-L44C13
+func findLeaderEndpoints(ctx context.Context, c *etcd.Client) (leaderEps []string, err error) {
+	resp, lerr := c.MemberList(ctx)
+	if lerr != nil {
+		return nil, errors.New("failed to find a leader endpoint")
+	}
+
+	leaderID := uint64(0)
+	for _, ep := range c.Endpoints() {
+		if sresp, serr := c.Status(ctx, ep); serr == nil {
+			leaderID = sresp.Leader
+			break
+		}
+	}
+
+	for _, m := range resp.Members {
+		if m.ID == leaderID {
+			leaderEps = m.ClientURLs
+			return
+		}
+	}
+
+	return nil, errors.New("failed to find a leader endpoint")
 }

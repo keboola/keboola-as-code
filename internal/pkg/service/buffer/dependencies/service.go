@@ -114,6 +114,7 @@ func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servic
 		ctx, d, cfg.Etcd,
 		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
 		etcdclient.WithDebugOpLogs(cfg.DebugEtcd),
+		etcdclient.WithTargetLeader(cfg.EtcdTargetLeader),
 	)
 	if err != nil {
 		return nil, err

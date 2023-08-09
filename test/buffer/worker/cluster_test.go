@@ -238,6 +238,7 @@ func (ts *testSuite) createAPINode(i int) *apiNode {
 	envs.Set("BUFFER_API_PUBLIC_ADDRESS", apiAddress)
 	envs.Set("BUFFER_API_STATISTICS_SYNC_INTERVAL", statisticsSyncInterval.String())
 	envs.Set("BUFFER_API_RECEIVER_BUFFER_SIZE", receiverBufferSize.String())
+	envs.Set("BUFFER_API_ETCD_TARGET_LEADER", "true")
 
 	// Create log file
 	logFile, err := os.OpenFile(filepath.Join(ts.logsDir, nodeID+".out.txt"), os.O_CREATE|os.O_WRONLY, 0o644) //nolint:forbidigo

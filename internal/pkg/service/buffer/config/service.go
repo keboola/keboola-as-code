@@ -23,6 +23,7 @@ type ServiceConfig struct {
 	CPUProfFilePath      string                 `mapstructure:"cpu-profile" usage:"Write cpu profile to the file."`
 	StorageAPIHost       string                 `mapstructure:"storage-api-host" usage:"Host of the Storage API."`
 	Etcd                 etcdclient.Credentials `mapstructure:",squash" usage:"etcd client credentials."`
+	EtcdTargetLeader     bool                   `mapstructure:"etcd-target-leader" usage:"Connect only to the leader node."`
 	EtcdConnectTimeout   time.Duration          `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
 	StatisticsL2CacheTTL time.Duration          `mapstructure:"statistics-l2-cache-ttl" usage:"Invalidation interval fast L2 statistics cache."`
 	UploadTransport      http.RoundTripper      `json:"-"`
@@ -43,6 +44,7 @@ func NewServiceConfig() ServiceConfig {
 			Username:  "",
 			Password:  "",
 		},
+		EtcdTargetLeader:     false,
 		EtcdConnectTimeout:   30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API/Worker
 		StatisticsL2CacheTTL: DefaultStatisticsL2CacheTTL,
 		UploadTransport:      nil, // use default transport

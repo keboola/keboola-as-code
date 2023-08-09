@@ -1,4 +1,4 @@
-[bufferApi]INFO Configuration: debug-log=false; debug-etcd=false; debug-http=false; datadog-enabled=false; datadog-debug=false; cpu-profile=; storage-api-host=%s; etcd-endpoint=%s; etcd-namespace=%s; etcd-username=%s; etcd-connect-timeout=30s; statistics-l2-cache-ttl=1s; unique-id=; public-address=%s; listen-address=%s; metrics-listen-address=%s; statistics-sync-interval=1s; receiver-buffer-size=100MB;
+[bufferApi]INFO Configuration: debug-log=false; debug-etcd=false; debug-http=false; datadog-enabled=false; datadog-debug=false; cpu-profile=; storage-api-host=%s; etcd-endpoint=%s; etcd-namespace=%s; etcd-username=%s; etcd-target-leader=false; etcd-connect-timeout=30s; statistics-l2-cache-ttl=1s; unique-id=; public-address=%s; listen-address=%s; metrics-listen-address=%s; statistics-sync-interval=1s; receiver-buffer-size=100MB;
 [bufferApi]INFO process unique id "%s"
 [bufferApi][metrics]INFO HTTP server listening on "localhost:%d/metrics"
 [bufferApi]INFO loading Storage API index without components
