@@ -22,7 +22,7 @@ spec:
         - name: benchmark
           image: fangruo/etcd-benchmark:1.0
           command: ["benchmark"]
-          args: ["--endpoints=100.64.17.85:2379", "--conns=200", "--clients=2000", "put", "--key-size=8", "--sequential-keys", "--total=1000000", "--val-size=1024", "--user=root:$ETCD_PASSWORD"]
+          args: ["--endpoints=100.64.17.85:2379", "--target-leader", "--conns=200", "--clients=2000", "put", "--key-size=8", "--sequential-keys", "--total=1000000", "--val-size=1024", "--user=root:$ETCD_PASSWORD"]
           resources:
             requests:
               cpu: "1"
