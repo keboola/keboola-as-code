@@ -202,7 +202,7 @@ extraDeploy:
                       
                       # Common flags
                       read -r -a flags <<<"$(etcdctl_auth_flags)"
-                      cmd="etcdctl ${flags[@]}"
+                      cmd="etcdctl --command-timeout=60s ${flags[@]}"
                       
                       # Sequentially run defragmentation for each node
                       for (( index=0; index<$ETCD_REPLICAS; index++ )); do
