@@ -94,8 +94,9 @@ spec:
             - name: BUFFER_WORKER_READER_PAGE_SIZE
               value: "10000"
             - name: BUFFER_WORKER_MIN_UPLOAD_INTERVAL
-              value: "5s"
-
+              value: "1s"
+            - name: BUFFER_WORKER_CHECK_CONDITIONS_INTERVAL
+              value: "1s"
       tolerations:
         - key: app
           operator: Exists
