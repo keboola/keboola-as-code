@@ -9,7 +9,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -79,25 +78,25 @@ func NewImporter(d dependencies) *Importer {
 
 // CreateRecord in etcd temporal database.
 func (i *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey key.ReceiverKey, secret string, bodyReader io.ReadCloser) (err error) {
-	// Metrics
-	var bodySize int64
-	defer func() {
-		attrs := []attribute.KeyValue{
-			attribute.String("projectId", receiverKey.ProjectID.String()),
-			attribute.String("receiverId", receiverKey.ReceiverID.String()),
-			attribute.String("source", "http"),
-			attribute.Bool("is_success", err == nil),
-		}
-		if err != nil {
-			attrs = append(attrs,
-				attribute.Bool("is_application_error", HTTPCodeFrom(err) >= http.StatusInternalServerError),
-				attribute.String("error_type", telemetry.ErrorType(err)),
-			)
-		}
-		attrsOption := metric.WithAttributes(attrs...)
-		i.metrics.Count.Add(ctx, 1, attrsOption)
-		i.metrics.BodySize.Add(ctx, bodySize, attrsOption)
-	}()
+	//// Metrics
+	//var bodySize int64
+	//defer func() {
+	//	attrs := []attribute.KeyValue{
+	//		attribute.String("projectId", receiverKey.ProjectID.String()),
+	//		attribute.String("receiverId", receiverKey.ReceiverID.String()),
+	//		attribute.String("source", "http"),
+	//		attribute.Bool("is_success", err == nil),
+	//	}
+	//	if err != nil {
+	//		attrs = append(attrs,
+	//			attribute.Bool("is_application_error", HTTPCodeFrom(err) >= http.StatusInternalServerError),
+	//			attribute.String("error_type", telemetry.ErrorType(err)),
+	//		)
+	//	}
+	//	attrsOption := metric.WithAttributes(attrs...)
+	//	i.metrics.Count.Add(ctx, 1, attrsOption)
+	//	i.metrics.BodySize.Add(ctx, bodySize, attrsOption)
+	//}()
 
 	// Get cached receiver from the memory
 	receiver, found, unlock := i.watcher.GetReceiver(receiverKey)
