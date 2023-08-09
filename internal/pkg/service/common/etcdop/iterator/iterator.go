@@ -246,7 +246,7 @@ func nextPageOp(start, end string, pageSize int, revision int64, serializable bo
 		etcd.WithFromKey(),
 		etcd.WithRange(end), // iterate to the end of the prefix
 		etcd.WithLimit(int64(pageSize)),
-		etcd.WithSort(etcd.SortByKey, etcd.SortAscend),
+		//etcd.WithSort(etcd.SortByKey, etcd.SortAscend),
 	}
 
 	// Ensure atomicity
