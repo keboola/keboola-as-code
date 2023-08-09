@@ -29,6 +29,8 @@ if [[ "$CREATE_BUFFER_BENCHMARK" == "true" ]]; then
   envsubst < templates/benchmark/namespace.yaml   > deploy/benchmark/namespace.yaml
   envsubst < templates/benchmark/secret.yaml      > deploy/benchmark/secret.yaml
   envsubst < templates/benchmark/job.yaml         > deploy/benchmark/job.yaml
+  envsubst < templates/benchmark/etcd-benchmark-job.yaml         > deploy/benchmark/etcd-benchmark-job.yaml
+
 fi
 
 

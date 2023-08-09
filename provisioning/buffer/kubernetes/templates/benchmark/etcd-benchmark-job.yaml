@@ -1,0 +1,41 @@
+---
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: etcd-benchmark
+  namespace: buffer-benchmark
+  labels:
+    app: etcd-benchmark
+spec:
+  template:
+    metadata:
+      labels:
+        app: etcd-load-test
+        buffer-etcd-client: "true"
+        tags.datadoghq.com/env: "$KEBOOLA_STACK"
+        tags.datadoghq.com/service: "etcd-load-test"
+        tags.datadoghq.com/version: "$RELEASE_ID"
+    spec:
+      terminationGracePeriodSeconds: 300
+      restartPolicy: Never
+      containers:
+        - name: benchmark
+          image: fangruo/etcd-benchmark:1.0
+          command: ["benchmark"]
+          args: ["--endpoints=100.64.17.85:2379", "--conns=200", "--clients=2000", "put", "--key-size=8", "--sequential-keys", "--total=1000000", "--val-size=1024", "--user=root:$ETCD_PASSWORD"]
+          resources:
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+          env:
+            - name: ETCD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: benchmark
+                  key: etcd-password
+      tolerations:
+        - key: app
+          operator: Exists
+          effect: NoSchedule
+      nodeSelector:
+        nodepool: main
