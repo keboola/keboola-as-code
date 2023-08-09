@@ -91,6 +91,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
+            - name: BUFFER_WORKER_READER_PAGE_SIZE
+              value: "10000"
+            - name: BUFFER_WORKER_MIN_UPLOAD_INTERVAL
+              value: "1s"
+
       tolerations:
         - key: app
           operator: Exists
