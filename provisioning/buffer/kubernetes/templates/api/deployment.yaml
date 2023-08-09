@@ -98,7 +98,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
             - name: BUFFER_WORKER_MIN_UPLOAD_INTERVAL
-              value: "5s"
+              value: "1s"
             - name: BUFFER_API_RECEIVER_BUFFER_SIZE
               value: "10G"
           startupProbe:
