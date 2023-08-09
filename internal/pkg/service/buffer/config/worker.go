@@ -42,6 +42,7 @@ type WorkerConfig struct {
 	RetryFailedFiles        bool             `mapstructure:"enable-retry-failed-files" usage:"Enable retry for failed files."`
 	TasksCleanup            bool             `mapstructure:"tasks-cleanup-enabled" usage:"Enable periodical tasks cleanup functionality."`
 	TasksCleanupInterval    time.Duration    `mapstructure:"tasks-cleanup-interval" usage:"How often will old tasks be deleted."`
+	ReaderPageSize          int              `mapstructure:"reader-page-size" usage:"Page size of etcd range queries."`
 }
 
 func NewWorkerConfig() WorkerConfig {
@@ -66,6 +67,7 @@ func NewWorkerConfig() WorkerConfig {
 		RetryFailedFiles:     true,
 		TasksCleanup:         true,
 		TasksCleanupInterval: DefaultCleanupInterval,
+		ReaderPageSize:       100,
 	}
 }
 

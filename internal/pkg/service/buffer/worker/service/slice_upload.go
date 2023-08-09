@@ -117,7 +117,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 
 				// Upload slice, set statistics
 				uploadStats := statistics.AfterUpload{}
-				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice, stats.Total, &uploadStats)
+				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice, stats.Total, &uploadStats, s.config.ReaderPageSize)
 				if err := fileManager.UploadSlice(ctx, &slice, reader, &uploadStats); err != nil {
 					return task.ErrResult(errors.Errorf(`file upload failed: %w`, err))
 				}

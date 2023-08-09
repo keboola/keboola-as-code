@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Client, schema *schema.Schema, slice model.Slice, receivedStats statistics.Value, uploadStats *statistics.AfterUpload) io.Reader {
+func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Client, schema *schema.Schema, slice model.Slice, receivedStats statistics.Value, uploadStats *statistics.AfterUpload, pageSize int) io.Reader {
 	out, in := io.Pipe()
 	go func() {
 		var err error
@@ -37,9 +37,14 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 		// It is guaranteed that new records are not added to the prefix, and existing ones are not changed.
 		// Therefore, the WithFromSameRev(false) is used.
 		// This also prevents ErrCompacted, because we are not requesting a specific version.
-		pageSize := 100
 		records := schema.Records().InSlice(slice.SliceKey)
-		itr := records.GetAll(iterator.WithPageSize(pageSize), iterator.WithFromSameRev(false)).Do(ctx, client)
+		itr := records.
+			GetAll(
+				iterator.WithPageSize(pageSize),
+				iterator.WithFromSameRev(false),
+				iterator.WithSerializable(),
+			).
+			Do(ctx, client)
 		for itr.Next() {
 			row := itr.Value().Value
 			row = bytes.ReplaceAll(row, idPlaceholder, []byte(strconv.FormatUint(id, 10)))
