@@ -34,7 +34,7 @@ spec:
             - name: GOMEMLIMIT
               value: "1600MiB"
             - name: BENCHMARK_API_HOST
-              value: "https://buffer.$HOSTNAME_SUFFIX"
+              value: "http://buffer-api.buffer.svc.cluster.local"
             - name: BENCHMARK_API_TOKEN
               valueFrom:
                 secretKeyRef:
