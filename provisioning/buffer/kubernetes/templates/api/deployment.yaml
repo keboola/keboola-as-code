@@ -99,8 +99,6 @@ spec:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
             - name: BUFFER_API_RECEIVER_BUFFER_SIZE
               value: "10G"
-            - name: BUFFER_API_ETCD_TARGET_LEADER
-              value: "false"
           startupProbe:
             httpGet:
               path: /health-check
