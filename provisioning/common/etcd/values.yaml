@@ -94,7 +94,7 @@ networkPolicy:
 # Set disk size
 persistence:
   enabled: true
-  size: 10Gi
+  size: 50Gi
 
 # At least 51% of the cluster must be available during rollout,
 # otherwise, the quorum is lost and the cluster will not work.
