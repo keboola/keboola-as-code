@@ -42,6 +42,7 @@ echo $GKE_CLUSTER_LOCATION
 
 gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
 
+# https://cloud.google.com/blog/products/containers-kubernetes/kubectl-auth-changes-in-gke
 echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
 sudo apt update
@@ -54,7 +55,8 @@ export ETCD_STORAGE_CLASS_NAME=
 . ./common.sh
 
 # GCP specific part of the deploy
-# TODO
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/service.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress.yaml
 
 # Wait for the rollout
 . ./wait.sh
