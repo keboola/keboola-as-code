@@ -41,4 +41,20 @@ echo $GKE_CLUSTER_NAME
 echo $GKE_CLUSTER_LOCATION
 
 gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+sudo apt update
+sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
+
 gcloud container clusters get-credentials $GKE_CLUSTER_NAME --region $GKE_CLUSTER_LOCATION --project $GCP_PROJECT
+
+# Common part of the deploy
+export ETCD_STORAGE_CLASS_NAME=
+. ./common.sh
+
+# GCP specific part of the deploy
+# TODO
+
+# Wait for the rollout
+. ./wait.sh
