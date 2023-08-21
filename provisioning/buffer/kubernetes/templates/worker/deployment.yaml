@@ -46,15 +46,15 @@ spec:
           resources:
             requests:
               cpu: "200m"
-              memory: "512Mi"
+              memory: $BUFFER_WORKER_MEMORY
             limits:
-              memory: "512Mi"
+              memory: $BUFFER_WORKER_MEMORY
           ports:
             - containerPort: 9000 # metrics
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
-              value: "400MiB"
+              value: $BUFFER_WORKER_MEMORY_GOMEMLIMIT
             - name: BUFFER_WORKER_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
