@@ -1,13 +1,5 @@
 # Extends values from the common directory
 
-# Resources limits
-resources:
-  requests:
-    cpu: "200m"
-    memory: "2000Mi"
-  limits:
-    memory: "2000Mi"
-
 # Run defragmentation each 2 hours
 defragmentation:
   cronjob:
