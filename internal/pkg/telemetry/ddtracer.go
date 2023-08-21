@@ -43,7 +43,7 @@ func (t *wrappedDDTracer) Start(ctx context.Context, spanName string, opts ...tr
 	if span != nil {
 		span = &wrappedDDSpan{Span: span, tracerProvider: t.tracerProvider}
 	}
-	return ctx, span
+	return trace.ContextWithSpan(ctx, span), span
 }
 
 func (s *wrappedDDSpan) TracerProvider() trace.TracerProvider {
