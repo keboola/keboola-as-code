@@ -23,9 +23,10 @@ const (
 	stackTraceLength      = 20
 )
 
+// wrappedDDSpan to override RecordError.
 type wrappedDDSpan struct {
 	trace.Span
-	tracerProvider trace.TracerProvider
+	tp *wrappedDDTracerProvider
 }
 
 type stackTracer interface {
@@ -33,7 +34,7 @@ type stackTracer interface {
 }
 
 func (s *wrappedDDSpan) TracerProvider() trace.TracerProvider {
-	return s.tracerProvider
+	return s.tp
 }
 
 func (s *wrappedDDSpan) RecordError(err error, _ ...trace.EventOption) {
