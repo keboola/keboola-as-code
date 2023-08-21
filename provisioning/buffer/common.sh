@@ -20,6 +20,9 @@ fi
 : ${BUFFER_ETCD_REPLICAS?"Missing BUFFER_ETCD_REPLICAS"}
 : ${ETCD_STORAGE_CLASS_NAME?"Missing ETCD_STORAGE_CLASS_NAME"}
 
+# Default values
+export BUFFER_ETCD_MEMORY="${BUFFER_ETCD_MEMORY:="2000Mi"}"
+
 # Constants
 export NAMESPACE="buffer"
 ETCD_HELM_CHART_VERSION="8.5.8"
@@ -43,7 +46,9 @@ helm upgrade \
   --namespace "$NAMESPACE" \
   --set "replicaCount=$BUFFER_ETCD_REPLICAS" \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD" \
-  --set "persistence.storageClass=$ETCD_STORAGE_CLASS_NAME"
+  --set "persistence.storageClass=$ETCD_STORAGE_CLASS_NAME" \
+  --set "resources.requests.memory=$BUFFER_ETCD_MEMORY" \
+  --set "resources.limits.memory=$BUFFER_ETCD_MEMORY"
 
 # API
 kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
