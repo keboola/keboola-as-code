@@ -2,18 +2,19 @@ package telemetry
 
 import (
 	"context"
+
 	"go.opentelemetry.io/otel/trace"
 )
 
 type wrappedDDTracer struct {
-	tracer         trace.Tracer
-	tracerProvider trace.TracerProvider
+	trace.Tracer
 }
 
-func (t *wrappedDDTracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	ctx, span := t.tracer.Start(ctx, spanName, opts...)
+// Start method wraps underlying DD span to wrappedDDSpan, see details there.
+func (t *wrappedDDTracer) Start(parentCtx context.Context, spanName string, opts ...trace.SpanStartOption) (ctx context.Context, span trace.Span) {
+	ctx, span = t.Tracer.Start(parentCtx, spanName, opts...)
 	if span != nil {
-		span = &wrappedDDSpan{Span: span, tracerProvider: t.tracerProvider}
+		span = &wrappedDDSpan{Span: span}
 	}
 	return ctx, span
 }

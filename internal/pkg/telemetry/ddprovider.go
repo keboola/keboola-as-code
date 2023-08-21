@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"sync"
+
 	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/trace"
@@ -11,22 +13,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 )
 
-type singleTracerProvider struct {
-	tracer trace.Tracer
+type wrappedDDTracerProvider struct {
+	*ddotel.TracerProvider
+	lock    *sync.Mutex
+	tracers map[string]trace.Tracer
 }
 
 // NewDDTracerProvider - see wrapDDTracerProvider.
 func NewDDTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...ddTracer.StartOption) trace.TracerProvider {
 	opts = append(opts, ddTracer.WithLogger(NewDDLogger(logger)))
-	wrappedTp := ddotel.NewTracerProvider(opts...)
+	tp := &wrappedDDTracerProvider{
+		TracerProvider: ddotel.NewTracerProvider(opts...),
+		lock:           &sync.Mutex{},
+		tracers:        make(map[string]trace.Tracer),
+	}
 	proc.OnShutdown(func() {
-		if err := wrappedTp.Shutdown(); err != nil {
+		if err := tp.Shutdown(); err != nil {
 			logger.Error(err)
 		}
 	})
-
-	// Wrap a tracer instance that will be used everywhere
-	tp := wrapDDTracerProvider(wrappedTp.Tracer(""))
 
 	// Register legacy OpenCensus tracing for go-cloud (https://github.com/google/go-cloud/issues/2877).
 	octrace.DefaultTracer = opencensus.NewTracer(tp.Tracer("opencensus-bridge"))
@@ -34,17 +39,15 @@ func NewDDTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...dd
 	return tp
 }
 
-// wrapDDTracerProvider is a workaround for DataDog OpenTelemetry tracer.
-// DataDog restarts a global tracer on each TracerProvider.Tracer() call, which is not what we want.
-// In the DataDog library there is no concept (internally yes, but not publicly) of tracer instance,
-// everything is handled globally.
-func wrapDDTracerProvider(tracer trace.Tracer) trace.TracerProvider {
-	tp := &singleTracerProvider{}
-	tc := &wrappedDDTracer{tracer: tracer, tracerProvider: tp}
-	tp.tracer = tc
-	return tp
-}
+func (p *wrappedDDTracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.Tracer {
+	p.lock.Lock()
+	defer p.lock.Unlock()
 
-func (p *singleTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
-	return p.tracer
+	v, ok := p.tracers[name]
+	if !ok {
+		v = &wrappedDDTracer{Tracer: p.TracerProvider.Tracer(name, opts...)}
+		p.tracers[name] = v
+	}
+
+	return v
 }
