@@ -16,6 +16,7 @@ func (t *wrappedDDTracer) Start(parentCtx context.Context, spanName string, opts
 	ctx, span = t.Tracer.Start(parentCtx, spanName, opts...)
 	if span != nil {
 		span = &wrappedDDSpan{Span: span, tp: t.tp}
+		ctx = trace.ContextWithSpan(ctx, span)
 	}
 	return ctx, span
 }
