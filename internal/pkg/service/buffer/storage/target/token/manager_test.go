@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/target/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
