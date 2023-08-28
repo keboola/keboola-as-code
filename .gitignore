@@ -26,7 +26,7 @@ coverage.html
 vendor/*
 
 # Build dir
-target
+/target
 
 # Environment
 /.env
