@@ -26,6 +26,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.15.1
 	github.com/go-resty/resty/v2 v2.7.0
+	github.com/gofrs/flock v0.8.1
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -185,7 +186,6 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
-	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
