@@ -2,7 +2,6 @@ package notify
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"sync"
 )
 
 // Notifier allows multiple listeners to Wait for the completion of an operation that may end with an error.
@@ -13,8 +12,6 @@ type Notifier struct {
 }
 
 func New() *Notifier {
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
 	return &Notifier{doneCh: make(chan struct{})}
 }
 
