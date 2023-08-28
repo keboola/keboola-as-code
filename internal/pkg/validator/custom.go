@@ -17,6 +17,9 @@ import (
 
 func (v *wrapper) registerCustomMessages() {
 	v.registerErrorMessage("required_if", "{0} is a required field")
+	v.registerErrorMessage("required_unless", "{0} is a required field")
+	v.registerErrorMessage("excluded_if", "{0} should not be set")
+	v.registerErrorMessage("excluded_unless", "{0} should not be set")
 }
 
 func (v *wrapper) registerCustomRules() {
