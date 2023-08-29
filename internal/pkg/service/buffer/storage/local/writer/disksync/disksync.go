@@ -243,7 +243,7 @@ func (s *Syncer) doSync() *notify.Notifier {
 	s.notifier = notify.New()
 	s.notifierLock.Unlock()
 
-	// Reset timer for periodical sync
+	// Schedule next periodical sync
 	s.timer.Reset(s.config.IntervalTrigger)
 
 	s.wg.Add(1)
