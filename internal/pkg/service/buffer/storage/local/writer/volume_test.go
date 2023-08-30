@@ -10,6 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -200,6 +202,7 @@ type volumeTestCase struct {
 	Ctx        context.Context
 	Logger     log.DebugLogger
 	Clock      *clock.Mock
+	Allocator  *testAllocator
 	VolumePath string
 }
 
@@ -217,11 +220,19 @@ func newVolumeTestCase(t testing.TB) *volumeTestCase {
 		Ctx:        ctx,
 		Logger:     logger,
 		Clock:      clock.NewMock(),
+		Allocator:  &testAllocator{},
 		VolumePath: tmpDir,
 	}
 }
 
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
+	opts = append([]Option{
+		WithAllocator(tc.Allocator),
+		WithWriterFactory(func(w base.Writer) (SliceWriter, error) {
+			return test.NewSliceWriter(w), nil
+		}),
+	}, opts...)
+
 	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.VolumePath, opts...)
 }
 
