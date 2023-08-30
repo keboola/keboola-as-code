@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestConfig(t *testing.T) {
+func TestConfig_Validation(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {

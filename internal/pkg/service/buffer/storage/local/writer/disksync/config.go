@@ -36,13 +36,13 @@ type Mode string
 //   - When Mode=cache and Wait=false, writing will NOT WAIT for synchronization to OS DISK CACHE; synchronization to DISK is handled by the OS.
 type Config struct {
 	// Mode defines sync mode: more durable ModeDisk or faster ModeCache.
-	Mode Mode `json:"mode" validate:"required,one_of=disabled disk cache"`
+	Mode Mode `json:"mode" validate:"required,oneof=disabled disk cache"`
 	// Wait defines whether the operation should wait for sync.
-	Wait bool `json:"wait"`
+	Wait bool `json:"wait" validate:"excluded_if= Mode disabled"`
 	// BytesTrigger defines the size after the sync will be triggered.
-	BytesTrigger datasize.ByteSize `json:"bytesTrigger,omitempty" validate:"required,excluded_if= Mode disabled"`
+	BytesTrigger datasize.ByteSize `json:"bytesTrigger,omitempty" validate:"maxBytes=100MB,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache"`
 	// IntervalTrigger defines the interval after the sync will be triggered.
-	IntervalTrigger time.Duration `json:"intervalTrigger,omitempty"  validate:"required,excluded_if= Mode disabled"`
+	IntervalTrigger time.Duration `json:"intervalTrigger,omitempty"  validate:"min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache"`
 }
 
 func DefaultConfig() Config {
