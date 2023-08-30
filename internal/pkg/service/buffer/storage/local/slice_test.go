@@ -23,15 +23,17 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok",
 			Value: Slice{
 				Dir:           "my-dir",
+				Filename:      "slice.csv.gzip",
 				AllocateSpace: 10 * datasize.KB,
 				Compression:   compression.DefaultConfig(),
 				Sync:          disksync.DefaultConfig(),
 			},
 		},
 		{
-			Name: "ok: is empty",
+			Name: "ok: IsEmpty=true",
 			Value: Slice{
 				Dir:           "my-dir",
+				Filename:      "slice.csv.gzip",
 				IsEmpty:       true,
 				AllocateSpace: 10 * datasize.KB,
 				Compression:   compression.DefaultConfig(),
@@ -42,6 +44,7 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok: disk space allocation disabled",
 			Value: Slice{
 				Dir:           "my-dir",
+				Filename:      "slice.csv.gzip",
 				AllocateSpace: 0,
 				Compression:   compression.DefaultConfig(),
 				Sync:          disksync.DefaultConfig(),
@@ -52,6 +55,18 @@ func TestSlice_Validation(t *testing.T) {
 			ExpectedError: `"dir" is a required field`,
 			Value: Slice{
 				Dir:           "",
+				Filename:      "slice.csv.gzip",
+				AllocateSpace: 0,
+				Compression:   compression.DefaultConfig(),
+				Sync:          disksync.DefaultConfig(),
+			},
+		},
+		{
+			Name:          "empty filename",
+			ExpectedError: `"filename" is a required field`,
+			Value: Slice{
+				Dir:           "my-dir",
+				Filename:      "",
 				AllocateSpace: 0,
 				Compression:   compression.DefaultConfig(),
 				Sync:          disksync.DefaultConfig(),
