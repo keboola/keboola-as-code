@@ -1,2 +1,146 @@
 // Package writer provides writing of tabular data to local storage.
 package writer
+
+import (
+	"github.com/c2h5oh/datasize"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"io"
+	"os"
+)
+
+const (
+	sliceFileFlags = os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	sliceFilePerm  = 0o640
+	sliceDirPerm   = 0o750
+)
+
+type SliceWriter interface {
+	SliceKey() storage.SliceKey
+	DirPath() string
+	FilePath() string
+	WriteRow(values []any) error
+	CompressedSize() datasize.ByteSize
+	UncompressedSize() datasize.ByteSize
+	Close() error
+}
+
+type writerRef struct {
+	SliceWriter
+}
+
+func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
+	// Check context
+	if err := v.ctx.Err(); err != nil {
+		return nil, errors.Errorf(`writer for slice "%s cannot be created, volume is closed: %w`, slice.SliceKey.String(), err)
+	}
+
+	// Setup logger
+	logger := v.logger
+
+	// Check if the writer already exists, if not, register an empty reference to unlock immediately
+	ref, exists := v.addWriterFor(slice.SliceKey)
+	if exists {
+		return nil, errors.Errorf(`writer for slice "%s" already exists`, slice.SliceKey.String())
+	}
+
+	// Close resources on a creation error
+	var file *os.File
+	var chain *writechain.Chain
+	defer func() {
+		if err == nil {
+			// Update reference
+			ref.SliceWriter = w
+		} else {
+			// Close resources
+			if chain != nil {
+				_ = chain.Close()
+			} else if file != nil {
+				_ = file.Close()
+			}
+			// Unregister the writer
+			v.removeWriter(slice.SliceKey)
+		}
+	}()
+
+	// Create directory if not exists
+	dirPath := filesystem.Join(v.path, slice.LocalStorage.Dir)
+	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
+		return nil, errors.Errorf(`cannot create slice directory "%s": %w`, dirPath, err)
+	}
+
+	// Open file
+	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
+	file, err = os.OpenFile(filePath, sliceFileFlags, sliceFilePerm)
+	if err == nil {
+		logger.Debug("opened file")
+	} else {
+		logger.Error(`cannot open file file "%s": %s`, filePath, err)
+		return nil, err
+	}
+
+	// Allocate disk space
+	if size := slice.LocalStorage.AllocateSpace; size != 0 {
+		if ok, err := v.config.allocator.Allocate(file, size); ok {
+			logger.Debugf(`allocated disk space "%s"`, size)
+		} else if err != nil {
+			// The error is not fatal
+			logger.Errorf(`cannot allocate disk space "%s", allocation skipped: %s`, size, err)
+		} else {
+			logger.Debug("disk space allocation is not supported")
+		}
+	} else {
+		logger.Debug("disk space allocation is disabled")
+	}
+
+	// Init writers chain
+	chain = writechain.New(logger, file)
+
+	// Unregister the writer on close
+	chain.AppendCloseFn(func() error {
+		v.removeWriter(slice.SliceKey)
+		return nil
+	})
+
+	// Setup sync to disk or OS disk cache
+	var syncer *disksync.Syncer
+	chain.PrependWriter(func(w writechain.Writer) io.Writer {
+		syncer = disksync.NewSyncer(v.ctx, logger, v.clock, slice.LocalStorage.Sync, w, chain)
+		if syncer == nil {
+			// Synchronization is disabled, return original writer
+			return w
+		} else {
+			// Synchronization is enabled
+			return syncer
+		}
+	})
+
+	// Create writer via factory
+	return v.config.writerFactory(base.NewWriter(logger, slice, dirPath, filePath, chain, syncer))
+}
+
+func (v *Volume) addWriterFor(k storage.SliceKey) (ref *writerRef, exists bool) {
+	v.writersLock.Lock()
+	defer v.writersLock.Unlock()
+
+	key := k.String()
+	ref, exists = v.writers[key]
+	if !exists {
+		// Register a new empty reference, it will be initialized later.
+		// Empty reference is used to make possible to create multiple writers without being blocked by the lock.
+		ref = &writerRef{}
+		v.writers[key] = ref
+	}
+
+	return ref, exists
+}
+
+func (v *Volume) removeWriter(k storage.SliceKey) {
+	v.writersLock.Lock()
+	defer v.writersLock.Unlock()
+	delete(v.writers, k.String())
+}
