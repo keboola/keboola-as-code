@@ -22,6 +22,7 @@ type SliceWriter interface {
 	DirPath() string
 	FilePath() string
 	WriteRow(values []any) error
+	RowsCount() uint64
 	CompressedSize() datasize.ByteSize
 	UncompressedSize() datasize.ByteSize
 	Close() error
