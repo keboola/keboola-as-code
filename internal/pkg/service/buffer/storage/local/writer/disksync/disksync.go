@@ -19,8 +19,7 @@ import (
 type Syncer struct {
 	logger log.Logger
 	config Config
-	writer nextWriter
-	syncer chain
+	chain  chain
 	timer  *clock.Timer
 
 	ctx    context.Context
@@ -46,14 +45,10 @@ type Syncer struct {
 	opFn func() error
 }
 
-// nextWriter is an underlying writer, for example *os.File
-type nextWriter interface {
-	io.Writer
-	io.StringWriter
-}
-
 // chain is a resource responsible for synchronizing of file writers.
 type chain interface {
+	io.Writer
+	io.StringWriter
 	// Flush data from memory to OS disk cache. Used if Config.Mode=ModeToCache.
 	Flush() error
 	// Sync data from memory to disk. Used if Config.Mode=ModeToDisk.
