@@ -33,7 +33,9 @@ func (c *Chain) Dump() string {
 }
 
 func stringOrType(v any) string {
-	if stringer, ok := v.(fmt.Stringer); ok {
+	if str, ok := v.(string); ok {
+		return str
+	} else if stringer, ok := v.(fmt.Stringer); ok {
 		return stringer.String()
 	} else {
 		return fmt.Sprintf("%T", v)
