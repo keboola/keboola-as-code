@@ -27,8 +27,14 @@ type Syncer struct {
 	cancel context.CancelFunc
 	wg     *sync.WaitGroup
 
-	bytesToSync    *atomic.Uint64
-	bytesTriggerCh chan struct{}
+	// writeOpsCount is updated via AddWriteOp method.
+	// It contains count of high-level writers, e.g., one table row = one write operation.
+	// This may not correspond to the number of calls of the low-level Write or WriteString methods.
+	writeOpsCount *atomic.Uint64
+	// lastSyncAt is updated on each sync start
+	lastSyncAt *atomic.Time
+	// bytesToSync are updated by the Write method, the Syncer is the first writer in the chain
+	bytesToSync *atomic.Uint64
 
 	// syncLock ensures that only one sync runs at a time
 	syncLock *sync.Mutex
@@ -55,27 +61,31 @@ type chain interface {
 }
 
 // NewSyncer may return nil if the synchronization is disabled by the Config.
-func NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, writer nextWriter, syncer chain) *Syncer {
+func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain) *Syncer {
 	// Process mode option
 	var opFn func() error
 	switch config.Mode {
 	case ModeDisabled:
-		logger.Info("sync is disabled")
-		return nil
+		opFn = nil
 	case ModeDisk:
-		opFn = syncer.Sync
+		opFn = chain.Sync
 	case ModeCache:
-		opFn = syncer.Flush
+		opFn = chain.Flush
 	default:
 		panic(errors.Errorf(`unexpected sync mode "%s"`, config.Mode))
 	}
 
 	// Check conditions
-	if config.IntervalTrigger <= 0 {
-		panic(errors.New("syncAfterInterval is not set"))
-	}
-	if config.BytesTrigger <= 0 {
-		panic(errors.New("syncAfterBytes is not set"))
+	if config.Mode != ModeDisabled {
+		if config.CheckInterval <= 0 {
+			panic(errors.New("checkInterval is not set"))
+		}
+		if config.IntervalTrigger <= 0 {
+			panic(errors.New("intervalTrigger is not set"))
+		}
+		if config.BytesTrigger <= 0 {
+			panic(errors.New("bytesTrigger is not set"))
+		}
 	}
 
 	w := &Syncer{
@@ -84,20 +94,30 @@ func NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config
 		writer:         writer,
 		syncer:         syncer,
 		timer:          clock.Timer(config.IntervalTrigger),
-		wg:             &sync.WaitGroup{},
-		bytesToSync:    atomic.NewUint64(0),
-		bytesTriggerCh: make(chan struct{}, 1),
-		syncLock:       &sync.Mutex{},
-		notifierLock:   &sync.RWMutex{},
-		notifier:       notify.New(),
-		opFn:           opFn,
+		writeOpsCount: atomic.NewUint64(0),
+		lastSyncAt:    atomic.NewTime(clock.Now()),
+		bytesToSync:   atomic.NewUint64(0),
+		syncLock:      &sync.Mutex{},
+		notifierLock:  &sync.RWMutex{},
+		notifier:      notify.New(),
+		opFn:          opFn,
 	}
 
-	w.ctx, w.cancel = context.WithCancel(ctx)
+	w.ctx, w.cancel = context.WithCancel(context.Background())
 
-	w.logger.Infof(`sync is enabled, mode=%s, sync each "%s" or "%s"`, config.Mode, config.IntervalTrigger, config.BytesTrigger)
-
-	w.startSyncLoop()
+	if opFn != nil {
+		w.logger.Infof(
+			`sync is enabled, mode=%s, sync each {count=%d or bytes=%s or interval=%s}, check each %s`,
+			config.Mode,
+			config.CountTrigger,
+			config.BytesTrigger,
+			config.IntervalTrigger,
+			config.CheckInterval,
+		)
+		w.syncLoop()
+	} else {
+		logger.Info("sync is disabled")
+	}
 
 	return w
 }
