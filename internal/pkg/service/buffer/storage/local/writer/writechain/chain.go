@@ -56,16 +56,6 @@ type File interface {
 	Close() error
 }
 
-// Writer allows writing bytes or strings.
-// Some writes are optimized for writing strings
-// without an unnecessary conversion from []byte to string,
-// so we support both methods.
-// See Chain.AddWriter method.
-type Writer interface {
-	io.Writer
-	io.StringWriter
-}
-
 func New(logger log.Logger, file File) *Chain {
 	return &Chain{logger: logger, file: file, beginning: file}
 }
@@ -187,13 +177,8 @@ func (c *Chain) PrependWriterOrErr(factory func(Writer) (io.Writer, error)) (ok 
 	if !same {
 		c.writers = append([]io.Writer{newWriter}, c.writers...)
 
-		// Check if the new writer implements WriteString method
-		if v, ok := newWriter.(Writer); ok {
-			c.beginning = v
-		} else {
-			// Add WriteString method, if the new writer doesn't implement it.
-			c.beginning = &stringWriter{Writer: newWriter}
-		}
+		// Protect asynchronous Flush with a lock
+		safe := newSafeWriter(newWriter)
 
 		// Should be the writer flushed before the File.Sync?
 		if v, ok := newWriter.(flusher); ok {
