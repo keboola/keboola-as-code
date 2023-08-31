@@ -110,6 +110,7 @@ func TestSlice_Validation(t *testing.T) {
 	// Following values have own validation
 	localStorage := local.Slice{
 		Dir:         "my-dir",
+		Filename:    "slice.csv",
 		Compression: compression.DefaultConfig(),
 		Sync:        disksync.DefaultConfig(),
 	}
