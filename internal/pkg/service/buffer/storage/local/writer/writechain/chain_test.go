@@ -59,20 +59,32 @@ func TestChain_SetupMethods(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Flushers
-	tc.Chain.PrependFlusher(&testFlusher{Name: "F1"})
-	tc.Chain.PrependFlusher(&testFlusher{Name: "F2"})
-	tc.Chain.PrependFlushFn(func() error { return nil })
-	tc.Chain.AppendFlusher(&testFlusher{Name: "F3"})
-	tc.Chain.AppendFlusher(&testFlusher{Name: "F4"})
-	tc.Chain.AppendFlushFn(func() error { return nil })
+	tc.Chain.PrependFlusherCloser(&testFlusher{Name: "F1"})
+	tc.Chain.PrependFlusherCloser(&testFlusher{Name: "F2"})
+	tc.Chain.PrependFlushFn("fn1", func() error { return nil })
+	tc.Chain.AppendFlusherCloser(&testFlusher{Name: "F3"})
+	tc.Chain.AppendFlusherCloser(&testFlusher{Name: "F4"})
+	tc.Chain.AppendFlushFn("fn2", func() error { return nil })
 
 	// Closers
-	tc.Chain.PrependCloser(&testCloser{Name: "C1"})
-	tc.Chain.PrependCloser(&testCloser{Name: "C2"})
-	tc.Chain.PrependCloseFn(func() error { return nil })
-	tc.Chain.AppendCloser(&testCloser{Name: "C3"})
-	tc.Chain.AppendCloser(&testCloser{Name: "C4"})
-	tc.Chain.AppendCloseFn(func() error { return nil })
+	tc.Chain.PrependFlusherCloser(&testCloser{Name: "C1"})
+	tc.Chain.PrependFlusherCloser(&testCloser{Name: "C2"})
+	tc.Chain.PrependCloseFn("fn3", func() error { return nil })
+	tc.Chain.AppendFlusherCloser(&testCloser{Name: "C3"})
+	tc.Chain.AppendFlusherCloser(&testCloser{Name: "C4"})
+	tc.Chain.AppendCloseFn("fn4", func() error { return nil })
+
+	// Flusher + Closers
+	tc.Chain.PrependFlusherCloser(&testFlusherCloser{Name: "FC1"})
+	tc.Chain.AppendFlusherCloser(&testFlusherCloser{Name: "FC2"})
+
+	// Invalid type
+	assert.PanicsWithError(t, `type "string" must have Flush or/and Close method`, func() {
+		tc.Chain.PrependFlusherCloser("invalid type")
+	})
+	assert.PanicsWithError(t, `type "string" must have Flush or/and Close method`, func() {
+		tc.Chain.AppendFlusherCloser("invalid type")
+	})
 
 	assert.Equal(t, `
 Writers:
@@ -80,22 +92,32 @@ Writers:
   W1 writer
 
 Flushers:
-  writechain.flushFn
+  FC1 flusher closer
+  fn1
   F2 flusher
   F1 flusher
   W2 writer
   F3 flusher
   F4 flusher
-  writechain.flushFn
+  fn2
+  FC2 flusher closer
 
 Closers:
-  writechain.closeFn
+  FC1 flusher closer
+  fn3
   C2 closer
   C1 closer
+  fn1
+  F2 flusher
+  F1 flusher
   W2 writer
+  F3 flusher
+  F4 flusher
+  fn2
   C3 closer
   C4 closer
-  writechain.closeFn
+  fn4
+  FC2 flusher closer
 `, "\n"+tc.Chain.Dump())
 }
 
@@ -194,19 +216,16 @@ INFO  TEST: write "def" to writer "flusher"
 INFO  TEST: write "def" to writer "closer"
 INFO  TEST: write "def" to writer "buffer1"
 DEBUG  closing chain
-DEBUG  flushing writers
-INFO  TEST: flush writer "flusher-closer"
+INFO  TEST: close writer "flusher-closer"
 INFO  TEST: flush writer "flusher"
+INFO  TEST: close writer "closer"
 INFO  TEST: flush "func"
+INFO  TEST: close "func"
 INFO  TEST: flush writer "buffer1"
 INFO  TEST: write "abcdef" to writer "buffer2"
 INFO  TEST: flush writer "buffer2"
 INFO  TEST: write "abcdef" to writer "last"
 INFO  TEST: write "abcdef" to file
-DEBUG  writers flushed
-INFO  TEST: close writer "flusher-closer"
-INFO  TEST: close writer "closer"
-INFO  TEST: close "func"
 DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  file synced
@@ -245,14 +264,7 @@ chain sync error:
 	}
 
 	// Close
-	err = tc.Chain.Close()
-	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`
-chain close error:
-- chain flush error:
-  - cannot flush "flusher-closer writer": flush error
-`), err.Error())
-	}
+	assert.NoError(t, tc.Chain.Close())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -273,12 +285,8 @@ DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  file synced
 DEBUG  closing chain
-DEBUG  flushing writers
-INFO  TEST: flush writer "flusher-closer"
-ERROR  cannot flush "flusher-closer writer": flush error
-INFO  TEST: flush writer "buffer"
-DEBUG  writers flushed
 INFO  TEST: close writer "flusher-closer"
+INFO  TEST: flush writer "buffer"
 DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  file synced
@@ -310,13 +318,10 @@ chain close error:
 	tc.AssertLogs(`
 %A
 DEBUG  closing chain
-DEBUG  flushing writers
-INFO  TEST: flush writer "flusher-closer"
-INFO  TEST: flush writer "buffer"
-INFO  TEST: write "foobar" to file
-DEBUG  writers flushed
 INFO  TEST: close writer "flusher-closer"
 ERROR  cannot close "flusher-closer writer": some close error
+INFO  TEST: flush writer "buffer"
+INFO  TEST: write "foobar" to file
 DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  file synced
@@ -361,11 +366,8 @@ DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  cannot sync file: file sync error
 DEBUG  closing chain
-DEBUG  flushing writers
-INFO  TEST: flush writer "flusher-closer"
-INFO  TEST: flush writer "buffer"
-DEBUG  writers flushed
 INFO  TEST: close writer "flusher-closer"
+INFO  TEST: flush writer "buffer"
 DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  cannot sync file: file sync error
@@ -395,12 +397,9 @@ func TestChain_FileCloseError(t *testing.T) {
 	tc.AssertLogs(`
 %A
 DEBUG  closing chain
-DEBUG  flushing writers
-INFO  TEST: flush writer "flusher-closer"
+INFO  TEST: close writer "flusher-closer"
 INFO  TEST: flush writer "buffer"
 INFO  TEST: write "foobar" to file
-DEBUG  writers flushed
-INFO  TEST: close writer "flusher-closer"
 DEBUG  syncing file
 INFO  TEST: sync file
 DEBUG  file synced
@@ -460,6 +459,13 @@ type testFlusher struct {
 type testCloser struct {
 	Name       string
 	Logger     log.Logger
+	CloseError error
+}
+
+type testFlusherCloser struct {
+	Name       string
+	Logger     log.Logger
+	FlushError error
 	CloseError error
 }
 
@@ -582,6 +588,20 @@ func (w *testCloser) Close() error {
 	return w.CloseError
 }
 
+func (w *testFlusherCloser) String() string {
+	return w.Name + " flusher closer"
+}
+
+func (w *testFlusherCloser) Flush() error {
+	w.Logger.Infof(`TEST: flush "%s"`, w.Name)
+	return w.FlushError
+}
+
+func (w *testFlusherCloser) Close() error {
+	w.Logger.Infof(`TEST: close "%s"`, w.Name)
+	return w.CloseError
+}
+
 type chainTestCase struct {
 	T      testing.TB
 	Logger log.DebugLogger
@@ -675,6 +695,7 @@ Flushers:
 
 Closers:
   flusher-closer writer
+  buffer
 `, "\n"+tc.Chain.Dump())
 
 	return out
@@ -696,11 +717,11 @@ func (tc *chainTestCase) SetupComplexChain() *complexChain {
 		out.Buffer1 = &testBuffer{Name: "buffer1", Buffer: bufio.NewWriter(w), Logger: tc.Logger}
 		return out.Buffer1
 	})
-	tc.Chain.PrependCloseFn(func() error {
+	tc.Chain.PrependCloseFn("fn1", func() error {
 		tc.Logger.Info(`TEST: close "func"`)
 		return nil
 	})
-	tc.Chain.PrependFlushFn(func() error {
+	tc.Chain.PrependFlushFn("fn2", func() error {
 		tc.Logger.Info(`TEST: flush "func"`)
 		return nil
 	})
@@ -738,14 +759,18 @@ Writers:
 Flushers:
   flusher-closer writer
   flusher writer
-  writechain.flushFn
+  fn2
   buffer1
   buffer2
 
 Closers:
   flusher-closer writer
+  flusher writer
   closer writer
-  writechain.closeFn
+  fn2
+  fn1
+  buffer1
+  buffer2
 `, "\n"+tc.Chain.Dump())
 
 	return out
