@@ -1,25 +1,27 @@
 package test
 
 import (
+	"bytes"
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"strings"
+	"go.uber.org/atomic"
 	"testing"
 	"time"
 )
 
-type baseWriter = base.Writer
-
 // SliceWriter implements a simple writer implementing writer.SliceWriter for tests.
 // The writer writes row values to one line as strings, separated by comma.
 type SliceWriter struct {
-	baseWriter
+	base *base.Writer
 	// CompressedSizeValue defines value of the CompressedSize getter.
 	CompressedSizeValue datasize.ByteSize
 	// UncompressedSizeValue defines value of the UncompressedSize getter.
 	UncompressedSizeValue datasize.ByteSize
+	// RowsCounter counts successfully written rows.
+	RowsCounter *atomic.Uint64
 	// CloseError simulates error in the Close method.
 	CloseError error
 	// WriteDone signals completion of the write operation and the start of waiting for disk synchronization.
@@ -27,12 +29,16 @@ type SliceWriter struct {
 	WriteDone chan struct{}
 }
 
-func NewSliceWriter(b base.Writer) *SliceWriter {
-	return &SliceWriter{baseWriter: b, WriteDone: make(chan struct{}, 100)}
+func NewSliceWriter(b *base.Writer) *SliceWriter {
+	return &SliceWriter{
+		base:        b,
+		WriteDone:   make(chan struct{}, 100),
+		RowsCounter: atomic.NewUint64(0),
+	}
 }
 
 func (w *SliceWriter) WriteRow(values []any) error {
-	var s strings.Builder
+	var s bytes.Buffer
 	for i, v := range values {
 		if i > 0 {
 			s.WriteString(",")
@@ -41,18 +47,21 @@ func (w *SliceWriter) WriteRow(values []any) error {
 	}
 	s.WriteString("\n")
 
-	var err error
-	notifier := w.Syncer().DoWithNotifier(func() {
-		_, err = w.Chain().WriteString(s.String())
-	})
+	_, notifier, err := w.base.WriteWithNotify(s.Bytes())
+	w.base.AddWriteOp(1)
 
 	w.WriteDone <- struct{}{}
 
-	if err != nil {
-		return err
+	// Wait for sync
+	if err == nil {
+		err = notifier.Wait()
 	}
 
-	return notifier.Wait()
+	return err
+}
+
+func (w *SliceWriter) RowsCount() uint64 {
+	return w.RowsCounter.Load()
 }
 
 func (w *SliceWriter) CompressedSize() datasize.ByteSize {
@@ -63,8 +72,20 @@ func (w *SliceWriter) UncompressedSize() datasize.ByteSize {
 	return w.UncompressedSizeValue
 }
 
+func (w *SliceWriter) SliceKey() storage.SliceKey {
+	return w.base.SliceKey()
+}
+
+func (w *SliceWriter) DirPath() string {
+	return w.base.DirPath()
+}
+
+func (w *SliceWriter) FilePath() string {
+	return w.base.FilePath()
+}
+
 func (w *SliceWriter) Close() error {
-	if err := w.baseWriter.Close(); err != nil {
+	if err := w.base.Close(); err != nil {
 		return err
 	}
 	return w.CloseError
@@ -86,6 +107,6 @@ func (w *SliceWriter) ExpectWritesCount(t testing.TB, n int) {
 
 func (w *SliceWriter) TriggerSync(t testing.TB) {
 	t.Logf("trigger sync")
-	w.baseWriter.Syncer().SyncAndWait()
+	assert.NoError(t, w.base.TriggerSync(true).Wait())
 	t.Logf("sync done")
 }
