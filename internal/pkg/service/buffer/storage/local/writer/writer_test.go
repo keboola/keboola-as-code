@@ -188,8 +188,8 @@ INFO  opening volume "%s"
 INFO  opened volume
 DEBUG  opened file
 DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=disk, sync each "100ms" or "100KB"
-DEBUG  starting sync of "24 B" to disk
+INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
+DEBUG  starting sync to disk
 DEBUG  syncing file
 DEBUG  flushing writers
 DEBUG  writers flushed
@@ -198,7 +198,7 @@ DEBUG  file synced
 DEBUG  sync to disk done
 INFO  TEST: write unblocked
 INFO  TEST: write unblocked
-DEBUG  starting sync of "12 B" to disk
+DEBUG  starting sync to disk
 DEBUG  syncing file
 DEBUG  flushing writers
 DEBUG  writers flushed
@@ -208,18 +208,16 @@ DEBUG  sync to disk done
 INFO  TEST: write unblocked
 INFO  closing volume
 DEBUG  closing file
-DEBUG  closing chain
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  closing syncer
-DEBUG  starting sync of "12 B" to disk
+DEBUG  stopping syncer
+DEBUG  starting sync to disk
 DEBUG  syncing file
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  sync to disk done
-DEBUG  syncer closed
+DEBUG  syncer stopped
+DEBUG  closing chain
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  chain closed
@@ -292,29 +290,27 @@ INFO  opening volume "%s"
 INFO  opened volume
 DEBUG  opened file
 DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=cache, sync each "100ms" or "100KB"
-DEBUG  starting sync of "24 B" to cache
+INFO  sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
+DEBUG  starting sync to cache
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  sync to cache done
 INFO  TEST: write unblocked
 INFO  TEST: write unblocked
-DEBUG  starting sync of "12 B" to cache
+DEBUG  starting sync to cache
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  sync to cache done
 INFO  TEST: write unblocked
 INFO  closing volume
 DEBUG  closing file
-DEBUG  closing chain
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  closing syncer
-DEBUG  starting sync of "12 B" to cache
+DEBUG  stopping syncer
+DEBUG  starting sync to cache
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  sync to cache done
-DEBUG  syncer closed
+DEBUG  syncer stopped
+DEBUG  closing chain
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  chain closed
@@ -365,15 +361,15 @@ INFO  opening volume "%s"
 INFO  opened volume
 DEBUG  opened file
 DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=disk, sync each "100ms" or "100KB"
-DEBUG  starting sync of "24 B" to disk
+INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
+DEBUG  starting sync to disk
 DEBUG  syncing file
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  sync to disk done
-DEBUG  starting sync of "12 B" to disk
+DEBUG  starting sync to disk
 DEBUG  syncing file
 DEBUG  flushing writers
 DEBUG  writers flushed
@@ -382,18 +378,16 @@ DEBUG  file synced
 DEBUG  sync to disk done
 INFO  closing volume
 DEBUG  closing file
-DEBUG  closing chain
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  closing syncer
-DEBUG  starting sync of "12 B" to disk
+DEBUG  stopping syncer
+DEBUG  starting sync to disk
 DEBUG  syncing file
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  sync to disk done
-DEBUG  syncer closed
+DEBUG  syncer stopped
+DEBUG  closing chain
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  chain closed
@@ -444,26 +438,24 @@ INFO  opening volume "%s"
 INFO  opened volume
 DEBUG  opened file
 DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=cache, sync each "100ms" or "100KB"
-DEBUG  starting sync of "24 B" to cache
+INFO  sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
+DEBUG  starting sync to cache
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  sync to cache done
-DEBUG  starting sync of "12 B" to cache
+DEBUG  starting sync to cache
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  sync to cache done
 INFO  closing volume
 DEBUG  closing file
-DEBUG  closing chain
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  closing syncer
-DEBUG  starting sync of "12 B" to cache
+DEBUG  stopping syncer
+DEBUG  starting sync to cache
 DEBUG  flushing writers
 DEBUG  writers flushed
 DEBUG  sync to cache done
-DEBUG  syncer closed
+DEBUG  syncer stopped
+DEBUG  closing chain
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  chain closed
@@ -475,7 +467,7 @@ INFO  closed volume
 func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.Sync.Mode = disksync.ModeDisabled
+	tc.Slice.LocalStorage.Sync = disksync.Config{Mode: disksync.ModeDisabled}
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
@@ -514,9 +506,9 @@ DEBUG  disk space allocation is not supported
 INFO  sync is disabled
 INFO  closing volume
 DEBUG  closing file
+DEBUG  stopping syncer
+DEBUG  syncer stopped
 DEBUG  closing chain
-DEBUG  flushing writers
-DEBUG  writers flushed
 DEBUG  syncing file
 DEBUG  file synced
 DEBUG  chain closed
@@ -544,7 +536,7 @@ INFO  opening volume "%s"
 INFO  opened volume
 DEBUG  opened file
 ERROR  cannot allocate disk space "10KB", allocation skipped: some space allocation error
-INFO  sync is enabled, mode=disk, sync each "100ms" or "100KB"
+INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
 INFO  closing volume
 DEBUG  closing file
 %A
@@ -570,7 +562,7 @@ INFO  opening volume "%s"
 INFO  opened volume
 DEBUG  opened file
 DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=disk, sync each "100ms" or "100KB"
+INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
 INFO  closing volume
 DEBUG  closing file
 %A
@@ -607,7 +599,7 @@ func newTestSlice(t testing.TB) *storage.Slice {
 }
 
 func newTestSliceOpenedAt(t testing.TB, openedAt string) *storage.Slice {
-	s := &storage.Slice{
+	return &storage.Slice{
 		SliceKey: storage.SliceKey{
 			FileKey: storage.FileKey{
 				ExportKey: key.ExportKey{
@@ -643,8 +635,10 @@ func newTestSliceOpenedAt(t testing.TB, openedAt string) *storage.Slice {
 			Sync: disksync.Config{
 				Mode:            disksync.ModeDisk,
 				Wait:            true,
-				BytesTrigger:    100 * datasize.KB,
-				IntervalTrigger: 100 * time.Millisecond,
+				CheckInterval:   1 * time.Millisecond,
+				CountTrigger:    500,
+				BytesTrigger:    1 * datasize.MB,
+				IntervalTrigger: 50 * time.Millisecond,
 			},
 		},
 		StagingStorage: staging.Slice{
@@ -654,11 +648,6 @@ func newTestSliceOpenedAt(t testing.TB, openedAt string) *storage.Slice {
 			},
 		},
 	}
-
-	// Slice definition must be valid
-	val := validator.New()
-	require.NoError(t, val.Validate(context.Background(), s))
-	return s
 }
 
 type writerTestCase struct {
@@ -689,6 +678,10 @@ func (tc *writerTestCase) NewWriter(opts ...Option) (*test.SliceWriter, error) {
 		_, err := tc.OpenVolume(opts...)
 		require.NoError(tc.T, err)
 	}
+
+	// Slice definition must be valid
+	val := validator.New()
+	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
 
 	w, err := tc.Volume.NewWriterFor(tc.Slice)
 	if err != nil {
