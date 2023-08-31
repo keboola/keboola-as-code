@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	testWaitTimeout = 2 * time.Second
+)
+
 func TestNotifier_Nil(t *testing.T) {
 	t.Parallel()
 
@@ -17,11 +21,21 @@ func TestNotifier_Nil(t *testing.T) {
 
 	// Notifier can be used as a nil value, Wait ends immediately, without error
 	assert.NoError(t, n.Wait())
+	assert.NoError(t, n.WaitWithTimeout(testWaitTimeout))
 
 	// But call of the Done fails
 	assert.Panics(t, func() {
 		n.Done(nil)
 	})
+}
+
+func TestNotifier_WaitWithTimeout(t *testing.T) {
+	t.Parallel()
+
+	err := New().WaitWithTimeout(time.Millisecond)
+	if assert.Error(t, err) {
+		assert.Equal(t, "timeout after 1ms", err.Error())
+	}
 }
 
 func TestNotifier_Success(t *testing.T) {
@@ -35,6 +49,7 @@ func TestNotifier_Success(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			assert.NoError(t, n.WaitWithTimeout(testWaitTimeout))
 			assert.NoError(t, n.Wait())
 			_, _ = log.WriteString("wait finished\n")
 		}()
@@ -84,7 +99,7 @@ func TestNotifier_Error(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := n.Wait()
+			err := n.WaitWithTimeout(testWaitTimeout)
 			if assert.Error(t, err) {
 				assert.Equal(t, "some error", err.Error())
 			}

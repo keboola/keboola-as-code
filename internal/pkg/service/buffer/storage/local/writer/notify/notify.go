@@ -2,6 +2,7 @@ package notify
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"time"
 )
 
 // Notifier allows multiple listeners to Wait for the completion of an operation that may end with an error.
@@ -31,5 +32,20 @@ func (n *Notifier) Wait() error {
 	}
 
 	<-n.doneCh
+	return n.error
+}
+
+// WaitWithTimeout for the operation.
+func (n *Notifier) WaitWithTimeout(timeout time.Duration) error {
+	if n == nil {
+		return nil
+	}
+
+	select {
+	case <-n.doneCh:
+	case <-time.After(timeout):
+		return errors.Errorf(`timeout after %s`, timeout)
+	}
+	
 	return n.error
 }
