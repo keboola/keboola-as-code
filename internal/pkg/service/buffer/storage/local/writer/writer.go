@@ -99,7 +99,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 	chain = writechain.New(logger, file)
 
 	// Unregister the writer on close
-	chain.AppendCloseFn(func() error {
+	chain.AppendCloseFn("unregister", func() error {
 		v.removeWriter(slice.SliceKey)
 		return nil
 	})
