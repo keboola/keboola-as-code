@@ -228,7 +228,7 @@ func newVolumeTestCase(t testing.TB) *volumeTestCase {
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	opts = append([]Option{
 		WithAllocator(tc.Allocator),
-		WithWriterFactory(func(w base.Writer) (SliceWriter, error) {
+		WithWriterFactory(func(w *base.Writer) (SliceWriter, error) {
 			return test.NewSliceWriter(w), nil
 		}),
 	}, opts...)
