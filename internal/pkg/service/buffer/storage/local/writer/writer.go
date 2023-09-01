@@ -82,18 +82,26 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 		return nil, err
 	}
 
+	// Get file info
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+
 	// Allocate disk space
-	if size := slice.LocalStorage.AllocateSpace; size != 0 {
-		if ok, err := v.config.allocator.Allocate(file, size); ok {
-			logger.Debugf(`allocated disk space "%s"`, size)
-		} else if err != nil {
-			// The error is not fatal
-			logger.Errorf(`cannot allocate disk space "%s", allocation skipped: %s`, size, err)
+	if isNew := stat.Size() == 0; isNew {
+		if size := slice.LocalStorage.AllocateSpace; size != 0 && isNew {
+			if ok, err := v.config.allocator.Allocate(file, size); ok {
+				logger.Debugf(`allocated disk space "%s"`, size)
+			} else if err != nil {
+				// The error is not fatal
+				logger.Errorf(`cannot allocate disk space "%s", allocation skipped: %s`, size, err)
+			} else {
+				logger.Debug("disk space allocation is not supported")
+			}
 		} else {
-			logger.Debug("disk space allocation is not supported")
+			logger.Debug("disk space allocation is disabled")
 		}
-	} else {
-		logger.Debug("disk space allocation is disabled")
 	}
 
 	// Init writers chain
