@@ -159,6 +159,7 @@ func (s *Syncer) WriteWithNotify(p []byte) (n int, notifier *notify.Notifier, er
 		return n, nil, err
 	}
 
+	s.AddWriteOp(1)
 	return n, notifier, nil
 }
 
@@ -279,11 +280,13 @@ func (s *Syncer) syncLoop() {
 				// The Close method has been called
 				return
 			case <-ticker.C:
-				countTrigger := s.writeOpsCount.Load() >= uint64(s.config.CountTrigger)
-				bytesTrigger := datasize.ByteSize(s.bytesToSync.Load()) >= s.config.BytesTrigger
-				intervalTrigger := s.clock.Now().Sub(s.lastSyncAt.Load()) >= s.config.IntervalTrigger
-				if countTrigger || bytesTrigger || intervalTrigger {
-					s.TriggerSync(false)
+				if count := s.writeOpsCount.Load(); count > 0 {
+					countTrigger := count >= uint64(s.config.CountTrigger)
+					bytesTrigger := datasize.ByteSize(s.bytesToSync.Load()) >= s.config.BytesTrigger
+					intervalTrigger := s.clock.Now().Sub(s.lastSyncAt.Load()) >= s.config.IntervalTrigger
+					if countTrigger || bytesTrigger || intervalTrigger {
+						s.TriggerSync(false)
+					}
 				}
 			}
 		}
