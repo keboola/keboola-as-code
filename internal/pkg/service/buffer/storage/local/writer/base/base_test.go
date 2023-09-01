@@ -57,10 +57,12 @@ func TestBaseWriter(t *testing.T) {
 	assert.Equal(t, 3, n)
 	assert.NoError(t, err)
 	n, err = w.WriteString("789")
+	w.AddWriteOp(1)
 	assert.Equal(t, 3, n)
 	assert.NoError(t, err)
 	notifier, err = w.DoWithNotify(func() error {
 		_, err := w.Write([]byte("abc"))
+		w.AddWriteOp(1)
 		return err
 	})
 	assert.NoError(t, err)
