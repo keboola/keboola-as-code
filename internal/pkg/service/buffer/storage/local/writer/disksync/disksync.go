@@ -197,13 +197,13 @@ func (s *Syncer) Stop() error {
 	s.cancel()
 
 	// Run last sync
-	_ = s.TriggerSync(true).Wait()
+	err := s.TriggerSync(true).Wait()
 
 	// Wait for sync loop and running sync, if any
 	s.wg.Wait()
 
 	s.logger.Debug(`syncer stopped`)
-	return nil
+	return err
 }
 
 // TriggerSync initiates synchronization.
