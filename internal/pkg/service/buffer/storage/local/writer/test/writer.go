@@ -5,9 +5,9 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/count"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 	"testing"
 	"time"
 )
@@ -21,7 +21,7 @@ type SliceWriter struct {
 	// UncompressedSizeValue defines value of the UncompressedSize getter.
 	UncompressedSizeValue datasize.ByteSize
 	// RowsCounter counts successfully written rows.
-	RowsCounter *atomic.Uint64
+	RowsCounter *count.Counter
 	// CloseError simulates error in the Close method.
 	CloseError error
 	// WriteDone signals completion of the write operation and the start of waiting for disk synchronization.
@@ -33,7 +33,7 @@ func NewSliceWriter(b *base.Writer) *SliceWriter {
 	return &SliceWriter{
 		base:        b,
 		WriteDone:   make(chan struct{}, 100),
-		RowsCounter: atomic.NewUint64(0),
+		RowsCounter: count.NewCounter(),
 	}
 }
 
@@ -61,7 +61,7 @@ func (w *SliceWriter) WriteRow(values []any) error {
 }
 
 func (w *SliceWriter) RowsCount() uint64 {
-	return w.RowsCounter.Load()
+	return w.RowsCounter.Count()
 }
 
 func (w *SliceWriter) CompressedSize() datasize.ByteSize {
