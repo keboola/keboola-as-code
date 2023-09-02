@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"bufio"
 	"encoding/csv"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
@@ -21,6 +22,7 @@ const (
 	rowsCounterFile      = "rows_count"
 	compressedSizeFile   = "compressed_size"
 	uncompressedSizeFile = "uncompressed_size"
+	fileBufferSize       = 64 * datasize.KB
 )
 
 type Writer struct {
@@ -74,6 +76,11 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	} else {
 		// Size of the compressed and uncompressed data is same
 		w.uncompressedMeter = w.compressedMeter
+
+		// Add a small buffer before the file
+		w.base.PrependWriter(func(writer writechain.Writer) io.Writer {
+			return bufio.NewWriterSize(writer, int(fileBufferSize.Bytes()))
+		})
 	}
 
 	// Setup rows counter
@@ -139,6 +146,10 @@ func (w *Writer) WriteRow(values []any) error {
 
 	w.rowsCounter.Add(1)
 	return nil
+}
+
+func (w *Writer) DumpChain() string {
+	return w.base.Dump()
 }
 
 func (w *Writer) RowsCount() uint64 {
