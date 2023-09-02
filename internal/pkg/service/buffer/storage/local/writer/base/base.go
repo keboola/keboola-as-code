@@ -1,19 +1,14 @@
 package base
 
 import (
-	"bufio"
 	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"io"
 )
-
-const fileBufferSize = 64 * datasize.KB
 
 type chain = writechain.Chain
 
@@ -29,7 +24,7 @@ type Writer struct {
 }
 
 func NewWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPath string, filePath string, chain *writechain.Chain) *Writer {
-	w := &Writer{
+	return &Writer{
 		chain:    chain,
 		syncer:   disksync.NewSyncer(logger, clock, slice.LocalStorage.Sync, chain),
 		logger:   logger,
@@ -37,13 +32,6 @@ func NewWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPa
 		dirPath:  dirPath,
 		filePath: filePath,
 	}
-
-	// Add a small buffer before the file
-	w.chain.PrependWriter(func(writer writechain.Writer) io.Writer {
-		return bufio.NewWriterSize(writer, int(fileBufferSize.Bytes()))
-	})
-
-	return w
 }
 
 func (w *Writer) Logger() log.Logger {
