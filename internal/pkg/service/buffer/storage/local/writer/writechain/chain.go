@@ -20,12 +20,10 @@ import (
 //
 // Add additional flusher or closer:
 //   - If you have a separate flusher or closer, you can add it using one of the following methods:
-//   - AppendFlusher
-//   - PrependFlusher
+//   - AppendFlusherCloser
+//   - PrependFlusherCloser
 //   - AppendFlushFn
 //   - PrependFlushFn
-//   - AppendCloser
-//   - PrependCloser
 //   - AppendCloseFn
 //   - PrependCloseFn
 //

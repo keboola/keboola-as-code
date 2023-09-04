@@ -78,7 +78,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 	if err == nil {
 		logger.Debug("opened file")
 	} else {
-		logger.Error(`cannot open file file "%s": %s`, filePath, err)
+		logger.Error(`cannot open file "%s": %s`, filePath, err)
 		return nil, err
 	}
 
