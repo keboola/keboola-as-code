@@ -10,8 +10,8 @@ type flushFn struct {
 	fn   func() error
 }
 
-// newFlushFn allows to a custom function in the flusher interface.
-// Info is a value used in the Chain.Dump, for example a related structure.
+// newFlushFn allows a custom function to be used as the flusher interface.
+// Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
 func newFlushFn(info any, fn func() error) flusher {
 	return &flushFn{info: info, fn: fn}
 }
