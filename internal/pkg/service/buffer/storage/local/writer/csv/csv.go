@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/count"
@@ -56,16 +57,17 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 		return nil, err
 	}
 
-	// Add compression, if a compression writer is created, the method returns true
-	compression, err := w.base.PrependWriterOrErr(func(writer writechain.Writer) (io.Writer, error) {
-		return compressionWriter.New(writer, w.base.Compression())
-	})
-	if err != nil {
-		return nil, err
-	}
+	// Add compression if enabled
+	if compConfig := w.base.Compression(); compConfig.Type != compression.TypeNone {
+		// Add compression writer
+		_, err := w.base.PrependWriterOrErr(func(writer writechain.Writer) (io.Writer, error) {
+			return compressionWriter.New(writer, compConfig)
+		})
+		if err != nil {
+			return nil, err
+		}
 
-	// Measure size of uncompressed CSV data
-	if compression {
+		// Measure size of uncompressed CSV data
 		_, err = w.base.PrependWriterOrErr(func(writer writechain.Writer) (_ io.Writer, err error) {
 			w.uncompressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), uncompressedSizeFile))
 			return w.uncompressedMeter, err
