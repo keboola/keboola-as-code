@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,9 @@ type Volume struct {
 
 	volumeID storage.VolumeID
 	lock     *flock.Flock
+
+	readersLock *sync.Mutex
+	readers     map[string]*readerRef
 }
 
 // OpenVolume volume for writing.
@@ -43,11 +47,13 @@ type Volume struct {
 func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path string, opts ...Option) (*Volume, error) {
 	logger.Infof(`opening volume "%s"`, path)
 	v := &Volume{
-		config: newConfig(opts),
-		logger: logger,
-		clock:  clock,
-		path:   path,
-		wg:     &sync.WaitGroup{},
+		config:      newConfig(opts),
+		logger:      logger,
+		clock:       clock,
+		path:        path,
+		wg:          &sync.WaitGroup{},
+		readersLock: &sync.Mutex{},
+		readers:     make(map[string]*readerRef),
 	}
 
 	v.ctx, v.cancel = context.WithCancel(ctx)
@@ -91,6 +97,13 @@ func (v *Volume) Close() error {
 	// Cancel all operations
 	v.cancel()
 
+	// Close all slice writers
+	for _, w := range v.openedReaders() {
+		if err := w.Close(); err != nil {
+			errs.Append(errors.Errorf(`cannot close reader for slice "%s": %w`, w.SliceKey().String(), err))
+		}
+	}
+
 	// Wait for all operations
 	v.wg.Wait()
 
@@ -104,6 +117,18 @@ func (v *Volume) Close() error {
 
 	v.logger.Info("closed volume")
 	return errs.ErrorOrNil()
+}
+
+func (v *Volume) openedReaders() (out []SliceReader) {
+	v.readersLock.Lock()
+	defer v.readersLock.Unlock()
+	for _, w := range v.readers {
+		out = append(out, w)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].SliceKey().String() < out[j].SliceKey().String()
+	})
+	return out
 }
 
 // waitForVolumeID waits for the file with volume ID.
