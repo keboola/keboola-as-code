@@ -13,11 +13,14 @@ package allocate
 
 import (
 	"github.com/c2h5oh/datasize"
-	"os"
 )
 
+type File interface {
+	Fd() uintptr
+}
+
 type Allocator interface {
-	Allocate(f *os.File, size datasize.ByteSize) (bool, error)
+	Allocate(f File, size datasize.ByteSize) (bool, error)
 }
 
 // DefaultAllocator is default implementation of the Allocator interface.
