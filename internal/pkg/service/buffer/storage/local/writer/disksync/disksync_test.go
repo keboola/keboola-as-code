@@ -903,9 +903,11 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 
 	// Trigger sync multiple times, but it should run only once
 	go func() {
+		tc.Chain.SyncLock.Lock() // block sync completion
 		for i := 0; i < 20; i++ {
 			syncer.TriggerSync(false)
 		}
+		tc.Chain.SyncLock.Unlock()
 	}()
 
 	// Wait for sync
