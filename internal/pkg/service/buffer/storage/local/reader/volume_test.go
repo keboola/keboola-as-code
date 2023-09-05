@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"time"
 )
 
+// TestOpenVolume_NonExistentPath tests that an error should occur if the volume directory not exists.
 func TestOpenVolume_NonExistentPath(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
@@ -44,6 +46,7 @@ func TestOpenVolume_FileNotDir(t *testing.T) {
 	}
 }
 
+// TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume directory.
 func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
@@ -57,7 +60,8 @@ func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 	}
 }
 
-func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
+// TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume ID file.
+func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -72,6 +76,7 @@ func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
 	}
 }
 
+// TestOpenVolume_NonExistentPath tests successful opening of the volume and filesystem locks.
 func TestOpenVolume_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
@@ -106,6 +111,7 @@ INFO  closed volume
 `)
 }
 
+// TestOpenVolume_WaitForVolumeIDFile_Ok tests that volume should wait for volume ID file.
 func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
@@ -122,16 +128,23 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 		assert.Equal(t, storage.VolumeID("abcdef"), volume.VolumeID())
 	}()
 
-	// Create the file after a while
+	// Wait for 2 checks
+	assert.Eventually(t, func() bool {
+		return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == 1
+	}, time.Second, 5*time.Millisecond)
 	tc.Clock.Add(waitForVolumeIDInterval)
-	tc.Clock.Add(waitForVolumeIDInterval)
+	assert.Eventually(t, func() bool {
+		return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == 2
+	}, time.Second, 5*time.Millisecond)
+
+	// Create the volume ID file
 	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
 	tc.Clock.Add(waitForVolumeIDInterval)
 
 	// Wait for the goroutine
 	select {
 	case <-done:
-	case <-time.After(5 * time.Second):
+	case <-time.After(time.Second):
 		assert.Fail(t, "timeout")
 	}
 
@@ -160,11 +173,12 @@ INFO  closed volume
 `)
 }
 
+// TestOpenVolume_WaitForVolumeIDFile_Ok tests a timeout when waiting for volume ID file.
 func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
-	timeout := 5 * waitForVolumeIDInterval
+	timeout := 5*waitForVolumeIDInterval - 1
 
 	// Start opening the volume in background
 	done := make(chan struct{})
@@ -177,8 +191,13 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 	}()
 
 	// Simulate timeout
+	i := 1
 	for elapsed := time.Duration(0); elapsed <= timeout; elapsed += waitForVolumeIDInterval {
+		assert.Eventually(t, func() bool {
+			return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == i
+		}, time.Second, 5*time.Millisecond)
 		tc.Clock.Add(waitForVolumeIDInterval)
+		i++
 	}
 
 	// Wait for the goroutine
@@ -189,11 +208,8 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 	}
 
 	// Check logs
-	// Note: waiting message is present 6x, because wait and timeout timers are triggered at the same time.
-	// The clock is mocked, so the first registered timer = wait is unlocked first.
 	tc.AssertLogs(`
 INFO  opening volume "%s"
-INFO  waiting for volume ID file
 INFO  waiting for volume ID file
 INFO  waiting for volume ID file
 INFO  waiting for volume ID file
@@ -218,6 +234,41 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	_, err = tc.OpenVolume()
 	if assert.Error(t, err) {
 		wildcards.Assert(t, `cannot acquire reader lock "%s": already locked`, err.Error())
+	}
+}
+
+// TestVolume_Close_Errors tests propagation of readers close errors on Volume.Close().
+func TestVolume_Close_Errors(t *testing.T) {
+	t.Parallel()
+
+	tc := newVolumeTestCase(t)
+
+	// Create volume ID file
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
+
+	// Open volume, replace file opener
+	volume, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
+		f := newTestFile(strings.NewReader("foo bar"))
+		f.CloseError = errors.New("some close error")
+		return f, nil
+	}))
+	require.NoError(t, err)
+
+	// Open two writers
+	_, err = volume.NewReaderFor(newTestSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	require.NoError(t, err)
+	_, err = volume.NewReaderFor(newTestSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	require.NoError(t, err)
+
+	// Close volume, expect close errors from the writers
+	err = volume.Close()
+	if assert.Error(t, err) {
+		assert.Equal(t, strings.TrimSpace(`
+- cannot close reader for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z": chain close error:
+  - cannot close "*reader.testFile": some close error
+- cannot close reader for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T21:00:00.000Z": chain close error:
+  - cannot close "*reader.testFile": some close error
+`), err.Error())
 	}
 }
 
