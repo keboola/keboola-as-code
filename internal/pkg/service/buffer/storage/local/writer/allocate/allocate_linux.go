@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func (a DefaultAllocator) Allocate(f *os.File, size datasize.ByteSize) (bool, error) {
+func (a DefaultAllocator) Allocate(f File, size datasize.ByteSize) (bool, error) {
 	// Allocate space using the "fallocate" sys call, Linux only.
 	err := unix.Fallocate(int(f.Fd()), unix.FALLOC_FL_KEEP_SIZE, 0, int64(size.Bytes()))
 	if err != nil {
