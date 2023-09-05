@@ -696,7 +696,7 @@ type testAllocator struct {
 	Error error
 }
 
-func (a *testAllocator) Allocate(_ *os.File, _ datasize.ByteSize) (bool, error) {
+func (a *testAllocator) Allocate(_ allocate.File, _ datasize.ByteSize) (bool, error) {
 	return a.Ok, a.Error
 }
 
