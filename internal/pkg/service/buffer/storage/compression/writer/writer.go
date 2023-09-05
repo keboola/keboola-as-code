@@ -12,10 +12,10 @@ import (
 )
 
 // New wraps the specified writer with the compression writer.
-func New(w io.Writer, cfg compression.Config) (io.Writer, error) {
+func New(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	switch cfg.Type {
 	case compression.TypeNone:
-		return w, nil
+		return &nopCloser{Writer: w}, nil
 	case compression.TypeGZIP:
 		switch cfg.GZIP.Impl {
 		case compression.GZIPImplStandard:
@@ -34,15 +34,15 @@ func New(w io.Writer, cfg compression.Config) (io.Writer, error) {
 	}
 }
 
-func newGZIPWriter(w io.Writer, cfg compression.Config) (io.Writer, error) {
+func newGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	return gzip.NewWriterLevel(w, cfg.GZIP.Level)
 }
 
-func newFastGZIPWriter(w io.Writer, cfg compression.Config) (io.Writer, error) {
+func newFastGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	return fastGzip.NewWriterLevel(w, cfg.GZIP.Level)
 }
 
-func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.Writer, error) {
+func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	bSize, bCount := cfg.GZIP.BlockSize, cfg.GZIP.Concurrency
 
 	out, err := pgzip.NewWriterLevel(w, cfg.GZIP.Level)
@@ -58,7 +58,7 @@ func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.Writer, erro
 	return out, nil
 }
 
-func newZstdWriter(w io.Writer, cfg compression.Config) (io.Writer, error) {
+func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	return zstd.NewWriter(
 		w,
 		zstd.WithEncoderLevel(zstd.EncoderLevel(cfg.ZSTD.Level)),
@@ -73,4 +73,12 @@ func nextPowOf2(n int) int {
 		k = k << 1
 	}
 	return k
+}
+
+type nopCloser struct {
+	io.Writer
+}
+
+func (v *nopCloser) Close() error {
+	return nil
 }
