@@ -97,6 +97,8 @@ Closers:
 `, "\n"+tc.Chain.Dump())
 }
 
+// TestChain_UnwrapFile_Ok tests that the UnwrapFile is successful,
+// if there is only one reader in the chain, and it is *os.File.
 func TestChain_UnwrapFile_Ok(t *testing.T) {
 	t.Parallel()
 
@@ -114,7 +116,7 @@ func TestChain_UnwrapFile_Ok(t *testing.T) {
 	assert.Equal(t, expectedFile, file)
 	assert.True(t, ok)
 
-	// Unwrap not OK, it is not the only element in the chain
+	// Unwrap not OK, two readers are present in the chain
 	chain.PrependReader(func(r io.Reader) io.Reader {
 		return &testReader{inner: r}
 	})
@@ -209,6 +211,7 @@ func TestChain_ReadError(t *testing.T) {
 		assert.Equal(tc.T, "some error", err.Error())
 	}
 
+	// 1st read is the string, 2nd is EOF error
 	tc.AssertLogs(`
 INFO  TEST: read "RC2"
 INFO  TEST: read "R1"
