@@ -12,9 +12,7 @@ import (
 )
 
 const (
-	sliceFileFlags = os.O_CREATE | os.O_WRONLY | os.O_APPEND
-	sliceFilePerm  = 0o640
-	sliceDirPerm   = 0o750
+	sliceDirPerm = 0o750
 )
 
 type SliceWriter interface {
@@ -48,7 +46,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 	}
 
 	// Close resources on a creation error
-	var file *os.File
+	var file File
 	var chain *writechain.Chain
 	defer func() {
 		if err == nil {
@@ -74,7 +72,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 
 	// Open file
 	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
-	file, err = os.OpenFile(filePath, sliceFileFlags, sliceFilePerm)
+	file, err = v.config.fileOpener(filePath)
 	if err == nil {
 		logger.Debug("opened file")
 	} else {
