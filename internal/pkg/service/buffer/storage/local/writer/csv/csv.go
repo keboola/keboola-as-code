@@ -150,7 +150,6 @@ func (w *Writer) WriteRow(values []any) error {
 		w.csvWriterLock.Lock()
 		err = w.csvWriter.Write(strings)
 		w.csvWriterLock.Unlock()
-		w.base.AddWriteOp(1)
 		return err
 	})
 
@@ -159,7 +158,9 @@ func (w *Writer) WriteRow(values []any) error {
 		return err
 	}
 
-	// Wait for sync to disk, return sync error, if any
+	// Increments number of high-level writes in progress
+	w.base.AddWriteOp(1)
+
 	err = notifier.Wait()
 	if err != nil {
 		return err
