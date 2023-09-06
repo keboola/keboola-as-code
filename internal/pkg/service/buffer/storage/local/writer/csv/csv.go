@@ -161,11 +161,13 @@ func (w *Writer) WriteRow(values []any) error {
 	// Increments number of high-level writes in progress
 	w.base.AddWriteOp(1)
 
+	// Wait for sync and return sync error, if any
 	err = notifier.Wait()
 	if err != nil {
 		return err
 	}
 
+	// Increase the count of successful writes
 	w.rowsCounter.Add(1)
 	return nil
 }
@@ -174,25 +176,28 @@ func (w *Writer) DumpChain() string {
 	return w.base.Dump()
 }
 
+func (w *Writer) SliceKey() storage.SliceKey {
+	return w.base.SliceKey()
+}
 
 // WaitingWriteOps returns count of write operations waiting for the sync, for tests.
 func (w *Writer) WaitingWriteOps() uint64 {
 	return w.base.WaitingWriteOps()
 }
+
+// RowsCount returns count of successfully written rows.
 func (w *Writer) RowsCount() uint64 {
 	return w.rowsCounter.Count()
 }
 
+// CompressedSize written to the file, measured after compression writer.
 func (w *Writer) CompressedSize() datasize.ByteSize {
 	return w.compressedMeter.Size()
 }
 
+// UncompressedSize written to the file, measured before compression writer.
 func (w *Writer) UncompressedSize() datasize.ByteSize {
 	return w.uncompressedMeter.Size()
-}
-
-func (w *Writer) SliceKey() storage.SliceKey {
-	return w.base.SliceKey()
 }
 
 func (w *Writer) DirPath() string {
