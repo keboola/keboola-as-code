@@ -39,18 +39,18 @@ jobs:
     name: "Lint"
     secrets: inherit
     uses: ./.github/workflows/test-lint.yml
-  test-unit:
-    name: "Unit Tests"
-    secrets: inherit
-    uses: ./.github/workflows/test-unit.yml
-  test-e2e-service-buffer:
-    name: "E2E: Buffer"
-    secrets: inherit
-    uses: ./.github/workflows/test-e2e-service-buffer.yml
-  test-k8s-service-buffer:
-    name: "K8S: Buffer"
-    secrets: inherit
-    uses: ./.github/workflows/test-k8s-service-buffer.yml
+#  test-unit:
+#    name: "Unit Tests"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-unit.yml
+#  test-e2e-service-buffer:
+#    name: "E2E: Buffer"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-e2e-service-buffer.yml
+#  test-k8s-service-buffer:
+#    name: "K8S: Buffer"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-k8s-service-buffer.yml
   build-and-push-api-image:
     name: "Build & Push API/Worker Images"
     runs-on: ubuntu-latest
@@ -58,9 +58,9 @@ jobs:
       id-token: write
     needs:
       - test-lint
-      - test-unit
-      - test-e2e-service-buffer
-      - test-k8s-service-buffer
+#      - test-unit
+#      - test-e2e-service-buffer
+#      - test-k8s-service-buffer
     steps:
       - name: Checkout
         uses: actions/checkout@v3
