@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	rowsCounterFile      = "rows_count"
-	compressedSizeFile   = "compressed_size"
-	uncompressedSizeFile = "uncompressed_size"
+	RowsCounterFile      = "rows_count"
+	CompressedSizeFile   = "compressed_size"
+	UncompressedSizeFile = "uncompressed_size"
 	fileBufferSize       = 64 * datasize.KB
 )
 
@@ -50,7 +50,7 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 
 	// Measure size of compressed data
 	_, err = w.base.PrependWriterOrErr(func(writer writechain.Writer) (out io.Writer, err error) {
-		w.compressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), compressedSizeFile))
+		w.compressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), CompressedSizeFile))
 		return w.compressedMeter, err
 	})
 	if err != nil {
@@ -69,7 +69,7 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 
 		// Measure size of uncompressed CSV data
 		_, err = w.base.PrependWriterOrErr(func(writer writechain.Writer) (_ io.Writer, err error) {
-			w.uncompressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), uncompressedSizeFile))
+			w.uncompressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), UncompressedSizeFile))
 			return w.uncompressedMeter, err
 		})
 		if err != nil {
@@ -86,7 +86,7 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	}
 
 	// Setup rows counter
-	w.rowsCounter, err = count.NewCounterWithBackupFile(filepath.Join(w.base.DirPath(), rowsCounterFile))
+	w.rowsCounter, err = count.NewCounterWithBackupFile(filepath.Join(w.base.DirPath(), RowsCounterFile))
 	if err == nil {
 		// Backup the counter value on Flush and Close
 		w.base.PrependFlusherCloser(w.rowsCounter)
