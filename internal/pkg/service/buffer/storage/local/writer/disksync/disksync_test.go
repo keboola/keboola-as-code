@@ -829,7 +829,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 
 	// Wait for sync start
 	assert.Eventually(t, func() bool {
-		return strings.Contains(tc.Logger.AllMessages(), `starting sync`)
+		return strings.Contains(tc.Logger.AllMessages(), `INFO  TEST: sync started`)
 	}, time.Second, 10*time.Millisecond)
 
 	// Write more data
