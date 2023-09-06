@@ -263,7 +263,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	// Close volume, expect close errors from the writers
 	err = volume.Close()
 	if assert.Error(t, err) {
-		// Order of the errors is random, writers are closed in parallel
+		// Order of the errors is random, readers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`
 - cannot close reader for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error:
   - cannot close "*reader.testFile": some close error
