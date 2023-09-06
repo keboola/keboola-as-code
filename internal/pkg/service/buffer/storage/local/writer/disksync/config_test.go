@@ -37,17 +37,19 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			Name:          "disabled mode: unexpected fields",
-			ExpectedError: "- \"wait\" should not be set\n- \"bytesTrigger\" should not be set\n- \"intervalTrigger\" should not be set",
+			ExpectedError: "- \"wait\" should not be set\n- \"checkInterval\" should not be set\n- \"countTrigger\" should not be set\n- \"bytesTrigger\" should not be set\n- \"intervalTrigger\" should not be set",
 			Config: Config{
 				Mode:            ModeDisabled,
 				Wait:            true,
+				CheckInterval:   1,
+				CountTrigger:    1,
 				BytesTrigger:    1,
 				IntervalTrigger: 1,
 			},
 		},
 		{
 			Name:          "disk mode: empty",
-			ExpectedError: "- \"bytesTrigger\" is a required field\n- \"intervalTrigger\" is a required field",
+			ExpectedError: "- \"checkInterval\" is a required field\n- \"countTrigger\" is a required field\n- \"bytesTrigger\" is a required field\n- \"intervalTrigger\" is a required field",
 			Config: Config{
 				Mode: ModeDisk,
 			},
@@ -57,13 +59,15 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
+				CheckInterval:   10 * time.Millisecond,
+				CountTrigger:    100,
 				BytesTrigger:    100,
 				IntervalTrigger: 10 * time.Millisecond,
 			},
 		},
 		{
 			Name:          "cache mode: cache",
-			ExpectedError: "- \"bytesTrigger\" is a required field\n- \"intervalTrigger\" is a required field",
+			ExpectedError: "- \"checkInterval\" is a required field\n- \"countTrigger\" is a required field\n- \"bytesTrigger\" is a required field\n- \"intervalTrigger\" is a required field",
 			Config: Config{
 				Mode: ModeCache,
 			},
@@ -73,6 +77,32 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeCache,
 				Wait:            true,
+				CheckInterval:   10 * time.Millisecond,
+				CountTrigger:    100,
+				BytesTrigger:    100,
+				IntervalTrigger: 10 * time.Millisecond,
+			},
+		},
+		{
+			Name:          "check interval: over max",
+			ExpectedError: `"checkInterval" must be 2s or less`,
+			Config: Config{
+				Mode:            ModeDisk,
+				Wait:            true,
+				CheckInterval:   10 * time.Second,
+				CountTrigger:    100,
+				BytesTrigger:    100,
+				IntervalTrigger: 10 * time.Millisecond,
+			},
+		},
+		{
+			Name:          "count trigger: over max",
+			ExpectedError: `"countTrigger" must be 1,000,000 or less`,
+			Config: Config{
+				Mode:            ModeDisk,
+				Wait:            true,
+				CheckInterval:   10 * time.Millisecond,
+				CountTrigger:    2000000,
 				BytesTrigger:    100,
 				IntervalTrigger: 10 * time.Millisecond,
 			},
@@ -83,6 +113,8 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
+				CheckInterval:   10 * time.Millisecond,
+				CountTrigger:    100,
 				BytesTrigger:    1 * datasize.GB,
 				IntervalTrigger: 10 * time.Millisecond,
 			},
@@ -93,6 +125,8 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
+				CheckInterval:   10 * time.Millisecond,
+				CountTrigger:    100,
 				BytesTrigger:    100,
 				IntervalTrigger: -10 * time.Millisecond,
 			},
@@ -103,6 +137,8 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
+				CheckInterval:   10 * time.Millisecond,
+				CountTrigger:    100,
 				BytesTrigger:    100,
 				IntervalTrigger: 10 * time.Second,
 			},

@@ -6,10 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"io"
 	"os"
 )
 
@@ -24,6 +22,7 @@ type SliceWriter interface {
 	DirPath() string
 	FilePath() string
 	WriteRow(values []any) error
+	RowsCount() uint64
 	CompressedSize() datasize.ByteSize
 	UncompressedSize() datasize.ByteSize
 	Close() error
@@ -101,26 +100,13 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 	chain = writechain.New(logger, file)
 
 	// Unregister the writer on close
-	chain.AppendCloseFn(func() error {
+	chain.AppendCloseFn("unregister", func() error {
 		v.removeWriter(slice.SliceKey)
 		return nil
 	})
 
-	// Setup sync to disk or OS disk cache
-	var syncer *disksync.Syncer
-	chain.PrependWriter(func(w writechain.Writer) io.Writer {
-		syncer = disksync.NewSyncer(v.ctx, logger, v.clock, slice.LocalStorage.Sync, w, chain)
-		if syncer == nil {
-			// Synchronization is disabled, return original writer
-			return w
-		} else {
-			// Synchronization is enabled
-			return syncer
-		}
-	})
-
 	// Create writer via factory
-	return v.config.writerFactory(base.NewWriter(logger, slice, dirPath, filePath, chain, syncer))
+	return v.config.writerFactory(base.NewWriter(logger, v.clock, slice, dirPath, filePath, chain))
 }
 
 func (v *Volume) addWriterFor(k storage.SliceKey) (ref *writerRef, exists bool) {

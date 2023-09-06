@@ -56,16 +56,6 @@ type File interface {
 	Close() error
 }
 
-// Writer allows writing bytes or strings.
-// Some writes are optimized for writing strings
-// without an unnecessary conversion from []byte to string,
-// so we support both methods.
-// See Chain.AddWriter method.
-type Writer interface {
-	io.Writer
-	io.StringWriter
-}
-
 func New(logger log.Logger, file File) *Chain {
 	return &Chain{logger: logger, file: file, beginning: file}
 }
@@ -127,11 +117,6 @@ func (c *Chain) Close() error {
 	c.logger.Debugf("closing chain")
 	errs := errors.NewMultiError()
 
-	// Flush all writers in the Chain before the underlying file
-	if err := c.Flush(); err != nil {
-		errs.Append(err)
-	}
-
 	// Close all writers in the chain before the underlying file
 	for _, item := range c.closers {
 		if err := item.Close(); err != nil {
@@ -187,23 +172,22 @@ func (c *Chain) PrependWriterOrErr(factory func(Writer) (io.Writer, error)) (ok 
 	if !same {
 		c.writers = append([]io.Writer{newWriter}, c.writers...)
 
-		// Check if the new writer implements WriteString method
-		if v, ok := newWriter.(Writer); ok {
-			c.beginning = v
-		} else {
-			// Add WriteString method, if the new writer doesn't implement it.
-			c.beginning = &stringWriter{Writer: newWriter}
-		}
+		// Protect asynchronous Flush with a lock
+		safe := newSafeWriter(newWriter)
 
 		// Should be the writer flushed before the File.Sync?
-		if v, ok := newWriter.(flusher); ok {
-			c.PrependFlusher(v)
+		if _, ok := newWriter.(flusher); ok {
+			c.addFlusher(true, safe)
 		}
 
-		// Should be the writer closed before the File.Close?
+		// Should be the writer closed/flushed before the File.Close?
 		if v, ok := newWriter.(io.Closer); ok {
-			c.PrependCloser(v)
+			c.addCloser(true, v)
+		} else if _, ok := newWriter.(flusher); ok {
+			c.addCloser(true, newCloseFn(newWriter, safe.Flush))
 		}
+
+		c.beginning = safe
 	}
 
 	return !same, nil
@@ -222,36 +206,50 @@ func (c *Chain) syncFile() error {
 	return nil
 }
 
-func (c *Chain) AppendFlusher(v flusher) {
-	c.addFlusher(false, v)
+func (c *Chain) AppendFlusherCloser(v any) {
+	c.addFlusherCloser(false, v)
 }
 
-func (c *Chain) PrependFlusher(v flusher) {
-	c.addFlusher(true, v)
+func (c *Chain) PrependFlusherCloser(v any) {
+	c.addFlusherCloser(true, v)
 }
 
-func (c *Chain) AppendFlushFn(v func() error) {
-	c.addFlusher(false, flushFn(v))
+func (c *Chain) AppendFlushFn(info any, fn func() error) {
+	c.addFlusher(false, newFlushFn(info, fn))
+	c.addCloser(false, newCloseFn(info, fn))
 }
 
-func (c *Chain) PrependFlushFn(v func() error) {
-	c.addFlusher(true, flushFn(v))
+func (c *Chain) PrependFlushFn(info any, fn func() error) {
+	c.addFlusher(true, newFlushFn(info, fn))
+	c.addCloser(true, newCloseFn(info, fn))
 }
 
-func (c *Chain) AppendCloser(v io.Closer) {
-	c.addCloser(false, v)
+func (c *Chain) AppendCloseFn(info any, fn func() error) {
+	c.addCloser(false, newCloseFn(info, fn))
 }
 
-func (c *Chain) PrependCloser(v io.Closer) {
-	c.addCloser(true, v)
+func (c *Chain) PrependCloseFn(info any, fn func() error) {
+	c.addCloser(true, newCloseFn(info, fn))
 }
 
-func (c *Chain) AppendCloseFn(v func() error) {
-	c.addCloser(false, closeFn(v))
-}
+func (c *Chain) addFlusherCloser(prepend bool, v any) {
+	vf, isFlusher := v.(flusher)
+	vc, isCloser := v.(io.Closer)
+	if !isFlusher && !isCloser {
+		panic(errors.Errorf(`type "%T" must have Flush or/and Close method`, v))
+	}
 
-func (c *Chain) PrependCloseFn(v func() error) {
-	c.addCloser(true, closeFn(v))
+	// Register flusher for periodical sync
+	if isFlusher {
+		c.addFlusher(prepend, vf)
+	}
+
+	// Register closer: use Close method if exists, or call Flush also on Close
+	if isCloser {
+		c.addCloser(prepend, vc)
+	} else {
+		c.addCloser(prepend, newCloseFn(v, vf.Flush))
+	}
 }
 
 func (c *Chain) addFlusher(prepend bool, v flusher) {

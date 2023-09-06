@@ -184,7 +184,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "zstd: level over max",
-			ExpectedError: `"zstd.level" must be 22 or less`,
+			ExpectedError: `"zstd.level" must be 4 or less`,
 			Config: Config{
 				Type: TypeZSTD,
 				ZSTD: &ZSTDConfig{

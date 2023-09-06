@@ -1,16 +1,18 @@
 package compression
 
 import (
+	"compress/gzip"
 	"github.com/c2h5oh/datasize"
+	"github.com/klauspost/compress/zstd"
 	"runtime"
 )
 
 const (
-	DefaultGZIPLevel     = 6 // 1-9
-	DefaultGZIPBlockSize = datasize.MB
+	DefaultGZIPLevel     = gzip.BestSpeed // 1-9
+	DefaultGZIPBlockSize = 256 * datasize.KB
 
-	DefaultZSTDLevel      = 3 // 1-22
-	DefaultZSDTWindowSize = datasize.MB
+	DefaultZSTDLevel      = zstd.SpeedFastest // 1-4
+	DefaultZSDTWindowSize = 256 * datasize.KB
 )
 
 // Config for compression writer and reader.
@@ -28,7 +30,7 @@ type GZIPConfig struct {
 }
 
 type ZSTDConfig struct {
-	Level       int               `json:"level" mapstructure:"level" validate:"min=1,max=22" usage:"Default ZSTD compression level."`
+	Level       zstd.EncoderLevel `json:"level" mapstructure:"level" validate:"min=1,max=4" usage:"Default ZSTD compression level."`
 	WindowSize  datasize.ByteSize `json:"windowSize" mapstructure:"window-size" validate:"required,min=1024,max=536870912" usage:"Default ZSTD window size."` //1kB-512MB
 	Concurrency int               `json:"concurrency" mapstructure:"concurrency" usage:"Default ZSTD concurrency, 0 = auto"`
 }
