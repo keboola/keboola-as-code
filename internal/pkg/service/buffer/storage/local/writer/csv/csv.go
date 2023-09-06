@@ -97,8 +97,9 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	// Setup rows counter
 	w.rowsCounter, err = count.NewCounterWithBackupFile(filepath.Join(w.base.DirPath(), RowsCounterFile))
 	if err == nil {
-		// Backup the counter value on Flush and Close
-		w.base.PrependFlusherCloser(w.rowsCounter)
+		// Backup the counter value on Flush
+		// The final value is backed up on writer close, see Close method
+		w.base.PrependFlushFn(w.rowsCounter, w.rowsCounter.Flush)
 	} else {
 		return nil, err
 	}
@@ -210,6 +211,11 @@ func (w *Writer) Close() error {
 
 	// Wait for running writes
 	w.writeWg.Wait()
+
+	// Close, backup counter value
+	if counterErr := w.rowsCounter.Close(); err == nil && counterErr != nil {
+		err = counterErr
+	}
 
 	return err
 }
