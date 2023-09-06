@@ -30,7 +30,6 @@ type Volume struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
-	wg     *sync.WaitGroup
 
 	volumeID storage.VolumeID
 	lock     *flock.Flock
@@ -51,7 +50,6 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 		logger:      logger,
 		clock:       clock,
 		path:        path,
-		wg:          &sync.WaitGroup{},
 		readersLock: &sync.Mutex{},
 		readers:     make(map[string]*readerRef),
 	}
@@ -94,18 +92,22 @@ func (v *Volume) Close() error {
 	errs := errors.NewMultiError()
 	v.logger.Info("closing volume")
 
-	// Cancel all operations
+	// Block NewReaderFor method
 	v.cancel()
 
-	// Close all slice writers
-	for _, w := range v.openedReaders() {
-		if err := w.Close(); err != nil {
-			errs.Append(errors.Errorf(`cannot close reader for slice "%s": %w`, w.SliceKey().String(), err))
-		}
+	// Close all slice readers
+	wg := &sync.WaitGroup{}
+	for _, r := range v.openedReaders() {
+		r := r
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := r.Close(); err != nil {
+				errs.Append(errors.Errorf(`cannot close reader for slice "%s": %w`, r.SliceKey().String(), err))
+			}
+		}()
 	}
-
-	// Wait for all operations
-	v.wg.Wait()
+	wg.Wait()
 
 	// Release the lock
 	if err := v.lock.Unlock(); err != nil {
