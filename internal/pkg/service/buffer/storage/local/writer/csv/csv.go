@@ -2,6 +2,7 @@ package csv
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
@@ -30,6 +31,10 @@ type Writer struct {
 	base    *base.Writer
 	columns column.Columns
 	writeWg *sync.WaitGroup
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	// csvWriter writers to the Chain in the baseWriter.
 	csvWriter *csv.Writer
 	// csvWriterLock serializes writes to the internal csv.Writer buffer
@@ -49,6 +54,8 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 		writeWg:       &sync.WaitGroup{},
 		csvWriterLock: &sync.Mutex{},
 	}
+
+	w.ctx, w.cancel = context.WithCancel(context.Background())
 
 	// Measure size of compressed data
 	_, err = w.base.PrependWriterOrErr(func(writer writechain.Writer) (out io.Writer, err error) {
@@ -110,6 +117,11 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 }
 
 func (w *Writer) WriteRow(values []any) error {
+	// Check if the writer is closed
+	if err := w.ctx.Err(); err != nil {
+		return errors.Errorf(`CSV writer is closed: %w`, err)
+	}
+
 	// Block Close method
 	w.writeWg.Add(1)
 	defer w.writeWg.Done()
@@ -190,6 +202,8 @@ func (w *Writer) FilePath() string {
 }
 
 func (w *Writer) Close() error {
+	// Prevent new writes
+	w.cancel()
 
 	// Close the chain
 	err := w.base.Close()
