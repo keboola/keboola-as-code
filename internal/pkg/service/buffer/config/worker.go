@@ -19,7 +19,7 @@ const (
 	// DefaultMinimalUploadInterval defines minimal interval between two slice upload operations.
 	DefaultMinimalUploadInterval = 5 * time.Second
 	// DefaultMinimalImportInterval defines minimal interval between two import file operations.
-	DefaultMinimalImportInterval = 30 * time.Second
+	DefaultMinimalImportInterval = 10 * time.Minute
 	// DefaultCleanupInterval defines how often old tasks and files will be checked and deleted.
 	DefaultCleanupInterval = 15 * time.Minute
 )

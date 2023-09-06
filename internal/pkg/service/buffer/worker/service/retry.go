@@ -15,7 +15,7 @@ func NewRetryBackoff() *backoff.ExponentialBackOff {
 	b.RandomizationFactor = 0.2
 	b.Multiplier = 4
 	b.InitialInterval = 2 * time.Minute
-	b.MaxInterval = 3 * time.Hour
+	b.MaxInterval = 6 * time.Hour
 	b.MaxElapsedTime = 0 // don't stop
 	b.Reset()
 	return b

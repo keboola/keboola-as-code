@@ -22,7 +22,7 @@ const (
 	// In normal operation, switch to the "uploading" state is processed immediately, on event from the Watch API.
 	ImportingFilesCheckInterval = time.Minute
 	fileImportTaskType          = "file.import"
-	fileImportTimeout           = 5 * time.Minute
+	fileImportTimeout           = 8 * time.Hour
 	fileMarkAsFailedTimeout     = 30 * time.Second
 	importEventSendTimeout      = 10 * time.Second
 )
