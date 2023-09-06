@@ -29,6 +29,7 @@ const (
 type Writer struct {
 	base    *base.Writer
 	columns column.Columns
+	writeWg *sync.WaitGroup
 	// csvWriter writers to the Chain in the baseWriter.
 	csvWriter *csv.Writer
 	// csvWriterLock serializes writes to the internal csv.Writer buffer
@@ -45,6 +46,7 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	w = &Writer{
 		base:          b,
 		columns:       b.Columns(),
+		writeWg:       &sync.WaitGroup{},
 		csvWriterLock: &sync.Mutex{},
 	}
 
@@ -108,6 +110,10 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 }
 
 func (w *Writer) WriteRow(values []any) error {
+	// Block Close method
+	w.writeWg.Add(1)
+	defer w.writeWg.Done()
+
 	// Check values count
 	if len(values) != len(w.columns) {
 		return errors.Errorf(`expected %d columns in the row, given %d`, len(w.columns), len(values))
@@ -184,5 +190,12 @@ func (w *Writer) FilePath() string {
 }
 
 func (w *Writer) Close() error {
-	return w.base.Close()
+
+	// Close the chain
+	err := w.base.Close()
+
+	// Wait for running writes
+	w.writeWg.Wait()
+
+	return err
 }
