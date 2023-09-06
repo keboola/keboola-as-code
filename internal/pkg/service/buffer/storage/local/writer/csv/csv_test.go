@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -19,7 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
+	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -84,6 +88,82 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, `cannot convert value of the column "id" to the string: unable to cast struct {}{} of type struct {} to string`, err.Error())
 	}
+}
+
+// TestCSVWriter_Close_WaitForWrites tests that the Close method waits for writes in progress
+// and rows counter backup file contains the right value after the Close - count of the written rows.
+func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Create lock to defer file sync
+	syncLock := &sync.Mutex{}
+
+	// Open volume
+	volume, err := writer.OpenVolume(
+		ctx,
+		log.NewNopLogger(),
+		clock.New(),
+		t.TempDir(),
+		writer.WithFileOpener(func(filePath string) (writer.File, error) {
+			file, err := writer.DefaultFileOpener(filePath)
+			if err != nil {
+				return nil, err
+			}
+			return &testFile{File: file, SyncLock: syncLock}, nil
+		}))
+	require.NoError(t, err)
+
+	// Create slice
+	slice := testcase.NewTestSlice(volume)
+	slice.Type = storage.FileTypeCSV
+	slice.Columns = column.Columns{column.ID{Name: "id"}}
+	slice.LocalStorage.Sync.Mode = disksync.ModeDisk
+	slice.LocalStorage.Sync.Wait = true
+	val := validator.New()
+	assert.NoError(t, val.Validate(ctx, slice))
+
+	// Create writer
+	w, err := volume.NewWriterFor(slice)
+	require.NoError(t, err)
+
+	// Block sync
+	syncLock.Lock()
+
+	// Start two parallel writes
+	go func() { assert.NoError(t, w.WriteRow([]any{"value"})) }()
+	go func() { assert.NoError(t, w.WriteRow([]any{"value"})) }()
+	assert.Eventually(t, func() bool {
+		return w.(*csv.Writer).WaitingWriteOps() == 2
+	}, time.Second, 5*time.Millisecond)
+
+	// Close writer
+	closeDone := make(chan struct{})
+	go func() {
+		defer close(closeDone)
+		assert.NoError(t, w.Close())
+	}()
+
+	// Unblock sync and wait for Close
+	syncLock.Unlock()
+	select {
+	case <-closeDone:
+		// ok
+	case <-time.After(time.Second):
+		assert.Fail(t, "timeout")
+	}
+
+	// Check file content
+	content, err := os.ReadFile(w.FilePath())
+	assert.NoError(t, err)
+	assert.Equal(t, "value\nvalue\n", string(content))
+
+	// Check rows count file
+	content, err = os.ReadFile(filesystem.Join(w.DirPath(), csv.RowsCounterFile))
+	assert.NoError(t, err)
+	assert.Equal(t, "2", string(content))
 }
 
 func TestCSVWriter(t *testing.T) {
@@ -223,4 +303,15 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 		FileDecoder: comp.FileDecoder,
 		Validator:   validateFn,
 	}
+}
+
+type testFile struct {
+	writer.File
+	SyncLock *sync.Mutex
+}
+
+func (f *testFile) Sync() error {
+	f.SyncLock.Lock()
+	defer f.SyncLock.Unlock()
+	return f.File.Sync()
 }
