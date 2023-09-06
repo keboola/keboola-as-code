@@ -154,6 +154,11 @@ func (w *Writer) DumpChain() string {
 	return w.base.Dump()
 }
 
+
+// WaitingWriteOps returns count of write operations waiting for the sync, for tests.
+func (w *Writer) WaitingWriteOps() uint64 {
+	return w.base.WaitingWriteOps()
+}
 func (w *Writer) RowsCount() uint64 {
 	return w.rowsCounter.Count()
 }
