@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
@@ -43,18 +44,18 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	defer cancel()
 
 	// Open volume
-	volume, err := writer.OpenVolume(ctx, log.NewNopLogger(), clock.New(), t.TempDir())
+	vol, err := writer.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
-	slice := testcase.NewTestSlice(volume)
+	slice := testcase.NewTestSlice(vol)
 	slice.Type = storage.FileTypeCSV
 	slice.Columns = column.Columns{column.ID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := volume.NewWriterFor(slice)
+	w, err := vol.NewWriterFor(slice)
 	require.NoError(t, err)
 
 	// Write invalid number of values
@@ -71,18 +72,18 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	defer cancel()
 
 	// Open volume
-	volume, err := writer.OpenVolume(ctx, log.NewNopLogger(), clock.New(), t.TempDir())
+	vol, err := writer.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
-	slice := testcase.NewTestSlice(volume)
+	slice := testcase.NewTestSlice(vol)
 	slice.Type = storage.FileTypeCSV
 	slice.Columns = column.Columns{column.ID{Name: "id"}}
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := volume.NewWriterFor(slice)
+	w, err := vol.NewWriterFor(slice)
 	require.NoError(t, err)
 
 	// Write invalid number of values
@@ -104,11 +105,11 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	syncLock := &sync.Mutex{}
 
 	// Open volume
-	volume, err := writer.OpenVolume(
+	vol, err := writer.OpenVolume(
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
-		t.TempDir(),
+		volume.NewInfo(t.TempDir(), "hdd", "1"),
 		writer.WithFileOpener(func(filePath string) (writer.File, error) {
 			file, err := writer.DefaultFileOpener(filePath)
 			if err != nil {
@@ -119,7 +120,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create slice
-	slice := testcase.NewTestSlice(volume)
+	slice := testcase.NewTestSlice(vol)
 	slice.Type = storage.FileTypeCSV
 	slice.Columns = column.Columns{column.ID{Name: "id"}}
 	slice.LocalStorage.Sync.Mode = disksync.ModeDisk
@@ -128,7 +129,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	assert.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := volume.NewWriterFor(slice)
+	w, err := vol.NewWriterFor(slice)
 	require.NoError(t, err)
 
 	// Block sync

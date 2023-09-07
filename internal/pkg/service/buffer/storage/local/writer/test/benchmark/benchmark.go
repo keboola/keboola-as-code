@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/staging"
@@ -61,11 +62,11 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	volume, err := writer.OpenVolume(ctx, logger, clock.New(), b.TempDir())
+	vol, err := writer.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(b.TempDir(), "hdd", "1"))
 	require.NoError(b, err)
 
 	// Create writer
-	sliceWriter, err := volume.NewWriterFor(wb.newSlice(b, volume))
+	sliceWriter, err := vol.NewWriterFor(wb.newSlice(b, vol))
 	require.NoError(b, err)
 
 	// Create data channel
@@ -107,7 +108,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	end := time.Now()
 
 	// Close volume
-	assert.NoError(b, volume.Close())
+	assert.NoError(b, vol.Close())
 
 	// Report extra metrics
 	duration := end.Sub(start)
@@ -142,7 +143,7 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *writer.Volume) *storag
 				},
 				FileID: storage.FileID{OpenedAt: openedAt},
 			},
-			SliceID: storage.SliceID{VolumeID: volume.VolumeID(), OpenedAt: openedAt},
+			SliceID: storage.SliceID{VolumeID: volume.ID(), OpenedAt: openedAt},
 		},
 		Type:    wb.FileType,
 		State:   storage.SliceWriting,

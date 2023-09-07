@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/staging"
@@ -58,14 +59,14 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	volume, err := writer.OpenVolume(ctx, logger, clock.New(), t.TempDir())
+	vol, err := writer.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create a test slice
-	slice := tc.newSlice(t, volume)
+	slice := tc.newSlice(t, vol)
 
 	// Create writer
-	w, err := volume.NewWriterFor(slice)
+	w, err := vol.NewWriterFor(slice)
 	require.NoError(t, err)
 
 	// Write all rows batches
@@ -112,7 +113,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 		// Simulate pod failure, restart writer
 		require.NoError(t, w.Close())
-		w, err = volume.NewWriterFor(slice)
+		w, err = vol.NewWriterFor(slice)
 		require.NoError(t, err)
 	}
 
@@ -174,7 +175,7 @@ func NewTestSlice(volume *writer.Volume) *storage.Slice {
 				},
 				FileID: storage.FileID{OpenedAt: openedAt},
 			},
-			SliceID: storage.SliceID{VolumeID: volume.VolumeID(), OpenedAt: openedAt},
+			SliceID: storage.SliceID{VolumeID: volume.ID(), OpenedAt: openedAt},
 		},
 		State: storage.SliceWriting,
 		LocalStorage: local.Slice{
