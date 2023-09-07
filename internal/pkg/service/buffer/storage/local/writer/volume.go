@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -63,7 +63,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 	v.ctx, v.cancel = context.WithCancel(ctx)
 
 	// Check volume directory
-	if err := local.CheckVolumeDir(v.path); err != nil {
+	if err := volume.CheckVolumeDir(v.path); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
 	{
-		idFilePath := filepath.Join(v.path, local.VolumeIDFile)
+		idFilePath := filepath.Join(v.path, volume.IDFile)
 		content, err := os.ReadFile(idFilePath)
 
 		// VolumeID file doesn't exist, create it
