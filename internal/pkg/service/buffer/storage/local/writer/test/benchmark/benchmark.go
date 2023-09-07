@@ -2,8 +2,17 @@ package benchmark
 
 import (
 	"context"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
@@ -16,13 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
-	"os"
-	"sync"
-	"testing"
-	"time"
 )
 
 // WriterBenchmark is a generic benchmark for writer.SliceWriter.
@@ -122,7 +124,6 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	}
 	stat, err := os.Stat(sliceWriter.FilePath())
 	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
-
 }
 
 func (wb *WriterBenchmark) newSlice(b *testing.B, volume *writer.Volume) *storage.Slice {

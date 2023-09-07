@@ -2,7 +2,17 @@ package writer
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
@@ -15,14 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestVolume_NewWriterFor_Ok(t *testing.T) {
@@ -55,7 +57,6 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 
 	assert.NoError(t, w.Close())
 	assert.Len(t, tc.Volume.writers, 0)
-
 }
 
 func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {

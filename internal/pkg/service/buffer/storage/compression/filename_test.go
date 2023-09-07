@@ -1,8 +1,9 @@
 package compression
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFilename(t *testing.T) {

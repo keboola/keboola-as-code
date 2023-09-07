@@ -3,15 +3,17 @@ package csv_test
 import (
 	"compress/gzip"
 	"context"
+	"testing"
+	"time"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/klauspost/compress/zstd"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/test/benchmark"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/klauspost/compress/zstd"
-	"testing"
-	"time"
 )
 
 const (

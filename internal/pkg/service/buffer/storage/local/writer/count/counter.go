@@ -2,13 +2,15 @@
 package count
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-	"go.uber.org/atomic"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	"go.uber.org/atomic"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // Counter is an atomic counter.

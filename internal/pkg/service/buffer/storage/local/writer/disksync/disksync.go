@@ -4,14 +4,16 @@ package disksync
 
 import (
 	"context"
+	"io"
+	"sync"
+
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"go.uber.org/atomic"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"go.uber.org/atomic"
-	"io"
-	"sync"
 )
 
 // Syncer writes data to the underlying writer and according to the Config it calls the chain.Flush() or chain.Sync().
