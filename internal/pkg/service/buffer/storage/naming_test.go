@@ -1,9 +1,11 @@
 package storage
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 )
 
 func TestSliceFilename(t *testing.T) {

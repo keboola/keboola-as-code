@@ -2,16 +2,18 @@ package writechain
 
 import (
 	"bufio"
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // TestChain_Empty tests that an empty Chain writes directly to the File.
@@ -603,7 +605,7 @@ func (w *testFlusherCloser) Close() error {
 }
 
 type chainTestCase struct {
-	T      testing.TB
+	TB     testing.TB
 	Logger log.DebugLogger
 	Path   string
 	File   *testFile
@@ -626,29 +628,29 @@ type simpleChain struct {
 	Buffer        *testBuffer
 }
 
-func newChainTestCase(t testing.TB) *chainTestCase {
-	t.Helper()
+func newChainTestCase(tb testing.TB) *chainTestCase {
+	tb.Helper()
 
 	logger := log.NewDebugLogger()
-	path := filepath.Join(t.TempDir(), "file")
+	path := filepath.Join(tb.TempDir(), "file")
 	osFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o640)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	file := &testFile{OsFile: osFile, Logger: logger}
 	chain := New(logger, file)
 
-	return &chainTestCase{T: t, Logger: logger, Path: path, File: file, Chain: chain}
+	return &chainTestCase{TB: tb, Logger: logger, Path: path, File: file, Chain: chain}
 }
 
 func (tc *chainTestCase) AssertFileContent(expected string) {
 	content, err := os.ReadFile(tc.Path)
-	if assert.NoError(tc.T, err) {
-		assert.Equal(tc.T, expected, string(content))
+	if assert.NoError(tc.TB, err) {
+		assert.Equal(tc.TB, expected, string(content))
 	}
 }
 
 func (tc *chainTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.T, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
 }
 
 // WriteData writes alternately using Write and WriteString methods.
@@ -656,18 +658,18 @@ func (tc *chainTestCase) WriteData(items []string) {
 	for i, str := range items {
 		if i%2 == 0 {
 			n, err := tc.Chain.Write([]byte(str))
-			assert.Equal(tc.T, 3, n)
-			assert.NoError(tc.T, err)
+			assert.Equal(tc.TB, 3, n)
+			assert.NoError(tc.TB, err)
 		} else {
 			n, err := tc.Chain.WriteString(str)
-			assert.Equal(tc.T, 3, n)
-			assert.NoError(tc.T, err)
+			assert.Equal(tc.TB, 3, n)
+			assert.NoError(tc.TB, err)
 		}
 	}
 }
 
 // SetupSimpleChain creates following chain:
-// simple -> flusher-closer -> buffer -> file
+// simple -> flusher-closer -> buffer -> file.
 func (tc *chainTestCase) SetupSimpleChain() *simpleChain {
 	out := &simpleChain{}
 	tc.Chain.PrependWriter(func(w Writer) io.Writer {
@@ -683,7 +685,7 @@ func (tc *chainTestCase) SetupSimpleChain() *simpleChain {
 		return out.Simple
 	})
 
-	assert.Equal(tc.T, `
+	assert.Equal(tc.TB, `
 Writers:
   simple writer
   flusher-closer writer
@@ -702,7 +704,7 @@ Closers:
 }
 
 // SetupComplexChain creates following chain:
-// simple -> flusher-closer -> flusher -> closer -> flush func -> close func -> buffer1 -> buffer2 -> last -> file
+// simple -> flusher-closer -> flusher -> closer -> flush func -> close func -> buffer1 -> buffer2 -> last -> file.
 func (tc *chainTestCase) SetupComplexChain() *complexChain {
 	out := &complexChain{}
 	tc.Chain.PrependWriter(func(w Writer) io.Writer {
@@ -746,7 +748,7 @@ func (tc *chainTestCase) SetupComplexChain() *complexChain {
 		return out.Simple
 	})
 
-	assert.Equal(tc.T, `
+	assert.Equal(tc.TB, `
 Writers:
   simple writer
   flusher-closer writer

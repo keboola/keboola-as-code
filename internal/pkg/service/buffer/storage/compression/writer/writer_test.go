@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5"
-	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/klauspost/compress/zstd"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/c2h5oh/datasize"
+	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 )
 
 func TestWriter(t *testing.T) {
@@ -20,15 +22,18 @@ func TestWriter(t *testing.T) {
 
 	// Decoders to validate compressed data
 	noneDecoder := func(t *testing.T, r io.Reader) io.Reader {
+		t.Helper()
 		return r
 	}
 	gzipDecoder := func(t *testing.T, r io.Reader) io.Reader {
+		t.Helper()
 		// The standard gzip implementation is used to decode data.
 		r, err := gzip.NewReader(r)
 		require.NoError(t, err)
 		return r
 	}
 	zstdDecoder := func(t *testing.T, r io.Reader) io.Reader {
+		t.Helper()
 		r, err := zstd.NewReader(r)
 		require.NoError(t, err)
 		return r

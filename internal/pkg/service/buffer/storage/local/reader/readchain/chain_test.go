@@ -1,15 +1,17 @@
 package readchain
 
 import (
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // TestChain_Empty tests that an empty Chain with only one reader.
@@ -19,8 +21,8 @@ func TestChain_Empty(t *testing.T) {
 
 	// Read all from the Chain
 	content, err := io.ReadAll(tc.Chain)
-	if assert.NoError(tc.T, err) {
-		assert.Equal(tc.T, "foo bar", string(content))
+	if assert.NoError(tc.TB, err) {
+		assert.Equal(tc.TB, "foo bar", string(content))
 	}
 
 	// Close the chain
@@ -167,8 +169,8 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 
 	// Read all from the Chain
 	content, err := io.ReadAll(tc.Chain)
-	if assert.NoError(tc.T, err) {
-		assert.Equal(tc.T, "foo bar", string(content))
+	if assert.NoError(tc.TB, err) {
+		assert.Equal(tc.TB, "foo bar", string(content))
 	}
 
 	// Close the chain
@@ -207,8 +209,8 @@ func TestChain_ReadError(t *testing.T) {
 
 	// Read all from the Chain
 	_, err := io.ReadAll(tc.Chain)
-	if assert.Error(tc.T, err) {
-		assert.Equal(tc.T, "some error", err.Error())
+	if assert.Error(tc.TB, err) {
+		assert.Equal(tc.TB, "some error", err.Error())
 	}
 
 	// 1st read is the string, 2nd is EOF error
@@ -232,14 +234,14 @@ func TestChain_CloseError(t *testing.T) {
 
 	// Read all from the Chain
 	content, err := io.ReadAll(tc.Chain)
-	if assert.NoError(tc.T, err) {
-		assert.Equal(tc.T, "foo bar", string(content))
+	if assert.NoError(tc.TB, err) {
+		assert.Equal(tc.TB, "foo bar", string(content))
 	}
 
 	// Read all from the Chain
 	err = tc.Chain.Close()
-	if assert.Error(tc.T, err) {
-		assert.Equal(tc.T, "chain close error: cannot close \"RC2\": some error", err.Error())
+	if assert.Error(tc.TB, err) {
+		assert.Equal(tc.TB, "chain close error: cannot close \"RC2\": some error", err.Error())
 	}
 
 	// 1st read is the content, 2nd is EOF error
@@ -260,21 +262,21 @@ DEBUG  chain closed
 }
 
 type chainTestCase struct {
-	T      testing.TB
+	TB     testing.TB
 	Logger log.DebugLogger
 	Chain  *Chain
 }
 
-func newChainTestCase(t testing.TB) *chainTestCase {
-	t.Helper()
+func newChainTestCase(tb testing.TB) *chainTestCase {
+	tb.Helper()
 	logger := log.NewDebugLogger()
 	testFile := &testReadCloser{inner: strings.NewReader("foo bar"), Logger: logger, Name: "file"}
 	chain := New(logger, testFile)
-	return &chainTestCase{T: t, Logger: logger, Chain: chain}
+	return &chainTestCase{TB: tb, Logger: logger, Chain: chain}
 }
 
 func (tc *chainTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.T, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
 }
 
 type testReader struct {

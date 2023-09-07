@@ -3,12 +3,14 @@ package writer
 
 import (
 	"compress/gzip"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"io"
+
 	fastGzip "github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
-	"io"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // New wraps the specified writer with the compression writer.
@@ -61,7 +63,7 @@ func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser,
 func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	return zstd.NewWriter(
 		w,
-		zstd.WithEncoderLevel(zstd.EncoderLevel(cfg.ZSTD.Level)),
+		zstd.WithEncoderLevel(cfg.ZSTD.Level),
 		zstd.WithEncoderConcurrency(cfg.ZSTD.Concurrency),
 		zstd.WithWindowSize(nextPowOf2(int(cfg.ZSTD.WindowSize.Bytes()))),
 	)

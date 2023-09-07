@@ -1,9 +1,10 @@
 package writer
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // testFile provides implementation of the File interface for tests.
@@ -13,6 +14,7 @@ type testFile struct {
 }
 
 func newTestFile(t *testing.T, filePath string) *testFile {
+	t.Helper()
 	file, err := os.OpenFile(filePath, sliceFileFlags, sliceFilePerm)
 	require.NoError(t, err)
 	return &testFile{file: file}

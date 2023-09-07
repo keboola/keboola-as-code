@@ -2,14 +2,18 @@ package staging
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestSlice_Validation(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		Name          string
 		ExpectedError string

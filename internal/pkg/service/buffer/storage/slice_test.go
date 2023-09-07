@@ -2,6 +2,11 @@ package storage
 
 import (
 	"context"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
@@ -10,9 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 func TestSliceID_Validation(t *testing.T) {
@@ -107,6 +109,8 @@ func TestSliceKey_OpenedAt(t *testing.T) {
 }
 
 func TestSlice_Validation(t *testing.T) {
+	t.Parallel()
+
 	// Following values have own validation
 	localStorage := local.Slice{
 		Dir:         "my-dir",

@@ -3,10 +3,11 @@
 package allocate
 
 import (
-	"github.com/c2h5oh/datasize"
-	"golang.org/x/sys/unix"
 	"os"
 	"syscall"
+
+	"github.com/c2h5oh/datasize"
+	"golang.org/x/sys/unix"
 )
 
 func (a DefaultAllocator) Allocate(f File, size datasize.ByteSize) (bool, error) {

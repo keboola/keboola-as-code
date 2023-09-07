@@ -3,21 +3,23 @@ package reader
 import (
 	"context"
 	"fmt"
-	"github.com/benbjohnson/clock"
-	"github.com/gofrs/flock"
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/benbjohnson/clock"
+	"github.com/gofrs/flock"
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // TestOpenVolume_NonExistentPath tests that an error should occur if the volume directory not exists.
@@ -274,24 +276,26 @@ func TestVolume_Close_Errors(t *testing.T) {
 }
 
 type volumeTestCase struct {
-	T          testing.TB
+	TB         testing.TB
 	Ctx        context.Context
 	Logger     log.DebugLogger
 	Clock      *clock.Mock
 	VolumePath string
 }
 
-func newVolumeTestCase(t testing.TB) *volumeTestCase {
+func newVolumeTestCase(tb testing.TB) *volumeTestCase {
+	tb.Helper()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		cancel()
 	})
 
 	logger := log.NewDebugLogger()
-	tmpDir := t.TempDir()
+	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		T:          t,
+		TB:         tb,
 		Ctx:        ctx,
 		Logger:     logger,
 		Clock:      clock.NewMock(),
@@ -304,5 +308,5 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.T, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
 }

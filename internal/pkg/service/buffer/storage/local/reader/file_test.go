@@ -1,8 +1,9 @@
 package reader
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"io"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // testFile provides implementation of the File interface for tests.

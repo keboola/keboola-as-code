@@ -32,7 +32,7 @@ type SliceKey struct {
 }
 
 type SliceID struct {
-	VolumeID VolumeID        `json:"volumeID" validate:"required"`
+	VolumeID VolumeID        `json:"volumeId" validate:"required"`
 	OpenedAt utctime.UTCTime `json:"openedAt" validate:"required"`
 }
 
@@ -40,7 +40,7 @@ func (v SliceID) String() string {
 	if v.OpenedAt.IsZero() {
 		panic(errors.New("storage.SliceID.OpenedAt cannot be empty"))
 	}
-	return string(v.VolumeID.String()) + "/" + v.OpenedAt.String()
+	return v.VolumeID.String() + "/" + v.OpenedAt.String()
 }
 
 func (v SliceKey) String() string {

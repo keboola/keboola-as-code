@@ -2,7 +2,17 @@ package writer
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
@@ -15,14 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestVolume_NewWriterFor_Ok(t *testing.T) {
@@ -55,7 +57,6 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 
 	assert.NoError(t, w.Close())
 	assert.Len(t, tc.Volume.writers, 0)
-
 }
 
 func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
@@ -648,9 +649,10 @@ type writerTestCase struct {
 	Slice  *storage.Slice
 }
 
-func newWriterTestCase(t testing.TB) *writerTestCase {
+func newWriterTestCase(tb testing.TB) *writerTestCase {
+	tb.Helper()
 	tc := &writerTestCase{}
-	tc.volumeTestCase = newVolumeTestCase(t)
+	tc.volumeTestCase = newVolumeTestCase(tb)
 	tc.Slice = newTestSlice()
 	return tc
 }
@@ -664,16 +666,16 @@ func (tc *writerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 func (tc *writerTestCase) NewWriter(opts ...Option) (*test.SliceWriter, error) {
 	if tc.Volume == nil {
 		// Write file with the VolumeID
-		require.NoError(tc.T, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
+		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
 
 		// Open volume
 		_, err := tc.OpenVolume(opts...)
-		require.NoError(tc.T, err)
+		require.NoError(tc.TB, err)
 	}
 
 	// Slice definition must be valid
 	val := validator.New()
-	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
+	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
 	w, err := tc.Volume.NewWriterFor(tc.Slice)
 	if err != nil {
@@ -692,8 +694,9 @@ func (a *testAllocator) Allocate(_ allocate.File, _ datasize.ByteSize) (bool, er
 	return a.Ok, a.Error
 }
 
-func AssertFileContent(t testing.TB, path, expected string) {
+func AssertFileContent(tb testing.TB, path, expected string) {
+	tb.Helper()
 	content, err := os.ReadFile(path)
-	assert.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(string(content)))
+	assert.NoError(tb, err)
+	assert.Equal(tb, strings.TrimSpace(expected), strings.TrimSpace(string(content)))
 }

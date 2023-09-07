@@ -3,8 +3,17 @@ package testcase
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
@@ -17,13 +26,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io"
-	"os"
-	"sync"
-	"testing"
-	"time"
 )
 
 type WriterTestCase struct {
@@ -44,7 +46,10 @@ type RowBatch struct {
 	Rows     [][]any
 }
 
+// nolint:thelper // false positive
 func (tc *WriterTestCase) Run(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -142,6 +147,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 }
 
 func (tc *WriterTestCase) newSlice(t *testing.T, volume *writer.Volume) *storage.Slice {
+	t.Helper()
+
 	s := NewTestSlice(volume)
 	s.Type = storage.FileTypeCSV
 	s.Columns = tc.Columns

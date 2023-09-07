@@ -4,8 +4,19 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
@@ -17,15 +28,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/klauspost/compress/zstd"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io"
-	"os"
-	"strings"
-	"sync"
-	"testing"
-	"time"
 )
 
 type fileCompression struct {
@@ -166,6 +168,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	assert.Equal(t, "2", string(content))
 }
 
+// nolint:tparallel // false positive
 func TestCSVWriter(t *testing.T) {
 	t.Parallel()
 
@@ -178,6 +181,7 @@ func TestCSVWriter(t *testing.T) {
 			Name:   "gzip",
 			Config: compression.DefaultGZIPConfig(),
 			FileDecoder: func(t *testing.T, r io.Reader) io.Reader {
+				t.Helper()
 				r, err := gzip.NewReader(r)
 				require.NoError(t, err)
 				return r
@@ -187,6 +191,7 @@ func TestCSVWriter(t *testing.T) {
 			Name:   "zstd",
 			Config: compression.DefaultZSTDConfig(),
 			FileDecoder: func(t *testing.T, r io.Reader) io.Reader {
+				t.Helper()
 				r, err := zstd.NewReader(r)
 				require.NoError(t, err)
 				return r
@@ -201,6 +206,7 @@ func TestCSVWriter(t *testing.T) {
 	}
 
 	// Generate all possible combinations of the parameters
+	// nolint:paralleltest // false positive
 	for _, comp := range compressions {
 		for _, syncMode := range syncModes {
 			for _, syncWait := range []bool{false, true} {
@@ -212,9 +218,7 @@ func TestCSVWriter(t *testing.T) {
 
 					// Run test case
 					if tc := newTestCase(comp, syncMode, syncWait, parallelWrite); tc != nil {
-						t.Run(tc.Name, func(t *testing.T) {
-							tc.Run(t)
-						})
+						t.Run(tc.Name, tc.Run)
 					}
 				}
 			}
@@ -239,6 +243,7 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 	var validateFn func(t *testing.T, fileContent string)
 	if parallelWrite {
 		validateFn = func(t *testing.T, fileContent string) {
+			t.Helper()
 			assert.Equal(t, 4, strings.Count(fileContent, "\n"))
 			assert.Contains(t, fileContent, "abc,123\n")
 			assert.Contains(t, fileContent, "\"\"\"def\"\"\",456\n")
@@ -247,6 +252,7 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 		}
 	} else {
 		validateFn = func(t *testing.T, fileContent string) {
+			t.Helper()
 			assert.Equal(t, "abc,123\n\"\"\"def\"\"\",456\nfoo,bar\nxyz,false\n", fileContent)
 		}
 	}
