@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/allocate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/test"
@@ -658,15 +659,15 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 }
 
 func (tc *writerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
-	volume, err := tc.volumeTestCase.OpenVolume(opts...)
-	tc.Volume = volume
-	return volume, err
+	vol, err := tc.volumeTestCase.OpenVolume(opts...)
+	tc.Volume = vol
+	return vol, err
 }
 
 func (tc *writerTestCase) NewWriter(opts ...Option) (*test.SliceWriter, error) {
 	if tc.Volume == nil {
 		// Write file with the VolumeID
-		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
+		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
 
 		// Open volume
 		_, err := tc.OpenVolume(opts...)

@@ -18,7 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -67,7 +67,7 @@ func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, local.VolumeIDFile)
+	path := filesystem.Join(tc.VolumePath, volume.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -98,18 +98,18 @@ func TestOpenVolume_GenerateVolumeID(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Open volume - it generates the file
-	volume, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Read the volume ID file and check content length
-	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
+	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
 		assert.NoError(t, err)
 		assert.Len(t, content, storage.VolumeIDLength)
 
 		// Volume ID reported by the volume instance match the file content
-		assert.Equal(t, storage.VolumeID(content), volume.VolumeID())
+		assert.Equal(t, storage.VolumeID(content), vol.VolumeID())
 	}
 
 	// Lock is locked by the volume
@@ -119,7 +119,7 @@ func TestOpenVolume_GenerateVolumeID(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, volume.Close())
+	assert.NoError(t, vol.Close())
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -142,16 +142,16 @@ func TestOpenVolume_LoadVolumeID(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Write volume ID file
-	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
+	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	writeContent := []byte("  123456789  ")
 	require.NoError(t, os.WriteFile(idFilePath, writeContent, 0o0640))
 
 	// Open volume - it loads the file
-	volume, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Volume ID reported by the volume instance match the file content
-	assert.Equal(t, storage.VolumeID("123456789"), volume.VolumeID())
+	assert.Equal(t, storage.VolumeID("123456789"), vol.VolumeID())
 
 	// File content remains same
 	if assert.FileExists(t, idFilePath) {
@@ -167,7 +167,7 @@ func TestOpenVolume_LoadVolumeID(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, volume.Close())
+	assert.NoError(t, vol.Close())
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -205,7 +205,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Open volume, replace file opener
-	volume, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
+	vol, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
 		f := newTestFile(t, filePath)
 		f.CloseError = errors.New("some close error")
 		return f, nil
@@ -213,13 +213,13 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Open two writers
-	_, err = volume.NewWriterFor(newTestSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	_, err = vol.NewWriterFor(newTestSliceOpenedAt("2000-01-01T20:00:00.000Z"))
 	require.NoError(t, err)
-	_, err = volume.NewWriterFor(newTestSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	_, err = vol.NewWriterFor(newTestSliceOpenedAt("2000-01-01T21:00:00.000Z"))
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	err = volume.Close()
+	err = vol.Close()
 	if assert.Error(t, err) {
 		// Order of the errors is random, writers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`
