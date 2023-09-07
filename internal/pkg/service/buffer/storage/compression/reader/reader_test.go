@@ -22,13 +22,16 @@ func TestReader(t *testing.T) {
 
 	// Encoders to compressed data before test
 	noneDecoder := func(t *testing.T, w io.Writer) io.Writer {
+		t.Helper()
 		return w
 	}
 	gzipEncoder := func(t *testing.T, w io.Writer) io.Writer {
+		t.Helper()
 		// The standard gzip implementation is used to encode data.
 		return gzip.NewWriter(w)
 	}
 	zstdEncoder := func(t *testing.T, w io.Writer) io.Writer {
+		t.Helper()
 		r, err := zstd.NewWriter(w)
 		require.NoError(t, err)
 		return r

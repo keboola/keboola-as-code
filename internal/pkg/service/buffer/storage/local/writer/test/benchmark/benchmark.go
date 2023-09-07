@@ -45,6 +45,8 @@ type WriterBenchmark struct {
 }
 
 func (wb *WriterBenchmark) Run(b *testing.B) {
+	b.Helper()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -123,10 +125,13 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 		assert.Equal(b, sliceWriter.CompressedSize(), sliceWriter.UncompressedSize())
 	}
 	stat, err := os.Stat(sliceWriter.FilePath())
+	assert.NoError(b, err)
 	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
 }
 
 func (wb *WriterBenchmark) newSlice(b *testing.B, volume *writer.Volume) *storage.Slice {
+	b.Helper()
+
 	openedAt := utctime.From(time.Now())
 	s := &storage.Slice{
 		SliceKey: storage.SliceKey{

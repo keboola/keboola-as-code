@@ -14,6 +14,7 @@ type testFile struct {
 }
 
 func newTestFile(t *testing.T, filePath string) *testFile {
+	t.Helper()
 	file, err := os.OpenFile(filePath, sliceFileFlags, sliceFilePerm)
 	require.NoError(t, err)
 	return &testFile{file: file}

@@ -22,15 +22,18 @@ func TestWriter(t *testing.T) {
 
 	// Decoders to validate compressed data
 	noneDecoder := func(t *testing.T, r io.Reader) io.Reader {
+		t.Helper()
 		return r
 	}
 	gzipDecoder := func(t *testing.T, r io.Reader) io.Reader {
+		t.Helper()
 		// The standard gzip implementation is used to decode data.
 		r, err := gzip.NewReader(r)
 		require.NoError(t, err)
 		return r
 	}
 	zstdDecoder := func(t *testing.T, r io.Reader) io.Reader {
+		t.Helper()
 		r, err := zstd.NewReader(r)
 		require.NoError(t, err)
 		return r

@@ -83,6 +83,8 @@ func TestFileKey_OpenedAt(t *testing.T) {
 }
 
 func TestFile_Validation(t *testing.T) {
+	t.Parallel()
+
 	// Following values have own validation
 	localStorage := local.File{
 		Dir:         "my-dir",
