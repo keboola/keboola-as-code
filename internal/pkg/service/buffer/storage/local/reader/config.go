@@ -13,9 +13,23 @@ type config struct {
 	// waitForVolumeIDTimeout defines how long to wait for the existence of a file with the VolumeID,
 	// see OpenVolume function and Volume.waitForVolumeID method.
 	waitForVolumeIDTimeout time.Duration
+	// fileOpener provides file opening, a custom implementation can be useful for tests.
+	fileOpener FileOpener
 }
 
 type Option func(config *config)
+
+func newConfig(opts []Option) config {
+	cfg := config{
+		waitForVolumeIDTimeout: defaultVolumeIDWaitTimeout,
+		fileOpener:             DefaultFileOpener,
+	}
+
+	for _, o := range opts {
+		o(&cfg)
+	}
+	return cfg
+}
 
 func WithWaitForVolumeIDTimeout(v time.Duration) Option {
 	return func(c *config) {
@@ -26,13 +40,11 @@ func WithWaitForVolumeIDTimeout(v time.Duration) Option {
 	}
 }
 
-func newConfig(opts []Option) config {
-	cfg := config{
-		waitForVolumeIDTimeout: defaultVolumeIDWaitTimeout,
+func WithFileOpener(v FileOpener) Option {
+	return func(c *config) {
+		if v == nil {
+			panic(errors.New(`value must not be nil`))
+		}
+		c.fileOpener = v
 	}
-
-	for _, o := range opts {
-		o(&cfg)
-	}
-	return cfg
 }

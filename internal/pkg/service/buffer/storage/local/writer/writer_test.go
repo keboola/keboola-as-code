@@ -27,42 +27,34 @@ import (
 
 func TestVolume_NewWriterFor_Ok(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
-	volume, err := tc.OpenVolume()
-	require.NoError(t, err)
+	tc := newWriterTestCase(t)
 
-	slice := newTestSlice(t)
-
-	w, err := volume.NewWriterFor(slice)
+	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.Len(t, volume.writers, 1)
+	assert.Len(t, tc.Volume.writers, 1)
 
 	assert.NoError(t, w.Close())
-	assert.Len(t, volume.writers, 0)
+	assert.Len(t, tc.Volume.writers, 0)
 }
 
 func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
-	volume, err := tc.OpenVolume()
-	require.NoError(t, err)
-
-	slice := newTestSlice(t)
+	tc := newWriterTestCase(t)
 
 	// Create the writer first time - ok
-	w, err := volume.NewWriterFor(slice)
+	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.Len(t, volume.writers, 1)
+	assert.Len(t, tc.Volume.writers, 1)
 
 	// Create writer for the same slice again - error
-	_, err = volume.NewWriterFor(slice)
+	_, err = tc.NewWriter()
 	if assert.Error(t, err) {
 		assert.Equal(t, `writer for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
-	assert.Len(t, volume.writers, 1)
+	assert.Len(t, tc.Volume.writers, 1)
 
 	assert.NoError(t, w.Close())
-	assert.Len(t, volume.writers, 0)
+	assert.Len(t, tc.Volume.writers, 0)
 
 }
 
@@ -74,7 +66,7 @@ func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
 
 	assert.NoError(t, volume.Close())
 
-	_, err = volume.NewWriterFor(newTestSlice(t))
+	_, err = volume.NewWriterFor(newTestSlice())
 	assert.Error(t, err)
 }
 
@@ -594,11 +586,11 @@ DEBUG  disk space allocation is disabled
 `)
 }
 
-func newTestSlice(t testing.TB) *storage.Slice {
-	return newTestSliceOpenedAt(t, "2000-01-01T20:00:00.000Z")
+func newTestSlice() *storage.Slice {
+	return newTestSliceOpenedAt("2000-01-01T20:00:00.000Z")
 }
 
-func newTestSliceOpenedAt(t testing.TB, openedAt string) *storage.Slice {
+func newTestSliceOpenedAt(openedAt string) *storage.Slice {
 	return &storage.Slice{
 		SliceKey: storage.SliceKey{
 			FileKey: storage.FileKey{
@@ -659,7 +651,7 @@ type writerTestCase struct {
 func newWriterTestCase(t testing.TB) *writerTestCase {
 	tc := &writerTestCase{}
 	tc.volumeTestCase = newVolumeTestCase(t)
-	tc.Slice = newTestSlice(t)
+	tc.Slice = newTestSlice()
 	return tc
 }
 
@@ -696,7 +688,7 @@ type testAllocator struct {
 	Error error
 }
 
-func (a *testAllocator) Allocate(_ *os.File, _ datasize.ByteSize) (bool, error) {
+func (a *testAllocator) Allocate(_ allocate.File, _ datasize.ByteSize) (bool, error) {
 	return a.Ok, a.Error
 }
 

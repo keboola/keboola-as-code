@@ -16,7 +16,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	v, err := tc.OpenVolume(WithWriterFactory(DefaultFactory))
 	assert.NoError(t, err)
 
-	slice := newTestSlice(t)
+	slice := newTestSlice()
 	slice.Type = storage.FileTypeCSV
 
 	w, err := v.NewWriterFor(slice)
@@ -35,7 +35,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	v, err := tc.OpenVolume(WithWriterFactory(DefaultFactory))
 	assert.NoError(t, err)
 
-	slice := newTestSlice(t)
+	slice := newTestSlice()
 	slice.Type = "invalid"
 	_, err = v.NewWriterFor(slice)
 	if assert.Error(t, err) {
