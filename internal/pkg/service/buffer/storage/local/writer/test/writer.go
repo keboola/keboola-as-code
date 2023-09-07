@@ -68,7 +68,7 @@ func (w *SliceWriter) WriteRow(values []any) error {
 	w.WriteDone <- struct{}{}
 
 	// Wait for sync and return sync error, if any
-	if err = notifier.Wait(); err == nil {
+	if err = notifier.Wait(); err != nil {
 		return err
 	}
 
