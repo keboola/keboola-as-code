@@ -10,8 +10,8 @@ type closeFn struct {
 	fn   func() error
 }
 
-// newCloseFn allows to a custom function in the io.Closer interface.
-// Info is a value used in the Chain.Dump, for example a related structure.
+// newCloseFn allows a custom function to be used as the io.Closer interface.
+// Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
 func newCloseFn(info any, fn func() error) io.Closer {
 	return &closeFn{info: info, fn: fn}
 }

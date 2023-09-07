@@ -20,12 +20,10 @@ import (
 //
 // Add additional flusher or closer:
 //   - If you have a separate flusher or closer, you can add it using one of the following methods:
-//   - AppendFlusher
-//   - PrependFlusher
+//   - AppendFlusherCloser
+//   - PrependFlusherCloser
 //   - AppendFlushFn
 //   - PrependFlushFn
-//   - AppendCloser
-//   - PrependCloser
 //   - AppendCloseFn
 //   - PrependCloseFn
 //
@@ -60,15 +58,17 @@ func New(logger log.Logger, file File) *Chain {
 	return &Chain{logger: logger, file: file, beginning: file}
 }
 
+// Write to the Chain beginning.
 func (c *Chain) Write(p []byte) (n int, err error) {
 	return c.beginning.Write(p)
 }
 
+// WriteString to the Chain beginning.
 func (c *Chain) WriteString(s string) (n int, err error) {
 	return c.beginning.WriteString(s)
 }
 
-// Flush data from writers to the file, see also Sync method.
+// Flush data from writers internal buffers, see also Sync method.
 func (c *Chain) Flush() error {
 	c.logger.Debug("flushing writers")
 	errs := errors.NewMultiError()
@@ -90,7 +90,8 @@ func (c *Chain) Flush() error {
 	return nil
 }
 
-// Sync method flushes data from writers to the file and then sync the in-memory copy of written data to disk.
+// Sync method flushes data from writers internal buffers and
+// then sync the in-memory copy of written data from the OS disk cache to the disk.
 func (c *Chain) Sync() error {
 	c.logger.Debug("syncing file")
 	errs := errors.NewMultiError()
@@ -147,8 +148,9 @@ func (c *Chain) Close() error {
 	return nil
 }
 
-// PrependWriter method adds writer to the Chain beginning.
+// PrependWriter method adds writer from the factory to the Chain beginning.
 // The factory can return the original writer without changes.
+// If the writer implements Flush or Close method, they are automatically registered.
 func (c *Chain) PrependWriter(factory func(Writer) io.Writer) (ok bool) {
 	ok, _ = c.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
 		return factory(w), nil
@@ -156,8 +158,9 @@ func (c *Chain) PrependWriter(factory func(Writer) io.Writer) (ok bool) {
 	return ok
 }
 
-// PrependWriterOrErr method adds writer to the Chain beginning.
+// PrependWriterOrErr method adds writer from the factory to the Chain beginning.
 // The factory can return the original writer without changes.
+// If the writer implements Flush or Close method, they are automatically registered.
 func (c *Chain) PrependWriterOrErr(factory func(Writer) (io.Writer, error)) (ok bool, err error) {
 	// Wrap Chain with the new writer
 	oldWriter := c.beginning
@@ -172,15 +175,15 @@ func (c *Chain) PrependWriterOrErr(factory func(Writer) (io.Writer, error)) (ok 
 	if !same {
 		c.writers = append([]io.Writer{newWriter}, c.writers...)
 
-		// Protect asynchronous Flush with a lock
+		// Protect asynchronous Flush with a lock, add WriteString method if needed
 		safe := newSafeWriter(newWriter)
 
-		// Should be the writer flushed before the File.Sync?
+		// Register flusher for periodical sync
 		if _, ok := newWriter.(flusher); ok {
 			c.addFlusher(true, safe)
 		}
 
-		// Should be the writer closed/flushed before the File.Close?
+		// Register closer: use Close method if exists, or call Flush also on Close
 		if v, ok := newWriter.(io.Closer); ok {
 			c.addCloser(true, v)
 		} else if _, ok := newWriter.(flusher); ok {
@@ -191,6 +194,50 @@ func (c *Chain) PrependWriterOrErr(factory func(Writer) (io.Writer, error)) (ok 
 	}
 
 	return !same, nil
+}
+
+// AppendFlusherCloser adds
+// the Flush method if v implements it,
+// the Close method if v implements it,
+// to the Chain end.
+// At least one method must be implemented.
+func (c *Chain) AppendFlusherCloser(v any) {
+	c.addFlusherCloser(false, v)
+}
+
+// PrependFlusherCloser adds
+// the Flush method if v implements it,
+// the Close method if v implements it,
+// to the Chain beginning.
+// At least one method must be implemented.
+func (c *Chain) PrependFlusherCloser(v any) {
+	c.addFlusherCloser(true, v)
+}
+
+// AppendFlushFn adds the Flush function to the Chain end.
+// Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
+func (c *Chain) AppendFlushFn(info any, fn func() error) {
+	c.addFlusher(false, newFlushFn(info, fn))
+	c.addCloser(false, newCloseFn(info, fn))
+}
+
+// PrependFlushFn adds the Flush function to the Chain beginning.
+// Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
+func (c *Chain) PrependFlushFn(info any, fn func() error) {
+	c.addFlusher(true, newFlushFn(info, fn))
+	c.addCloser(true, newCloseFn(info, fn))
+}
+
+// AppendCloseFn adds the Close function to the Chain end.
+// Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
+func (c *Chain) AppendCloseFn(info any, fn func() error) {
+	c.addCloser(false, newCloseFn(info, fn))
+}
+
+// PrependCloseFn adds the Close function to the Chain beginning.
+// Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
+func (c *Chain) PrependCloseFn(info any, fn func() error) {
+	c.addCloser(true, newCloseFn(info, fn))
 }
 
 func (c *Chain) syncFile() error {
@@ -204,32 +251,6 @@ func (c *Chain) syncFile() error {
 
 	c.logger.Debug("file synced")
 	return nil
-}
-
-func (c *Chain) AppendFlusherCloser(v any) {
-	c.addFlusherCloser(false, v)
-}
-
-func (c *Chain) PrependFlusherCloser(v any) {
-	c.addFlusherCloser(true, v)
-}
-
-func (c *Chain) AppendFlushFn(info any, fn func() error) {
-	c.addFlusher(false, newFlushFn(info, fn))
-	c.addCloser(false, newCloseFn(info, fn))
-}
-
-func (c *Chain) PrependFlushFn(info any, fn func() error) {
-	c.addFlusher(true, newFlushFn(info, fn))
-	c.addCloser(true, newCloseFn(info, fn))
-}
-
-func (c *Chain) AppendCloseFn(info any, fn func() error) {
-	c.addCloser(false, newCloseFn(info, fn))
-}
-
-func (c *Chain) PrependCloseFn(info any, fn func() error) {
-	c.addCloser(true, newCloseFn(info, fn))
 }
 
 func (c *Chain) addFlusherCloser(prepend bool, v any) {

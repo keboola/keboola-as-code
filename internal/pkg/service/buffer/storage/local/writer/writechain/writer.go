@@ -29,12 +29,13 @@ func newStringWriterWrapper(w io.Writer) Writer {
 	return &stringWriterWrapper{Writer: w}
 }
 
-// safeWriter add locks to a io.Writer.
+// safeWriter add locks to an io.Writer.
 // Write, WriteString and Flush are protected by the lock, because Flush is triggered asynchronously.
 type safeWriter struct {
 	originalWriter io.Writer
 	stringWriter   Writer
-	lock           *sync.Mutex
+	// lock synchronizes calls of the Write, WriteString, and Flush methods.
+	lock *sync.Mutex
 }
 
 func newSafeWriter(w io.Writer) *safeWriter {
@@ -46,7 +47,7 @@ func newSafeWriter(w io.Writer) *safeWriter {
 		sw = newStringWriterWrapper(w)
 	}
 
-	// Setup lock
+	// Setup Write/Flush lock
 	return &safeWriter{
 		originalWriter: w,
 		stringWriter:   sw,

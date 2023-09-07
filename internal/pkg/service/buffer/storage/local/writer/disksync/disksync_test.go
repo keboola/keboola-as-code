@@ -411,7 +411,10 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop())
+	err := syncer.Stop()
+	if assert.Error(t, err) {
+		assert.Equal(t, "some sync error", err.Error())
+	}
 
 	// Check logs
 	tc.AssertLogs(`
@@ -514,7 +517,10 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop())
+	err = syncer.Stop()
+	if assert.Error(t, err) {
+		assert.Equal(t, "some sync error", err.Error())
+	}
 
 	// Check logs
 	tc.AssertLogs(`
@@ -660,7 +666,10 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop())
+	err := syncer.Stop()
+	if assert.Error(t, err) {
+		assert.Equal(t, "some flush error", err.Error())
+	}
 
 	// Check logs
 	tc.AssertLogs(`
@@ -763,7 +772,10 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop())
+	err = syncer.Stop()
+	if assert.Error(t, err) {
+		assert.Equal(t, "some flush error", err.Error())
+	}
 
 	// Check logs
 	tc.AssertLogs(`

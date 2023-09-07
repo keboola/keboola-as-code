@@ -11,7 +11,8 @@ type Option func(config *config)
 
 func newConfig(opts []Option) config {
 	cfg := config{
-		allocator: allocate.DefaultAllocator{},
+		allocator:     allocate.DefaultAllocator{},
+		writerFactory: DefaultFactory,
 	}
 
 	for _, o := range opts {
