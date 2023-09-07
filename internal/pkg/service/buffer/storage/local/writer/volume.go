@@ -3,23 +3,25 @@ package writer
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
+	"sort"
+	"sync"
+
 	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"os"
-	"path/filepath"
-	"sort"
-	"sync"
 )
 
 const (
-	// drainFile blocks opening of the volume for writing
+	// drainFile blocks opening of the volume for writing.
 	drainFile = "drain"
-	// lockFile ensures only one opening of the volume for writing
+	// lockFile ensures only one opening of the volume for writing.
 	lockFile          = "writer.lock"
 	volumeIDFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	volumeIDFilePerm  = 0o640

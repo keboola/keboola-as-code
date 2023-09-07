@@ -3,12 +3,13 @@
 package allocate
 
 import (
-	"github.com/c2h5oh/datasize"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAllocate(t *testing.T) {

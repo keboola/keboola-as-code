@@ -2,11 +2,13 @@ package target
 
 import (
 	"context"
-	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestFile_Validation(t *testing.T) {

@@ -1,9 +1,10 @@
 package writer
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // testFile provides implementation of the File interface for tests.

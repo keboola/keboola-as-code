@@ -1,8 +1,9 @@
 package reader
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (

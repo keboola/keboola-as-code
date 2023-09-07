@@ -3,12 +3,14 @@ package writer
 
 import (
 	"compress/gzip"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"io"
+
 	fastGzip "github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
-	"io"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // New wraps the specified writer with the compression writer.

@@ -2,22 +2,24 @@ package reader
 
 import (
 	"context"
-	"github.com/benbjohnson/clock"
-	"github.com/gofrs/flock"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/benbjohnson/clock"
+	"github.com/gofrs/flock"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	// lockFile ensures only one opening of the volume for reading
+	// lockFile ensures only one opening of the volume for reading.
 	lockFile                = "reader.lock"
 	waitForVolumeIDInterval = 500 * time.Millisecond
 )

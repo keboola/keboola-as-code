@@ -1,15 +1,15 @@
 package local
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"os"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const VolumeIDFile = "volume-id.txt"
 
 func CheckVolumeDir(path string) error {
 	info, err := os.Stat(path)
-
 	// Path must exist
 	if err != nil {
 		return errors.Errorf(`cannot open volume "%s": %w`, path, err)

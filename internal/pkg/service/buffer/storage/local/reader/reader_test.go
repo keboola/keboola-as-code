@@ -3,7 +3,16 @@ package reader
 import (
 	"bytes"
 	"context"
+	"io"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/reader"
@@ -16,13 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 // TestVolume_NewReaderFor_Ok tests Volume.NewReaderFor method and SliceReader getters.

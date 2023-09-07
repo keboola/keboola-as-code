@@ -2,7 +2,12 @@ package storage
 
 import (
 	"context"
+	"strings"
+	"testing"
+
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
@@ -12,9 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 func TestFileID_Validation(t *testing.T) {

@@ -3,6 +3,9 @@
 package reader
 
 import (
+	"io"
+	"os"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
@@ -10,8 +13,6 @@ import (
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/reader/readchain"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"io"
-	"os"
 )
 
 type SliceReader interface {

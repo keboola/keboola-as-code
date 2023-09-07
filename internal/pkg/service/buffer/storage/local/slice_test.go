@@ -2,13 +2,15 @@ package local
 
 import (
 	"context"
+	"strings"
+	"testing"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 func TestSlice_Validation(t *testing.T) {

@@ -2,9 +2,10 @@
 package writechain
 
 import (
+	"io"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"io"
 )
 
 // Chain of writers at the end of which is the File.

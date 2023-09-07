@@ -2,9 +2,10 @@ package compression
 
 import (
 	"compress/gzip"
+	"runtime"
+
 	"github.com/c2h5oh/datasize"
 	"github.com/klauspost/compress/zstd"
-	"runtime"
 )
 
 const (
@@ -25,13 +26,13 @@ type Config struct {
 type GZIPConfig struct {
 	Level       int                `json:"level" mapstructure:"level" validate:"min=1,max=9"  usage:"Default GZIP compression level."`
 	Impl        GZIPImplementation `json:"impl" mapstructure:"impl" validate:"required,oneof=standard fast parallel" usage:"Default GZIP implementation: standard, fast, parallel."`
-	BlockSize   datasize.ByteSize  `json:"blockSize" mapstructure:"block-size" validate:"required,min=16384,max=104857600" usage:"Default GZIP parallel block size."` //16kB-100MB
+	BlockSize   datasize.ByteSize  `json:"blockSize" mapstructure:"block-size" validate:"required,min=16384,max=104857600" usage:"Default GZIP parallel block size."` // 16kB-100MB
 	Concurrency int                `json:"concurrency" mapstructure:"concurrency" usage:"Default GZIP parallel concurrency, 0 = auto."`
 }
 
 type ZSTDConfig struct {
 	Level       zstd.EncoderLevel `json:"level" mapstructure:"level" validate:"min=1,max=4" usage:"Default ZSTD compression level."`
-	WindowSize  datasize.ByteSize `json:"windowSize" mapstructure:"window-size" validate:"required,min=1024,max=536870912" usage:"Default ZSTD window size."` //1kB-512MB
+	WindowSize  datasize.ByteSize `json:"windowSize" mapstructure:"window-size" validate:"required,min=1024,max=536870912" usage:"Default ZSTD window size."` // 1kB-512MB
 	Concurrency int               `json:"concurrency" mapstructure:"concurrency" usage:"Default ZSTD concurrency, 0 = auto"`
 }
 

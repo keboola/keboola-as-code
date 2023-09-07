@@ -1,10 +1,12 @@
 package writer
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/csv"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // TestDefaultFactory_FileTypeCSV tests that csv.Writer is created for the storage.FileTypeCSV.

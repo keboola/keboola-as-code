@@ -2,16 +2,18 @@ package writechain
 
 import (
 	"bufio"
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // TestChain_Empty tests that an empty Chain writes directly to the File.
@@ -667,7 +669,7 @@ func (tc *chainTestCase) WriteData(items []string) {
 }
 
 // SetupSimpleChain creates following chain:
-// simple -> flusher-closer -> buffer -> file
+// simple -> flusher-closer -> buffer -> file.
 func (tc *chainTestCase) SetupSimpleChain() *simpleChain {
 	out := &simpleChain{}
 	tc.Chain.PrependWriter(func(w Writer) io.Writer {
@@ -702,7 +704,7 @@ Closers:
 }
 
 // SetupComplexChain creates following chain:
-// simple -> flusher-closer -> flusher -> closer -> flush func -> close func -> buffer1 -> buffer2 -> last -> file
+// simple -> flusher-closer -> flusher -> closer -> flush func -> close func -> buffer1 -> buffer2 -> last -> file.
 func (tc *chainTestCase) SetupComplexChain() *complexChain {
 	out := &complexChain{}
 	tc.Chain.PrependWriter(func(w Writer) io.Writer {
