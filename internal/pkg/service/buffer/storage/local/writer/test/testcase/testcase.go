@@ -46,7 +46,10 @@ type RowBatch struct {
 	Rows     [][]any
 }
 
+// nolint:thelper // false positive
 func (tc *WriterTestCase) Run(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -144,6 +147,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 }
 
 func (tc *WriterTestCase) newSlice(t *testing.T, volume *writer.Volume) *storage.Slice {
+	t.Helper()
+
 	s := NewTestSlice(volume)
 	s.Type = storage.FileTypeCSV
 	s.Columns = tc.Columns

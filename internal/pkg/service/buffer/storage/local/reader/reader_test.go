@@ -127,18 +127,9 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			t.Run("Ok", func(t *testing.T) {
-				t.Parallel()
-				tc.TestOk(t)
-			})
-			t.Run("ReadError", func(t *testing.T) {
-				t.Parallel()
-				tc.TestReadError(t)
-			})
-			t.Run("CloseError", func(t *testing.T) {
-				t.Parallel()
-				tc.TestCloseError(t)
-			})
+			t.Run("Ok", tc.TestOk)
+			t.Run("ReadError", tc.TestReadError)
+			t.Run("CloseError", tc.TestCloseError)
 		})
 	}
 }
@@ -151,6 +142,8 @@ type compressionTestCase struct {
 
 // TestOk tests successful read chain.
 func (tc *compressionTestCase) TestOk(t *testing.T) {
+	t.Parallel()
+
 	// Prepare writer
 	localData := bytes.NewBuffer(nil)
 	var localWriter io.Writer = localData
@@ -204,6 +197,8 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 
 // TestReadError tests propagation of the file read error through read chain.
 func (tc *compressionTestCase) TestReadError(t *testing.T) {
+	t.Parallel()
+
 	// Prepare writer
 	localData := bytes.NewBuffer(nil)
 	var localWriter io.Writer = localData
@@ -262,6 +257,8 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 // TestCloseError tests propagation of the file close error through read chain.
 func (tc *compressionTestCase) TestCloseError(t *testing.T) {
+	t.Parallel()
+
 	// Prepare writer
 	localData := bytes.NewBuffer(nil)
 	var localWriter io.Writer = localData
@@ -326,16 +323,17 @@ type readerTestCase struct {
 	SliceData []byte
 }
 
-func newReaderTestCase(t testing.TB) *readerTestCase {
+func newReaderTestCase(tb testing.TB) *readerTestCase {
+	tb.Helper()
 	tc := &readerTestCase{}
-	tc.volumeTestCase = newVolumeTestCase(t)
+	tc.volumeTestCase = newVolumeTestCase(tb)
 	tc.Slice = newTestSlice()
 	return tc
 }
 
 func (tc *readerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	// Write file with the VolumeID
-	require.NoError(tc.T, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
+	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
 
 	volume, err := tc.volumeTestCase.OpenVolume(opts...)
 	tc.Volume = volume
@@ -346,17 +344,17 @@ func (tc *readerTestCase) NewReader(opts ...Option) (SliceReader, error) {
 	if tc.Volume == nil {
 		// Open volume
 		_, err := tc.OpenVolume(opts...)
-		require.NoError(tc.T, err)
+		require.NoError(tc.TB, err)
 	}
 
 	// Slice definition must be valid
 	val := validator.New()
-	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
+	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
 	// Write slice data
 	path := filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
-	assert.NoError(tc.T, os.MkdirAll(filepath.Dir(path), 0o750))
-	assert.NoError(tc.T, os.WriteFile(path, tc.SliceData, 0o640))
+	assert.NoError(tc.TB, os.MkdirAll(filepath.Dir(path), 0o750))
+	assert.NoError(tc.TB, os.WriteFile(path, tc.SliceData, 0o640))
 
 	r, err := tc.Volume.NewReaderFor(tc.Slice)
 	if err != nil {

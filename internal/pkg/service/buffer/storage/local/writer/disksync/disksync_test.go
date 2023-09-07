@@ -114,6 +114,7 @@ func TestSyncWriter_WriteString_Error(t *testing.T) {
 
 func TestSyncWriter_StopStoppedSyncer(t *testing.T) {
 	t.Parallel()
+
 	tc := newWriterTestCase(t)
 	syncer := tc.NewSyncer()
 
@@ -1122,7 +1123,7 @@ DEBUG  syncer stopped
 }
 
 type writerTestCase struct {
-	T      testing.TB
+	TB     testing.TB
 	Ctx    context.Context
 	Logger log.DebugLogger
 	Clock  *clock.Mock
@@ -1173,11 +1174,11 @@ func (c *testChain) Sync() error {
 	return c.SyncError
 }
 
-func newWriterTestCase(t testing.TB) *writerTestCase {
-	t.Helper()
+func newWriterTestCase(tb testing.TB) *writerTestCase {
+	tb.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		cancel()
 	})
 
@@ -1191,11 +1192,11 @@ func newWriterTestCase(t testing.TB) *writerTestCase {
 		IntervalTrigger: 10 * time.Millisecond,
 	}
 	val := validator.New()
-	require.NoError(t, val.Validate(ctx, config))
+	require.NoError(tb, val.Validate(ctx, config))
 
 	logger := log.NewDebugLogger()
 	return &writerTestCase{
-		T:      t,
+		TB:     tb,
 		Ctx:    ctx,
 		Logger: logger,
 		Clock:  clock.NewMock(),
@@ -1212,5 +1213,5 @@ func (tc *writerTestCase) NewSyncer() *Syncer {
 }
 
 func (tc *writerTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.T, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
 }

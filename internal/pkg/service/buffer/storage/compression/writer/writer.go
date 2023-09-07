@@ -63,7 +63,7 @@ func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser,
 func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	return zstd.NewWriter(
 		w,
-		zstd.WithEncoderLevel(zstd.EncoderLevel(cfg.ZSTD.Level)),
+		zstd.WithEncoderLevel(cfg.ZSTD.Level),
 		zstd.WithEncoderConcurrency(cfg.ZSTD.Concurrency),
 		zstd.WithWindowSize(nextPowOf2(int(cfg.ZSTD.WindowSize.Bytes()))),
 	)

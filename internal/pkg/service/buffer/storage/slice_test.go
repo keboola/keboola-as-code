@@ -109,6 +109,8 @@ func TestSliceKey_OpenedAt(t *testing.T) {
 }
 
 func TestSlice_Validation(t *testing.T) {
+	t.Parallel()
+
 	// Following values have own validation
 	localStorage := local.Slice{
 		Dir:         "my-dir",

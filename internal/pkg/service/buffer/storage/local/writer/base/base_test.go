@@ -110,7 +110,9 @@ func TestBaseWriter_CloseError(t *testing.T) {
 	}
 }
 
-func newTestSlice(t testing.TB) *storage.Slice {
+func newTestSlice(tb testing.TB) *storage.Slice {
+	tb.Helper()
+
 	s := &storage.Slice{
 		SliceKey: storage.SliceKey{
 			FileKey: storage.FileKey{
@@ -152,6 +154,6 @@ func newTestSlice(t testing.TB) *storage.Slice {
 
 	// Slice definition must be valid
 	val := validator.New()
-	require.NoError(t, val.Validate(context.Background(), s))
+	require.NoError(tb, val.Validate(context.Background(), s))
 	return s
 }
