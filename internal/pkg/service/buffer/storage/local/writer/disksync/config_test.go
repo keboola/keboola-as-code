@@ -2,12 +2,14 @@ package disksync
 
 import (
 	"context"
-	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestConfig(t *testing.T) {

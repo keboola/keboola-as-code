@@ -2,13 +2,15 @@ package size
 
 import (
 	"bytes"
-	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestMeter(t *testing.T) {

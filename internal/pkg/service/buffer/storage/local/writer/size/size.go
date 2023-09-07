@@ -2,13 +2,15 @@
 package size
 
 import (
-	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // Meter implements io.Writer interface to measure size of the data written to the underlying writer.

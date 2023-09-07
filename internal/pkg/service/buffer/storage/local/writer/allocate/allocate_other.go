@@ -3,8 +3,9 @@
 package allocate
 
 import (
-	"github.com/c2h5oh/datasize"
 	"os"
+
+	"github.com/c2h5oh/datasize"
 )
 
 func (a DefaultAllocator) AllocateSpace(f *os.File, size datasize.ByteSize) (bool, error) {

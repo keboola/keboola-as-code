@@ -2,15 +2,17 @@ package test
 
 import (
 	"bytes"
-	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/count"
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/c2h5oh/datasize"
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/count"
 )
 
 // SliceWriter implements a simple writer implementing writer.SliceWriter for tests.

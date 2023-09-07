@@ -4,7 +4,13 @@ import (
 	"bufio"
 	"context"
 	"encoding/csv"
+	"io"
+	"path/filepath"
+	"sync"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/spf13/cast"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
@@ -14,10 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/spf13/cast"
-	"io"
-	"path/filepath"
-	"sync"
 )
 
 const (
@@ -152,7 +154,6 @@ func (w *Writer) WriteRow(values []any) error {
 		w.csvWriterLock.Unlock()
 		return err
 	})
-
 	// Return writer error
 	if err != nil {
 		return err

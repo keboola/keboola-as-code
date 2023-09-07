@@ -3,11 +3,13 @@
 package writer
 
 import (
+	"testing"
+
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/allocate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/allocate"
 )
 
 func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {

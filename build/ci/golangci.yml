@@ -192,6 +192,15 @@ issues:
       text: "filepath."
       linters:
         - forbidigo
+    # Allow direct file operations in the Stream service
+    - path: internal/pkg/service/buffer/.*
+      text: "os."
+      linters:
+        - forbidigo
+    - path: internal/pkg/service/buffer/.*
+      text: "filepath."
+      linters:
+        - forbidigo
     # Allow direct printing to the console
     - path: internal/pkg/service/common/cliconfig/*
       text: "fmt."
