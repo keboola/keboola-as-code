@@ -64,8 +64,11 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	require.NoError(t, err)
 
 	// Write all rows batches
+	rowsCount := 0
 	for i, batch := range tc.Data {
 		batch := batch
+		rowsCount += len(batch.Rows)
+
 		done := make(chan struct{})
 
 		// There are two write modes
@@ -110,7 +113,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Close the writer
 	require.NoError(t, w.Close())
-	assert.NotEmpty(t, w.RowsCount())
+	assert.Equal(t, uint64(rowsCount), w.RowsCount())
 	assert.NotEmpty(t, w.CompressedSize())
 	assert.NotEmpty(t, w.UncompressedSize())
 

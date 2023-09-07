@@ -2,6 +2,7 @@ package csv
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
@@ -20,15 +21,20 @@ import (
 )
 
 const (
-	rowsCounterFile      = "rows_count"
-	compressedSizeFile   = "compressed_size"
-	uncompressedSizeFile = "uncompressed_size"
+	RowsCounterFile      = "rows_count"
+	CompressedSizeFile   = "compressed_size"
+	UncompressedSizeFile = "uncompressed_size"
 	fileBufferSize       = 64 * datasize.KB
 )
 
 type Writer struct {
 	base    *base.Writer
 	columns column.Columns
+	writeWg *sync.WaitGroup
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	// csvWriter writers to the Chain in the baseWriter.
 	csvWriter *csv.Writer
 	// csvWriterLock serializes writes to the internal csv.Writer buffer
@@ -45,12 +51,15 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	w = &Writer{
 		base:          b,
 		columns:       b.Columns(),
+		writeWg:       &sync.WaitGroup{},
 		csvWriterLock: &sync.Mutex{},
 	}
 
+	w.ctx, w.cancel = context.WithCancel(context.Background())
+
 	// Measure size of compressed data
 	_, err = w.base.PrependWriterOrErr(func(writer writechain.Writer) (out io.Writer, err error) {
-		w.compressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), compressedSizeFile))
+		w.compressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), CompressedSizeFile))
 		return w.compressedMeter, err
 	})
 	if err != nil {
@@ -69,7 +78,7 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 
 		// Measure size of uncompressed CSV data
 		_, err = w.base.PrependWriterOrErr(func(writer writechain.Writer) (_ io.Writer, err error) {
-			w.uncompressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), uncompressedSizeFile))
+			w.uncompressedMeter, err = size.NewMeterWithBackupFile(writer, filepath.Join(w.base.DirPath(), UncompressedSizeFile))
 			return w.uncompressedMeter, err
 		})
 		if err != nil {
@@ -86,10 +95,11 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	}
 
 	// Setup rows counter
-	w.rowsCounter, err = count.NewCounterWithBackupFile(filepath.Join(w.base.DirPath(), rowsCounterFile))
+	w.rowsCounter, err = count.NewCounterWithBackupFile(filepath.Join(w.base.DirPath(), RowsCounterFile))
 	if err == nil {
-		// Backup the counter value on Flush and Close
-		w.base.PrependFlusherCloser(w.rowsCounter)
+		// Backup the counter value on Flush
+		// The final value is backed up on writer close, see Close method
+		w.base.PrependFlushFn(w.rowsCounter, w.rowsCounter.Flush)
 	} else {
 		return nil, err
 	}
@@ -108,6 +118,15 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 }
 
 func (w *Writer) WriteRow(values []any) error {
+	// Check if the writer is closed
+	if err := w.ctx.Err(); err != nil {
+		return errors.Errorf(`CSV writer is closed: %w`, err)
+	}
+
+	// Block Close method
+	w.writeWg.Add(1)
+	defer w.writeWg.Done()
+
 	// Check values count
 	if len(values) != len(w.columns) {
 		return errors.Errorf(`expected %d columns in the row, given %d`, len(w.columns), len(values))
@@ -131,7 +150,6 @@ func (w *Writer) WriteRow(values []any) error {
 		w.csvWriterLock.Lock()
 		err = w.csvWriter.Write(strings)
 		w.csvWriterLock.Unlock()
-		w.base.AddWriteOp(1)
 		return err
 	})
 
@@ -140,12 +158,16 @@ func (w *Writer) WriteRow(values []any) error {
 		return err
 	}
 
-	// Wait for sync to disk, return sync error, if any
+	// Increments number of high-level writes in progress
+	w.base.AddWriteOp(1)
+
+	// Wait for sync and return sync error, if any
 	err = notifier.Wait()
 	if err != nil {
 		return err
 	}
 
+	// Increase the count of successful writes
 	w.rowsCounter.Add(1)
 	return nil
 }
@@ -154,20 +176,28 @@ func (w *Writer) DumpChain() string {
 	return w.base.Dump()
 }
 
+func (w *Writer) SliceKey() storage.SliceKey {
+	return w.base.SliceKey()
+}
+
+// WaitingWriteOps returns count of write operations waiting for the sync, for tests.
+func (w *Writer) WaitingWriteOps() uint64 {
+	return w.base.WaitingWriteOps()
+}
+
+// RowsCount returns count of successfully written rows.
 func (w *Writer) RowsCount() uint64 {
 	return w.rowsCounter.Count()
 }
 
+// CompressedSize written to the file, measured after compression writer.
 func (w *Writer) CompressedSize() datasize.ByteSize {
 	return w.compressedMeter.Size()
 }
 
+// UncompressedSize written to the file, measured before compression writer.
 func (w *Writer) UncompressedSize() datasize.ByteSize {
 	return w.uncompressedMeter.Size()
-}
-
-func (w *Writer) SliceKey() storage.SliceKey {
-	return w.base.SliceKey()
 }
 
 func (w *Writer) DirPath() string {
@@ -179,5 +209,19 @@ func (w *Writer) FilePath() string {
 }
 
 func (w *Writer) Close() error {
-	return w.base.Close()
+	// Prevent new writes
+	w.cancel()
+
+	// Close the chain
+	err := w.base.Close()
+
+	// Wait for running writes
+	w.writeWg.Wait()
+
+	// Close, backup counter value
+	if counterErr := w.rowsCounter.Close(); err == nil && counterErr != nil {
+		err = counterErr
+	}
+
+	return err
 }

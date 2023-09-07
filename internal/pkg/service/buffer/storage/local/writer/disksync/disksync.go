@@ -123,6 +123,11 @@ func (s *Syncer) AddWriteOp(n uint) {
 	s.writeOpsCount.Add(uint64(n))
 }
 
+// WaitingWriteOps returns count of write operations waiting for the sync, for tests.
+func (s *Syncer) WaitingWriteOps() uint64 {
+	return s.writeOpsCount.Load()
+}
+
 // DoWithNotify provides wrapping for multiple write operations and waiting for them to be synced to disk.
 // This is ensured by shared notifierLock, so notifier cannot be swapped during the method,
 // but parallel writes are not blocked. The lock blocks the TriggerSync method,

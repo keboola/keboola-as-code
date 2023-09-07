@@ -219,9 +219,10 @@ func TestVolume_Close_Errors(t *testing.T) {
 	// Close volume, expect close errors from the writers
 	err = volume.Close()
 	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`
-- cannot close writer for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z": chain close error: cannot close file: some close error
-- cannot close writer for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T21:00:00.000Z": chain close error: cannot close file: some close error
+		// Order of the errors is random, writers are closed in parallel
+		wildcards.Assert(t, strings.TrimSpace(`
+- cannot close writer for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error: cannot close file: some close error
+- cannot close writer for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error: cannot close file: some close error
 `), err.Error())
 	}
 }
