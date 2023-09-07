@@ -14,7 +14,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -24,17 +24,20 @@ const (
 	waitForVolumeIDInterval = 500 * time.Millisecond
 )
 
+type volumeInfo = volume.Info
+
 type Volume struct {
-	config config
-	logger log.Logger
-	clock  clock.Clock
-	path   string
+	volumeInfo
+	id storage.VolumeID
 
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	volumeID storage.VolumeID
-	lock     *flock.Flock
+	config config
+	logger log.Logger
+	clock  clock.Clock
+
+	fsLock *flock.Flock
 
 	readersLock *sync.Mutex
 	readers     map[string]*readerRef
@@ -42,30 +45,30 @@ type Volume struct {
 
 // OpenVolume volume for writing.
 //   - It is checked that the volume path exists.
-//   - The local.VolumeIDFile is loaded.
-//   - If the local.VolumeIDFile doesn't exist, the function waits until the writer.OpenFile function will create it.
+//   - The volume.IDFile is loaded.
+//   - If the volume.IDFile doesn't exist, the function waits until the writer.OpenVolume function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path string, opts ...Option) (*Volume, error) {
-	logger.Infof(`opening volume "%s"`, path)
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
+	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
+		volumeInfo:  info,
 		config:      newConfig(opts),
 		logger:      logger,
 		clock:       clock,
-		path:        path,
 		readersLock: &sync.Mutex{},
 		readers:     make(map[string]*readerRef),
 	}
 
-	v.ctx, v.cancel = context.WithCancel(ctx)
+	v.ctx, v.cancel = context.WithCancel(context.Background())
 
 	// Check volume directory
-	if err := local.CheckVolumeDir(v.path); err != nil {
+	if err := volume.CheckVolumeDir(v.Path()); err != nil {
 		return nil, err
 	}
 
 	// Wait for volume ID
-	if volumeID, err := v.waitForVolumeID(); err == nil {
-		v.volumeID = volumeID
+	if volumeID, err := v.waitForVolumeID(ctx); err == nil {
+		v.id = volumeID
 	} else {
 		return nil, err
 	}
@@ -74,11 +77,11 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 	// Note: If it is necessary to use the filesystem mounted in read-only mode,
 	// this lock can be removed from the code, if it is ensured that only one reader is running at a time.
 	{
-		v.lock = flock.New(filepath.Join(v.path, lockFile))
-		if locked, err := v.lock.TryLock(); err != nil {
-			return nil, errors.Errorf(`cannot acquire reader lock "%s": %w`, v.lock.Path(), err)
+		v.fsLock = flock.New(filepath.Join(v.Path(), lockFile))
+		if locked, err := v.fsLock.TryLock(); err != nil {
+			return nil, errors.Errorf(`cannot acquire reader lock "%s": %w`, v.fsLock.Path(), err)
 		} else if !locked {
-			return nil, errors.Errorf(`cannot acquire reader lock "%s": already locked`, v.lock.Path())
+			return nil, errors.Errorf(`cannot acquire reader lock "%s": already locked`, v.fsLock.Path())
 		}
 	}
 
@@ -86,8 +89,8 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 	return v, nil
 }
 
-func (v *Volume) VolumeID() storage.VolumeID {
-	return v.volumeID
+func (v *Volume) ID() storage.VolumeID {
+	return v.id
 }
 
 func (v *Volume) Close() error {
@@ -112,11 +115,11 @@ func (v *Volume) Close() error {
 	wg.Wait()
 
 	// Release the lock
-	if err := v.lock.Unlock(); err != nil {
-		errs.Append(errors.Errorf(`cannot release reader lock "%s": %w`, v.lock.Path(), err))
+	if err := v.fsLock.Unlock(); err != nil {
+		errs.Append(errors.Errorf(`cannot release reader lock "%s": %w`, v.fsLock.Path(), err))
 	}
-	if err := os.Remove(v.lock.Path()); err != nil {
-		errs.Append(errors.Errorf(`cannot remove reader lock "%s": %w`, v.lock.Path(), err))
+	if err := os.Remove(v.fsLock.Path()); err != nil {
+		errs.Append(errors.Errorf(`cannot remove reader lock "%s": %w`, v.fsLock.Path(), err))
 	}
 
 	v.logger.Info("closed volume")
@@ -138,14 +141,14 @@ func (v *Volume) openedReaders() (out []SliceReader) {
 // waitForVolumeID waits for the file with volume ID.
 // The file is created by the writer.OpenVolume
 // and this reader.OpenVolume is waiting for it.
-func (v *Volume) waitForVolumeID() (storage.VolumeID, error) {
+func (v *Volume) waitForVolumeID(ctx context.Context) (storage.VolumeID, error) {
+	ctx, cancel := v.clock.WithTimeout(ctx, v.config.waitForVolumeIDTimeout)
+	defer cancel()
+
 	ticker := v.clock.Ticker(waitForVolumeIDInterval)
 	defer ticker.Stop()
 
-	timeout := v.config.waitForVolumeIDTimeout
-	timeoutC := v.clock.After(timeout)
-
-	path := filepath.Join(v.path, local.VolumeIDFile)
+	path := filepath.Join(v.Path(), volume.IDFile)
 	for {
 		// Try open the file
 		if content, err := os.ReadFile(path); err == nil {
@@ -159,9 +162,9 @@ func (v *Volume) waitForVolumeID() (storage.VolumeID, error) {
 		select {
 		case <-ticker.C:
 			// One more attempt
-		case <-timeoutC:
-			// Stop on timeout
-			return "", errors.Errorf(`cannot open volume ID file "%s": waiting timeout after %s`, path, timeout)
+		case <-ctx.Done():
+			// Stop on context cancellation / timeout
+			return "", errors.Errorf(`cannot open volume ID file "%s": %w`, path, ctx.Err())
 		}
 	}
 }
