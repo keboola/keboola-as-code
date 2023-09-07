@@ -113,22 +113,24 @@ func (w *SliceWriter) Close() error {
 	return w.CloseError
 }
 
-func (w *SliceWriter) ExpectWritesCount(t testing.TB, n int) {
-	t.Logf(`waiting for %d writes`, n)
+func (w *SliceWriter) ExpectWritesCount(tb testing.TB, n int) {
+	tb.Helper()
+	tb.Logf(`waiting for %d writes`, n)
 	for i := 0; i < n; i++ {
 		select {
 		case <-w.WriteDone:
-			t.Logf(`write %d done`, i+1)
+			tb.Logf(`write %d done`, i+1)
 		case <-time.After(2 * time.Second):
-			assert.FailNow(t, "timeout")
+			assert.FailNow(tb, "timeout")
 			return
 		}
 	}
-	t.Logf(`all writes done`)
+	tb.Logf(`all writes done`)
 }
 
-func (w *SliceWriter) TriggerSync(t testing.TB) {
-	t.Logf("trigger sync")
-	assert.NoError(t, w.base.TriggerSync(true).Wait())
-	t.Logf("sync done")
+func (w *SliceWriter) TriggerSync(tb testing.TB) {
+	tb.Helper()
+	tb.Logf("trigger sync")
+	assert.NoError(tb, w.base.TriggerSync(true).Wait())
+	tb.Logf("sync done")
 }

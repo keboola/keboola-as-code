@@ -14,6 +14,8 @@ import (
 )
 
 func TestFile_Validation(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		Name          string
 		ExpectedError string

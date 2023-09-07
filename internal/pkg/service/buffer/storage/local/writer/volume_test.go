@@ -230,7 +230,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 }
 
 type volumeTestCase struct {
-	T          testing.TB
+	TB         testing.TB
 	Ctx        context.Context
 	Logger     log.DebugLogger
 	Clock      *clock.Mock
@@ -238,17 +238,18 @@ type volumeTestCase struct {
 	VolumePath string
 }
 
-func newVolumeTestCase(t testing.TB) *volumeTestCase {
+func newVolumeTestCase(tb testing.TB) *volumeTestCase {
+	tb.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		cancel()
 	})
 
 	logger := log.NewDebugLogger()
-	tmpDir := t.TempDir()
+	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		T:          t,
+		TB:         tb,
 		Ctx:        ctx,
 		Logger:     logger,
 		Clock:      clock.NewMock(),
@@ -269,5 +270,5 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.T, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
 }
