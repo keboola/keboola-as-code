@@ -72,7 +72,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w SliceWriter, err error) {
 	}()
 
 	// Create directory if not exists
-	dirPath := filesystem.Join(v.path, slice.LocalStorage.Dir)
+	dirPath := filesystem.Join(v.Path(), slice.LocalStorage.Dir)
 	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, errors.Errorf(`cannot create slice directory "%s": %w`, dirPath, err)
 	}

@@ -27,18 +27,21 @@ const (
 	volumeIDFilePerm  = 0o640
 )
 
+type volumeInfo = volume.Info
+
 // Volume represents a local directory intended for slices writing.
 type Volume struct {
+	volumeInfo
+	id storage.VolumeID
+
 	config config
 	logger log.Logger
 	clock  clock.Clock
-	path   string
 
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	volumeID storage.VolumeID
-	lock     *flock.Flock
+	fsLock *flock.Flock
 
 	writersLock *sync.Mutex
 	writers     map[string]*writerRef
@@ -49,26 +52,26 @@ type Volume struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path string, opts ...Option) (*Volume, error) {
-	logger.Infof(`opening volume "%s"`, path)
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
+	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
+		volumeInfo:  info,
 		config:      newConfig(opts),
 		logger:      logger,
 		clock:       clock,
-		path:        path,
 		writersLock: &sync.Mutex{},
 		writers:     make(map[string]*writerRef),
 	}
 
-	v.ctx, v.cancel = context.WithCancel(ctx)
+	v.ctx, v.cancel = context.WithCancel(context.Background())
 
 	// Check volume directory
-	if err := volume.CheckVolumeDir(v.path); err != nil {
+	if err := volume.CheckVolumeDir(v.Path()); err != nil {
 		return nil, err
 	}
 
 	// Check if the drain file exists, if so, the volume is blocked for writing
-	if _, err := os.Stat(filesystem.Join(v.path, drainFile)); err == nil {
+	if _, err := os.Stat(filesystem.Join(v.Path(), drainFile)); err == nil {
 		return nil, errors.Errorf(`cannot open volume for writing: found "%s" file`, drainFile)
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
@@ -77,7 +80,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
 	{
-		idFilePath := filepath.Join(v.path, volume.IDFile)
+		idFilePath := filepath.Join(v.Path(), volume.IDFile)
 		content, err := os.ReadFile(idFilePath)
 
 		// VolumeID file doesn't exist, create it
@@ -94,16 +97,16 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 		}
 
 		// Store volume ID
-		v.volumeID = storage.VolumeID(bytes.TrimSpace(content))
+		v.id = storage.VolumeID(bytes.TrimSpace(content))
 	}
 
 	// Create lock file
 	{
-		v.lock = flock.New(filepath.Join(v.path, lockFile))
-		if locked, err := v.lock.TryLock(); err != nil {
-			return nil, errors.Errorf(`cannot acquire writer lock "%s": %w`, v.lock.Path(), err)
+		v.fsLock = flock.New(filepath.Join(v.Path(), lockFile))
+		if locked, err := v.fsLock.TryLock(); err != nil {
+			return nil, errors.Errorf(`cannot acquire writer lock "%s": %w`, v.fsLock.Path(), err)
 		} else if !locked {
-			return nil, errors.Errorf(`cannot acquire writer lock "%s": already locked`, v.lock.Path())
+			return nil, errors.Errorf(`cannot acquire writer lock "%s": already locked`, v.fsLock.Path())
 		}
 	}
 
@@ -111,8 +114,8 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 	return v, nil
 }
 
-func (v *Volume) VolumeID() storage.VolumeID {
-	return v.volumeID
+func (v *Volume) ID() storage.VolumeID {
+	return v.id
 }
 
 func (v *Volume) Close() error {
@@ -137,11 +140,11 @@ func (v *Volume) Close() error {
 	wg.Wait()
 
 	// Release the lock
-	if err := v.lock.Unlock(); err != nil {
-		errs.Append(errors.Errorf(`cannot release writer lock "%s": %w`, v.lock.Path(), err))
+	if err := v.fsLock.Unlock(); err != nil {
+		errs.Append(errors.Errorf(`cannot release writer lock "%s": %w`, v.fsLock.Path(), err))
 	}
-	if err := os.Remove(v.lock.Path()); err != nil {
-		errs.Append(errors.Errorf(`cannot remove writer lock "%s": %w`, v.lock.Path(), err))
+	if err := os.Remove(v.fsLock.Path()); err != nil {
+		errs.Append(errors.Errorf(`cannot remove writer lock "%s": %w`, v.fsLock.Path(), err))
 	}
 
 	v.logger.Info("closed volume")

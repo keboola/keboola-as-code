@@ -109,7 +109,7 @@ func TestOpenVolume_GenerateVolumeID(t *testing.T) {
 		assert.Len(t, content, storage.VolumeIDLength)
 
 		// Volume ID reported by the volume instance match the file content
-		assert.Equal(t, storage.VolumeID(content), vol.VolumeID())
+		assert.Equal(t, storage.VolumeID(content), vol.ID())
 	}
 
 	// Lock is locked by the volume
@@ -151,7 +151,7 @@ func TestOpenVolume_LoadVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Volume ID reported by the volume instance match the file content
-	assert.Equal(t, storage.VolumeID("123456789"), vol.VolumeID())
+	assert.Equal(t, storage.VolumeID("123456789"), vol.ID())
 
 	// File content remains same
 	if assert.FileExists(t, idFilePath) {
@@ -230,12 +230,14 @@ func TestVolume_Close_Errors(t *testing.T) {
 }
 
 type volumeTestCase struct {
-	TB         testing.TB
-	Ctx        context.Context
-	Logger     log.DebugLogger
-	Clock      *clock.Mock
-	Allocator  *testAllocator
-	VolumePath string
+	TB          testing.TB
+	Ctx         context.Context
+	Logger      log.DebugLogger
+	Clock       *clock.Mock
+	Allocator   *testAllocator
+	VolumePath  string
+	VolumeType  string
+	VolumeLabel string
 }
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
@@ -249,12 +251,14 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		TB:         tb,
-		Ctx:        ctx,
-		Logger:     logger,
-		Clock:      clock.NewMock(),
-		Allocator:  &testAllocator{},
-		VolumePath: tmpDir,
+		TB:          tb,
+		Ctx:         ctx,
+		Logger:      logger,
+		Clock:       clock.NewMock(),
+		Allocator:   &testAllocator{},
+		VolumePath:  tmpDir,
+		VolumeType:  "hdd",
+		VolumeLabel: "1",
 	}
 }
 
@@ -266,7 +270,7 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 		}),
 	}, opts...)
 
-	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.VolumePath, opts...)
+	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
