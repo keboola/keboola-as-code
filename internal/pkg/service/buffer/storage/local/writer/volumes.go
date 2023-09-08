@@ -59,7 +59,7 @@ func (v *Volumes) assignVolumes(count int, preferredTypes []string, randomFed st
 	}
 
 	// Sort volumes
-	volumes := v.All()
+	volumes := v.allExceptDrained()
 	sort.SliceStable(volumes, func(i, j int) bool {
 		// Sort volumes by the preferred types.
 		// If the "type" key is not found in the priorityByType map, the empty value (0) is returned.
@@ -82,5 +82,15 @@ func (v *Volumes) assignVolumes(count int, preferredTypes []string, randomFed st
 		count = len(volumes)
 	}
 
+	// Return first N volumes
 	return volumes[:count]
+}
+
+func (v *Volumes) allExceptDrained() (out []*Volume) {
+	for _, vol := range v.All() {
+		if !vol.Drained() {
+			out = append(out, vol)
+		}
+	}
+	return out
 }

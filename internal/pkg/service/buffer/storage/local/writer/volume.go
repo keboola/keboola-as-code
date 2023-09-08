@@ -9,7 +9,9 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
+	"github.com/fsnotify/fsnotify"
 	"github.com/gofrs/flock"
+	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -40,8 +42,12 @@ type Volume struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+	wg     *sync.WaitGroup
 
 	fsLock *flock.Flock
+
+	drained       *atomic.Bool
+	drainFilePath string
 
 	writersLock *sync.Mutex
 	writers     map[string]*writerRef
@@ -55,25 +61,21 @@ type Volume struct {
 func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
 	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
-		volumeInfo:  info,
-		config:      newConfig(opts),
-		logger:      logger,
-		clock:       clock,
-		writersLock: &sync.Mutex{},
-		writers:     make(map[string]*writerRef),
+		volumeInfo:    info,
+		config:        newConfig(opts),
+		logger:        logger,
+		clock:         clock,
+		wg:            &sync.WaitGroup{},
+		drained:       atomic.NewBool(false),
+		drainFilePath: filesystem.Join(info.Path(), drainFile),
+		writersLock:   &sync.Mutex{},
+		writers:       make(map[string]*writerRef),
 	}
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
 	// Check volume directory
 	if err := volume.CheckVolumeDir(v.Path()); err != nil {
-		return nil, err
-	}
-
-	// Check if the drain file exists, if so, the volume is blocked for writing
-	if _, err := os.Stat(filesystem.Join(v.Path(), drainFile)); err == nil {
-		return nil, errors.Errorf(`cannot open volume for writing: found "%s" file`, drainFile)
-	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
@@ -110,6 +112,11 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info 
 		}
 	}
 
+	// Check drain file and watch it
+	if err := v.watchDrainFile(); err != nil {
+		return nil, err
+	}
+
 	v.logger.Info("opened volume")
 	return v, nil
 }
@@ -118,26 +125,31 @@ func (v *Volume) ID() storage.VolumeID {
 	return v.id
 }
 
+func (v *Volume) Drained() bool {
+	return v.drained.Load()
+}
+
 func (v *Volume) Close() error {
 	errs := errors.NewMultiError()
 	v.logger.Info("closing volume")
 
-	// Block NewWriterFor method
+	// Block NewWriterFor method, stop FS notifier
 	v.cancel()
 
 	// Close all slice writers
-	wg := &sync.WaitGroup{}
 	for _, w := range v.openedWriters() {
 		w := w
-		wg.Add(1)
+		v.wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer v.wg.Done()
 			if err := w.Close(); err != nil {
 				errs.Append(errors.Errorf(`cannot close writer for slice "%s": %w`, w.SliceKey().String(), err))
 			}
 		}()
 	}
-	wg.Wait()
+
+	// Wait for writers closing and FS notifier stopping
+	v.wg.Wait()
 
 	// Release the lock
 	if err := v.fsLock.Unlock(); err != nil {
@@ -149,6 +161,81 @@ func (v *Volume) Close() error {
 
 	v.logger.Info("closed volume")
 	return errs.ErrorOrNil()
+}
+
+func (v *Volume) watchDrainFile() error {
+	// Check presence of the file
+	if err := v.checkDrainFile(); err != nil {
+		v.logger.Errorf(`cannot check the drain file: %s`, err)
+		return err
+	}
+
+	// Check if the watcher is enabled
+	if !v.config.watchDrainFile {
+		return nil
+	}
+
+	// Setup watcher
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		// The error is not fatal, skip watching
+		v.logger.Errorf(`cannot create FS watcher: %s`, err)
+		return nil
+	}
+	if err := watcher.Add(v.Path()); err != nil {
+		// The error is not fatal, skip watching
+		v.logger.Errorf(`cannot add path to the FS watcher "%s": %s`, v.Path(), err)
+		return nil
+	}
+
+	v.wg.Add(1)
+	go func() {
+		defer v.wg.Done()
+
+		defer func() {
+			if err := watcher.Close(); err != nil {
+				v.logger.Warnf(`cannot close FS watcher: %s`, err)
+			}
+		}()
+
+		for {
+			select {
+			case <-v.ctx.Done():
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Name == v.drainFilePath {
+					if err := v.checkDrainFile(); err != nil {
+						v.logger.Errorf(`cannot check the drain file: %s`, err)
+					}
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				v.logger.Errorf(`FS watcher error: %s`, err)
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (v *Volume) checkDrainFile() error {
+	if _, err := os.Stat(v.drainFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	} else if errors.Is(err, os.ErrNotExist) {
+		if v.drained.Swap(false) {
+			v.logger.Info("set drained=false")
+		}
+	} else {
+		if !v.drained.Swap(true) {
+			v.logger.Info("set drained=true")
+		}
+	}
+	return nil
 }
 
 func (v *Volume) openedWriters() (out []SliceWriter) {
