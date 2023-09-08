@@ -77,19 +77,53 @@ func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
 	}
 }
 
-// TestOpenVolume_DrainFile tests that the volume can be blocked for writing by a drain file.
-func TestOpenVolume_DrainFile(t *testing.T) {
+// TestOpenVolume_DrainFile_TrueFalse tests that the volume can be blocked for writing by a drain file.
+func TestOpenVolume_DrainFile_TrueFalse(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
 	// Create an empty drain file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, drainFile), nil, 0o640))
+	drainFilePath := filepath.Join(tc.VolumePath, drainFile)
+	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 
 	// Type open volume
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.Equal(t, `cannot open volume for writing: found "drain" file`, err.Error())
+	vol, err := tc.OpenVolume(WithWatchDrainFile(true))
+	assert.NoError(t, err)
+	assert.True(t, vol.Drained())
+
+	// Check error
+	if strings.Contains(tc.Logger.ErrorMessages(), `ERROR  cannot create FS watcher:`) {
+		t.Skipf(`too many opened inotify watchers, many tests are probably running in parallel`)
 	}
+
+	// Remove the file
+	assert.NoError(t, os.Remove(drainFilePath))
+	assert.Eventually(t, func() bool {
+		return vol.Drained() == false
+	}, time.Second, 5*time.Millisecond)
+}
+
+// TestOpenVolume_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
+func TestOpenVolume_DrainFile_FalseTrue(t *testing.T) {
+	t.Parallel()
+	tc := newVolumeTestCase(t)
+
+	// Type open volume
+	vol, err := tc.OpenVolume(WithWatchDrainFile(true))
+	assert.NoError(t, err)
+	assert.False(t, vol.Drained())
+
+	// Check error
+	if strings.Contains(tc.Logger.ErrorMessages(), `ERROR  cannot create FS watcher:`) {
+		t.Skipf(`too many opened inotify watchers, many tests are probably running in parallel`)
+	}
+
+	// Create an empty drain file
+	drainFilePath := filepath.Join(tc.VolumePath, drainFile)
+	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
+	assert.Eventually(t, func() bool {
+		return vol.Drained() == true
+	}, time.Second, 5*time.Millisecond)
 }
 
 // TestOpenVolume_GenerateVolumeID tests that the file with the volume ID is generated if not exists.
@@ -268,6 +302,7 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 		WithWriterFactory(func(w *base.Writer) (SliceWriter, error) {
 			return test.NewSliceWriter(w), nil
 		}),
+		WithWatchDrainFile(false),
 	}, opts...)
 
 	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)

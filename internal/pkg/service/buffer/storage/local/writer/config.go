@@ -12,15 +12,21 @@ type config struct {
 	writerFactory Factory
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
 	fileOpener FileOpener
+	// watchDrainFile activates watching for drainFile changes (creation/deletion),
+	// otherwise the file is checked only on the volume opening.
+	// Default Linux OS limit is 128 inotify watchers = 128 volumes.
+	// The value is sufficient for production but insufficient parallel for tests.
+	watchDrainFile bool
 }
 
 type Option func(config *config)
 
 func newConfig(opts []Option) config {
 	cfg := config{
-		allocator:     allocate.DefaultAllocator{},
-		writerFactory: DefaultFactory,
-		fileOpener:    DefaultFileOpener,
+		allocator:      allocate.DefaultAllocator{},
+		writerFactory:  DefaultFactory,
+		fileOpener:     DefaultFileOpener,
+		watchDrainFile: true,
 	}
 
 	for _, o := range opts {
@@ -54,5 +60,11 @@ func WithFileOpener(v FileOpener) Option {
 			panic(errors.New(`value must not be nil`))
 		}
 		c.fileOpener = v
+	}
+}
+
+func WithWatchDrainFile(v bool) Option {
+	return func(c *config) {
+		c.watchDrainFile = v
 	}
 }

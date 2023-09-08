@@ -45,6 +45,10 @@ func TestVolumes(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "SSD", "1"), 0o750))
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "ssd", "2"), 0o750))
 
+	// Created also some drained volume
+	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "drained", "1"), 0o750))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "drained", "1", drainFile), []byte{}, 0o640))
+
 	// Only two volumes has volume ID file
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", volume.IDFile), []byte("HDD_2"), 0o640))
@@ -69,10 +73,11 @@ func TestVolumes(t *testing.T) {
 	}
 
 	// Check opened volumes
-	assert.Len(t, volumes.All(), 5)
+	assert.Len(t, volumes.All(), 6)
 	assert.Len(t, volumes.VolumeByType("foo"), 0)
 	assert.Len(t, volumes.VolumeByType("hdd"), 3)
 	assert.Len(t, volumes.VolumeByType("ssd"), 2)
+	assert.Len(t, volumes.VolumeByType("drained"), 1)
 	for _, id := range []storage.VolumeID{"HDD_1", "HDD_2"} {
 		vol, err := volumes.Volume(id)
 		assert.NotNil(t, vol)
@@ -82,6 +87,7 @@ func TestVolumes(t *testing.T) {
 		filepath.Join(volumesPath, "hdd", "3", volume.IDFile),
 		filepath.Join(volumesPath, "SSD", "1", volume.IDFile),
 		filepath.Join(volumesPath, "ssd", "2", volume.IDFile),
+		filepath.Join(volumesPath, "drained", "1", volume.IDFile),
 	} {
 		content, err := os.ReadFile(path)
 		assert.NoError(t, err)
@@ -105,7 +111,7 @@ type assignVolumesTestCase struct {
 
 func TestVolumes_VolumesFor(t *testing.T) {
 	t.Parallel()
-
+	
 	// Random fed determines volume selection on the same priority level.
 	randomFed1 := utctime.MustParse("2000-01-01T01:00:00.000Z")
 	randomFed2 := utctime.MustParse("2000-01-01T02:00:00.000Z")
@@ -348,6 +354,10 @@ func createVolumes(t *testing.T, volumesPath string, volumes []string) {
 		path := filepath.Join(volumesPath, filepath.FromSlash(definition))
 		assert.NoError(t, os.MkdirAll(path, 0o750))
 		assert.NoError(t, os.WriteFile(filepath.Join(path, volume.IDFile), []byte(definition), 0o640))
+
+		if strings.HasPrefix(definition, "drained/") {
+			require.NoError(t, os.WriteFile(filepath.Join(path, drainFile), []byte{}, 0o640))
+		}
 	}
 }
 

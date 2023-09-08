@@ -59,7 +59,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	vol, err := writer.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	opts := []writer.Option{writer.WithWatchDrainFile(false)}
+	vol, err := writer.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
