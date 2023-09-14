@@ -243,7 +243,7 @@ func (v *Volume) checkDrainFile() error {
 	return nil
 }
 
-func (v *Volume) openedWriters() (out []writer.SliceWriter) {
+func (v *Volume) openedWriters() (out []writer.Writer) {
 	v.writersLock.Lock()
 	defer v.writersLock.Unlock()
 	for _, w := range v.writers {

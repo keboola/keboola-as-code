@@ -7,9 +7,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type Factory func(w *base.Writer) (SliceWriter, error)
+type Factory func(w *base.Writer) (Writer, error)
 
-func DefaultFactory(w *base.Writer) (SliceWriter, error) {
+func DefaultFactory(w *base.Writer) (Writer, error) {
 	// Create writer according to the file type
 	switch w.Type() {
 	case storage.FileTypeCSV:
