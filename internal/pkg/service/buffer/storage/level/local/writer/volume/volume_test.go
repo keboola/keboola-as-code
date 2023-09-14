@@ -300,7 +300,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	opts = append([]Option{
 		WithAllocator(tc.Allocator),
-		WithWriterFactory(func(w *base.Writer) (writer.SliceWriter, error) {
+		WithWriterFactory(func(w *base.Writer) (writer.Writer, error) {
 			return test.NewSliceWriter(w), nil
 		}),
 		WithWatchDrainFile(false),
