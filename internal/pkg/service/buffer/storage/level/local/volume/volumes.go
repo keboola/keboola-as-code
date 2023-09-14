@@ -1,5 +1,5 @@
 // Package volume contains common code for reader.Volumes and writer.Volumes implementations.
-// The OpenVolumes function detects and opens all volumes in the volumesPath.
+// The DetectVolumes function detects and opens all volumes in the volumesPath.
 //
 // Volume relative path has the following format: "{type}/{label}".
 //
@@ -46,9 +46,9 @@ type Volumes[V Volume] struct {
 // Opener opens volume instance of the V type.
 type Opener[V Volume] func(info Info) (V, error)
 
-// OpenVolumes function detects and opens all volumes in the volumesPath.
+// DetectVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
-func OpenVolumes[V Volume](logger log.Logger, volumesPath string, opener Opener[V]) (*Volumes[V], error) {
+func DetectVolumes[V Volume](logger log.Logger, volumesPath string, opener Opener[V]) (*Volumes[V], error) {
 	m := &Volumes[V]{
 		logger:  logger,
 		path:    volumesPath,

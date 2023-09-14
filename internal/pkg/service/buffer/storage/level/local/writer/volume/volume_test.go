@@ -25,7 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func TestOpenVolume_NonExistentPath(t *testing.T) {
+func TestOpen_NonExistentPath(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 	tc.VolumePath = filesystem.Join("non-existent", "path")
@@ -36,7 +36,7 @@ func TestOpenVolume_NonExistentPath(t *testing.T) {
 	}
 }
 
-func TestOpenVolume_FileNotDir(t *testing.T) {
+func TestOpen_FileNotDir(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 	tc.VolumePath = filesystem.Join(t.TempDir(), "file")
@@ -50,7 +50,7 @@ func TestOpenVolume_FileNotDir(t *testing.T) {
 	}
 }
 
-func TestOpenVolume_Error_DirPermissions(t *testing.T) {
+func TestOpen_Error_DirPermissions(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -63,7 +63,7 @@ func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 	}
 }
 
-func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
+func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -78,8 +78,8 @@ func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
 	}
 }
 
-// TestOpenVolume_DrainFile_TrueFalse tests that the volume can be blocked for writing by a drain file.
-func TestOpenVolume_DrainFile_TrueFalse(t *testing.T) {
+// TestOpen_DrainFile_TrueFalse tests that the volume can be blocked for writing by a drain file.
+func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -104,8 +104,8 @@ func TestOpenVolume_DrainFile_TrueFalse(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 }
 
-// TestOpenVolume_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
-func TestOpenVolume_DrainFile_FalseTrue(t *testing.T) {
+// TestOpen_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
+func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -127,8 +127,8 @@ func TestOpenVolume_DrainFile_FalseTrue(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 }
 
-// TestOpenVolume_GenerateVolumeID tests that the file with the volume ID is generated if not exists.
-func TestOpenVolume_GenerateVolumeID(t *testing.T) {
+// TestOpen_GenerateVolumeID tests that the file with the volume ID is generated if not exists.
+func TestOpen_GenerateVolumeID(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -171,8 +171,8 @@ INFO  closed volume
 `)
 }
 
-// TestOpenVolume_LoadVolumeID tests that the volume ID is loaded from the file if it exists.
-func TestOpenVolume_LoadVolumeID(t *testing.T) {
+// TestOpen_LoadVolumeID tests that the volume ID is loaded from the file if it exists.
+func TestOpen_LoadVolumeID(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
@@ -218,8 +218,8 @@ INFO  closed volume
 `)
 }
 
-// TestOpenVolume_VolumeLock tests that only one volume instance can be active at a time.
-func TestOpenVolume_VolumeLock(t *testing.T) {
+// TestOpen_VolumeLock tests that only one volume instance can be active at a time.
+func TestOpen_VolumeLock(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 

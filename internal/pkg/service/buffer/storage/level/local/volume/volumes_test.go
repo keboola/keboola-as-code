@@ -19,8 +19,7 @@ func TestVolumes_Empty(t *testing.T) {
 	t.Parallel()
 	tc := newVolumesTestCase(t)
 
-	// Open volumes
-	_, err := tc.New()
+	_, err := tc.DetectVolumes()
 	if assert.Error(t, err) {
 		assert.Equal(t, "no volume found", err.Error())
 	}
@@ -31,8 +30,7 @@ func TestVolumes_WalkError(t *testing.T) {
 	tc := newVolumesTestCase(t)
 	tc.Path = "/missing/path"
 
-	// Open volumes
-	_, err := tc.New()
+	_, err := tc.DetectVolumes()
 	assert.True(t, errors.Is(err, os.ErrNotExist))
 }
 
@@ -45,8 +43,7 @@ func TestVolumes_DuplicatedVolumeID(t *testing.T) {
 		assert.NoError(t, os.MkdirAll(filepath.Join(tc.Path, "default", cast.ToString(i)), 0o750))
 	}
 
-	// Open volumes
-	_, err := tc.New()
+	_, err := tc.DetectVolumes()
 	if assert.Error(t, err) {
 		assert.Equal(t, `found 5 volumes with the ID "abcdef"`, err.Error())
 	}
@@ -64,8 +61,7 @@ func TestVolumes_Open_Error(t *testing.T) {
 		assert.NoError(t, os.MkdirAll(filepath.Join(tc.Path, "default", cast.ToString(i)), 0o750))
 	}
 
-	// Open volumes
-	_, err := tc.New()
+	_, err := tc.DetectVolumes()
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.Repeat("- some open error\n", 5), err.Error()+"\n")
 	}
@@ -85,8 +81,7 @@ func TestVolumes_Close_Error(t *testing.T) {
 		assert.NoError(t, os.MkdirAll(filepath.Join(tc.Path, "default", cast.ToString(i)), 0o750))
 	}
 
-	// Open volumes
-	volumes, err := tc.New()
+	volumes, err := tc.DetectVolumes()
 	assert.NoError(t, err)
 	assert.Len(t, volumes.All(), 5)
 
@@ -113,8 +108,7 @@ func TestVolumes_Ok(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(filepath.Join(tc.Path, "SSD", "1"), 0o750))
 	assert.NoError(t, os.MkdirAll(filepath.Join(tc.Path, "ssd", "2"), 0o750))
 
-	// Open volumes
-	volumes, err := tc.New()
+	volumes, err := tc.DetectVolumes()
 	assert.NoError(t, err)
 
 	// Volume found
@@ -209,6 +203,6 @@ func newVolumesTestCase(t *testing.T) *volumesTestCase {
 	}
 }
 
-func (tc *volumesTestCase) New() (*volume.Volumes[*testVolume], error) {
-	return volume.OpenVolumes(tc.Logger, tc.Path, tc.Opener)
+func (tc *volumesTestCase) DetectVolumes() (*volume.Volumes[*testVolume], error) {
+	return volume.DetectVolumes(tc.Logger, tc.Path, tc.Opener)
 }
