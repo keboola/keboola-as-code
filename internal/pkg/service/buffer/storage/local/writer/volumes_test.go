@@ -175,6 +175,10 @@ func TestVolumes_VolumesFor(t *testing.T) {
 			ExpectedVolumes: []string{"hdd/2"},
 		},
 		{
+			// Drained volumes are ignored, writing to them is prohibited.
+			// Whether their types are on the preferred list or not doesn't matter.
+			// This case tests situation when the type of the drained volume is on the preferred list.
+			// Other cases test situation when the type of the drained volume is NOT on the preferred list.
 			Name:            "count=1,pref=drained",
 			Count:           1,
 			PreferredTypes:  []string{"drained"},
