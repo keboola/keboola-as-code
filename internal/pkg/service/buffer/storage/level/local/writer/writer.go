@@ -6,6 +6,7 @@ package writer
 
 import (
 	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 )
 

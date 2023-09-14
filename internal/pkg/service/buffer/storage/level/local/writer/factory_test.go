@@ -2,17 +2,17 @@ package writer_test
 
 import (
 	"context"
-	"github.com/benbjohnson/clock"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"testing"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/csv"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 )
 
 // TestDefaultFactory_FileTypeCSV tests that csv.Writer is created for the storage.FileTypeCSV.
