@@ -1,29 +1,21 @@
-package writer
+package volume
 
 import (
 	"context"
+	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
-	"time"
-
-	"github.com/c2h5oh/datasize"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/allocate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -63,12 +55,12 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
-	volume, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
-	assert.NoError(t, volume.Close())
+	assert.NoError(t, vol.Close())
 
-	_, err = volume.NewWriterFor(newTestSlice())
+	_, err = vol.NewWriterFor(test.NewSlice())
 	assert.Error(t, err)
 }
 
@@ -588,62 +580,6 @@ DEBUG  disk space allocation is disabled
 `)
 }
 
-func newTestSlice() *storage.Slice {
-	return newTestSliceOpenedAt("2000-01-01T20:00:00.000Z")
-}
-
-func newTestSliceOpenedAt(openedAt string) *storage.Slice {
-	return &storage.Slice{
-		SliceKey: storage.SliceKey{
-			FileKey: storage.FileKey{
-				ExportKey: key.ExportKey{
-					ReceiverKey: key.ReceiverKey{
-						ProjectID:  123,
-						ReceiverID: "my-receiver",
-					},
-					ExportID: "my-export",
-				},
-				FileID: storage.FileID{
-					OpenedAt: utctime.MustParse("2000-01-01T19:00:00.000Z"),
-				},
-			},
-			SliceID: storage.SliceID{
-				VolumeID: "my-volume",
-				OpenedAt: utctime.MustParse(openedAt),
-			},
-		},
-		Type:  storage.FileTypeCSV,
-		State: storage.SliceWriting,
-		Columns: column.Columns{
-			column.ID{},
-			column.Headers{},
-			column.Body{},
-		},
-		LocalStorage: local.Slice{
-			Dir:           openedAt,
-			Filename:      "slice.csv",
-			AllocateSpace: 10 * datasize.KB,
-			Compression: compression.Config{
-				Type: compression.TypeNone,
-			},
-			Sync: disksync.Config{
-				Mode:            disksync.ModeDisk,
-				Wait:            true,
-				CheckInterval:   1 * time.Millisecond,
-				CountTrigger:    500,
-				BytesTrigger:    1 * datasize.MB,
-				IntervalTrigger: 50 * time.Millisecond,
-			},
-		},
-		StagingStorage: staging.Slice{
-			Path: "slice.csv",
-			Compression: compression.Config{
-				Type: compression.TypeNone,
-			},
-		},
-	}
-}
-
 type writerTestCase struct {
 	*volumeTestCase
 	Volume *Volume
@@ -654,7 +590,7 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 	tb.Helper()
 	tc := &writerTestCase{}
 	tc.volumeTestCase = newVolumeTestCase(tb)
-	tc.Slice = newTestSlice()
+	tc.Slice = test.NewSlice()
 	return tc
 }
 

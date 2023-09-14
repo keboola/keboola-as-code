@@ -1,8 +1,9 @@
-package writer
+package volume
 
 import (
 	"bytes"
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"os"
 	"path/filepath"
 	"sort"
@@ -51,6 +52,10 @@ type Volume struct {
 
 	writersLock *sync.Mutex
 	writers     map[string]*writerRef
+}
+
+func NewInfo(path, typ, label string) volume.Info {
+	return volume.NewInfo(path, typ, label)
 }
 
 // OpenVolume volume for writing.
@@ -238,7 +243,7 @@ func (v *Volume) checkDrainFile() error {
 	return nil
 }
 
-func (v *Volume) openedWriters() (out []SliceWriter) {
+func (v *Volume) openedWriters() (out []writer.SliceWriter) {
 	v.writersLock.Lock()
 	defer v.writersLock.Unlock()
 	for _, w := range v.writers {
