@@ -45,7 +45,7 @@ func TestVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = OpenVolumes(ctx, logger, clk, volumesPath)
+		volumes, err = DetectVolumes(ctx, logger, clk, volumesPath)
 		assert.NoError(t, err)
 	}()
 
