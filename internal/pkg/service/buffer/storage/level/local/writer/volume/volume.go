@@ -3,14 +3,11 @@ package volume
 import (
 	"bytes"
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 
 	"github.com/benbjohnson/clock"
-	"github.com/fsnotify/fsnotify"
 	"github.com/gofrs/flock"
 	"go.uber.org/atomic"
 
@@ -142,7 +139,7 @@ func (v *Volume) Close() error {
 	v.cancel()
 
 	// Close all slice writers
-	for _, w := range v.openedWriters() {
+	for _, w := range v.Writers() {
 		w := w
 		v.wg.Add(1)
 		go func() {
@@ -241,18 +238,6 @@ func (v *Volume) checkDrainFile() error {
 		}
 	}
 	return nil
-}
-
-func (v *Volume) openedWriters() (out []writer.Writer) {
-	v.writersLock.Lock()
-	defer v.writersLock.Unlock()
-	for _, w := range v.writers {
-		out = append(out, w)
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].SliceKey().String() < out[j].SliceKey().String()
-	})
-	return out
 }
 
 func createVolumeIDFile(path string, content []byte) error {
