@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"

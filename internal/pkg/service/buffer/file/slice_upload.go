@@ -8,7 +8,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
