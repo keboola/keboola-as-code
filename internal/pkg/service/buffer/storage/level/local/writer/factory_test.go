@@ -25,7 +25,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	clk := clock.New()
 	info := volume.NewInfo(t.TempDir(), "hdd", "1")
 
-	v, err := volume.OpenVolume(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
+	v, err := volume.Open(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()
@@ -48,7 +48,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	clk := clock.New()
 	info := volume.NewInfo(t.TempDir(), "hdd", "1")
 
-	v, err := volume.OpenVolume(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
+	v, err := volume.Open(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()

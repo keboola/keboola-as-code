@@ -43,7 +43,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	defer cancel()
 
 	// Open volume
-	vol, err := volume.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	vol, err := volume.Open(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
@@ -71,7 +71,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	defer cancel()
 
 	// Open volume
-	vol, err := volume.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	vol, err := volume.Open(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
@@ -104,7 +104,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	syncLock := &sync.Mutex{}
 
 	// Open volume
-	vol, err := volume.OpenVolume(
+	vol, err := volume.Open(
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
