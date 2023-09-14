@@ -1,7 +1,8 @@
-package reader
+package volume
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"os"
 	"path/filepath"
 	"sort"
@@ -126,7 +127,7 @@ func (v *Volume) Close() error {
 	return errs.ErrorOrNil()
 }
 
-func (v *Volume) openedReaders() (out []SliceReader) {
+func (v *Volume) openedReaders() (out []reader.SliceReader) {
 	v.readersLock.Lock()
 	defer v.readersLock.Unlock()
 	for _, w := range v.readers {

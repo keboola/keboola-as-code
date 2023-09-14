@@ -1,8 +1,9 @@
-package reader
+package volume
 
 import (
 	"bytes"
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"io"
 	"os"
 	"path/filepath"
@@ -341,7 +342,7 @@ func (tc *readerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	return vol, err
 }
 
-func (tc *readerTestCase) NewReader(opts ...Option) (SliceReader, error) {
+func (tc *readerTestCase) NewReader(opts ...Option) (reader.SliceReader, error) {
 	if tc.Volume == nil {
 		// Open volume
 		_, err := tc.OpenVolume(opts...)
