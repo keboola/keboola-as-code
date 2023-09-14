@@ -16,10 +16,10 @@ const (
 )
 
 type writerRef struct {
-	writer.SliceWriter
+	writer.Writer
 }
 
-func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.SliceWriter, err error) {
+func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.Errorf(`writer for slice "%s cannot be created, volume is closed: %w`, slice.SliceKey.String(), err)
@@ -40,7 +40,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.SliceWriter, err e
 	defer func() {
 		if err == nil {
 			// Update reference
-			ref.SliceWriter = w
+			ref.Writer = w
 		} else {
 			// Close resources
 			if chain != nil {
