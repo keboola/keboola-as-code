@@ -1,5 +1,7 @@
 // Package writer provides writing of tabular data to local storage.
-// Regarding creating a writer, see the "volume" package and the volume.NewWriterFor method in the package.
+// Regarding creating a writer, see:
+//   - The DefaultFactory function.
+//   - The "volume" package and the volume.NewWriterFor method in the package.
 package writer
 
 import (
