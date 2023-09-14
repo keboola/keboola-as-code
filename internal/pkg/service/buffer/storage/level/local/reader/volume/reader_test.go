@@ -314,7 +314,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	// Close
 	err = r.Close()
 	if assert.Error(t, err) {
-		assert.Equal(t, "chain close error:\n- cannot close \"*reader.testFile\": some close error", err.Error())
+		assert.Equal(t, "chain close error:\n- cannot close \"*volume.testFile\": some close error", err.Error())
 	}
 }
 
