@@ -59,7 +59,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Open volume
 	opts := []volume.Option{volume.WithWatchDrainFile(false)}
-	vol, err := volume.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
+	vol, err := volume.Open(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
 	require.NoError(t, err)
 
 	// Create a test slice

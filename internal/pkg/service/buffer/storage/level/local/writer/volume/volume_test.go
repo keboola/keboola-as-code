@@ -306,7 +306,7 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 		WithWatchDrainFile(false),
 	}, opts...)
 
-	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
+	return Open(tc.Ctx, tc.Logger, tc.Clock, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
