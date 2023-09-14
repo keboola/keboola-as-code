@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-type SliceReader interface {
+type Reader interface {
 	io.ReadCloser
 
 	SliceKey() storage.SliceKey
@@ -53,6 +53,6 @@ func (r *reader) FilePath() string {
 	return r.filePath
 }
 
-func New(chain *readchain.Chain, sliceKey storage.SliceKey, dirPath, filePath string) SliceReader {
+func New(chain *readchain.Chain, sliceKey storage.SliceKey, dirPath, filePath string) Reader {
 	return &reader{readChain: chain, sliceKey: sliceKey, dirPath: dirPath, filePath: filePath}
 }

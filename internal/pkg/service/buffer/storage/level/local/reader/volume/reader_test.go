@@ -29,7 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// TestVolume_NewReaderFor_Ok tests Volume.NewReaderFor method and SliceReader getters.
+// TestVolume_NewReaderFor_Ok tests Volume.NewReaderFor method and Reader getters.
 func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newReaderTestCase(t)
@@ -342,7 +342,7 @@ func (tc *readerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	return vol, err
 }
 
-func (tc *readerTestCase) NewReader(opts ...Option) (reader.SliceReader, error) {
+func (tc *readerTestCase) NewReader(opts ...Option) (reader.Reader, error) {
 	if tc.Volume == nil {
 		// Open volume
 		_, err := tc.OpenVolume(opts...)
