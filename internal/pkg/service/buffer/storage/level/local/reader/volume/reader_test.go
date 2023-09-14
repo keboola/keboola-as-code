@@ -3,7 +3,6 @@ package volume
 import (
 	"bytes"
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"

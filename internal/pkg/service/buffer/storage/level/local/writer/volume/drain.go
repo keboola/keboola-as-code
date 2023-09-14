@@ -1,9 +1,11 @@
 package volume
 
 import (
-	"github.com/fsnotify/fsnotify"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"os"
+
+	"github.com/fsnotify/fsnotify"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (v *Volume) Drained() bool {

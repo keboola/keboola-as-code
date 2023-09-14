@@ -2,6 +2,9 @@
 package volume
 
 import (
+	"io"
+	"sort"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
@@ -10,8 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader/readchain"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"io"
-	"sort"
 )
 
 type readerRef struct {

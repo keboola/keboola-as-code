@@ -1,7 +1,10 @@
 package test
 
 import (
+	"time"
+
 	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
@@ -10,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"time"
 )
 
 func NewSlice() *storage.Slice {
