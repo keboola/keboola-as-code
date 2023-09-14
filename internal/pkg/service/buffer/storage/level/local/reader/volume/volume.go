@@ -127,7 +127,7 @@ func (v *Volume) Close() error {
 	return errs.ErrorOrNil()
 }
 
-func (v *Volume) openedReaders() (out []reader.SliceReader) {
+func (v *Volume) openedReaders() (out []reader.Reader) {
 	v.readersLock.Lock()
 	defer v.readersLock.Unlock()
 	for _, w := range v.readers {

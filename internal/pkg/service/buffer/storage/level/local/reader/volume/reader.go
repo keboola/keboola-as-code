@@ -14,10 +14,10 @@ import (
 )
 
 type readerRef struct {
-	reader.SliceReader
+	reader.Reader
 }
 
-func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.SliceReader, err error) {
+func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error) {
 	// Check if the volume is already open
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.Errorf(`volume is closed: %w`, err)
@@ -38,7 +38,7 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.SliceReader, err e
 	defer func() {
 		if err == nil {
 			// Update reference
-			ref.SliceReader = r
+			ref.Reader = r
 		} else {
 			// Close resources
 			if chain != nil {
