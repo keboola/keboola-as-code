@@ -43,12 +43,15 @@ func (v *Volumes) VolumesFor(file *storage.File) []*Volume {
 //
 // The "preferredTypes" slice defines priority of the volumes types.
 // The first value in the slice has the highest priority.
-// The function returns the maximum number of volumes:
-//   - of the most preferred type, then
-//   - of less preferred types, then
-//   - of other types in lexicographic order.
+// The function tries to assign the maximum number of volumes from the following levels:
+//   - the most preferred type, then
+//   - less preferred types, then
+//   - other types that are not on the preferred list
+//
+// Drained volumes are ignored, writing to them is prohibited.
 //
 // The "randomFed" argument determines volume selection on the same priority level.
+// This ensures an even distribution of slices between volumes on the same level.
 func (v *Volumes) assignVolumes(count int, preferredTypes []string, randomFed string) (out []*Volume) {
 	// Convert preferred slice to a map
 	priority := 1
@@ -62,7 +65,8 @@ func (v *Volumes) assignVolumes(count int, preferredTypes []string, randomFed st
 	volumes := v.allExceptDrained()
 	sort.SliceStable(volumes, func(i, j int) bool {
 		// Sort volumes by the preferred types.
-		// If the "type" key is not found in the priorityByType map, the empty value (0) is returned.
+		// If the "type" key is not found in the priorityByType map,
+		// the empty value (0, the lowest priority) is returned from the map.
 		iPriority := priorityByType[volumes[i].Type()]
 		jPriority := priorityByType[volumes[j].Type()]
 		if iPriority != jPriority {
@@ -70,8 +74,9 @@ func (v *Volumes) assignVolumes(count int, preferredTypes []string, randomFed st
 			return iPriority > jPriority
 		}
 
-		// Volumes with the same priority sort by the label.
-		// Use a randomFed to make the distribution of the volumes more even.
+		// Sort volumes on the same level: randomly, but stably.
+		// For the same input parameters of the function assignVolumes,
+		// the same order is always generated.
 		iHash := xxhash.Sum64String(randomFed + volumes[i].Type() + volumes[i].Label())
 		jHash := xxhash.Sum64String(randomFed + volumes[j].Type() + volumes[j].Label())
 		return iHash < jHash
