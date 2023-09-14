@@ -58,12 +58,12 @@ func NewInfo(path, typ, label string) volume.Info {
 	return volume.NewInfo(path, typ, label)
 }
 
-// OpenVolume volume for writing.
+// Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
 	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
 		volumeInfo:    info,

@@ -61,7 +61,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	vol, err := volume.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(b.TempDir(), "hdd", "1"))
+	vol, err := volume.Open(ctx, logger, clock.New(), volume.NewInfo(b.TempDir(), "hdd", "1"))
 	require.NoError(b, err)
 
 	// Create writer
