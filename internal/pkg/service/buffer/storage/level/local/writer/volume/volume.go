@@ -1,3 +1,4 @@
+// Package volume provides detection and opening of volumes intended for slices writing.
 package volume
 
 import (
