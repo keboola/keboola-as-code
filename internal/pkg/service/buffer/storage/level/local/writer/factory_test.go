@@ -1,6 +1,12 @@
-package writer
+package writer_test
 
 import (
+	"context"
+	"github.com/benbjohnson/clock"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,12 +19,16 @@ import (
 // Test for csv.Writer itself are in the "csv" package.
 func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
 
-	v, err := tc.OpenVolume(WithWriterFactory(DefaultFactory))
+	ctx := context.Background()
+	logger := log.NewNopLogger()
+	clk := clock.New()
+	info := volume.NewInfo(t.TempDir(), "hdd", "1")
+
+	v, err := volume.OpenVolume(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
 	assert.NoError(t, err)
 
-	slice := newTestSlice()
+	slice := test.NewSlice()
 	slice.Type = storage.FileTypeCSV
 
 	w, err := v.NewWriterFor(slice)
@@ -32,12 +42,16 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 // TestDefaultFactory_FileTypeInvalid test handling of an invalid file type.
 func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
 
-	v, err := tc.OpenVolume(WithWriterFactory(DefaultFactory))
+	ctx := context.Background()
+	logger := log.NewNopLogger()
+	clk := clock.New()
+	info := volume.NewInfo(t.TempDir(), "hdd", "1")
+
+	v, err := volume.OpenVolume(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
 	assert.NoError(t, err)
 
-	slice := newTestSlice()
+	slice := test.NewSlice()
 	slice.Type = "invalid"
 	_, err = v.NewWriterFor(slice)
 	if assert.Error(t, err) {

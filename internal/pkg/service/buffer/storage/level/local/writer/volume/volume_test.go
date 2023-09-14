@@ -1,8 +1,9 @@
-package writer
+package volume
 
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"os"
 	"path/filepath"
 	"strings"
@@ -247,9 +248,9 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Open two writers
-	_, err = vol.NewWriterFor(newTestSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	_, err = vol.NewWriterFor(test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z"))
 	require.NoError(t, err)
-	_, err = vol.NewWriterFor(newTestSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	_, err = vol.NewWriterFor(test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z"))
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
@@ -299,7 +300,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	opts = append([]Option{
 		WithAllocator(tc.Allocator),
-		WithWriterFactory(func(w *base.Writer) (SliceWriter, error) {
+		WithWriterFactory(func(w *base.Writer) (writer.SliceWriter, error) {
 			return test.NewSliceWriter(w), nil
 		}),
 		WithWatchDrainFile(false),

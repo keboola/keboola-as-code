@@ -1,6 +1,6 @@
 //go:build linux
 
-package writer
+package volume
 
 import (
 	"testing"

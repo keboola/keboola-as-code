@@ -18,9 +18,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -59,8 +58,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	opts := []writer.Option{writer.WithWatchDrainFile(false)}
-	vol, err := writer.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
+	opts := []volume.Option{volume.WithWatchDrainFile(false)}
+	vol, err := volume.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
@@ -148,7 +147,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	tc.Validator(t, string(content))
 }
 
-func (tc *WriterTestCase) newSlice(t *testing.T, volume *writer.Volume) *storage.Slice {
+func (tc *WriterTestCase) newSlice(t *testing.T, volume *volume.Volume) *storage.Slice {
 	t.Helper()
 
 	s := NewTestSlice(volume)
@@ -165,7 +164,7 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *writer.Volume) *storage
 	return s
 }
 
-func NewTestSlice(volume *writer.Volume) *storage.Slice {
+func NewTestSlice(volume *volume.Volume) *storage.Slice {
 	openedAt := utctime.From(time.Now())
 	return &storage.Slice{
 		SliceKey: storage.SliceKey{
