@@ -59,7 +59,7 @@ func TestVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = OpenVolumes(ctx, logger, clk, volumesPath)
+		volumes, err = DetectVolumes(ctx, logger, clk, volumesPath)
 		assert.NoError(t, err)
 	}()
 
@@ -324,7 +324,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewDebugLogger()
 			clk := clock.New()
-			volumes, err := OpenVolumes(ctx, logger, clk, volumesPath, WithWatchDrainFile(false))
+			volumes, err := DetectVolumes(ctx, logger, clk, volumesPath, WithWatchDrainFile(false))
 			require.NoError(t, err)
 
 			// Create a test file according to the test case specification
