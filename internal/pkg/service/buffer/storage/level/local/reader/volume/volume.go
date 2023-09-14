@@ -44,12 +44,12 @@ type Volume struct {
 	readers     map[string]*readerRef
 }
 
-// OpenVolume volume for writing.
+// Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - The volume.IDFile is loaded.
-//   - If the volume.IDFile doesn't exist, the function waits until the writer.OpenVolume function will create it.
+//   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
 	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
 		volumeInfo:  info,
@@ -140,8 +140,8 @@ func (v *Volume) openedReaders() (out []reader.Reader) {
 }
 
 // waitForVolumeID waits for the file with volume ID.
-// The file is created by the writer.OpenVolume
-// and this reader.OpenVolume is waiting for it.
+// The file is created by the writer.Open
+// and this reader.Open is waiting for it.
 func (v *Volume) waitForVolumeID(ctx context.Context) (storage.VolumeID, error) {
 	ctx, cancel := v.clock.WithTimeout(ctx, v.config.waitForVolumeIDTimeout)
 	defer cancel()
