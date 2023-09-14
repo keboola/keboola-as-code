@@ -6,10 +6,11 @@
 package reader
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader/readchain"
 	"io"
 	"os"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader/readchain"
 )
 
 type Reader interface {
