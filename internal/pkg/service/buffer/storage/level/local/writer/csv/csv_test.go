@@ -21,11 +21,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test/testcase"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -44,7 +43,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	defer cancel()
 
 	// Open volume
-	vol, err := writer.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	vol, err := volume.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
@@ -72,7 +71,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	defer cancel()
 
 	// Open volume
-	vol, err := writer.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	vol, err := volume.OpenVolume(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
@@ -105,13 +104,13 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	syncLock := &sync.Mutex{}
 
 	// Open volume
-	vol, err := writer.OpenVolume(
+	vol, err := volume.OpenVolume(
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
 		volume.NewInfo(t.TempDir(), "hdd", "1"),
-		writer.WithFileOpener(func(filePath string) (writer.File, error) {
-			file, err := writer.DefaultFileOpener(filePath)
+		volume.WithFileOpener(func(filePath string) (volume.File, error) {
+			file, err := volume.DefaultFileOpener(filePath)
 			if err != nil {
 				return nil, err
 			}
@@ -313,7 +312,7 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 }
 
 type testFile struct {
-	writer.File
+	volume.File
 	SyncLock *sync.Mutex
 }
 

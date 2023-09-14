@@ -17,9 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -62,7 +61,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	vol, err := writer.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(b.TempDir(), "hdd", "1"))
+	vol, err := volume.OpenVolume(ctx, logger, clock.New(), volume.NewInfo(b.TempDir(), "hdd", "1"))
 	require.NoError(b, err)
 
 	// Create writer
@@ -130,7 +129,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
 }
 
-func (wb *WriterBenchmark) newSlice(b *testing.B, volume *writer.Volume) *storage.Slice {
+func (wb *WriterBenchmark) newSlice(b *testing.B, volume *volume.Volume) *storage.Slice {
 	b.Helper()
 
 	openedAt := utctime.From(time.Now())
