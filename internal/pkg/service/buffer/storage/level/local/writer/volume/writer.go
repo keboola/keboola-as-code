@@ -3,6 +3,7 @@ package volume
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"os"
+	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
@@ -102,6 +103,22 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error)
 
 	// Create writer via factory
 	return v.config.writerFactory(base.NewWriter(logger, v.clock, slice, dirPath, filePath, chain))
+}
+
+func (v *Volume) Writers() (out []writer.Writer) {
+	v.writersLock.Lock()
+	defer v.writersLock.Unlock()
+
+	out = make([]writer.Writer, 0, len(v.writers))
+	for _, w := range v.writers {
+		out = append(out, w)
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].SliceKey().String() < out[j].SliceKey().String()
+	})
+
+	return out
 }
 
 func (v *Volume) addWriterFor(k storage.SliceKey) (ref *writerRef, exists bool) {
