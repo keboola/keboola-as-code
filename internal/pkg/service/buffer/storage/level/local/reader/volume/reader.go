@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader/readchain"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"io"
+	"sort"
 )
 
 type readerRef struct {
@@ -119,6 +120,22 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error)
 	}
 
 	return r, nil
+}
+
+func (v *Volume) openedReaders() (out []reader.Reader) {
+	v.readersLock.Lock()
+	defer v.readersLock.Unlock()
+
+	out = make([]reader.Reader, 0, len(v.readers))
+	for _, w := range v.readers {
+		out = append(out, w)
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].SliceKey().String() < out[j].SliceKey().String()
+	})
+
+	return out
 }
 
 func (v *Volume) addReaderFor(k storage.SliceKey) (ref *readerRef, exists bool) {

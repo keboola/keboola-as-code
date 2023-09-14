@@ -2,10 +2,8 @@ package volume
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -125,18 +123,6 @@ func (v *Volume) Close() error {
 
 	v.logger.Info("closed volume")
 	return errs.ErrorOrNil()
-}
-
-func (v *Volume) openedReaders() (out []reader.Reader) {
-	v.readersLock.Lock()
-	defer v.readersLock.Unlock()
-	for _, w := range v.readers {
-		out = append(out, w)
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].SliceKey().String() < out[j].SliceKey().String()
-	})
-	return out
 }
 
 // waitForVolumeID waits for the file with volume ID.
