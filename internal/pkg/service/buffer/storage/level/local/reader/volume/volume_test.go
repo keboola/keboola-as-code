@@ -310,7 +310,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	info := volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel)
-	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, info, opts...)
+	return Open(tc.Ctx, tc.Logger, tc.Clock, info, opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

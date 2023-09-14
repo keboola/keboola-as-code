@@ -12,7 +12,7 @@ const (
 
 type config struct {
 	// waitForVolumeIDTimeout defines how long to wait for the existence of a file with the VolumeID,
-	// see OpenVolume function and Volume.waitForVolumeID method.
+	// see Open function and Volume.waitForVolumeID method.
 	waitForVolumeIDTimeout time.Duration
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
 	fileOpener FileOpener
