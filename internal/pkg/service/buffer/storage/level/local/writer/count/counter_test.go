@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -20,74 +22,87 @@ func TestCounter(t *testing.T) {
 	// Empty
 	assert.Equal(t, uint64(0), c.Count())
 
-	// Empty
-	assert.Equal(t, uint64(0), c.Count())
-
 	// Add 0
-	c.Add(0)
+	c.Add(utctime.MustParse("2000-01-01T00:00:00.000Z").Time(), 0)
 	assert.Equal(t, uint64(0), c.Count())
+	assert.True(t, c.FirstAt().IsZero())
+	assert.True(t, c.LastAt().IsZero())
 
 	// Add 3
-	c.Add(3)
+	c.Add(utctime.MustParse("2001-01-01T00:00:00.000Z").Time(), 3)
 	assert.Equal(t, uint64(3), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Add 2
-	c.Add(2)
+	c.Add(utctime.MustParse("2002-01-01T00:00:00.000Z").Time(), 2)
 	assert.Equal(t, uint64(5), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
 }
 
 func TestMeterWithBackup(t *testing.T) {
 	t.Parallel()
 
 	backupPath := filepath.Join(t.TempDir(), "backup")
-	m, err := NewCounterWithBackupFile(backupPath)
+	c, err := NewCounterWithBackupFile(backupPath)
 	assert.NoError(t, err)
 
 	// Empty
-	assert.Equal(t, uint64(0), m.Count())
+	assert.Equal(t, uint64(0), c.Count())
 
 	// Add 0
-	m.Add(0)
-	assert.Equal(t, uint64(0), m.Count())
+	c.Add(utctime.MustParse("2000-01-01T00:00:00.000Z").Time(), 0)
+	assert.Equal(t, uint64(0), c.Count())
+	assert.True(t, c.FirstAt().IsZero())
+	assert.True(t, c.LastAt().IsZero())
 
 	// Add 3
-	m.Add(3)
-	assert.Equal(t, uint64(3), m.Count())
+	c.Add(utctime.MustParse("2001-01-01T00:00:00.000Z").Time(), 3)
+	assert.Equal(t, uint64(3), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Add 2
-	m.Add(2)
-	assert.Equal(t, uint64(5), m.Count())
+	c.Add(utctime.MustParse("2002-01-01T00:00:00.000Z").Time(), 2)
+	assert.Equal(t, uint64(5), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Flush backup
-	assert.NoError(t, m.Flush())
+	assert.NoError(t, c.Flush())
 	content, err := os.ReadFile(backupPath)
 	assert.NoError(t, err)
-	assert.Equal(t, "5", string(content))
+	assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
 
 	// Add 4
-	m.Add(4)
-	assert.Equal(t, uint64(9), m.Count())
+	c.Add(utctime.MustParse("2003-01-01T00:00:00.000Z").Time(), 4)
+	assert.Equal(t, uint64(9), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2003-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Close (flush backup)
-	assert.NoError(t, m.Close())
+	assert.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
 	assert.NoError(t, err)
-	assert.Equal(t, "9", string(content))
+	assert.Equal(t, "9,2001-01-01T00:00:00.000Z,2003-01-01T00:00:00.000Z", string(content))
 
 	// Reopen - load from backup
-	m, err = NewCounterWithBackupFile(backupPath)
+	c, err = NewCounterWithBackupFile(backupPath)
 	assert.NoError(t, err)
-	assert.Equal(t, uint64(9), m.Count())
+	assert.Equal(t, uint64(9), c.Count())
 
 	// Add 6
-	m.Add(6)
-	assert.Equal(t, uint64(15), m.Count())
+	c.Add(utctime.MustParse("2004-01-01T00:00:00.000Z").Time(), 6)
+	assert.Equal(t, uint64(15), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2004-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Close
-	assert.NoError(t, m.Close())
+	assert.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
 	assert.NoError(t, err)
-	assert.Equal(t, "15", string(content))
+	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
 }
 
 func TestMeterWithBackup_OpenError_Missing(t *testing.T) {
@@ -101,12 +116,42 @@ func TestMeterWithBackup_OpenError_Missing(t *testing.T) {
 func TestMeterWithBackup_OpenError_Invalid(t *testing.T) {
 	t.Parallel()
 
-	backupPath := filepath.Join(t.TempDir(), "backup")
-	assert.NoError(t, os.WriteFile(backupPath, []byte("foo"), 0o640))
+	cases := []struct{ name, content, expectedError string }{
+		{
+			"commas",
+			"foo",
+			`content "%s" of the backup file is not valid: expected 3 comma-separated values, found 1`,
+		},
+		{
+			"count",
+			"foo,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z",
+			`content "%s" of the backup file is not valid: invalid count "foo"`,
+		},
+		{
+			"firstAt",
+			"123,foo,2004-01-01T00:00:00.000Z",
+			`content "%s" of the backup file is not valid: invalid firstAt time "foo"`,
+		},
+		{
+			"lastAt",
+			"123,2001-01-01T00:00:00.000Z,foo",
+			`content "%s" of the backup file is not valid: invalid lastAt time "foo"`,
+		},
+	}
 
-	_, err := NewCounterWithBackupFile(backupPath)
-	if assert.Error(t, err) {
-		assert.Equal(t, `content "foo" of the backup file is not valid uint64`, err.Error())
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			backupPath := filepath.Join(t.TempDir(), "backup")
+			assert.NoError(t, os.WriteFile(backupPath, []byte(tc.content), 0o640))
+
+			_, err := NewCounterWithBackupFile(backupPath)
+			if assert.Error(t, err) {
+				wildcards.Assert(t, tc.expectedError, err.Error())
+			}
+		})
 	}
 }
 
