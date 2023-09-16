@@ -61,7 +61,9 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	vol, err := volume.Open(ctx, logger, clock.New(), volume.NewInfo(b.TempDir(), "hdd", "1"))
+	clk := clock.New()
+	now := clk.Now()
+	vol, err := volume.Open(ctx, logger, clk, volume.NewInfo(b.TempDir(), "hdd", "1"))
 	require.NoError(b, err)
 
 	// Create writer
@@ -93,7 +95,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 				// Read from the channel until the N rows are processed, together by all goroutines
 				for row := range dataCh {
 					start := time.Now()
-					assert.NoError(b, sliceWriter.WriteRow(row))
+					assert.NoError(b, sliceWriter.WriteRow(now, row))
 					latencySum += time.Since(start).Seconds()
 					latencyCount++
 				}
