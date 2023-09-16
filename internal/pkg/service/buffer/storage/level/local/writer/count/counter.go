@@ -2,20 +2,25 @@
 package count
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
-	"go.uber.org/atomic"
-
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // Counter is an atomic counter.
 type Counter struct {
-	value *atomic.Uint64
+	lock    *sync.RWMutex
+	count   uint64
+	firstAt utctime.UTCTime
+	lastAt  utctime.UTCTime
 }
 
 // CounterWithBackup in addition to Counter allows to read and save the counter value to a backup file.
@@ -33,7 +38,7 @@ type backup interface {
 }
 
 func NewCounter() *Counter {
-	return &Counter{value: atomic.NewUint64(0)}
+	return &Counter{lock: &sync.RWMutex{}}
 }
 
 func NewCounterWithBackupFile(filePath string) (*CounterWithBackup, error) {
@@ -46,46 +51,104 @@ func NewCounterWithBackupFile(filePath string) (*CounterWithBackup, error) {
 }
 
 func NewCounterWithBackup(backup backup) (*CounterWithBackup, error) {
+	c := &CounterWithBackup{Counter: NewCounter(), backup: backup}
+
 	// Read value
-	buffer := make([]byte, 32)
+	buffer := make([]byte, 128)
 	n, err := io.ReadFull(backup, buffer)
 	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return nil, errors.Errorf(`cannot read from the backup file: %w`, err)
 	}
 
-	// Parse value
-	var value uint64
+	// Parse values
 	content := string(buffer[0:n])
 	if content != "" {
-		value, err = strconv.ParseUint(strings.TrimSpace(content), 10, 64)
-		if err != nil {
+		errs := errors.NewMultiError()
+		parts := strings.Split(content, ",")
+		if len(parts) != 3 {
+			errs.Append(errors.Errorf(`expected 3 comma-separated values, found %d`, len(parts)))
+		} else {
+			if c.count, err = strconv.ParseUint(strings.TrimSpace(parts[0]), 10, 64); err != nil {
+				errs.Append(errors.Errorf(`invalid count "%s"`, parts[0]))
+			}
+			if c.firstAt, err = utctime.Parse(parts[1]); err != nil {
+				errs.Append(errors.Errorf(`invalid firstAt time "%s"`, parts[1]))
+			}
+			if c.lastAt, err = utctime.Parse(parts[2]); err != nil {
+				errs.Append(errors.Errorf(`invalid lastAt time "%s"`, parts[2]))
+			}
+		}
+
+		if err := errs.ErrorOrNil(); err != nil {
 			content = strhelper.Truncate(content, 20, "...")
-			return nil, errors.Errorf(`content "%s" of the backup file is not valid uint64`, content)
+			return nil, errors.Errorf(`content "%s" of the backup file is not valid: %w`, content, err)
 		}
 	}
 
-	// Create writer and set the counter value
-	c := &CounterWithBackup{Counter: NewCounter(), backup: backup}
-	c.value.Store(value)
 	return c, nil
 }
 
-func (c *Counter) Add(n uint64) uint64 {
-	return c.value.Add(n)
+func (c *Counter) Add(timestamp time.Time, n uint64) uint64 {
+	if n == 0 {
+		return c.Count()
+	}
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.count += n
+
+	timestampUTC := utctime.From(timestamp)
+
+	if c.firstAt.IsZero() || c.firstAt.After(timestampUTC) {
+		c.firstAt = timestampUTC
+	}
+
+	if timestampUTC.After(c.lastAt) {
+		c.lastAt = timestampUTC
+	}
+
+	return c.count
 }
 
 func (c *Counter) Count() uint64 {
-	return c.value.Load()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.count
+}
+
+func (c *Counter) FirstAt() utctime.UTCTime {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.firstAt
+}
+
+func (c *Counter) LastAt() utctime.UTCTime {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lastAt
 }
 
 func (c *CounterWithBackup) Flush() error {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	// Seek to the beginning of the file
 	// The size counter can only grow, so it guarantees that the entire file will be overwritten.
 	if _, err := c.backup.Seek(0, io.SeekStart); err != nil {
 		return errors.Errorf(`cannot seek the backup file: %w`, err)
 	}
 
-	if _, err := c.backup.Write([]byte(strconv.FormatUint(c.value.Load(), 10))); err != nil {
+	// Prepare file content
+	var content bytes.Buffer
+	content.WriteString(strconv.FormatUint(c.count, 10))
+	content.WriteString(",")
+	content.WriteString(c.firstAt.String())
+	content.WriteString(",")
+	content.WriteString(c.lastAt.String())
+
+	// Write file content
+	if _, err := c.backup.Write(content.Bytes()); err != nil {
 		return errors.Errorf(`cannot write to the backup file: %w`, err)
 	}
 
