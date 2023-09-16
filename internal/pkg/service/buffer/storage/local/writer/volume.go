@@ -9,12 +9,14 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
+	"github.com/fsnotify/fsnotify"
 	"github.com/gofrs/flock"
+	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -27,18 +29,25 @@ const (
 	volumeIDFilePerm  = 0o640
 )
 
+type volumeInfo = volume.Info
+
 // Volume represents a local directory intended for slices writing.
 type Volume struct {
+	volumeInfo
+	id storage.VolumeID
+
 	config config
 	logger log.Logger
 	clock  clock.Clock
-	path   string
 
 	ctx    context.Context
 	cancel context.CancelFunc
+	wg     *sync.WaitGroup
 
-	volumeID storage.VolumeID
-	lock     *flock.Flock
+	fsLock *flock.Flock
+
+	drained       *atomic.Bool
+	drainFilePath string
 
 	writersLock *sync.Mutex
 	writers     map[string]*writerRef
@@ -49,35 +58,31 @@ type Volume struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path string, opts ...Option) (*Volume, error) {
-	logger.Infof(`opening volume "%s"`, path)
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
+	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
-		config:      newConfig(opts),
-		logger:      logger,
-		clock:       clock,
-		path:        path,
-		writersLock: &sync.Mutex{},
-		writers:     make(map[string]*writerRef),
+		volumeInfo:    info,
+		config:        newConfig(opts),
+		logger:        logger,
+		clock:         clock,
+		wg:            &sync.WaitGroup{},
+		drained:       atomic.NewBool(false),
+		drainFilePath: filesystem.Join(info.Path(), drainFile),
+		writersLock:   &sync.Mutex{},
+		writers:       make(map[string]*writerRef),
 	}
 
-	v.ctx, v.cancel = context.WithCancel(ctx)
+	v.ctx, v.cancel = context.WithCancel(context.Background())
 
 	// Check volume directory
-	if err := local.CheckVolumeDir(v.path); err != nil {
-		return nil, err
-	}
-
-	// Check if the drain file exists, if so, the volume is blocked for writing
-	if _, err := os.Stat(filesystem.Join(v.path, drainFile)); err == nil {
-		return nil, errors.Errorf(`cannot open volume for writing: found "%s" file`, drainFile)
-	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := volume.CheckVolumeDir(v.Path()); err != nil {
 		return nil, err
 	}
 
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
 	{
-		idFilePath := filepath.Join(v.path, local.VolumeIDFile)
+		idFilePath := filepath.Join(v.Path(), volume.IDFile)
 		content, err := os.ReadFile(idFilePath)
 
 		// VolumeID file doesn't exist, create it
@@ -94,58 +99,143 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, path 
 		}
 
 		// Store volume ID
-		v.volumeID = storage.VolumeID(bytes.TrimSpace(content))
+		v.id = storage.VolumeID(bytes.TrimSpace(content))
 	}
 
 	// Create lock file
 	{
-		v.lock = flock.New(filepath.Join(v.path, lockFile))
-		if locked, err := v.lock.TryLock(); err != nil {
-			return nil, errors.Errorf(`cannot acquire writer lock "%s": %w`, v.lock.Path(), err)
+		v.fsLock = flock.New(filepath.Join(v.Path(), lockFile))
+		if locked, err := v.fsLock.TryLock(); err != nil {
+			return nil, errors.Errorf(`cannot acquire writer lock "%s": %w`, v.fsLock.Path(), err)
 		} else if !locked {
-			return nil, errors.Errorf(`cannot acquire writer lock "%s": already locked`, v.lock.Path())
+			return nil, errors.Errorf(`cannot acquire writer lock "%s": already locked`, v.fsLock.Path())
 		}
+	}
+
+	// Check drain file and watch it
+	if err := v.watchDrainFile(); err != nil {
+		return nil, err
 	}
 
 	v.logger.Info("opened volume")
 	return v, nil
 }
 
-func (v *Volume) VolumeID() storage.VolumeID {
-	return v.volumeID
+func (v *Volume) ID() storage.VolumeID {
+	return v.id
+}
+
+func (v *Volume) Drained() bool {
+	return v.drained.Load()
 }
 
 func (v *Volume) Close() error {
 	errs := errors.NewMultiError()
 	v.logger.Info("closing volume")
 
-	// Block NewWriterFor method
+	// Block NewWriterFor method, stop FS notifier
 	v.cancel()
 
 	// Close all slice writers
-	wg := &sync.WaitGroup{}
 	for _, w := range v.openedWriters() {
 		w := w
-		wg.Add(1)
+		v.wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer v.wg.Done()
 			if err := w.Close(); err != nil {
 				errs.Append(errors.Errorf(`cannot close writer for slice "%s": %w`, w.SliceKey().String(), err))
 			}
 		}()
 	}
-	wg.Wait()
+
+	// Wait for writers closing and FS notifier stopping
+	v.wg.Wait()
 
 	// Release the lock
-	if err := v.lock.Unlock(); err != nil {
-		errs.Append(errors.Errorf(`cannot release writer lock "%s": %w`, v.lock.Path(), err))
+	if err := v.fsLock.Unlock(); err != nil {
+		errs.Append(errors.Errorf(`cannot release writer lock "%s": %w`, v.fsLock.Path(), err))
 	}
-	if err := os.Remove(v.lock.Path()); err != nil {
-		errs.Append(errors.Errorf(`cannot remove writer lock "%s": %w`, v.lock.Path(), err))
+	if err := os.Remove(v.fsLock.Path()); err != nil {
+		errs.Append(errors.Errorf(`cannot remove writer lock "%s": %w`, v.fsLock.Path(), err))
 	}
 
 	v.logger.Info("closed volume")
 	return errs.ErrorOrNil()
+}
+
+func (v *Volume) watchDrainFile() error {
+	// Check presence of the file
+	if err := v.checkDrainFile(); err != nil {
+		v.logger.Errorf(`cannot check the drain file: %s`, err)
+		return err
+	}
+
+	// Check if the watcher is enabled
+	if !v.config.watchDrainFile {
+		return nil
+	}
+
+	// Setup watcher
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		// The error is not fatal, skip watching
+		v.logger.Errorf(`cannot create FS watcher: %s`, err)
+		return nil
+	}
+	if err := watcher.Add(v.Path()); err != nil {
+		// The error is not fatal, skip watching
+		v.logger.Errorf(`cannot add path to the FS watcher "%s": %s`, v.Path(), err)
+		return nil
+	}
+
+	v.wg.Add(1)
+	go func() {
+		defer v.wg.Done()
+
+		defer func() {
+			if err := watcher.Close(); err != nil {
+				v.logger.Warnf(`cannot close FS watcher: %s`, err)
+			}
+		}()
+
+		for {
+			select {
+			case <-v.ctx.Done():
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Name == v.drainFilePath {
+					if err := v.checkDrainFile(); err != nil {
+						v.logger.Errorf(`cannot check the drain file: %s`, err)
+					}
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				v.logger.Errorf(`FS watcher error: %s`, err)
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (v *Volume) checkDrainFile() error {
+	if _, err := os.Stat(v.drainFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	} else if errors.Is(err, os.ErrNotExist) {
+		if v.drained.Swap(false) {
+			v.logger.Info("set drained=false")
+		}
+	} else {
+		if !v.drained.Swap(true) {
+			v.logger.Info("set drained=true")
+		}
+	}
+	return nil
 }
 
 func (v *Volume) openedWriters() (out []SliceWriter) {

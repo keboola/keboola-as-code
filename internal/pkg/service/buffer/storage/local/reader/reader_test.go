@@ -18,6 +18,7 @@ import (
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -71,11 +72,11 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	tc := newReaderTestCase(t)
 
 	// Open volume
-	volume, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Close the volume
-	assert.NoError(t, volume.Close())
+	assert.NoError(t, vol.Close())
 
 	// Try crate a reader
 	_, err = tc.NewReader()
@@ -333,11 +334,11 @@ func newReaderTestCase(tb testing.TB) *readerTestCase {
 
 func (tc *readerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	// Write file with the VolumeID
-	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
+	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
 
-	volume, err := tc.volumeTestCase.OpenVolume(opts...)
-	tc.Volume = volume
-	return volume, err
+	vol, err := tc.volumeTestCase.OpenVolume(opts...)
+	tc.Volume = vol
+	return vol, err
 }
 
 func (tc *readerTestCase) NewReader(opts ...Option) (SliceReader, error) {

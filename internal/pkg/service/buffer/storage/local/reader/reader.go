@@ -83,7 +83,7 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r SliceReader, err error) {
 	}()
 
 	// Open file
-	dirPath := filesystem.Join(v.path, slice.LocalStorage.Dir)
+	dirPath := filesystem.Join(v.Path(), slice.LocalStorage.Dir)
 	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {

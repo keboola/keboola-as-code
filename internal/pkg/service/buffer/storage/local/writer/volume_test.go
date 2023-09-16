@@ -18,7 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -67,7 +67,7 @@ func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, local.VolumeIDFile)
+	path := filesystem.Join(tc.VolumePath, volume.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -77,19 +77,53 @@ func TestOpenVolume_Error_VolumeFilePermissions(t *testing.T) {
 	}
 }
 
-// TestOpenVolume_DrainFile tests that the volume can be blocked for writing by a drain file.
-func TestOpenVolume_DrainFile(t *testing.T) {
+// TestOpenVolume_DrainFile_TrueFalse tests that the volume can be blocked for writing by a drain file.
+func TestOpenVolume_DrainFile_TrueFalse(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
 	// Create an empty drain file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, drainFile), nil, 0o640))
+	drainFilePath := filepath.Join(tc.VolumePath, drainFile)
+	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 
 	// Type open volume
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.Equal(t, `cannot open volume for writing: found "drain" file`, err.Error())
+	vol, err := tc.OpenVolume(WithWatchDrainFile(true))
+	assert.NoError(t, err)
+	assert.True(t, vol.Drained())
+
+	// Check error
+	if strings.Contains(tc.Logger.ErrorMessages(), `ERROR  cannot create FS watcher:`) {
+		t.Skipf(`too many opened inotify watchers, many tests are probably running in parallel`)
 	}
+
+	// Remove the file
+	assert.NoError(t, os.Remove(drainFilePath))
+	assert.Eventually(t, func() bool {
+		return vol.Drained() == false
+	}, time.Second, 5*time.Millisecond)
+}
+
+// TestOpenVolume_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
+func TestOpenVolume_DrainFile_FalseTrue(t *testing.T) {
+	t.Parallel()
+	tc := newVolumeTestCase(t)
+
+	// Type open volume
+	vol, err := tc.OpenVolume(WithWatchDrainFile(true))
+	assert.NoError(t, err)
+	assert.False(t, vol.Drained())
+
+	// Check error
+	if strings.Contains(tc.Logger.ErrorMessages(), `ERROR  cannot create FS watcher:`) {
+		t.Skipf(`too many opened inotify watchers, many tests are probably running in parallel`)
+	}
+
+	// Create an empty drain file
+	drainFilePath := filepath.Join(tc.VolumePath, drainFile)
+	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
+	assert.Eventually(t, func() bool {
+		return vol.Drained() == true
+	}, time.Second, 5*time.Millisecond)
 }
 
 // TestOpenVolume_GenerateVolumeID tests that the file with the volume ID is generated if not exists.
@@ -98,18 +132,18 @@ func TestOpenVolume_GenerateVolumeID(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Open volume - it generates the file
-	volume, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Read the volume ID file and check content length
-	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
+	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
 		assert.NoError(t, err)
 		assert.Len(t, content, storage.VolumeIDLength)
 
 		// Volume ID reported by the volume instance match the file content
-		assert.Equal(t, storage.VolumeID(content), volume.VolumeID())
+		assert.Equal(t, storage.VolumeID(content), vol.ID())
 	}
 
 	// Lock is locked by the volume
@@ -119,7 +153,7 @@ func TestOpenVolume_GenerateVolumeID(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, volume.Close())
+	assert.NoError(t, vol.Close())
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -142,16 +176,16 @@ func TestOpenVolume_LoadVolumeID(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Write volume ID file
-	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
+	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	writeContent := []byte("  123456789  ")
 	require.NoError(t, os.WriteFile(idFilePath, writeContent, 0o0640))
 
 	// Open volume - it loads the file
-	volume, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Volume ID reported by the volume instance match the file content
-	assert.Equal(t, storage.VolumeID("123456789"), volume.VolumeID())
+	assert.Equal(t, storage.VolumeID("123456789"), vol.ID())
 
 	// File content remains same
 	if assert.FileExists(t, idFilePath) {
@@ -167,7 +201,7 @@ func TestOpenVolume_LoadVolumeID(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, volume.Close())
+	assert.NoError(t, vol.Close())
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -205,7 +239,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Open volume, replace file opener
-	volume, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
+	vol, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
 		f := newTestFile(t, filePath)
 		f.CloseError = errors.New("some close error")
 		return f, nil
@@ -213,13 +247,13 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Open two writers
-	_, err = volume.NewWriterFor(newTestSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	_, err = vol.NewWriterFor(newTestSliceOpenedAt("2000-01-01T20:00:00.000Z"))
 	require.NoError(t, err)
-	_, err = volume.NewWriterFor(newTestSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	_, err = vol.NewWriterFor(newTestSliceOpenedAt("2000-01-01T21:00:00.000Z"))
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	err = volume.Close()
+	err = vol.Close()
 	if assert.Error(t, err) {
 		// Order of the errors is random, writers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`
@@ -230,12 +264,14 @@ func TestVolume_Close_Errors(t *testing.T) {
 }
 
 type volumeTestCase struct {
-	TB         testing.TB
-	Ctx        context.Context
-	Logger     log.DebugLogger
-	Clock      *clock.Mock
-	Allocator  *testAllocator
-	VolumePath string
+	TB          testing.TB
+	Ctx         context.Context
+	Logger      log.DebugLogger
+	Clock       *clock.Mock
+	Allocator   *testAllocator
+	VolumePath  string
+	VolumeType  string
+	VolumeLabel string
 }
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
@@ -249,12 +285,14 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		TB:         tb,
-		Ctx:        ctx,
-		Logger:     logger,
-		Clock:      clock.NewMock(),
-		Allocator:  &testAllocator{},
-		VolumePath: tmpDir,
+		TB:          tb,
+		Ctx:         ctx,
+		Logger:      logger,
+		Clock:       clock.NewMock(),
+		Allocator:   &testAllocator{},
+		VolumePath:  tmpDir,
+		VolumeType:  "hdd",
+		VolumeLabel: "1",
 	}
 }
 
@@ -264,9 +302,10 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 		WithWriterFactory(func(w *base.Writer) (SliceWriter, error) {
 			return test.NewSliceWriter(w), nil
 		}),
+		WithWatchDrainFile(false),
 	}, opts...)
 
-	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.VolumePath, opts...)
+	return OpenVolume(tc.Ctx, tc.Logger, tc.Clock, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
