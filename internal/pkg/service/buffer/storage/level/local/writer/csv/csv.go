@@ -120,14 +120,14 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 }
 
 func (w *Writer) WriteRow(values []any) error {
+	// Block Close method
+	w.writeWg.Add(1)
+	defer w.writeWg.Done()
+
 	// Check if the writer is closed
 	if err := w.ctx.Err(); err != nil {
 		return errors.Errorf(`CSV writer is closed: %w`, err)
 	}
-
-	// Block Close method
-	w.writeWg.Add(1)
-	defer w.writeWg.Done()
 
 	// Check values count
 	if len(values) != len(w.columns) {
