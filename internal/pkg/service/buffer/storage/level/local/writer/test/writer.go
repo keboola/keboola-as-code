@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -13,13 +14,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/count"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// SliceWriter implements a simple writer implementing writer.SliceWriter for tests.
+// Writer implements a simple writer implementing writer.Writer for tests.
 // The writer writes row values to one line as strings, separated by comma.
-type SliceWriter struct {
+type Writer struct {
 	base    *base.Writer
 	writeWg *sync.WaitGroup
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	// CompressedSizeValue defines value of the CompressedSize getter.
 	CompressedSizeValue datasize.ByteSize
 	// UncompressedSizeValue defines value of the UncompressedSize getter.
@@ -33,18 +40,28 @@ type SliceWriter struct {
 	WriteDone chan struct{}
 }
 
-func NewSliceWriter(b *base.Writer) *SliceWriter {
-	return &SliceWriter{
+func NewSliceWriter(b *base.Writer) *Writer {
+	w := &Writer{
 		base:        b,
 		writeWg:     &sync.WaitGroup{},
 		WriteDone:   make(chan struct{}, 100),
 		RowsCounter: count.NewCounter(),
 	}
+
+	w.ctx, w.cancel = context.WithCancel(context.Background())
+
+	return w
 }
 
-func (w *SliceWriter) WriteRow(values []any) error {
+func (w *Writer) WriteRow(timestamp time.Time, values []any) error {
+	// Block Close method
 	w.writeWg.Add(1)
 	defer w.writeWg.Done()
+
+	// Check if the writer is closed
+	if err := w.ctx.Err(); err != nil {
+		return errors.Errorf(`test writer is closed: %w`, err)
+	}
 
 	var s bytes.Buffer
 	for i, v := range values {
@@ -73,37 +90,50 @@ func (w *SliceWriter) WriteRow(values []any) error {
 	}
 
 	// Increase the count of successful writes
-	w.RowsCounter.Add(1)
+	w.RowsCounter.Add(timestamp, 1)
 	return nil
 }
 
-func (w *SliceWriter) RowsCount() uint64 {
+func (w *Writer) RowsCount() uint64 {
 	return w.RowsCounter.Count()
 }
 
-func (w *SliceWriter) CompressedSize() datasize.ByteSize {
+func (w *Writer) FirstRowAt() utctime.UTCTime {
+	return w.RowsCounter.FirstAt()
+}
+
+func (w *Writer) LastRowAt() utctime.UTCTime {
+	return w.RowsCounter.LastAt()
+}
+
+func (w *Writer) CompressedSize() datasize.ByteSize {
 	return w.CompressedSizeValue
 }
 
-func (w *SliceWriter) UncompressedSize() datasize.ByteSize {
+func (w *Writer) UncompressedSize() datasize.ByteSize {
 	return w.UncompressedSizeValue
 }
 
-func (w *SliceWriter) SliceKey() storage.SliceKey {
+func (w *Writer) SliceKey() storage.SliceKey {
 	return w.base.SliceKey()
 }
 
-func (w *SliceWriter) DirPath() string {
+func (w *Writer) DirPath() string {
 	return w.base.DirPath()
 }
 
-func (w *SliceWriter) FilePath() string {
+func (w *Writer) FilePath() string {
 	return w.base.FilePath()
 }
 
-func (w *SliceWriter) Close() error {
+func (w *Writer) Close() error {
+	// Prevent new writes
+	w.cancel()
+
+	// Close the chain
 	err := w.base.Close()
 
+	// Wait for running writes
 	w.writeWg.Wait()
 
 	if err != nil {
@@ -113,7 +143,7 @@ func (w *SliceWriter) Close() error {
 	return w.CloseError
 }
 
-func (w *SliceWriter) ExpectWritesCount(tb testing.TB, n int) {
+func (w *Writer) ExpectWritesCount(tb testing.TB, n int) {
 	tb.Helper()
 	tb.Logf(`waiting for %d writes`, n)
 	for i := 0; i < n; i++ {
@@ -128,7 +158,7 @@ func (w *SliceWriter) ExpectWritesCount(tb testing.TB, n int) {
 	tb.Logf(`all writes done`)
 }
 
-func (w *SliceWriter) TriggerSync(tb testing.TB) {
+func (w *Writer) TriggerSync(tb testing.TB) {
 	tb.Helper()
 	tb.Logf("trigger sync")
 	assert.NoError(tb, w.base.TriggerSync(true).Wait())
