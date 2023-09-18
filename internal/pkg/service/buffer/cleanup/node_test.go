@@ -110,7 +110,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
 
 	// Add received stats for the cleaned-up slice
-	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
@@ -164,7 +164,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
 
 	// Add received stats for the ignored slice
-	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey2,
 			Value: statistics.Value{
@@ -219,7 +219,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey3).Put("rec").Do(ctx, client))
 
 	// Add received stats for the ignored slice
-	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey3,
 			Value: statistics.Value{

@@ -15,6 +15,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	// putMaxStatsPerTxn defines maximum number of keys per transaction when updating database values
+	putMaxStatsPerTxn = 100
+)
+
 type atomicProvider = AtomicProvider
 
 type Repository struct {
@@ -101,8 +106,8 @@ func (r *Repository) RollupImportedOnCleanupOp(fileKey storage.FileKey) *op.Atom
 		})
 }
 
-func (r *Repository) Insert(ctx context.Context, nodeID string, stats []PerAPINode) (err error) {
-	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.statistics.Repository.Insert")
+func (r *Repository) Put(ctx context.Context, stats []PerSlice) (err error) {
+	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.storage.statistics.Repository.Put")
 	defer span.End(&err)
 
 	var currentTxn *op.TxnOp
@@ -115,18 +120,18 @@ func (r *Repository) Insert(ctx context.Context, nodeID string, stats []PerAPINo
 	// Merge multiple put operations into one transaction
 	i := 0
 	for _, v := range stats {
-		if i == 0 || i >= collectorMaxStatsPerTxn {
+		if i == 0 || i >= putMaxStatsPerTxn {
 			i = 0
 			addTxn()
 		}
-		currentTxn.Then(r.schema.InCategory(Buffered).InSlice(v.SliceKey).PerNode(nodeID).Put(v.Value))
+		currentTxn.Then(r.schema.InLevel(storage.LevelLocal).InSlice(v.SliceKey).Put(v.Value))
 		i++
 	}
 
 	// Trace records and transactions count
 	span.SetAttributes(
-		attribute.Int("statistics.collector.records_count", len(stats)),
-		attribute.Int("statistics.collector.txn_count", len(allTxn)),
+		attribute.Int("statistics.put.records_count", len(stats)),
+		attribute.Int("statistics.put.txn_count", len(allTxn)),
 	)
 
 	// Run transactions in parallel
