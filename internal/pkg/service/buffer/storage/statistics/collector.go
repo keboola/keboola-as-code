@@ -18,10 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-const (
-	collectorMaxStatsPerTxn = 50
-)
-
 // Collector collects node statistics in memory and periodically synchronizes them to the database.
 type Collector struct {
 	nodeID     string

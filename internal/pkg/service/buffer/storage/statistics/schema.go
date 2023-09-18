@@ -12,9 +12,6 @@ import (
 )
 
 const (
-	// nodesSumKey contains sum of statistics for a slice from all API nodes,
-	// the value is calculated when the slice is closed and all partial values are deleted.
-	nodesSumKey = "_nodes_sum"
 	// cleanupSumKey contains sum of statistics of all old slices deleted by cleanup.
 	cleanupSumKey = "_cleanup_sum"
 )
