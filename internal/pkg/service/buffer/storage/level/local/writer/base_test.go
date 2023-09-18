@@ -1,4 +1,4 @@
-package base_test
+package writer
 
 import (
 	"context"
@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
@@ -38,7 +37,7 @@ func TestBaseWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 	chain := writechain.New(logger, file)
-	w := base.NewWriter(logger, clk, slice, dirPath, filePath, chain)
+	w := NewBaseWriter(logger, clk, slice, dirPath, filePath, chain)
 
 	// Test getters
 	assert.Equal(t, logger, w.Logger())
@@ -97,7 +96,7 @@ func TestBaseWriter_CloseError(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 	chain := writechain.New(logger, file)
-	w := base.NewWriter(logger, clk, slice, dirPath, filePath, chain)
+	w := NewBaseWriter(logger, clk, slice, dirPath, filePath, chain)
 
 	w.AppendCloseFn("my-closer", func() error {
 		return errors.New("some error")

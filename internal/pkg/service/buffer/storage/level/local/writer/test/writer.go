@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -21,7 +21,7 @@ import (
 // Writer implements a simple writer implementing writer.Writer for tests.
 // The writer writes row values to one line as strings, separated by comma.
 type Writer struct {
-	base    *base.Writer
+	base    *writer.BaseWriter
 	writeWg *sync.WaitGroup
 
 	ctx    context.Context
@@ -40,7 +40,7 @@ type Writer struct {
 	WriteDone chan struct{}
 }
 
-func NewSliceWriter(b *base.Writer) *Writer {
+func NewSliceWriter(b *writer.BaseWriter) *Writer {
 	w := &Writer{
 		base:        b,
 		writeWg:     &sync.WaitGroup{},

@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -102,7 +101,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error)
 	})
 
 	// Create writer via factory
-	return v.config.writerFactory(base.NewWriter(logger, v.clock, slice, dirPath, filePath, chain))
+	return v.config.writerFactory(writer.NewBaseWriter(logger, v.clock, slice, dirPath, filePath, chain))
 }
 
 func (v *Volume) Writers() (out []writer.Writer) {

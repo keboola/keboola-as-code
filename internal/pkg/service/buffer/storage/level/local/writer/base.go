@@ -1,4 +1,4 @@
-package base
+package writer
 
 import (
 	"github.com/benbjohnson/clock"
@@ -15,7 +15,8 @@ type chain = writechain.Chain
 
 type syncer = disksync.Syncer
 
-type Writer struct {
+// BaseWriter implements common logic for all file types.
+type BaseWriter struct {
 	*chain
 	*syncer
 	logger   log.Logger
@@ -24,8 +25,8 @@ type Writer struct {
 	filePath string
 }
 
-func NewWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPath string, filePath string, chain *writechain.Chain) *Writer {
-	return &Writer{
+func NewBaseWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPath string, filePath string, chain *writechain.Chain) *BaseWriter {
+	return &BaseWriter{
 		chain:    chain,
 		syncer:   disksync.NewSyncer(logger, clock, slice.LocalStorage.Sync, chain),
 		logger:   logger,
@@ -35,50 +36,50 @@ func NewWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPa
 	}
 }
 
-func (w *Writer) Logger() log.Logger {
+func (w *BaseWriter) Logger() log.Logger {
 	return w.logger
 }
 
-func (w *Writer) SliceKey() storage.SliceKey {
+func (w *BaseWriter) SliceKey() storage.SliceKey {
 	return w.slice.SliceKey
 }
 
-func (w *Writer) Columns() column.Columns {
+func (w *BaseWriter) Columns() column.Columns {
 	out := make(column.Columns, len(w.slice.Columns))
 	copy(out, w.slice.Columns)
 	return out
 }
 
-func (w *Writer) Type() storage.FileType {
+func (w *BaseWriter) Type() storage.FileType {
 	return w.slice.Type
 }
 
 // Compression config.
-func (w *Writer) Compression() compression.Config {
+func (w *BaseWriter) Compression() compression.Config {
 	return w.slice.LocalStorage.Compression
 }
 
 // DirPath to the directory with slice files.
 // It is an absolute path.
-func (w *Writer) DirPath() string {
+func (w *BaseWriter) DirPath() string {
 	return w.dirPath
 }
 
 // FilePath to the slice data.
 // It is an absolute path.
-func (w *Writer) FilePath() string {
+func (w *BaseWriter) FilePath() string {
 	return w.filePath
 }
 
-func (w *Writer) Write(p []byte) (int, error) {
+func (w *BaseWriter) Write(p []byte) (int, error) {
 	return w.syncer.Write(p)
 }
 
-func (w *Writer) WriteString(s string) (int, error) {
+func (w *BaseWriter) WriteString(s string) (int, error) {
 	return w.syncer.WriteString(s)
 }
 
-func (w *Writer) Close() error {
+func (w *BaseWriter) Close() error {
 	w.logger.Debug("closing file")
 
 	// Stop syncer, it triggers also the last sync
