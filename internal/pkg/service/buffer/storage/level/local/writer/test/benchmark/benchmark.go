@@ -28,7 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// WriterBenchmark is a generic benchmark for writer.SliceWriter.
+// WriterBenchmark is a generic benchmark for writer.Writer.
 type WriterBenchmark struct {
 	// Parallelism is number of parallel write operations.
 	Parallelism int

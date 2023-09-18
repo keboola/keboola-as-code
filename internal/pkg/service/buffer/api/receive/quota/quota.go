@@ -56,7 +56,7 @@ func (c *Checker) Check(ctx context.Context, k key.ReceiverKey) error {
 		return err
 	}
 
-	buffered := stats.Buffered.RecordsSize
+	buffered := stats.Local.RecordsSize
 	if limit := c.config.ReceiverBufferSize; buffered > limit {
 		return commonErrors.NewInsufficientStorageError(c.shouldLogError(k), errors.Errorf(
 			`no free space in the buffer: receiver "%s" has "%s" buffered for upload, limit is "%s"`,
