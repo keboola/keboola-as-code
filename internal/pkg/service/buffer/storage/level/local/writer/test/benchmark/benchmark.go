@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
@@ -63,7 +64,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Open volume
 	clk := clock.New()
 	now := clk.Now()
-	vol, err := volume.Open(ctx, logger, clk, volume.NewInfo(b.TempDir(), "hdd", "1"))
+	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), volume.NewInfo(b.TempDir(), "hdd", "1"))
 	require.NoError(b, err)
 
 	// Create writer
