@@ -3,14 +3,12 @@ package statistics
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"sync"
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -47,42 +45,35 @@ func (r *Repository) AtomicProvider() *AtomicProvider {
 
 func (r *Repository) DeleteOp(objectKey fmt.Stringer) op.Op {
 	txn := op.NewTxnOp()
-	for _, category := range allCategories {
-		txn.Then(r.schema.InCategory(category).InObject(objectKey).DeleteAll())
+	for _, level := range storage.AllLevels() {
+		txn.Then(r.schema.InLevel(level).InObject(objectKey).DeleteAll())
 	}
 	return txn
 }
 
-func (r *Repository) MoveOp(ctx context.Context, sliceKey key.SliceKey, from, to Category, modifyStatsFn func(*Value)) (op.Op, error) {
+func (r *Repository) MoveOp(ctx context.Context, sliceKey storage.SliceKey, from, to storage.Level, modifyStatsFn func(*Value)) (op.Op, error) {
 	if from == to {
 		panic(errors.Errorf(`from and to categories are same and equal to "%s"`, to))
 	}
 
-	fromPfx := r.schema.InCategory(from).InSlice(sliceKey)
-	toKey := r.schema.InCategory(to).InSlice(sliceKey).NodesSum()
+	fromKey := r.schema.InLevel(from).InSlice(sliceKey)
+	toKey := r.schema.InLevel(to).InSlice(sliceKey)
 
-	stats, err := SumStats(ctx, r.client, fromPfx.GetAll())
+	stats, err := fromKey.Get().Do(ctx, r.client)
 	if err != nil {
 		return nil, err
 	}
 
 	if modifyStatsFn != nil {
-		modifyStatsFn(&stats)
+		modifyStatsFn(&stats.Value)
 	}
 
-	txn := op.NewTxnOp()
-	txn.Then(fromPfx.DeleteAll())
-
-	if stats.RecordsCount > 0 {
-		txn.Then(toKey.Put(stats))
-	}
-
-	return txn, nil
+	return op.MergeToTxn(fromKey.Delete(), toKey.Put(stats.Value)), nil
 }
 
-func (r *Repository) RollupImportedOnCleanupOp(fileKey key.FileKey) *op.AtomicOp {
-	fileStatsPfx := r.schema.InCategory(Imported).InFile(fileKey)
-	exportSumKey := r.schema.InCategory(Imported).InExport(fileKey.ExportKey).CleanupSum()
+func (r *Repository) RollupImportedOnCleanupOp(fileKey storage.FileKey) *op.AtomicOp {
+	fileStatsPfx := r.schema.InLevel(storage.LevelTarget).InFile(fileKey)
+	exportSumKey := r.schema.InLevel(storage.LevelTarget).InExport(fileKey.ExportKey).CleanupSum()
 
 	var sumValue Value
 	var sliceValue Value
@@ -154,37 +145,5 @@ func (r *Repository) Insert(ctx context.Context, nodeID string, stats []PerAPINo
 
 	// Wait for all transactions
 	wg.Wait()
-	if err := errs.ErrorOrNil(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func SliceStateToCategory(s slicestate.State) Category {
-	switch s {
-	case slicestate.Writing, slicestate.Closing, slicestate.Uploading, slicestate.Failed:
-		return Buffered
-	case slicestate.Uploaded:
-		return Uploaded
-	case slicestate.Imported:
-		return Imported
-	default:
-		panic(errors.Errorf(`unexpected slice state "%v"`, s))
-	}
-}
-
-func SumStats(ctx context.Context, client *etcd.Client, prefix iterator.DefinitionT[Value]) (out Value, err error) {
-	if err := SumStatsOp(prefix, &out).DoOrErr(ctx, client); err != nil {
-		return out, err
-	}
-	return out, nil
-}
-
-// SumStatsOp sums all stats from the iterator.
-func SumStatsOp(prefix iterator.DefinitionT[Value], out *Value) *iterator.ForEachOpT[Value] {
-	return prefix.ForEachOp(func(item Value, _ *iterator.Header) error {
-		*out = out.Add(item)
-		return nil
-	})
+	return errs.ErrorOrNil()
 }

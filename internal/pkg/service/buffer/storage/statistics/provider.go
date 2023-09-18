@@ -3,6 +3,7 @@ package statistics
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -11,8 +12,8 @@ import (
 type Provider interface {
 	ReceiverStats(ctx context.Context, k key.ReceiverKey) (Aggregated, error)
 	ExportStats(ctx context.Context, k key.ExportKey) (Aggregated, error)
-	FileStats(ctx context.Context, k key.FileKey) (Aggregated, error)
-	SliceStats(ctx context.Context, k key.SliceKey) (Aggregated, error)
+	FileStats(ctx context.Context, k storage.FileKey) (Aggregated, error)
+	SliceStats(ctx context.Context, k storage.SliceKey) (Aggregated, error)
 }
 
 func newGetters(fn getStatsFn) *getters {
@@ -33,26 +34,26 @@ func (v *getters) ExportStats(ctx context.Context, k key.ExportKey) (Aggregated,
 	return v.getStatsFn(ctx, k)
 }
 
-func (v *getters) FileStats(ctx context.Context, k key.FileKey) (Aggregated, error) {
+func (v *getters) FileStats(ctx context.Context, k storage.FileKey) (Aggregated, error) {
 	return v.getStatsFn(ctx, k)
 }
 
-func (v *getters) SliceStats(ctx context.Context, k key.SliceKey) (Aggregated, error) {
+func (v *getters) SliceStats(ctx context.Context, k storage.SliceKey) (Aggregated, error) {
 	return v.getStatsFn(ctx, k)
 }
 
-func aggregate(category Category, partial Value, out *Aggregated) {
-	switch category {
-	case Buffered:
-		out.Buffered = out.Buffered.Add(partial)
+func aggregate(level storage.Level, partial Value, out *Aggregated) {
+	switch level {
+	case storage.LevelLocal:
+		out.Local = out.Local.Add(partial)
 		out.Total = out.Total.Add(partial)
-	case Uploaded:
-		out.Uploaded = out.Uploaded.Add(partial)
+	case storage.LevelStaging:
+		out.Staging = out.Staging.Add(partial)
 		out.Total = out.Total.Add(partial)
-	case Imported:
-		out.Imported = out.Imported.Add(partial)
+	case storage.LevelTarget:
+		out.Target = out.Target.Add(partial)
 		out.Total = out.Total.Add(partial)
 	default:
-		panic(errors.Errorf(`unexpected statistics category "%v"`, category))
+		panic(errors.Errorf(`unexpected statistics level "%v"`, level))
 	}
 }
