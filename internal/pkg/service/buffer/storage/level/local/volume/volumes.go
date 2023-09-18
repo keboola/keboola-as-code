@@ -114,6 +114,8 @@ func (v *Volumes[V]) Close() error {
 // detect volumes in the volumesPath.
 // Relative path of each Volume has format: {type}/{label}.
 func (v *Volumes[V]) detect() error {
+	v.logger.Infof(`searching for volumes in "%s"`, v.path)
+
 	lock := &sync.Mutex{}
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
@@ -197,6 +199,7 @@ func (v *Volumes[V]) detect() error {
 		return errors.New("no volume found")
 	}
 
+	v.logger.Infof(`found "%d" volumes`, len(v.byID))
 	return nil
 }
 
