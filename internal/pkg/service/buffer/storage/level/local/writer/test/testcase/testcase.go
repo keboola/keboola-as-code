@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
@@ -61,7 +62,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	opts := []volume.Option{volume.WithWatchDrainFile(false)}
 	clk := clock.New()
 	now := clk.Now()
-	vol, err := volume.Open(ctx, logger, clk, volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
+	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
