@@ -32,6 +32,8 @@ type Writer interface {
 	// Close the writer and sync data to the disk.
 	Close() error
 
+	// Events provides listening to the writer lifecycle.
+	Events() *Events
 	// DirPath is absolute path to the slice directory. It contains slice file and optionally an auxiliary files.
 	DirPath() string
 	// FilePath is absolute path to the slice file.

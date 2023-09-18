@@ -19,16 +19,18 @@ type syncer = disksync.Syncer
 type BaseWriter struct {
 	*chain
 	*syncer
+	events   *Events
 	logger   log.Logger
 	slice    *storage.Slice
 	dirPath  string
 	filePath string
 }
 
-func NewBaseWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPath string, filePath string, chain *writechain.Chain) *BaseWriter {
+func NewBaseWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPath string, filePath string, chain *writechain.Chain, events *Events) *BaseWriter {
 	return &BaseWriter{
 		chain:    chain,
 		syncer:   disksync.NewSyncer(logger, clock, slice.LocalStorage.Sync, chain),
+		events:   events,
 		logger:   logger,
 		slice:    slice,
 		dirPath:  dirPath,
@@ -38,6 +40,10 @@ func NewBaseWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, d
 
 func (w *BaseWriter) Logger() log.Logger {
 	return w.logger
+}
+
+func (w *BaseWriter) Events() *Events {
+	return w.events
 }
 
 func (w *BaseWriter) SliceKey() storage.SliceKey {

@@ -213,6 +213,10 @@ func (w *Writer) UncompressedSize() datasize.ByteSize {
 	return w.uncompressedMeter.Size()
 }
 
+func (w *Writer) Events() *writer.Events {
+	return w.base.Events()
+}
+
 func (w *Writer) DirPath() string {
 	return w.base.DirPath()
 }
