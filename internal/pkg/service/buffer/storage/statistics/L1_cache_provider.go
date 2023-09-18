@@ -3,6 +3,7 @@ package statistics
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"sync"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -73,11 +74,11 @@ func (p *L1CacheProvider) setupCache(ctx context.Context, wg *sync.WaitGroup) <-
 
 func (p *L1CacheProvider) statsFromCache(_ context.Context, objectKey fmt.Stringer) (out Aggregated, err error) {
 	p.cache.Atomic(func(t prefixtree.TreeReadOnly[Value]) {
-		for _, category := range allCategories {
+		for _, level := range storage.AllLevels() {
 			t.WalkPrefix(
-				p.schema.InCategory(category).InObject(objectKey).Prefix(),
+				p.schema.InLevel(level).InObject(objectKey).Prefix(),
 				func(_ string, v Value) bool {
-					aggregate(category, v, &out)
+					aggregate(level, v, &out)
 					return false
 				},
 			)

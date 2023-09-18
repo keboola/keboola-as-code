@@ -3,6 +3,7 @@ package statistics
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -37,15 +38,15 @@ func NewAtomicProvider(d atomicProviderDeps) *AtomicProvider {
 func (p *AtomicProvider) statsFromDB(ctx context.Context, objectKey fmt.Stringer) (out Aggregated, err error) {
 	var ops []op.Op
 
-	for _, category := range allCategories {
-		category := category
+	for _, level := range storage.AllLevels() {
+		level := level
 
 		// Get stats prefix for the slice state
-		pfx := p.prefix.InCategory(category).InObject(objectKey)
+		pfx := p.prefix.InLevel(level).InObject(objectKey)
 
 		// Sum
 		ops = append(ops, pfx.GetAll().ForEachOp(func(v Value, header *iterator.Header) error {
-			aggregate(category, v, &out)
+			aggregate(level, v, &out)
 			return nil
 		}))
 	}

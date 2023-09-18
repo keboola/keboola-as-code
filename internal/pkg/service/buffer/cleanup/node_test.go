@@ -122,7 +122,7 @@ func TestCleanup(t *testing.T) {
 			},
 		},
 	}))
-	moveOp, err := statsRepo.MoveOp(ctx, sliceKey1, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+	moveOp, err := statsRepo.MoveOp(ctx, sliceKey1, statistics.Local, statistics.Staging, func(value *statistics.Value) {
 		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
 			FileSize:     1 * datasize.KB,
@@ -176,7 +176,7 @@ func TestCleanup(t *testing.T) {
 			},
 		},
 	}))
-	moveOp, err = statsRepo.MoveOp(ctx, sliceKey2, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey2, statistics.Local, statistics.Staging, func(value *statistics.Value) {
 		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
 			FileSize:     1 * datasize.KB,
@@ -231,7 +231,7 @@ func TestCleanup(t *testing.T) {
 			},
 		},
 	}))
-	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Local, statistics.Staging, func(value *statistics.Value) {
 		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
 			FileSize:     1 * datasize.KB,
@@ -240,7 +240,7 @@ func TestCleanup(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NoError(t, moveOp.DoOrErr(ctx, client))
-	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Uploaded, statistics.Imported, nil)
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Staging, statistics.Target, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, moveOp.DoOrErr(ctx, client))
 	// -----------------------------------------------------------------------------------------------------------------

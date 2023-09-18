@@ -33,13 +33,6 @@
 //
 //	stats/<CATEGORY:imported>/<EXPORT_KEY:PROJECT_ID/RECEIVER_ID/EXPORT_ID>/_cleanup_sum
 //
-// # Categories
-//
-// There are three statistics categories:
-//   - [Buffered]: for slices in [slicestate.Writing], [slicestate.Closing], [slicestate.Uploading], [slicestate.Failed]
-//   - [Uploaded]: for slices in [slicestate.Uploaded]
-//   - [Imported]: for slices in [slicestate.Imported]
-//
 // # Collector
 //
 // Whenever a new record is successfully saved, the [Collector.Notify] method is called.
@@ -114,21 +107,9 @@ package statistics
 
 import (
 	"github.com/c2h5oh/datasize"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
-
-const (
-	Buffered = Category("buffered")
-	Uploaded = Category("uploaded")
-	Imported = Category("imported")
-)
-
-//nolint:gochecknoglobals
-var allCategories = []Category{Buffered, Uploaded, Imported}
-
-type Category string
 
 // Value contains statistics for a slice or summarized statistics for a parent object.
 type Value struct {
@@ -148,37 +129,24 @@ type Value struct {
 	FileGZipSize datasize.ByteSize `json:"fileGZipSize,omitempty"`
 }
 
-type PerAPINode struct {
-	SliceKey key.SliceKey
+type PerSlice struct {
+	SliceKey storage.SliceKey
 	Value    Value
 }
 
 // Aggregated contains aggregated statistics for an object, such as file or export.
 type Aggregated struct {
-	// Buffered field contains summarized statistics for slices in slicestate.Writing, slicestate.Closing, slicestate.Uploading, slicestate.Failed.
-	Buffered Value
-	// Uploaded field contains summarized statistics for slices in slicestate.Uploaded.
-	Uploaded Value
-	// Imported  field contains summarized statistics for slices in slicestate.Imported.
-	Imported Value
-	// Total field contains summarized statistics for slices in all states, Buffered + Uploaded + Imported.
+	// Local field contains summarized statistics for slices in storage.SliceWriting, storage.SliceClosing, storage.SliceUploading.
+	// Statistics match the data on local disks.
+	Local Value
+	// Staging field contains summarized statistics for slices in storage.SliceUploaded.
+	// Statistics match the data in the staging storage.
+	Staging Value
+	// Target  field contains summarized statistics for slices in storage.SliceImported.
+	// Statistics match the data in the target table.
+	Target Value
+	// Total field contains summarized statistics for slices in all states, Local + Staging + Target.
 	Total Value
-}
-
-// AfterUpload contains statistics after a slice upload.
-// It is used to add information about the size of uploaded file to the Value
-// and to correct potentially inaccurate RecordsCount statistics, see Atomicity section in package docs.
-type AfterUpload struct {
-	// RecordsCount is count of uploaded records.
-	RecordsCount uint64
-	// FileSize is total uploaded size before compression.
-	FileSize datasize.ByteSize
-	// FileSize is total uploaded size after compression.
-	FileGZipSize datasize.ByteSize
-}
-
-func (c Category) String() string {
-	return string(c)
 }
 
 func (v Value) Add(v2 Value) Value {
@@ -193,12 +161,5 @@ func (v Value) Add(v2 Value) Value {
 	if v2.LastRecordAt.After(v.LastRecordAt) {
 		v.LastRecordAt = v2.LastRecordAt
 	}
-	return v
-}
-
-func (v Value) WithAfterUpload(stats AfterUpload) Value {
-	v.RecordsCount = stats.RecordsCount
-	v.FileSize = stats.FileSize
-	v.FileGZipSize = stats.FileGZipSize
 	return v
 }
