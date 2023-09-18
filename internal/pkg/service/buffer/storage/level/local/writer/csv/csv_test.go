@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test/testcase"
@@ -45,7 +46,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 
 	// Open volume
 	clk := clock.New()
-	vol, err := volume.Open(ctx, log.NewNopLogger(), clk, volume.NewInfo(t.TempDir(), "hdd", "1"))
+	vol, err := volume.Open(ctx, log.NewNopLogger(), clk, writer.NewEvents(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
@@ -74,7 +75,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 
 	// Open volume
 	clk := clock.New()
-	vol, err := volume.Open(ctx, log.NewNopLogger(), clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	vol, err := volume.Open(ctx, log.NewNopLogger(), clock.New(), writer.NewEvents(), volume.NewInfo(t.TempDir(), "hdd", "1"))
 	require.NoError(t, err)
 
 	// Create slice
@@ -111,6 +112,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
+		writer.NewEvents(),
 		volume.NewInfo(t.TempDir(), "hdd", "1"),
 		volume.WithFileOpener(func(filePath string) (volume.File, error) {
 			file, err := volume.DefaultFileOpener(filePath)
@@ -142,7 +144,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	go func() { assert.NoError(t, w.WriteRow(now, []any{"value"})) }()
 	go func() { assert.NoError(t, w.WriteRow(now, []any{"value"})) }()
 	assert.Eventually(t, func() bool {
-		return w.(*csv.Writer).WaitingWriteOps() == 2
+		return w.Unwrap().(*csv.Writer).WaitingWriteOps() == 2
 	}, time.Second, 5*time.Millisecond)
 
 	// Close writer
