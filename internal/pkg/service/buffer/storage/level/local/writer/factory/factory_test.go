@@ -1,4 +1,4 @@
-package writer_test
+package factory_test
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/csv"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/factory"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/volume"
 )
@@ -25,7 +25,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	clk := clock.New()
 	info := volume.NewInfo(t.TempDir(), "hdd", "1")
 
-	v, err := volume.Open(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
+	v, err := volume.Open(ctx, logger, clk, info, volume.WithWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()
@@ -48,7 +48,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	clk := clock.New()
 	info := volume.NewInfo(t.TempDir(), "hdd", "1")
 
-	v, err := volume.Open(ctx, logger, clk, info, volume.WithWriterFactory(writer.DefaultFactory))
+	v, err := volume.Open(ctx, logger, clk, info, volume.WithWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()
