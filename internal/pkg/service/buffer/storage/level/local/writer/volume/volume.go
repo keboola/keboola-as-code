@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -38,6 +39,7 @@ type Volume struct {
 	config config
 	logger log.Logger
 	clock  clock.Clock
+	events *writer.Events
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -61,13 +63,14 @@ func NewInfo(path, typ, label string) volume.Info {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, info volumeInfo, opts ...Option) (*Volume, error) {
 	logger.Infof(`opening volume "%s"`, info.Path())
 	v := &Volume{
 		volumeInfo:    info,
 		config:        newConfig(opts),
 		logger:        logger,
 		clock:         clock,
+		events:        events,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filesystem.Join(info.Path(), drainFile),
@@ -126,6 +129,10 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volume
 
 func (v *Volume) ID() storage.VolumeID {
 	return v.id
+}
+
+func (v *Volume) Events() *writer.Events {
+	return v.events
 }
 
 func (v *Volume) Close() error {
