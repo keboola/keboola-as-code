@@ -126,6 +126,10 @@ func (w *Writer) FilePath() string {
 	return w.base.FilePath()
 }
 
+func (w *Writer) Events() *writer.Events {
+	return w.base.Events()
+}
+
 func (w *Writer) Close() error {
 	// Prevent new writes
 	w.cancel()
