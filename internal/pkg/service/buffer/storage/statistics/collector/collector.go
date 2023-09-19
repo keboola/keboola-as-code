@@ -1,96 +1,120 @@
+// Package collector provides collecting and saving of the storage statistics.
 package collector
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
-	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Collector collects node statistics in memory and periodically synchronizes them to the database.
+const (
+	DefaultSyncInterval = 1 * time.Second
+	DefaultSyncTimeout  = 30 * time.Second
+)
+
+// Collector collects writers statistics and saves them to the database.
+// Collection is triggered periodically and on the writer close.
 type Collector struct {
-	nodeID     string
-	clock      clock.Clock
 	logger     log.Logger
-	telemetry  telemetry.Telemetry
-	client     *etcd.Client
-	schema     schemaRoot
-	repository *Repository
+	repository *repository.Repository
 
-	statsLock     *sync.Mutex
-	statsPerSlice map[key.SliceKey]*sliceStats
+	config Config
+
+	cancel context.CancelFunc
+	wg     *sync.WaitGroup
+
+	syncLock    *sync.Mutex
+	writersLock *sync.Mutex
+	writers     map[storage.SliceKey]*writerSnapshot
 }
 
-type sliceStats struct {
-	Value
-	changed bool
+type Config struct {
+	SyncInterval time.Duration
+	SyncTimeout  time.Duration
 }
 
-func (s *sliceStats) Add(value Value) {
-	s.Value = s.Value.Add(value)
-	s.changed = true
+type WriterEvents interface {
+	OnWriterOpen(fn func(writer.Writer) error)
+	OnWriterClose(func(w writer.Writer, err error) error)
 }
 
-type collectorDeps interface {
-	Clock() clock.Clock
-	Logger() log.Logger
-	Telemetry() telemetry.Telemetry
-	Process() *servicectx.Process
-	EtcdClient() *etcd.Client
-	EtcdSerde() *serde.Serde
-	APIConfig() config.APIConfig
-	StatisticsRepository() *Repository
+// writerSnapshot contains collected statistics from a writer.Writer.
+// It is used to determine whether the statistics have changed and should be saved to the database or not.
+type writerSnapshot struct {
+	stats  statistics.PerSlice
+	writer writer.Writer
 }
 
-func NewCollector(d collectorDeps) *Collector {
+func DefaultConfig() Config {
+	return Config{
+		SyncInterval: DefaultSyncInterval,
+		SyncTimeout:  DefaultSyncTimeout,
+	}
+}
+
+func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, events WriterEvents, config Config) *Collector {
 	c := &Collector{
-		nodeID:        d.Process().UniqueID(),
-		clock:         d.Clock(),
-		logger:        d.Logger().AddPrefix("[stats-collector]"),
-		telemetry:     d.Telemetry(),
-		client:        d.EtcdClient(),
-		schema:        newSchema(d.EtcdSerde()),
-		repository:    d.StatisticsRepository(),
-		statsLock:     &sync.Mutex{},
-		statsPerSlice: make(map[key.SliceKey]*sliceStats),
+		logger:      logger,
+		repository:  repository,
+		config:      config,
+		wg:          &sync.WaitGroup{},
+		syncLock:    &sync.Mutex{},
+		writersLock: &sync.Mutex{},
+		writers:     make(map[storage.SliceKey]*writerSnapshot),
 	}
 
-	// Graceful shutdown
-	// The context is cancelled on shutdown, after the HTTP server.
-	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
-	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
-	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func(ctx context.Context) {
-		c.logger.InfoCtx(ctx, "received shutdown request")
-		cancel()
-		wg.Wait()
-		c.logger.InfoCtx(ctx, "shutdown done")
+	// Create context for cancellation of the periodical sync
+	var ctx context.Context
+	ctx, c.cancel = context.WithCancel(context.Background())
+
+	// Listen on writer events
+	events.OnWriterOpen(func(w writer.Writer) error {
+		// Register the writer for the periodical sync, see bellow
+		k := w.SliceKey()
+
+		c.writersLock.Lock()
+		c.writers[k] = &writerSnapshot{writer: w, stats: statistics.PerSlice{SliceKey: k}}
+		c.writersLock.Unlock()
+
+		return nil
+	})
+	events.OnWriterClose(func(w writer.Writer, _ error) error {
+		// Sync the final statistics and unregister the writer
+		k := w.SliceKey()
+		err := c.syncOne(k)
+
+		c.writersLock.Lock()
+		delete(c.writers, k)
+		c.writersLock.Unlock()
+
+		return err
 	})
 
-	// Receive notifications and periodically trigger sync
-	wg.Add(1)
+	// Periodically collect statistics and sync them to the database
+	c.wg.Add(1)
+	ticker := clk.Ticker(c.config.SyncInterval)
 	go func() {
-		defer wg.Done()
-		ticker := c.clock.Ticker(d.APIConfig().StatisticsSyncInterval)
+		defer c.wg.Done()
 		defer ticker.Stop()
+
+		// Note: errors are already logged
 		for {
 			select {
 			case <-ctx.Done():
-				<-c.Sync(context.Background()) // nolint: contextcheck
+				_ = c.syncAll()
 				return
 			case <-ticker.C:
-				c.Sync(ctx)
+				_ = c.syncAll()
 			}
 		}
 	}()
@@ -98,57 +122,90 @@ func NewCollector(d collectorDeps) *Collector {
 	return c
 }
 
-func (c *Collector) Notify(receivedAt time.Time, sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
-	c.statsLock.Lock()
-	defer c.statsLock.Unlock()
-
-	// Init stats
-	value, exists := c.statsPerSlice[sliceKey]
-	if !exists {
-		value = &sliceStats{}
-		c.statsPerSlice[sliceKey] = value
-	}
-
-	// Update stats
-	receivedAtUTC := utctime.UTCTime(receivedAt)
-	value.Add(Value{
-		RecordsCount:  1,
-		RecordsSize:   recordSize,
-		BodySize:      bodySize,
-		FirstRecordAt: receivedAtUTC,
-		LastRecordAt:  receivedAtUTC,
-	})
+// Stop periodical sync on shutdown.
+func (c *Collector) Stop(ctx context.Context) {
+	c.cancel()
+	c.logger.Info(ctx, "stopping storage statistics collector")
+	c.wg.Wait()
+	c.logger.Info(ctx, "storage statistics stopped")
 }
 
-func (c *Collector) Sync(ctx context.Context) <-chan error {
-	stats := c.statsForSync()
-	errCh := make(chan error, 1)
-	if len(stats) > 0 {
-		go func() {
-			defer close(errCh)
-			c.logger.DebugfCtx(ctx, "syncing %d records", len(stats))
-			if err := c.repository.Insert(ctx, c.nodeID, stats); err == nil {
-				c.logger.DebugCtx(ctx, "sync done")
-			} else {
-				c.logger.ErrorfCtx(ctx, "cannot update stats in etcd: %s", err.Error())
-				errCh <- err
+func (c *Collector) syncAll() error {
+	return c.sync(nil)
+}
+
+func (c *Collector) syncOne(k storage.SliceKey) error {
+	return c.sync(&k)
+}
+
+// sync all writers or a one writer, if the filter is specified.
+func (c *Collector) sync(filter *storage.SliceKey) error {
+	c.syncLock.Lock()
+	defer c.syncLock.Unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.config.SyncTimeout)
+	defer cancel()
+
+	// Collect statistics
+	c.writersLock.Lock()
+	var forSync []statistics.PerSlice
+	if filter == nil {
+		// Collect all writers
+		for _, s := range c.writers {
+			if changed := c.collect(s.writer, &s.stats); changed {
+				forSync = append(forSync, s.stats)
 			}
-		}()
+		}
 	} else {
-		close(errCh)
-	}
-
-	return errCh
-}
-
-func (c *Collector) statsForSync() (out []PerAPINode) {
-	c.statsLock.Lock()
-	defer c.statsLock.Unlock()
-	for k, v := range c.statsPerSlice {
-		if v.changed {
-			out = append(out, PerAPINode{SliceKey: k, Value: v.Value})
-			v.changed = false
+		// Collect one writer
+		if s, found := c.writers[*filter]; found {
+			if changed := c.collect(s.writer, &s.stats); changed {
+				forSync = append(forSync, s.stats)
+			}
 		}
 	}
-	return out
+	c.writersLock.Unlock()
+
+	// Sort slice for easier debugging
+	sort.SliceStable(forSync, func(i, j int) bool {
+		return forSync[i].SliceKey.String() < forSync[j].SliceKey.String()
+	})
+
+	// Update values in the database
+	if len(forSync) > 0 {
+		if err := c.repository.Put(ctx, forSync); err != nil {
+			err = errors.Errorf("cannot save the storage statistics to the database: %w", err)
+			c.logger.Error(ctx, err.Error())
+			return err
+		}
+	}
+
+	c.logger.Debug(ctx, "sync done")
+	return nil
+}
+
+// collect statistics from the writer to the PerSlice struct.
+func (c *Collector) collect(w writer.Writer, out *statistics.PerSlice) (changed bool) {
+	// Get values
+	firstRowAt := w.FirstRowAt()
+	lastRowAt := w.LastRowAt()
+	rowsCount := w.RowsCount()
+	compressedSize := w.CompressedSize()
+	uncompressedSize := w.UncompressedSize()
+
+	// Are statistics changed?
+	changed = out.Value.FirstRecordAt != firstRowAt ||
+		out.Value.LastRecordAt != lastRowAt ||
+		out.Value.RecordsCount != rowsCount ||
+		out.Value.CompressedSize != compressedSize ||
+		out.Value.UncompressedSize != uncompressedSize
+
+	// Update values
+	out.Value.FirstRecordAt = firstRowAt
+	out.Value.LastRecordAt = lastRowAt
+	out.Value.RecordsCount = rowsCount
+	out.Value.CompressedSize = compressedSize
+	out.Value.UncompressedSize = uncompressedSize
+
+	return changed
 }
