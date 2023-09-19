@@ -171,8 +171,8 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.API, start time.Tim
 			"recordsCount": params.Stats.RecordsCount,
 			"recordsSize":  params.Stats.RecordsSize.Bytes(),
 			"bodySize":     params.Stats.BodySize.Bytes(),
-			"fileSize":     params.Stats.FileSize.Bytes(),
-			"fileGZipSize": params.Stats.FileGZipSize.Bytes(),
+			"fileSize":     params.Stats.UncompressedSize.Bytes(),
+			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
 		}
 	}
 
