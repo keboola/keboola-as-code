@@ -118,15 +118,15 @@ type Value struct {
 	// LastRecordAt contains the timestamp of the last received record.
 	LastRecordAt utctime.UTCTime `json:"lastRecordAt" validate:"required"`
 	// RecordsCount is count of received records.
-	RecordsCount uint64 `json:"recordsCount" validate:"required"`
-	// RecordsSize is total size of CSV rows.
-	RecordsSize datasize.ByteSize `json:"recordsSize"`
-	// BodySize is total size of all processed request bodies.
-	BodySize datasize.ByteSize `json:"bodySize"`
-	// FileSize is total uploaded size before compression.
-	FileSize datasize.ByteSize `json:"fileSize,omitempty"`
-	// FileSize is total uploaded size after compression.
-	FileGZipSize datasize.ByteSize `json:"fileGZipSize,omitempty"`
+	RecordsCount uint64 `json:"recordsCount"`
+	// UncompressedSize is data size before compression in the local storage.
+	UncompressedSize datasize.ByteSize `json:"uncompressedSize"`
+	// CompressedSize is data size after compression in the local storage.
+	CompressedSize datasize.ByteSize `json:"compressedSize"`
+	// StagingSize is data size in the staging storage.
+	// The value is usually same as the CompressedSize,
+	// if the type of compression did not change during the upload.
+	StagingSize datasize.ByteSize `json:"stagingSize,omitempty"`
 }
 
 type PerSlice struct {
@@ -151,11 +151,10 @@ type Aggregated struct {
 
 func (v Value) Add(v2 Value) Value {
 	v.RecordsCount += v2.RecordsCount
-	v.RecordsSize += v2.RecordsSize
-	v.BodySize += v2.BodySize
-	v.FileSize += v2.FileSize
-	v.FileGZipSize += v2.FileGZipSize
-	if v.FirstRecordAt.IsZero() || !v2.FirstRecordAt.After(v.FirstRecordAt) {
+	v.UncompressedSize += v2.UncompressedSize
+	v.CompressedSize += v2.CompressedSize
+	v.StagingSize += v2.StagingSize
+	if v.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && v.FirstRecordAt.After(v2.FirstRecordAt)) {
 		v.FirstRecordAt = v2.FirstRecordAt
 	}
 	if v2.LastRecordAt.After(v.LastRecordAt) {

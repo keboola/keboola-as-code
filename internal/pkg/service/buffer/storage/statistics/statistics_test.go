@@ -219,15 +219,15 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				}, stats)
 			},
 		},
@@ -255,7 +255,7 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/buffered/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/api-node-1",
@@ -271,8 +271,8 @@ func TestStatistics(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Buffered: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330},
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 44, FileGZipSize: 4},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 44, CompressedSize: 4},
 				}, stats)
 			},
 		},
@@ -284,7 +284,7 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/buffered/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/api-node-1",
@@ -300,8 +300,8 @@ func TestStatistics(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Buffered: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330},
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 44, FileGZipSize: 4},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 44, CompressedSize: 4},
 				}, stats)
 			},
 		},
@@ -313,7 +313,7 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/buffered/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/api-node-1",
@@ -329,8 +329,8 @@ func TestStatistics(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Buffered: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330},
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 44, FileGZipSize: 4},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 44, CompressedSize: 4},
 				}, stats)
 			},
 		},
@@ -342,19 +342,19 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
@@ -367,19 +367,19 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
@@ -391,19 +391,19 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
@@ -415,19 +415,19 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/uploaded/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Uploaded: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
@@ -440,19 +440,19 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/imported/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/imported/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
@@ -465,11 +465,11 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/imported/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				},
 				{
 					Key:   "stats/imported/123/my-receiver/my-export/2000-01-01T01:00:00.000Z/2000-01-01T02:00:00.000Z/_nodes_sum",
-					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Value: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
@@ -477,36 +477,36 @@ func TestStatistics(t *testing.T) {
 				stats, err := provider.SliceStats(ctx, slice1Key)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record2At, RecordsCount: 2, RecordsSize: 30, BodySize: 33, UncompressedSize: 44, CompressedSize: 4},
 				}, stats)
 				// Slice 2
 				stats, err = provider.SliceStats(ctx, slice2Key)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
-					Total:    statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, FileSize: 1000, FileGZipSize: 1000},
+					Imported: statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
+					Total:    statistics.Value{FirstRecordAt: record3At, LastRecordAt: record5At, RecordsCount: 3, RecordsSize: 300, BodySize: 330, UncompressedSize: 1000, CompressedSize: 1000},
 				}, stats)
 				// File
 				stats, err = provider.FileStats(ctx, fileKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 				// Export
 				stats, err = provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 				// Receiver
 				stats, err = provider.ReceiverStats(ctx, receiverKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
@@ -519,7 +519,7 @@ func TestStatistics(t *testing.T) {
 			Records: []expectedEtcdRecord{
 				{
 					Key:   "stats/imported/123/my-receiver/my-export/_cleanup_sum",
-					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Value: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				},
 			},
 			Assert: func(provider statistics.Provider) {
@@ -527,15 +527,15 @@ func TestStatistics(t *testing.T) {
 				stats, err := provider.ExportStats(ctx, exportKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 				// Receiver
 				stats, err = provider.ReceiverStats(ctx, receiverKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
-					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
-					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 1044, FileGZipSize: 1004},
+					Imported: statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
+					Total:    statistics.Value{FirstRecordAt: record1At, LastRecordAt: record5At, RecordsCount: 5, RecordsSize: 330, BodySize: 363, UncompressedSize: 1044, CompressedSize: 1004},
 				}, stats)
 			},
 		},
