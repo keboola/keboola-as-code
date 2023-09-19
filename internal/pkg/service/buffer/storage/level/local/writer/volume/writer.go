@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -20,7 +19,7 @@ type writerRef struct {
 	writer.Writer
 }
 
-func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error) {
+func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.Errorf(`writer for slice "%s cannot be created, volume is closed: %w`, slice.SliceKey.String(), err)
@@ -29,11 +28,20 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error)
 	// Setup logger
 	logger := v.logger
 
+	// Setup events
+	events := v.events.Clone()
+
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
-	ref, exists := v.addWriterFor(slice.SliceKey)
+	ref, exists := v.addWriter(slice.SliceKey)
 	if exists {
 		return nil, errors.Errorf(`writer for slice "%s" already exists`, slice.SliceKey.String())
 	}
+
+	// Register writer close callback
+	events.OnWriterClose(func(_ writer.Writer, _ error) error {
+		v.removeWriter(slice.SliceKey)
+		return nil
+	})
 
 	// Close resources on a creation error
 	var file File
@@ -41,7 +49,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error)
 	defer func() {
 		if err == nil {
 			// Update reference
-			ref.Writer = w
+			ref.Writer = out
 		} else {
 			// Close resources
 			if chain != nil {
@@ -95,14 +103,14 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (w writer.Writer, err error)
 	// Init writers chain
 	chain = writechain.New(logger, file)
 
-	// Unregister the writer on close
-	chain.AppendCloseFn("unregister", func() error {
-		v.removeWriter(slice.SliceKey)
-		return nil
-	})
-
 	// Create writer via factory
-	return v.config.writerFactory(base.NewWriter(logger, v.clock, slice, dirPath, filePath, chain))
+	w, err := v.config.writerFactory(writer.NewBaseWriter(logger, v.clock, slice, dirPath, filePath, chain, events))
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap the writer to add events dispatching
+	return writer.NewEventWriter(w, events)
 }
 
 func (v *Volume) Writers() (out []writer.Writer) {
@@ -121,7 +129,7 @@ func (v *Volume) Writers() (out []writer.Writer) {
 	return out
 }
 
-func (v *Volume) addWriterFor(k storage.SliceKey) (ref *writerRef, exists bool) {
+func (v *Volume) addWriter(k storage.SliceKey) (ref *writerRef, exists bool) {
 	v.writersLock.Lock()
 	defer v.writersLock.Unlock()
 

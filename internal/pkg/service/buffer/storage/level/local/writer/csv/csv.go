@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/size"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
@@ -32,7 +32,7 @@ const (
 )
 
 type Writer struct {
-	base    *base.Writer
+	base    *writer.BaseWriter
 	columns column.Columns
 	writeWg *sync.WaitGroup
 
@@ -51,7 +51,7 @@ type Writer struct {
 	uncompressedMeter *size.MeterWithBackup
 }
 
-func NewWriter(b *base.Writer) (w *Writer, err error) {
+func NewWriter(b *writer.BaseWriter) (w *Writer, err error) {
 	w = &Writer{
 		base:          b,
 		columns:       b.Columns(),
@@ -211,6 +211,10 @@ func (w *Writer) CompressedSize() datasize.ByteSize {
 // UncompressedSize written to the file, measured before compression writer.
 func (w *Writer) UncompressedSize() datasize.ByteSize {
 	return w.uncompressedMeter.Size()
+}
+
+func (w *Writer) Events() *writer.Events {
+	return w.base.Events()
 }
 
 func (w *Writer) DirPath() string {

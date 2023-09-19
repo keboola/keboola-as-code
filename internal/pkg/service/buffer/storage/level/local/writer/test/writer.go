@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -21,7 +21,8 @@ import (
 // Writer implements a simple writer implementing writer.Writer for tests.
 // The writer writes row values to one line as strings, separated by comma.
 type Writer struct {
-	base    *base.Writer
+	helper  *WriterHelper
+	base    *writer.BaseWriter
 	writeWg *sync.WaitGroup
 
 	ctx    context.Context
@@ -35,18 +36,17 @@ type Writer struct {
 	RowsCounter *count.Counter
 	// CloseError simulates error in the Close method.
 	CloseError error
-	// WriteDone signals completion of the write operation and the start of waiting for disk synchronization.
-	// See the WriteRow method.
-	WriteDone chan struct{}
 }
 
-func NewSliceWriter(b *base.Writer) *Writer {
+func NewWriter(helper *WriterHelper, base *writer.BaseWriter) *Writer {
 	w := &Writer{
-		base:        b,
+		helper:      helper,
+		base:        base,
 		writeWg:     &sync.WaitGroup{},
-		WriteDone:   make(chan struct{}, 100),
 		RowsCounter: count.NewCounter(),
 	}
+
+	helper.addWriter(w)
 
 	w.ctx, w.cancel = context.WithCancel(context.Background())
 
@@ -82,7 +82,7 @@ func (w *Writer) WriteRow(timestamp time.Time, values []any) error {
 	w.base.AddWriteOp(1)
 
 	// Signal the completion of write operation and waiting for sync
-	w.WriteDone <- struct{}{}
+	w.helper.writeDone <- struct{}{}
 
 	// Wait for sync and return sync error, if any
 	if err = notifier.Wait(); err != nil {
@@ -126,6 +126,10 @@ func (w *Writer) FilePath() string {
 	return w.base.FilePath()
 }
 
+func (w *Writer) Events() *writer.Events {
+	return w.base.Events()
+}
+
 func (w *Writer) Close() error {
 	// Prevent new writes
 	w.cancel()
@@ -143,12 +147,27 @@ func (w *Writer) Close() error {
 	return w.CloseError
 }
 
-func (w *Writer) ExpectWritesCount(tb testing.TB, n int) {
+// WriterHelper controls test.Writer in the tests.
+type WriterHelper struct {
+	// writeDone signals completion of the write operation and the start of waiting for disk synchronization.
+	// See the WriteRow method.
+	writeDone chan struct{}
+	// writers slice holds all writers to trigger manual sync by the TriggerSync method.
+	writers []*Writer
+}
+
+func NewWriterHelper() *WriterHelper {
+	return &WriterHelper{
+		writeDone: make(chan struct{}, 100),
+	}
+}
+
+func (h *WriterHelper) ExpectWritesCount(tb testing.TB, n int) {
 	tb.Helper()
 	tb.Logf(`waiting for %d writes`, n)
 	for i := 0; i < n; i++ {
 		select {
-		case <-w.WriteDone:
+		case <-h.writeDone:
 			tb.Logf(`write %d done`, i+1)
 		case <-time.After(2 * time.Second):
 			assert.FailNow(tb, "timeout")
@@ -158,9 +177,24 @@ func (w *Writer) ExpectWritesCount(tb testing.TB, n int) {
 	tb.Logf(`all writes done`)
 }
 
-func (w *Writer) TriggerSync(tb testing.TB) {
+func (h *WriterHelper) TriggerSync(tb testing.TB) {
 	tb.Helper()
 	tb.Logf("trigger sync")
-	assert.NoError(tb, w.base.TriggerSync(true).Wait())
+
+	wg := &sync.WaitGroup{}
+	for _, w := range h.writers {
+		w := w
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			assert.NoError(tb, w.base.TriggerSync(true).Wait())
+		}()
+	}
+	wg.Wait()
+
 	tb.Logf("sync done")
+}
+
+func (h *WriterHelper) addWriter(w *Writer) {
+	h.writers = append(h.writers, w)
 }

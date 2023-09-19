@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/base"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -216,10 +215,12 @@ func TestVolume_Close_Errors(t *testing.T) {
 }
 
 type volumeTestCase struct {
+	*test.WriterHelper
 	TB          testing.TB
 	Ctx         context.Context
 	Logger      log.DebugLogger
 	Clock       *clock.Mock
+	Events      *writer.Events
 	Allocator   *testAllocator
 	VolumePath  string
 	VolumeType  string
@@ -237,27 +238,29 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		TB:          tb,
-		Ctx:         ctx,
-		Logger:      logger,
-		Clock:       clock.NewMock(),
-		Allocator:   &testAllocator{},
-		VolumePath:  tmpDir,
-		VolumeType:  "hdd",
-		VolumeLabel: "1",
+		WriterHelper: test.NewWriterHelper(),
+		TB:           tb,
+		Ctx:          ctx,
+		Logger:       logger,
+		Clock:        clock.NewMock(),
+		Events:       writer.NewEvents(),
+		Allocator:    &testAllocator{},
+		VolumePath:   tmpDir,
+		VolumeType:   "hdd",
+		VolumeLabel:  "1",
 	}
 }
 
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	opts = append([]Option{
 		WithAllocator(tc.Allocator),
-		WithWriterFactory(func(w *base.Writer) (writer.Writer, error) {
-			return test.NewSliceWriter(w), nil
+		WithWriterFactory(func(w *writer.BaseWriter) (writer.Writer, error) {
+			return test.NewWriter(tc.WriterHelper, w), nil
 		}),
 		WithWatchDrainFile(false),
 	}, opts...)
 
-	return Open(tc.Ctx, tc.Logger, tc.Clock, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
+	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
