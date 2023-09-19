@@ -124,12 +124,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof("TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof("TEST: write unblocked")
 	}()
 	w.ExpectWritesCount(t, 2)
@@ -140,7 +140,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"abc", "def", 456}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 		tc.Logger.Infof("TEST: write unblocked")
 	}()
 	w.ExpectWritesCount(t, 1)
@@ -151,7 +151,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"ghi", "jkl", 789}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	}()
 	w.ExpectWritesCount(t, 1)
 
@@ -228,12 +228,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof("TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof("TEST: write unblocked")
 	}()
 	w.ExpectWritesCount(t, 2)
@@ -244,7 +244,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"abc", "def", 456}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 		tc.Logger.Infof("TEST: write unblocked")
 	}()
 	w.ExpectWritesCount(t, 1)
@@ -255,7 +255,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow([]any{"ghi", "jkl", 789}))
+		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	}()
 	w.ExpectWritesCount(t, 1)
 
@@ -317,18 +317,18 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	w.ExpectWritesCount(t, 2)
 	w.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow([]any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 	w.ExpectWritesCount(t, 1)
 	w.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRow([]any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	w.ExpectWritesCount(t, 1)
 
 	// Close writer and volume - it triggers the last sync
@@ -394,18 +394,18 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	w.ExpectWritesCount(t, 2)
 	w.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow([]any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 	w.ExpectWritesCount(t, 1)
 	w.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRow([]any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	w.ExpectWritesCount(t, 1)
 
 	// Close writer and volume - it triggers the last sync
@@ -461,16 +461,16 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	// Writes are NOT BLOCKING, sync is disabled completely
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow([]any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	w.ExpectWritesCount(t, 2)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow([]any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 	w.ExpectWritesCount(t, 1)
 
 	// Last write
-	assert.NoError(t, w.WriteRow([]any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	w.ExpectWritesCount(t, 1)
 
 	// Close writer and volume
@@ -601,7 +601,7 @@ func (tc *writerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	return vol, err
 }
 
-func (tc *writerTestCase) NewWriter(opts ...Option) (*test.SliceWriter, error) {
+func (tc *writerTestCase) NewWriter(opts ...Option) (*test.Writer, error) {
 	if tc.Volume == nil {
 		// Write file with the VolumeID
 		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
@@ -620,7 +620,7 @@ func (tc *writerTestCase) NewWriter(opts ...Option) (*test.SliceWriter, error) {
 		return nil, err
 	}
 
-	return w.(*test.SliceWriter), nil
+	return w.(*test.Writer), nil
 }
 
 type testAllocator struct {

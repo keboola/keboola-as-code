@@ -119,7 +119,7 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 	return w
 }
 
-// AddWriteOp increments number of high-level writer operations,
+// AddWriteOp increments number of high-level writer operations in progress,
 // for example writing one row of the table is one high-level write operation.
 func (s *Syncer) AddWriteOp(n uint) {
 	s.writeOpsCount.Add(uint64(n))
@@ -203,7 +203,7 @@ func (s *Syncer) Stop() error {
 	// Stop sync loop
 	s.cancel()
 
-	// Run last sync
+	// Run the last sync
 	err := s.TriggerSync(true).Wait()
 
 	// Wait for sync loop and running sync, if any

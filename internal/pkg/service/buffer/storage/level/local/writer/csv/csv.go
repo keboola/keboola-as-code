@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/spf13/cast"
@@ -19,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/size"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -119,15 +121,15 @@ func NewWriter(b *base.Writer) (w *Writer, err error) {
 	return w, nil
 }
 
-func (w *Writer) WriteRow(values []any) error {
+func (w *Writer) WriteRow(timestamp time.Time, values []any) error {
+	// Block Close method
+	w.writeWg.Add(1)
+	defer w.writeWg.Done()
+
 	// Check if the writer is closed
 	if err := w.ctx.Err(); err != nil {
 		return errors.Errorf(`CSV writer is closed: %w`, err)
 	}
-
-	// Block Close method
-	w.writeWg.Add(1)
-	defer w.writeWg.Done()
 
 	// Check values count
 	if len(values) != len(w.columns) {
@@ -169,7 +171,7 @@ func (w *Writer) WriteRow(values []any) error {
 	}
 
 	// Increase the count of successful writes
-	w.rowsCounter.Add(1)
+	w.rowsCounter.Add(timestamp, 1)
 	return nil
 }
 
@@ -189,6 +191,16 @@ func (w *Writer) WaitingWriteOps() uint64 {
 // RowsCount returns count of successfully written rows.
 func (w *Writer) RowsCount() uint64 {
 	return w.rowsCounter.Count()
+}
+
+// FirstRowAt returns timestamp of receiving the first row for processing.
+func (w *Writer) FirstRowAt() utctime.UTCTime {
+	return w.rowsCounter.FirstAt()
+}
+
+// LastRowAt returns timestamp of receiving the last row for processing.
+func (w *Writer) LastRowAt() utctime.UTCTime {
+	return w.rowsCounter.LastAt()
 }
 
 // CompressedSize written to the file, measured after compression writer.

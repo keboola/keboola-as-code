@@ -59,7 +59,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Open volume
 	opts := []volume.Option{volume.WithWatchDrainFile(false)}
-	vol, err := volume.Open(ctx, logger, clock.New(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
+	clk := clock.New()
+	now := clk.Now()
+	vol, err := volume.Open(ctx, logger, clk, volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
@@ -86,7 +88,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, w.WriteRow(row))
+					assert.NoError(t, w.WriteRow(now, row))
 				}()
 			}
 			go func() {
@@ -98,7 +100,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			go func() {
 				defer close(done)
 				for _, row := range batch.Rows {
-					assert.NoError(t, w.WriteRow(row))
+					assert.NoError(t, w.WriteRow(now, row))
 				}
 			}()
 		}
