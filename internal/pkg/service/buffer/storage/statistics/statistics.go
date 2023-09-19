@@ -114,9 +114,9 @@ import (
 // Value contains statistics for a slice or summarized statistics for a parent object.
 type Value struct {
 	// FirstRecordAt contains the timestamp of the first received record.
-	FirstRecordAt utctime.UTCTime `json:"firstRecordAt" validate:"required"`
+	FirstRecordAt utctime.UTCTime `json:"firstRecordAt"`
 	// LastRecordAt contains the timestamp of the last received record.
-	LastRecordAt utctime.UTCTime `json:"lastRecordAt" validate:"required"`
+	LastRecordAt utctime.UTCTime `json:"lastRecordAt"`
 	// RecordsCount is count of received records.
 	RecordsCount uint64 `json:"recordsCount"`
 	// UncompressedSize is data size before compression in the local storage.
