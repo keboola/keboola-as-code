@@ -17,6 +17,10 @@ func (v UTCTime) String() string {
 	return FormatTime(time.Time(v))
 }
 
+func (v UTCTime) Add(d time.Duration) UTCTime {
+	return From(time.Time(v).Add(d))
+}
+
 func (v UTCTime) IsZero() bool {
 	return time.Time(v).IsZero()
 }
