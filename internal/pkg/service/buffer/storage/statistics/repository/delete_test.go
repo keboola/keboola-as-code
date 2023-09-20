@@ -1,0 +1,507 @@
+package repository_test
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+)
+
+// TestRepository_DeleteOp_LevelLocalAndStaging tests deletion
+// of the statistics on the storage.LevelLocal and storage.LevelStaging.
+//
+// Statistics are permanently deleted without rollup to the higher level,
+// because the data are lost, they did not arrive to the storage.LevelTarget.
+func TestRepository_DeleteOp_LevelLocalAndStaging(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
+	client := d.EtcdClient()
+	repo := repository.New(d)
+
+	// Create records
+	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
+	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
+	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
+	value := statistics.Value{
+		FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+		LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+		RecordsCount:     1,
+		UncompressedSize: 1,
+		CompressedSize:   1,
+	}
+	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+		{SliceKey: sliceKey1, Value: value},
+		{SliceKey: sliceKey2, Value: value},
+		{SliceKey: sliceKey3, Value: value},
+	}))
+
+	// Move statistics for slices 2 and 3 to the storage.LevelStaging
+	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelStaging).Do(ctx, client))
+
+	// Check initial state
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+
+<<<<<
+storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+
+<<<<<
+storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+`)
+
+	// Delete slice 2 statistics
+	assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx, client))
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+
+<<<<<
+storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+`)
+
+	// Delete file statistics
+	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx, client))
+	etcdhelper.AssertKVsString(t, client, ``)
+}
+
+// TestRepository_DeleteOp_LevelTarget_Sum tests that statistics of data in storage.LevelTarget
+// are rolled up to the parent object sum when the object is deleted.
+func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
+	client := d.EtcdClient()
+
+	repo := repository.New(d)
+
+	// Create records
+	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
+	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
+	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
+	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+		{
+			SliceKey: sliceKey1,
+			Value: statistics.Value{
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+			},
+		},
+		{
+			SliceKey: sliceKey2,
+			Value: statistics.Value{
+				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				RecordsCount:     10,
+				UncompressedSize: 10,
+				CompressedSize:   10,
+			},
+		},
+		{
+			SliceKey: sliceKey3,
+			Value: statistics.Value{
+				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+				RecordsCount:     100,
+				UncompressedSize: 100,
+				CompressedSize:   100,
+			},
+		},
+	}))
+
+	// Move statistics to the target level
+	assert.NoError(t, repo.MoveOp(sliceKey1, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
+
+	// Check initial state
+	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.FileStats(ctx, sliceKey1.FileKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.SliceStats(ctx, sliceKey1); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+			RecordsCount:     1,
+			UncompressedSize: 1,
+			CompressedSize:   1,
+		}, stats.Total)
+	}
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T02:00:00.000Z",
+  "lastRecordAt": "2000-01-01T03:00:00.000Z",
+  "recordsCount": 10,
+  "uncompressedSize": "10B",
+  "compressedSize": "10B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T03:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 100,
+  "uncompressedSize": "100B",
+  "compressedSize": "100B"
+}
+>>>>>
+`)
+
+	// Delete slice 1 statistics
+	assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx, client))
+	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.FileStats(ctx, sliceKey1.FileKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/_sum
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T02:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T02:00:00.000Z",
+  "lastRecordAt": "2000-01-01T03:00:00.000Z",
+  "recordsCount": 10,
+  "uncompressedSize": "10B",
+  "compressedSize": "10B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T03:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 100,
+  "uncompressedSize": "100B",
+  "compressedSize": "100B"
+}
+>>>>>
+`)
+
+	// Delete slice 3 statistics
+	assert.NoError(t, repo.DeleteOp(sliceKey3).Do(ctx, client))
+	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.FileStats(ctx, sliceKey1.FileKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/_sum
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 101,
+  "uncompressedSize": "101B",
+  "compressedSize": "101B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+-----
+{
+  "firstRecordAt": "2000-01-01T02:00:00.000Z",
+  "lastRecordAt": "2000-01-01T03:00:00.000Z",
+  "recordsCount": 10,
+  "uncompressedSize": "10B",
+  "compressedSize": "10B"
+}
+>>>>>
+`)
+
+	// Delete file
+	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx, client))
+	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/target/123/my-receiver/my-export/_sum
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 111,
+  "uncompressedSize": "111B",
+  "compressedSize": "111B"
+}
+>>>>>
+`)
+
+	// Delete export
+	assert.NoError(t, repo.DeleteOp(sliceKey1.ExportKey).Do(ctx, client))
+	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/target/123/my-receiver/_sum
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 111,
+  "uncompressedSize": "111B",
+  "compressedSize": "111B"
+}
+>>>>>
+`)
+
+	// Delete receiver
+	assert.NoError(t, repo.DeleteOp(sliceKey1.ReceiverKey).Do(ctx, client))
+	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
+		assert.Equal(t, statistics.Value{
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     111,
+			UncompressedSize: 111,
+			CompressedSize:   111,
+		}, stats.Total)
+	}
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/stats/target/123/_sum
+-----
+{
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 111,
+  "uncompressedSize": "111B",
+  "compressedSize": "111B"
+}
+>>>>>
+`)
+}
