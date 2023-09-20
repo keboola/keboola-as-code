@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"sync"
-
-	etcd "go.etcd.io/etcd/client/v3"
-	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	etcd "go.etcd.io/etcd/client/v3"
 )
 
 const (
@@ -37,7 +34,7 @@ type repositoryDeps interface {
 
 func NewRepository(provider *AtomicProvider, d repositoryDeps) *Repository {
 	return &Repository{
-		atomicProvider: provider,
+		atomicProvider: NewAtomicProvider(d),
 		telemetry:      d.Telemetry(),
 		client:         d.EtcdClient(),
 		schema:         newSchema(d.EtcdSerde()),
@@ -104,51 +101,4 @@ func (r *Repository) RollupImportedOnCleanupOp(fileKey storage.FileKey) *op.Atom
 			// Delete file stats
 			return fileStatsPfx.DeleteAll()
 		})
-}
-
-func (r *Repository) Put(ctx context.Context, stats []PerSlice) (err error) {
-	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.storage.statistics.Repository.Put")
-	defer span.End(&err)
-
-	var currentTxn *op.TxnOp
-	var allTxn []*op.TxnOp
-	addTxn := func() {
-		currentTxn = op.NewTxnOp()
-		allTxn = append(allTxn, currentTxn)
-	}
-
-	// Merge multiple put operations into one transaction
-	i := 0
-	for _, v := range stats {
-		if i == 0 || i >= putMaxStatsPerTxn {
-			i = 0
-			addTxn()
-		}
-		currentTxn.Then(r.schema.InLevel(storage.LevelLocal).InSlice(v.SliceKey).Put(v.Value))
-		i++
-	}
-
-	// Trace records and transactions count
-	span.SetAttributes(
-		attribute.Int("statistics.put.records_count", len(stats)),
-		attribute.Int("statistics.put.txn_count", len(allTxn)),
-	)
-
-	// Run transactions in parallel
-	wg := &sync.WaitGroup{}
-	errs := errors.NewMultiError()
-	for _, txn := range allTxn {
-		txn := txn
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if _, err := txn.Do(ctx, r.client); err != nil {
-				errs.Append(err)
-			}
-		}()
-	}
-
-	// Wait for all transactions
-	wg.Wait()
-	return errs.ErrorOrNil()
 }
