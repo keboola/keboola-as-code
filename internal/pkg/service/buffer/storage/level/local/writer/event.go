@@ -14,9 +14,9 @@ type EventWriter struct {
 
 // Events provides listening to the writer lifecycle.
 type Events struct {
-	parent           *Events
-	onWriterCreation []func(w Writer) error
-	onWriterClose    []func(w Writer, closeErr error) error
+	parent        *Events
+	onWriterOpen  []func(w Writer) error
+	onWriterClose []func(w Writer, closeErr error) error
 }
 
 // NewEventWriter wraps the Writer to the EventWriter and dispatch "open" event.
@@ -57,7 +57,7 @@ func (w *EventWriter) Unwrap() Writer {
 
 // OnWriterOpen registers a callback that is invoked in the LIFO order when a new writer is created.
 func (e *Events) OnWriterOpen(fn func(Writer) error) {
-	e.onWriterCreation = append(e.onWriterCreation, fn)
+	e.onWriterOpen = append(e.onWriterOpen, fn)
 }
 
 // OnWriterClose registers a callback that is invoked in the LIFO order when a writer is closed.
@@ -76,7 +76,7 @@ func (e *Events) dispatchOnWriterOpen(w Writer) error {
 	// Invoke listeners in the LIFO order
 	node := e
 	for node != nil {
-		listeners := node.onWriterCreation
+		listeners := node.onWriterOpen
 		for i := len(listeners) - 1; i >= 0; i-- {
 			if err := listeners[i](w); err != nil {
 				errs.Append(err)
