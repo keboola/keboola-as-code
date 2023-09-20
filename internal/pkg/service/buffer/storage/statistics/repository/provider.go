@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Provider interface {
@@ -40,20 +39,4 @@ func (v *getters) FileStats(ctx context.Context, k storage.FileKey) (Aggregated,
 
 func (v *getters) SliceStats(ctx context.Context, k storage.SliceKey) (Aggregated, error) {
 	return v.getStatsFn(ctx, k)
-}
-
-func aggregate(level storage.Level, partial Value, out *Aggregated) {
-	switch level {
-	case storage.LevelLocal:
-		out.Local = out.Local.Add(partial)
-		out.Total = out.Total.Add(partial)
-	case storage.LevelStaging:
-		out.Staging = out.Staging.Add(partial)
-		out.Total = out.Total.Add(partial)
-	case storage.LevelTarget:
-		out.Target = out.Target.Add(partial)
-		out.Total = out.Total.Add(partial)
-	default:
-		panic(errors.Errorf(`unexpected statistics level "%v"`, level))
-	}
 }
