@@ -11,7 +11,7 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
+	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -26,7 +26,7 @@ const (
 type Checker struct {
 	clock         clock.Clock
 	config        config.APIConfig
-	cachedL2Stats *statistics.L2CacheProvider
+	cachedL2Stats *statsCache.L2
 
 	// nextLogAt prevents errors from flooding the log
 	nextLogAtLock *sync.RWMutex
@@ -36,7 +36,7 @@ type Checker struct {
 type dependencies interface {
 	APIConfig() config.APIConfig
 	Clock() clock.Clock
-	StatisticsL2Cache() *statistics.L2CacheProvider
+	StatisticsL2Cache() *statsCache.L2
 }
 
 func New(d dependencies) *Checker {
@@ -56,10 +56,10 @@ func (c *Checker) Check(ctx context.Context, k key.ReceiverKey) error {
 		return err
 	}
 
-	buffered := stats.Local.RecordsSize
+	buffered := stats.Local.CompressedSize
 	if limit := c.config.ReceiverBufferSize; buffered > limit {
 		return commonErrors.NewInsufficientStorageError(c.shouldLogError(k), errors.Errorf(
-			`no free space in the buffer: receiver "%s" has "%s" buffered for upload, limit is "%s"`,
+			`no free space in the buffer: receiver "%s" has "%s" of compressed data buffered for upload, limit is "%s"`,
 			k.ReceiverID, buffered.HumanReadable(), limit.HumanReadable(),
 		))
 	}
