@@ -8,5 +8,5 @@ import (
 )
 
 func (r *Repository) GetAllAndWatch(ctx context.Context) *etcdop.RestartableWatchStreamT[statistics.Value] {
-	return r.Schema().GetAllAndWatch(ctx, r.client)
+	return r.schema.GetAllAndWatch(ctx, r.client)
 }
