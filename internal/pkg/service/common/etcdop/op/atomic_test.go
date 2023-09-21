@@ -44,12 +44,13 @@ func TestAtomicUpdate(t *testing.T) {
 	var beforeUpdate func() (clear bool)
 	var valueFromGetPhase string
 	atomicOp := op.Atomic()
+	atomicOp.ReadOp(nil)
+	atomicOp.ReadOp(key1.Get().WithOnResult(func(kv *op.KeyValue) {
+		valueFromGetPhase = string(kv.Value)
+	}))
 	atomicOp.Read(func() op.Op {
 		return op.MergeToTxn(
 			key1.Get(),
-			key1.Get().WithOnResult(func(kv *op.KeyValue) {
-				valueFromGetPhase = string(kv.Value)
-			}),
 			key2.Delete(),
 			key3.Put("value"),
 			op.NewTxnOp().
@@ -74,6 +75,8 @@ func TestAtomicUpdate(t *testing.T) {
 		// Use a value from the GET phase in the UPDATE phase
 		return key1.Put("<" + valueFromGetPhase + ">")
 	})
+	atomicOp.WriteOp(nil)
+	atomicOp.WriteOp(key8.Put("value"))
 
 	// 1. No modification during update, DoWithoutRetry, success
 	ok, err := atomicOp.DoWithoutRetry(ctx, client)
