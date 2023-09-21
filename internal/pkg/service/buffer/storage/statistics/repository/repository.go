@@ -70,23 +70,3 @@ func New(d dependencies) *Repository {
 func (r *Repository) Schema() SchemaRoot {
 	return r.schema
 }
-
-func (r *Repository) MoveOp(ctx context.Context, sliceKey storage.SliceKey, from, to storage.Level, modifyStatsFn func(*Value)) (op.Op, error) {
-	if from == to {
-		panic(errors.Errorf(`from and to categories are same and equal to "%s"`, to))
-	}
-
-	fromKey := r.schema.InLevel(from).InSlice(sliceKey)
-	toKey := r.schema.InLevel(to).InSlice(sliceKey)
-
-	stats, err := fromKey.Get().Do(ctx, r.client)
-	if err != nil {
-		return nil, err
-	}
-
-	if modifyStatsFn != nil {
-		modifyStatsFn(&stats.Value)
-	}
-
-	return op.MergeToTxn(fromKey.Delete(), toKey.Put(stats.Value)), nil
-}
