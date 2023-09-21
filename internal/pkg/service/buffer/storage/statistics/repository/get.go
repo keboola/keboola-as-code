@@ -64,7 +64,7 @@ func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out
 		level := level
 
 		// Get stats prefix for the slice state
-		pfx := r.Schema().InLevel(level).InObject(objectKey)
+		pfx := r.schema.InLevel(level).InObject(objectKey)
 
 		// Sum
 		txn.Then(pfx.GetAll().ForEachOp(func(v statistics.Value, header *iterator.Header) error {

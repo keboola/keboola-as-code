@@ -22,33 +22,33 @@ const (
 
 type prefix = PrefixT[statistics.Value]
 
-type SchemaRoot struct {
+type schemaRoot struct {
 	prefix
 }
 
-type SchemaInLevel struct {
+type schemaInLevel struct {
 	prefix
 }
 
-type SchemaInObject struct {
+type schemaInObject struct {
 	prefix
 }
 
-func newSchema(s *serde.Serde) SchemaRoot {
-	return SchemaRoot{prefix: NewTypedPrefix[statistics.Value]("storage/stats", s)}
+func newSchema(s *serde.Serde) schemaRoot {
+	return schemaRoot{prefix: NewTypedPrefix[statistics.Value]("storage/stats", s)}
 }
 
-func (s SchemaRoot) InLevel(level storage.Level) SchemaInLevel {
+func (s schemaRoot) InLevel(level storage.Level) schemaInLevel {
 	switch level {
 	case storage.LevelLocal, storage.LevelStaging, storage.LevelTarget:
-		return SchemaInLevel{prefix: s.prefix.Add(level.String())}
+		return schemaInLevel{prefix: s.prefix.Add(level.String())}
 	default:
 		panic(errors.Errorf(`unexpected storage level "%v"`, level))
 	}
 }
 
-// InParentOf returns prefix of the parent object, it is used as SchemaInLevel.InParentOf(...).Sum().
-func (v SchemaInLevel) InParentOf(k fmt.Stringer) SchemaInObject {
+// InParentOf returns prefix of the parent object, it is used as schemaInLevel.InParentOf(...).Sum().
+func (v schemaInLevel) InParentOf(k fmt.Stringer) schemaInObject {
 	switch k := k.(type) {
 	case storeKey.ReceiverKey:
 		return v.inObject(k.ProjectID)
@@ -63,7 +63,7 @@ func (v SchemaInLevel) InParentOf(k fmt.Stringer) SchemaInObject {
 	}
 }
 
-func (v SchemaInLevel) InObject(k fmt.Stringer) SchemaInObject {
+func (v schemaInLevel) InObject(k fmt.Stringer) schemaInObject {
 	switch k.(type) {
 	case keboola.ProjectID, storeKey.ReceiverKey, storeKey.ExportKey, storage.FileKey, storage.SliceKey:
 		return v.inObject(k)
@@ -72,30 +72,30 @@ func (v SchemaInLevel) InObject(k fmt.Stringer) SchemaInObject {
 	}
 }
 
-func (v SchemaInLevel) InProject(projectID keboola.ProjectID) SchemaInObject {
+func (v schemaInLevel) InProject(projectID keboola.ProjectID) schemaInObject {
 	return v.inObject(projectID)
 }
 
-func (v SchemaInLevel) InReceiver(k storeKey.ReceiverKey) SchemaInObject {
+func (v schemaInLevel) InReceiver(k storeKey.ReceiverKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v SchemaInLevel) InExport(k storeKey.ExportKey) SchemaInObject {
+func (v schemaInLevel) InExport(k storeKey.ExportKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v SchemaInLevel) InFile(k storage.FileKey) SchemaInObject {
+func (v schemaInLevel) InFile(k storage.FileKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v SchemaInLevel) InSlice(k storage.SliceKey) KeyT[statistics.Value] {
+func (v schemaInLevel) InSlice(k storage.SliceKey) KeyT[statistics.Value] {
 	return v.inObject(k).Key(sliceValueKey)
 }
 
-func (v SchemaInLevel) inObject(objectKey fmt.Stringer) SchemaInObject {
-	return SchemaInObject{prefix: v.prefix.Add(objectKey.String())}
+func (v schemaInLevel) inObject(objectKey fmt.Stringer) schemaInObject {
+	return schemaInObject{prefix: v.prefix.Add(objectKey.String())}
 }
 
-func (v SchemaInObject) Sum() KeyT[statistics.Value] {
+func (v schemaInObject) Sum() KeyT[statistics.Value] {
 	return v.prefix.Key(rollupSumKey)
 }

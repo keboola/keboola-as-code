@@ -83,7 +83,7 @@ func (c *L1) aggregateWithRev(_ context.Context, objectKey fmt.Stringer) (out st
 	c.cache.Atomic(func(t prefixtree.TreeReadOnly[statistics.Value]) {
 		for _, level := range storage.AllLevels() {
 			t.WalkPrefix(
-				c.repository.Schema().InLevel(level).InObject(objectKey).Prefix(),
+				c.repository.ObjectPrefix(level, objectKey),
 				func(_ string, v statistics.Value) bool {
 					aggregate.Aggregate(level, v, &out)
 					return false
