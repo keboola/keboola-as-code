@@ -1,4 +1,4 @@
-package statistics
+package repository
 
 import (
 	"context"
