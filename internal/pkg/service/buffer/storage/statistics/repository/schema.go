@@ -5,6 +5,8 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -12,74 +14,88 @@ import (
 )
 
 const (
-	// cleanupSumKey contains sum of statistics of all old slices deleted by cleanup.
-	cleanupSumKey = "_cleanup_sum"
+	// sliceValueKey contains a slice statistics, it is the lowest level.
+	sliceValueKey = "value"
+	// rollupSumKey contains the sum of all statistics from the object children that were deleted.
+	rollupSumKey = "_sum"
 )
 
-type prefix = PrefixT[Value]
+type prefix = PrefixT[statistics.Value]
 
-type schemaRoot struct {
+type SchemaRoot struct {
 	prefix
 }
 
-type schemaInCategory struct {
+type SchemaInLevel struct {
 	prefix
-	category Category
 }
 
-type schemaInExport struct {
+type SchemaInObject struct {
 	prefix
-	category Category
 }
 
-type schemaInSlice struct {
-	prefix
-	category Category
+func newSchema(s *serde.Serde) SchemaRoot {
+	return SchemaRoot{prefix: NewTypedPrefix[statistics.Value]("storage/stats", s)}
 }
 
-func newSchema(s *serde.Serde) schemaRoot {
-	return schemaRoot{prefix: NewTypedPrefix[Value]("stats", s)}
-}
-
-func (s schemaRoot) InCategory(category Category) schemaInCategory {
-	return schemaInCategory{prefix: s.prefix.Add(category.String())}
-}
-
-func (v schemaInCategory) InObject(objectKey fmt.Stringer) PrefixT[Value] {
-	return v.prefix.Add(objectKey.String()).PrefixT()
-}
-
-func (v schemaInCategory) InProject(projectID keboola.ProjectID) PrefixT[Value] {
-	return v.InObject(projectID)
-}
-
-func (v schemaInCategory) InReceiver(k storeKey.ReceiverKey) PrefixT[Value] {
-	return v.InObject(k)
-}
-
-func (v schemaInCategory) InExport(k storeKey.ExportKey) schemaInExport {
-	return schemaInExport{category: v.category, prefix: v.prefix.Add(k.String())}
-}
-
-func (v schemaInCategory) InFile(k storeKey.FileKey) PrefixT[Value] {
-	return v.InObject(k)
-}
-
-func (v schemaInCategory) InSlice(k storeKey.SliceKey) schemaInSlice {
-	return schemaInSlice{category: v.category, prefix: v.prefix.Add(k.String())}
-}
-
-func (v schemaInExport) CleanupSum() KeyT[Value] {
-	return v.prefix.Key(cleanupSumKey)
-}
-
-func (v schemaInSlice) PerNode(nodeID string) KeyT[Value] {
-	if nodeID == "" {
-		panic(errors.New("node ID cannot be empty"))
+func (s SchemaRoot) InLevel(level storage.Level) SchemaInLevel {
+	switch level {
+	case storage.LevelLocal, storage.LevelStaging, storage.LevelTarget:
+		return SchemaInLevel{prefix: s.prefix.Add(level.String())}
+	default:
+		panic(errors.Errorf(`unexpected storage level "%v"`, level))
 	}
-	return v.prefix.Key(nodeID)
 }
 
-func (v schemaInSlice) NodesSum() KeyT[Value] {
-	return v.prefix.Key(nodesSumKey)
+// InParentOf returns prefix of the parent object, it is used as SchemaInLevel.InParentOf(...).Sum().
+func (v SchemaInLevel) InParentOf(k fmt.Stringer) SchemaInObject {
+	switch k := k.(type) {
+	case storeKey.ReceiverKey:
+		return v.inObject(k.ProjectID)
+	case storeKey.ExportKey:
+		return v.inObject(k.ReceiverKey)
+	case storage.FileKey:
+		return v.inObject(k.ExportKey)
+	case storage.SliceKey:
+		return v.inObject(k.FileKey)
+	default:
+		panic(errors.Errorf(`unexpected object key "%T"`, k))
+	}
+}
+
+func (v SchemaInLevel) InObject(k fmt.Stringer) SchemaInObject {
+	switch k.(type) {
+	case keboola.ProjectID, storeKey.ReceiverKey, storeKey.ExportKey, storage.FileKey, storage.SliceKey:
+		return v.inObject(k)
+	default:
+		panic(errors.Errorf(`unexpected object key "%T"`, k))
+	}
+}
+
+func (v SchemaInLevel) InProject(projectID keboola.ProjectID) SchemaInObject {
+	return v.inObject(projectID)
+}
+
+func (v SchemaInLevel) InReceiver(k storeKey.ReceiverKey) SchemaInObject {
+	return v.inObject(k)
+}
+
+func (v SchemaInLevel) InExport(k storeKey.ExportKey) SchemaInObject {
+	return v.inObject(k)
+}
+
+func (v SchemaInLevel) InFile(k storage.FileKey) SchemaInObject {
+	return v.inObject(k)
+}
+
+func (v SchemaInLevel) InSlice(k storage.SliceKey) KeyT[statistics.Value] {
+	return v.inObject(k).Key(sliceValueKey)
+}
+
+func (v SchemaInLevel) inObject(objectKey fmt.Stringer) SchemaInObject {
+	return SchemaInObject{prefix: v.prefix.Add(objectKey.String())}
+}
+
+func (v SchemaInObject) Sum() KeyT[statistics.Value] {
+	return v.prefix.Key(rollupSumKey)
 }
