@@ -48,6 +48,15 @@ func (v *AtomicOp) AddFrom(ops ...*AtomicOp) *AtomicOp {
 	return v
 }
 
+func (v *AtomicOp) ReadOp(ops ...Op) *AtomicOp {
+	for _, op := range ops {
+		v.Read(func() Op {
+			return op
+		})
+	}
+	return v
+}
+
 func (v *AtomicOp) Read(factories ...func() Op) *AtomicOp {
 	for _, fn := range factories {
 		v.ReadOrErr(func() (Op, error) {
@@ -66,6 +75,15 @@ func (v *AtomicOp) Write(factories ...func() Op) *AtomicOp {
 	for _, fn := range factories {
 		v.WriteOrErr(func() (Op, error) {
 			return fn(), nil
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp) WriteOp(ops ...Op) *AtomicOp {
+	for _, op := range ops {
+		v.Write(func() Op {
+			return op
 		})
 	}
 	return v
@@ -116,7 +134,9 @@ func (v *AtomicOp) DoWithoutRetry(ctx context.Context, client etcd.KV, opts ...O
 		if err != nil {
 			return false, err
 		}
-		getOps = append(getOps, op)
+		if op != nil {
+			getOps = append(getOps, op)
+		}
 	}
 
 	// Run GET operation, track used keys/prefixes
@@ -133,7 +153,9 @@ func (v *AtomicOp) DoWithoutRetry(ctx context.Context, client etcd.KV, opts ...O
 		if err != nil {
 			return false, err
 		}
-		updateOps = append(updateOps, op)
+		if op != nil {
+			updateOps = append(updateOps, op)
+		}
 	}
 
 	// Create IF part of the transaction
