@@ -90,6 +90,9 @@ func TestFile_Validation(t *testing.T) {
 		Dir:         "my-dir",
 		Compression: compression.DefaultConfig(),
 		Sync:        disksync.DefaultConfig(),
+		Volumes: local.VolumesAssignment{
+			PerPod: 1,
+		},
 	}
 	stagingStorage := staging.File{
 		Compression:                 compression.DefaultConfig(),
@@ -117,6 +120,7 @@ func TestFile_Validation(t *testing.T) {
 - "type" is a required field
 - "state" is a required field
 - "columns" is a required field
+
 `,
 			Value: File{
 				LocalStorage:   localStorage,
