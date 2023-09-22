@@ -365,38 +365,7 @@ func createVolumes(t *testing.T, volumesPath string, volumes []string) {
 
 func newStorageFile(t *testing.T, openedAt utctime.UTCTime) *storage.File {
 	t.Helper()
-	f := &storage.File{
-		FileKey: storage.FileKey{
-			ExportKey: key.ExportKey{
-				ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"},
-				ExportID:    "my-export",
-			},
-			FileID: storage.FileID{
-				OpenedAt: openedAt,
-			},
-		},
-		Type:    storage.FileTypeCSV,
-		State:   storage.FileWriting,
-		Columns: column.Columns{column.Body{}},
-		LocalStorage: local.File{
-			Dir:         "my-dir",
-			Compression: compression.DefaultNoneConfig(),
-			Sync:        disksync.DefaultConfig(),
-			Volumes: local.VolumesAssignment{
-				PerPod:         1,
-				PreferredTypes: []string{},
-			},
-		},
-		StagingStorage: staging.File{
-			Compression:                 compression.DefaultNoneConfig(),
-			UploadCredentials:           &keboola.FileUploadCredentials{},
-			UploadCredentialsExpiration: utctime.From(openedAt.Time().Add(time.Hour)),
-		},
-		TargetStorage: target.File{
-			TableID:    keboola.MustParseTableID("in.bucket.table"),
-			StorageJob: nil,
-		},
-	}
+	f := test.NewFileOpenedAt(openedAt.String())
 
 	// File must be valid
 	val := validator.New()
