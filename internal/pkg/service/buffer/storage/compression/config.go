@@ -13,7 +13,7 @@ const (
 	DefaultGZIPBlockSize = 256 * datasize.KB
 
 	DefaultZSTDLevel      = zstd.SpeedFastest // 1-4
-	DefaultZSDTWindowSize = 256 * datasize.KB
+	DefaultZSDTWindowSize = 1 * datasize.MB
 )
 
 // Config for compression writer and reader.
