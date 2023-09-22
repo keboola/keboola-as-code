@@ -166,28 +166,7 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *volume.Volume) *storage
 }
 
 func NewTestSlice(volume *volume.Volume) *storage.Slice {
-	openedAt := utctime.From(time.Now())
-	return &storage.Slice{
-		SliceKey: storage.SliceKey{
-			FileKey: storage.FileKey{
-				ExportKey: key.ExportKey{
-					ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"},
-					ExportID:    "my-export",
-				},
-				FileID: storage.FileID{OpenedAt: openedAt},
-			},
-			SliceID: storage.SliceID{VolumeID: volume.ID(), OpenedAt: openedAt},
-		},
-		State: storage.SliceWriting,
-		LocalStorage: local.Slice{
-			Dir:         "dir",
-			Filename:    "slice",
-			Compression: compression.DefaultNoneConfig(),
-			Sync:        disksync.DefaultConfig(),
-		},
-		StagingStorage: staging.Slice{
-			Path:        "slice",
-			Compression: compression.DefaultNoneConfig(),
-		},
-	}
+	s := test.NewSlice()
+	s.VolumeID = volume.ID()
+	return s
 }
