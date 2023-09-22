@@ -66,6 +66,7 @@ func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) 
 		zstd.WithEncoderLevel(cfg.ZSTD.Level),
 		zstd.WithEncoderConcurrency(cfg.ZSTD.Concurrency),
 		zstd.WithWindowSize(nextPowOf2(int(cfg.ZSTD.WindowSize.Bytes()))),
+		zstd.WithLowerEncoderMem(false),
 	)
 }
 
