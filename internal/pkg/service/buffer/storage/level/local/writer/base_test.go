@@ -2,23 +2,18 @@ package writer
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -108,44 +103,7 @@ func TestBaseWriter_CloseError(t *testing.T) {
 func newTestSlice(tb testing.TB) *storage.Slice {
 	tb.Helper()
 
-	s := &storage.Slice{
-		SliceKey: storage.SliceKey{
-			FileKey: storage.FileKey{
-				ExportKey: key.ExportKey{
-					ReceiverKey: key.ReceiverKey{
-						ProjectID:  123,
-						ReceiverID: "my-receiver",
-					},
-					ExportID: "my-export",
-				},
-				FileID: storage.FileID{
-					OpenedAt: utctime.MustParse("2000-01-01T19:00:00.000Z"),
-				},
-			},
-			SliceID: storage.SliceID{
-				VolumeID: "my-volume",
-				OpenedAt: utctime.MustParse("2000-01-01T19:00:00.000Z"),
-			},
-		},
-		Type:  storage.FileTypeCSV,
-		State: storage.SliceWriting,
-		Columns: column.Columns{
-			column.ID{},
-			column.Headers{},
-			column.Body{},
-		},
-		LocalStorage: local.Slice{
-			Dir:           "my-dir",
-			Filename:      "slice.csv",
-			AllocateSpace: 10 * datasize.KB,
-			Compression:   compression.DefaultNoneConfig(),
-			Sync:          disksync.DefaultConfig(),
-		},
-		StagingStorage: staging.Slice{
-			Path:        "slice.csv",
-			Compression: compression.DefaultNoneConfig(),
-		},
-	}
+	s := test.NewSlice()
 
 	// Slice definition must be valid
 	val := validator.New()

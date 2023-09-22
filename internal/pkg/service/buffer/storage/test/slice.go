@@ -5,6 +5,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
@@ -17,23 +18,13 @@ func NewSliceKey() storage.SliceKey {
 	return NewSliceKeyOpenedAt("2000-01-01T20:00:00.000Z")
 }
 
-func NewSliceKeyOpenedAt(openedAt string) storage.SliceKey {
+func NewSliceKeyOpenedAt(openedAtStr string) storage.SliceKey {
+	openedAt := utctime.MustParse(openedAtStr)
 	return storage.SliceKey{
-		FileKey: storage.FileKey{
-			ExportKey: key.ExportKey{
-				ReceiverKey: key.ReceiverKey{
-					ProjectID:  123,
-					ReceiverID: "my-receiver",
-				},
-				ExportID: "my-export",
-			},
-			FileID: storage.FileID{
-				OpenedAt: utctime.MustParse("2000-01-01T19:00:00.000Z"),
-			},
-		},
+		FileKey: NewFileKeyOpenedAt("2000-01-01T19:00:00.000Z"),
 		SliceID: storage.SliceID{
 			VolumeID: "my-volume",
-			OpenedAt: utctime.MustParse(openedAt),
+			OpenedAt: openedAt,
 		},
 	}
 }
@@ -56,9 +47,7 @@ func NewSliceOpenedAt(openedAt string) *storage.Slice {
 			Dir:           openedAt,
 			Filename:      "slice.csv",
 			AllocateSpace: 10 * datasize.KB,
-			Compression: compression.Config{
-				Type: compression.TypeNone,
-			},
+			Compression:   compression.DefaultNoneConfig(),
 			Sync: disksync.Config{
 				Mode:            disksync.ModeDisk,
 				Wait:            true,
@@ -69,10 +58,8 @@ func NewSliceOpenedAt(openedAt string) *storage.Slice {
 			},
 		},
 		StagingStorage: staging.Slice{
-			Path: "slice.csv",
-			Compression: compression.Config{
-				Type: compression.TypeNone,
-			},
+			Path:        "slice.csv",
+			Compression: compression.DefaultNoneConfig(),
 		},
 	}
 }

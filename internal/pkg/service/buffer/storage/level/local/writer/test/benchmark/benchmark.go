@@ -133,33 +133,14 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 func (wb *WriterBenchmark) newSlice(b *testing.B, volume *volume.Volume) *storage.Slice {
 	b.Helper()
 
-	openedAt := utctime.From(time.Now())
-	s := &storage.Slice{
-		SliceKey: storage.SliceKey{
-			FileKey: storage.FileKey{
-				ExportKey: key.ExportKey{
-					ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"},
-					ExportID:    "my-export",
-				},
-				FileID: storage.FileID{OpenedAt: openedAt},
-			},
-			SliceID: storage.SliceID{VolumeID: volume.ID(), OpenedAt: openedAt},
-		},
-		Type:    wb.FileType,
-		State:   storage.SliceWriting,
-		Columns: wb.Columns,
-		LocalStorage: local.Slice{
-			Dir:           openedAt.String(),
-			Filename:      "slice",
-			AllocateSpace: wb.Allocate,
-			Compression:   wb.Compression,
-			Sync:          wb.Sync,
-		},
-		StagingStorage: staging.Slice{
-			Path:        "slice",
-			Compression: wb.Compression,
-		},
-	}
+	s := test.NewSlice()
+	s.VolumeID = volume.ID()
+	s.Type = wb.FileType
+	s.Columns = wb.Columns
+	s.LocalStorage.AllocateSpace = wb.Allocate
+	s.LocalStorage.Compression = wb.Compression
+	s.LocalStorage.Sync = wb.Sync
+	s.StagingStorage.Compression = wb.Compression
 
 	// Slice definition must be valid
 	val := validator.New()
