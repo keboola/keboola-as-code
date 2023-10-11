@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -171,8 +171,8 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.API, start time.Tim
 			"recordsCount": params.Stats.RecordsCount,
 			"recordsSize":  params.Stats.RecordsSize.Bytes(),
 			"bodySize":     params.Stats.BodySize.Bytes(),
-			"fileSize":     params.Stats.FileSize.Bytes(),
-			"fileGZipSize": params.Stats.FileGZipSize.Bytes(),
+			"fileSize":     params.Stats.UncompressedSize.Bytes(),
+			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
 		}
 	}
 

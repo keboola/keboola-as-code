@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -110,7 +110,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
 
 	// Add received stats for the cleaned-up slice
-	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
@@ -122,7 +122,7 @@ func TestCleanup(t *testing.T) {
 			},
 		},
 	}))
-	moveOp, err := statsRepo.MoveOp(ctx, sliceKey1, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+	moveOp, err := statsRepo.MoveOp(ctx, sliceKey1, statistics.Local, statistics.Staging, func(value *statistics.Value) {
 		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
 			FileSize:     1 * datasize.KB,
@@ -164,7 +164,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
 
 	// Add received stats for the ignored slice
-	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey2,
 			Value: statistics.Value{
@@ -176,7 +176,7 @@ func TestCleanup(t *testing.T) {
 			},
 		},
 	}))
-	moveOp, err = statsRepo.MoveOp(ctx, sliceKey2, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey2, statistics.Local, statistics.Staging, func(value *statistics.Value) {
 		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
 			FileSize:     1 * datasize.KB,
@@ -219,7 +219,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey3).Put("rec").Do(ctx, client))
 
 	// Add received stats for the ignored slice
-	assert.NoError(t, statsRepo.Insert(ctx, "node-123", []statistics.PerAPINode{
+	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey3,
 			Value: statistics.Value{
@@ -231,7 +231,7 @@ func TestCleanup(t *testing.T) {
 			},
 		},
 	}))
-	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Buffered, statistics.Uploaded, func(value *statistics.Value) {
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Local, statistics.Staging, func(value *statistics.Value) {
 		*value = value.WithAfterUpload(statistics.AfterUpload{
 			RecordsCount: 456,
 			FileSize:     1 * datasize.KB,
@@ -240,7 +240,7 @@ func TestCleanup(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NoError(t, moveOp.DoOrErr(ctx, client))
-	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Uploaded, statistics.Imported, nil)
+	moveOp, err = statsRepo.MoveOp(ctx, sliceKey3, statistics.Staging, statistics.Target, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, moveOp.DoOrErr(ctx, client))
 	// -----------------------------------------------------------------------------------------------------------------
