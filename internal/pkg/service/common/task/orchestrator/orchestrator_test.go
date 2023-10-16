@@ -2,18 +2,17 @@ package orchestrator_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -26,16 +25,9 @@ import (
 )
 
 type testResource struct {
-	ReceiverKey key.ReceiverKey
-	ID          string
-}
-
-func (v testResource) GetReceiverKey() key.ReceiverKey {
-	return v.ReceiverKey
-}
-
-func (v testResource) String() string {
-	return v.ReceiverKey.String() + "/" + v.ID
+	ProjectID       keboola.ProjectID
+	DistributionKey string
+	ID              string
 }
 
 func TestOrchestrator(t *testing.T) {
@@ -63,7 +55,6 @@ func TestOrchestrator(t *testing.T) {
 	node1 := orchestrator.NewNode(d1)
 	node2 := orchestrator.NewNode(d2)
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -74,18 +65,17 @@ func TestOrchestrator(t *testing.T) {
 			RestartInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
-			return event.Value.ReceiverKey.String()
+			return event.Value.DistributionKey
 		},
 		Lock: func(event etcdop.WatchEventT[testResource]) string {
 			// Define a custom lock name
-			resource := event.Value
-			return fmt.Sprintf(`%s/%s`, resource.ReceiverKey.String(), resource.ID)
+			return "custom-lock"
 		},
 		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
-				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
+				ProjectID: resource.ProjectID,
+				TaskID:    task.ID("my-prefix/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -104,7 +94,8 @@ func TestOrchestrator(t *testing.T) {
 	assert.NoError(t, <-node2.Start(config))
 
 	// Put some key to trigger the task
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID"}).Do(ctx, client))
+	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
+	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
 
 	// Wait for task on the node 2
 	assert.Eventually(t, func() bool {
@@ -125,12 +116,12 @@ func TestOrchestrator(t *testing.T) {
 
 	wildcards.Assert(t, `
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/ResourceID"
+[orchestrator][some.task]INFO  assigned "1000/my-prefix/some.task/ResourceID"
 [task][%s]INFO  started task
-[task][%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/ResourceID"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/custom-lock"
 [task][%s]INFO  message from the task
 [task][%s]INFO  task succeeded (%s): ResourceID
-[task][%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/ResourceID"
+[task][%s]DEBUG  lock released "runtime/lock/task/custom-lock"
 %A
 `, strhelper.FilterLines(`^\[orchestrator|task\]`, d2.DebugLogger().AllMessages()))
 
@@ -141,7 +132,7 @@ func TestOrchestrator(t *testing.T) {
 
 	wildcards.Assert(t, `
 %A
-[orchestrator][some.task]DEBUG  not assigned "1000/my-receiver/some.task/ResourceID", distribution key "1000/my-receiver"
+[orchestrator][some.task]DEBUG  not assigned "1000/my-prefix/some.task/ResourceID", distribution key "foo"
 %A
 `, strhelper.FilterLines(`^\[orchestrator|task\]`, d1.DebugLogger().AllMessages()))
 }
@@ -164,7 +155,6 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	)
 	node := orchestrator.NewNode(d)
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -175,13 +165,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 			RestartInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
-			return event.Value.ReceiverKey.String()
+			return event.Value.DistributionKey
 		},
 		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
-				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
+				ProjectID: resource.ProjectID,
+				TaskID:    task.ID("my-prefix/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -202,8 +192,10 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	}
 
 	assert.NoError(t, <-node.Start(config))
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "BadID"}).Do(ctx, client))
-	assert.NoError(t, pfx.Key("key2").Put(testResource{ReceiverKey: receiverKey, ID: "GoodID"}).Do(ctx, client))
+	v1 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "BadID"}
+	v2 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "GoodID"}
+	assert.NoError(t, pfx.Key("key1").Put(client, v1).Do(ctx).Err())
+	assert.NoError(t, pfx.Key("key2").Put(client, v2).Do(ctx).Err())
 	assert.Eventually(t, func() bool {
 		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -215,13 +207,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 
 	wildcards.Assert(t, `
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  skipped "1000/my-receiver/some.task/BadID", StartTaskIf condition evaluated as false
-[orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/GoodID"
-[task][1000/my-receiver/some.task/GoodID/%s]INFO  started task
-[task][1000/my-receiver/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/some.task/GoodID"
-[task][1000/my-receiver/some.task/GoodID/%s]INFO  message from the task
-[task][1000/my-receiver/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
-[task][1000/my-receiver/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/some.task/GoodID"
+[orchestrator][some.task]DEBUG  skipped "1000/my-prefix/some.task/BadID", StartTaskIf condition evaluated as false
+[orchestrator][some.task]INFO  assigned "1000/my-prefix/some.task/GoodID"
+[task][1000/my-prefix/some.task/GoodID/%s]INFO  started task
+[task][1000/my-prefix/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-prefix/some.task/GoodID"
+[task][1000/my-prefix/some.task/GoodID/%s]INFO  message from the task
+[task][1000/my-prefix/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
+[task][1000/my-prefix/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/1000/my-prefix/some.task/GoodID"
 %A
 `, strhelper.FilterLines(`^\[orchestrator|task\]`, d.DebugLogger().AllMessages()))
 }
@@ -247,7 +239,6 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	)
 	node := orchestrator.NewNode(d)
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -258,13 +249,13 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			RestartInterval: restartInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
-			return event.Value.ReceiverKey.String()
+			return event.Value.DistributionKey
 		},
 		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
-				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
+				ProjectID: resource.ProjectID,
+				TaskID:    task.ID("my-prefix/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -283,7 +274,8 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	assert.NoError(t, <-node.Start(config))
 
 	// Put some key to trigger the task
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID1"}).Do(ctx, client))
+	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
+	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
 	assert.Eventually(t, func() bool {
 		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -307,12 +299,12 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 
 	wildcards.Assert(t, `
 [orchestrator][some.task]DEBUG  restart
-[orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/ResourceID1"
-[task][1000/my-receiver/some.task/ResourceID1/%s]INFO  started task
-[task][1000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/some.task/ResourceID1"
-[task][1000/my-receiver/some.task/ResourceID1/%s]INFO  message from the task
-[task][1000/my-receiver/some.task/ResourceID1/%s]INFO  task succeeded (0s): ResourceID1
-[task][1000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/some.task/ResourceID1"
+[orchestrator][some.task]INFO  assigned "1000/my-prefix/some.task/ResourceID"
+[task][1000/my-prefix/some.task/ResourceID/%s]INFO  started task
+[task][1000/my-prefix/some.task/ResourceID/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-prefix/some.task/ResourceID"
+[task][1000/my-prefix/some.task/ResourceID/%s]INFO  message from the task
+[task][1000/my-prefix/some.task/ResourceID/%s]INFO  task succeeded (0s): ResourceID
+[task][1000/my-prefix/some.task/ResourceID/%s]DEBUG  lock released "runtime/lock/task/1000/my-prefix/some.task/ResourceID"
 %A
 `, d.DebugLogger().AllMessages())
 }
