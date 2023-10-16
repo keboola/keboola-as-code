@@ -117,7 +117,7 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	n.logger.Infof(`registering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
-	if err := key.Put(n.nodeID, etcd.WithLease(session.Lease())).Do(ctx, session.Client()); err != nil {
+	if err := key.Put(session.Client(), n.nodeID, etcd.WithLease(session.Lease())).Do(ctx).Err(); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
@@ -133,7 +133,7 @@ func (n *Node) unregister(timeout time.Duration) {
 	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
-	if _, err := key.Delete().Do(ctx, n.client); err != nil {
+	if err := key.Delete(n.client).Do(ctx).Err(); err != nil {
 		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
