@@ -99,26 +99,15 @@ func (v Prefix) GetOne(client etcd.KV, opts ...etcd.OpOption) op.GetOneOp {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-<<<<<<< HEAD
-		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValue, error) {
+		func(ctx context.Context, raw op.RawResponse) (*op.KeyValue, error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
-			count := len(r.Get().Kvs)
+			count := len(raw.Get().Kvs)
 			switch count {
 			case 0:
 				return nil, nil
 			case 1:
-				return r.Get().Kvs[0], nil
-			default:
-=======
-		func(ctx context.Context, raw op.RawResponse) (*op.KeyValue, error) {
-			// Not raw.Get.Count(), it returns the count of all records, regardless of the limit
-			count := len(raw.Get().Kvs)
-			if count == 0 {
-				return nil, nil
-			} else if count == 1 {
 				return raw.Get().Kvs[0], nil
-			} else {
->>>>>>> 686ba005a (Update Key and Prefix)
+			default:
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
 		},
@@ -149,24 +138,14 @@ func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-<<<<<<< HEAD
-		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
+		func(ctx context.Context, raw op.RawResponse) (*op.KeyValueT[T], error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
-			count := len(r.Get().Kvs)
+			count := len(raw.Get().Kvs)
 			switch count {
 			case 0:
 				return nil, nil
 			case 1:
-				kv := r.Get().Kvs[0]
-=======
-		func(ctx context.Context, raw op.RawResponse) (*op.KeyValueT[T], error) {
-			// Not raw.Get.Count(), it returns the count of all records, regardless of the limit
-			count := len(raw.Get().Kvs)
-			if count == 0 {
-				return nil, nil
-			} else if count == 1 {
 				kv := raw.Get().Kvs[0]
->>>>>>> 686ba005a (Update Key and Prefix)
 				target := new(T)
 				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))

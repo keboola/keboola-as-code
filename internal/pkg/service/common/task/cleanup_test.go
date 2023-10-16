@@ -57,7 +57,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "err",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey1.String()).Put(task1).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey1.String()).Put(client, task1).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
@@ -74,7 +74,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(task2).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(client, task2).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
@@ -91,7 +91,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(task3).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
 
 	// Run the cleanup
 	tel.Reset()

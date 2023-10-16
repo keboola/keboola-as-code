@@ -219,13 +219,14 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
-		n.taskEtcdPrefix.Key(taskKey.String()).Put(task),
-		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
+		n.client,
+		n.taskEtcdPrefix.Key(taskKey.String()).Put(n.client, task),
+		lock.PutIfNotExists(n.client, task.Node, etcd.WithLease(session.Lease())),
 	)
-	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil { // nolint: contextcheck
+	if r := createTaskOp.Do(n.tasksCtx); r.Err() != nil { // nolint: contextcheck
 		unlock()
-		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
-	} else if !resp.Succeeded {
+		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, r.Err())
+	} else if !r.Succeeded() {
 		unlock()
 		logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil, nil
@@ -311,14 +312,16 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 
 	// Update task and release lock in etcd
 	finalizeTaskOp := op.MergeToTxn(
-		n.taskEtcdPrefix.Key(task.Key.String()).Put(task),
-		task.Lock.DeleteIfExists(),
+		n.client,
+		n.taskEtcdPrefix.Key(task.Key.String()).Put(n.client, task),
+		task.Lock.DeleteIfExists(n.client),
 	)
-	if resp, err := finalizeTaskOp.Do(ctx, n.client); err != nil {
+	r := finalizeTaskOp.Do(ctx)
+	if err := r.Err(); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
 		logger.ErrorCtx(ctx, err)
 		return result, err
-	} else if !resp.Succeeded {
+	} else if !r.Succeeded() {
 		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
 		logger.ErrorCtx(ctx, err)
 		return result, err
