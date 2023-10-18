@@ -13,7 +13,7 @@ env:
   DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  # S3 Repository in KAC Assets Account
+  # S3 Repository in CLI Assets Account
   BASE_URL: "https://cli-dist.keboola.com"
   AWS_REGION: us-east-1
   AWS_BUCKET_NAME: cli-dist-keboola-com
@@ -132,7 +132,7 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
 
-      - name: Configure AWS Credentials to KAC Assets Account
+      - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
@@ -262,13 +262,13 @@ jobs:
       - name: Clean aws credentials file
         run: rm -rf ${HOME}/.aws
 
-      - name: Configure AWS Credentials to KAC Assets AWS
+      - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_ROLE_REGION }}
 
-      - name: Mount KAC Assets S3 Bucket
+      - name: Mount CLI Assets S3 Bucket
         uses: ./.github/actions/mount-s3
         with:
           mountedFolder: /s3bucket
@@ -278,7 +278,7 @@ jobs:
           awsSecretAccessKey: ${{ env.AWS_SECRET_ACCESS_KEY }}
           awsSessionToken: ${{ env.AWS_SESSION_TOKEN }}
 
-      - name: Index Linux packages in KAC Assets S3
+      - name: Index Linux packages in CLI Assets S3
         run: ./build/package/linux/index.sh /s3bucket
         env:
           DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
@@ -371,13 +371,13 @@ jobs:
           $msi=".\build\package\windows\msi\$env:MSI_FILE"
           .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
 
-      - name: Configure AWS Credentials to KAC Assets Account
+      - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_ROLE_REGION }}
 
-      - name: Upload MSI to KAC Assets S3
+      - name: Upload MSI to CLI Assets S3
         env:
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
