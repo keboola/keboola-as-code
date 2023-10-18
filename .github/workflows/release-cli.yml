@@ -10,7 +10,7 @@ env:
   TAG: ${{ github.ref_name }}
 
   # DockerHub login
-  DOCKERHUB_USER: "keboolabot"
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # S3 Repository in KAC Assets Account
