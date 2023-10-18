@@ -185,98 +185,6 @@ jobs:
           path: target/keboola-cli.json
           retention-days: 1
 
-  release-msi-windows:
-    needs:
-      - version
-      - release
-    env:
-      VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: windows-2019
-    permissions:
-      id-token: write
-      contents: read
-    outputs:
-      msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
-      msi_file: ${{ steps.build_msi.outputs.msi_file }}
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-
-      - name: Install GitHub "hub" CLI
-        uses: geertvdc/setup-hub@master
-
-      - name: Download zipped exe
-        id: download_zip
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          hub release download "${TAG}" -i '*windows_amd64*.zip'
-          printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
-          unzip -o *.zip && rm -v *.zip
-
-      - name: Prepare PATH
-        id: setup_msbuild
-        uses: microsoft/setup-msbuild@v1.0.3
-
-      - name: Obtain signing cert
-        id: obtain_cert
-        shell: bash
-        env:
-          CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
-        run: |
-          base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
-
-      - name: Sign EXE
-        env:
-          CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
-        run: |
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
-
-      - name: Build MSI
-        id: build_msi
-        shell: bash
-        env:
-          MSBUILD_PATH: ${{ steps.setup_msbuild.outputs.msbuildPath }}
-          ZIP_FILE: ${{ steps.download_zip.outputs.zip }}
-        run: |
-          mkdir msi
-          filename="$(basename "$ZIP_FILE" ".zip")"
-          "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
-          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
-
-      - name: Sign MSI
-        env:
-          CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
-          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
-        run: |
-          $msi=".\build\package\windows\msi\$env:MSI_FILE"
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
-
-      - name: Configure AWS Credentials to KAC Assets Account
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
-          aws-region: eu-central-1
-
-      - name: Upload MSI to KAC Assets S3
-        env:
-          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
-        shell: bash
-        run: |
-          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
-
-      - name: Checksum MSI
-        id: checksum
-        env:
-          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
-        shell: bash
-        run: |
-          choco install checksum
-          checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
-          echo $checksum
-          echo "msi_checksum=${checksum}" >> $GITHUB_OUTPUT
-
   update-repositories-homebrew:
     needs:
       - version
@@ -398,19 +306,96 @@ jobs:
     needs:
       - version
       - release
-      - release-msi-windows
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
+    outputs:
+      msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
+      msi_file: ${{ steps.build_msi.outputs.msi_file }}
     runs-on: windows-2019
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
 
+      - name: Install GitHub "hub" CLI
+        uses: geertvdc/setup-hub@master
+
+      - name: Download zipped exe
+        id: download_zip
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          hub release download "${TAG}" -i '*windows_amd64*.zip'
+          printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
+          unzip -o *.zip && rm -v *.zip
+
+      - name: Prepare PATH
+        id: setup_msbuild
+        uses: microsoft/setup-msbuild@v1.0.3
+
+      - name: Obtain signing cert
+        id: obtain_cert
+        shell: bash
+        env:
+          CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
+        run: |
+          base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
+
+      - name: Sign EXE
+        env:
+          CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
+        run: |
+          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
+
+      - name: Build MSI
+        id: build_msi
+        shell: bash
+        env:
+          MSBUILD_PATH: ${{ steps.setup_msbuild.outputs.msbuildPath }}
+          ZIP_FILE: ${{ steps.download_zip.outputs.zip }}
+        run: |
+          mkdir msi
+          filename="$(basename "$ZIP_FILE" ".zip")"
+          "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
+          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
+
+      - name: Sign MSI
+        env:
+          CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        run: |
+          $msi=".\build\package\windows\msi\$env:MSI_FILE"
+          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
+
+      - name: Configure AWS Credentials to KAC Assets Account
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
+          aws-region: eu-central-1
+
+      - name: Upload MSI to KAC Assets S3
+        env:
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        shell: bash
+        run: |
+          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
+
+      - name: Checksum MSI
+        id: checksum
+        env:
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        shell: bash
+        run: |
+          choco install checksum
+          checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
+          echo $checksum
+          echo "msi_checksum=${checksum}" >> $GITHUB_OUTPUT
+
       - name: Push Chocolatey
         env:
           CHOCOLATEY_KEY: ${{ secrets.CHOCOLATEY_KEY }}
-          MSI_CHECKSUM: ${{ needs.release-msi-windows.outputs.msi_checksum }}
-          MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
+          MSI_CHECKSUM: ${{ steps.checksum.msi_checksum }}
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         run: |
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push"
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push\tools"
@@ -436,7 +421,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
-          MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         run: |
           curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
           msiUrl="${BASE_URL}/msi/${MSI_FILE}"
@@ -445,7 +430,6 @@ jobs:
   test-install-linux:
     needs:
       - version
-      - release
       - update-repositories-homebrew
       - update-repositories-linux
     runs-on: ubuntu-latest
@@ -519,7 +503,6 @@ jobs:
   test-install-mac-os:
     needs:
       - version
-      - release
       - update-repositories-homebrew
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
@@ -535,7 +518,7 @@ jobs:
 
   test-install-windows:
     needs:
-      - release-msi-windows
+      - version
       - update-repositories-windows
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
@@ -544,7 +527,7 @@ jobs:
       - name: Download MSI
         shell: bash
         env:
-          MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
+          MSI_FILE: ${{ needs.update-repositories-windows.outputs.msi_file }}
         run: |
           curl "${BASE_URL}/msi/${MSI_FILE}" --output install.msi
 
