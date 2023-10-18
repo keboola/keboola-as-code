@@ -429,8 +429,6 @@ jobs:
 
   test-install-linux:
     needs:
-      - version
-      - update-repositories-homebrew
       - update-repositories-linux
     runs-on: ubuntu-latest
     env:
@@ -491,6 +489,15 @@ jobs:
           apk add keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
+
+  test-install-homebrew-linux:
+    needs:
+      - update-repositories-homebrew
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    steps:
+
       - name: Install on Linux by Homebrew
         if: always()
         run: |
@@ -500,9 +507,8 @@ jobs:
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
 
-  test-install-mac-os:
+  test-install-homebrew-mac-os:
     needs:
-      - version
       - update-repositories-homebrew
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
@@ -518,7 +524,6 @@ jobs:
 
   test-install-windows:
     needs:
-      - version
       - update-repositories-windows
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
