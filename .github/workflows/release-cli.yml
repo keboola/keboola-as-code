@@ -314,6 +314,9 @@ jobs:
       msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
       msi_file: ${{ steps.build_msi.outputs.msi_file }}
     runs-on: windows-2019
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
