@@ -277,7 +277,37 @@ jobs:
           echo $checksum
           echo "msi_checksum=${checksum}" >> $GITHUB_OUTPUT
 
-  update-repositories:
+  update-repositories-homebrew:
+    needs:
+      - version
+      - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Download Homebrew formulae
+        uses: actions/download-artifact@v3
+        with:
+          name: homebrew-formulae
+          path: target/homebrew
+
+      - name: Push Homebrew formulae
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+        with:
+          source-directory: "target/homebrew"
+          destination-github-username: "keboola"
+          destination-repository-name: "homebrew-keboola-cli"
+          target-branch: main
+
+  update-repositories-linux:
     needs:
       - version
       - release
@@ -303,22 +333,6 @@ jobs:
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
-
-      - name: Download Homebrew formulae
-        uses: actions/download-artifact@v3
-        with:
-          name: homebrew-formulae
-          path: target/homebrew
-
-      - name: Push Homebrew formulae
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
-        with:
-          source-directory: "target/homebrew"
-          destination-github-username: "keboola"
-          destination-repository-name: "homebrew-keboola-cli"
-          target-branch: main
 
       - name: Build DEB repo tools
         uses: ./.github/actions/build-repo-tools
@@ -432,7 +446,8 @@ jobs:
     needs:
       - version
       - release
-      - update-repositories
+      - update-repositories-homebrew
+      - update-repositories-linux
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
@@ -505,7 +520,7 @@ jobs:
     needs:
       - version
       - release
-      - update-repositories
+      - update-repositories-homebrew
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: macos-latest
@@ -521,7 +536,7 @@ jobs:
   test-install-windows:
     needs:
       - release-msi-windows
-      - update-repositories
+      - update-repositories-windows
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-2019
