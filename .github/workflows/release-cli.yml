@@ -17,6 +17,8 @@ env:
   BASE_URL: "https://cli-dist.keboola.com"
   AWS_REGION: us-east-1
   AWS_BUCKET_NAME: cli-dist-keboola-com
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::455460941449:role/cli-dist-release
+  AWS_ROLE_REGION: eu-central-1
 
   # WinGet packages
   WINGET_PACKAGES_REPO_FORK: "KeboolaAsCodeBot/winget-pkgs"
@@ -131,10 +133,10 @@ jobs:
           brew install mitchellh/gon/gon
 
       - name: Configure AWS Credentials to KAC Assets Account
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
-          aws-region: eu-central-1
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_ROLE_REGION }}
 
       - name: Release
         run: make release
@@ -261,10 +263,10 @@ jobs:
         run: rm -rf ${HOME}/.aws
 
       - name: Configure AWS Credentials to KAC Assets AWS
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
-          aws-region: eu-central-1
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_ROLE_REGION }}
 
       - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
@@ -370,10 +372,10 @@ jobs:
           .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
 
       - name: Configure AWS Credentials to KAC Assets Account
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
-          aws-region: eu-central-1
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_ROLE_REGION }}
 
       - name: Upload MSI to KAC Assets S3
         env:
