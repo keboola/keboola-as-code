@@ -318,6 +318,8 @@ jobs:
 
       - name: Install GitHub "hub" CLI
         uses: geertvdc/setup-hub@master
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true' # allow add-path
 
       - name: Download zipped exe
         id: download_zip
