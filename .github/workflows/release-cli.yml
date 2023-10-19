@@ -202,6 +202,9 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v3
 
+      - name: Install GitHub "hub" CLI
+        uses: geertvdc/setup-hub@master
+
       - name: Download zipped exe
         id: download_zip
         shell: bash
