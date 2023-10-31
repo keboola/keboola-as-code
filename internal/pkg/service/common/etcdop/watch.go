@@ -139,7 +139,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 			defer cancel()
 
 			// GetAll phase
-			itr := v.GetAll().Do(ctx, client)
+			itr := v.GetAll(client).Do(ctx)
 			var events []WatchEvent
 			sendBatch := func() {
 				if len(events) > 0 {
