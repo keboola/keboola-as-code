@@ -66,36 +66,40 @@ func NewTypedPrefix[T any](v Prefix, s *serde.Serde) PrefixT[T] {
 	return PrefixT[T]{prefix: v, serde: s}
 }
 
-func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) op.BoolOp {
+func (v Prefix) AtLeastOneExists(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 	return op.NewBoolOp(
+		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCountOnly()}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, r etcd.OpResponse) (bool, error) {
-			return r.Get().Count > 0, nil
+		func(_ context.Context, raw op.RawResponse) (bool, error) {
+			return raw.Get().Count > 0, nil
 		},
 	)
 }
 
-func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
+func (v Prefix) Count(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 	return op.NewCountOp(
+		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithCountOnly(), etcd.WithPrefix()}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, r etcd.OpResponse) (int64, error) {
-			return r.Get().Count, nil
+		func(_ context.Context, raw op.RawResponse) (int64, error) {
+			return raw.Get().Count, nil
 		},
 	)
 }
 
-func (v Prefix) GetOne(opts ...etcd.OpOption) op.GetOneOp {
+func (v Prefix) GetOne(client etcd.KV, opts ...etcd.OpOption) op.GetOneOp {
 	return op.NewGetOneOp(
+		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
+<<<<<<< HEAD
 		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValue, error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(r.Get().Kvs)
@@ -105,34 +109,47 @@ func (v Prefix) GetOne(opts ...etcd.OpOption) op.GetOneOp {
 			case 1:
 				return r.Get().Kvs[0], nil
 			default:
+=======
+		func(ctx context.Context, raw op.RawResponse) (*op.KeyValue, error) {
+			// Not raw.Get.Count(), it returns the count of all records, regardless of the limit
+			count := len(raw.Get().Kvs)
+			if count == 0 {
+				return nil, nil
+			} else if count == 1 {
+				return raw.Get().Kvs[0], nil
+			} else {
+>>>>>>> 686ba005a (Update Key and Prefix)
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
 		},
 	)
 }
 
-func (v Prefix) GetAll(opts ...iterator.Option) iterator.Definition {
-	return iterator.New(v.Prefix(), opts...)
+func (v Prefix) GetAll(client etcd.KV, opts ...iterator.Option) iterator.Definition {
+	return iterator.New(client, v.Prefix(), opts...)
 }
 
-func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
+func (v Prefix) DeleteAll(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 	return op.NewCountOp(
+		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 			return etcd.OpDelete(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, r etcd.OpResponse) (int64, error) {
-			return r.Del().Deleted, nil
+		func(_ context.Context, raw op.RawResponse) (int64, error) {
+			return raw.Del().Deleted, nil
 		},
 	)
 }
 
-func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
+func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 	return op.NewGetOneTOp(
+		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
+<<<<<<< HEAD
 		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(r.Get().Kvs)
@@ -141,6 +158,15 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 				return nil, nil
 			case 1:
 				kv := r.Get().Kvs[0]
+=======
+		func(ctx context.Context, raw op.RawResponse) (*op.KeyValueT[T], error) {
+			// Not raw.Get.Count(), it returns the count of all records, regardless of the limit
+			count := len(raw.Get().Kvs)
+			if count == 0 {
+				return nil, nil
+			} else if count == 1 {
+				kv := raw.Get().Kvs[0]
+>>>>>>> 686ba005a (Update Key and Prefix)
 				target := new(T)
 				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))
@@ -153,6 +179,6 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 	)
 }
 
-func (v PrefixT[T]) GetAll(opts ...iterator.Option) iterator.DefinitionT[T] {
-	return iterator.NewTyped[T](v.Prefix(), v.serde, opts...)
+func (v PrefixT[T]) GetAll(client etcd.KV, opts ...iterator.Option) iterator.DefinitionT[T] {
+	return iterator.NewTyped[T](client, v.serde, v.Prefix(), opts...)
 }
