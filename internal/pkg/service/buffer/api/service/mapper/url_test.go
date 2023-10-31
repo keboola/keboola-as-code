@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 )
 
 func TestFormatReceiverURL(t *testing.T) {

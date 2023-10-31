@@ -14,8 +14,4 @@
 //   - The cache is invalidated every time the distribution of worker nodes changes.
 package condition
 
-import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-)
-
 type Conditions = model.Conditions

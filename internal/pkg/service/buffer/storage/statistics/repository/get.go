@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/aggregate"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )

@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 )
 
 type service struct {

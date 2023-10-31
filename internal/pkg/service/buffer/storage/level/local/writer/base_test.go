@@ -18,8 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"

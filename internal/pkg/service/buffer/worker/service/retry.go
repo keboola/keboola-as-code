@@ -6,7 +6,6 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 

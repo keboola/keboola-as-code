@@ -14,8 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
