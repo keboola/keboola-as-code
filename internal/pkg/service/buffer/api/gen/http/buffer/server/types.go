@@ -14,7 +14,6 @@ import (
 	"unicode/utf8"
 
 	buffer "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	goa "goa.design/goa/v3/pkg"
 )
 

@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/cache"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

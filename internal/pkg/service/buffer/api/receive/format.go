@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/receivectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

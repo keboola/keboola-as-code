@@ -3,7 +3,6 @@ package mapper
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 )
 
