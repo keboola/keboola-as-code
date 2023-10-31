@@ -31,38 +31,39 @@ func TestAtomicUpdate(t *testing.T) {
 	key6 := etcdop.Key("key6")
 	key7 := etcdop.Key("key7")
 	key8 := etcdop.Key("key8")
-	assert.NoError(t, key1.Put("value").Do(ctx, client))
-	assert.NoError(t, key2.Put("value").Do(ctx, client))
-	assert.NoError(t, key3.Put("value").Do(ctx, client))
-	assert.NoError(t, key4.Put("value").Do(ctx, client))
-	assert.NoError(t, key5.Put("value").Do(ctx, client))
-	assert.NoError(t, key6.Put("value").Do(ctx, client))
-	assert.NoError(t, key7.Put("value").Do(ctx, client))
-	assert.NoError(t, key8.Put("value").Do(ctx, client))
+	assert.NoError(t, key1.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key2.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key3.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key4.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key5.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key6.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key7.Put(client, "value").Do(ctx).Err())
+	assert.NoError(t, key8.Put(client, "value").Do(ctx).Err())
 
 	// Create atomic update operation
 	var beforeUpdate func() (clear bool)
 	var valueFromGetPhase string
-	atomicOp := op.Atomic()
+	atomicOp := op.Atomic(client)
 	atomicOp.ReadOp(nil)
-	atomicOp.ReadOp(key1.Get().WithOnResult(func(kv *op.KeyValue) {
+	atomicOp.ReadOp(key1.Get(client).WithOnResult(func(kv *op.KeyValue) {
 		valueFromGetPhase = string(kv.Value)
 	}))
 	atomicOp.Read(func() op.Op {
 		return op.MergeToTxn(
-			key1.Get(),
-			key2.Delete(),
-			key3.Put("value"),
-			op.NewTxnOp().
+			client,
+			key1.Get(client),
+			key2.Delete(client),
+			key3.Put(client, "value"),
+			op.NewTxnOp(client).
 				If(etcd.Compare(etcd.Value("key4"), "=", "value")).
 				Then(
-					key5.Get(),
-					op.NewTxnOp().
+					key5.Get(client),
+					op.NewTxnOp(client).
 						If(etcd.Compare(etcd.Value("checkMissing"), "=", "value")).
 						Then().
-						Else(key8.Get()),
+						Else(key8.Get(client)),
 				).
-				Else(key7.Get()),
+				Else(key7.Get(client)),
 		)
 	})
 	atomicOp.Write(func() op.Op {
@@ -73,57 +74,57 @@ func TestAtomicUpdate(t *testing.T) {
 		}
 
 		// Use a value from the GET phase in the UPDATE phase
-		return key1.Put("<" + valueFromGetPhase + ">")
+		return key1.Put(client, "<"+valueFromGetPhase+">")
 	})
 	atomicOp.WriteOp(nil)
-	atomicOp.WriteOp(key8.Put("value"))
+	atomicOp.WriteOp(key8.Put(client, "value"))
 
 	// 1. No modification during update, DoWithoutRetry, success
-	ok, err := atomicOp.DoWithoutRetry(ctx, client)
+	ok, err := atomicOp.DoWithoutRetry(ctx)
 	assert.True(t, ok)
 	assert.NoError(t, err)
-	r, err := key1.Get().Do(ctx, client)
+	r, err := key1.Get(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, "<value>", string(r.Value))
 
 	// 2. No modification during update, Do, success
-	err = atomicOp.Do(ctx, client)
+	err = atomicOp.Do(ctx).Err()
 	assert.NoError(t, err)
-	r, err = key1.Get().Do(ctx, client)
+	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, "<<value>>", string(r.Value))
 
 	// 3. Modification during update, DoWithoutRetry, fail
 	beforeUpdate = func() (clear bool) {
-		assert.NoError(t, key1.Put("newValue1").DoOrErr(ctx, client))
+		assert.NoError(t, key1.Put(client, "newValue1").Do(ctx).Err())
 		return true
 	}
-	ok, err = atomicOp.DoWithoutRetry(ctx, client)
+	ok, err = atomicOp.DoWithoutRetry(ctx)
 	assert.False(t, ok)
 	assert.NoError(t, err)
-	r, err = key1.Get().Do(ctx, client)
+	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, "newValue1", string(r.Value))
 
 	// 4. Modification during update, Do, fail
 	beforeUpdate = func() (clear bool) {
-		assert.NoError(t, key1.Put("newValue3").DoOrErr(ctx, client))
+		assert.NoError(t, key1.Put(client, "newValue3").Do(ctx).Err())
 		return false
 	}
-	err = atomicOp.Do(ctx, client, op.WithRetryMaxElapsedTime(100*time.Millisecond))
+	err = atomicOp.Do(ctx, op.WithRetryMaxElapsedTime(100*time.Millisecond)).Err()
 	assert.Error(t, err)
 	wildcards.Assert(t, "atomic update failed: revision has been modified between GET and UPDATE op, attempt %d, elapsed time %s", err.Error())
-	r, err = key1.Get().Do(ctx, client)
+	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, "newValue3", string(r.Value))
 
 	// 5. Modification during update, Do, success
 	beforeUpdate = func() (clear bool) {
-		assert.NoError(t, key1.Put("newValue2").DoOrErr(ctx, client))
+		assert.NoError(t, key1.Put(client, "newValue2").Do(ctx).Err())
 		return true
 	}
-	assert.NoError(t, atomicOp.Do(ctx, client))
-	r, err = key1.Get().Do(ctx, client)
+	assert.NoError(t, atomicOp.Do(ctx).Err())
+	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, "<newValue2>", string(r.Value))
 }

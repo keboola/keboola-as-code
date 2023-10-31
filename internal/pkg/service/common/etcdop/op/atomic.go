@@ -32,12 +32,19 @@ import (
 //
 // Retries on network errors are always performed.
 type AtomicOp struct {
+	client     etcd.KV
 	readPhase  []func() (Op, error)
 	writePhase []func() (Op, error)
 }
 
-func Atomic() *AtomicOp {
-	return &AtomicOp{}
+type AtomicResult struct {
+	error       error
+	attempt     int
+	elapsedTime time.Duration
+}
+
+func Atomic(client etcd.KV) *AtomicOp {
+	return &AtomicOp{client: client}
 }
 
 func (v *AtomicOp) AddFrom(ops ...*AtomicOp) *AtomicOp {
@@ -94,7 +101,7 @@ func (v *AtomicOp) WriteOrErr(factories ...func() (Op, error)) *AtomicOp {
 	return v
 }
 
-func (v *AtomicOp) Do(ctx context.Context, client etcd.KV, opts ...Option) error {
+func (v *AtomicOp) Do(ctx context.Context, opts ...Option) AtomicResult {
 	b := newBackoff(opts...)
 	attempt := 0
 
@@ -102,8 +109,8 @@ func (v *AtomicOp) Do(ctx context.Context, client etcd.KV, opts ...Option) error
 	var err error
 
 	for {
-		if ok, err = v.DoWithoutRetry(ctx, client, opts...); err != nil {
-			return err
+		if ok, err = v.DoWithoutRetry(ctx, opts...); err != nil {
+			break
 		} else if !ok {
 			attempt++
 			if delay := b.NextBackOff(); delay == backoff.Stop {
@@ -116,17 +123,18 @@ func (v *AtomicOp) Do(ctx context.Context, client etcd.KV, opts ...Option) error
 		}
 	}
 
-	if !ok {
-		return errors.Errorf(
+	elapsedTime := b.GetElapsedTime()
+	if err == nil && !ok {
+		err = errors.Errorf(
 			`atomic update failed: revision has been modified between GET and UPDATE op, attempt %d, elapsed time %s`,
-			attempt, b.GetElapsedTime(),
+			attempt, elapsedTime,
 		)
 	}
 
-	return nil
+	return AtomicResult{error: err, attempt: attempt, elapsedTime: elapsedTime}
 }
 
-func (v *AtomicOp) DoWithoutRetry(ctx context.Context, client etcd.KV, opts ...Option) (bool, error) {
+func (v *AtomicOp) DoWithoutRetry(ctx context.Context, opts ...Option) (bool, error) {
 	// Create GET operations
 	var getOps []Op
 	for _, opFactory := range v.readPhase {
@@ -140,8 +148,8 @@ func (v *AtomicOp) DoWithoutRetry(ctx context.Context, client etcd.KV, opts ...O
 	}
 
 	// Run GET operation, track used keys/prefixes
-	tracker := NewTracker(client)
-	header, err := NewTxnOp().Then(getOps...).DoWithHeader(ctx, tracker, opts...)
+	tracker := NewTracker(v.client)
+	header, err := NewTxnOp(tracker).Then(getOps...).Do(ctx, opts...).HeaderOrErr()
 	if err != nil {
 		return false, err
 	}
@@ -204,9 +212,18 @@ func (v *AtomicOp) DoWithoutRetry(ctx context.Context, client etcd.KV, opts ...O
 
 	// Create transaction
 	// IF no key/prefix has been changed, THEN do updateOp
-	txnResp, err := NewTxnOp().If(cmps...).Then(updateOps...).Do(ctx, client)
-	if err != nil {
-		return false, err
-	}
-	return txnResp.Succeeded, nil
+	txnResp := NewTxnOp(v.client).If(cmps...).Then(updateOps...).Do(ctx)
+	return txnResp.Succeeded(), txnResp.Err()
+}
+
+func (v AtomicResult) Err() error {
+	return v.error
+}
+
+func (v AtomicResult) Attempt() int {
+	return v.attempt
+}
+
+func (v AtomicResult) ElapsedTime() time.Duration {
+	return v.elapsedTime
 }
