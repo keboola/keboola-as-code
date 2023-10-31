@@ -1,11 +1,13 @@
 package op
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"testing"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestResult(t *testing.T) {
