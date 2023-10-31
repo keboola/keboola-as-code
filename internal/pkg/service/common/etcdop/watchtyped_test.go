@@ -20,11 +20,11 @@ func TestPrefixT_Watch(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := typedPrefixForTest()
 
 	// Create watcher
-	stream := pfx.Watch(ctx, c)
+	stream := pfx.Watch(ctx, client)
 	ch := stream.Channel()
 
 	// Wait for watcher created event
@@ -39,7 +39,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key1").Put("foo").Do(ctx, c))
+		assert.NoError(t, pfx.Key("key1").Put(client, "foo").Do(ctx).Err())
 	}()
 
 	// Wait for CREATE event
@@ -61,7 +61,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key1").Put("new").Do(ctx, c))
+		assert.NoError(t, pfx.Key("key1").Put(client, "new").Do(ctx).Err())
 	}()
 
 	// Wait for UPDATE event
@@ -83,7 +83,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
+		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.True(t, ok)
 	}()
@@ -117,14 +117,14 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := typedPrefixForTest()
 
 	// CREATE key1
-	assert.NoError(t, pfx.Key("key1").Put("foo1").Do(ctx, c))
+	assert.NoError(t, pfx.Key("key1").Put(client, "foo1").Do(ctx).Err())
 
 	// Create watcher
-	stream := pfx.GetAllAndWatch(ctx, c, etcd.WithPrevKV())
+	stream := pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())
 	ch := stream.Channel()
 
 	// Wait for CREATE key1 event
@@ -154,7 +154,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
+		assert.NoError(t, pfx.Key("key2").Put(client, "foo2").Do(ctx).Err())
 	}()
 
 	// Wait for CREATE key1 event
@@ -176,7 +176,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
+		assert.NoError(t, pfx.Key("key2").Put(client, "new").Do(ctx).Err())
 	}()
 
 	// Wait for UPDATE event
@@ -205,7 +205,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
+		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.True(t, ok)
 	}()

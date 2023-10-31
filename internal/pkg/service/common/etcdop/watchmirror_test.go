@@ -35,8 +35,8 @@ func TestMirror(t *testing.T) {
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := NewTypedPrefix[testUser]("my/prefix", serde.NewJSON(serde.NoValidation))
-	require.NoError(t, pfx.Key("key1").Put(testUser{FirstName: "John", LastName: "Brown", Age: 10}).DoOrErr(ctx, client))
-	require.NoError(t, pfx.Key("key2").Put(testUser{FirstName: "Paul", LastName: "Green", Age: 20}).DoOrErr(ctx, client))
+	require.NoError(t, pfx.Key("key1").Put(client, testUser{FirstName: "John", LastName: "Brown", Age: 10}).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key2").Put(client, testUser{FirstName: "Paul", LastName: "Green", Age: 20}).Do(ctx).Err())
 
 	// Setup mirroring of a prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
@@ -65,7 +65,7 @@ func TestMirror(t *testing.T) {
 	mirror.ToMap()
 
 	// Insert
-	header, err := pfx.Key("key3").Put(testUser{FirstName: "Luke", LastName: "Blue", Age: 30}).DoWithHeader(ctx, client)
+	header, err := pfx.Key("key3").Put(client, testUser{FirstName: "Luke", LastName: "Blue", Age: 30}).Do(ctx).HeaderOrErr()
 	require.NoError(t, err)
 	waitForSync()
 	assert.Equal(t, map[string]int{
@@ -75,7 +75,7 @@ func TestMirror(t *testing.T) {
 	}, mirror.ToMap())
 
 	// Update
-	header, err = pfx.Key("key1").Put(testUser{FirstName: "Jacob", LastName: "Brown", Age: 15}).DoWithHeader(ctx, client)
+	header, err = pfx.Key("key1").Put(client, testUser{FirstName: "Jacob", LastName: "Brown", Age: 15}).Do(ctx).HeaderOrErr()
 	require.NoError(t, err)
 	waitForSync()
 	assert.Equal(t, map[string]int{
@@ -85,7 +85,7 @@ func TestMirror(t *testing.T) {
 	}, mirror.ToMap())
 
 	// Delete
-	header, err = pfx.Key("key2").Delete().DoWithHeader(ctx, client)
+	header, err = pfx.Key("key2").Delete(client).Do(ctx).HeaderOrErr()
 	require.NoError(t, err)
 	waitForSync()
 	assert.Equal(t, map[string]int{
@@ -94,7 +94,7 @@ func TestMirror(t *testing.T) {
 	}, mirror.ToMap())
 
 	// Filter
-	header, err = pfx.Key("ignore").Put(testUser{FirstName: "Ignored", LastName: "User", Age: 50}).DoWithHeader(ctx, client)
+	header, err = pfx.Key("ignore").Put(client, testUser{FirstName: "Ignored", LastName: "User", Age: 50}).Do(ctx).HeaderOrErr()
 	require.NoError(t, err)
 	waitForSync()
 	assert.Equal(t, map[string]int{
