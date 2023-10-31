@@ -41,7 +41,7 @@ func (s *Store) checkExportsCountOp(receiverKey key.ReceiverKey) op.Op {
 		Exports().
 		InReceiver(receiverKey).
 		Count().
-		WithOnResultOrErr(func(count int64) error {
+		WithResultValidator(func(count int64) error {
 			if count >= MaxExportsPerReceiver {
 				return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 			}

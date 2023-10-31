@@ -254,7 +254,7 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 	// Atomically swap keys in the transaction
 	alreadyInState := false
 	ops := []op.Op{
-		s.schema.Files().InState(to).ByKey(file.FileKey).PutIfNotExists(clone).WithOnResultOrErr(func(ok bool) error {
+		s.schema.Files().InState(to).ByKey(file.FileKey).PutIfNotExists(clone).WithResultValidator(func(ok bool) error {
 			alreadyInState = !ok
 			if !ok {
 				file.State = to
@@ -262,7 +262,7 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 			}
 			return nil
 		}),
-		s.schema.Files().InState(from).ByKey(file.FileKey).DeleteIfExists().WithOnResultOrErr(func(ok bool) error {
+		s.schema.Files().InState(from).ByKey(file.FileKey).DeleteIfExists().WithResultValidator(func(ok bool) error {
 			if !ok && !alreadyInState {
 				return errors.Errorf(`file "%s" not found in the "%s" state`, file.FileKey, file.State)
 			}

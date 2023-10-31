@@ -45,7 +45,7 @@ func (s *Store) checkReceiversCountOp(projectID keboola.ProjectID) op.Op {
 		Receivers().
 		InProject(projectID).
 		Count().
-		WithOnResultOrErr(func(count int64) error {
+		WithResultValidator(func(count int64) error {
 			if count >= MaxReceiversPerProject {
 				return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
 			}
