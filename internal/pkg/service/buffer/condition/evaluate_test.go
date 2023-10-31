@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 )
 
 func TestEvaluate_DefaultImportConditions(t *testing.T) {

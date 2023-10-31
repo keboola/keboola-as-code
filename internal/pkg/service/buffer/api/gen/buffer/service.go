@@ -14,8 +14,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"goa.design/goa/v3/security"
 )
