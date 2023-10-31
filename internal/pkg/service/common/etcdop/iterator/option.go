@@ -13,17 +13,19 @@ type Option func(c *config)
 
 type config struct {
 	prefix      string
-	end         string       // optional range end, it is a suffix to the prefix field
+	end         string // optional range end, it is a suffix to the prefix field
+	client      etcd.KV
 	serde       *serde.Serde // empty for not-typed iterator
 	pageSize    int
 	revision    int64 // revision of the all values, set by "WithRev" or by the first page
 	fromSameRev bool  // fromSameRev if true, then 2+ page will be loaded from the same revision as the first page
 }
 
-func newConfig(prefix string, s *serde.Serde, opts []Option) config {
+func newConfig(client etcd.KV, s *serde.Serde, prefix string, opts []Option) config {
 	c := config{
 		prefix:      prefix,
 		end:         etcd.GetPrefixRangeEnd(prefix), // default range end, read the entire prefix
+		client:      client,
 		serde:       s,
 		pageSize:    DefaultLimit,
 		fromSameRev: true,
