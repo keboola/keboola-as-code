@@ -17,7 +17,7 @@ const (
 )
 
 // TrackerKV wraps etcd.KV interface and tracks all operations.
-// List of the invoked operations can be obtained by the Operations method.
+// List of the executed operations can be obtained by the Operations method.
 // This utility is used by the AtomicOp to collect all keys/prefixes used by the AtomicOp.Read phase.
 type TrackerKV struct {
 	kv  etcd.KV

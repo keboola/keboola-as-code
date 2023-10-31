@@ -19,22 +19,22 @@ func TestGetOneOp(t *testing.T) {
 	factory := func(ctx context.Context) (etcd.Op, error) {
 		return etcd.OpGet("foo"), nil
 	}
-	mapper := func(ctx context.Context, r etcd.OpResponse) (*KeyValue, error) {
-		get := r.Get()
+	mapper := func(ctx context.Context, raw RawResponse) (*KeyValue, error) {
+		get := raw.Get()
 		if get.Count > 0 {
 			return get.Kvs[0], nil
 		}
 		return nil, nil
 	}
 
-	v, err := NewGetOneOp(factory, mapper).Do(ctx, client)
+	v, err := NewGetOneOp(client, factory, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Nil(t, v)
 
 	_, err = client.Put(ctx, "foo", "test1")
 	assert.NoError(t, err)
 
-	v, err = NewGetOneOp(factory, mapper).Do(ctx, client)
+	v, err = NewGetOneOp(client, factory, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, "test1", string(v.Value))
@@ -42,7 +42,7 @@ func TestGetOneOp(t *testing.T) {
 	_, err = client.Put(ctx, "foo", "test2")
 	assert.NoError(t, err)
 
-	v, err = NewGetOneOp(factory, mapper).Do(ctx, client)
+	v, err = NewGetOneOp(client, factory, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, "test2", string(v.Value))
@@ -57,12 +57,12 @@ func TestGetOneTOp(t *testing.T) {
 		Field string `json:"field"`
 	}
 
-	factory := func(ctx context.Context) (etcd.Op, error) {
+	factoryFn := func(ctx context.Context) (etcd.Op, error) {
 		return etcd.OpGet("foo"), nil
 	}
 
-	mapper := func(ctx context.Context, r etcd.OpResponse) (*KeyValueT[Data], error) {
-		get := r.Get()
+	mapper := func(ctx context.Context, raw RawResponse) (*KeyValueT[Data], error) {
+		get := raw.Get()
 		if get.Count > 0 {
 			kv := get.Kvs[0]
 			value := Data{}
@@ -79,14 +79,14 @@ func TestGetOneTOp(t *testing.T) {
 		return nil, nil
 	}
 
-	v, err := NewGetOneTOp(factory, mapper).Do(ctx, client)
+	v, err := NewGetOneTOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Nil(t, v)
 
 	_, err = client.Put(ctx, "foo", json.MustEncodeString(Data{Field: "test1"}, false))
 	assert.NoError(t, err)
 
-	v, err = NewGetOneTOp(factory, mapper).Do(ctx, client)
+	v, err = NewGetOneTOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, Data{Field: "test1"}, v.Value)
@@ -94,7 +94,7 @@ func TestGetOneTOp(t *testing.T) {
 	_, err = client.Put(ctx, "foo", json.MustEncodeString(Data{Field: "test2"}, false))
 	assert.NoError(t, err)
 
-	v, err = NewGetOneTOp(factory, mapper).Do(ctx, client)
+	v, err = NewGetOneTOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, Data{Field: "test2"}, v.Value)
