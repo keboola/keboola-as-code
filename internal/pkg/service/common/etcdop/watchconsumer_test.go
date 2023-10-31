@@ -77,7 +77,7 @@ func TestWatchConsumer(t *testing.T) {
 	logger.Truncate()
 
 	// Put some key
-	assert.NoError(t, pfx.Key("key1").Put("value1").Do(ctx, watchClient))
+	assert.NoError(t, pfx.Key("key1").Put(watchClient, "value1").Do(ctx).Err())
 
 	// Expect forEach event
 	assert.Eventually(t, func() bool {
@@ -96,8 +96,8 @@ INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
-	assert.NoError(t, pfx.Key("key2").Put("value2").Do(ctx, testClient))
-	assert.NoError(t, pfx.Key("key3").Put("value3").Do(ctx, testClient))
+	assert.NoError(t, pfx.Key("key2").Put(testClient, "value2").Do(ctx).Err())
+	assert.NoError(t, pfx.Key("key3").Put(testClient, "value3").Do(ctx).Err())
 
 	// Compact, during the watcher is disconnected
 	status, err := testClient.Status(ctx, testClient.Endpoints()[0])
@@ -122,7 +122,7 @@ INFO  ForEach: restart=true, events(3): create "my/prefix/key1", create "my/pref
 	logger.Truncate()
 
 	// The restart flag is false in further events.
-	assert.NoError(t, pfx.Key("key4").Put("value4").Do(ctx, testClient))
+	assert.NoError(t, pfx.Key("key4").Put(testClient, "value4").Do(ctx).Err())
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
 	}, 5*time.Second, 10*time.Millisecond)
