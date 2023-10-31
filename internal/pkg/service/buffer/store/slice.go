@@ -265,7 +265,7 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 	alreadyInState := false
 	ops = append(
 		ops,
-		s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone).WithOnResultOrErr(func(ok bool) error {
+		s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone).WithResultValidator(func(ok bool) error {
 			alreadyInState = !ok
 			if !ok {
 				slice.State = to
@@ -273,7 +273,7 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 			}
 			return nil
 		}),
-		s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists().WithOnResultOrErr(func(ok bool) error {
+		s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists().WithResultValidator(func(ok bool) error {
 			if !ok && !alreadyInState {
 				return errors.Errorf(`slice "%s" not found in the "%s" state`, slice.SliceKey, slice.State)
 			}
@@ -317,7 +317,7 @@ func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
 func assertNoPreviousSliceInState(schema *schema.Schema, k key.SliceKey, state slicestate.State) op.Op {
 	prefix := schema.Slices().InState(state)
 	end := etcd.WithRange(prefix.ByKey(k).Key())
-	return prefix.InExport(k.ExportKey).Count(end).WithOnResultOrErr(func(v int64) error {
+	return prefix.InExport(k.ExportKey).Count(end).WithResultValidator(func(v int64) error {
 		if v > 0 {
 			return errors.Errorf(`no slice in the state "%s" expected before the "%s", found %v`, state, k, v)
 		}

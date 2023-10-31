@@ -55,7 +55,7 @@ func (s *Store) setExportRecordsCounterOp(k key.ExportKey, newValue uint64) op.O
 func (s *Store) loadExportRecordsCounter(k key.ExportKey, out *uint64) op.Op {
 	counterKey := s.schema.Runtime().LastRecordID().ByKey(k)
 	return counterKey.Get().
-		WithOnResultOrErr(func(kv *op.KeyValue) error {
+		WithResultValidator(func(kv *op.KeyValue) error {
 			if kv == nil {
 				// Counter key is missing, use zero
 				*out = 0
