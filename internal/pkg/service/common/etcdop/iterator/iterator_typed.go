@@ -25,13 +25,13 @@ type ForEachOpT[T any] struct {
 	fn  func(value T, header *Header) error
 }
 
-func NewTyped[R any](start string, serde *serde.Serde, opts ...Option) DefinitionT[R] {
-	return DefinitionT[R]{config: newConfig(start, serde, opts)}
+func NewTyped[R any](client etcd.KV, serde *serde.Serde, start string, opts ...Option) DefinitionT[R] {
+	return DefinitionT[R]{config: newConfig(client, serde, start, opts)}
 }
 
 // Do converts iterator definition to the iterator.
-func (v DefinitionT[T]) Do(ctx context.Context, client etcd.KV, opts ...op.Option) *IteratorT[T] {
-	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, client, opts...)}
+func (v DefinitionT[T]) Do(ctx context.Context, opts ...op.Option) *IteratorT[T] {
+	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, opts...)}
 	out.config.serde = v.serde
 	return out
 }
@@ -41,40 +41,44 @@ func (v DefinitionT[T]) ForEachOp(fn func(value T, header *Header) error) *ForEa
 	return &ForEachOpT[T]{def: v, fn: fn}
 }
 
-func (v *ForEachOpT[T]) Op(ctx context.Context) (etcd.Op, error) {
+func (v *ForEachOpT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 	// If ForEachOpT is combined with other operations into a transaction,
 	// then the first page is loaded within the transaction.
 	// Other pages are loaded within MapResponse method, see below.
 	// Iterator always load next pages WithRevision,
 	// so all results, from all pages, are from the same revision.
-	return firstPageOp(v.def.prefix, v.def.end, v.def.pageSize, v.def.revision).Op(ctx)
-}
-
-func (v *ForEachOpT[T]) MapResponse(ctx context.Context, response op.Response) (result any, err error) {
-	// See comment in the Op method.
-	itr := v.def.Do(ctx, response.Client, response.Options...)
-
-	// Inject the first page, from the response
-	itr.moveToPage(response.Get())
-	itr.currentIndex--
-
-	// Process all records from the first page and load next pages, if any.
-	return op.NoResult{}, itr.ForEachValue(v.fn)
-}
-
-func (v *ForEachOpT[T]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*Header, error) {
-	// See comment in the Op method.
-	itr := v.def.Do(ctx, client, opts...)
-	if err := itr.ForEachValue(v.fn); err != nil {
-		return nil, err
+	firstPageOp, err := newFirstPageOp(v.def.client, v.def.prefix, v.def.end, v.def.pageSize, v.def.revision).Op(ctx)
+	if err != nil {
+		return op.LowLevelOp{}, err
 	}
-	return itr.Header(), nil
+
+	return op.LowLevelOp{
+		Op: firstPageOp.Op,
+		MapResponse: func(ctx context.Context, response op.RawResponse) (result any, err error) {
+			// Create iterator, see comment above.
+			itr := v.def.Do(ctx, response.Options...)
+			itr.config.client = response.Client
+
+			// Inject the first page, from the response
+			itr.moveToPage(response.Get())
+			itr.currentIndex--
+
+			// Process all records from the first page and load next pages, if any.
+			return op.NoResult{}, itr.ForEachValue(v.fn)
+		},
+	}, nil
 }
 
-func (v *ForEachOpT[T]) DoOrErr(ctx context.Context, client etcd.KV, opts ...op.Option) error {
+func (v *ForEachOpT[T]) Do(ctx context.Context, opts ...op.Option) (out Result) {
 	// See comment in the Op method.
-	_, err := v.DoWithHeader(ctx, client, opts...)
-	return err
+	itr := v.def.Do(ctx, opts...)
+	if err := itr.ForEachValue(v.fn); err != nil {
+		out.error = err
+		return out
+	}
+
+	out.header = itr.header
+	return out
 }
 
 // Next returns true if there is a next value.
