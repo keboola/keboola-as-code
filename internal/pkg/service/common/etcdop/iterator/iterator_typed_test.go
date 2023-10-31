@@ -174,13 +174,13 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 
 		// Test iteration methods
 		logs.Reset()
-		actual := iterateAllT(t, prefix.GetAll(ops...), ctx, client)
+		actual := iterateAllT(t, prefix.GetAll(client, ops...), ctx)
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
 		// Test All method
 		logs.Reset()
-		actualKvs, err := prefix.GetAll(ops...).Do(ctx, client).All()
+		actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).All()
 		assert.NoError(t, err)
 		actual = make([]resultT, 0)
 		for _, kv := range actualKvs {
@@ -191,7 +191,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 
 		// Test ForEachKV method
 		logs.Reset()
-		itr := prefix.GetAll(ops...).Do(ctx, client)
+		itr := prefix.GetAll(client, ops...).Do(ctx)
 		actual = make([]resultT, 0)
 		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj], header *iterator.Header) error {
 			assert.NotNil(t, header)
@@ -203,7 +203,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 
 		// Test ForEachValue method
 		logs.Reset()
-		itr = prefix.GetAll(ops...).Do(ctx, client)
+		itr = prefix.GetAll(client, ops...).Do(ctx)
 		values := make([]obj, 0)
 		assert.NoError(t, itr.ForEachValue(func(value obj, header *iterator.Header) error {
 			assert.NotNil(t, header)
@@ -224,25 +224,25 @@ func TestIteratorT_Revision(t *testing.T) {
 	prefix := etcdop.NewTypedPrefix[obj]("some/prefix", serialization)
 
 	// There are 3 keys
-	assert.NoError(t, prefix.Key("foo001").Put(obj{Value: "bar001"}).Do(ctx, client))
-	assert.NoError(t, prefix.Key("foo002").Put(obj{Value: "bar002"}).Do(ctx, client))
-	assert.NoError(t, prefix.Key("foo003").Put(obj{Value: "bar003"}).Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo001").Put(client, obj{Value: "bar001"}).Do(ctx).Err())
+	assert.NoError(t, prefix.Key("foo002").Put(client, obj{Value: "bar002"}).Do(ctx).Err())
+	assert.NoError(t, prefix.Key("foo003").Put(client, obj{Value: "bar003"}).Do(ctx).Err())
 
 	// Get current revision
-	r, err := prefix.Key("foo003").Get().Do(ctx, client)
+	r, err := prefix.Key("foo003").Get(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	revision := r.Kv.ModRevision
 
 	// Add more keys
-	assert.NoError(t, prefix.Key("foo004").Put(obj{Value: "bar004"}).Do(ctx, client))
-	assert.NoError(t, prefix.Key("foo005").Put(obj{Value: "bar005"}).Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo004").Put(client, obj{Value: "bar004"}).Do(ctx).Err())
+	assert.NoError(t, prefix.Key("foo005").Put(client, obj{Value: "bar005"}).Do(ctx).Err())
 
 	// Get all WithRev
 	var actual []resultT
 	assert.NoError(
 		t,
 		prefix.
-			GetAll(iterator.WithRev(revision)).Do(ctx, client).
+			GetAll(client, iterator.WithRev(revision)).Do(ctx).
 			ForEachKV(func(kv op.KeyValueT[obj], _ *iterator.Header) error {
 				actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 				return nil
@@ -263,7 +263,7 @@ func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVsT(t, 3, ctx, client)
 
-	it := prefix.GetAll().Do(ctx, client)
+	it := prefix.GetAll(client).Do(ctx)
 	assert.PanicsWithError(t, "unexpected Value() call: Next() must be called first", func() {
 		it.Value()
 	})
@@ -275,16 +275,18 @@ func TestIteratorT_ForEachOp(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	out := ioutil.NewAtomicWriter()
 	prefix := generateKVsT(t, 5, ctx, client)
+	tracker := op.NewTracker(client)
 
 	// Define op
-	getAllOp := prefix.GetAll(iterator.WithPageSize(2)).ForEachOp(func(value obj, header *iterator.Header) error {
-		_, _ = out.WriteString(fmt.Sprintf("%s\n", value.Value))
-		return nil
-	})
+	getAllOp := prefix.
+		GetAll(tracker, iterator.WithPageSize(2)).
+		ForEachOp(func(value obj, header *iterator.Header) error {
+			_, _ = out.WriteString(fmt.Sprintf("%s\n", value.Value))
+			return nil
+		})
 
 	// Run op
-	tracker := op.NewTracker(client)
-	assert.NoError(t, getAllOp.DoOrErr(ctx, tracker))
+	assert.NoError(t, getAllOp.Do(ctx).Err())
 
 	// All requests can be tracked by the TrackerKV
 	assert.Equal(t, []op.TrackedOp{
@@ -303,9 +305,9 @@ bar005
 `), strings.TrimSpace(out.String()))
 }
 
-func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context, client *etcd.Client) []resultT {
+func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context) []resultT {
 	t.Helper()
-	it := def.Do(ctx, client)
+	it := def.Do(ctx)
 	actual := make([]resultT, 0)
 	for it.Next() {
 		kv := it.Value()
@@ -319,7 +321,7 @@ func generateKVsT(t *testing.T, count int, ctx context.Context, client *etcd.Cli
 	t.Helper()
 
 	// There are some keys before the prefix
-	assert.NoError(t, etcdop.Key("some/abc").Put("foo").Do(ctx, client))
+	assert.NoError(t, etcdop.Key("some/abc").Put(client, "foo").Do(ctx).Err())
 
 	// Create keys in the iterated prefix
 	serialization := serde.NewJSON(serde.NoValidation)
@@ -327,11 +329,11 @@ func generateKVsT(t *testing.T, count int, ctx context.Context, client *etcd.Cli
 	for i := 1; i <= count; i++ {
 		key := prefix.Key(fmt.Sprintf("foo%03d", i))
 		val := obj{fmt.Sprintf("bar%03d", i)}
-		assert.NoError(t, key.Put(val).Do(ctx, client))
+		assert.NoError(t, key.Put(client, val).Do(ctx).Err())
 	}
 
 	// There are some keys after the prefix
-	assert.NoError(t, etcdop.Key("some/xyz").Put("foo").Do(ctx, client))
+	assert.NoError(t, etcdop.Key("some/xyz").Put(client, "foo").Do(ctx).Err())
 
 	return prefix
 }
