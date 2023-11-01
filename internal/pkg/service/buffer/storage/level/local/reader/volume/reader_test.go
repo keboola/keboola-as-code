@@ -7,9 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -17,12 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/reader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -57,7 +52,7 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 	// Create writer for the same slice again - error
 	_, err = tc.NewReader()
 	if assert.Error(t, err) {
-		assert.Equal(t, `reader for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
+		assert.Equal(t, `reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
 	assert.Len(t, tc.Volume.readers, 1)
 
@@ -327,7 +322,7 @@ func newReaderTestCase(tb testing.TB) *readerTestCase {
 	tb.Helper()
 	tc := &readerTestCase{}
 	tc.volumeTestCase = newVolumeTestCase(tb)
-	tc.Slice = newTestSlice()
+	tc.Slice = test.NewSlice()
 	return tc
 }
 

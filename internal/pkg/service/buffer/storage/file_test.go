@@ -8,6 +8,8 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
@@ -59,8 +61,9 @@ func TestFileKey_Validation(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 - "projectId" is a required field
-- "receiverId" is a required field
-- "exportId" is a required field
+- "branchId" is a required field
+- "sourceId" is a required field
+- "sinkId" is a required field
 - "fileId" is a required field
 `), strings.TrimSpace(err.Error()))
 	}
@@ -69,7 +72,7 @@ func TestFileKey_Validation(t *testing.T) {
 func TestFileKey_String(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "123/my-receiver/my-export/2006-01-02T15:04:05.000Z", testFileKey().String())
+	assert.Equal(t, "123/456/my-source/my-sink/2006-01-02T15:04:05.000Z", testFileKey().String())
 }
 
 func TestFileKey_OpenedAt(t *testing.T) {
@@ -112,8 +115,9 @@ func TestFile_Validation(t *testing.T) {
 			Name: "empty",
 			ExpectedError: `
 - "projectId" is a required field
-- "receiverId" is a required field
-- "exportId" is a required field
+- "branchId" is a required field
+- "sourceId" is a required field
+- "sinkId" is a required field
 - "fileId" is a required field
 - "type" is a required field
 - "state" is a required field
@@ -228,12 +232,15 @@ func TestFile_Validation(t *testing.T) {
 
 func testFileKey() FileKey {
 	return FileKey{
-		ExportKey: key.ExportKey{
-			ReceiverKey: key.ReceiverKey{
-				ProjectID:  123,
-				ReceiverID: "my-receiver",
+		SinkKey: key.SinkKey{
+			SourceKey: key.SourceKey{
+				BranchKey: key.BranchKey{
+					ProjectID: 123,
+					BranchID:  456,
+				},
+				SourceID: "my-source",
 			},
-			ExportID: "my-export",
+			SinkID: "my-sink",
 		},
 		FileID: FileID{
 			OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z"),

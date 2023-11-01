@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/target"
@@ -31,7 +33,7 @@ type File struct {
 type FileType string
 
 type FileKey struct {
-	key.ExportKey
+	key.SinkKey
 	FileID FileID `json:"fileId" validate:"required"`
 }
 
@@ -47,7 +49,7 @@ func (v FileID) String() string {
 }
 
 func (v FileKey) String() string {
-	return v.ExportKey.String() + "/" + v.FileID.String()
+	return v.SinkKey.String() + "/" + v.FileID.String()
 }
 
 func (v FileKey) OpenedAt() utctime.UTCTime {
