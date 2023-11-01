@@ -3,15 +3,13 @@ package repository
 import (
 	"context"
 
-	etcd "go.etcd.io/etcd/client/v3"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 )
 
 // SumStats sums all stats from the iterator.
-func SumStats(ctx context.Context, client *etcd.Client, prefix iterator.DefinitionT[statistics.Value]) (out statistics.Value, err error) {
-	if err := SumStatsOp(prefix, &out).DoOrErr(ctx, client); err != nil {
+func SumStats(ctx context.Context, prefix iterator.DefinitionT[statistics.Value]) (out statistics.Value, err error) {
+	if err := SumStatsOp(prefix, &out).Do(ctx).Err(); err != nil {
 		return out, err
 	}
 	return out, nil

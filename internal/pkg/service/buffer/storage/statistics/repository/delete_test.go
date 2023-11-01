@@ -49,13 +49,13 @@ func TestRepository_DeleteOp_LevelLocalAndStaging(t *testing.T) {
 	}))
 
 	// Move statistics for slices 2 and 3 to the storage.LevelStaging
-	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx, client))
-	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelStaging).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
+	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
 
 	// Check initial state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -67,7 +67,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -79,7 +79,7 @@ storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volu
 >>>>>
 
 <<<<<
-storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -92,10 +92,10 @@ storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Delete slice 2 statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -107,7 +107,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -120,7 +120,7 @@ storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Delete file statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, ``)
 }
 
@@ -175,9 +175,9 @@ func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
 	}))
 
 	// Move statistics to the target level
-	assert.NoError(t, repo.MoveOp(sliceKey1, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
-	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
-	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey1, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
 
 	// Check initial state
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
@@ -189,7 +189,7 @@ func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -198,7 +198,7 @@ func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -227,7 +227,7 @@ func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
 	}
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -239,7 +239,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 >>>>>
 
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T02:00:00.000Z",
@@ -251,7 +251,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 >>>>>
 
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T03:00:00.000Z",
@@ -264,7 +264,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete slice 1 statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -274,7 +274,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -283,7 +283,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -303,7 +303,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 	}
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/_sum
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/_sum
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -315,7 +315,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/_sum
 >>>>>
 
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T02:00:00.000Z",
@@ -327,7 +327,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 >>>>>
 
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T03:00:00.000Z",
@@ -340,7 +340,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete slice 3 statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey3).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey3).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -350,7 +350,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -359,7 +359,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -379,7 +379,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 	}
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/_sum
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/_sum
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -391,7 +391,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/_sum
 >>>>>
 
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T02:00:00.000Z",
@@ -404,7 +404,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete file
-	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -414,7 +414,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -423,7 +423,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ExportStats(ctx, sliceKey1.ExportKey); assert.NoError(t, err) {
+	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -434,7 +434,7 @@ storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volum
 	}
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/my-export/_sum
+storage/stats/target/123/456/my-source/my-sink/_sum
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -447,7 +447,7 @@ storage/stats/target/123/my-receiver/my-export/_sum
 `)
 
 	// Delete export
-	assert.NoError(t, repo.DeleteOp(sliceKey1.ExportKey).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey1.SinkKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -457,7 +457,7 @@ storage/stats/target/123/my-receiver/my-export/_sum
 			CompressedSize:   111,
 		}, stats.Total)
 	}
-	if stats, err := repo.ReceiverStats(ctx, sliceKey1.ReceiverKey); assert.NoError(t, err) {
+	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -468,7 +468,7 @@ storage/stats/target/123/my-receiver/my-export/_sum
 	}
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/_sum
+storage/stats/target/123/456/my-source/_sum
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -481,7 +481,7 @@ storage/stats/target/123/my-receiver/_sum
 `)
 
 	// Delete receiver
-	assert.NoError(t, repo.DeleteOp(sliceKey1.ReceiverKey).Do(ctx, client))
+	assert.NoError(t, repo.DeleteOp(sliceKey1.SourceKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -493,7 +493,7 @@ storage/stats/target/123/my-receiver/_sum
 	}
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/_sum
+storage/stats/target/123/456/_sum
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",

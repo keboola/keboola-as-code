@@ -5,7 +5,8 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -37,9 +38,9 @@ func newSchema(s *serde.Serde) schemaRoot {
 	return schemaRoot{prefix: NewTypedPrefix[statistics.Value]("storage/stats", s)}
 }
 
-func (s schemaRoot) InLevel(level storage.Level) schemaInLevel {
+func (s schemaRoot) InLevel(level Level) schemaInLevel {
 	switch level {
-	case storage.LevelLocal, storage.LevelStaging, storage.LevelTarget:
+	case LevelLocal, LevelStaging, LevelTarget:
 		return schemaInLevel{prefix: s.prefix.Add(level.String())}
 	default:
 		panic(errors.Errorf(`unexpected storage level "%v"`, level))
@@ -49,13 +50,15 @@ func (s schemaRoot) InLevel(level storage.Level) schemaInLevel {
 // InParentOf returns prefix of the parent object, it is used as schemaInLevel.InParentOf(...).Sum().
 func (v schemaInLevel) InParentOf(k fmt.Stringer) schemaInObject {
 	switch k := k.(type) {
-	case storeKey.ReceiverKey:
+	case BranchKey:
 		return v.inObject(k.ProjectID)
-	case storeKey.ExportKey:
-		return v.inObject(k.ReceiverKey)
-	case storage.FileKey:
-		return v.inObject(k.ExportKey)
-	case storage.SliceKey:
+	case SourceKey:
+		return v.inObject(k.BranchKey)
+	case SinkKey:
+		return v.inObject(k.SourceKey)
+	case FileKey:
+		return v.inObject(k.SinkKey)
+	case SliceKey:
 		return v.inObject(k.FileKey)
 	default:
 		panic(errors.Errorf(`unexpected object key "%T"`, k))
@@ -64,7 +67,7 @@ func (v schemaInLevel) InParentOf(k fmt.Stringer) schemaInObject {
 
 func (v schemaInLevel) InObject(k fmt.Stringer) schemaInObject {
 	switch k.(type) {
-	case keboola.ProjectID, storeKey.ReceiverKey, storeKey.ExportKey, storage.FileKey, storage.SliceKey:
+	case keboola.ProjectID, BranchKey, SourceKey, SinkKey, FileKey, SliceKey:
 		return v.inObject(k)
 	default:
 		panic(errors.Errorf(`unexpected object key "%T"`, k))
@@ -75,19 +78,23 @@ func (v schemaInLevel) InProject(projectID keboola.ProjectID) schemaInObject {
 	return v.inObject(projectID)
 }
 
-func (v schemaInLevel) InReceiver(k storeKey.ReceiverKey) schemaInObject {
+func (v schemaInLevel) InBranch(k BranchKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v schemaInLevel) InExport(k storeKey.ExportKey) schemaInObject {
+func (v schemaInLevel) InSource(k SourceKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v schemaInLevel) InFile(k storage.FileKey) schemaInObject {
+func (v schemaInLevel) InSink(k SinkKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v schemaInLevel) InSlice(k storage.SliceKey) KeyT[statistics.Value] {
+func (v schemaInLevel) InFile(k FileKey) schemaInObject {
+	return v.inObject(k)
+}
+
+func (v schemaInLevel) InSlice(k SliceKey) KeyT[statistics.Value] {
 	return v.inObject(k).Key(sliceValueKey)
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/aggregate"
@@ -16,8 +17,9 @@ import (
 // Provider is a unified interface to aggregate statistics directly from the database or from a cache.
 type Provider interface {
 	ProjectStats(ctx context.Context, k keboola.ProjectID) (statistics.Aggregated, error)
-	ReceiverStats(ctx context.Context, k key.ReceiverKey) (statistics.Aggregated, error)
-	ExportStats(ctx context.Context, k key.ExportKey) (statistics.Aggregated, error)
+	BranchStats(ctx context.Context, k key.BranchKey) (statistics.Aggregated, error)
+	SourceStats(ctx context.Context, k key.SourceKey) (statistics.Aggregated, error)
+	SinkStats(ctx context.Context, k key.SinkKey) (statistics.Aggregated, error)
 	FileStats(ctx context.Context, k storage.FileKey) (statistics.Aggregated, error)
 	SliceStats(ctx context.Context, k storage.SliceKey) (statistics.Aggregated, error)
 }
@@ -40,11 +42,15 @@ func (v *provider) ProjectStats(ctx context.Context, k keboola.ProjectID) (stati
 	return v.fn(ctx, k)
 }
 
-func (v *provider) ReceiverStats(ctx context.Context, k key.ReceiverKey) (statistics.Aggregated, error) {
+func (v *provider) BranchStats(ctx context.Context, k key.BranchKey) (statistics.Aggregated, error) {
 	return v.fn(ctx, k)
 }
 
-func (v *provider) ExportStats(ctx context.Context, k key.ExportKey) (statistics.Aggregated, error) {
+func (v *provider) SourceStats(ctx context.Context, k key.SourceKey) (statistics.Aggregated, error) {
+	return v.fn(ctx, k)
+}
+
+func (v *provider) SinkStats(ctx context.Context, k key.SinkKey) (statistics.Aggregated, error) {
 	return v.fn(ctx, k)
 }
 
@@ -58,7 +64,7 @@ func (v *provider) SliceStats(ctx context.Context, k storage.SliceKey) (statisti
 
 // aggregate statistics from the database.
 func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, err error) {
-	txn := op.NewTxnOp()
+	txn := op.NewTxnOp(r.client)
 	for _, level := range storage.AllLevels() {
 		level := level
 
@@ -66,14 +72,14 @@ func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out
 		pfx := r.schema.InLevel(level).InObject(objectKey)
 
 		// Sum
-		txn.Then(pfx.GetAll().ForEachOp(func(v statistics.Value, header *iterator.Header) error {
+		txn.Then(pfx.GetAll(r.client).ForEachOp(func(v statistics.Value, header *iterator.Header) error {
 			aggregate.Aggregate(level, v, &out)
 			return nil
 		}))
 	}
 
 	// Get all values in a transaction
-	if err := txn.DoOrErr(ctx, r.client); err != nil {
+	if err := txn.Do(ctx).Err(); err != nil {
 		return out, err
 	}
 
