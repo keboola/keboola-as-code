@@ -41,10 +41,10 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.42.0
-	github.com/qmuntal/stateless v1.6.3
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/sirupsen/logrus v1.9.2
