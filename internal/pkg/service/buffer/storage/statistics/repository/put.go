@@ -20,7 +20,7 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 	var currentTxn *op.TxnOp
 	var allTxn []*op.TxnOp
 	addTxn := func() {
-		currentTxn = op.NewTxnOp()
+		currentTxn = op.NewTxnOp(r.client)
 		allTxn = append(allTxn, currentTxn)
 	}
 
@@ -31,7 +31,7 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 			i = 0
 			addTxn()
 		}
-		currentTxn.Then(r.schema.InLevel(storage.LevelLocal).InSlice(v.SliceKey).Put(v.Value))
+		currentTxn.Then(r.schema.InLevel(storage.LevelLocal).InSlice(v.SliceKey).Put(r.client, v.Value))
 		i++
 	}
 
@@ -49,7 +49,7 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if _, err := txn.Do(ctx, r.client); err != nil {
+			if err := txn.Do(ctx).Err(); err != nil {
 				errs.Append(err)
 			}
 		}()

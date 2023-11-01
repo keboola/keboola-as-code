@@ -11,14 +11,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 )
 
-type keyTestCase struct{ actual, expected string }
+type schemaTestCase struct{ actual, expected string }
 
 func TestSchema(t *testing.T) {
 	t.Parallel()
 	s := newSchema(serde.NewJSON(serde.NoValidation))
 	sliceKey := test.NewSliceKey()
 
-	cases := []keyTestCase{
+	cases := []schemaTestCase{
 		{
 			s.InLevel(storage.LevelLocal).Prefix(),
 			"storage/stats/local/",
@@ -36,44 +36,52 @@ func TestSchema(t *testing.T) {
 			"storage/stats/local/123/",
 		},
 		{
-			s.InLevel(storage.LevelLocal).InReceiver(sliceKey.ReceiverKey).Prefix(),
-			"storage/stats/local/123/my-receiver/",
+			s.InLevel(storage.LevelLocal).InBranch(sliceKey.BranchKey).Prefix(),
+			"storage/stats/local/123/456/",
 		},
 		{
-			s.InLevel(storage.LevelLocal).InReceiver(sliceKey.ReceiverKey).Sum().Key(),
-			"storage/stats/local/123/my-receiver/_sum",
+			s.InLevel(storage.LevelLocal).InSource(sliceKey.SourceKey).Prefix(),
+			"storage/stats/local/123/456/my-source/",
 		},
 		{
-			s.InLevel(storage.LevelLocal).InExport(sliceKey.ExportKey).Prefix(),
-			"storage/stats/local/123/my-receiver/my-export/",
+			s.InLevel(storage.LevelLocal).InSource(sliceKey.SourceKey).Sum().Key(),
+			"storage/stats/local/123/456/my-source/_sum",
 		},
 		{
-			s.InLevel(storage.LevelLocal).InExport(sliceKey.ExportKey).Sum().Key(),
-			"storage/stats/local/123/my-receiver/my-export/_sum",
+			s.InLevel(storage.LevelLocal).InSink(sliceKey.SinkKey).Prefix(),
+			"storage/stats/local/123/456/my-source/my-sink/",
+		},
+		{
+			s.InLevel(storage.LevelLocal).InSink(sliceKey.SinkKey).Sum().Key(),
+			"storage/stats/local/123/456/my-source/my-sink/_sum",
 		},
 		{
 			s.InLevel(storage.LevelLocal).InFile(sliceKey.FileKey).Prefix(),
-			"storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/",
+			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},
 		{
 			s.InLevel(storage.LevelLocal).InSlice(sliceKey).Key(),
-			"storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/value",
+			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/value",
 		},
 		{
-			s.InLevel(storage.LevelLocal).InParentOf(sliceKey.ReceiverKey).Prefix(),
+			s.InLevel(storage.LevelLocal).InParentOf(sliceKey.BranchKey).Prefix(),
 			"storage/stats/local/123/",
 		},
 		{
-			s.InLevel(storage.LevelLocal).InParentOf(sliceKey.ExportKey).Prefix(),
-			"storage/stats/local/123/my-receiver/",
+			s.InLevel(storage.LevelLocal).InParentOf(sliceKey.SourceKey).Prefix(),
+			"storage/stats/local/123/456/",
+		},
+		{
+			s.InLevel(storage.LevelLocal).InParentOf(sliceKey.SinkKey).Prefix(),
+			"storage/stats/local/123/456/my-source/",
 		},
 		{
 			s.InLevel(storage.LevelLocal).InParentOf(sliceKey.FileKey).Prefix(),
-			"storage/stats/local/123/my-receiver/my-export/",
+			"storage/stats/local/123/456/my-source/my-sink/",
 		},
 		{
 			s.InLevel(storage.LevelLocal).InParentOf(sliceKey).Prefix(),
-			"storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/",
+			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},
 	}
 

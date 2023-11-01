@@ -1,6 +1,9 @@
 // Package statistics is responsible for collecting and providing statistics regarding the count and size of processed records.
+//
 // These statistics are primarily used to evaluate upload and import conditions,
 // but users can also access them through the API.
+//
+// Statistics are collected and stored per definition.Sink, one definition.Source can have multiple sinks.
 package statistics
 
 import (

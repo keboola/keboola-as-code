@@ -68,7 +68,7 @@ func TestCollector(t *testing.T) {
 	triggerSyncAndWait()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
@@ -84,7 +84,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 	triggerSyncAndWait()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
@@ -109,7 +109,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 	triggerSyncAndWait()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
@@ -121,7 +121,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:25:00.000Z",
@@ -141,7 +141,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 	assert.NoError(t, events.WriterClose(w1, nil))
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
@@ -153,7 +153,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:25:00.000Z",
@@ -176,7 +176,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 	assert.NoError(t, events.WriterClose(w2, nil))
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
@@ -188,7 +188,7 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:25:00.000Z",

@@ -20,12 +20,12 @@ func (r *Repository) MoveOp(sliceKey storage.SliceKey, from, to storage.Level, t
 	fromKey := r.schema.InLevel(from).InSlice(sliceKey)
 	toKey := r.schema.InLevel(to).InSlice(sliceKey)
 
-	ops := op.Atomic()
+	ops := op.Atomic(r.client)
 	var value statistics.Value
 
 	// Load statistics value from the old key
 	ops.Read(func() op.Op {
-		return fromKey.Get().WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
+		return fromKey.Get(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
 			if result != nil {
 				value = result.Value
 			}
@@ -34,7 +34,7 @@ func (r *Repository) MoveOp(sliceKey storage.SliceKey, from, to storage.Level, t
 
 	// Delete the old key
 	ops.Write(func() op.Op {
-		return fromKey.Delete()
+		return fromKey.Delete(r.client)
 	})
 
 	// Save the value to the new key
@@ -43,7 +43,7 @@ func (r *Repository) MoveOp(sliceKey storage.SliceKey, from, to storage.Level, t
 			fn(&value)
 		}
 		if value.RecordsCount > 0 {
-			return toKey.Put(value)
+			return toKey.Put(r.client, value)
 		} else {
 			return nil
 		}

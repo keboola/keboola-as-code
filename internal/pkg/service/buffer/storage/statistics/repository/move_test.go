@@ -38,7 +38,7 @@ func TestMoveOp(t *testing.T) {
 	sliceKey := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 
 	// Move non-existing statistics or empty statistics
-	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// Create a record in the storage.LevelLocal
@@ -56,7 +56,7 @@ func TestMoveOp(t *testing.T) {
 	}))
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -72,10 +72,10 @@ storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume
 	addStagingSize := func(value *statistics.Value) {
 		value.StagingSize = 1
 	}
-	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelLocal, storage.LevelStaging, addStagingSize).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelLocal, storage.LevelStaging, addStagingSize).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
@@ -89,10 +89,10 @@ storage/stats/staging/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Move record to the storage.LevelTarget
-	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
