@@ -34,9 +34,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Description: "foo bar",
 		},
 	}
-	switchable := Switchable{
-		Enabled: true,
-	}
 	softDeletable := SoftDeletable{
 		Deleted: false,
 	}
@@ -66,7 +63,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SinkTypeTable,
 				Name:          "My Source",
@@ -79,7 +75,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SinkTypeTable,
 				Name:          "My Source",
@@ -92,7 +87,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SinkTypeTable,
 				Name:          strings.Repeat("a", 40+1),
@@ -116,7 +110,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SinkTypeTable,
 				Name:          "My Source",
@@ -139,7 +132,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SinkTypeTable,
 				Name:          "My Source",
@@ -162,7 +154,6 @@ func TestTableSink_Validation(t *testing.T) {
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SinkTypeTable,
 				Name:          "My Source",

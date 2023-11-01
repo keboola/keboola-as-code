@@ -24,9 +24,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Description: "foo bar",
 		},
 	}
-	switchable := Switchable{
-		Enabled: true,
-	}
 	softDeletable := SoftDeletable{
 		Deleted: false,
 	}
@@ -53,7 +50,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Value: Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SourceTypeHTTP,
 				Name:          "My Source",
@@ -66,7 +62,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Value: Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SourceTypeHTTP,
 				Name:          "My Source",
@@ -80,7 +75,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Value: Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SourceTypeHTTP,
 				Name:          "My Source",
@@ -96,7 +90,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Value: Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SourceTypeHTTP,
 				Name:          strings.Repeat("a", 40+1),
@@ -112,7 +105,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Value: Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SourceTypeHTTP,
 				Name:          strings.Repeat("a", 4096+1),
@@ -127,7 +119,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Value: Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
-				Switchable:    switchable,
 				SoftDeletable: softDeletable,
 				Type:          SourceTypeHTTP,
 				Name:          "My Source",
