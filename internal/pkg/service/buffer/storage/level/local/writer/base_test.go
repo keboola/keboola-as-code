@@ -2,7 +2,6 @@ package writer
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )

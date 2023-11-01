@@ -46,7 +46,7 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 	// Create writer for the same slice again - error
 	_, err = tc.NewWriter()
 	if assert.Error(t, err) {
-		assert.Equal(t, `writer for slice "123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
+		assert.Equal(t, `writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
 	assert.Len(t, tc.Volume.writers, 1)
 
