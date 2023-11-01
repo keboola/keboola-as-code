@@ -27,31 +27,31 @@ func TestSumStats(t *testing.T) {
 	pfx := etcdop.NewTypedPrefix[statistics.Value]("test/stats", serde.NewJSON(validator.New().Validate))
 
 	// Put values
-	assert.NoError(t, pfx.Key("0").Put(statistics.Value{}).DoOrErr(ctx, client))
-	assert.NoError(t, pfx.Key("1").Put(statistics.Value{
+	assert.NoError(t, pfx.Key("0").Put(client, statistics.Value{}).Do(ctx).Err())
+	assert.NoError(t, pfx.Key("1").Put(client, statistics.Value{
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 		RecordsCount:     4,
 		UncompressedSize: 2,
 		CompressedSize:   1,
-	}).DoOrErr(ctx, client))
-	assert.NoError(t, pfx.Key("2").Put(statistics.Value{
+	}).Do(ctx).Err())
+	assert.NoError(t, pfx.Key("2").Put(client, statistics.Value{
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 		RecordsCount:     8,
 		UncompressedSize: 4,
 		CompressedSize:   2,
-	}).DoOrErr(ctx, client))
-	assert.NoError(t, pfx.Key("3").Put(statistics.Value{
+	}).Do(ctx).Err())
+	assert.NoError(t, pfx.Key("3").Put(client, statistics.Value{
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
 		RecordsCount:     32,
 		UncompressedSize: 16,
 		CompressedSize:   3,
-	}).DoOrErr(ctx, client))
+	}).Do(ctx).Err())
 
 	// Sum
-	sum, err := repository.SumStats(ctx, client, pfx.GetAll())
+	sum, err := repository.SumStats(ctx, pfx.GetAll(client))
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Value{
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),

@@ -43,7 +43,7 @@ func TestRepository_Put(t *testing.T) {
 	}))
 	etcdhelper.AssertKVsString(t, d.EtcdClient(), `
 <<<<<
-storage/stats/local/123/my-receiver/my-export/2000-01-01T19:00:00.000Z/my-volume/2000-01-20T00:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-20T00:00:00.000Z/value
 -----
 {
   "firstRecordAt": "2000-01-20T00:00:00.000Z",

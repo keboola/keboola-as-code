@@ -12,7 +12,7 @@ import (
 // Statistics for the storage.LevelTarget are not deleted but are rolled up to the parent object.
 // This operation should not be used separately but atomically together with the deletion of the object.
 func (r *Repository) DeleteOp(objectKey fmt.Stringer) *op.AtomicOp {
-	ops := op.Atomic()
+	ops := op.Atomic(r.client)
 	for _, level := range storage.AllLevels() {
 		// Object prefix contains all statistics related to the object
 		objectPfx := r.schema.InLevel(level).InObject(objectKey)
@@ -26,7 +26,7 @@ func (r *Repository) DeleteOp(objectKey fmt.Stringer) *op.AtomicOp {
 			sumKey := r.schema.InLevel(storage.LevelTarget).InParentOf(objectKey).Sum()
 
 			// Get sum from the parent object
-			ops.ReadOp(sumKey.Get().WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
+			ops.ReadOp(sumKey.Get(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
 				if result == nil {
 					parentSum = statistics.Value{}
 				} else {
@@ -37,13 +37,13 @@ func (r *Repository) DeleteOp(objectKey fmt.Stringer) *op.AtomicOp {
 			// Get statistics of the object
 			ops.Read(func() op.Op {
 				objectSum = statistics.Value{}
-				return SumStatsOp(objectPfx.GetAll(), &objectSum)
+				return SumStatsOp(objectPfx.GetAll(r.client), &objectSum)
 			})
 
 			// Save update sum
 			ops.Write(func() op.Op {
 				if objectSum.RecordsCount > 0 {
-					return sumKey.Put(parentSum.Add(objectSum))
+					return sumKey.Put(r.client, parentSum.Add(objectSum))
 				} else {
 					return nil
 				}
@@ -51,7 +51,7 @@ func (r *Repository) DeleteOp(objectKey fmt.Stringer) *op.AtomicOp {
 		}
 
 		// Delete statistics
-		ops.WriteOp(objectPfx.DeleteAll())
+		ops.WriteOp(objectPfx.DeleteAll(r.client))
 	}
 
 	return ops

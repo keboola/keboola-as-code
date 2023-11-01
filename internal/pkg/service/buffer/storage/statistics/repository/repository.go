@@ -28,9 +28,10 @@ package repository
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
+
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )

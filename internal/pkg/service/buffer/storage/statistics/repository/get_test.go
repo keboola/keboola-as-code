@@ -23,7 +23,6 @@ func TestProvider(t *testing.T) {
 	defer cancel()
 
 	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
-	client := d.EtcdClient()
 	repo := repository.New(d)
 
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
@@ -34,10 +33,10 @@ func TestProvider(t *testing.T) {
 	v, err := repo.ProjectStats(ctx, sliceKey1.ProjectID)
 	assert.Empty(t, v)
 	assert.NoError(t, err)
-	v, err = repo.ReceiverStats(ctx, sliceKey1.ReceiverKey)
+	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
 	assert.Empty(t, v)
 	assert.NoError(t, err)
-	v, err = repo.ExportStats(ctx, sliceKey1.ExportKey)
+	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
 	assert.Empty(t, v)
 	assert.NoError(t, err)
 	v, err = repo.FileStats(ctx, sliceKey1.FileKey)
@@ -80,8 +79,8 @@ func TestProvider(t *testing.T) {
 			},
 		},
 	}))
-	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx, client))
-	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
+	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
+	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
 
 	// Check provider
 	expected := statistics.Aggregated{
@@ -119,10 +118,10 @@ func TestProvider(t *testing.T) {
 	v, err = repo.ProjectStats(ctx, sliceKey1.ProjectID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, v)
-	v, err = repo.ReceiverStats(ctx, sliceKey1.ReceiverKey)
+	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, v)
-	v, err = repo.ExportStats(ctx, sliceKey1.ExportKey)
+	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, v)
 	v, err = repo.FileStats(ctx, sliceKey1.FileKey)
@@ -187,7 +186,7 @@ func TestProvider(t *testing.T) {
 
 	// Add slice from a different export
 	sliceKey4 := test.NewSliceKeyOpenedAt("2000-01-01T04:00:00.000Z")
-	sliceKey4.ExportID += "-2"
+	sliceKey4.SinkID += "-2"
 	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey4,
@@ -202,7 +201,7 @@ func TestProvider(t *testing.T) {
 	}))
 
 	// Receiver level
-	v, err = repo.ReceiverStats(ctx, sliceKey1.ReceiverKey)
+	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
@@ -236,7 +235,7 @@ func TestProvider(t *testing.T) {
 	}, v)
 
 	// Export level
-	v, err = repo.ExportStats(ctx, sliceKey1.ExportKey)
+	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
@@ -268,7 +267,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   111,
 		},
 	}, v)
-	v, err = repo.ExportStats(ctx, sliceKey4.ExportKey)
+	v, err = repo.SinkStats(ctx, sliceKey4.SinkKey)
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{

@@ -54,7 +54,7 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Empty",
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Empty(t, stats)
 			},
@@ -76,7 +76,7 @@ func TestCaches(t *testing.T) {
 				}))
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -113,7 +113,7 @@ func TestCaches(t *testing.T) {
 				}))
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -136,10 +136,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Move stats from local -> staging level",
 			Prepare: func() {
-				assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx, client))
+				assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -183,7 +183,7 @@ func TestCaches(t *testing.T) {
 				}))
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -213,10 +213,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Move stats from local -> target level",
 			Prepare: func() {
-				assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx, client))
+				assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -253,10 +253,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Remove stats from the local level",
 			Prepare: func() {
-				assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx, client))
+				assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Staging: statistics.Value{
@@ -286,10 +286,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Remove stats from the staging level",
 			Prepare: func() {
-				assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx, client))
+				assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Target: statistics.Value{
@@ -312,10 +312,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Remove stats from the target level, statistics are rolled up to the export sum",
 			Prepare: func() {
-				assert.NoError(t, repo.DeleteOp(sliceKey3.FileKey).Do(ctx, client))
+				assert.NoError(t, repo.DeleteOp(sliceKey3.FileKey).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.ExportStats(ctx, sliceKey1.ExportKey)
+				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				assert.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Target: statistics.Value{
@@ -374,7 +374,7 @@ func TestCaches(t *testing.T) {
 	// Check final etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/target/123/my-receiver/my-export/_sum
+storage/stats/target/123/456/my-source/my-sink/_sum
 -----
 {
   "firstRecordAt": "2000-01-01T03:00:00.000Z",
