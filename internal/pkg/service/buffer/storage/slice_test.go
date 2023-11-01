@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer/disksync"
@@ -71,8 +73,9 @@ func TestSliceKey_Validation(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 - "projectId" is a required field
-- "receiverId" is a required field
-- "exportId" is a required field
+- "branchId" is a required field
+- "sourceId" is a required field
+- "sinkId" is a required field
 - "fileId" is a required field
 - "volumeId" is a required field
 - "openedAt" is a required field
@@ -83,7 +86,7 @@ func TestSliceKey_Validation(t *testing.T) {
 func TestSliceKey_String(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "123/my-receiver/my-export/2006-01-02T10:04:05.000Z/abcdef/2006-01-02T20:04:05.000Z", testSliceKey().String())
+	assert.Equal(t, "123/456/my-source/my-sink/2006-01-02T10:04:05.000Z/abcdef/2006-01-02T20:04:05.000Z", testSliceKey().String())
 }
 
 func TestSliceKey_OpenedAt(t *testing.T) {
@@ -131,8 +134,9 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "empty",
 			ExpectedError: `
 - "projectId" is a required field
-- "receiverId" is a required field
-- "exportId" is a required field
+- "branchId" is a required field
+- "sourceId" is a required field
+- "sinkId" is a required field
 - "fileId" is a required field
 - "volumeId" is a required field
 - "openedAt" is a required field
@@ -262,12 +266,15 @@ func TestSlice_Validation(t *testing.T) {
 func testSliceKey() SliceKey {
 	return SliceKey{
 		FileKey: FileKey{
-			ExportKey: key.ExportKey{
-				ReceiverKey: key.ReceiverKey{
-					ProjectID:  123,
-					ReceiverID: "my-receiver",
+			SinkKey: key.SinkKey{
+				SourceKey: key.SourceKey{
+					BranchKey: key.BranchKey{
+						ProjectID: 123,
+						BranchID:  456,
+					},
+					SourceID: "my-source",
 				},
-				ExportID: "my-export",
+				SinkID: "my-sink",
 			},
 			FileID: FileID{
 				OpenedAt: utctime.MustParse("2006-01-02T10:04:05.000Z"),

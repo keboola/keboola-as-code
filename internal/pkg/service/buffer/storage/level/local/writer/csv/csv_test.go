@@ -19,6 +19,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/level/local/writer"
