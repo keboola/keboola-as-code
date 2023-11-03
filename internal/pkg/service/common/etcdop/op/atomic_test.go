@@ -66,13 +66,15 @@ func TestAtomicUpdate(t *testing.T) {
 				Else(key7.Get(client)),
 		)
 	})
-	atomicOp.Write(func() op.Op {
+	atomicOp.BeforeWrite(func() error {
 		if beforeUpdate != nil {
 			if clear := beforeUpdate(); clear {
 				beforeUpdate = nil
 			}
 		}
-
+		return nil
+	})
+	atomicOp.Write(func() op.Op {
 		// Use a value from the GET phase in the UPDATE phase
 		return key1.Put(client, "<"+valueFromGetPhase+">")
 	})
