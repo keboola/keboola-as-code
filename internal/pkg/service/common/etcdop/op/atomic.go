@@ -87,6 +87,15 @@ func (v *AtomicOp) Write(factories ...func() Op) *AtomicOp {
 	return v
 }
 
+func (v *AtomicOp) BeforeWrite(fns ...func() error) *AtomicOp {
+	for _, fn := range fns {
+		v.WriteOrErr(func() (Op, error) {
+			return nil, fn()
+		})
+	}
+	return v
+}
+
 func (v *AtomicOp) WriteOp(ops ...Op) *AtomicOp {
 	for _, op := range ops {
 		v.Write(func() Op {
