@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 const (
@@ -31,7 +31,7 @@ type Options struct {
 	*parser
 	envNaming   *env.NamingConvention
 	envs        *env.Map
-	setBy       map[string]cliconfig.SetBy
+	setBy       map[string]configmap.SetBy
 	Verbose     bool   // verbose mode, print details to console
 	VerboseAPI  bool   // log each API request and response
 	LogFilePath string // path to the log file
@@ -41,7 +41,7 @@ func New() *Options {
 	envNaming := env.NewNamingConvention(EnvPrefix)
 	return &Options{
 		envNaming: envNaming,
-		setBy:     make(map[string]cliconfig.SetBy),
+		setBy:     make(map[string]configmap.SetBy),
 		parser:    viper.New(),
 	}
 }
@@ -51,7 +51,7 @@ func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, fla
 	o.envs = o.loadEnvFiles(logger, osEnvs, fs)
 
 	// Bind all flags and corresponding ENVs
-	if setBy, err := cliconfig.BindToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
+	if setBy, err := configmap.BindToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
 		return err
 	} else {
 		for k, v := range setBy {
@@ -72,11 +72,11 @@ func (o *Options) GetEnvName(flagName string) string {
 
 func (o *Options) Set(key string, value any) {
 	o.parser.Set(key, value)
-	o.setBy[key] = cliconfig.SetManually
+	o.setBy[key] = configmap.SetManually
 }
 
 // KeySetBy method informs how the value of the key was set.
-func (o *Options) KeySetBy(key string) cliconfig.SetBy {
+func (o *Options) KeySetBy(key string) configmap.SetBy {
 	return o.setBy[key]
 }
 

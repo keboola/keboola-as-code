@@ -202,7 +202,7 @@ issues:
       linters:
         - forbidigo
     # Allow direct printing to the console
-    - path: internal/pkg/service/common/cliconfig/*
+    - path: internal/pkg/service/common/configmap/*
       text: "fmt."
       linters:
         - forbidigo
