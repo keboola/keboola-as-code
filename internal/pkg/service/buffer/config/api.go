@@ -7,7 +7,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -50,11 +50,11 @@ func BindAPIConfig(args []string, envs env.Provider) (APIConfig, error) {
 }
 
 func (c *APIConfig) LoadFrom(args []string, envs env.Provider) error {
-	return cliconfig.LoadTo(c, args, envs, APIEnvPrefix)
+	return configmap.LoadTo(c, args, envs, APIEnvPrefix)
 }
 
 func (c *APIConfig) Dump() string {
-	if kvs, err := cliconfig.Dump(c); err != nil {
+	if kvs, err := configmap.Dump(c); err != nil {
 		panic(err)
 	} else {
 		return kvs.String()
