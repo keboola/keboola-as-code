@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -19,7 +19,7 @@ const (
 )
 
 // Config of the Templates API.
-// See "cliconfig" package for more information.
+// See "configmap" package for more information.
 type Config struct {
 	DebugLog             bool                   `mapstructure:"debug-log" usage:"Enable debug log level."`
 	DebugEtcd            bool                   `mapstructure:"debug-etcd" usage:"Enable logging of each etcd KV operation as a debug message."`
@@ -99,11 +99,11 @@ func LoadFrom(args []string, envs env.Provider) (Config, error) {
 }
 
 func (c *Config) LoadFrom(args []string, envs env.Provider) error {
-	return cliconfig.LoadTo(c, args, envs, EnvPrefix)
+	return configmap.LoadTo(c, args, envs, EnvPrefix)
 }
 
 func (c *Config) Dump() string {
-	if kvs, err := cliconfig.Dump(c); err != nil {
+	if kvs, err := configmap.Dump(c); err != nil {
 		panic(err)
 	} else {
 		return kvs.String()

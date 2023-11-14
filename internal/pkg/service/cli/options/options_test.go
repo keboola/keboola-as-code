@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 func TestValuesPriority(t *testing.T) {
@@ -29,7 +29,7 @@ func TestValuesPriority(t *testing.T) {
 	err := options.Load(logger, env.Empty(), fs, &pflag.FlagSet{})
 	assert.NoError(t, err)
 	assert.Equal(t, "", options.GetString(key))
-	assert.Equal(t, cliconfig.SetByUnknown, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByUnknown, options.KeySetBy(key))
 
 	// 2. Lowest priority, flag default value
 	flags := &pflag.FlagSet{}
@@ -38,7 +38,7 @@ func TestValuesPriority(t *testing.T) {
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "default flag value", options.GetString(key))
-	assert.Equal(t, cliconfig.SetByFlagDefault, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByFlagDefault, options.KeySetBy(key))
 
 	// 3. Higher priority, ".env" file from project dir
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
@@ -46,7 +46,7 @@ func TestValuesPriority(t *testing.T) {
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "1abcdef", options.GetString(key))
-	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByEnv, options.KeySetBy(key))
 
 	// 4. Higher priority, ".env" file from working dir
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
@@ -54,7 +54,7 @@ func TestValuesPriority(t *testing.T) {
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "2abcdef", options.GetString(key))
-	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByEnv, options.KeySetBy(key))
 
 	// 5. Higher priority , ENV defined in OS
 	osEnvs := env.Empty()
@@ -63,7 +63,7 @@ func TestValuesPriority(t *testing.T) {
 	err = options.Load(logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "3abcdef", options.GetString(key))
-	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByEnv, options.KeySetBy(key))
 
 	// 6. Higher priority , flag value
 	assert.NoError(t, flags.Set(key, "4abcdef"))
@@ -71,7 +71,7 @@ func TestValuesPriority(t *testing.T) {
 	err = options.Load(logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "4abcdef", options.GetString(key))
-	assert.Equal(t, cliconfig.SetByFlag, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByFlag, options.KeySetBy(key))
 
 	// 7. The highest priority, Set method
 	options = New()
@@ -79,7 +79,7 @@ func TestValuesPriority(t *testing.T) {
 	options.Set(key, "foo-bar")
 	assert.NoError(t, err)
 	assert.Equal(t, "foo-bar", options.GetString(key))
-	assert.Equal(t, cliconfig.SetManually, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetManually, options.KeySetBy(key))
 }
 
 func TestDumpOptions(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -77,11 +77,11 @@ func BindWorkerConfig(args []string, envs env.Provider) (WorkerConfig, error) {
 }
 
 func (c *WorkerConfig) LoadFrom(args []string, envs env.Provider) error {
-	return cliconfig.LoadTo(c, args, envs, WorkerEnvPrefix)
+	return configmap.LoadTo(c, args, envs, WorkerEnvPrefix)
 }
 
 func (c *WorkerConfig) Dump() string {
-	if kvs, err := cliconfig.Dump(c); err != nil {
+	if kvs, err := configmap.Dump(c); err != nil {
 		panic(err)
 	} else {
 		return kvs.String()
