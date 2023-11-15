@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
@@ -50,8 +51,13 @@ func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, fla
 	// Load ENVs from OS and files
 	o.envs = o.loadEnvFiles(logger, osEnvs, fs)
 
+	// Define mapping between flag and field path
+	flagToField := func(flag *pflag.Flag) (orderedmap.Path, bool) {
+		return orderedmap.PathFromStr(flag.Name), true
+	}
+
 	// Bind all flags and corresponding ENVs
-	if setBy, err := configmap.BindToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
+	if setBy, err := configmap.BindToViper(o.parser, flags, flagToField, o.envs, o.envNaming, nil); err != nil {
 		return err
 	} else {
 		for k, v := range setBy {
