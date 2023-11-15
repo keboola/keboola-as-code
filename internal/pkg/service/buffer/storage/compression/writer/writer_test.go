@@ -58,8 +58,8 @@ func TestWriter(t *testing.T) {
 			Config: compression.Config{
 				Type: compression.TypeGZIP,
 				GZIP: &compression.GZIPConfig{
-					Level: compression.DefaultGZIPLevel,
-					Impl:  compression.GZIPImplStandard, // <<<<<<<<
+					Level:          compression.DefaultGZIPLevel,
+					Implementation: compression.GZIPImplStandard, // <<<<<<<<
 				},
 			},
 		},
@@ -69,8 +69,8 @@ func TestWriter(t *testing.T) {
 			Config: compression.Config{
 				Type: compression.TypeGZIP,
 				GZIP: &compression.GZIPConfig{
-					Level: compression.DefaultGZIPLevel,
-					Impl:  compression.GZIPImplFast, // <<<<<<<<
+					Level:          compression.DefaultGZIPLevel,
+					Implementation: compression.GZIPImplFast, // <<<<<<<<
 				},
 			},
 		},
@@ -80,10 +80,10 @@ func TestWriter(t *testing.T) {
 			Config: compression.Config{
 				Type: compression.TypeGZIP,
 				GZIP: &compression.GZIPConfig{
-					Level:       compression.DefaultGZIPLevel,
-					Impl:        compression.GZIPImplParallel, // <<<<<<<<
-					BlockSize:   compression.DefaultGZIPBlockSize,
-					Concurrency: 4,
+					Level:          compression.DefaultGZIPLevel,
+					Implementation: compression.GZIPImplParallel, // <<<<<<<<
+					BlockSize:      compression.DefaultGZIPBlockSize,
+					Concurrency:    4,
 				},
 			},
 		},

@@ -322,8 +322,8 @@ func TestVolumes_VolumesFor(t *testing.T) {
 
 			// Create a test file according to the test case specification
 			file := newStorageFile(t, tc.FileOpenedAt)
-			file.LocalStorage.Volumes.PerPod = tc.Count
-			file.LocalStorage.Volumes.PreferredTypes = tc.PreferredTypes
+			file.LocalStorage.VolumesAssignment.PerPod = tc.Count
+			file.LocalStorage.VolumesAssignment.PreferredTypes = tc.PreferredTypes
 
 			// Assign volume
 			fileVolumes := volumes.VolumesFor(file)

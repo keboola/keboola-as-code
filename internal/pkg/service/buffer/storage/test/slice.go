@@ -44,11 +44,11 @@ func NewSliceOpenedAt(openedAt string) *storage.Slice {
 			column.Body{},
 		},
 		LocalStorage: local.Slice{
-			Dir:           openedAt,
-			Filename:      "slice.csv",
-			AllocateSpace: 10 * datasize.KB,
-			Compression:   compression.DefaultNoneConfig(),
-			Sync: disksync.Config{
+			Dir:                openedAt,
+			Filename:           "slice.csv",
+			AllocatedDiskSpace: 10 * datasize.KB,
+			Compression:        compression.DefaultNoneConfig(),
+			DiskSync: disksync.Config{
 				Mode:            disksync.ModeDisk,
 				Wait:            true,
 				CheckInterval:   1 * time.Millisecond,

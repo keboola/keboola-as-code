@@ -153,8 +153,8 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *volume.Volume) *storage
 	s := NewTestSlice(volume)
 	s.Type = storage.FileTypeCSV
 	s.Columns = tc.Columns
-	s.LocalStorage.AllocateSpace = tc.Allocate
-	s.LocalStorage.Sync = tc.Sync
+	s.LocalStorage.AllocatedDiskSpace = tc.Allocate
+	s.LocalStorage.DiskSync = tc.Sync
 	s.LocalStorage.Compression = tc.Compression
 	s.StagingStorage.Compression = tc.Compression
 

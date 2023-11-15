@@ -17,7 +17,7 @@ func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 	tc := newWriterTestCase(t)
 
 	expectedSize := 10 * datasize.KB
-	tc.Slice.LocalStorage.AllocateSpace = expectedSize
+	tc.Slice.LocalStorage.AllocatedDiskSpace = expectedSize
 
 	// Use real allocator
 	w, err := tc.NewWriter(WithAllocator(allocate.DefaultAllocator{}))

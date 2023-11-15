@@ -29,7 +29,7 @@ type BaseWriter struct {
 func NewBaseWriter(logger log.Logger, clock clock.Clock, slice *storage.Slice, dirPath string, filePath string, chain *writechain.Chain, events *Events) *BaseWriter {
 	return &BaseWriter{
 		chain:    chain,
-		syncer:   disksync.NewSyncer(logger, clock, slice.LocalStorage.Sync, chain),
+		syncer:   disksync.NewSyncer(logger, clock, slice.LocalStorage.DiskSync, chain),
 		events:   events,
 		logger:   logger,
 		slice:    slice,

@@ -25,8 +25,8 @@ func TestFile_Validation(t *testing.T) {
 			Value: File{
 				Dir:         "my-dir",
 				Compression: compression.DefaultConfig(),
-				Sync:        disksync.DefaultConfig(),
-				Volumes: VolumesAssignment{
+				DiskSync:    disksync.DefaultConfig(),
+				VolumesAssignment: VolumesAssignment{
 					PerPod: 1,
 				},
 			},
@@ -37,19 +37,19 @@ func TestFile_Validation(t *testing.T) {
 			Value: File{
 				Dir:         "",
 				Compression: compression.DefaultConfig(),
-				Sync:        disksync.DefaultConfig(),
-				Volumes: VolumesAssignment{
+				DiskSync:    disksync.DefaultConfig(),
+				VolumesAssignment: VolumesAssignment{
 					PerPod: 1,
 				},
 			},
 		},
 		{
 			Name:          "zero volumes per pod",
-			ExpectedError: `"volumes.perPod" must be 1 or greater`,
+			ExpectedError: `"volumesAssignment.perPod" must be 1 or greater`,
 			Value: File{
 				Dir:         "my-dir",
 				Compression: compression.DefaultConfig(),
-				Sync:        disksync.DefaultConfig(),
+				DiskSync:    disksync.DefaultConfig(),
 			},
 		},
 	}
