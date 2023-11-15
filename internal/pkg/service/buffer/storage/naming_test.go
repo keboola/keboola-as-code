@@ -17,7 +17,7 @@ func TestSliceFilename(t *testing.T) {
 		ct       compression.Type
 	}{
 		{"slice.csv", FileTypeCSV, compression.TypeNone},
-		{"slice.csv.gzip", FileTypeCSV, compression.TypeGZIP},
+		{"slice.csv.gz", FileTypeCSV, compression.TypeGZIP},
 		{"slice.csv.zstd", FileTypeCSV, compression.TypeZSTD},
 		{"", "invalid", compression.TypeNone},
 		{"", FileTypeCSV, "invalid"},
