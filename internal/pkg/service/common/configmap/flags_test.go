@@ -39,14 +39,14 @@ func TestStructToFlags_Empty(t *testing.T) {
 	// Struct
 	flagToField1 := make(map[string]orderedmap.Path)
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err := structToFlags(fs1, in, flagToField1)
+	err := StructToFlags(fs1, in, flagToField1)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
 	flagToField2 := make(map[string]orderedmap.Path)
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err = structToFlags(fs2, &in, flagToField2)
+	err = StructToFlags(fs2, &in, flagToField2)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
 
@@ -121,14 +121,14 @@ func TestStructToFlags_Default(t *testing.T) {
 	// Struct
 	flagToField1 := make(map[string]orderedmap.Path)
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err := structToFlags(fs1, in, flagToField1)
+	err := StructToFlags(fs1, in, flagToField1)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
 	flagToField2 := make(map[string]orderedmap.Path)
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err = structToFlags(fs2, &in, flagToField2)
+	err = StructToFlags(fs2, &in, flagToField2)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
 
