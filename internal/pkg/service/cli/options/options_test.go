@@ -39,7 +39,7 @@ func TestValuesPriority(t *testing.T) {
 	err = options.Load(context.Background(), logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "default flag value", options.GetString(key))
-	assert.Equal(t, configmap.SetByFlagDefault, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByDefault, options.KeySetBy(key))
 
 	// 3. Higher priority, ".env" file from project dir
 	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
