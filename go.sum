@@ -1525,6 +1525,8 @@ github.com/keboola/go-jsonnet v0.19.1 h1:vdWv6lKNX2WdZl4R8PCOnOWINIjdcwmLqNssU7O
 github.com/keboola/go-jsonnet v0.19.1/go.mod h1:pSOb2+VoKZjVbIB4z58am8q15yWO/VTEp6n1GxW3x0I=
 github.com/keboola/go-utils v0.8.1 h1:nkTiAX9Me9NHvEkopm762BKV+iMNDqWyXmBsOTVDmyE=
 github.com/keboola/go-utils v0.8.1/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
+github.com/keboola/go-utils v0.8.3 h1:FCAircm1wlI0S6MgJxfmoo5HvjX2p0/LnClNfPMnI7k=
+github.com/keboola/go-utils v0.8.3/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
