@@ -53,8 +53,8 @@ func NewFileOpenedAt(openedAtStr string) *storage.File {
 		LocalStorage: local.File{
 			Dir:         "my-dir",
 			Compression: compression.DefaultNoneConfig(),
-			Sync:        disksync.DefaultConfig(),
-			Volumes: local.VolumesAssignment{
+			DiskSync:    disksync.DefaultConfig(),
+			VolumesAssignment: local.VolumesAssignment{
 				PerPod:         1,
 				PreferredTypes: []string{},
 			},

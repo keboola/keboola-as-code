@@ -15,10 +15,10 @@ type Slice struct {
 	Filename string `json:"filename" validate:"required"`
 	// IsEmpty is set if the upload was skipped because we did not receive any data.
 	IsEmpty bool `json:"isEmpty,omitempty"`
-	// AllocateSpace when creating the local file.
-	AllocateSpace datasize.ByteSize `json:"allocateSpace"`
 	// Compression of the local file.
 	Compression compression.Config `json:"compression"`
-	// Sync writer configuration.
-	Sync disksync.Config `json:"sync"`
+	// DiskSync writer configuration.
+	DiskSync disksync.Config `json:"diskSync"`
+	// AllocatedDiskSpace defines the disk size that is pre-allocated when creating the slice.
+	AllocatedDiskSpace datasize.ByteSize `json:"allocatedDiskSpace"`
 }

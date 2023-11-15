@@ -20,7 +20,7 @@ func New(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 	case compression.TypeNone:
 		return &nopCloser{Writer: w}, nil
 	case compression.TypeGZIP:
-		switch cfg.GZIP.Impl {
+		switch cfg.GZIP.Implementation {
 		case compression.GZIPImplStandard:
 			return newGZIPWriter(w, cfg)
 		case compression.GZIPImplFast:
@@ -28,7 +28,7 @@ func New(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
 		case compression.GZIPImplParallel:
 			return newParallelGZIPWriter(w, cfg)
 		default:
-			panic(errors.Errorf(`unexpected gzip implementation type "%s"`, cfg.GZIP.Impl))
+			panic(errors.Errorf(`unexpected gzip implementation type "%s"`, cfg.GZIP.Implementation))
 		}
 	case compression.TypeZSTD:
 		return newZstdWriter(w, cfg)
