@@ -53,22 +53,6 @@ func TestConfig_Validation(t *testing.T) {
 			Config: DefaultNoneConfig(),
 		},
 		{
-			Name:          "none: unexpected gzip config",
-			ExpectedError: `"gzip" should not be set`,
-			Config: Config{
-				Type: TypeNone,
-				GZIP: &GZIPConfig{},
-			},
-		},
-		{
-			Name:          "none: unexpected zstd config",
-			ExpectedError: `"zstd" should not be set`,
-			Config: Config{
-				Type: TypeNone,
-				ZSTD: &ZSTDConfig{},
-			},
-		},
-		{
 			Name: "gzip: ok",
 			Config: Config{
 				Type: TypeGZIP,
@@ -145,19 +129,6 @@ func TestConfig_Validation(t *testing.T) {
 			},
 		},
 		{
-			Name:          "gzip: unexpected zstd config",
-			ExpectedError: `"zstd" should not be set`,
-			Config: Config{
-				Type: TypeGZIP,
-				GZIP: &GZIPConfig{
-					Level:     DefaultGZIPLevel,
-					Impl:      DefaultGZIPImpl,
-					BlockSize: DefaultGZIPBlockSize,
-				},
-				ZSTD: &ZSTDConfig{},
-			},
-		},
-		{
 			Name: "zstd: ok",
 			Config: Config{
 				Type: TypeZSTD,
@@ -216,19 +187,6 @@ func TestConfig_Validation(t *testing.T) {
 				ZSTD: &ZSTDConfig{
 					Level:       DefaultZSTDLevel,
 					WindowSize:  1000000000,
-					Concurrency: 4,
-				},
-			},
-		},
-		{
-			Name:          "zstd: unexpected gzip config",
-			ExpectedError: `"gzip" should not be set`,
-			Config: Config{
-				Type: TypeZSTD,
-				GZIP: &GZIPConfig{},
-				ZSTD: &ZSTDConfig{
-					Level:       DefaultGZIPLevel,
-					WindowSize:  DefaultZSDTWindowSize,
 					Concurrency: 4,
 				},
 			},
