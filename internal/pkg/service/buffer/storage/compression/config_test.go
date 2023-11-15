@@ -57,10 +57,10 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
-					Level:       DefaultGZIPLevel,
-					Impl:        DefaultGZIPImpl,
-					BlockSize:   DefaultGZIPBlockSize,
-					Concurrency: 4,
+					Level:          DefaultGZIPLevel,
+					Implementation: DefaultGZIPImpl,
+					BlockSize:      DefaultGZIPBlockSize,
+					Concurrency:    4,
 				},
 			},
 		},
@@ -74,9 +74,9 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
-					Level:     0,
-					Impl:      DefaultGZIPImpl,
-					BlockSize: DefaultGZIPBlockSize,
+					Level:          0,
+					Implementation: DefaultGZIPImpl,
+					BlockSize:      DefaultGZIPBlockSize,
 				},
 			},
 		},
@@ -86,9 +86,9 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
-					Level:     10,
-					Impl:      DefaultGZIPImpl,
-					BlockSize: DefaultGZIPBlockSize,
+					Level:          10,
+					Implementation: DefaultGZIPImpl,
+					BlockSize:      DefaultGZIPBlockSize,
 				},
 			},
 		},
@@ -98,9 +98,9 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
-					Level:     DefaultGZIPLevel,
-					Impl:      "foo",
-					BlockSize: DefaultGZIPBlockSize,
+					Level:          DefaultGZIPLevel,
+					Implementation: "foo",
+					BlockSize:      DefaultGZIPBlockSize,
 				},
 			},
 		},
@@ -110,9 +110,9 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
-					Level:     DefaultGZIPLevel,
-					Impl:      DefaultGZIPImpl,
-					BlockSize: 1,
+					Level:          DefaultGZIPLevel,
+					Implementation: DefaultGZIPImpl,
+					BlockSize:      1,
 				},
 			},
 		},
@@ -122,9 +122,9 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
-					Level:     DefaultGZIPLevel,
-					Impl:      DefaultGZIPImpl,
-					BlockSize: 1000000000,
+					Level:          DefaultGZIPLevel,
+					Implementation: DefaultGZIPImpl,
+					BlockSize:      1000000000,
 				},
 			},
 		},

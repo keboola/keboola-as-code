@@ -86,7 +86,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, er
 
 	// Allocate disk space
 	if isNew := stat.Size() == 0; isNew {
-		if size := slice.LocalStorage.AllocateSpace; size != 0 {
+		if size := slice.LocalStorage.AllocatedDiskSpace; size != 0 {
 			if ok, err := v.config.allocator.Allocate(file, size); ok {
 				logger.Debugf(`allocated disk space "%s"`, size)
 			} else if err != nil {

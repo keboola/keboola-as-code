@@ -52,10 +52,10 @@ func DefaultGZIPConfig() Config {
 	return Config{
 		Type: TypeGZIP,
 		GZIP: &GZIPConfig{
-			Level:       DefaultGZIPLevel,
-			Impl:        DefaultGZIPImpl,
-			BlockSize:   DefaultGZIPBlockSize,
-			Concurrency: 0,
+			Level:          DefaultGZIPLevel,
+			Implementation: DefaultGZIPImpl,
+			BlockSize:      DefaultGZIPBlockSize,
+			Concurrency:    0,
 		},
 	}
 }

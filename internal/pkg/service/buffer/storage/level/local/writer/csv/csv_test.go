@@ -127,8 +127,8 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	slice := testcase.NewTestSlice(vol)
 	slice.Type = storage.FileTypeCSV
 	slice.Columns = column.Columns{column.ID{Name: "id"}}
-	slice.LocalStorage.Sync.Mode = disksync.ModeDisk
-	slice.LocalStorage.Sync.Wait = true
+	slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
+	slice.LocalStorage.DiskSync.Wait = true
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 

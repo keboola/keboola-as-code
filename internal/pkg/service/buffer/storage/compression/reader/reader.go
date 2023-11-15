@@ -20,7 +20,7 @@ func New(r io.Reader, cfg compression.Config) (io.ReadCloser, error) {
 	case compression.TypeNone:
 		return io.NopCloser(r), nil
 	case compression.TypeGZIP:
-		switch cfg.GZIP.Impl {
+		switch cfg.GZIP.Implementation {
 		case compression.GZIPImplStandard:
 			return newGZIPReader(r)
 		case compression.GZIPImplFast:
@@ -28,7 +28,7 @@ func New(r io.Reader, cfg compression.Config) (io.ReadCloser, error) {
 		case compression.GZIPImplParallel:
 			return newParallelGZIPReader(r)
 		default:
-			panic(errors.Errorf(`unexpected gzip implementation type "%s"`, cfg.GZIP.Impl))
+			panic(errors.Errorf(`unexpected gzip implementation type "%s"`, cfg.GZIP.Implementation))
 		}
 	case compression.TypeZSTD:
 		return newZstdReader(r, cfg)

@@ -117,7 +117,7 @@ func TestSlice_Validation(t *testing.T) {
 		Dir:         "my-dir",
 		Filename:    "slice.csv",
 		Compression: compression.DefaultConfig(),
-		Sync:        disksync.DefaultConfig(),
+		DiskSync:    disksync.DefaultConfig(),
 	}
 	stagingStorage := staging.Slice{
 		Path:        "slice.csv.gzip",

@@ -113,8 +113,8 @@ func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
 func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.Sync.Mode = disksync.ModeDisk
-	tc.Slice.LocalStorage.Sync.Wait = true
+	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
+	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
@@ -217,8 +217,8 @@ INFO  closed volume
 func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.Sync.Mode = disksync.ModeCache
-	tc.Slice.LocalStorage.Sync.Wait = true
+	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
+	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
@@ -310,8 +310,8 @@ INFO  closed volume
 func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.Sync.Mode = disksync.ModeDisk
-	tc.Slice.LocalStorage.Sync.Wait = false
+	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
+	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
@@ -387,8 +387,8 @@ INFO  closed volume
 func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.Sync.Mode = disksync.ModeCache
-	tc.Slice.LocalStorage.Sync.Wait = false
+	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
+	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
@@ -455,7 +455,7 @@ INFO  closed volume
 func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.Sync = disksync.Config{Mode: disksync.ModeDisabled}
+	tc.Slice.LocalStorage.DiskSync = disksync.Config{Mode: disksync.ModeDisabled}
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
@@ -560,7 +560,7 @@ DEBUG  closing file
 func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.AllocateSpace = 0
+	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
 	w, err := tc.NewWriter(WithAllocator(allocate.DefaultAllocator{}))
 	assert.NoError(t, err)
 

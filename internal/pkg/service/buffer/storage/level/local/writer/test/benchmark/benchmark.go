@@ -136,9 +136,9 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *volume.Volume) *storag
 	s.VolumeID = volume.ID()
 	s.Type = wb.FileType
 	s.Columns = wb.Columns
-	s.LocalStorage.AllocateSpace = wb.Allocate
+	s.LocalStorage.AllocatedDiskSpace = wb.Allocate
 	s.LocalStorage.Compression = wb.Compression
-	s.LocalStorage.Sync = wb.Sync
+	s.LocalStorage.DiskSync = wb.Sync
 	s.StagingStorage.Compression = wb.Compression
 
 	// Slice definition must be valid
