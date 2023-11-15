@@ -10,7 +10,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -18,20 +17,18 @@ const (
 )
 
 type BranchRepository struct {
-	telemetry telemetry.Telemetry
-	clock     clock.Clock
-	client    etcd.KV
-	schema    branchSchema
-	all       *Repository
+	clock  clock.Clock
+	client etcd.KV
+	schema branchSchema
+	all    *Repository
 }
 
 func newBranchRepository(d dependencies, all *Repository) *BranchRepository {
 	return &BranchRepository{
-		telemetry: d.Telemetry(),
-		clock:     d.Clock(),
-		client:    d.EtcdClient(),
-		schema:    newBranchSchema(d.EtcdSerde()),
-		all:       all,
+		clock:  d.Clock(),
+		client: d.EtcdClient(),
+		schema: newBranchSchema(d.EtcdSerde()),
+		all:    all,
 	}
 }
 
