@@ -79,8 +79,8 @@ func TestProvider(t *testing.T) {
 			},
 		},
 	}))
-	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
-	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
 
 	// Check provider
 	expected := statistics.Aggregated{

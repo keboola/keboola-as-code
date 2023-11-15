@@ -136,7 +136,7 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Move stats from local -> staging level",
 			Prepare: func() {
-				assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
+				assert.NoError(t, repo.Move(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
@@ -213,7 +213,7 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Move stats from local -> target level",
 			Prepare: func() {
-				assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+				assert.NoError(t, repo.Move(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
@@ -253,7 +253,7 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Remove stats from the local level",
 			Prepare: func() {
-				assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx).Err())
+				assert.NoError(t, repo.Delete(sliceKey1).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
@@ -286,7 +286,7 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Remove stats from the staging level",
 			Prepare: func() {
-				assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx).Err())
+				assert.NoError(t, repo.Delete(sliceKey2).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
@@ -312,7 +312,7 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Remove stats from the target level, statistics are rolled up to the export sum",
 			Prepare: func() {
-				assert.NoError(t, repo.DeleteOp(sliceKey3.FileKey).Do(ctx).Err())
+				assert.NoError(t, repo.Delete(sliceKey3.FileKey).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
