@@ -4,6 +4,7 @@ package writer
 import (
 	"compress/gzip"
 	"io"
+	"runtime"
 
 	fastGzip "github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
@@ -45,26 +46,36 @@ func newFastGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, err
 }
 
 func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
-	bSize, bCount := cfg.GZIP.BlockSize, cfg.GZIP.Concurrency
+	// Concurrency = 0 means "auto", number of available CPU threads
+	concurrency := cfg.GZIP.Concurrency
+	if concurrency == 0 {
+		concurrency = runtime.GOMAXPROCS(0)
+	}
 
 	out, err := pgzip.NewWriterLevel(w, cfg.GZIP.Level)
 	if err != nil {
 		return nil, errors.Errorf(`cannot create parallel gzip writer: %w`, err)
 	}
 
-	err = out.SetConcurrency(int(cfg.GZIP.BlockSize.Bytes()), cfg.GZIP.Concurrency)
+	err = out.SetConcurrency(int(cfg.GZIP.BlockSize.Bytes()), concurrency)
 	if err != nil {
-		return nil, errors.Errorf(`cannot set parallel gzip concurrency, size=%s, count=%d: %w`, bSize, bCount, err)
+		return nil, errors.Errorf(`cannot set parallel gzip concurrency, size=%s, count=%d: %w`, cfg.GZIP.BlockSize, concurrency, err)
 	}
 
 	return out, nil
 }
 
 func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) {
+	// Concurrency = 0 means "auto", number of available CPU threads
+	concurrency := cfg.ZSTD.Concurrency
+	if concurrency == 0 {
+		concurrency = runtime.GOMAXPROCS(0)
+	}
+
 	return zstd.NewWriter(
 		w,
 		zstd.WithEncoderLevel(cfg.ZSTD.Level),
-		zstd.WithEncoderConcurrency(cfg.ZSTD.Concurrency),
+		zstd.WithEncoderConcurrency(concurrency),
 		zstd.WithWindowSize(nextPowOf2(int(cfg.ZSTD.WindowSize.Bytes()))),
 		zstd.WithLowerEncoderMem(false),
 	)
