@@ -14,7 +14,7 @@ func TestFilename(t *testing.T) {
 		t        Type
 	}{
 		{"file.txt", TypeNone},
-		{"file.txt.gzip", TypeGZIP},
+		{"file.txt.gz", TypeGZIP},
 		{"file.txt.zstd", TypeZSTD},
 		{"", "invalid"},
 	}

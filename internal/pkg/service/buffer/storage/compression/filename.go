@@ -7,7 +7,7 @@ func Filename(base string, t Type) (string, error) {
 	case TypeNone:
 		return base, nil
 	case TypeGZIP:
-		return base + ".gzip", nil
+		return base + ".gz", nil
 	case TypeZSTD:
 		return base + ".zstd", nil
 	default:
