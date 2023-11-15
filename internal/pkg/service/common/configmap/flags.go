@@ -10,11 +10,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// structToFlags generates FlagSet from the provided configuration structure.
+// StructToFlags generates FlagSet from the provided configuration structure.
 // Each field tagged by "configKey" tag is mapped to a flag.
 // Field can optionally have the "configUsage" tag.
 // Inspired by: https://stackoverflow.com/a/72893101
-func structToFlags(fs *pflag.FlagSet, v ConfigStruct, flagToField map[string]orderedmap.Path) error {
+func StructToFlags(fs *pflag.FlagSet, v ConfigStruct, outFlagToField map[string]orderedmap.Path) error {
 	// Dereference pointer, if any
 	value := reflect.ValueOf(v)
 	if value.Kind() == reflect.Pointer {
@@ -36,7 +36,10 @@ func structToFlags(fs *pflag.FlagSet, v ConfigStruct, flagToField map[string]ord
 				return nil
 			}
 
-			flagToField[flagName] = vc.MappedPath
+			if outFlagToField != nil {
+				outFlagToField[flagName] = vc.MappedPath
+			}
+
 			usage := vc.StructField.Tag.Get(configUsageTag)
 
 			switch v := vc.PrimitiveValue.Interface().(type) {

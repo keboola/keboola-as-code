@@ -86,7 +86,7 @@ func Bind(cfg BindSpec, targets ...ConfigStruct) error {
 	// Generate flags from the structs
 	flagToFieldMap := make(map[string]orderedmap.Path)
 	for _, target := range targets {
-		if err := structToFlags(flags, target, flagToFieldMap); err != nil {
+		if err := StructToFlags(flags, target, flagToFieldMap); err != nil {
 			return err
 		}
 	}
