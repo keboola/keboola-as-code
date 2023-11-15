@@ -16,9 +16,9 @@ const (
 
 // Config for compression writer and reader.
 type Config struct {
-	Type Type        `json:"type" mapstructure:"type" validate:"required,oneof=none gzip zstd"  usage:"Compression type."`
-	GZIP *GZIPConfig `json:"gzip,omitempty" mapstructure:"gzip" validate:"required_if=Type gzip"`
-	ZSTD *ZSTDConfig `json:"zstd,omitempty" mapstructure:"zstd" validate:"required_if=Type zstd"`
+	Type Type        `json:"type" configKey:"type" validate:"required,oneof=none gzip zstd"  configUsage:"Compression type."`
+	GZIP *GZIPConfig `json:"gzip,omitempty" configKey:"gzip" validate:"required_if=Type gzip"`
+	ZSTD *ZSTDConfig `json:"zstd,omitempty" configKey:"zstd" validate:"required_if=Type zstd"`
 }
 
 type GZIPConfig struct {
@@ -29,9 +29,9 @@ type GZIPConfig struct {
 }
 
 type ZSTDConfig struct {
-	Level       zstd.EncoderLevel `json:"level" mapstructure:"level" validate:"min=1,max=4" usage:"ZSTD compression level."`
-	WindowSize  datasize.ByteSize `json:"windowSize" mapstructure:"window-size" validate:"required,min=1024,max=536870912" usage:"ZSTD window size."` // 1kB-512MB
-	Concurrency int               `json:"concurrency" mapstructure:"concurrency" usage:"ZSTD concurrency, 0 = auto"`
+	Level       zstd.EncoderLevel `json:"level" configKey:"level" validate:"min=1,max=4" configUsage:"ZSTD compression level: fastest, default, better, best"`
+	WindowSize  datasize.ByteSize `json:"windowSize" configKey:"windowSize" validate:"required,min=1024,max=536870912" configUsage:"ZSTD window size."` // 1kB-512MB
+	Concurrency int               `json:"concurrency" configKey:"concurrency" configUsage:"ZSTD concurrency, 0 = auto"`
 }
 
 func DefaultConfig() Config {

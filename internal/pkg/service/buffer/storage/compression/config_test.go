@@ -32,7 +32,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "gzip: empty",
-			ExpectedError: "- \"gzip.level\" must be 1 or greater\n- \"gzip.impl\" is a required field\n- \"gzip.blockSize\" is a required field",
+			ExpectedError: "- \"gzip.level\" must be 1 or greater\n- \"gzip.implementation\" is a required field\n- \"gzip.blockSize\" is a required field",
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{},
@@ -94,7 +94,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "gzip: unexpected impl",
-			ExpectedError: `"gzip.impl" must be one of [standard fast parallel]`,
+			ExpectedError: `"gzip.implementation" must be one of [standard fast parallel]`,
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
