@@ -4,8 +4,9 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
-	"github.com/keboola/go-utils/pkg/orderedmap"
 	"reflect"
+
+	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
 type VisitConfig struct {
