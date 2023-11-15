@@ -16,12 +16,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-// TestRepository_DeleteOp_LevelLocalAndStaging tests deletion
+// TestRepository_Delete_LevelLocalAndStaging tests deletion
 // of the statistics on the storage.LevelLocal and storage.LevelStaging.
 //
 // Statistics are permanently deleted without rollup to the higher level,
 // because the data are lost, they did not arrive to the storage.LevelTarget.
-func TestRepository_DeleteOp_LevelLocalAndStaging(t *testing.T) {
+func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -49,8 +49,8 @@ func TestRepository_DeleteOp_LevelLocalAndStaging(t *testing.T) {
 	}))
 
 	// Move statistics for slices 2 and 3 to the storage.LevelStaging
-	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
-	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey2, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey3, storage.LevelLocal, storage.LevelStaging).Do(ctx).Err())
 
 	// Check initial state
 	etcdhelper.AssertKVsString(t, client, `
@@ -92,7 +92,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Delete slice 2 statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey2).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey2).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
@@ -120,13 +120,13 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Delete file statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, ``)
 }
 
-// TestRepository_DeleteOp_LevelTarget_Sum tests that statistics of data in storage.LevelTarget
+// TestRepository_Delete_LevelTarget_Sum tests that statistics of data in storage.LevelTarget
 // are rolled up to the parent object sum when the object is deleted.
-func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
+func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -175,9 +175,9 @@ func TestRepository_DeleteOp_LevelTarget_Sum(t *testing.T) {
 	}))
 
 	// Move statistics to the target level
-	assert.NoError(t, repo.MoveOp(sliceKey1, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
-	assert.NoError(t, repo.MoveOp(sliceKey2, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
-	assert.NoError(t, repo.MoveOp(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey1, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey2, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey3, storage.LevelLocal, storage.LevelTarget).Do(ctx).Err())
 
 	// Check initial state
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
@@ -264,7 +264,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete slice 1 statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey1).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey1).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -340,7 +340,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete slice 3 statistics
-	assert.NoError(t, repo.DeleteOp(sliceKey3).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey3).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -404,7 +404,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete file
-	assert.NoError(t, repo.DeleteOp(sliceKey1.FileKey).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -447,7 +447,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 `)
 
 	// Delete export
-	assert.NoError(t, repo.DeleteOp(sliceKey1.SinkKey).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey1.SinkKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -481,7 +481,7 @@ storage/stats/target/123/456/my-source/_sum
 `)
 
 	// Delete receiver
-	assert.NoError(t, repo.DeleteOp(sliceKey1.SourceKey).Do(ctx).Err())
+	assert.NoError(t, repo.Delete(sliceKey1.SourceKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
