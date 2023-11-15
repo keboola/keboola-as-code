@@ -10,9 +10,9 @@ import (
 // transformFn transforms statistics value, for example to set StagingSize after the upload.
 type transformFn func(value *statistics.Value)
 
-// MoveOp returns an etcd operation to move slice statistics to a different storage level.
+// Move returns an etcd operation to move slice statistics to a different storage level.
 // This operation should not be used separately but atomically together with changing the slice state.
-func (r *Repository) MoveOp(sliceKey storage.SliceKey, from, to storage.Level, transform ...transformFn) *op.AtomicOp {
+func (r *Repository) Move(sliceKey storage.SliceKey, from, to storage.Level, transform ...transformFn) *op.AtomicOp {
 	if from == to {
 		panic(errors.Errorf(`from and to categories are same and equal to "%s"`, to))
 	}

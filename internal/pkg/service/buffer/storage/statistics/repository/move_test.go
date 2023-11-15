@@ -16,13 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestMoveOp_SameLevels_Panic(t *testing.T) {
+func TestMove_SameLevels_Panic(t *testing.T) {
 	t.Parallel()
 
 	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
 	repo := repository.New(d)
 	assert.PanicsWithError(t, `from and to categories are same and equal to "staging"`, func() {
-		repo.MoveOp(test.NewSliceKey(), storage.LevelStaging, storage.LevelStaging)
+		repo.Move(test.NewSliceKey(), storage.LevelStaging, storage.LevelStaging)
 	})
 }
 
@@ -38,7 +38,7 @@ func TestMoveOp(t *testing.T) {
 	sliceKey := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 
 	// Move non-existing statistics or empty statistics
-	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// Create a record in the storage.LevelLocal
@@ -72,7 +72,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	addStagingSize := func(value *statistics.Value) {
 		value.StagingSize = 1
 	}
-	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelLocal, storage.LevelStaging, addStagingSize).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey, storage.LevelLocal, storage.LevelStaging, addStagingSize).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
@@ -89,7 +89,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Move record to the storage.LevelTarget
-	assert.NoError(t, repo.MoveOp(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey, storage.LevelStaging, storage.LevelTarget).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value

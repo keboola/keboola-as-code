@@ -8,10 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
-// DeleteOp returns an etcd operation to delete all statistics associated with the object key.
+// Delete returns an etcd operation to delete all statistics associated with the object key.
 // Statistics for the storage.LevelTarget are not deleted but are rolled up to the parent object.
 // This operation should not be used separately but atomically together with the deletion of the object.
-func (r *Repository) DeleteOp(objectKey fmt.Stringer) *op.AtomicOp {
+func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp {
 	ops := op.Atomic(r.client)
 	for _, level := range storage.AllLevels() {
 		// Object prefix contains all statistics related to the object
