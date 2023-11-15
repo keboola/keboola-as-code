@@ -5,11 +5,9 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type dependencies interface {
-	Telemetry() telemetry.Telemetry
 	Clock() clock.Clock
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde

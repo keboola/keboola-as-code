@@ -11,7 +11,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -20,20 +19,18 @@ const (
 )
 
 type SourceRepository struct {
-	telemetry telemetry.Telemetry
-	clock     clock.Clock
-	client    etcd.KV
-	schema    sourceSchema
-	all       *Repository
+	clock  clock.Clock
+	client etcd.KV
+	schema sourceSchema
+	all    *Repository
 }
 
 func newSourceRepository(d dependencies, all *Repository) *SourceRepository {
 	return &SourceRepository{
-		telemetry: d.Telemetry(),
-		clock:     d.Clock(),
-		client:    d.EtcdClient(),
-		schema:    newSourceSchema(d.EtcdSerde()),
-		all:       all,
+		clock:  d.Clock(),
+		client: d.EtcdClient(),
+		schema: newSourceSchema(d.EtcdSerde()),
+		all:    all,
 	}
 }
 

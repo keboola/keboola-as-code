@@ -11,7 +11,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -20,20 +19,18 @@ const (
 )
 
 type SinkRepository struct {
-	telemetry telemetry.Telemetry
-	clock     clock.Clock
-	client    etcd.KV
-	schema    sinkSchema
-	all       *Repository
+	clock  clock.Clock
+	client etcd.KV
+	schema sinkSchema
+	all    *Repository
 }
 
 func newSinkRepository(d dependencies, all *Repository) *SinkRepository {
 	return &SinkRepository{
-		telemetry: d.Telemetry(),
-		clock:     d.Clock(),
-		client:    d.EtcdClient(),
-		schema:    newSinkSchema(d.EtcdSerde()),
-		all:       all,
+		clock:  d.Clock(),
+		client: d.EtcdClient(),
+		schema: newSinkSchema(d.EtcdSerde()),
+		all:    all,
 	}
 }
 
