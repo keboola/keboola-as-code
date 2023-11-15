@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -14,7 +15,8 @@ const (
 )
 
 type TableSink struct {
-	UploadConditions *SliceUploadConditions `json:"uploadConditions"` // nil == default
+	Storage          storage.ConfigPatch    `json:"storage,omitempty"`
+	UploadConditions *SliceUploadConditions `json:"uploadConditions,omitempty"` // nil == default
 	ImportConditions TableImportConditions  `json:"importConditions"`
 	Mapping          TableMapping           `json:"mapping"`
 }
