@@ -4,6 +4,7 @@ package reader
 import (
 	"compress/gzip"
 	"io"
+	"runtime"
 
 	fastGzip "github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
@@ -54,13 +55,17 @@ func newParallelGZIPReader(r io.Reader) (io.ReadCloser, error) {
 }
 
 func newZstdReader(r io.Reader, cfg compression.Config) (io.ReadCloser, error) {
-	zstdReader, err := zstd.NewReader(
-		r,
-		zstd.WithDecoderConcurrency(cfg.ZSTD.Concurrency),
-	)
+	// Concurrency = 0 means "auto", number of available CPU threads
+	concurrency := cfg.ZSTD.Concurrency
+	if concurrency == 0 {
+		concurrency = runtime.GOMAXPROCS(0)
+	}
+
+	zstdReader, err := zstd.NewReader(r, zstd.WithDecoderConcurrency(concurrency))
 	if err != nil {
 		return nil, err
 	}
+
 	return &noErrorCloser{reader: zstdReader}, nil
 }
 
