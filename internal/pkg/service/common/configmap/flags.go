@@ -74,7 +74,7 @@ func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedma
 			case bool:
 				fs.Bool(flagName, v, usage)
 			case string:
-				if value.IsZero() {
+				if vc.Value.IsZero() {
 					// Don't set the default Value, if the original Value is empty.
 					// For example empty time.Duration(0) is represented as not empty string "0s",
 					// but we don't want to show the empty string, as we do not do in other empty cases either.

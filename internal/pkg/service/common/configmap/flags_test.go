@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStructToFlags_Empty(t *testing.T) {
+func TestStructToFlags_AlmostEmpty(t *testing.T) {
 	t.Parallel()
 
-	in := TestConfig{}
+	in := TestConfig{Float: 123.45}
 
 	expected := `
       --address string             
@@ -25,7 +25,7 @@ func TestStructToFlags_Empty(t *testing.T) {
       --duration string            
       --duration-nullable string   
       --embedded string            
-      --float float                
+      --float float                 (default 123.45)
       --int int                    
       --int-slice ints             
       --nested-bar int             
