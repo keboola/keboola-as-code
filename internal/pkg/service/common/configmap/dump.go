@@ -43,10 +43,13 @@ func (v dumpedValue) MarshalJSON() ([]byte, error) {
 }
 
 // Dump the configuration structure to an internal buffer.
-func (d *Dumper) Dump(v ConfigStruct) *Dumper {
+func (d *Dumper) Dump(v any) *Dumper {
 	err := Visit(reflect.ValueOf(v), VisitConfig{
 		OnField: mapAndFilterField(),
 		OnValue: func(vc *VisitContext) error {
+			if !vc.Leaf {
+				return nil
+			}
 			return d.values.SetNestedPath(vc.MappedPath, dumpValue(vc))
 		},
 	})
