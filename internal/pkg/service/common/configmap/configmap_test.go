@@ -3,6 +3,7 @@ package configmap
 import (
 	"net/netip"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -10,16 +11,36 @@ type CustomStringType string
 
 type CustomIntType int
 
-type TestConfigWithValidationError struct {
-	Foo             string `configKey:"foo"`
+// TestValueNV is a value with Normalize and Validate methods.
+type TestValueNV struct {
 	ValidationError error
+	Foo             string `configKey:"foo"`
 }
 
-func (c TestConfigWithValidationError) Normalize() {
-	// nop
+func (c *TestValueNV) Normalize() {
+	c.Foo = strings.TrimSpace(c.Foo)
 }
 
-func (c TestConfigWithValidationError) Validate() error {
+func (c *TestValueNV) Validate() error {
+	return c.ValidationError
+}
+
+// TestConfigNV is a configuration structure with Normalize and Validate methods.
+type TestConfigNV struct {
+	ValidationError error
+	Key1            TestValueNV `configKey:"key1"`
+	Key2            struct {
+		KeyA TestValueNV `configKey:"keyA" validate:"required"`
+		KeyB TestValueNV `configKey:"keyB" validate:"required"`
+	} `configKey:"key2"`
+	Normalized string
+}
+
+func (c *TestConfigNV) Normalize() {
+	c.Normalized = "normalized"
+}
+
+func (c *TestConfigNV) Validate() error {
 	return c.ValidationError
 }
 
