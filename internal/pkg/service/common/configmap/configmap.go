@@ -122,6 +122,13 @@
 //	    - tag2
 //	interactive: false
 //
+// # Normalization and Validation
+//
+// Configuration structure and each nested value inside it and marked with the "configKey" tag may:
+//  - Implement the Normalize method, see ValueWithNormalization interface.
+//  - Implement the Validate method, see ValueWithValidation interface.
+//  - Has "validate" tag to define validation rules.
+//
 // # SetBy
 //
 // If you need to find out the source of the value, wrap the field type in the generic type Value[T].
