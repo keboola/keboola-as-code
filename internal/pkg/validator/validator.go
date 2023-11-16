@@ -76,8 +76,13 @@ func New(rules ...Rule) Validator {
 			return anonymousField
 		}
 
-		// Prefer JSON field name in error messages
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		// Prefer name defined by the configKey tag
+		name := strings.SplitN(fld.Tag.Get("configKey"), ",", 2)[0]
+
+		// Alternatively use JSON field name in error messages
+		if name == "" {
+			name = strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		}
 
 		// Alternatively use YAML field name
 		if name == "" {
