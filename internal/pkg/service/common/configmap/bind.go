@@ -47,17 +47,21 @@ type BindSpec struct {
 	GenerateDumpConfigFlag bool
 }
 
-// FlagToFieldFn translates flag definition to the field name in the configuration.
-type FlagToFieldFn func(flag *pflag.Flag) (orderedmap.Path, bool)
-
-// ConfigStruct of a service.
-type ConfigStruct interface {
+// ValueWithNormalization is a nested value with the Normalize method that is called on Bind and BindToViper.
+type ValueWithNormalization interface {
 	Normalize()
+}
+
+// ValueWithValidation is a nested value with the Validate method that is called on Bind and BindToViper.
+type ValueWithValidation interface {
 	Validate() error
 }
 
+// FlagToFieldFn translates flag definition to the field name in the configuration.
+type FlagToFieldFn func(flag *pflag.Flag) (orderedmap.Path, bool)
+
 // Bind flags, ENVs and config files to target configuration structures.
-func Bind(cfg BindSpec, targets ...ConfigStruct) error {
+func Bind(cfg BindSpec, targets ...any) error {
 	if len(targets) == 0 {
 		return errors.Errorf(`at least one ConfigStruct must be provided`)
 	}
