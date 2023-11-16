@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,22 +33,31 @@ func TestBind_Empty(t *testing.T) {
 	assert.Equal(t, TestConfig{}, target)
 }
 
-// TestBind_ValidationError tests validation error after binding.
-func TestBind_ValidationError(t *testing.T) {
+// TestBind_NormalizeAndValidate tests the Normalize and Validate method calls if a type implements them.
+func TestBind_NormalizeAndValidate(t *testing.T) {
 	t.Parallel()
 
 	spec := BindSpec{
-		Args:      []string{"--foo", "Foo"},
+		Args:      []string{"--key1-foo", "  Foo  "},
 		EnvNaming: env.NewNamingConvention("MY_APP_"),
 		Envs:      env.Empty(),
 	}
 
-	target := TestConfigWithValidationError{ValidationError: errors.New("some error")}
+	target := TestConfigNV{}
+	target.ValidationError = errors.New("config error")
+	target.Key1 = TestValueNV{ValidationError: errors.New("key1 error")}
+	target.Key2.KeyB = TestValueNV{ValidationError: errors.New("keyB error")}
 
 	err := Bind(spec, &target)
 	if assert.Error(t, err) {
-		assert.Equal(t, "some error", err.Error())
-		assert.Equal(t, "Foo", target.Foo)
+		assert.Equal(t, strings.TrimSpace(`
+- config error
+- invalid "key1": key1 error
+- invalid "key2.keyB": keyB error
+- "key2.keyA" is a required field
+`), err.Error())
+		assert.Equal(t, "Foo", target.Key1.Foo)          // normalized
+		assert.Equal(t, "normalized", target.Normalized) // set by the Normalize method
 	}
 }
 

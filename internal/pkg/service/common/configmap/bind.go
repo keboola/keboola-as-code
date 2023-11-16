@@ -1,9 +1,11 @@
 package configmap
 
 import (
+	"context"
 	"encoding"
 	"encoding/json"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -124,17 +126,14 @@ func Bind(cfg BindSpec, targets ...any) error {
 	}
 
 	// Bind config files, flags, envs to the structs
-	for _, target := range targets {
-		if err := bind(cfg, target, flags, flagToField, configFiles); err != nil {
-			return err
-		}
-	}
-
-	// Normalize and validate the structs
 	errs := errors.NewMultiError()
 	for _, target := range targets {
-		target.Normalize()
-		if err := target.Validate(); err != nil {
+		// Validate type
+		if v := reflect.ValueOf(target); v.Kind() != reflect.Pointer && v.Type().Elem().Kind() != reflect.Pointer {
+			return errors.Errorf(`cannot bind to type "%s": expected a pointer to a struct`, v.Type().String())
+		}
+
+		if err := bind(cfg, target, flags, flagToField, configFiles); err != nil {
 			errs.Append(err)
 		}
 	}
@@ -158,40 +157,68 @@ func Bind(cfg BindSpec, targets ...any) error {
 // bind binds flags, ENVs and config files to the configuration structure.
 // Flags have priority over environment variables.
 // The struct is normalized and validated.
-func bind(cfg BindSpec, target ConfigStruct, flags *pflag.FlagSet, flagToFieldFn FlagToFieldFn, configFiles []string) error {
+func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFieldFn, configFiles []string) error {
 	values, err := collectValues(flags, flagToFieldFn, cfg.EnvNaming, cfg.Envs, configFiles)
 	if err != nil {
 		return err
 	}
 
+	// Decode
+	validationErrs := errors.NewMultiError()
 	decoderCfg := &mapstructure.DecoderConfig{
 		TagName:          configKeyTag,
 		ZeroFields:       true,
 		WeaklyTypedInput: true,
 		Result:           target,
 	}
-
 	decoderCfg.DecodeHook = mapstructure.ComposeDecodeHookFunc(
 		unmarshalHook(&decoderCfg.DecodeHook),
 		// additional hooks can be added
 	)
-
 	decoder, err := mapstructure.NewDecoder(decoderCfg)
 	if err != nil {
 		return err
 	}
-
 	if err := decoder.Decode(values); err != nil {
 		return err
 	}
 
-	target.Normalize()
+	// Call Normalize and Validate methods on each value
+	_ = Visit(reflect.ValueOf(target), VisitConfig{
+		OnField: mapAndFilterField(),
+		OnValue: func(vc *VisitContext) error {
+			// Get pointer to the value, methods may be defined on the pointer
+			value := vc.Value
+			if value.Kind() != reflect.Pointer && value.CanAddr() {
+				value = value.Addr()
+			}
 
-	if err := target.Validate(); err != nil {
-		return err
+			// Call Normalize method, if any
+			if v, ok := value.Interface().(ValueWithNormalization); ok {
+				v.Normalize()
+			}
+
+			// Call Validate method, if any
+			if v, ok := value.Interface().(ValueWithValidation); ok {
+				if err := v.Validate(); err != nil {
+					if path := vc.MappedPath.String(); path == "" {
+						validationErrs.Append(err)
+					} else {
+						validationErrs.Append(errors.Errorf(`invalid "%s": %w`, path, err))
+					}
+				}
+			}
+
+			return nil
+		},
+	})
+
+	// Validate with validator
+	if err := validator.New().Validate(context.Background(), target); err != nil {
+		validationErrs.Append(err)
 	}
 
-	return nil
+	return validationErrs.ErrorOrNil()
 }
 
 // collectValues defined in the configuration structure from flags, ENVs and config files.
