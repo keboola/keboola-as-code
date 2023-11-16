@@ -27,9 +27,13 @@ type VisitContext struct {
 	// otherwise the PrimitiveValue is same as the Value.
 	PrimitiveValue reflect.Value
 	// Type of the Value
-	Type      reflect.Type
+	Type reflect.Type
+	// Leaf is true if it is the last value in the path.
+	Leaf bool
+	// Sensitive is true, if the field has `sensitive:"true"` tag.
 	Sensitive bool
-	Usage     string
+	// Usage contains value from the "configUsage" tag, if any.
+	Usage string
 }
 
 func Visit(value reflect.Value, cfg VisitConfig) error {
@@ -43,8 +47,9 @@ func Visit(value reflect.Value, cfg VisitConfig) error {
 func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	isNil := vc.Value.Kind() == reflect.Pointer && vc.Value.IsNil()
 
-	onPrimitiveValue := func(primitiveValue reflect.Value) error {
+	onLeaf := func(primitiveValue reflect.Value) error {
 		vc.PrimitiveValue = primitiveValue
+		vc.Leaf = true
 		return cfg.OnValue(vc)
 	}
 
@@ -67,67 +72,72 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	switch v := methodReceiver.Interface().(type) {
 	case fmt.Stringer:
 		if isNil {
-			return onPrimitiveValue(reflect.ValueOf(""))
+			return onLeaf(reflect.ValueOf(""))
 		}
-		return onPrimitiveValue(reflect.ValueOf(v.String()))
+		return onLeaf(reflect.ValueOf(v.String()))
 	case json.Marshaler:
 		if isNil {
-			return onPrimitiveValue(reflect.ValueOf(""))
+			return onLeaf(reflect.ValueOf(""))
 		}
 		if v, err := v.MarshalJSON(); err == nil {
-			return onPrimitiveValue(reflect.ValueOf(string(v)))
+			return onLeaf(reflect.ValueOf(string(v)))
 		} else {
 			return err
 		}
 	case encoding.TextMarshaler:
 		if isNil {
-			return onPrimitiveValue(reflect.ValueOf(""))
+			return onLeaf(reflect.ValueOf(""))
 		}
 		if v, err := v.MarshalText(); err == nil {
-			return onPrimitiveValue(reflect.ValueOf(string(v)))
+			return onLeaf(reflect.ValueOf(string(v)))
 		} else {
 			return err
 		}
 	case encoding.BinaryMarshaler:
 		if isNil {
-			return onPrimitiveValue(reflect.ValueOf(""))
+			return onLeaf(reflect.ValueOf(""))
 		}
 		if bytes, err := v.MarshalBinary(); err == nil {
-			return onPrimitiveValue(reflect.ValueOf(string(bytes)))
+			return onLeaf(reflect.ValueOf(string(bytes)))
 		} else {
 			return err
 		}
 	default:
 		switch vc.Value.Kind() {
 		case reflect.Int:
-			return onPrimitiveValue(reflect.ValueOf(int(vc.Value.Int())))
+			return onLeaf(reflect.ValueOf(int(vc.Value.Int())))
 		case reflect.Int8:
-			return onPrimitiveValue(reflect.ValueOf(int8(vc.Value.Int())))
+			return onLeaf(reflect.ValueOf(int8(vc.Value.Int())))
 		case reflect.Int16:
-			return onPrimitiveValue(reflect.ValueOf(int16(vc.Value.Int())))
+			return onLeaf(reflect.ValueOf(int16(vc.Value.Int())))
 		case reflect.Int32:
-			return onPrimitiveValue(reflect.ValueOf(int32(vc.Value.Int())))
+			return onLeaf(reflect.ValueOf(int32(vc.Value.Int())))
 		case reflect.Int64:
-			return onPrimitiveValue(reflect.ValueOf(vc.Value.Int()))
+			return onLeaf(reflect.ValueOf(vc.Value.Int()))
 		case reflect.Uint:
-			return onPrimitiveValue(reflect.ValueOf(uint(vc.Value.Uint())))
+			return onLeaf(reflect.ValueOf(uint(vc.Value.Uint())))
 		case reflect.Uint8:
-			return onPrimitiveValue(reflect.ValueOf(uint8(vc.Value.Uint())))
+			return onLeaf(reflect.ValueOf(uint8(vc.Value.Uint())))
 		case reflect.Uint16:
-			return onPrimitiveValue(reflect.ValueOf(uint16(vc.Value.Uint())))
+			return onLeaf(reflect.ValueOf(uint16(vc.Value.Uint())))
 		case reflect.Uint32:
-			return onPrimitiveValue(reflect.ValueOf(uint32(vc.Value.Uint())))
+			return onLeaf(reflect.ValueOf(uint32(vc.Value.Uint())))
 		case reflect.Uint64:
-			return onPrimitiveValue(reflect.ValueOf(vc.Value.Uint()))
+			return onLeaf(reflect.ValueOf(vc.Value.Uint()))
 		case reflect.Float32:
-			return onPrimitiveValue(reflect.ValueOf(float32(vc.Value.Float())))
+			return onLeaf(reflect.ValueOf(float32(vc.Value.Float())))
 		case reflect.Float64:
-			return onPrimitiveValue(reflect.ValueOf(vc.Value.Float()))
+			return onLeaf(reflect.ValueOf(vc.Value.Float()))
 		case reflect.Bool:
-			return onPrimitiveValue(reflect.ValueOf(vc.Value.Bool()))
+			return onLeaf(reflect.ValueOf(vc.Value.Bool()))
 		case reflect.String:
-			return onPrimitiveValue(reflect.ValueOf(vc.Value.String()))
+			return onLeaf(reflect.ValueOf(vc.Value.String()))
 		case reflect.Struct:
+			// Call callback
+			if err := cfg.OnValue(vc); err != nil {
+				return err
+			}
+
 			for i := 0; i < vc.Value.NumField(); i++ {
 				// Fill context with field information
 				field := &VisitContext{}
@@ -137,6 +147,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 				field.Value = vc.Value.Field(i)
 				field.PrimitiveValue = field.Value
 				field.Type = field.Value.Type()
+				field.Leaf = false
 
 				// Mark field and all its children as sensitive according to the tag
 				field.Sensitive = vc.Sensitive || field.StructField.Tag.Get(sensitiveTag) == "true"
@@ -160,7 +171,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 				}
 			}
 		default:
-			return onPrimitiveValue(vc.Value)
+			return onLeaf(vc.Value)
 		}
 	}
 

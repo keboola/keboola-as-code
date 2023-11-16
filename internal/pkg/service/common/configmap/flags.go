@@ -14,7 +14,7 @@ import (
 // Each field tagged by "configKey" tag is mapped to a flag.
 // Field can optionally have the "configUsage" tag.
 // Inspired by: https://stackoverflow.com/a/72893101
-func StructToFlags(fs *pflag.FlagSet, v ConfigStruct, outFlagToField map[string]orderedmap.Path) error {
+func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedmap.Path) error {
 	// Dereference pointer, if any
 	value := reflect.ValueOf(v)
 	if value.Kind() == reflect.Pointer {
@@ -30,6 +30,10 @@ func StructToFlags(fs *pflag.FlagSet, v ConfigStruct, outFlagToField map[string]
 	return Visit(value, VisitConfig{
 		OnField: mapAndFilterField(),
 		OnValue: func(vc *VisitContext) error {
+			if !vc.Leaf {
+				return nil
+			}
+
 			fieldName := vc.MappedPath.String()
 			flagName := fieldToFlagName(fieldName)
 			if flagName == "" {
