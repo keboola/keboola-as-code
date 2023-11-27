@@ -65,7 +65,7 @@ type MockedConfig struct {
 	debugLogger  log.DebugLogger
 	procOpts     []servicectx.Option
 
-	etcdCredentials etcdclient.Credentials
+	etcdConfig etcdclient.Config
 
 	services                  keboola.Services
 	features                  keboola.Features
@@ -132,10 +132,10 @@ func WithLoggerPrefix(v string) MockedOption {
 	}
 }
 
-func WithEtcdCredentials(credentials etcdclient.Credentials) MockedOption {
+func WithEtcdConfig(cfg etcdclient.Config) MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
-		c.etcdCredentials = credentials
+		c.etcdConfig = cfg
 	}
 }
 
@@ -295,13 +295,13 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableEtcdClient {
-		if cfg.etcdCredentials.Endpoint == "" {
-			cfg.etcdCredentials = etcdhelper.TmpNamespace(t)
+		etcdCfg := cfg.etcdConfig
+		if cfg.etcdConfig.Endpoint == "" {
+			cfg.etcdConfig = etcdhelper.TmpNamespace(t)
+			cfg.etcdConfig.DebugLog = true
+			etcdCfg = cfg.etcdConfig
 		}
-		etcdOpts := []etcdclient.Option{
-			etcdclient.WithDebugOpLogs(etcdhelper.VerboseTestLogs()),
-		}
-		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, cfg.etcdCredentials, etcdOpts...)
+		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, etcdCfg)
 		require.NoError(t, err)
 	}
 
@@ -337,11 +337,11 @@ func (v *mocked) TestTelemetry() telemetry.ForTest {
 	return v.config.telemetry
 }
 
-func (v *mocked) TestEtcdCredentials() etcdclient.Credentials {
-	if v.config.etcdCredentials.Endpoint == "" {
+func (v *mocked) TestEtcdConfig() etcdclient.Config {
+	if v.config.etcdConfig.Endpoint == "" {
 		panic(errors.New("dependencies etcd client scope is not initialized"))
 	}
-	return v.config.etcdCredentials
+	return v.config.etcdConfig
 }
 
 // TestEtcdClient returns an etcd client for tests, for example to check etcd state.
@@ -351,7 +351,7 @@ func (v *mocked) TestEtcdClient() *etcdPkg.Client {
 		panic(errors.New("etcd is not enabled in the mocked dependencies"))
 	}
 	if v.testEtcdClient == nil {
-		v.testEtcdClient = etcdhelper.ClientForTest(v.t, v.config.etcdCredentials)
+		v.testEtcdClient = etcdhelper.ClientForTest(v.t, v.config.etcdConfig)
 	}
 	return v.testEtcdClient
 }

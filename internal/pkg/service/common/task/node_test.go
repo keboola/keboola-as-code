@@ -35,8 +35,8 @@ func TestSuccessfulTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -49,8 +49,8 @@ func TestSuccessfulTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
-	node2, _ := createNode(t, etcdCredentials, logs, tel, "node2")
+	node1, _ := createNode(t, etcdCfg, logs, tel, "node1")
+	node2, _ := createNode(t, etcdCfg, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -311,8 +311,8 @@ func TestFailedTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -325,8 +325,8 @@ func TestFailedTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
-	node2, _ := createNode(t, etcdCredentials, logs, tel, "node2")
+	node1, _ := createNode(t, etcdCfg, logs, tel, "node1")
+	node2, _ := createNode(t, etcdCfg, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -635,8 +635,8 @@ func TestTaskTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -648,7 +648,7 @@ func TestTaskTimeout(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create node and
-	node1, d := createNode(t, etcdCredentials, nil, tel, "node1")
+	node1, d := createNode(t, etcdCfg, nil, tel, "node1")
 	logger := d.DebugLogger()
 	logger.Truncate()
 	tel.Reset()
@@ -801,8 +801,8 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -815,7 +815,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create node
-	node1, d := createNode(t, etcdCredentials, logs, tel, "node1")
+	node1, d := createNode(t, etcdCfg, logs, tel, "node1")
 	tel.Reset()
 	logs.Truncate()
 
@@ -907,16 +907,16 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 		})
 }
 
-func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
+	d := createDeps(t, etcdCfg, logs, tel, nodeName)
 	node, err := task.NewNode(d)
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
 	t.Helper()
 
 	d := dependencies.NewMocked(
@@ -924,7 +924,7 @@ func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithTelemetry(tel),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 	)
 
 	// Connect logs output

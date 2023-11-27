@@ -25,10 +25,10 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
-	opts := []dependencies.MockedOption{dependencies.WithEtcdCredentials(etcdCredentials)}
+	opts := []dependencies.MockedOption{dependencies.WithEtcdConfig(etcdCfg)}
 	serviceSp, _ := bufferDependencies.NewMockedServiceScope(t, config.NewServiceConfig(), opts...)
 	str := store.New(serviceSp)
 

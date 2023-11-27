@@ -17,7 +17,7 @@ func NewMockedServiceScope(t *testing.T, cfg config.ServiceConfig, opts ...depen
 	mock := dependencies.NewMocked(t, opts...)
 
 	cfg.StorageAPIHost = mock.StorageAPIHost()
-	cfg.Etcd = mock.TestEtcdCredentials()
+	cfg.Etcd = mock.TestEtcdConfig()
 	require.NoError(t, cfg.Validate())
 
 	serviceScp, err := newServiceScope(mock, cfg)

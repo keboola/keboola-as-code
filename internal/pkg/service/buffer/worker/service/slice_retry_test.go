@@ -38,8 +38,8 @@ func (v notRetryableError) RetryableError() bool {
 func TestRetryFailedUploadsTask(t *testing.T) {
 	t.Parallel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	// Test dependencies
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -49,7 +49,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	opts := []dependencies.MockedOption{
 		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 	}
 
 	// Create file
