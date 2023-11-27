@@ -75,8 +75,8 @@ type testSuite struct {
 	apiBinaryPath    string
 	workerBinaryPath string
 
-	etcdCredentials etcdclient.Credentials
-	etcdClient      *etcd.Client
+	etcdConfig etcdclient.Config
+	etcdClient *etcd.Client
 
 	receiver *buffer.Receiver
 	secret   string
@@ -111,14 +111,14 @@ func newTestSuite(t *testing.T, ctx context.Context, testDir string, project *te
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	ts := &testSuite{
-		t:               t,
-		fatalCh:         make(chan error, 1),
-		ctx:             ctx,
-		project:         project,
-		envs:            project.Env(),
-		etcdCredentials: etcdhelper.TmpNamespaceFromEnv(t, "BUFFER_WORKER_ETCD_"),
-		apiNodes:        make([]*apiNode, apiNodesCount),
-		workerNodes:     make([]*workerNode, workerNodesCount),
+		t:           t,
+		fatalCh:     make(chan error, 1),
+		ctx:         ctx,
+		project:     project,
+		envs:        project.Env(),
+		etcdConfig:  etcdhelper.TmpNamespaceFromEnv(t, "BUFFER_WORKER_ETCD_"),
+		apiNodes:    make([]*apiNode, apiNodesCount),
+		workerNodes: make([]*workerNode, workerNodesCount),
 	}
 
 	ts.createDirs(testDir)
@@ -181,7 +181,7 @@ func (ts *testSuite) createAPIClient() {
 }
 
 func (ts *testSuite) createEtcdClient() {
-	ts.etcdClient = etcdhelper.ClientForTest(ts.t, ts.etcdCredentials)
+	ts.etcdClient = etcdhelper.ClientForTest(ts.t, ts.etcdConfig)
 }
 
 func (ts *testSuite) startNodes() {
@@ -227,10 +227,10 @@ func (ts *testSuite) createAPINode(i int) *apiNode {
 	envs.Set("BUFFER_API_UNIQUE_ID", nodeID)
 	envs.Set("BUFFER_API_DEBUG_LOG", "true")
 	envs.Set("BUFFER_API_DATADOG_ENABLED", "false")
-	envs.Set("BUFFER_API_ETCD_ENDPOINT", ts.etcdCredentials.Endpoint)
-	envs.Set("BUFFER_API_ETCD_NAMESPACE", ts.etcdCredentials.Namespace)
-	envs.Set("BUFFER_API_ETCD_USERNAME", ts.etcdCredentials.Username)
-	envs.Set("BUFFER_API_ETCD_PASSWORD", ts.etcdCredentials.Password)
+	envs.Set("BUFFER_API_ETCD_ENDPOINT", ts.etcdConfig.Endpoint)
+	envs.Set("BUFFER_API_ETCD_NAMESPACE", ts.etcdConfig.Namespace)
+	envs.Set("BUFFER_API_ETCD_USERNAME", ts.etcdConfig.Username)
+	envs.Set("BUFFER_API_ETCD_PASSWORD", ts.etcdConfig.Password)
 	envs.Set("BUFFER_API_STATISTICS_L2_CACHE_TTL", statisticsL2CacheTTL.String())
 	envs.Set("BUFFER_API_STORAGE_API_HOST", ts.project.StorageAPIHost())
 	envs.Set("BUFFER_API_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", apiPort))
@@ -287,10 +287,10 @@ func (ts *testSuite) createWorkerNode(i int) *workerNode {
 	envs.Set("BUFFER_WORKER_UNIQUE_ID", nodeID)
 	envs.Set("BUFFER_WORKER_DEBUG_LOG", "true")
 	envs.Set("BUFFER_WORKER_DATADOG_ENABLED", "false")
-	envs.Set("BUFFER_WORKER_ETCD_ENDPOINT", ts.etcdCredentials.Endpoint)
-	envs.Set("BUFFER_WORKER_ETCD_NAMESPACE", ts.etcdCredentials.Namespace)
-	envs.Set("BUFFER_WORKER_ETCD_USERNAME", ts.etcdCredentials.Username)
-	envs.Set("BUFFER_WORKER_ETCD_PASSWORD", ts.etcdCredentials.Password)
+	envs.Set("BUFFER_WORKER_ETCD_ENDPOINT", ts.etcdConfig.Endpoint)
+	envs.Set("BUFFER_WORKER_ETCD_NAMESPACE", ts.etcdConfig.Namespace)
+	envs.Set("BUFFER_WORKER_ETCD_USERNAME", ts.etcdConfig.Username)
+	envs.Set("BUFFER_WORKER_ETCD_PASSWORD", ts.etcdConfig.Password)
 	envs.Set("BUFFER_WORKER_STORAGE_API_HOST", ts.project.StorageAPIHost())
 	envs.Set("BUFFER_WORKER_METRICS_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", metricsPort))
 	envs.Set("BUFFER_WORKER_CHECK_CONDITIONS_INTERVAL", conditionsCheckInterval.String())

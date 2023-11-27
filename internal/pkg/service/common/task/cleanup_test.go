@@ -30,12 +30,12 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 	tel := newTestTelemetryWithFilter(t)
 
 	logs := ioutil.NewAtomicWriter()
-	node, d := createNode(t, etcdCredentials, logs, tel, "node1")
+	node, d := createNode(t, etcdCfg, logs, tel, "node1")
 	logger := d.DebugLogger()
 	logger.Truncate()
 	tel.Reset()

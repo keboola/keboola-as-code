@@ -44,16 +44,16 @@ func TestTemplatesApiE2E(t *testing.T) {
 			addArgs := []string{fmt.Sprintf("--repositories=%s", repositories)}
 
 			// Connect to the etcd
-			etcdCredentials := etcdhelper.TmpNamespaceFromEnv(t, "TEMPLATES_API_ETCD_")
-			etcdClient := etcdhelper.ClientForTest(t, etcdCredentials)
+			etcdCfg := etcdhelper.TmpNamespaceFromEnv(t, "TEMPLATES_API_ETCD_")
+			etcdClient := etcdhelper.ClientForTest(t, etcdCfg)
 
 			addEnvs := env.FromMap(map[string]string{
 				"TEMPLATES_API_DATADOG_ENABLED":  "false",
 				"TEMPLATES_API_STORAGE_API_HOST": test.TestProject().StorageAPIHost(),
-				"TEMPLATES_API_ETCD_NAMESPACE":   etcdCredentials.Namespace,
-				"TEMPLATES_API_ETCD_ENDPOINT":    etcdCredentials.Endpoint,
-				"TEMPLATES_API_ETCD_USERNAME":    etcdCredentials.Username,
-				"TEMPLATES_API_ETCD_PASSWORD":    etcdCredentials.Password,
+				"TEMPLATES_API_ETCD_NAMESPACE":   etcdCfg.Namespace,
+				"TEMPLATES_API_ETCD_ENDPOINT":    etcdCfg.Endpoint,
+				"TEMPLATES_API_ETCD_USERNAME":    etcdCfg.Username,
+				"TEMPLATES_API_ETCD_PASSWORD":    etcdCfg.Password,
 				"TEMPLATES_API_PUBLIC_ADDRESS":   "https://templates.keboola.local",
 			})
 
