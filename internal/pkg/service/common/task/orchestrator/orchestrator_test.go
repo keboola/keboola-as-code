@@ -37,18 +37,18 @@ func TestOrchestrator(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	d1 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithUniqueID("node1"),
 	)
 	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithUniqueID("node2"),
 	)
@@ -144,12 +144,12 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithUniqueID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
@@ -225,15 +225,15 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	restartInterval := time.Millisecond
 	clk := clock.NewMock()
 	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithUniqueID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)

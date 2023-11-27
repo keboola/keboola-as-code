@@ -77,7 +77,7 @@ func NewConfig() Config {
 		ListenAddress:        "0.0.0.0:8000",
 		MetricsListenAddress: "0.0.0.0:9000",
 		StorageAPIHost:       "",
-		Etcd: etcdclient.Credentials{
+		Etcd: etcdclient.Config{
 			Endpoint:  "",
 			Namespace: "",
 			Username:  "",

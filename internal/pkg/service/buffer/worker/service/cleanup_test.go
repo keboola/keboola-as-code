@@ -28,8 +28,8 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	// Create nodes
 	clk := clock.NewMock()
@@ -38,7 +38,7 @@ func TestCleanup(t *testing.T) {
 	opts := []dependencies.MockedOption{
 		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithTestProject(project),
 	}
 

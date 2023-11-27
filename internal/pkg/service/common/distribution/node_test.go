@@ -27,8 +27,8 @@ func TestNodesDiscovery(t *testing.T) {
 
 	clk := clock.New() // use real clock
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	// Create 3 nodes and (pseudo) processes
 	nodesCount := 3
@@ -44,7 +44,7 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			node, d := createNode(t, clk, etcdCredentials, fmt.Sprintf("node%d", i+1))
+			node, d := createNode(t, clk, etcdCfg, fmt.Sprintf("node%d", i+1))
 			if node != nil {
 				lock.Lock()
 				nodes[i] = node
@@ -244,7 +244,7 @@ node3
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	node4, d4 := createNode(t, clk, etcdCredentials, "node4")
+	node4, d4 := createNode(t, clk, etcdCfg, "node4")
 	process4 := d4.Process()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
@@ -285,11 +285,11 @@ node4
 `, d4.DebugLogger().AllMessages())
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdclient.Credentials, nodeName string) (*distribution.Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeName string) (*distribution.Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, clk, nil, etcdCredentials, nodeName)
+	d := createDeps(t, clk, nil, etcdCfg, nodeName)
 
 	// Speedup tests with real clock,
 	// and disable events grouping interval in tests with mocked clocks,
@@ -311,14 +311,14 @@ func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdclient.Creden
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials etcdclient.Credentials, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config, nodeName string) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMocked(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 	)
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)

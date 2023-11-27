@@ -159,7 +159,7 @@ type MockControl interface {
 	DebugLogger() log.DebugLogger
 	TestContext() context.Context
 	TestTelemetry() telemetry.ForTest
-	TestEtcdCredentials() etcdclient.Credentials
+	TestEtcdConfig() etcdclient.Config
 	TestEtcdClient() *etcdPkg.Client
 	MockedRequest() *http.Request
 	MockedHTTPTransport() *httpmock.MockTransport
