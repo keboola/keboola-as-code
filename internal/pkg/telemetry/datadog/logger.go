@@ -1,4 +1,4 @@
-package telemetry
+package datadog
 
 import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
