@@ -99,7 +99,7 @@ func Bind(cfg BindSpec, targets ...any) error {
 
 	// Parse flags
 	if err := flags.Parse(cfg.Args); err != nil {
-		return err
+		return errors.Errorf(`cannot parse flags: %w`, err)
 	}
 
 	// Return help
@@ -175,12 +175,11 @@ func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFi
 		unmarshalHook(&decoderCfg.DecodeHook),
 		// additional hooks can be added
 	)
-	decoder, err := mapstructure.NewDecoder(decoderCfg)
-	if err != nil {
-		return err
-	}
-	if err := decoder.Decode(values); err != nil {
-		return err
+
+	if decoder, err := mapstructure.NewDecoder(decoderCfg); err != nil {
+		return errors.PrefixError(err, "cannot create configuration decoder")
+	} else if err := decoder.Decode(values); err != nil {
+		return errors.PrefixError(err, "cannot decode configuration")
 	}
 
 	// Call Normalize and Validate methods on each value
@@ -218,7 +217,11 @@ func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFi
 		validationErrs.Append(err)
 	}
 
-	return validationErrs.ErrorOrNil()
+	if err := validationErrs.ErrorOrNil(); err != nil {
+		return errors.PrefixError(err, "configuration is not valid")
+	}
+
+	return nil
 }
 
 // collectValues defined in the configuration structure from flags, ENVs and config files.
@@ -337,21 +340,6 @@ func unmarshalHook(hooks *mapstructure.DecodeHookFunc) mapstructure.DecodeHookFu
 			}
 		}
 
-		// Handle slice
-		if to.Kind() == reflect.Slice {
-			if str, ok := from.Interface().(string); ok {
-				// Remove surrounding [...] from []string slice represented as a string
-				str = strings.TrimSuffix(strings.TrimPrefix(str, "["), "]")
-
-				// Split slice parts
-				if str == "" {
-					return []string(nil), nil
-				} else {
-					return strings.Split(str, SliceSeparator), nil
-				}
-			}
-		}
-
 		// Map string to a type
 		if from.Kind() == reflect.String {
 			str, ok := from.Interface().(string)
@@ -398,6 +386,21 @@ func unmarshalHook(hooks *mapstructure.DecodeHookFunc) mapstructure.DecodeHookFu
 					return nil, err
 				}
 				return to.Interface(), nil
+			}
+		}
+
+		// Handle slice
+		if to.Kind() == reflect.Slice {
+			if str, ok := from.Interface().(string); ok {
+				// Remove surrounding [...] from []string slice represented as a string
+				str = strings.TrimSuffix(strings.TrimPrefix(str, "["), "]")
+
+				// Split slice parts
+				if str == "" {
+					return []string(nil), nil
+				} else {
+					return strings.Split(str, SliceSeparator), nil
+				}
 			}
 		}
 
