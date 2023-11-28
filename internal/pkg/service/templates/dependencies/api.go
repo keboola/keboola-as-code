@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
@@ -67,7 +66,7 @@ func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Pr
 			if cfg.DebugLog {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
 			}
-			if cfg.DebugHTTP {
+			if cfg.DebugHTTPClient {
 				httpclient.WithDumpOutput(logger.DebugWriter())(c)
 			}
 		},
@@ -86,11 +85,7 @@ func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Pr
 		return nil, err
 	}
 
-	d.EtcdClientScope, err = dependencies.NewEtcdClientScope(
-		ctx, d, cfg.Etcd,
-		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
-		etcdclient.WithDebugOpLogs(cfg.DebugEtcd),
-	)
+	d.EtcdClientScope, err = dependencies.NewEtcdClientScope(ctx, d, cfg.Etcd)
 	if err != nil {
 		return nil, err
 	}

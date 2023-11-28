@@ -9,6 +9,31 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type Repositories []model.TemplateRepository
+
+func DefaultRepositories() Repositories {
+	return Repositories{
+		{
+			Type: model.RepositoryTypeGit,
+			Name: "keboola",
+			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
+			Ref:  "main",
+		},
+		{
+			Type: model.RepositoryTypeGit,
+			Name: "keboola-beta",
+			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
+			Ref:  "beta",
+		},
+		{
+			Type: model.RepositoryTypeGit,
+			Name: "keboola-dev",
+			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
+			Ref:  "dev",
+		},
+	}
+}
+
 func (r Repositories) MarshalText() ([]byte, error) {
 	var out bytes.Buffer
 	for i, repo := range r {

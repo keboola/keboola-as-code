@@ -26,7 +26,7 @@ func NewMockedAPIScope(t *testing.T, cfg config.Config, opts ...dependencies.Moc
 
 	var err error
 	cfg.StorageAPIHost = mocked.StorageAPIHost()
-	cfg.PublicAddress, err = url.Parse("https://templates.keboola.local")
+	cfg.API.PublicURL, err = url.Parse("https://templates.keboola.local")
 	require.NoError(t, err)
 	cfg.Etcd = mocked.TestEtcdConfig()
 

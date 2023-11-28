@@ -343,8 +343,8 @@ func (t *Test) runAPIServer(
 	metricsListenAddress := fmt.Sprintf("localhost:%d", metricsListenPort)
 	apiURL := "http://" + listenAddress
 	args := append([]string{
-		fmt.Sprintf("--listen-address=%s", listenAddress),
-		fmt.Sprintf("--metrics-listen-address=%s", metricsListenAddress),
+		fmt.Sprintf("--api-listen=%s", listenAddress),
+		fmt.Sprintf("--metrics-listen=%s", metricsListenAddress),
 	}, addArgs...)
 
 	// Envs
