@@ -51,6 +51,7 @@ func TestBind_NormalizeAndValidate(t *testing.T) {
 	err := Bind(spec, &target)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
+configuration is not valid:
 - config error
 - invalid "key1": key1 error
 - invalid "key2.keyB": keyB error
