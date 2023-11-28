@@ -27,6 +27,10 @@ const (
 	shutdownTimeout = 30 * time.Second
 )
 
+type Config struct {
+	Listen string `configKey:"listen" configUsage:"Prometheus scraping metrics listen address." validate:"required,hostname_port"`
+}
+
 type errLogger struct {
 	logger log.Logger
 }
@@ -35,9 +39,15 @@ func (l *errLogger) Println(v ...any) {
 	l.logger.Error(v...)
 }
 
+func NewConfig() Config {
+	return Config{
+		Listen: "0.0.0.0:9000",
+	}
+}
+
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.
 // Inspired by: https://github.com/open-telemetry/opentelemetry-go/blob/main/example/prometheus/main.go
-func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger log.Logger, proc *servicectx.Process) (*metric.MeterProvider, error) {
+func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *servicectx.Process, serviceName string) (*metric.MeterProvider, error) {
 	logger = logger.AddPrefix("[metrics]")
 
 	// Create resource
@@ -65,13 +75,13 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	opts := promhttp.HandlerOpts{ErrorLog: &errLogger{logger: logger}}
 	handler := http.NewServeMux()
 	handler.Handle("/"+Endpoint, promhttp.HandlerFor(registry, opts))
-	srv := &http.Server{Addr: listenAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
-		logger.Infof(`HTTP server listening on "%s/%s"`, listenAddr, Endpoint)
+		logger.Infof(`HTTP server listening on "%s/%s"`, cfg.Listen, Endpoint)
 		shutdown(srv.ListenAndServe())
 	})
 	proc.OnShutdown(func() {
-		logger.Infof(`shutting down HTTP server at "%s"`, listenAddr)
+		logger.Infof(`shutting down HTTP server at "%s"`, cfg.Listen)
 
 		// Shutdown gracefully with a 30s timeout.
 		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
