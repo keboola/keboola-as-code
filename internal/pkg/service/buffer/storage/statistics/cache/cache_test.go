@@ -40,7 +40,7 @@ func TestCaches(t *testing.T) {
 	require.NoError(t, err)
 	defer l1Cache.Stop()
 
-	l2Config := cache.DefaultL2Config()
+	l2Config := statistics.NewConfig().L2Cache
 	l2Cache, err := cache.NewL2Cache(d.Logger(), clk, l1Cache, l2Config)
 	require.NoError(t, err)
 	defer l2Cache.Stop()
@@ -359,7 +359,7 @@ func TestCaches(t *testing.T) {
 		tc.Assert(l1Cache)
 
 		// Invalidate L2
-		clk.Add(l2Config.TTL)
+		clk.Add(l2Config.InvalidationInterval)
 		if expectedRevision > 0 {
 			assert.Eventually(t, func() bool {
 				return l2Cache.Revision() >= expectedRevision

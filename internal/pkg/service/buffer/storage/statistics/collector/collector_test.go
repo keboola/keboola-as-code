@@ -1,6 +1,7 @@
 package collector_test
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
 	"strings"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestCollector(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.NewMock()
-	cfg := collector.DefaultConfig()
+	cfg := statistics.NewConfig().Collector
 
 	d := dependencies.NewMocked(t, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
 	client := d.EtcdClient()
