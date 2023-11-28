@@ -1,4 +1,4 @@
-package telemetry
+package datadog
 
 import (
 	"context"
@@ -20,8 +20,8 @@ type wrappedDDTracerProvider struct {
 	tracers map[string]trace.Tracer
 }
 
-// NewDDTracerProvider - see wrapDDTracerProvider.
-func NewDDTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...ddTracer.StartOption) trace.TracerProvider {
+// NewTracerProvider - see wrapDDTracerProvider.
+func NewTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...ddTracer.StartOption) trace.TracerProvider {
 	opts = append(opts, ddTracer.WithLogger(NewDDLogger(logger)))
 	tp := &wrappedDDTracerProvider{
 		TracerProvider: ddotel.NewTracerProvider(opts...),

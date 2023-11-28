@@ -1,4 +1,4 @@
-package telemetry
+package datadog
 
 import (
 	"fmt"
