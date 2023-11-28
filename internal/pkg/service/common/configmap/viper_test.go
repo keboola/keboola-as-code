@@ -39,4 +39,10 @@ func TestBindToViper(t *testing.T) {
 		"foo":     configmap.SetByFlag,
 		"foo-bar": configmap.SetByEnv,
 	}, setBy)
+	assert.False(t, v.IsSet("verbose"))
+	assert.False(t, v.GetBool("verbose"))
+	assert.True(t, v.IsSet("foo"))
+	assert.Equal(t, "from flag", v.GetString("foo"))
+	assert.True(t, v.IsSet("foo-bar"))
+	assert.Equal(t, "from env", v.GetString("foo-bar"))
 }
