@@ -4,6 +4,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"net/http"
 	"os"
 
@@ -53,7 +55,7 @@ func run() error {
 	if err != nil {
 		return errors.Errorf("cannot load envs: %w", err)
 	}
-	cfg, err := config.LoadFrom(os.Args, envs)
+	cfg, err := config.Bind(os.Args, envs)
 	if errors.Is(err, pflag.ErrHelp) {
 		// Stop on --help flag
 		return nil
@@ -63,11 +65,26 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[templatesApi]")
+<<<<<<< HEAD
 	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CpuProfFilePath != "" {
 		stop, err := cpuprofile.Start(ctx, cfg.CpuProfFilePath, logger)
+=======
+
+	// Dump configuration, sensitive values are masked
+	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
+	if err == nil {
+		logger.Info("Configuration: ", string(dump))
+	} else {
+		return err
+	}
+
+	// Start CPU profiling, if enabled.
+	if cfg.CPUProfFilePath != "" {
+		stop, err := cpuprofile.Start(cfg.CPUProfFilePath, logger)
+>>>>>>> 355bd1562 (Update Templates API config)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
@@ -75,7 +92,11 @@ func run() error {
 	}
 
 	// Create process abstraction.
+<<<<<<< HEAD
 	proc, err := servicectx.New(servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
+=======
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.NodeID))
+>>>>>>> 355bd1562 (Update Templates API config)
 	if err != nil {
 		return err
 	}
@@ -83,19 +104,19 @@ func run() error {
 	// Setup telemetry
 	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
-			if cfg.DatadogEnabled {
-				return telemetry.NewDDTracerProvider(
+			if cfg.Datadog.Enabled {
+				return datadog.NewTracerProvider(
 					logger, proc,
 					tracer.WithRuntimeMetrics(),
 					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 					tracer.WithAnalyticsRate(1.0),
-					tracer.WithDebugMode(cfg.DatadogDebug),
+					tracer.WithDebugMode(cfg.Datadog.Debug),
 				), nil
 			}
 			return nil, nil
 		},
 		func() (metric.MeterProvider, error) {
-			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
+			return prometheus.ServeMetrics(ctx, cfg.Metrics, logger, proc, ServiceName)
 		},
 	)
 	if err != nil {
@@ -115,9 +136,15 @@ func run() error {
 	}
 
 	// Start HTTP server.
+<<<<<<< HEAD
 	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
+=======
+	logger.Infof("starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
+	err = httpserver.Start(apiScp, httpserver.Config{
+		ListenAddress:     cfg.API.Listen,
+>>>>>>> 355bd1562 (Update Templates API config)
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		MiddlewareOptions: []middleware.Option{

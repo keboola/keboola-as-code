@@ -103,7 +103,7 @@ func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope)
 }
 
 func (s *service) APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *ServiceDetail, err error) {
-	url := *s.deps.APIConfig().PublicAddress
+	url := *s.deps.APIConfig().API.PublicURL
 	url.Path = path.Join(url.Path, "v1/documentation")
 	res = &ServiceDetail{
 		API:           "templates",
@@ -501,15 +501,13 @@ func (s *service) UpgradeInstanceValidateInputs(ctx context.Context, d dependenc
 func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScope, payload *GetTaskPayload) (res *Task, err error) {
 	str := d.Store()
 
-	t, err := str.GetTask(ctx, task.Key{
-		ProjectID: d.ProjectID(),
-		TaskID:    payload.TaskID,
-	})
+	k := task.Key{ProjectID: d.ProjectID(), TaskID: payload.TaskID}
+	t, err := str.GetTask(k).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}
 
-	return s.mapper.TaskPayload(&t), nil
+	return s.mapper.TaskPayload(&t.Value), nil
 }
 
 func repositoryRef(d dependencies.ProjectRequestScope, name string) (model.TemplateRepository, error) {

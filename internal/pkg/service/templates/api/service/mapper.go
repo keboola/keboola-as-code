@@ -34,7 +34,7 @@ type mapperDependencies interface {
 
 func NewMapper(d mapperDependencies) *Mapper {
 	return &Mapper{
-		apiHost: d.APIConfig().PublicAddress.String(),
+		apiHost: d.APIConfig().API.PublicURL.String(),
 	}
 }
 
