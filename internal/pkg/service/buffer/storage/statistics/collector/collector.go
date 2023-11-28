@@ -3,11 +3,9 @@ package collector
 
 import (
 	"context"
+	"github.com/benbjohnson/clock"
 	"sort"
 	"sync"
-	"time"
-
-	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage"
@@ -17,18 +15,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const (
-	DefaultSyncInterval = 1 * time.Second
-	DefaultSyncTimeout  = 30 * time.Second
-)
-
 // Collector collects writers statistics and saves them to the database.
 // Collection is triggered periodically and on the writer close.
 type Collector struct {
 	logger     log.Logger
 	repository *repository.Repository
 
-	config Config
+	config statistics.SyncConfig
 
 	cancel context.CancelFunc
 	wg     *sync.WaitGroup
@@ -36,11 +29,6 @@ type Collector struct {
 	syncLock    *sync.Mutex
 	writersLock *sync.Mutex
 	writers     map[storage.SliceKey]*writerSnapshot
-}
-
-type Config struct {
-	SyncInterval time.Duration
-	SyncTimeout  time.Duration
 }
 
 type WriterEvents interface {
@@ -55,14 +43,7 @@ type writerSnapshot struct {
 	writer writer.Writer
 }
 
-func DefaultConfig() Config {
-	return Config{
-		SyncInterval: DefaultSyncInterval,
-		SyncTimeout:  DefaultSyncTimeout,
-	}
-}
-
-func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, events WriterEvents, config Config) *Collector {
+func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, events WriterEvents, config statistics.SyncConfig) *Collector {
 	c := &Collector{
 		logger:      logger,
 		repository:  repository,
