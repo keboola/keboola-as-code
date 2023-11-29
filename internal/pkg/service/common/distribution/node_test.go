@@ -173,6 +173,7 @@ node3
 
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
+[node1][distribution][my-group]INFO  node ID "node1"
 [node1][distribution][my-group][etcd-session]INFO  creating etcd session
 [node1][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node1][distribution][my-group]INFO  registering the node "node1"
@@ -195,6 +196,7 @@ node3
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
+[node2][distribution][my-group]INFO  node ID "node2"
 [node2][distribution][my-group][etcd-session]INFO  creating etcd session
 [node2][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node2][distribution][my-group]INFO  registering the node "node2"
@@ -218,6 +220,7 @@ node3
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
+[node3][distribution][my-group]INFO  node ID "node3"
 [node3][distribution][my-group][etcd-session]INFO  creating etcd session
 [node3][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node3][distribution][my-group]INFO  registering the node "node3"
@@ -264,6 +267,7 @@ node4
 	etcdhelper.AssertKVsString(t, client, "")
 
 	wildcards.Assert(t, `
+[node4][distribution][my-group]INFO  node ID "node4"
 [node4][distribution][my-group][etcd-session]INFO  creating etcd session
 [node4][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node4][distribution][my-group]INFO  registering the node "node4"
@@ -285,11 +289,11 @@ node4
 `, d4.DebugLogger().AllMessages())
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeName string) (*distribution.Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeID string) (*distribution.Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, clk, nil, etcdCfg, nodeName)
+	d := createDeps(t, clk, nil, etcdCfg, nodeID)
 
 	// Speedup tests with real clock,
 	// and disable events grouping interval in tests with mocked clocks,
@@ -301,8 +305,7 @@ func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeNa
 
 	// Create node
 	node, err := distribution.NewNode(
-		"my-group",
-		d,
+		nodeID, "my-group", d,
 		distribution.WithStartupTimeout(time.Second),
 		distribution.WithShutdownTimeout(time.Second),
 		distribution.WithEventsGroupInterval(groupInterval),
@@ -311,13 +314,12 @@ func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeNa
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config, nodeID string) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMocked(
 		t,
 		dependencies.WithClock(clk),
-		dependencies.WithUniqueID(nodeName),
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
+		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeID)),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)
 	if logs != nil {

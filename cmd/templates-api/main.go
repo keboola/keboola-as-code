@@ -65,26 +65,18 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[templatesApi]")
-<<<<<<< HEAD
-	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
-
-	// Start CPU profiling, if enabled.
-	if cfg.CpuProfFilePath != "" {
-		stop, err := cpuprofile.Start(ctx, cfg.CpuProfFilePath, logger)
-=======
 
 	// Dump configuration, sensitive values are masked
 	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
 	if err == nil {
-		logger.Info("Configuration: ", string(dump))
+		logger.InfofCtx(ctx, "Configuration: %s", string(dump))
 	} else {
 		return err
 	}
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
-		stop, err := cpuprofile.Start(cfg.CPUProfFilePath, logger)
->>>>>>> 355bd1562 (Update Templates API config)
+		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
@@ -92,11 +84,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-<<<<<<< HEAD
-	proc, err := servicectx.New(servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
-=======
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.NodeID))
->>>>>>> 355bd1562 (Update Templates API config)
+	proc, err := servicectx.New(servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}
@@ -136,15 +124,9 @@ func run() error {
 	}
 
 	// Start HTTP server.
-<<<<<<< HEAD
-	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
+	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
-		ListenAddress:     cfg.ListenAddress,
-=======
-	logger.Infof("starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
-	err = httpserver.Start(apiScp, httpserver.Config{
 		ListenAddress:     cfg.API.Listen,
->>>>>>> 355bd1562 (Update Templates API config)
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		MiddlewareOptions: []middleware.Option{

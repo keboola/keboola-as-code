@@ -2,7 +2,6 @@ package servicectx
 
 import (
 	"context"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -17,8 +16,7 @@ func TestProcess_Add(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	logger.ConnectTo(os.Stdout)
-	proc, err := New(WithLogger(logger), WithUniqueID("<id>"))
+	proc, err := New(WithLogger(logger))
 	assert.NoError(t, err)
 
 	// OpCtx simulates long running operations
@@ -88,7 +86,6 @@ func TestProcess_Add(t *testing.T) {
 
 	// Check logs
 	expected := `
-INFO  process unique id "<id>"
 INFO  exiting (operation failed)
 INFO  end
 INFO  end
@@ -105,8 +102,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	logger.ConnectTo(os.Stdout)
-	proc, err := New(WithLogger(logger), WithUniqueID("<id>"))
+	proc, err := New(WithLogger(logger))
 	assert.NoError(t, err)
 
 	// OpCtx simulates long running operations
@@ -160,7 +156,6 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	// Check logs
 	expected := `
-INFO  process unique id "<id>"
 INFO  exiting (some error)
 INFO  end1
 INFO  end2

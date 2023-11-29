@@ -909,22 +909,21 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 		})
 }
 
-func createNode(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, etcdCfg, logs, tel, nodeName)
-	node, err := task.NewNode(d)
+	d := createDeps(t, etcdCfg, logs, tel, nodeID)
+	node, err := task.NewNode(nodeID, d)
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) dependencies.Mocked {
 	t.Helper()
 
 	d := dependencies.NewMocked(
 		t,
-		dependencies.WithUniqueID(nodeName),
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
+		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeID)),
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)

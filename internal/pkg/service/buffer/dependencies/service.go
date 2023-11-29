@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/store"
 
 	"github.com/benbjohnson/clock"
 
@@ -117,7 +118,7 @@ func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servic
 		return nil, err
 	}
 
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, d)
+	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, d)
 	if err != nil {
 		return nil, err
 	}

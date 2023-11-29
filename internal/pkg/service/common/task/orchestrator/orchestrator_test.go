@@ -44,13 +44,13 @@ func TestOrchestrator(t *testing.T) {
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
-		dependencies.WithUniqueID("node1"),
+		dependencies.WithNodeID("node1"),
 	)
 	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
-		dependencies.WithUniqueID("node2"),
+		dependencies.WithNodeID("node2"),
 	)
 	node1 := orchestrator.NewNode(d1)
 	node2 := orchestrator.NewNode(d2)
@@ -150,7 +150,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
-		dependencies.WithUniqueID("node1"),
+		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
 	node := orchestrator.NewNode(d)
@@ -234,7 +234,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		dependencies.WithCtx(ctx),
 		dependencies.WithClock(clk),
 		dependencies.WithEtcdConfig(etcdCfg),
-		dependencies.WithUniqueID("node1"),
+		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
 	node := orchestrator.NewNode(d)

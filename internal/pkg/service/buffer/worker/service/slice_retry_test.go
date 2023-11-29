@@ -70,7 +70,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}
 
 	// Create receivers, exports and records
-	apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig(), append(opts, dependencies.WithUniqueID("api-node-1"))...)
+	apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig(), append(opts, dependencies.WithNodeID("api-node-1"))...)
 	str := apiScp.Store()
 	sliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, file)
 	createRecords(t, ctx, clk, apiScp, sliceKey.ReceiverKey, 1, 5)
@@ -96,7 +96,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	workerConfig.UploadTransport = uploadTransport
 
 	// Start worker node
-	workerScp, workerMock := bufferDependencies.NewMockedWorkerScope(t, workerConfig, append(opts, dependencies.WithUniqueID("my-worker"))...)
+	workerScp, workerMock := bufferDependencies.NewMockedWorkerScope(t, workerConfig, append(opts, dependencies.WithNodeID("my-worker"))...)
 	_, err := service.New(workerScp)
 	assert.NoError(t, err)
 

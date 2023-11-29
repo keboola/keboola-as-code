@@ -43,7 +43,15 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, error) {
+	// Validate
+	if nodeID == "" {
+		panic(errors.New("distribution.Node: node ID cannot be empty"))
+	}
+	if group == "" {
+		panic(errors.New("distribution.Node: group cannot be empty"))
+	}
+
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -52,7 +60,7 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 
 	// Create instance
 	n := &Node{
-		assigner:    newAssigner(d.Process().UniqueID()),
+		assigner:    newAssigner(nodeID),
 		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", group)),
 		clock:       d.Clock(),
 		logger:      d.Logger().AddPrefix(fmt.Sprintf("[distribution][%s]", group)),
@@ -60,6 +68,9 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 		client:      d.EtcdClient(),
 		config:      c,
 	}
+
+	// Log node ID
+	n.logger.Infof(`node ID "%s"`, nodeID)
 
 	// Graceful shutdown
 	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck

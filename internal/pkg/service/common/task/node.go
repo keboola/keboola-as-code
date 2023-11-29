@@ -70,7 +70,12 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 }
 
-func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
+	// Validate
+	if nodeID == "" {
+		panic(errors.New("task.Node: node ID cannot be empty"))
+	}
+
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -86,13 +91,16 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 		clock:          d.Clock(),
 		logger:         d.Logger().AddPrefix("[task]"),
 		client:         d.EtcdClient(),
-		nodeID:         proc.UniqueID(),
+		nodeID:         nodeID,
 		config:         c,
 		tasksCount:     atomic.NewInt64(0),
 		taskEtcdPrefix: taskPrefix,
 		taskLocksMutex: &sync.Mutex{},
 		taskLocks:      make(map[string]bool),
 	}
+
+	// Log node ID
+	n.logger.Infof(`node ID "%s"`, n.nodeID)
 
 	// Graceful shutdown
 	var cancelTasks context.CancelFunc

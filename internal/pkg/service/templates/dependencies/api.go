@@ -90,12 +90,12 @@ func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Pr
 		return nil, err
 	}
 
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, d)
+	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, d)
 	if err != nil {
 		return nil, err
 	}
 
-	d.DistributionScope, err = dependencies.NewDistributionScope(ctx, d, distributionGroupName)
+	d.DistributionScope, err = dependencies.NewDistributionScope(ctx, cfg.NodeID, distributionGroupName, d)
 	if err != nil {
 		return nil, err
 	}
