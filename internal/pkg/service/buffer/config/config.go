@@ -1,11 +1,16 @@
 package config
 
 import (
-	"context"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"net/url"
 )
 
 const (
@@ -14,12 +19,35 @@ const (
 
 // Config of the Stream services.
 type Config struct {
-	Storage storage.Config `configKey:"storage"`
+	DebugLog        bool              `configKey:"debugLog"  configUsage:"Enable logging at DEBUG level."`
+	DebugHTTPClient bool              `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
+	CPUProfFilePath string            `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
+	NodeID          string            `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
+	Datadog         datadog.Config    `configKey:"datadog"`
+	Etcd            etcdclient.Config `configKey:"etcd"`
+	Metrics         prometheus.Config `configKey:"metrics"`
+	API             API               `configKey:"api"`
+	Source          source.Config     `configKey:"source"`
+	Sink            sink.Config       `configKey:"sink"`
+}
+
+type API struct {
+	Listen    string   `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
+	PublicURL *url.URL `configKey:"publicURL" configUsage:"Public URL of the configuration HTTP API for link generation."  validate:"required"`
 }
 
 func New() Config {
 	return Config{
-		Storage: storage.NewConfig(),
+		DebugLog:        false,
+		DebugHTTPClient: false,
+		CPUProfFilePath: "",
+		NodeID:          "",
+		Datadog:         datadog.NewConfig(),
+		Etcd:            etcdclient.NewConfig(),
+		Metrics:         prometheus.NewConfig(),
+		API:             API{Listen: "0.0.0.0:8000", PublicURL: &url.URL{Scheme: "http", Host: "localhost:8000"}},
+		Source:          source.NewConfig(),
+		Sink:            sink.NewConfig(),
 	}
 }
 
@@ -36,11 +64,19 @@ func Bind(args []string, envs env.Provider) (Config, error) {
 	return cfg, err
 }
 
-func (c *Config) Normalize() {
-
+func (c *API) Normalize() {
+	if c.PublicURL != nil {
+		c.PublicURL.Host = strhelper.NormalizeHost(c.PublicURL.Host)
+		if c.PublicURL.Scheme == "" {
+			c.PublicURL.Scheme = "https"
+		}
+	}
 }
 
-func (c *Config) Validate() error {
-	v := validator.New()
-	return v.Validate(context.Background(), c)
+func (c *API) Validate() error {
+	errs := errors.NewMultiError()
+	if c.PublicURL == nil || c.PublicURL.String() == "" {
+		errs.Append(errors.New("public address is not set"))
+	}
+	return errs.ErrorOrNil()
 }

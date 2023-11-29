@@ -39,7 +39,7 @@ type Config struct {
 	// Mode defines sync mode: more durable ModeDisk or faster ModeCache.
 	Mode Mode `json:"mode" configKey:"mode" validate:"required,oneof=disabled disk cache" configUsage:"Sync mode: \"disabled\", \"cache\" or \"disk\"."`
 	// Wait defines whether the operation should wait for sync.
-	Wait bool `json:"wait" configKey:"wait" validate:"excluded_if= Mode disabled" configUsage:"Wait for sync to disk cache or to disk, depending on the mode."`
+	Wait bool `json:"wait" configKey:"wait" validate:"excluded_if= Mode disabled" configUsage:"Wait for sync to disk OS cache or to disk hardware, depending on the mode."`
 	// CheckInterval defines how often BytesTrigger and IntervalTrigger will be checked.
 	// It is minimal interval between two syncs.
 	CheckInterval time.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs."`
@@ -50,7 +50,7 @@ type Config struct {
 	// Bytes are measured at the beginning of the writers chain.
 	BytesTrigger datasize.ByteSize `json:"bytesTrigger,omitempty" configKey:"bytesTrigger" validate:"maxBytes=100MB,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache" configUsage:"Written size to trigger sync."`
 	// IntervalTrigger defines the interval from the last sync after the sync will be triggered.
-	IntervalTrigger time.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync after the sync will be triggered."`
+	IntervalTrigger time.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync to trigger sync."`
 }
 
 func DefaultConfig() Config {
