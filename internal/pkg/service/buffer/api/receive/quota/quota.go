@@ -11,7 +11,7 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
-	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics/cache"
+	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/cache"
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
