@@ -41,7 +41,7 @@ func newWorkerScope(ctx context.Context, cfg config.WorkerConfig, serviceScp Ser
 
 	d.ServiceScope = serviceScp
 
-	d.DistributionScope, err = dependencies.NewDistributionScope(ctx, d, distributionWorkerGroupName)
+	d.DistributionScope, err = dependencies.NewDistributionScope(ctx, cfg.NodeID, distributionWorkerGroupName, d)
 	if err != nil {
 		return nil, err
 	}

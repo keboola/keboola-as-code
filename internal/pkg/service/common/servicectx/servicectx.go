@@ -3,7 +3,6 @@ package servicectx
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,12 +14,11 @@ import (
 )
 
 type Process struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	logger   log.Logger
-	wg       *sync.WaitGroup
-	errCh    chan error
-	uniqueID string
+	ctx    context.Context
+	cancel context.CancelFunc
+	logger log.Logger
+	wg     *sync.WaitGroup
+	errCh  chan error
 
 	lock        *sync.Mutex
 	terminating bool
@@ -34,16 +32,7 @@ type OnShutdownFn func()
 type ShutdownFn func(error)
 
 type config struct {
-	uniqueID string
-	logger   log.Logger
-}
-
-// WithUniqueID sets unique ID of the service process.
-// By default, it is generated from the hostname and PID.
-func WithUniqueID(v string) Option {
-	return func(c *config) {
-		c.uniqueID = v
-	}
+	logger log.Logger
 }
 
 func WithLogger(v log.Logger) Option {
@@ -64,33 +53,17 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 		c.logger = log.NewNopLogger()
 	}
 
-	// Generate uniqueID if not set
-	if c.uniqueID == "" {
-		// Get hostname
-		hostname, err := os.Hostname()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get PID
-		pid := os.Getpid()
-
-		// Compose unique ID
-		c.uniqueID = fmt.Sprintf(`%s-%05d`, hostname, pid)
-	}
-
 	// Create channel used by both the signal handler and service goroutines
 	// to notify the main goroutine when to stop the server.
 	errCh := make(chan error, 1)
 
 	proc := &Process{
-		ctx:      ctx,
-		cancel:   cancel,
-		logger:   c.logger,
-		wg:       &sync.WaitGroup{},
-		errCh:    errCh,
-		uniqueID: c.uniqueID,
-		lock:     &sync.Mutex{},
+		ctx:    ctx,
+		cancel: cancel,
+		logger: c.logger,
+		wg:     &sync.WaitGroup{},
+		errCh:  errCh,
+		lock:   &sync.Mutex{},
 	}
 
 	// Register onShutdown operation
@@ -118,7 +91,6 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 		}
 	}()
 
-	proc.logger.Infof(`process unique id "%s"`, proc.UniqueID())
 	return proc, nil
 }
 
@@ -178,11 +150,6 @@ func (v *Process) WaitForShutdown() {
 	v.wg.Wait()
 
 	v.logger.Info("exited")
-}
-
-// UniqueID returns unique process ID, it consists of hostname and PID.
-func (v *Process) UniqueID() string {
-	return v.uniqueID
 }
 
 // Add an operation.

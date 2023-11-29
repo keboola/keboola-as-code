@@ -61,6 +61,7 @@ type MockedConfig struct {
 	ctx          context.Context
 	clock        clock.Clock
 	telemetry    telemetry.ForTest
+	nodeID       string
 	loggerPrefix string
 	debugLogger  log.DebugLogger
 	procOpts     []servicectx.Option
@@ -120,6 +121,12 @@ func WithClock(v clock.Clock) MockedOption {
 	}
 }
 
+func WithNodeID(v string) MockedOption {
+	return func(c *MockedConfig) {
+		c.nodeID = v
+	}
+}
+
 func WithDebugLogger(v log.DebugLogger) MockedOption {
 	return func(c *MockedConfig) {
 		c.debugLogger = v
@@ -137,10 +144,6 @@ func WithEtcdConfig(cfg etcdclient.Config) MockedOption {
 		WithEnabledEtcdClient()(c)
 		c.etcdConfig = cfg
 	}
-}
-
-func WithUniqueID(v string) MockedOption {
-	return WithProcessOptions(servicectx.WithUniqueID(v))
 }
 
 func WithProcessOptions(opts ...servicectx.Option) MockedOption {
@@ -214,6 +217,7 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 		ctx:         context.Background(),
 		clock:       clock.New(),
 		telemetry:   telemetry.NewForTest(t),
+		nodeID:      "local-node",
 		useRealAPIs: false,
 		services: keboola.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
@@ -306,12 +310,12 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableTasks {
-		d.taskScope, err = newTaskScope(cfg.ctx, d)
+		d.taskScope, err = newTaskScope(cfg.ctx, cfg.nodeID, d)
 		require.NoError(t, err)
 	}
 
 	if cfg.enableDistribution {
-		d.distributionScope, err = newDistributionScope(cfg.ctx, d, distributionGroup)
+		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, distributionGroup, d)
 		require.NoError(t, err)
 	}
 
