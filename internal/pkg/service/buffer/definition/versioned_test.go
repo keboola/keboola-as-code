@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test/testvalidation"
 	"testing"
 	"time"
 
@@ -79,7 +80,7 @@ func TestVersioned_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Test cases
-	cases := ValidationTestCases[Versioned]{
+	cases := testvalidation.TestCases[Versioned]{
 		{
 			Name: "empty",
 			ExpectedError: `

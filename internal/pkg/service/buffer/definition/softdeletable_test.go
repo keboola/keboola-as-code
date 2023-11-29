@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test/testvalidation"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +43,7 @@ func TestSoftDeletable_Validation(t *testing.T) {
 	now := utctime.MustParse("2006-01-02T15:04:05.000Z")
 
 	// Test cases
-	cases := ValidationTestCases[SoftDeletable]{
+	cases := testvalidation.TestCases[SoftDeletable]{
 		{
 			Name: "deleted = false",
 			Value: SoftDeletable{
