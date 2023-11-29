@@ -162,6 +162,7 @@ const (
 	configKeyTag       = "configKey"
 	configUsageTag     = "configUsage"
 	sensitiveTag       = "sensitive"
+	validateTag        = "validate"
 	sensitiveMask      = "*****"
 	tagValuesSeparator = ","
 )

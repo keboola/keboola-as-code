@@ -133,6 +133,13 @@ func dumpValue(vc *VisitContext) (value dumpedValue) {
 	} else if vc.Sensitive {
 		return dumpedValue{Value: sensitiveMask, HeadComment: vc.Usage}
 	} else {
-		return dumpedValue{Value: vc.PrimitiveValue.Interface(), HeadComment: vc.Usage}
+		comment := vc.Usage
+		if vc.Validate != "" {
+			if comment != "" {
+				comment = strings.TrimRight(comment, " .") + ". "
+			}
+			comment += "Validation rules: " + vc.Validate
+		}
+		return dumpedValue{Value: vc.PrimitiveValue.Interface(), HeadComment: comment}
 	}
 }
