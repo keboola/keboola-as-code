@@ -84,10 +84,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(servicectx.WithLogger(logger))
-	if err != nil {
-		return err
-	}
+	proc := servicectx.New(servicectx.WithLogger(logger))
 
 	// Setup telemetry
 	tel, err := telemetry.New(

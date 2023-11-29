@@ -67,7 +67,7 @@ func WithLogger(v log.Logger) Option {
 	}
 }
 
-func New(opts ...Option) (*Process, error) {
+func New(opts ...Option) *Process {
 	// Apply options
 	c := config{}
 	for _, o := range opts {
@@ -122,18 +122,13 @@ func New(opts ...Option) (*Process, error) {
 		}
 	}()
 
-	return v, nil
+	return v
 }
 
 func NewForTest(t *testing.T, opts ...Option) *Process {
 	t.Helper()
 
-	proc, err := New(opts...)
-	if err != nil {
-		t.Fatal(err)
-		return nil
-	}
-
+	proc := New(opts...)
 	t.Cleanup(func() {
 		proc.Shutdown(context.Background(), errors.New("test cleanup"))
 		proc.WaitForShutdown()

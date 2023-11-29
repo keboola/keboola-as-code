@@ -16,8 +16,7 @@ func TestProcess_Add(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	proc, err := New(WithLogger(logger))
-	assert.NoError(t, err)
+	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
 	opCtx, opCancel := context.WithCancel(context.Background())
@@ -102,8 +101,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	proc, err := New(WithLogger(logger))
-	assert.NoError(t, err)
+	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
 	opCtx, opCancel := context.WithCancel(context.Background())
