@@ -45,7 +45,7 @@ func TestFile_Validation(t *testing.T) {
 		},
 		{
 			Name:          "zero volumes per pod",
-			ExpectedError: `"volumesAssignment.perPod" must be 1 or greater`,
+			ExpectedError: `"volumesAssignment.perPod" is a required field`,
 			Value: File{
 				Dir:         "my-dir",
 				Compression: compression.DefaultConfig(),

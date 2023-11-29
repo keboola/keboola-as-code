@@ -22,14 +22,14 @@ type Config struct {
 }
 
 type GZIPConfig struct {
-	Level          int                `json:"level" configKey:"level" validate:"min=1,max=9"  configUsage:"GZIP compression level: 1-9"`
+	Level          int                `json:"level" configKey:"level" validate:"min=1,max=9"  configUsage:"GZIP compression level: 1-9."`
 	Implementation GZIPImplementation `json:"implementation" configKey:"implementation" validate:"required,oneof=standard fast parallel" configUsage:"GZIP implementation: standard, fast, parallel."`
 	BlockSize      datasize.ByteSize  `json:"blockSize" configKey:"blockSize" validate:"required,min=16384,max=104857600" configUsage:"GZIP parallel block size."` // 16kB-100MB
 	Concurrency    int                `json:"concurrency" configKey:"concurrency" configUsage:"GZIP parallel concurrency, 0 = auto."`
 }
 
 type ZSTDConfig struct {
-	Level       zstd.EncoderLevel `json:"level" configKey:"level" validate:"min=1,max=4" configUsage:"ZSTD compression level: fastest, default, better, best"`
+	Level       zstd.EncoderLevel `json:"level" configKey:"level" validate:"min=1,max=4" configUsage:"ZSTD compression level: fastest, default, better, best."`
 	WindowSize  datasize.ByteSize `json:"windowSize" configKey:"windowSize" validate:"required,min=1024,max=536870912" configUsage:"ZSTD window size."` // 1kB-512MB
 	Concurrency int               `json:"concurrency" configKey:"concurrency" configUsage:"ZSTD concurrency, 0 = auto"`
 }

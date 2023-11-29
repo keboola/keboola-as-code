@@ -16,12 +16,12 @@ type Config struct {
 }
 
 type SyncConfig struct {
-	SyncInterval time.Duration `configKey:"interval" configUsage:"Statistics synchronization interval, from memory to the etcd." validate:"required"`
-	SyncTimeout  time.Duration `configKey:"timeout" configUsage:"Statistics synchronization timeout."  validate:"required"`
+	SyncInterval time.Duration `configKey:"interval" configUsage:"Statistics synchronization interval, from memory to the etcd." validate:"required,minDuration=100ms,maxDuration=5s"`
+	SyncTimeout  time.Duration `configKey:"timeout" configUsage:"Statistics synchronization timeout."  validate:"required,minDuration=1s,maxDuration=1m"`
 }
 
 type L2CacheConfig struct {
-	InvalidationInterval time.Duration `configKey:"invalidationInterval" configUsage:"Statistics L2 in-memory cache invalidation interval."`
+	InvalidationInterval time.Duration `configKey:"invalidationInterval" configUsage:"Statistics L2 in-memory cache invalidation interval." validate:"required,minDuration=100ms,maxDuration=5s"`
 }
 
 func NewConfig() Config {

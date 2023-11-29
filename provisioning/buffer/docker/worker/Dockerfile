@@ -24,4 +24,4 @@ WORKDIR /app
 # Prometheus metrics
 EXPOSE 9000
 
-CMD ["/app/worker", "--metrics-listen-address=0.0.0.0:9000"]
+CMD ["/app/worker", "--metrics-listen=0.0.0.0:9000"]

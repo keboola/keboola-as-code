@@ -11,7 +11,7 @@ type Config struct {
 }
 
 type UploadConfig struct {
-	MinInterval time.Duration      `configKey:"minInterval" configUsage:"Minimal duration between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
+	MinInterval time.Duration      `configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
 	Trigger     SliceUploadTrigger `configKey:"trigger"`
 }
 
