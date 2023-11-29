@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
@@ -38,8 +37,6 @@ func TestTableSink_Validation(t *testing.T) {
 	softDeletable := SoftDeletable{
 		Deleted: false,
 	}
-	uploadConditions := DefaultSliceUploadConditions()
-	importConditions := DefaultTableImportConditions()
 
 	// Test cases
 	cases := testvalidation.TestCases[Sink]{
@@ -93,7 +90,6 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
 				Table: &TableSink{
-					ImportConditions: importConditions,
 					Mapping: TableMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
@@ -116,7 +112,6 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   strings.Repeat("a", 4096+1),
 				Table: &TableSink{
-					ImportConditions: importConditions,
 					Mapping: TableMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
@@ -138,7 +133,6 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					ImportConditions: importConditions,
 					Mapping: TableMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
@@ -160,8 +154,6 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					UploadConditions: &uploadConditions,
-					ImportConditions: importConditions,
 					Mapping: TableMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
@@ -179,85 +171,11 @@ func TestTableSink_Validation(t *testing.T) {
 	cases.Run(t)
 }
 
-func TestSliceUploadConditions_Validation(t *testing.T) {
-	t.Parallel()
-
-	// Test cases
-	cases := ValidationTestCases[SliceUploadConditions]{
-		{
-			Name: "empty",
-			ExpectedError: `
-- "count" must be 1 or greater
-- "size" must be 100B or greater
-- "time" must be 1s or greater
-`,
-			Value: SliceUploadConditions{},
-		},
-		{
-			Name: "over maximum",
-			ExpectedError: `
-- "count" must be 10,000,000 or less
-- "size" must be 50MB or less
-- "time" must be 30m0s or less
-`,
-			Value: SliceUploadConditions{
-				Count: 10000000 + 1,
-				Size:  datasize.MustParseString("50MB") + 1,
-				Time:  30*time.Minute + 1,
-			},
-		},
-		{
-			Name:  "default",
-			Value: DefaultSliceUploadConditions(),
-		},
-	}
-
-	// Run test cases
-	cases.Run(t)
-}
-
-func TestTableImportConditions_Validation(t *testing.T) {
-	t.Parallel()
-
-	// Test cases
-	cases := ValidationTestCases[TableImportConditions]{
-		{
-			Name: "empty",
-			ExpectedError: `
-- "count" must be 1 or greater
-- "size" must be 100B or greater
-- "time" must be 30s or greater
-`,
-			Value: TableImportConditions{},
-		},
-		{
-			Name: "over maximum",
-			ExpectedError: `
-- "count" must be 10,000,000 or less
-- "size" must be 500MB or less
-- "time" must be 24h0m0s or less
-`,
-			Value: TableImportConditions{
-				Count: 10000000 + 1,
-				Size:  datasize.MustParseString("500MB") + 1,
-				Time:  24*time.Hour + 1,
-			},
-		},
-		{
-			Name:  "default",
-			Value: DefaultTableImportConditions(),
-		},
-	}
-
-	// Run test cases
-	cases.Run(t)
-}
-
 func TestTableMapping_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Test cases
-	cases := ValidationTestCases[TableMapping]{
+	cases := testvalidation.TestCases[TableMapping]{
 		{
 			Name: "empty",
 			ExpectedError: `

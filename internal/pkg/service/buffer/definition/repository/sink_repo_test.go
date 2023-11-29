@@ -28,7 +28,6 @@ func sinkTemplate() definition.Sink {
 		Name:        "My Sink",
 		Description: "My Description",
 		Table: &definition.TableSink{
-			ImportConditions: definition.DefaultTableImportConditions(),
 			Mapping: definition.TableMapping{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 				Columns: column.Columns{
@@ -501,7 +500,7 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "sinkId": "my-sink-1",
   "version": {
     "number": 5,
-    "hash": "fa72528723955f20",
+    "hash": "29c9075589e26aa6",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
     "description": "Rollback to version 2"
   },
@@ -509,12 +508,6 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "name": "Modified Name",
   "description": "My Description",
   "table": {
-    "uploadConditions": null,
-    "importConditions": {
-      "count": 10000,
-      "size": "5MB",
-      "time": 300000000000
-    },
     "mapping": {
       "tableId": "in.bucket.table",
       "columns": [
