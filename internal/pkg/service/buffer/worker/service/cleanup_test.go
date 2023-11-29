@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"strings"
 	"testing"
 	"time"
@@ -57,7 +58,7 @@ func TestCleanup(t *testing.T) {
 			config.WithCleanup(true),
 			config.WithCleanupInterval(cleanupInterval),
 		),
-		append(opts, dependencies.WithUniqueID("worker-node-1"))...,
+		append(opts, dependencies.WithNodeID("worker-node-1"))...,
 	)
 
 	store := workerScp.Store()

@@ -17,7 +17,7 @@ func TestProcess_Add(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := log.NewDebugLogger()
-	proc, err := New(ctx, cancel, WithLogger(logger), WithUniqueID("<id>"))
+	proc, err := New(ctx, cancel, WithLogger(logger))
 	assert.NoError(t, err)
 
 	op1 := &sync.WaitGroup{}
@@ -75,7 +75,6 @@ func TestProcess_Add(t *testing.T) {
 
 	// Check logs
 	expected := `
-INFO  process unique id "<id>"
 INFO  exiting (operation failed)
 INFO  end1
 INFO  end2
@@ -93,7 +92,7 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := log.NewDebugLogger()
-	proc, err := New(ctx, cancel, WithLogger(logger), WithUniqueID("<id>"))
+	proc, err := New(ctx, cancel, WithLogger(logger))
 	assert.NoError(t, err)
 
 	op1 := &sync.WaitGroup{}
@@ -136,7 +135,6 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	// Check logs
 	expected := `
-INFO  process unique id "<id>"
 INFO  exiting (some error)
 INFO  end1
 INFO  end2

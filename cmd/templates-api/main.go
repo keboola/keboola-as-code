@@ -84,7 +84,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.NodeID))
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}
