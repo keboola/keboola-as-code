@@ -11,7 +11,7 @@ type Config struct {
 }
 
 type ImportConfig struct {
-	MinInterval time.Duration     `configKey:"minInterval" configUsage:"Minimal duration between imports." validate:"required,minDuration=30s,maxDuration=30m"`
+	MinInterval time.Duration     `configKey:"minInterval" configUsage:"Minimal interval between imports." validate:"required,minDuration=30s,maxDuration=30m"`
 	Trigger     FileImportTrigger `configKey:"trigger"`
 }
 
