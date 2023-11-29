@@ -57,9 +57,13 @@ func (v VersionNumber) String() string {
 }
 
 func hashStruct(s any) string {
-	intHash, err := hashstructure.Hash(s, hashstructure.FormatV2, &hashstructure.HashOptions{})
-	if err != nil {
+	opts := &hashstructure.HashOptions{
+		IgnoreZeroValue: true, // improve forward compatibility
+	}
+
+	if intHash, err := hashstructure.Hash(s, hashstructure.FormatV2, opts); err == nil {
+		return fmt.Sprintf(`%016x`, intHash)
+	} else {
 		panic(err)
 	}
-	return fmt.Sprintf(`%016x`, intHash)
 }
