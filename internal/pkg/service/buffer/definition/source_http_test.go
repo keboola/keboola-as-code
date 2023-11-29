@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test/testvalidation"
 	"strings"
 	"testing"
 	"time"
@@ -29,7 +30,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 	}
 
 	// Test cases
-	cases := ValidationTestCases[Source]{
+	cases := testvalidation.TestCases[Source]{
 		{
 			Name: "empty",
 			ExpectedError: `
