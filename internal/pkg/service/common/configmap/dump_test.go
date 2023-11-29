@@ -120,7 +120,7 @@ intSlice:
     - 10
     - 20
 float: 4.56
-# An usage text.
+# An usage text. Validation rules: ne=invalid
 stringWithUsage: value2
 duration: 2m3s
 durationNullable: 2m3s

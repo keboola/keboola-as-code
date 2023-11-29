@@ -54,7 +54,7 @@ type TestConfig struct {
 	Int              int              `configKey:"int"`
 	IntSlice         []int            `configKey:"intSlice"`
 	Float            float64          `configKey:"float"`
-	StringWithUsage  string           `configKey:"stringWithUsage" configUsage:"An usage text."`
+	StringWithUsage  string           `configKey:"stringWithUsage" configUsage:"An usage text." validate:"ne=invalid"`
 	Duration         time.Duration    `configKey:"duration"`
 	DurationNullable *time.Duration   `configKey:"durationNullable"`
 	URL              *url.URL         `configKey:"url"`
