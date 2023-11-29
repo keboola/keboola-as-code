@@ -48,18 +48,37 @@ func TestConfig_With(t *testing.T) {
 		Size:        10 * datasize.MB,
 		SizePercent: 150,
 	}
+	sliceUploadTrigger := staging.SliceUploadTrigger{
+		Count:    30000,
+		Size:     4 * datasize.MB,
+		Interval: 5 * time.Minute,
+	}
+	fileImportTrigger := target.FileImportTrigger{
+		Count:    60000,
+		Size:     7 * datasize.MB,
+		Interval: 8 * time.Minute,
+	}
+
+	// Apply nil patch
+	assert.Equal(t, defaultCfg, defaultCfg.With(nil))
 
 	// Apply empty patch
-	assert.Equal(t, defaultCfg, defaultCfg.With(ConfigPatch{}))
+	assert.Equal(t, defaultCfg, defaultCfg.With(&ConfigPatch{}))
 
 	// First patch
 	expectedCfg := defaultCfg
 	expectedCfg.Local.Compression = compressionCfg
 	expectedCfg.Local.VolumesAssignment = volumesAssigmentCfg
-	patchedConfig1 := defaultCfg.With(ConfigPatch{
-		Local: local.ConfigPatch{
+	expectedCfg.Staging.Upload.Trigger = sliceUploadTrigger
+	patchedConfig1 := defaultCfg.With(&ConfigPatch{
+		Local: &local.ConfigPatch{
 			Compression:       &compressionCfg,
 			VolumesAssignment: &volumesAssigmentCfg,
+		},
+		Staging: &staging.ConfigPatch{
+			Upload: &staging.UploadConfigPatch{
+				Trigger: &sliceUploadTrigger,
+			},
 		},
 	})
 	assert.Equal(t, expectedCfg, patchedConfig1)
@@ -67,10 +86,16 @@ func TestConfig_With(t *testing.T) {
 	// Second patch
 	expectedCfg.Local.DiskSync = diskSyncCfg
 	expectedCfg.Local.DiskAllocation = diskAllocationCfg
-	patchedConfig2 := patchedConfig1.With(ConfigPatch{
-		Local: local.ConfigPatch{
+	expectedCfg.Target.Import.Trigger = fileImportTrigger
+	patchedConfig2 := patchedConfig1.With(&ConfigPatch{
+		Local: &local.ConfigPatch{
 			DiskSync:       &diskSyncCfg,
 			DiskAllocation: &diskAllocationCfg,
+		},
+		Target: &target.ConfigPatch{
+			Import: &target.ImportConfigPatch{
+				Trigger: &fileImportTrigger,
+			},
 		},
 	})
 	assert.Equal(t, expectedCfg, patchedConfig2)
