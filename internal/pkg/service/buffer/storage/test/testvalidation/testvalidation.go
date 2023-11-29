@@ -1,4 +1,4 @@
-package definition
+package testvalidation
 
 import (
 	"context"
@@ -10,15 +10,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-type ValidationTestCase[T any] struct {
+type TestCase[T any] struct {
 	Name          string
 	ExpectedError string
 	Value         T
 }
 
-type ValidationTestCases[T any] []ValidationTestCase[T]
+type TestCases[T any] []TestCase[T]
 
-func (v ValidationTestCases[T]) Run(t *testing.T) {
+func (v TestCases[T]) Run(t *testing.T) {
 	ctx := context.Background()
 	val := validator.New()
 	for _, tc := range v {

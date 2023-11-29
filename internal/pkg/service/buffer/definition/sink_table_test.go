@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/test/testvalidation"
 	"strings"
 	"testing"
 	"time"
@@ -41,7 +42,7 @@ func TestTableSink_Validation(t *testing.T) {
 	importConditions := DefaultTableImportConditions()
 
 	// Test cases
-	cases := ValidationTestCases[Sink]{
+	cases := testvalidation.TestCases[Sink]{
 		{
 			Name: "empty",
 			ExpectedError: `
