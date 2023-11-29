@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"net/http"
 	"os"
 	"strings"
@@ -53,7 +55,7 @@ func run() error {
 	if err != nil {
 		return errors.Errorf("cannot load envs: %w", err)
 	}
-	cfg, err := config.BindAPIConfig(os.Args, envs)
+	cfg, err := config.Bind(os.Args, envs)
 	if errors.Is(err, pflag.ErrHelp) {
 		// Stop on --help flag
 		return nil
@@ -63,7 +65,14 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferApi]")
-	logger.Info("Configuration: ", cfg.Dump())
+
+	// Dump configuration, sensitive values are masked
+	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
+	if err == nil {
+		logger.Info("Configuration: ", string(dump))
+	} else {
+		return err
+	}
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
@@ -75,7 +84,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}
@@ -83,19 +92,19 @@ func run() error {
 	// Setup telemetry
 	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
-			if cfg.DatadogEnabled {
-				return telemetry.NewDDTracerProvider(
+			if cfg.Datadog.Enabled {
+				return datadog.NewTracerProvider(
 					logger, proc,
 					tracer.WithRuntimeMetrics(),
 					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 					tracer.WithAnalyticsRate(1.0),
-					tracer.WithDebugMode(cfg.DatadogDebug),
+					tracer.WithDebugMode(cfg.Datadog.Debug),
 				), nil
 			}
 			return nil, nil
 		},
 		func() (metric.MeterProvider, error) {
-			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
+			return prometheus.ServeMetrics(ctx, cfg.Metrics, logger, proc, ServiceName)
 		},
 	)
 	if err != nil {
@@ -116,9 +125,9 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.Infof("starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
+	logger.Infof("starting Buffer API HTTP server, listen-address=%s", cfg.API.Listen)
 	err = httpserver.Start(apiScp, httpserver.Config{
-		ListenAddress:     cfg.ListenAddress,
+		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		MiddlewareOptions: []middleware.Option{
