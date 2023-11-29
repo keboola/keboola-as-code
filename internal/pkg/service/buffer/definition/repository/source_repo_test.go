@@ -449,7 +449,7 @@ definition/source/active/123/456/my-source-1
   "sourceId": "my-source-1",
   "version": {
     "number": 5,
-    "hash": "e8a7871823322d78",
+    "hash": "217862c1da330b9b",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
     "description": "Rollback to version 2"
   },

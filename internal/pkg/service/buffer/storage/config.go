@@ -17,17 +17,25 @@ type Config struct {
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It is part of the definition.TableSink structure to allow modification of the default configuration.
 type ConfigPatch struct {
-	Local   local.ConfigPatch   `json:"local,omitempty"`
-	Staging staging.ConfigPatch `json:"staging,omitempty"`
-	Target  target.ConfigPatch  `json:"target,omitempty"`
+	Local   *local.ConfigPatch   `json:"local,omitempty"`
+	Staging *staging.ConfigPatch `json:"staging,omitempty"`
+	Target  *target.ConfigPatch  `json:"target,omitempty"`
 }
 
 // With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
+func (c Config) With(v *ConfigPatch) Config {
 	// Copy values from the ConfigPatch, if any.
-	c.Local = c.Local.With(v.Local)
-	c.Staging = c.Staging.With(v.Staging)
-	c.Target = c.Target.With(v.Target)
+	if v != nil {
+		if v.Local != nil {
+			c.Local = c.Local.With(*v.Local)
+		}
+		if v.Staging != nil {
+			c.Staging = c.Staging.With(*v.Staging)
+		}
+		if v.Target != nil {
+			c.Target = c.Target.With(*v.Target)
+		}
+	}
 	return c
 }
 
