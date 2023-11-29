@@ -34,6 +34,8 @@ type VisitContext struct {
 	Sensitive bool
 	// Usage contains value from the "configUsage" tag, if any.
 	Usage string
+	// Validate contains value from the "validate" tag, if any.
+	Validate string
 }
 
 func Visit(value reflect.Value, cfg VisitConfig) error {
@@ -156,6 +158,11 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 				field.Usage = vc.Usage
 				if usage := field.StructField.Tag.Get(configUsageTag); usage != "" {
 					field.Usage = usage
+				}
+
+				// Set validate from the tag
+				if validate := field.StructField.Tag.Get(validateTag); validate != "" {
+					field.Validate = validate
 				}
 
 				// Map field name, ignore skipped fields
