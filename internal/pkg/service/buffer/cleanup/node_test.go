@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"

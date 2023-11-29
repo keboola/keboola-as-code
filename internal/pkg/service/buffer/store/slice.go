@@ -6,7 +6,7 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"

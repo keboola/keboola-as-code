@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
