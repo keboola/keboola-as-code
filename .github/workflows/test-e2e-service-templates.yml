@@ -48,7 +48,7 @@ jobs:
       - name: Start etcd database
         run: |
           set -Eeuo pipefail
-          docker-compose run -d --rm --publish 2379:2379 etcd
+          docker compose run -d --rm --publish 2379:2379 etcd
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
       - name: Run tests
