@@ -2,20 +2,27 @@
 package download
 
 import (
-	"compress/gzip"
 	"context"
-	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/klauspost/pgzip"
 	"github.com/schollz/progressbar/v3"
+	"go.uber.org/atomic"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+)
+
+const (
+	StdoutOutput           = "-"
+	GZIPFileExt            = ".gz"
+	GetFileSizeParallelism = 100
 )
 
 type dependencies interface {
@@ -24,206 +31,184 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 }
 
-type Options struct {
-	File        *keboola.FileDownloadCredentials
-	Output      string
-	AllowSliced bool
+type downloader struct {
+	dependencies
+	options Options
+	bar     *progressbar.ProgressBar
+	slices  []string
 }
 
-func (o *Options) ToStdOut() bool {
-	return o.Output == "-"
+func Run(ctx context.Context, o Options, d dependencies) (returnErr error) {
+	return (&downloader{options: o, dependencies: d}).Download(ctx)
 }
 
-// GetOutput returns an `io.WriteCloser` which either wraps a file or stdout.
-//
-// If `o.Output` is "-", then it wraps stdout, and `Close` is a no-op.
-// Otherwise wraps a file.
-//
-// If `file` is not an empty string, then `o.Output` is treated as a directory
-// and the file created will be at `path.Join(o.Output, file)`.
-func (o *Options) GetOutput(file string) (io.WriteCloser, error) {
-	if o.Output == "-" {
-		return &outputWriter{}, nil
-	} else {
-		var output string
-		if len(file) > 0 {
-			output = path.Join(o.Output, file)
-		} else {
-			output = o.Output
-		}
-
-		file, err := os.Create(output) // nolint: forbidigo
-		if err != nil {
-			return nil, errors.Errorf(`cannot create file "%s": %w`, output, err)
-		}
-		return &outputWriter{file}, nil
-	}
-}
-
-func Run(ctx context.Context, opts Options, d dependencies) (err error) {
+func (d *downloader) Download(ctx context.Context) (returnErr error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.file.download")
-	defer span.End(&err)
+	defer span.End(&returnErr)
 
-	if opts.File.IsSliced {
-		if !opts.AllowSliced {
-			err = runDownloadForceUnsliced(ctx, &opts, d.Logger())
-			if err != nil {
-				return err
+	// Log start and end
+	if !d.options.ToStdout() {
+		defer func() {
+			if returnErr == nil {
+				d.Logger().Infof(`File "%d" downloaded to "%s".`, d.options.File.ID, d.options.FormattedOutput())
 			}
-		} else {
-			err = runDownloadSliced(ctx, &opts)
-			if err != nil {
-				return err
-			}
-		}
+		}()
+	}
+
+	// Get slices
+	if slices, err := d.getSlices(ctx); err == nil {
+		d.slices = slices
 	} else {
-		err = runDownloadWhole(ctx, &opts)
-		if err != nil {
+		return err
+	}
+
+	// Get total size
+	size, err := d.totalSize(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Create progress bar, it writes to stderr
+	d.bar = progressbar.DefaultBytes(size, "Downloading")
+	defer func() {
+		if closeErr := d.bar.Close(); returnErr == nil && closeErr != nil {
+			returnErr = closeErr
+		}
+	}()
+
+	// Download
+	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
+		// Download all slices into single file
+		if output, err := d.openOutput(""); err != nil {
+			return err
+		} else if err := d.readMergedSlicesTo(ctx, output); err != nil {
+			return err
+		} else if err := output.Close(); err != nil {
 			return err
 		}
-	}
+	} else {
+		// Create output directory
+		if err := os.MkdirAll(d.options.Output, 0o700); err != nil {
+			return err
+		}
 
-	if !opts.ToStdOut() {
-		d.Logger().Infof(`File "%d" downloaded to "%s".`, opts.File.ID, opts.Output)
+		// Download all slices as separate files
+		for _, slice := range d.slices {
+			if output, err := d.openOutput(slice); err != nil {
+				return err
+			} else if err := d.readSliceTo(ctx, slice, output); err != nil {
+				return err
+			} else if err := output.Close(); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-// download slices to `opts.Output` as one file.
-func runDownloadForceUnsliced(ctx context.Context, opts *Options, logger log.Logger) error {
-	logger.Infof(`Creating file "%s"`, opts.Output)
-	dst, err := opts.GetOutput("")
-	if err != nil {
-		return err
+func (d *downloader) openOutput(slice string) (io.WriteCloser, error) {
+	switch {
+	case d.options.ToStdout():
+		return os.Stdout, nil // stdout should not be closed
+	case d.options.AllowSliced && d.options.File.IsSliced:
+		return os.OpenFile(filepath.Join(d.options.Output, slice), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // nolint:forbidigo
+	default:
+		return os.OpenFile(d.options.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // nolint:forbidigo
 	}
-	defer func() {
-		err = dst.Close()
-	}()
-
-	logger.Infof("Downloading slices")
-	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, size int64, index, total int) (err error) {
-		bar := progressbar.DefaultBytes(
-			size,
-			fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), index+1, total),
-		)
-
-		if path.Ext(slice) == ".gz" {
-			reader, err = gzip.NewReader(reader)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = io.CopyN(io.MultiWriter(dst, bar), reader, size)
-		return err
-	})
 }
 
-// download slices to `opts.Output` as individual files.
-func runDownloadSliced(ctx context.Context, opts *Options) error {
-	if !opts.ToStdOut() {
-		err := os.MkdirAll(opts.Output, 0o755) // nolint: forbidigo
-		if err != nil && !os.IsExist(err) {    // nolint: forbidigo
-			return errors.Errorf(`cannot create directory "%s": %w`, opts.Output, err)
-		}
-	}
-
-	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, size int64, index int, total int) (err error) {
-		bar := progressbar.DefaultBytes(
-			size,
-			fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), index+1, total),
-		)
-
-		output, err := opts.GetOutput(slice)
-		if err != nil {
+// readSliceTo to the pipe writer.
+func (d *downloader) readMergedSlicesTo(ctx context.Context, writer io.Writer) error {
+	for _, slice := range d.slices {
+		if err := d.readSliceTo(ctx, slice, writer); err != nil {
 			return err
 		}
-		defer func() {
-			err = output.Close()
-		}()
-
-		_, err = io.Copy(io.MultiWriter(output, bar), reader)
-		return err
-	})
+	}
+	return nil
 }
 
-// download whole file to `opts.Output`.
-func runDownloadWhole(ctx context.Context, opts *Options) (err error) {
-	dst, err := opts.GetOutput("")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		err = dst.Close()
-	}()
+// readSliceTo to the pipe writer.
+func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Writer) (returnErr error) {
+	var reader io.Reader
 
-	r, err := keboola.DownloadReader(ctx, opts.File)
-	if err != nil {
-		return err
+	// Create slice reader
+	if sliceReader, err := keboola.DownloadSliceReader(ctx, d.options.File, slice); err == nil {
+		defer func() {
+			if closeErr := sliceReader.Close(); returnErr == nil && closeErr != nil {
+				returnErr = closeErr
+			}
+		}()
+		reader = sliceReader
+	} else if slice == "" {
+		return errors.Errorf(`cannot download file: %w`, err)
+	} else {
+		return errors.Errorf(`cannot download file: %w`, err)
 	}
 
-	attrs, err := keboola.GetFileAttributes(ctx, opts.File, "")
-	if err != nil {
-		return errors.Errorf("cannot get storage file attributes: %w", err)
+	// Move progress bar on read
+	if d.bar != nil {
+		barReader := progressbar.NewReader(reader, d.bar)
+		reader = &barReader
 	}
-	bar := progressbar.DefaultBytes(attrs.Size, "downloading")
 
-	_, err = io.Copy(io.MultiWriter(dst, bar), r)
+	// Add decompression reader
+	if strings.HasSuffix(slice, GZIPFileExt) || (slice == "" && strings.HasSuffix(d.options.File.Name, GZIPFileExt)) {
+		if gzipReader, err := pgzip.NewReader(reader); err == nil {
+			defer func() {
+				if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
+					returnErr = closeErr
+				}
+			}()
+			reader = gzipReader
+		} else {
+			return errors.Errorf(`cannot create gzip reader: %w`, err)
+		}
+	}
+
+	// Copy all
+	_, err := io.Copy(writer, reader)
 	return err
 }
 
-type sliceHandler func(reader io.ReadCloser, slice string, size int64, index int, total int) error
-
-func downloadSliced(
-	ctx context.Context,
-	file *keboola.FileDownloadCredentials,
-	handler sliceHandler,
-) error {
-	slices, err := keboola.DownloadManifest(ctx, file)
-	if err != nil {
-		return err
-	}
-
-	for i, slice := range slices {
-		r, err := keboola.DownloadSliceReader(ctx, file, slice)
-		if err != nil {
-			return errors.Errorf(`cannot download slice "%s": %w`, slice, err)
-		}
-
-		attrs, err := keboola.GetFileAttributes(ctx, file, slice)
-		if err != nil {
-			return errors.Errorf(`cannot get slice attributes "%s": %w`, slice, err)
-		}
-
-		err = handler(r, slice, attrs.Size, i, len(slices))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// outputWriter wraps either a file or stdout, and implements `io.WriteCloser`.
-//
-// Close is a no-op if writing to stdout.
-type outputWriter struct {
-	file *os.File
-}
-
-func (o *outputWriter) Write(b []byte) (n int, err error) {
-	if o.file != nil {
-		return o.file.Write(b)
+// getSlices from the file manifest.
+func (d *downloader) getSlices(ctx context.Context) ([]string, error) {
+	if d.options.File.IsSliced {
+		// Sliced file
+		return keboola.DownloadManifest(ctx, d.options.File)
 	} else {
-		return os.Stdout.Write(b)
+		// Simple file
+		return []string{""}, nil
 	}
 }
 
-func (o *outputWriter) Close() error {
-	if o.file != nil {
-		return o.file.Close()
-	} else {
-		return nil
+// totalSize sums size of all slices.
+func (d *downloader) totalSize(ctx context.Context) (size int64, err error) {
+	atomicSize := atomic.NewInt64(0)
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.SetLimit(GetFileSizeParallelism)
+	for _, slice := range d.slices {
+		slice := slice
+		grp.Go(func() error {
+			// Check context cancellation
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			// Get slice size
+			if attrs, err := keboola.GetFileAttributes(ctx, d.options.File, slice); err == nil {
+				atomicSize.Add(attrs.Size)
+				return nil
+			} else {
+				return err
+			}
+		})
 	}
+
+	// Wait for all goroutines
+	if err := grp.Wait(); err != nil {
+		return 0, err
+	}
+
+	return atomicSize.Load(), nil
 }
