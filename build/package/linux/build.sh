@@ -7,4 +7,4 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
 cd "$(dirname "$0")"
-docker-compose build
+docker compose build

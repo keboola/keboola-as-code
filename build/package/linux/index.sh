@@ -28,21 +28,21 @@ function retry {
 }
 
 function indexDeb {
-  docker-compose run --rm -T -u "$(id -u):$(id -g)" deb
+  docker compose run --rm -T -u "$(id -u):$(id -g)" deb
   echo "OK. DEB packages indexed."
   echo
   echo
 }
 
 function indexRpm {
-  docker-compose run --rm -T -u "$(id -u):$(id -g)" rpm
+  docker compose run --rm -T -u "$(id -u):$(id -g)" rpm
   echo "OK. RPM packages indexed."
   echo
   echo
 }
 
 function indexApk {
-  docker-compose run --rm -T -u "$(id -u):$(id -g)" apk
+  docker compose run --rm -T -u "$(id -u):$(id -g)" apk
   echo "OK. APK packages indexed."
   echo
   echo
@@ -64,7 +64,7 @@ SCRIPTS_DIR="$(realpath "$SCRIPTS_DIR_REL")"
 cd $SCRIPTS_DIR
 
 echo "Pulling Docker images ..."
-docker-compose pull -q
+docker compose pull -q
 
 echo "Indexing DEB packages for Debian ..."
 retry 5 indexDeb

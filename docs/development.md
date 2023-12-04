@@ -9,7 +9,7 @@ Clone this repository and init the workspace with following command:
 ```
 git clone https://github.com/keboola/keboola-as-code
 cd keboola-as-code
-docker-compose build
+docker compose build
 ```
 
 ### Setup ENV
@@ -25,7 +25,7 @@ Staging storage can be `s3`, `abs` or `gcs`, according to the stack.
 
 Start an interactive console in a container, run:
 ```
-docker-compose run --rm -u "$UID:$GID" --service-ports dev bash
+docker compose run --rm -u "$UID:$GID" --service-ports dev bash
 ```
 
 ### Run Tests
@@ -81,14 +81,14 @@ make godoc
 API development uses [Goa code generator](https://goa.design/).
 
 To run the API locally:
-1. Start `bash` in the dev container, run `docker-compose run --rm -u "$UID:$GID" --service-ports dev bash`.
+1. Start `bash` in the dev container, run `docker compose run --rm -u "$UID:$GID" --service-ports dev bash`.
 2. Set env var with Keboola stack: `export TEMPLATES_API_STORAGE_API_HOST=connection.keboola.com` (or `BUFFER_API_STORAGE_API_HOST`)
 3. In the container run `make run-templates-api` (or `make run-buffer-api`)
  - The API is exposed to `http://localhost:8000/` (or `http://localhost:8001/`
  - When the code changes, the API recompiles and restarts.
 
 To run Buffer Worker locally:
-1. Start `bash` in the dev container, run `docker-compose run --rm -u "$UID:$GID" --service-ports dev bash`.
+1. Start `bash` in the dev container, run `docker compose run --rm -u "$UID:$GID" --service-ports dev bash`.
 2. Set env var with Keboola stack: `export BUFFER_WORKER_STORAGE_API_HOST=connection.keboola.com`
 3. In the container run `make run-buffer-worker`
 
