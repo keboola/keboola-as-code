@@ -1,1 +1,2 @@
-DEBUG	Version:    %A
+{"level":"debug","time":"%s","message":"Version:    %s"}
+%A
