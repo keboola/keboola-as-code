@@ -82,6 +82,7 @@ type RootCommand struct {
 	options   *options.Options
 	fs        filesystem.Fs
 	logFile   *log.File
+	logFormat log.LogFormat
 	cmdByPath map[string]*cobra.Command
 	aliases   *orderedmap.OrderedMap
 }
@@ -122,6 +123,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 	flags.SortFlags = true
 	flags.BoolP("help", "h", false, "print help for command")
 	flags.StringP("log-file", "l", "", "path to a log file for details")
+	flags.String("log-format", "console", "format of stdout and stderr")
 	flags.Bool("non-interactive", false, "disable interactive dialogs")
 	flags.StringP("working-dir", "d", "", "use other working directory")
 	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
@@ -352,17 +354,25 @@ func (root *RootCommand) setupLogger() {
 	var logFileErr error
 	root.logFile, logFileErr = log.NewLogFile(root.options.LogFilePath)
 
+	var logFormatErr error
+	root.logFormat, logFormatErr = log.NewLogFormat(root.options.LogFormat)
+
 	// Get temporary logger
 	memoryLogger, _ := root.logger.(*log.MemoryLogger)
 
 	// Create logger
-	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.options.Verbose)
+	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.options.Verbose)
 	root.SetOut(root.logger.InfoWriter())
 	root.SetErr(root.logger.WarnWriter())
 
 	// Warn if user specified log file + it cannot be opened
 	if logFileErr != nil && root.options.LogFilePath != "" {
 		root.logger.Warnf("Cannot open log file: %s", logFileErr)
+	}
+
+	// Warn if user specified invalid log format
+	if logFormatErr != nil {
+		root.logger.Warnf("Invalid log format: %s", logFormatErr)
 	}
 
 	// Log info

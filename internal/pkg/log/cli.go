@@ -8,7 +8,7 @@ import (
 )
 
 // NewCliLogger new production zapLogger for CLI.
-func NewCliLogger(stdout io.Writer, stderr io.Writer, logFile *File, verbose bool) Logger {
+func NewCliLogger(stdout io.Writer, stderr io.Writer, logFile *File, logFormat LogFormat, verbose bool) Logger {
 	var cores []zapcore.Core
 
 	// Log to file
@@ -17,10 +17,10 @@ func NewCliLogger(stdout io.Writer, stderr io.Writer, logFile *File, verbose boo
 	}
 
 	// Log to stdout
-	cores = append(cores, stdoutCore(stdout, verbose))
+	cores = append(cores, stdoutCore(stdout, logFormat, verbose))
 
 	// Log to stderr
-	cores = append(cores, stderrCore(stderr, verbose))
+	cores = append(cores, stderrCore(stderr, logFormat, verbose))
 
 	// Create zapLogger
 	return loggerFromZapCore(zapcore.NewTee(cores...))
