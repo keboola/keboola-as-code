@@ -2,22 +2,22 @@
 package log
 
 import (
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 // fileCore writes to a logFile.
 func fileCore(logFile *File) zapcore.Core {
 	// Log all
-	fileLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool { return true })
+	fileLevels := zapcore.DebugLevel
 
 	// Log time, level, msg
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
+	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		TimeKey:     "time",
+		LevelKey:    "level",
+		MessageKey:  "message",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+		EncodeTime:  zapcore.ISO8601TimeEncoder,
 	})
+
 	return zapcore.NewCore(encoder, logFile.File(), fileLevels)
 }

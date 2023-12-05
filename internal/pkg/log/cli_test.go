@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -37,10 +38,16 @@ func TestCliLogger_File(t *testing.T) {
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
-	expected := "DEBUG\tDebug msg\nINFO\tInfo msg\nWARN\tWarn msg\nERROR\tError msg\n"
+	expected := `
+{"level":"debug","time":"%s","message":"Debug msg"}
+{"level":"info","time":"%s","message":"Info msg"}
+{"level":"warn","time":"%s","message":"Warn msg"}
+{"level":"error","time":"%s","message":"Error msg"}
+`
+
 	content, err := os.ReadFile(filePath)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, string(content))
+	wildcards.Assert(t, expected, string(content))
 }
 
 func TestCliLogger_VerboseFalse(t *testing.T) {
