@@ -51,6 +51,8 @@ linters-settings:
       - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
       - ^gonanoid\..*$(# Use "internal/pkg/idgenerator" package instead)?
+      # No logger calls without context, use a method with Ctx suffix instead
+      # - ^(l|(root\.)?logger)\.(Log|Debugf?|Infof?|Warnf?|Errorf?)$(# Use a method with Ctx suffix instead)?
   depguard:
     list-type: denylist
     include-go-root: true
