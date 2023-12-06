@@ -27,6 +27,7 @@ Start an interactive console in a container, run:
 ```
 docker compose run --rm -u "$UID:$GID" --service-ports dev bash
 ```
+In case you're using Docker Desktop on Linux remove the `-u "$UID:$GID"`. It can cause some permission issues.
 
 ### Run Tests
 
