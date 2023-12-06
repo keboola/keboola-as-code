@@ -2,6 +2,8 @@
 package log
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -50,6 +52,59 @@ func (l *zapLogger) Log(level string, args ...any) {
 	default:
 		l.Info(args...)
 	}
+}
+
+func (l *zapLogger) LogCtx(ctx context.Context, level string, args ...any) {
+	switch level {
+	case "debug", "DEBUG":
+		l.Debug(args...)
+	case "info", "INFO":
+		l.Info(args...)
+	case "warn", "WARN":
+		l.Warn(args...)
+	case "error", "ERROR":
+		l.Error(args...)
+	case "dpanic", "DPANIC":
+		l.DPanic(args...)
+	case "panic", "PANIC":
+		l.Panic(args...)
+	case "fatal", "FATAL":
+		l.Fatal(args...)
+	default:
+		l.Info(args...)
+	}
+}
+
+func (l *zapLogger) DebugCtx(ctx context.Context, args ...any) {
+	l.Debug(args...)
+}
+
+func (l *zapLogger) InfoCtx(ctx context.Context, args ...any) {
+	l.Info(args...)
+}
+
+func (l *zapLogger) WarnCtx(ctx context.Context, args ...any) {
+	l.Warn(args...)
+}
+
+func (l *zapLogger) ErrorCtx(ctx context.Context, args ...any) {
+	l.Error(args...)
+}
+
+func (l *zapLogger) DebugfCtx(ctx context.Context, template string, args ...any) {
+	l.Debugf(template, args...)
+}
+
+func (l *zapLogger) InfofCtx(ctx context.Context, template string, args ...any) {
+	l.Infof(template, args...)
+}
+
+func (l *zapLogger) WarnfCtx(ctx context.Context, template string, args ...any) {
+	l.Warnf(template, args...)
+}
+
+func (l *zapLogger) ErrorfCtx(ctx context.Context, template string, args ...any) {
+	l.Errorf(template, args...)
 }
 
 func (l *zapLogger) DebugWriter() *LevelWriter {

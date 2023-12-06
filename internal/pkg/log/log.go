@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"io"
 
 	"go.uber.org/zap/zapcore"
@@ -15,7 +16,7 @@ const (
 
 type Logger interface {
 	baseLogger
-	sugaredLogger
+	contextLogger
 	toWriter
 	withPrefix
 }
@@ -44,15 +45,27 @@ type baseLogger interface {
 	Info(args ...any)
 	Warn(args ...any)
 	Error(args ...any)
-	Sync() error
-}
 
-type sugaredLogger interface {
 	With(args ...any) Logger // creates a child logger and adds structured context to it.
 	Debugf(template string, args ...any)
 	Infof(template string, args ...any)
 	Warnf(template string, args ...any)
 	Errorf(template string, args ...any)
+
+	Sync() error
+}
+
+type contextLogger interface {
+	LogCtx(ctx context.Context, level string, args ...any)
+	DebugCtx(ctx context.Context, args ...any)
+	InfoCtx(ctx context.Context, args ...any)
+	WarnCtx(ctx context.Context, args ...any)
+	ErrorCtx(ctx context.Context, args ...any)
+
+	DebugfCtx(ctx context.Context, template string, args ...any)
+	InfofCtx(ctx context.Context, template string, args ...any)
+	WarnfCtx(ctx context.Context, template string, args ...any)
+	ErrorfCtx(ctx context.Context, template string, args ...any)
 }
 
 type toWriter interface {
