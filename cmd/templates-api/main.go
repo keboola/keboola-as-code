@@ -116,7 +116,7 @@ func run() error {
 
 	// Start HTTP server.
 	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
-	err = httpserver.Start(apiScp, httpserver.Config{
+	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,

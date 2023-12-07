@@ -24,7 +24,7 @@ type dependencies interface {
 }
 
 // Start HTTP server.
-func Start(d dependencies, cfg Config) error {
+func Start(ctx context.Context, d dependencies, cfg Config) error {
 	logger, tel := d.Logger(), d.Telemetry()
 
 	// Create server components
@@ -43,7 +43,7 @@ func Start(d dependencies, cfg Config) error {
 	)
 	// Mount endpoints
 	cfg.Mount(com)
-	logger.Infof("mounted HTTP endpoints")
+	logger.InfofCtx(ctx, "mounted HTTP endpoints")
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
@@ -56,16 +56,16 @@ func Start(d dependencies, cfg Config) error {
 
 	// Register graceful shutdown
 	proc.OnShutdown(func() {
-		logger.Infof("shutting down HTTP server at %q", cfg.ListenAddress)
+		logger.InfofCtx(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
 
 		// Shutdown gracefully with a timeout.
-		ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Errorf(`HTTP server shutdown error: %s`, err)
+			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)
 		}
-		logger.Info("HTTP server shutdown finished")
+		logger.InfoCtx(ctx, "HTTP server shutdown finished")
 	})
 
 	return nil
