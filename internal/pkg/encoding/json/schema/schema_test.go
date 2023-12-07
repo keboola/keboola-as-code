@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -332,7 +333,7 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 	// Validate, no error
 	content := orderedmap.New()
 	content.Set(`parameters`, orderedmap.New())
-	assert.NoError(t, ValidateObjects(logger, registry))
+	assert.NoError(t, ValidateObjects(context.Background(), logger, registry))
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 }
 
