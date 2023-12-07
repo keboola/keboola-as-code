@@ -33,9 +33,9 @@ func Run(ctx context.Context, d dependencies) (err error) {
 			return err
 		}
 
-		logger.Infof("Project directory:  %s", prj.Fs().BasePath())
-		logger.Infof("Working directory:  %s", prj.Fs().WorkingDir())
-		logger.Infof("Manifest path:      %s", prj.Manifest().Path())
+		logger.InfofCtx(ctx, "Project directory:  %s", prj.Fs().BasePath())
+		logger.InfofCtx(ctx, "Working directory:  %s", prj.Fs().WorkingDir())
+		logger.InfofCtx(ctx, "Manifest path:      %s", prj.Manifest().Path())
 		return nil
 	}
 
@@ -44,9 +44,9 @@ func Run(ctx context.Context, d dependencies) (err error) {
 			return err
 		}
 
-		logger.Infof("Template directory:  %s", tmpl.Fs().BasePath())
-		logger.Infof("Working directory:   %s", tmpl.Fs().WorkingDir())
-		logger.Infof("Manifest path:       %s", tmpl.ManifestPath())
+		logger.InfofCtx(ctx, "Template directory:  %s", tmpl.Fs().BasePath())
+		logger.InfofCtx(ctx, "Working directory:   %s", tmpl.Fs().WorkingDir())
+		logger.InfofCtx(ctx, "Manifest path:       %s", tmpl.ManifestPath())
 		return nil
 	}
 
@@ -55,9 +55,9 @@ func Run(ctx context.Context, d dependencies) (err error) {
 			return err
 		}
 
-		logger.Infof("Repository directory:  %s", repo.Fs().BasePath())
-		logger.Infof("Working directory:     %s", repo.Fs().WorkingDir())
-		logger.Infof("Manifest path:         %s", repo.Manifest().Path())
+		logger.InfofCtx(ctx, "Repository directory:  %s", repo.Fs().BasePath())
+		logger.InfofCtx(ctx, "Working directory:     %s", repo.Fs().WorkingDir())
+		logger.InfofCtx(ctx, "Manifest path:         %s", repo.Manifest().Path())
 		return nil
 	}
 
@@ -66,11 +66,11 @@ func Run(ctx context.Context, d dependencies) (err error) {
 			return err
 		}
 
-		logger.Infof("Dbt project directory:  %s", prj.Fs().BasePath())
-		logger.Infof("Working directory:      %s", prj.Fs().WorkingDir())
+		logger.InfofCtx(ctx, "Dbt project directory:  %s", prj.Fs().BasePath())
+		logger.InfofCtx(ctx, "Working directory:      %s", prj.Fs().WorkingDir())
 		return nil
 	}
 
-	logger.Warnf(`Directory "%s" is not a project or template repository.`, d.Fs().BasePath())
+	logger.WarnfCtx(ctx, `Directory "%s" is not a project or template repository.`, d.Fs().BasePath())
 	return nil
 }

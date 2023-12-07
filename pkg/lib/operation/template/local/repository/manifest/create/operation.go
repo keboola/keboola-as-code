@@ -28,6 +28,6 @@ func Run(ctx context.Context, emptyDir filesystem.Fs, d dependencies) (m *manife
 		return nil, err
 	}
 
-	logger.Infof("Created repository manifest file \"%s\".", repositoryManifest.Path())
+	logger.InfofCtx(ctx, "Created repository manifest file \"%s\".", repositoryManifest.Path())
 	return repositoryManifest, nil
 }

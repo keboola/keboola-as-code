@@ -25,6 +25,6 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (m *repositoryMa
 		return nil, err
 	}
 
-	logger.Debugf(`Repository manifest loaded.`)
+	logger.DebugfCtx(ctx, `Repository manifest loaded.`)
 	return m, nil
 }

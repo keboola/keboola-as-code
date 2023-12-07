@@ -38,6 +38,6 @@ func Run(ctx context.Context, d dependencies) (err error) {
 		return err
 	}
 
-	logger.Info("Repository init done.")
+	logger.InfoCtx(ctx, "Repository init done.")
 	return nil
 }

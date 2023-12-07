@@ -26,6 +26,6 @@ func Run(ctx context.Context, m *project.Manifest, fs filesystem.Fs, d Dependenc
 		return true, nil
 	}
 
-	d.Logger().Debugf(`Project manifest has not changed.`)
+	d.Logger().DebugfCtx(ctx, `Project manifest has not changed.`)
 	return false, nil
 }

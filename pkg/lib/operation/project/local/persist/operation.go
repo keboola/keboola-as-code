@@ -46,7 +46,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !plan.Empty() {
 		// Dry run?
 		if o.DryRun {
-			logger.Info("Dry run, nothing changed.")
+			logger.InfoCtx(ctx, "Dry run, nothing changed.")
 			return nil
 		}
 
@@ -71,6 +71,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.Info(`Persist done.`)
+	logger.InfoCtx(ctx, `Persist done.`)
 	return nil
 }

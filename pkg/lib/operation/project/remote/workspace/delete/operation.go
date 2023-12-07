@@ -25,7 +25,7 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	logger.Infof(`Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
+	logger.InfofCtx(ctx, `Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
 	err = d.KeboolaProjectAPI().DeleteWorkspace(
 		ctx,
 		branchID,
@@ -35,7 +35,7 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	if err != nil {
 		return err
 	}
-	logger.Infof("Delete done.")
+	logger.InfofCtx(ctx, "Delete done.")
 
 	return nil
 }

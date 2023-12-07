@@ -2,7 +2,6 @@ package table
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -47,6 +46,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	d.Logger().Info(fmt.Sprintf(`Created table "%s".`, tableID.String()))
+	d.Logger().InfofCtx(ctx, `Created table "%s".`, tableID.String())
 	return nil
 }

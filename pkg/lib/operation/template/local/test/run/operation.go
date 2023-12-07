@@ -48,7 +48,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil { // nolint: forbidigo
-			d.Logger().Warnf(`cannot remove temp dir "%s": %w`, tempDir, err)
+			d.Logger().WarnfCtx(ctx, `cannot remove temp dir "%s": %w`, tempDir, err)
 		}
 	}()
 
@@ -67,25 +67,25 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 
 		if !o.RemoteOnly {
 			if o.Verbose {
-				d.Logger().Infof(`%s %s local running`, tmpl.FullName(), test.Name())
+				d.Logger().InfofCtx(ctx, `%s %s local running`, tmpl.FullName(), test.Name())
 			}
 			if err := runLocalTest(ctx, test, tmpl, o.Verbose, d); err != nil {
-				d.Logger().Errorf(`FAIL %s %s local`, tmpl.FullName(), test.Name())
+				d.Logger().ErrorfCtx(ctx, `FAIL %s %s local`, tmpl.FullName(), test.Name())
 				errs.AppendWithPrefixf(err, `running local test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateID())
 			} else {
-				d.Logger().Infof(`PASS %s %s local`, tmpl.FullName(), test.Name())
+				d.Logger().InfofCtx(ctx, `PASS %s %s local`, tmpl.FullName(), test.Name())
 			}
 		}
 
 		if !o.LocalOnly {
 			if o.Verbose {
-				d.Logger().Infof(`%s %s remote running`, tmpl.FullName(), test.Name())
+				d.Logger().InfofCtx(ctx, `%s %s remote running`, tmpl.FullName(), test.Name())
 			}
 			if err := runRemoteTest(ctx, test, tmpl, o.Verbose, d); err != nil {
-				d.Logger().Errorf(`FAIL %s %s remote`, tmpl.FullName(), test.Name())
+				d.Logger().ErrorfCtx(ctx, `FAIL %s %s remote`, tmpl.FullName(), test.Name())
 				errs.AppendWithPrefixf(err, `running remote test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateID())
 			} else {
-				d.Logger().Infof(`PASS %s %s remote`, tmpl.FullName(), test.Name())
+				d.Logger().InfofCtx(ctx, `PASS %s %s remote`, tmpl.FullName(), test.Name())
 			}
 		}
 	}
@@ -108,14 +108,14 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		return err
 	}
 	defer unlockFn()
-	d.Logger().Debugf(`Working directory set up.`)
+	d.Logger().DebugfCtx(ctx, `Working directory set up.`)
 
 	// Read inputs and replace env vars
 	inputValues, err := tmplTest.ReadInputValues(ctx, tmpl, test)
 	if err != nil {
 		return err
 	}
-	d.Logger().Debugf(`Inputs prepared.`)
+	d.Logger().DebugfCtx(ctx, `Inputs prepared.`)
 
 	// Use template
 	tmplOpts := useTemplate.Options{
@@ -166,7 +166,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		return err
 	}
 	defer unlockFn()
-	d.Logger().Debugf(`Working directory set up.`)
+	d.Logger().DebugfCtx(ctx, `Working directory set up.`)
 
 	branchKey := prjState.MainBranch().BranchKey
 
@@ -175,7 +175,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	if err != nil {
 		return err
 	}
-	d.Logger().Debugf(`Inputs prepared.`)
+	d.Logger().DebugfCtx(ctx, `Inputs prepared.`)
 
 	// Copy remote state to the local
 	for _, objectState := range prjState.All() {

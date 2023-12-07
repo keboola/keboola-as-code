@@ -22,6 +22,6 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 		return errors.Errorf("cannot create metadata directory \"%s\": %w", filesystem.MetadataDir, err)
 	}
 
-	d.Logger().Infof("Created metadata directory \"%s\".", filesystem.MetadataDir)
+	d.Logger().InfofCtx(ctx, "Created metadata directory \"%s\".", filesystem.MetadataDir)
 	return nil
 }
