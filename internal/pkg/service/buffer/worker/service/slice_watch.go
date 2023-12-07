@@ -95,7 +95,7 @@ func (w *activeSlicesWatcher) WaitUntilAllSlicesUploaded(ctx context.Context, lo
 	}
 
 	if logger != nil {
-		logger.Infof(`waiting for "%d" slices to be uploaded`, count)
+		logger.InfofCtx(ctx, `waiting for "%d" slices to be uploaded`, count)
 	}
 
 	// Wait

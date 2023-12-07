@@ -134,9 +134,9 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 		// Encode and log message
 		if bytes, err := encoder.EncodeEntry(entry, fields); err == nil {
-			logger.Log(entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
+			logger.LogCtx(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
 		} else {
-			logger.Warnf("cannot log msg from etcd client: %s", err)
+			logger.WarnfCtx(ctx, "cannot log msg from etcd client: %s", err)
 		}
 	}))
 
@@ -146,7 +146,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	// Create client
 	startTime := time.Now()
-	logger.Infof("connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.connectTimeout, cfg.keepAliveTimeout, cfg.keepAliveInterval)
+	logger.InfofCtx(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.connectTimeout, cfg.keepAliveTimeout, cfg.keepAliveInterval)
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{cfg.credentials.Endpoint},
@@ -193,14 +193,14 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	// Close client when shutting down the server
 	proc.OnShutdown(func() {
 		startTime := time.Now()
-		logger.Info("closing etcd connection")
+		logger.InfoCtx(ctx, "closing etcd connection")
 		if err := c.Close(); err != nil {
-			logger.Warnf("cannot close etcd connection: %s", err)
+			logger.WarnfCtx(ctx, "cannot close etcd connection: %s", err)
 		} else {
-			logger.Infof("closed etcd connection | %s", time.Since(startTime))
+			logger.InfofCtx(ctx, "closed etcd connection | %s", time.Since(startTime))
 		}
 	})
 
-	logger.Infof(`connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
+	logger.InfofCtx(ctx, `connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
 	return c, nil
 }

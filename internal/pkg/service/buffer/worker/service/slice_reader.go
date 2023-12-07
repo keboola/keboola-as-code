@@ -23,7 +23,7 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 		var err error
 		defer func() {
 			if closeErr := in.CloseWithError(err); closeErr != nil {
-				logger.Errorf(`cannot close records reader pipe: %s`, closeErr)
+				logger.ErrorfCtx(ctx, `cannot close records reader pipe: %s`, closeErr)
 			}
 		}()
 
@@ -59,7 +59,8 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 
 		// Check records count
 		if uploadStats.RecordsCount != receivedStats.RecordsCount {
-			logger.Errorf(
+			logger.ErrorfCtx(
+				ctx,
 				`unexpected number of uploaded records, expected "%d", found "%d"`,
 				receivedStats.RecordsCount, uploadStats.RecordsCount,
 			)
