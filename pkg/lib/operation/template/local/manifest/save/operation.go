@@ -26,6 +26,6 @@ func Run(ctx context.Context, m *template.Manifest, fs filesystem.Fs, d Dependen
 		return true, nil
 	}
 
-	d.Logger().Debugf(`Template manifest has not changed.`)
+	d.Logger().DebugfCtx(ctx, `Template manifest has not changed.`)
 	return false, nil
 }

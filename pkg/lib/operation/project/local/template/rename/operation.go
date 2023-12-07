@@ -55,6 +55,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.Info(`Rename done.`)
+	logger.InfoCtx(ctx, `Rename done.`)
 	return nil
 }

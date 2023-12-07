@@ -48,6 +48,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return errors.PrefixError(err, "validation failed")
 	}
 
-	logger.Debug("Validation done.")
+	logger.DebugCtx(ctx, "Validation done.")
 	return nil
 }

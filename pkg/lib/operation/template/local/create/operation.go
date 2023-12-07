@@ -101,7 +101,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Done
 	templatePath := filesystem.Join(templateRecord.Path, versionRecord.Path)
-	d.Logger().Infof(`Template "%s" has been created.`, templatePath)
+	d.Logger().InfofCtx(ctx, `Template "%s" has been created.`, templatePath)
 
 	return nil
 }
@@ -135,33 +135,33 @@ func createDir(ctx context.Context, o Options, d dependencies, repositoryDir fil
 	if _, err := createTemplateInputs.Run(ctx, fs, d); err != nil {
 		return nil, err
 	}
-	if err := createLongDesc(o, d, fs); err != nil {
+	if err := createLongDesc(ctx, o, d, fs); err != nil {
 		return nil, err
 	}
-	if err := createReadme(o, d, fs); err != nil {
+	if err := createReadme(ctx, o, d, fs); err != nil {
 		return nil, err
 	}
 	return fs, nil
 }
 
-func createLongDesc(o Options, d dependencies, fs filesystem.Fs) error {
+func createLongDesc(ctx context.Context, o Options, d dependencies, fs filesystem.Fs) error {
 	content := "### %s\n\n%s\n\n"
 	path := filesystem.Join("src", template.LongDescriptionFile)
 	file := filesystem.NewRawFile(path, fmt.Sprintf(content, o.Name, `Extended description`)).SetDescription(`extended description`)
 	if err := fs.WriteFile(file); err != nil {
 		return err
 	}
-	d.Logger().Infof("Created extended description file \"%s\".", file.Path())
+	d.Logger().InfofCtx(ctx, "Created extended description file \"%s\".", file.Path())
 	return nil
 }
 
-func createReadme(o Options, d dependencies, fs filesystem.Fs) error {
+func createReadme(ctx context.Context, o Options, d dependencies, fs filesystem.Fs) error {
 	content := "### %s\n\n%s\n\n"
 	path := filesystem.Join("src", template.ReadmeFile)
 	file := filesystem.NewRawFile(path, fmt.Sprintf(content, o.Name, o.Description)).SetDescription(`readme`)
 	if err := fs.WriteFile(file); err != nil {
 		return err
 	}
-	d.Logger().Infof("Created readme file \"%s\".", file.Path())
+	d.Logger().InfofCtx(ctx, "Created readme file \"%s\".", file.Path())
 	return nil
 }

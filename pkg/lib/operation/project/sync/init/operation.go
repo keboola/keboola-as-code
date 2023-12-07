@@ -73,12 +73,12 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		errs.AppendWithPrefix(err, "workflows generation failed")
 	}
 
-	logger.Info("Init done.")
+	logger.InfoCtx(ctx, "Init done.")
 
 	// First pull
 	if o.Pull {
-		logger.Info()
-		logger.Info(`Running pull.`)
+		logger.InfoCtx(ctx)
+		logger.InfoCtx(ctx, `Running pull.`)
 
 		// Load project state
 		prj := project.NewWithManifest(ctx, fs, manifest)

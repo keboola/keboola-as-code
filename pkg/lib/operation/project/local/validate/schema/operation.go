@@ -43,6 +43,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	logger.Info("Validation done.")
+	logger.InfoCtx(ctx, "Validation done.")
 	return nil
 }
