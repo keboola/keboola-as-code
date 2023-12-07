@@ -48,7 +48,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Log untracked paths
 	if o.LogUntrackedPaths {
-		projectState.LogUntrackedPaths(logger)
+		projectState.LogUntrackedPaths(ctx, logger)
 	}
 
 	// Validate

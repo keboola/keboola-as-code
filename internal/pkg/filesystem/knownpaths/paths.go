@@ -1,6 +1,7 @@
 package knownpaths
 
 import (
+	"context"
 	"io/fs"
 	"sort"
 	"strings"
@@ -169,12 +170,12 @@ func (p *Paths) UntrackedDirsFrom(base string) (dirs []string) {
 	return dirs
 }
 
-func (p *Paths) LogUntrackedPaths(logger log.Logger) {
+func (p *Paths) LogUntrackedPaths(ctx context.Context, logger log.Logger) {
 	untracked := p.UntrackedPaths()
 	if len(untracked) > 0 {
-		logger.Warn("Unknown paths found:")
+		logger.WarnCtx(ctx, "Unknown paths found:")
 		for _, path := range untracked {
-			logger.Warn("  - ", path)
+			logger.WarnCtx(ctx, "  - ", path)
 		}
 	}
 }
@@ -326,6 +327,6 @@ func (p *PathsReadOnly) IsDir(path string) bool {
 	return p.paths.IsDir(path)
 }
 
-func (p *PathsReadOnly) LogUntrackedPaths(logger log.Logger) {
-	p.paths.LogUntrackedPaths(logger)
+func (p *PathsReadOnly) LogUntrackedPaths(ctx context.Context, logger log.Logger) {
+	p.paths.LogUntrackedPaths(ctx, logger)
 }
