@@ -52,7 +52,7 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferWorker]")
-	logger.Info("Configuration: ", cfg.Dump())
+	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
@@ -98,7 +98,7 @@ func run() error {
 	}
 
 	// Create service.
-	logger.Infof("starting Buffer Worker")
+	logger.InfofCtx(ctx, "starting Buffer Worker")
 	_, err = service.New(workerScp)
 	if err != nil {
 		return err

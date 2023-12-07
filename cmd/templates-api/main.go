@@ -63,7 +63,7 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[templatesApi]")
-	logger.Info("Configuration: ", cfg.Dump())
+	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CpuProfFilePath != "" {
@@ -115,7 +115,7 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.Infof("starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
+	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
@@ -148,7 +148,7 @@ func run() error {
 			// Mount endpoints
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
-				logger.Debugf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+				logger.DebugfCtx(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
 	})
