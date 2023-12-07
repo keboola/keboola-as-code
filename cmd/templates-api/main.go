@@ -67,7 +67,7 @@ func run() error {
 
 	// Start CPU profiling, if enabled.
 	if cfg.CpuProfFilePath != "" {
-		stop, err := cpuprofile.Start(cfg.CpuProfFilePath, logger)
+		stop, err := cpuprofile.Start(ctx, cfg.CpuProfFilePath, logger)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
