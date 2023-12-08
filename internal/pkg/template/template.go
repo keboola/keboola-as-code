@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"io/fs"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
@@ -58,33 +59,33 @@ func NewManifest() *Manifest {
 	return templateManifest.New()
 }
 
-func LoadManifest(fs filesystem.Fs) (*ManifestFile, error) {
-	return templateManifest.Load(fs)
+func LoadManifest(ctx context.Context, fs filesystem.Fs) (*ManifestFile, error) {
+	return templateManifest.Load(ctx, fs)
 }
 
 func NewInputs() *Inputs {
 	return templateInput.NewInputs()
 }
 
-func LoadInputs(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
-	return templateInput.Load(fs, ctx)
+func LoadInputs(ctx context.Context, fs filesystem.Fs, jsonnetCtx *jsonnet.Context) (StepsGroups, error) {
+	return templateInput.Load(ctx, fs, jsonnetCtx)
 }
 
-func LoadLongDesc(fs filesystem.Fs) (string, error) {
+func LoadLongDesc(ctx context.Context, fs filesystem.Fs) (string, error) {
 	path := filesystem.Join(SrcDirectory, LongDescriptionFile)
-	if !fs.Exists(path) {
+	if !fs.Exists(ctx, path) {
 		return "", nil
 	}
-	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("template extended description"))
+	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(path).SetDescription("template extended description"))
 	if err != nil {
 		return "", err
 	}
 	return file.Content, nil
 }
 
-func LoadReadme(fs filesystem.Fs) (string, error) {
+func LoadReadme(ctx context.Context, fs filesystem.Fs) (string, error) {
 	path := filesystem.Join(SrcDirectory, ReadmeFile)
-	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("template readme"))
+	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(path).SetDescription("template readme"))
 	if err != nil {
 		return "", err
 	}
@@ -166,25 +167,25 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	loadCtx := load.NewContext(ctx, srcDir, components)
 
 	// Load manifest
-	out.manifestFile, err = LoadManifest(templateDir)
+	out.manifestFile, err = LoadManifest(ctx, templateDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load inputs
-	out.inputs, err = LoadInputs(templateDir, loadCtx.JsonnetContext())
+	out.inputs, err = LoadInputs(ctx, templateDir, loadCtx.JsonnetContext())
 	if err != nil {
 		return nil, err
 	}
 
 	// Load long description
-	out.longDescription, err = LoadLongDesc(templateDir)
+	out.longDescription, err = LoadLongDesc(ctx, templateDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load readme
-	out.readme, err = LoadReadme(templateDir)
+	out.readme, err = LoadReadme(ctx, templateDir)
 	if err != nil {
 		return nil, err
 	}

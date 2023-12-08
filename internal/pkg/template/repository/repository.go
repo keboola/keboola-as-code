@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -13,8 +14,8 @@ const (
 
 type Manifest = repositoryManifest.Manifest
 
-func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
-	return repositoryManifest.Load(fs)
+func LoadManifest(ctx context.Context, fs filesystem.Fs) (*Manifest, error) {
+	return repositoryManifest.Load(ctx, fs)
 }
 
 type Repository struct {

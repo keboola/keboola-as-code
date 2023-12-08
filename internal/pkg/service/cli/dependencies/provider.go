@@ -71,7 +71,7 @@ func (v *provider) BaseScope() BaseScope {
 
 func (v *provider) LocalCommandScope(opts ...Option) (LocalCommandScope, error) {
 	return v.localCmdScp.InitAndGet(func() (*localCommandScope, error) {
-		return newLocalCommandScope(v.BaseScope(), opts...)
+		return newLocalCommandScope(context.TODO(), v.BaseScope(), opts...)
 	})
 }
 

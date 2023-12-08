@@ -25,7 +25,7 @@ type Paths struct {
 
 type Option func(p *Paths)
 
-type IsIgnoredFn func(path string) (bool, error)
+type IsIgnoredFn func(ctx context.Context, path string) (bool, error)
 
 func WithFilter(fn IsIgnoredFn) Option {
 	return func(p *Paths) {
@@ -41,7 +41,7 @@ const (
 	Ignored
 )
 
-func New(fs filesystem.Fs, options ...Option) (*Paths, error) {
+func New(ctx context.Context, fs filesystem.Fs, options ...Option) (*Paths, error) {
 	v := &Paths{
 		lock: &sync.Mutex{},
 		fs:   fs,
@@ -52,20 +52,20 @@ func New(fs filesystem.Fs, options ...Option) (*Paths, error) {
 		o(v)
 	}
 
-	err := v.init()
+	err := v.init(ctx)
 	return v, err
 }
 
-func NewNop() *Paths {
-	paths, err := New(aferofs.NewMemoryFs())
+func NewNop(ctx context.Context) *Paths {
+	paths, err := New(ctx, aferofs.NewMemoryFs())
 	if err != nil {
 		panic(err)
 	}
 	return paths
 }
 
-func (p *Paths) Reset() error {
-	if err := p.init(); err != nil {
+func (p *Paths) Reset(ctx context.Context) error {
+	if err := p.init(ctx); err != nil {
 		return err
 	}
 	return nil
@@ -150,9 +150,9 @@ func (p *Paths) UntrackedPaths() []string {
 	return untracked
 }
 
-func (p *Paths) UntrackedDirs() (dirs []string) {
+func (p *Paths) UntrackedDirs(ctx context.Context) (dirs []string) {
 	for _, path := range p.UntrackedPaths() {
-		if !p.fs.IsDir(path) {
+		if !p.fs.IsDir(ctx, path) {
 			continue
 		}
 		dirs = append(dirs, path)
@@ -160,9 +160,9 @@ func (p *Paths) UntrackedDirs() (dirs []string) {
 	return dirs
 }
 
-func (p *Paths) UntrackedDirsFrom(base string) (dirs []string) {
+func (p *Paths) UntrackedDirsFrom(ctx context.Context, base string) (dirs []string) {
 	for _, path := range p.UntrackedPaths() {
-		if !p.fs.IsDir(path) || !filesystem.IsFrom(path, base) {
+		if !p.fs.IsDir(ctx, path) || !filesystem.IsFrom(path, base) {
 			continue
 		}
 		dirs = append(dirs, path)
@@ -230,14 +230,14 @@ func (p *Paths) MarkSubPathsTracked(path string) {
 	}
 }
 
-func (p *Paths) init() error {
+func (p *Paths) init(ctx context.Context) error {
 	p.all = make(map[string]bool)
 	p.tracked = make(map[string]bool)
 	p.isFile = make(map[string]bool)
 
 	errs := errors.NewMultiError()
 	root := "."
-	err := p.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	err := p.fs.Walk(ctx, root, func(path string, info fs.FileInfo, err error) error {
 		// Log error
 		if err != nil {
 			errs.Append(err)
@@ -250,7 +250,7 @@ func (p *Paths) init() error {
 		}
 
 		// Is ignored?
-		if ignored, err := p.isIgnored(path); err != nil {
+		if ignored, err := p.isIgnored(ctx, path); err != nil {
 			return err
 		} else if ignored {
 			if info.IsDir() {
@@ -260,7 +260,7 @@ func (p *Paths) init() error {
 		}
 
 		p.all[path] = true
-		p.isFile[path] = p.fs.IsFile(path)
+		p.isFile[path] = p.fs.IsFile(ctx, path)
 		return nil
 	})
 	// Errors are not critical, they can be e.g. problem with permissions
@@ -271,7 +271,7 @@ func (p *Paths) init() error {
 	return errs.ErrorOrNil()
 }
 
-func (p *Paths) isIgnored(path string) (bool, error) {
+func (p *Paths) isIgnored(ctx context.Context, path string) (bool, error) {
 	// Ignore empty and hidden paths
 	if path == "" || path == "." || strings.HasPrefix(filesystem.Base(path), ".") {
 		return true, nil
@@ -279,7 +279,7 @@ func (p *Paths) isIgnored(path string) (bool, error) {
 
 	// Use filter, if it is set
 	if p.filter != nil {
-		return p.filter(path)
+		return p.filter(ctx, path)
 	}
 
 	return false, nil
@@ -315,8 +315,8 @@ func (p *PathsReadOnly) UntrackedDirs() (dirs []string) {
 	return p.paths.UntrackedPaths()
 }
 
-func (p *PathsReadOnly) UntrackedDirsFrom(base string) (dirs []string) {
-	return p.paths.UntrackedDirsFrom(base)
+func (p *PathsReadOnly) UntrackedDirsFrom(ctx context.Context, base string) (dirs []string) {
+	return p.paths.UntrackedDirsFrom(ctx, base)
 }
 
 func (p *PathsReadOnly) IsFile(path string) bool {

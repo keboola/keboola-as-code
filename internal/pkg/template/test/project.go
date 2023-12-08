@@ -26,12 +26,12 @@ type Dependencies struct {
 	dependenciesPkg.ProjectScope
 }
 
-func PrepareProjectFS(testPrj *testproject.Project, branchID int) (filesystem.Fs, error) {
+func PrepareProjectFS(ctx context.Context, testPrj *testproject.Project, branchID int) (filesystem.Fs, error) {
 	envs := env.Empty()
 	envs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
 	envs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", strconv.Itoa(branchID))
-	return fixtures.LoadFS("empty-branch", envs)
+	return fixtures.LoadFS(ctx, "empty-branch", envs)
 }
 
 func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
@@ -72,7 +72,7 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 	}
 
 	// Load fixture with minimal project
-	prjFS, err := PrepareProjectFS(testPrj, branchID)
+	prjFS, err := PrepareProjectFS(ctx, testPrj, branchID)
 	if err != nil {
 		unlockFn()
 		return nil, nil, nil, nil, err

@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,43 +15,43 @@ import (
 
 func TestNewState(t *testing.T) {
 	t.Parallel()
-	s := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+	s := New(knownpaths.NewNop(context.Background()), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 }
 
 func TestStateComponents(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.NotNil(t, s.Components())
 }
 
 func TestStateAll(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Len(t, s.All(), 6)
 }
 
 func TestStateBranches(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Len(t, s.Branches(), 2)
 }
 
 func TestStateConfigs(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Len(t, s.Configs(), 2)
 }
 
 func TestStateConfigRows(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Len(t, s.ConfigRows(), 2)
 }
 
 func TestStateConfigsFrom(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 123}), 2)
 	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 567}), 0)
 	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 111}), 0)
@@ -58,7 +59,7 @@ func TestStateConfigsFrom(t *testing.T) {
 
 func TestStateConfigRowsFrom(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `678`}), 2)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `345`}), 0)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `111`}), 0)
@@ -66,7 +67,7 @@ func TestStateConfigRowsFrom(t *testing.T) {
 
 func TestStateGet(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	state, found := s.Get(BranchKey{ID: 567})
 	assert.NotNil(t, state)
 	assert.True(t, found)
@@ -74,7 +75,7 @@ func TestStateGet(t *testing.T) {
 
 func TestStateGetNotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	state, found := s.Get(BranchKey{ID: 111})
 	assert.Nil(t, state)
 	assert.False(t, found)
@@ -82,13 +83,13 @@ func TestStateGetNotFound(t *testing.T) {
 
 func TestStateMustGet(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.Equal(t, "Foo Bar Branch", s.MustGet(BranchKey{ID: 567}).ObjectName())
 }
 
 func TestStateMustGetNotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, knownpaths.NewNop())
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
 		s.MustGet(BranchKey{ID: 111})
 	})
@@ -97,10 +98,11 @@ func TestStateMustGetNotFound(t *testing.T) {
 func TestStateTrackRecordNotPersisted(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar1`, `foo`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar2`, `foo`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar3`, `foo`)))
-	paths, err := knownpaths.New(fs)
+	ctx := context.Background()
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, `foo`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar2`, `foo`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar3`, `foo`)))
+	paths, err := knownpaths.New(ctx, fs)
 	assert.NoError(t, err)
 	s := newTestState(t, paths)
 
@@ -122,10 +124,11 @@ func TestStateTrackRecordNotPersisted(t *testing.T) {
 func TestStateTrackRecordValid(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar1`, `foo`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar2`, `foo`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar3`, `foo`)))
-	paths, err := knownpaths.New(fs)
+	ctx := context.Background()
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, `foo`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar2`, `foo`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar3`, `foo`)))
+	paths, err := knownpaths.New(ctx, fs)
 	assert.NoError(t, err)
 	s := newTestState(t, paths)
 
@@ -146,11 +149,12 @@ func TestStateTrackRecordValid(t *testing.T) {
 
 func TestStateTrackRecordInvalid(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	fs := aferofs.NewMemoryFs()
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar1`, `foo`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar2`, `foo`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar3`, `foo`)))
-	paths, err := knownpaths.New(fs)
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, `foo`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar2`, `foo`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar3`, `foo`)))
+	paths, err := knownpaths.New(ctx, fs)
 	assert.NoError(t, err)
 	s := newTestState(t, paths)
 
@@ -173,7 +177,8 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 
 func TestRegistry_GetPath(t *testing.T) {
 	t.Parallel()
-	registry := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+	ctx := context.Background()
+	registry := New(knownpaths.NewNop(ctx), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 
 	// Not found
 	path, found := registry.GetPath(BranchKey{ID: 123})
@@ -198,7 +203,8 @@ func TestRegistry_GetPath(t *testing.T) {
 
 func TestRegistry_GetByPath(t *testing.T) {
 	t.Parallel()
-	registry := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+	ctx := context.Background()
+	registry := New(knownpaths.NewNop(ctx), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 
 	// Not found
 	objectState, found := registry.GetByPath(`my-branch`)

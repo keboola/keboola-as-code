@@ -1,6 +1,7 @@
 package knownpaths_test
 
 import (
+	"context"
 	"runtime"
 	"strings"
 	"testing"
@@ -318,7 +319,7 @@ func TestKnownPathsUntrackedDirs(t *testing.T) {
 		"main/extractor",
 		"main/extractor/ex-generic-v2",
 		"main/extractor/ex-generic-v2/456-todos",
-	}, paths.UntrackedDirs())
+	}, paths.UntrackedDirs(context.Background()))
 }
 
 func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
@@ -330,7 +331,7 @@ func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
 	assert.Equal(t, []string{
 		"main/extractor/ex-generic-v2",
 		"main/extractor/ex-generic-v2/456-todos",
-	}, paths.UntrackedDirsFrom(`main/extractor`))
+	}, paths.UntrackedDirsFrom(context.Background(), `main/extractor`))
 }
 
 func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, error) {
@@ -340,5 +341,5 @@ func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, er
 	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
 	fs, err := aferofs.NewLocalFs(projectDir)
 	assert.NoError(t, err)
-	return New(fs, options...)
+	return New(context.Background(), fs, options...)
 }

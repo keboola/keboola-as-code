@@ -21,7 +21,7 @@ func TestValuesPriority(t *testing.T) {
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(workingDir))
 
 	// Create working and project dir
-	assert.NoError(t, fs.Mkdir(workingDir))
+	assert.NoError(t, fs.Mkdir(context.Background(), workingDir))
 
 	key := "storage-api-token"
 
@@ -42,7 +42,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.Equal(t, cliconfig.SetByFlagDefault, options.KeySetBy(key))
 
 	// 3. Higher priority, ".env" file from project dir
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
 	options = New()
 	err = options.Load(context.Background(), logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
@@ -50,7 +50,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
 
 	// 4. Higher priority, ".env" file from working dir
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
 	options = New()
 	err = options.Load(context.Background(), logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
