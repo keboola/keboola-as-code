@@ -1,6 +1,7 @@
 package options
 
 import (
+	"context"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -26,7 +27,7 @@ func TestValuesPriority(t *testing.T) {
 
 	// 1. Key is not defined
 	options := New()
-	err := options.Load(logger, env.Empty(), fs, &pflag.FlagSet{})
+	err := options.Load(context.Background(), logger, env.Empty(), fs, &pflag.FlagSet{})
 	assert.NoError(t, err)
 	assert.Equal(t, "", options.GetString(key))
 	assert.Equal(t, cliconfig.SetByUnknown, options.KeySetBy(key))
@@ -35,7 +36,7 @@ func TestValuesPriority(t *testing.T) {
 	flags := &pflag.FlagSet{}
 	flags.String(key, "default flag value", "")
 	options = New()
-	err = options.Load(logger, env.Empty(), fs, flags)
+	err = options.Load(context.Background(), logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "default flag value", options.GetString(key))
 	assert.Equal(t, cliconfig.SetByFlagDefault, options.KeySetBy(key))
@@ -43,7 +44,7 @@ func TestValuesPriority(t *testing.T) {
 	// 3. Higher priority, ".env" file from project dir
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
 	options = New()
-	err = options.Load(logger, env.Empty(), fs, flags)
+	err = options.Load(context.Background(), logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "1abcdef", options.GetString(key))
 	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
@@ -51,7 +52,7 @@ func TestValuesPriority(t *testing.T) {
 	// 4. Higher priority, ".env" file from working dir
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
 	options = New()
-	err = options.Load(logger, env.Empty(), fs, flags)
+	err = options.Load(context.Background(), logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "2abcdef", options.GetString(key))
 	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
@@ -60,7 +61,7 @@ func TestValuesPriority(t *testing.T) {
 	osEnvs := env.Empty()
 	osEnvs.Set("KBC_STORAGE_API_TOKEN", "3abcdef")
 	options = New()
-	err = options.Load(logger, osEnvs, fs, flags)
+	err = options.Load(context.Background(), logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "3abcdef", options.GetString(key))
 	assert.Equal(t, cliconfig.SetByEnv, options.KeySetBy(key))
@@ -68,14 +69,14 @@ func TestValuesPriority(t *testing.T) {
 	// 6. Higher priority , flag value
 	assert.NoError(t, flags.Set(key, "4abcdef"))
 	options = New()
-	err = options.Load(logger, osEnvs, fs, flags)
+	err = options.Load(context.Background(), logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "4abcdef", options.GetString(key))
 	assert.Equal(t, cliconfig.SetByFlag, options.KeySetBy(key))
 
 	// 7. The highest priority, Set method
 	options = New()
-	err = options.Load(logger, osEnvs, fs, flags)
+	err = options.Load(context.Background(), logger, osEnvs, fs, flags)
 	options.Set(key, "foo-bar")
 	assert.NoError(t, err)
 	assert.Equal(t, "foo-bar", options.GetString(key))

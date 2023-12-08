@@ -1,6 +1,7 @@
 package env
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -26,7 +27,7 @@ func TestLoadDotEnv(t *testing.T) {
 
 	// Load envs
 	logger.Truncate()
-	envs := LoadDotEnv(logger, osEnvs, fs, []string{"."})
+	envs := LoadDotEnv(context.Background(), logger, osEnvs, fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{
@@ -56,7 +57,7 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 
 	// Load envs
 	logger.Truncate()
-	envs := LoadDotEnv(logger, Empty(), fs, []string{"."})
+	envs := LoadDotEnv(context.Background(), logger, Empty(), fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{}, envs.ToMap())
