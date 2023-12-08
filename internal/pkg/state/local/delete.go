@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"io/fs"
 	"sort"
 	"strings"
@@ -13,11 +14,11 @@ import (
 )
 
 // DeleteInvalidObjects from disk, for example if pull --force used.
-func (m *Manager) DeleteInvalidObjects() error {
+func (m *Manager) DeleteInvalidObjects(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	for _, objectManifest := range m.manifest.All() {
 		if objectManifest.State().IsInvalid() {
-			if err := m.deleteObject(objectManifest); err != nil {
+			if err := m.deleteObject(ctx, objectManifest); err != nil {
 				errs.Append(err)
 			}
 		}
@@ -28,11 +29,11 @@ func (m *Manager) DeleteInvalidObjects() error {
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 // Deleted are only empty directories from know/tracked paths.
 // Hidden dirs are ignored.
-func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
+func DeleteEmptyDirectories(ctx context.Context, fs filesystem.Fs, trackedPaths []string) error {
 	errs := errors.NewMultiError()
 	emptyDirs := orderedmap.New()
 	root := `.`
-	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
+	err := fs.Walk(ctx, root, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
@@ -91,7 +92,7 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 
 	// Delete
 	for _, dir := range dirsToRemove {
-		if err := fs.Remove(dir); err != nil {
+		if err := fs.Remove(ctx, dir); err != nil {
 			errs.Append(err)
 		}
 	}
@@ -100,7 +101,7 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 }
 
 // deleteObject from manifest and filesystem.
-func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
+func (m *Manager) deleteObject(ctx context.Context, objectManifest model.ObjectManifest) error {
 	errs := errors.NewMultiError()
 
 	// Remove manifest from manifest content
@@ -108,8 +109,8 @@ func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
 
 	// Remove all related files
 	for _, path := range objectManifest.GetRelatedPaths() {
-		if m.fs.IsFile(path) {
-			if err := m.fs.Remove(path); err != nil {
+		if m.fs.IsFile(ctx, path) {
+			if err := m.fs.Remove(ctx, path); err != nil {
 				errs.Append(err)
 			}
 		}

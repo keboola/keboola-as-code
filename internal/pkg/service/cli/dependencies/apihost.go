@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"context"
 	"net/url"
 	"strings"
 
@@ -19,13 +20,13 @@ import (
 // 2. Flag.
 // 3. ENV
 // 4. An env file, e.g., ".env.local".
-func storageAPIHost(baseScp BaseScope, fallback string) (string, error) {
+func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string) (string, error) {
 	fs, opts := baseScp.Fs(), baseScp.Options()
 
 	var host string
-	if fs.IsFile(projectManifest.Path()) {
+	if fs.IsFile(ctx, projectManifest.Path()) {
 		// Get host from manifest
-		m, err := projectManifest.Load(fs, true)
+		m, err := projectManifest.Load(ctx, fs, true)
 		if err != nil {
 			return "", err
 		} else {

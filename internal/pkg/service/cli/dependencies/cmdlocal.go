@@ -42,11 +42,11 @@ type localTemplateValue struct {
 	value *template.Template
 }
 
-func newLocalCommandScope(baseScp BaseScope, opts ...Option) (*localCommandScope, error) {
+func newLocalCommandScope(ctx context.Context, baseScp BaseScope, opts ...Option) (*localCommandScope, error) {
 	cfg := newConfig(opts)
 
 	// Get Storage API host
-	host, err := storageAPIHost(baseScp, cfg.defaultStorageAPIHost)
+	host, err := storageAPIHost(ctx, baseScp, cfg.defaultStorageAPIHost)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (v *localCommandScope) LocalTemplate(ctx context.Context) (*template.Templa
 
 		// Set working directory
 		if workingDir, err := filepath.Rel(tmpl.Fs().BasePath(), filepath.Join(v.Fs().BasePath(), filesystem.FromSlash(v.Fs().WorkingDir()))); err == nil { // nolint: forbidigo
-			tmpl.Fs().SetWorkingDir(workingDir)
+			tmpl.Fs().SetWorkingDir(ctx, workingDir)
 		}
 
 		return localTemplateValue{found: true, value: tmpl}, nil
@@ -174,7 +174,7 @@ func (v *localCommandScope) templateRepository(ctx context.Context, reference mo
 
 	// Set working directory to repo FS
 	if repo.Fs().BasePath() == v.Fs().BasePath() {
-		repo.Fs().SetWorkingDir(v.Fs().WorkingDir())
+		repo.Fs().SetWorkingDir(ctx, v.Fs().WorkingDir())
 	}
 
 	return repo, nil

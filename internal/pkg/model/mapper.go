@@ -66,8 +66,8 @@ func (l *FilesLoader) GetByTag(tag string) []filesystem.File {
 	return l.loaded.GetByTag(tag)
 }
 
-func (l *FilesLoader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
-	return l.fsLoader.ReadSubDirs(fs, root)
+func (l *FilesLoader) ReadSubDirs(ctx context.Context, fs filesystem.Fs, root string) ([]string, error) {
+	return l.fsLoader.ReadSubDirs(ctx, fs, root)
 }
 
 func (l *FilesLoader) addLoaded(file filesystem.File) {
@@ -103,7 +103,7 @@ func (f *fileToLoad) RemoveMetadata(key string) *fileToLoad {
 }
 
 func (f *fileToLoad) ReadFile(ctx context.Context) (*filesystem.RawFile, error) {
-	file, err := f.fsLoader.ReadRawFile(f.FileDef)
+	file, err := f.fsLoader.ReadRawFile(ctx, f.FileDef)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (f *fileToLoad) ReadFile(ctx context.Context) (*filesystem.RawFile, error) 
 }
 
 func (f *fileToLoad) ReadJSONFieldsTo(ctx context.Context, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadJSONFieldsTo(f.FileDef, target, tag)
+	file, tagFound, err := f.fsLoader.ReadJSONFieldsTo(ctx, f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
@@ -123,7 +123,7 @@ func (f *fileToLoad) ReadJSONFieldsTo(ctx context.Context, target interface{}, t
 }
 
 func (f *fileToLoad) ReadJSONMapTo(ctx context.Context, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadJSONMapTo(f.FileDef, target, tag)
+	file, tagFound, err := f.fsLoader.ReadJSONMapTo(ctx, f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
@@ -134,7 +134,7 @@ func (f *fileToLoad) ReadJSONMapTo(ctx context.Context, target interface{}, tag 
 }
 
 func (f *fileToLoad) ReadFileContentTo(ctx context.Context, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadFileContentTo(f.FileDef, target, tag)
+	file, tagFound, err := f.fsLoader.ReadFileContentTo(ctx, f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
@@ -145,7 +145,7 @@ func (f *fileToLoad) ReadFileContentTo(ctx context.Context, target interface{}, 
 }
 
 func (f *fileToLoad) ReadJSONFile(ctx context.Context) (*filesystem.JSONFile, error) {
-	file, err := f.fsLoader.ReadJSONFile(f.FileDef)
+	file, err := f.fsLoader.ReadJSONFile(ctx, f.FileDef)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (f *fileToLoad) ReadJSONFile(ctx context.Context) (*filesystem.JSONFile, er
 }
 
 func (f *fileToLoad) ReadJSONFileTo(ctx context.Context, target interface{}) (*filesystem.RawFile, error) {
-	file, err := f.fsLoader.ReadJSONFileTo(f.FileDef, target)
+	file, err := f.fsLoader.ReadJSONFileTo(ctx, f.FileDef, target)
 	if err != nil {
 		return nil, err
 	}

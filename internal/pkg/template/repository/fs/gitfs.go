@@ -54,7 +54,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 		}
 
 		// Load repository manifest
-		repoManifest, err := repository.LoadManifest(fs)
+		repoManifest, err := repository.LoadManifest(ctx, fs)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +76,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 		if err := gitRepository.Load(ctx, srcDir); err != nil {
 			return nil, err
 		}
-		if !fs.Exists(srcDir) {
+		if !fs.Exists(ctx, srcDir) {
 			return nil, errors.NewNestedError(
 				errors.Errorf(`folder "%s" not found`, srcDir),
 				errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),

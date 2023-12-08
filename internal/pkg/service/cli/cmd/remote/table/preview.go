@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 				tableID = id
 			}
 
-			opts, err := parsePreviewOptions(d.Options(), d.Fs(), tableID)
+			opts, err := parsePreviewOptions(cmd.Context(), d.Options(), d.Fs(), tableID)
 			if err != nil {
 				return err
 			}
@@ -70,7 +71,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
-func parsePreviewOptions(options *options.Options, fs filesystem.Fs, tableID keboola.TableID) (preview.Options, error) {
+func parsePreviewOptions(ctx context.Context, options *options.Options, fs filesystem.Fs, tableID keboola.TableID) (preview.Options, error) {
 	o := preview.Options{TableID: tableID}
 
 	o.ChangedSince = options.GetString("changed-since")
@@ -81,7 +82,7 @@ func parsePreviewOptions(options *options.Options, fs filesystem.Fs, tableID keb
 	e := errors.NewMultiError()
 
 	o.Out = options.GetString("out")
-	if fs.Exists(o.Out) && !options.GetBool("force") {
+	if fs.Exists(ctx, o.Out) && !options.GetBool("force") {
 		e.Append(errors.Errorf(`file "%s" already exists, use the "--force" flag to overwrite it`, o.Out))
 	}
 

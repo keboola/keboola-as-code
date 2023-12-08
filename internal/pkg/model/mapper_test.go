@@ -88,11 +88,11 @@ func TestFilesLoader(t *testing.T) {
 	// Create files
 	jsonContent := "{\"field1\": \"foo\", \"field2\": \"bar\"}"
 	jsonMap := orderedmap.FromPairs([]orderedmap.Pair{{Key: "field1", Value: "foo"}, {Key: "field2", Value: "bar"}})
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo1.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo2.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo3.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo4.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo5.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo1.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo2.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo3.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo4.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo5.json", jsonContent)))
 
 	// ReadFile
 	rawFile1, err := files.

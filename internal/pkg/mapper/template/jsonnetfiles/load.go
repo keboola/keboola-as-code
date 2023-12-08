@@ -22,7 +22,7 @@ func (m *jsonnetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		def.SetPath(strings.TrimSuffix(def.Path(), `.json`) + `.jsonnet`)
 
 		// Load Jsonnet file
-		f, err := next(def, filesystem.FileTypeJsonnet)
+		f, err := next(context.TODO(), def, filesystem.FileTypeJsonnet)
 		if err != nil {
 			return nil, err
 		}
@@ -44,5 +44,5 @@ func (m *jsonnetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		}
 	}
 
-	return next(def, fileType)
+	return next(context.TODO(), def, fileType)
 }

@@ -72,7 +72,7 @@ type Fs interface {
 	APIName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
-	SetWorkingDir(workingDir string)
+	SetWorkingDir(ctx context.Context, workingDir string)
 	SubDirFs(path string) (Fs, error)
 	Logger() log.Logger
 	SetLogger(logger log.Logger)
@@ -99,7 +99,7 @@ type Fs interface {
 }
 
 // LoadHandler callback modifies file loading process, see "fileloader" package.
-type LoadHandler func(def *FileDef, fileType FileType) (File, error)
+type LoadHandler func(ctx context.Context, def *FileDef, fileType FileType) (File, error)
 
 type FileLoader interface {
 	WithJsonnetContext(ctx *jsonnet.Context) FileLoader
@@ -202,9 +202,9 @@ func IsFrom(path, base string) bool {
 }
 
 // ReadSubDirs returns dir entries inside dir.
-func ReadSubDirs(fs Fs, root string) ([]string, error) {
+func ReadSubDirs(ctx context.Context, fs Fs, root string) ([]string, error) {
 	// Load all dir entries
-	items, err := fs.ReadDir(root)
+	items, err := fs.ReadDir(ctx, root)
 	if err != nil {
 		return nil, err
 	}

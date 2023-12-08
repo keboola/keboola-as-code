@@ -2,6 +2,7 @@
 package fileloader_test
 
 import (
+	"context"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -78,11 +79,11 @@ func (tc *testCases) runTests(t *testing.T) {
 func (*testCases) TestFileLoader_ReadRawFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "foo\n")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "foo\n")))
 
 	// Read
 	logger.Truncate()
-	file, err := fs.FileLoader().ReadRawFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadRawFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, "foo\n", file.Content)
@@ -91,7 +92,7 @@ func (*testCases) TestFileLoader_ReadRawFile(t *testing.T, fs filesystem.Fs, log
 
 func (*testCases) TestFileLoader_ReadRawFile_NotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	filePath := "file.txt"
-	file, err := fs.FileLoader().ReadRawFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadRawFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	assert.True(t, strings.HasPrefix(err.Error(), `missing file "file.txt"`))
@@ -101,11 +102,11 @@ func (*testCases) TestFileLoader_ReadRawFile_NotFound(t *testing.T, fs filesyste
 func (*testCases) TestFileLoader_ReadJsonFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"foo": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
 	logger.Truncate()
-	file, err := fs.FileLoader().ReadJSONFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadJSONFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
@@ -115,12 +116,12 @@ func (*testCases) TestFileLoader_ReadJsonFile(t *testing.T, fs filesystem.Fs, lo
 func (*testCases) TestFileLoader_ReadJsonFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"foo": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, err := fs.FileLoader().ReadJSONFileTo(filesystem.NewFileDef(filePath), target)
+	file, err := fs.FileLoader().ReadJSONFileTo(context.Background(), filesystem.NewFileDef(filePath), target)
 	assert.Equal(t, `{"foo": "bar"}`, file.Content)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
@@ -130,12 +131,12 @@ func (*testCases) TestFileLoader_ReadJsonFileTo(t *testing.T, fs filesystem.Fs, 
 func (*testCases) TestFileLoader_ReadJsonFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"foo":`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"foo":`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	_, err := fs.FileLoader().ReadJSONFileTo(filesystem.NewFileDef(filePath), target)
+	_, err := fs.FileLoader().ReadJSONFileTo(context.Background(), filesystem.NewFileDef(filePath), target)
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:
@@ -147,11 +148,11 @@ file "file.txt" is invalid:
 func (*testCases) TestFileLoader_ReadJsonnetFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
 
 	// Read
 	logger.Truncate()
-	file, err := fs.FileLoader().ReadJsonnetFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadJsonnetFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	jsonnetCode := jsonnet.FormatAst(file.Content)
@@ -162,12 +163,12 @@ func (*testCases) TestFileLoader_ReadJsonnetFile(t *testing.T, fs filesystem.Fs,
 func (*testCases) TestFileLoader_ReadJsonnetFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, err := fs.FileLoader().ReadJsonnetFileTo(filesystem.NewFileDef(filePath), target)
+	file, err := fs.FileLoader().ReadJsonnetFileTo(context.Background(), filesystem.NewFileDef(filePath), target)
 	assert.NotEmpty(t, file.Content)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
@@ -177,12 +178,12 @@ func (*testCases) TestFileLoader_ReadJsonnetFileTo(t *testing.T, fs filesystem.F
 func (*testCases) TestFileLoader_ReadJsonnetFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo:`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{foo:`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	_, err := fs.FileLoader().ReadJsonnetFileTo(filesystem.NewFileDef(filePath), target)
+	_, err := fs.FileLoader().ReadJsonnetFileTo(context.Background(), filesystem.NewFileDef(filePath), target)
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:
@@ -194,10 +195,10 @@ file "file.txt" is invalid:
 func (*testCases) TestFileLoader_ReadJsonFile_Invalid(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"foo":`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"foo":`)))
 
 	// Read
-	file, err := fs.FileLoader().ReadJSONFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadJSONFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	expectedError := `
@@ -210,12 +211,12 @@ file "file.txt" is invalid:
 func (*testCases) TestFileLoader_ReadJSONFieldsTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fs.FileLoader().ReadJSONFieldsTo(filesystem.NewFileDef(filePath), target, `mytag:field`)
+	file, tagFound, err := fs.FileLoader().ReadJSONFieldsTo(context.Background(), filesystem.NewFileDef(filePath), target, `mytag:field`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -228,12 +229,12 @@ func (*testCases) TestFileLoader_ReadJSONFieldsTo(t *testing.T, fs filesystem.Fs
 func (*testCases) TestFileLoader_ReadJsonMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fs.FileLoader().ReadJSONMapTo(filesystem.NewFileDef(filePath), target, `mytag:map`)
+	file, tagFound, err := fs.FileLoader().ReadJSONMapTo(context.Background(), filesystem.NewFileDef(filePath), target, `mytag:map`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -245,11 +246,11 @@ func (*testCases) TestFileLoader_ReadJsonMapTo(t *testing.T, fs filesystem.Fs, l
 func (*testCases) TestFileLoader_ReadYamlFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.yaml"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `foo: bar`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `foo: bar`)))
 
 	// Read
 	logger.Truncate()
-	file, err := fs.FileLoader().ReadYamlFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadYamlFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
@@ -259,12 +260,12 @@ func (*testCases) TestFileLoader_ReadYamlFile(t *testing.T, fs filesystem.Fs, lo
 func (*testCases) TestFileLoader_ReadYamlFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "foo: bar")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "foo: bar")))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, err := fs.FileLoader().ReadYamlFileTo(filesystem.NewFileDef(filePath), target)
+	file, err := fs.FileLoader().ReadYamlFileTo(context.Background(), filesystem.NewFileDef(filePath), target)
 	assert.NoError(t, err)
 	assert.Equal(t, `foo: bar`, file.Content)
 	assert.Equal(t, `bar`, target.FooField)
@@ -274,10 +275,10 @@ func (*testCases) TestFileLoader_ReadYamlFileTo(t *testing.T, fs filesystem.Fs, 
 func (*testCases) TestFileLoader_ReadYamlFile_Invalid(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 	// Create file
 	filePath := "file.yaml"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, ":\n")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, ":\n")))
 
 	// Read
-	file, err := fs.FileLoader().ReadYamlFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadYamlFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	expectedError := `
@@ -290,12 +291,12 @@ file "file.yaml" is invalid:
 func (*testCases) TestFileLoader_ReadYamlFieldsTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.yaml"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "field1: foo\nfield2: bar\n")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "field1: foo\nfield2: bar\n")))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fs.FileLoader().ReadYamlFieldsTo(filesystem.NewFileDef(filePath), target, `mytag:field`)
+	file, tagFound, err := fs.FileLoader().ReadYamlFieldsTo(context.Background(), filesystem.NewFileDef(filePath), target, `mytag:field`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -308,12 +309,12 @@ func (*testCases) TestFileLoader_ReadYamlFieldsTo(t *testing.T, fs filesystem.Fs
 func (*testCases) TestFileLoader_ReadYamlMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.yaml"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "field1: foo\nfield2: bar\n")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "field1: foo\nfield2: bar\n")))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fs.FileLoader().ReadYamlMapTo(filesystem.NewFileDef(filePath), target, `mytag:map`)
+	file, tagFound, err := fs.FileLoader().ReadYamlMapTo(context.Background(), filesystem.NewFileDef(filePath), target, `mytag:map`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -325,12 +326,12 @@ func (*testCases) TestFileLoader_ReadYamlMapTo(t *testing.T, fs filesystem.Fs, l
 func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fs.FileLoader().ReadFileContentTo(filesystem.NewFileDef(filePath), target, `mytag:content`)
+	file, tagFound, err := fs.FileLoader().ReadFileContentTo(context.Background(), filesystem.NewFileDef(filePath), target, `mytag:content`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -340,43 +341,45 @@ func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.F
 }
 
 func (*testCases) TestFileLoader_ReadSubDirs(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	ctx := context.Background();
 	// Create dirs and kbcdir files
-	assert.NoError(t, fs.Mkdir("dir1"))
-	assert.NoError(t, fs.Mkdir("dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
-	assert.NoError(t, fs.Mkdir("dir3"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
-	assert.NoError(t, fs.Mkdir("dir4"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
+	assert.NoError(t, fs.Mkdir(ctx, "dir1"))
+	assert.NoError(t, fs.Mkdir(ctx, "dir2"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, "dir3"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
+	assert.NoError(t, fs.Mkdir(ctx, "dir4"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
 
-	dirs, err := fs.FileLoader().ReadSubDirs(fs, ".")
+	dirs, err := fs.FileLoader().ReadSubDirs(ctx, fs, ".")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"dir1", "dir2", "dir3"}, dirs)
 }
 
 func (*testCases) TestFileLoader_IsIgnored(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	ctx := context.Background()
 	// Create dirs and kbcdir files
-	assert.NoError(t, fs.Mkdir("dir1"))
-	assert.NoError(t, fs.Mkdir("dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
-	assert.NoError(t, fs.Mkdir("dir3"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
-	assert.NoError(t, fs.Mkdir("dir4"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
+	assert.NoError(t, fs.Mkdir(ctx, "dir1"))
+	assert.NoError(t, fs.Mkdir(ctx, "dir2"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, "dir3"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
+	assert.NoError(t, fs.Mkdir(ctx, "dir4"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
 
-	isIgnored, err := fs.FileLoader().IsIgnored("dir1")
+	isIgnored, err := fs.FileLoader().IsIgnored(ctx, "dir1")
 	assert.NoError(t, err)
 	assert.False(t, isIgnored)
 
-	isIgnored, err = fs.FileLoader().IsIgnored("dir2")
+	isIgnored, err = fs.FileLoader().IsIgnored(ctx, "dir2")
 	assert.NoError(t, err)
 	assert.False(t, isIgnored)
 
-	isIgnored, err = fs.FileLoader().IsIgnored("dir3")
+	isIgnored, err = fs.FileLoader().IsIgnored(ctx, "dir3")
 	assert.NoError(t, err)
 	assert.False(t, isIgnored)
 
-	isIgnored, err = fs.FileLoader().IsIgnored("dir4")
+	isIgnored, err = fs.FileLoader().IsIgnored(ctx, "dir4")
 	assert.NoError(t, err)
 	assert.True(t, isIgnored)
 }

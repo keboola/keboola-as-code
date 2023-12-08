@@ -51,7 +51,7 @@ func evaluateFile(file *filesystem.RawFile, jsonnetCtx *jsonnet.Context) (*file,
 	return content, nil
 }
 
-func saveFile(fs filesystem.Fs, content *file) error {
+func saveFile(ctx context.Context, fs filesystem.Fs, content *file) error {
 	// Validate
 	if err := content.validate(); err != nil {
 		return err
@@ -71,7 +71,7 @@ func saveFile(fs filesystem.Fs, content *file) error {
 
 	// Write file
 	f := filesystem.NewRawFile(Path(), jsonnetStr)
-	if err := fs.WriteFile(f); err != nil {
+	if err := fs.WriteFile(ctx, f); err != nil {
 		return err
 	}
 

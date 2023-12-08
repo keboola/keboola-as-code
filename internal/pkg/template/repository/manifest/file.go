@@ -36,16 +36,16 @@ func newFile() *file {
 	}
 }
 
-func loadFile(fs filesystem.Fs) (*file, error) {
+func loadFile(ctx context.Context, fs filesystem.Fs) (*file, error) {
 	// Check if file exists
 	path := Path()
-	if !fs.IsFile(path) {
+	if !fs.IsFile(ctx, path) {
 		return nil, errors.Errorf("manifest \"%s\" not found", path)
 	}
 
 	// Read JSON file
 	content := newFile()
-	if _, err := fs.FileLoader().ReadJSONFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
+	if _, err := fs.FileLoader().ReadJSONFileTo(ctx, filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	return content, nil
 }
 
-func saveFile(fs filesystem.Fs, manifestContent *file) error {
+func saveFile(ctx context.Context, fs filesystem.Fs, manifestContent *file) error {
 	// Validate
 	err := manifestContent.validate()
 	if err != nil {
@@ -84,7 +84,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 		return errors.PrefixError(err, "cannot encode manifest")
 	}
 	file := filesystem.NewRawFile(Path(), content)
-	if err := fs.WriteFile(file); err != nil {
+	if err := fs.WriteFile(ctx, file); err != nil {
 		return err
 	}
 

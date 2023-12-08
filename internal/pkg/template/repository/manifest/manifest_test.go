@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestManifestFileNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(fs)
+	manifest, err := Load(context.Background(), fs)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/repository.json" not found`, err.Error())
@@ -51,15 +52,16 @@ func TestManifestFileNotFound(t *testing.T) {
 
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.json)))
+		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
-		manifestContent, err := loadFile(fs)
+		manifestContent, err := loadFile(ctx, fs)
 		assert.NotNil(t, manifestContent)
 		assert.NoError(t, err)
 
@@ -70,14 +72,15 @@ func TestLoadManifestFile(t *testing.T) {
 
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
 		// Save
-		assert.NoError(t, saveFile(fs, c.data))
+		assert.NoError(t, saveFile(ctx, fs, c.data))
 
 		// Load file
-		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
+		file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
 		assert.Equal(t, wildcards.EscapeWhitespaces(c.json), wildcards.EscapeWhitespaces(file.Content), c.name)
 	}
@@ -203,6 +206,7 @@ repository manifest is not valid:
 
 func TestManifestBadRecordSemanticVersion(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	fs := aferofs.NewMemoryFs()
 
 	fileContent := `
@@ -229,10 +233,10 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, fileContent)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, fileContent)))
 
 	// Load
-	_, err := loadFile(fs)
+	_, err := loadFile(ctx, fs)
 	assert.Error(t, err)
 	assert.Equal(t, "manifest file \".keboola/repository.json\" is invalid:\n- invalid semantic version \"foo-bar\"", err.Error())
 }

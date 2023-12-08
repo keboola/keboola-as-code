@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -39,9 +40,9 @@ func New() *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs) (*Manifest, error) {
+func Load(ctx context.Context, fs filesystem.Fs) (*Manifest, error) {
 	// Load file content
-	manifestContent, err := loadFile(fs)
+	manifestContent, err := loadFile(ctx, fs)
 	if err != nil {
 		return nil, err
 	}
@@ -62,14 +63,14 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
 	content.Author = m.author
 	content.Templates = m.AllTemplates()
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(ctx, fs, content); err != nil {
 		return err
 	}
 

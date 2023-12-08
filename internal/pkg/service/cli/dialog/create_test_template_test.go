@@ -31,7 +31,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Prepare the template
-	fs, err := fixtures.LoadFS("template-simple", env.Empty())
+	fs, err := fixtures.LoadFS(context.Background(), "template-simple", env.Empty())
 	assert.NoError(t, err)
 	version, err := model.NewSemVersion("v0.0.1")
 	assert.NoError(t, err)

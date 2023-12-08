@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -30,7 +31,7 @@ func newTestLocalManager(t *testing.T, components []*keboola.Component) *Manager
 	if components == nil {
 		components = testapi.MockedComponents()
 	}
-	projectState := registry.New(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(components), model.SortByPath)
+	projectState := registry.New(knownpaths.NewNop(context.Background()), naming.NewRegistry(), model.NewComponentsMap(components), model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

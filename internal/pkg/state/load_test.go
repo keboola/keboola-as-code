@@ -164,10 +164,10 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 
 	// Create Fs
 	fs := aferofs.NewMemoryFsFrom(stateDir)
-	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
 
 	// Load manifest
-	m, err := projectManifest.Load(fs, false)
+	m, err := projectManifest.Load(context.Background(), fs, false)
 	assert.NoError(t, err)
 
 	return m, fs

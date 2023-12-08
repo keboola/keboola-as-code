@@ -20,7 +20,7 @@ func LoadDotEnv(ctx context.Context, logger log.Logger, osEnvs *Map, fs filesyst
 		for _, file := range Files() {
 			// Check if exists
 			path := filesystem.Join(dir, file)
-			info, err := fs.Stat(path)
+			info, err := fs.Stat(ctx, path)
 			switch {
 			case err == nil && info.IsDir():
 				// Expected file found dir
@@ -33,7 +33,7 @@ func LoadDotEnv(ctx context.Context, logger log.Logger, osEnvs *Map, fs filesyst
 				continue
 			}
 
-			fileEnvs, err := LoadEnvFile(fs, path)
+			fileEnvs, err := LoadEnvFile(ctx, fs, path)
 			if err != nil {
 				logger.WarnfCtx(ctx, `%s`, err.Error())
 				continue
@@ -48,8 +48,8 @@ func LoadDotEnv(ctx context.Context, logger log.Logger, osEnvs *Map, fs filesyst
 	return envs
 }
 
-func LoadEnvFile(fs filesystem.Fs, path string) (*Map, error) {
-	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
+func LoadEnvFile(ctx context.Context, fs filesystem.Fs, path string) (*Map, error) {
+	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(path).SetDescription("env file"))
 	if err != nil {
 		return nil, errors.Errorf(`cannot read env file "%s": %w`, path, err)
 	}
