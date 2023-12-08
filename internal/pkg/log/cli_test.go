@@ -2,6 +2,7 @@
 package log
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,10 +32,10 @@ func TestCliLogger_File(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, file, false)
 
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
@@ -56,10 +57,10 @@ func TestCliLogger_VerboseFalse(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, false)
 
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -75,10 +76,10 @@ func TestCliLogger_VerboseTrue(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, true)
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout
