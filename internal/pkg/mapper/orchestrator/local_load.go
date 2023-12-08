@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -11,7 +12,7 @@ import (
 
 const PreviousPhaseLink = "<previous>"
 
-func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
+func (m *orchestratorMapper) onLocalLoad(ctx context.Context, config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
 	loader := &localLoader{
 		State:        m.state,
 		phasesSorter: newPhasesSorter(),
@@ -23,7 +24,7 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 		errors:       errors.NewMultiError(),
 	}
 
-	if err := loader.load(); err != nil {
+	if err := loader.load(ctx); err != nil {
 		return errors.PrefixErrorf(err, `invalid orchestrator config "%s"`, manifest.Path())
 	}
 	return nil
@@ -40,13 +41,13 @@ type localLoader struct {
 	errors     errors.MultiError
 }
 
-func (l *localLoader) load() error {
+func (l *localLoader) load(ctx context.Context) error {
 	// Load phases and tasks from filesystem
 	for phaseIndex, phaseDir := range l.phasesDirs() {
 		errs := errors.NewMultiError()
 
 		// Process phase
-		phase, dependsOn, err := l.addPhase(phaseIndex, phaseDir)
+		phase, dependsOn, err := l.addPhase(ctx, phaseIndex, phaseDir)
 		if err == nil {
 			key := phase.GetRelativePath()
 			l.phasesKeys = append(l.phasesKeys, key)
@@ -59,7 +60,7 @@ func (l *localLoader) load() error {
 		// Process tasks
 		if errs.Len() == 0 {
 			for taskIndex, taskDir := range l.tasksDirs(phase) {
-				if task, err := l.addTask(taskIndex, phase, taskDir); err == nil {
+				if task, err := l.addTask(ctx, taskIndex, phase, taskDir); err == nil {
 					phase.Tasks = append(phase.Tasks, task)
 				} else {
 					errs.AppendWithPrefixf(err, `invalid task "%s"`, taskDir)
@@ -91,7 +92,7 @@ func (l *localLoader) load() error {
 	return l.errors.ErrorOrNil()
 }
 
-func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []string, error) {
+func (l *localLoader) addPhase(ctx context.Context, phaseIndex int, path string) (*model.Phase, []string, error) {
 	// Create struct
 	phase := &model.Phase{
 		PhaseKey: model.PhaseKey{
@@ -110,11 +111,11 @@ func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []str
 	l.manifest.AddRelatedPath(phase.Path())
 
 	// Parse config file
-	dependsOn, err := l.parsePhaseConfig(phase)
+	dependsOn, err := l.parsePhaseConfig(ctx, phase)
 	return phase, dependsOn, err
 }
 
-func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*model.Task, error) {
+func (l *localLoader) addTask(ctx context.Context, taskIndex int, phase *model.Phase, path string) (*model.Task, error) {
 	// Create struct
 	task := &model.Task{
 		TaskKey: model.TaskKey{Index: taskIndex},
@@ -125,10 +126,10 @@ func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*
 	l.manifest.AddRelatedPath(task.Path())
 
 	// Parse config file
-	return task, l.parseTaskConfig(task)
+	return task, l.parseTaskConfig(ctx, task)
 }
 
-func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
+func (l *localLoader) parsePhaseConfig(ctx context.Context, phase *model.Phase) ([]string, error) {
 	// Load phase config
 	file, err := l.files.
 		Load(l.NamingGenerator().PhaseFilePath(phase)).
@@ -136,7 +137,7 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 		SetDescription("phase config").
 		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindPhaseConfig).
-		ReadJSONFile()
+		ReadJSONFile(ctx)
 	if err != nil {
 		return nil, l.formatError(err)
 	}
@@ -174,7 +175,7 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	return dependsOn, errs.ErrorOrNil()
 }
 
-func (l *localLoader) parseTaskConfig(task *model.Task) error {
+func (l *localLoader) parseTaskConfig(ctx context.Context, task *model.Task) error {
 	// Load task config
 	file, err := l.files.
 		Load(l.NamingGenerator().TaskFilePath(task)).
@@ -182,7 +183,7 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 		SetDescription("task config").
 		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindTaskConfig).
-		ReadJSONFile()
+		ReadJSONFile(ctx)
 	if err != nil {
 		return l.formatError(err)
 	}

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -99,7 +100,7 @@ func TestFilesLoader(t *testing.T) {
 		SetDescription(`my description`).
 		AddTag(`tag1`).
 		AddTag(`tag2`).
-		ReadFile()
+		ReadFile(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, `foo1.json`, rawFile1.Path())
 	assert.Equal(t, `my description`, rawFile1.Description())
@@ -111,7 +112,7 @@ func TestFilesLoader(t *testing.T) {
 		SetDescription(`my description`).
 		AddTag(`tag3`).
 		AddTag(`tag4`).
-		ReadJSONFile()
+		ReadJSONFile(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, `foo2.json`, jsonFile1.Path())
 	assert.Equal(t, `my description`, jsonFile1.Description())
@@ -124,7 +125,7 @@ func TestFilesLoader(t *testing.T) {
 		SetDescription(`my description`).
 		AddTag(`tag5`).
 		AddTag(`tag6`).
-		ReadJSONFieldsTo(target1, `mytag:field`)
+		ReadJSONFieldsTo(context.Background(), target1, `mytag:field`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
 	assert.Equal(t, `foo3.json`, jsonFile2.Path())
@@ -139,7 +140,7 @@ func TestFilesLoader(t *testing.T) {
 		SetDescription(`my description`).
 		AddTag(`tag7`).
 		AddTag(`tag8`).
-		ReadFileContentTo(target2, `mytag:content`)
+		ReadFileContentTo(context.Background(), target2, `mytag:content`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
 	assert.Equal(t, `foo4.json`, rawFile2.Path())
@@ -153,7 +154,7 @@ func TestFilesLoader(t *testing.T) {
 		SetDescription(`my description`).
 		AddTag(`tag9`).
 		AddTag(`tag10`).
-		ReadJSONMapTo(target3, `mytag:map`)
+		ReadJSONMapTo(context.Background(), target3, `mytag:map`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
 	assert.Equal(t, `foo5.json`, jsonFile3.Path())

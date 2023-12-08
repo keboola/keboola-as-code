@@ -32,7 +32,7 @@ func (m *transformationMapper) MapAfterLocalLoad(ctx context.Context, recipe *mo
 	}
 
 	// Load
-	return l.loadBlocks()
+	return l.loadBlocks(ctx)
 }
 
 type localLoader struct {
@@ -45,12 +45,12 @@ type localLoader struct {
 	errors    errors.MultiError
 }
 
-func (l *localLoader) loadBlocks() error {
+func (l *localLoader) loadBlocks(ctx context.Context) error {
 	// Load blocks and codes from filesystem
 	for blockIndex, blockDir := range l.blockDirs() {
-		block := l.addBlock(blockIndex, blockDir)
-		for codeIndex, codeDir := range l.codeDirs(block) {
-			l.addCode(block, codeIndex, codeDir)
+		block := l.addBlock(ctx, blockIndex, blockDir)
+		for codeIndex, codeDir := range l.codeDirs(ctx, block) {
+			l.addCode(ctx, block, codeIndex, codeDir)
 		}
 	}
 
@@ -71,7 +71,7 @@ func (l *localLoader) validate() {
 	}
 }
 
-func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
+func (l *localLoader) addBlock(ctx context.Context, blockIndex int, path string) *model.Block {
 	block := &model.Block{
 		BlockKey: model.BlockKey{
 			BranchID:    l.config.BranchID,
@@ -87,13 +87,13 @@ func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 	}
 
 	l.ObjectManifest.AddRelatedPath(block.Path())
-	l.loadBlockMetaFile(block)
+	l.loadBlockMetaFile(ctx, block)
 	l.blocks = append(l.blocks, block)
 
 	return block
 }
 
-func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *model.Code {
+func (l *localLoader) addCode(ctx context.Context, block *model.Block, codeIndex int, path string) *model.Code {
 	code := &model.Code{
 		CodeKey: model.CodeKey{
 			BranchID:    l.config.BranchID,
@@ -110,14 +110,14 @@ func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *m
 	}
 
 	l.ObjectManifest.AddRelatedPath(code.Path())
-	l.loadCodeMetaFile(code)
-	l.addScripts(code)
+	l.loadCodeMetaFile(ctx, code)
+	l.addScripts(ctx, code)
 	block.Codes = append(block.Codes, code)
 
 	return code
 }
 
-func (l *localLoader) addScripts(code *model.Code) {
+func (l *localLoader) addScripts(ctx context.Context, code *model.Code) {
 	code.CodeFileName = l.codeFileName(code)
 	if code.CodeFileName == "" {
 		return
@@ -129,7 +129,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 		AddMetadata(filesystem.ObjectKeyMetadata, code.Key()).
 		SetDescription("code file").
 		AddTag(model.FileKindNativeCode).
-		ReadFile()
+		ReadFile(ctx)
 	if err != nil {
 		l.errors.Append(err)
 		return
@@ -140,27 +140,27 @@ func (l *localLoader) addScripts(code *model.Code) {
 	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path())
 }
 
-func (l *localLoader) loadBlockMetaFile(block *model.Block) {
+func (l *localLoader) loadBlockMetaFile(ctx context.Context, block *model.Block) {
 	_, _, err := l.Files.
 		Load(l.NamingGenerator().MetaFilePath(block.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, block.Key()).
 		SetDescription("block metadata").
 		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindBlockMeta).
-		ReadJSONFieldsTo(block, model.MetaFileFieldsTag)
+		ReadJSONFieldsTo(ctx, block, model.MetaFileFieldsTag)
 	if err != nil {
 		l.errors.Append(err)
 	}
 }
 
-func (l *localLoader) loadCodeMetaFile(code *model.Code) {
+func (l *localLoader) loadCodeMetaFile(ctx context.Context, code *model.Code) {
 	_, _, err := l.Files.
 		Load(l.NamingGenerator().MetaFilePath(code.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, code.Key()).
 		SetDescription("code metadata").
 		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindCodeMeta).
-		ReadJSONFieldsTo(code, model.MetaFileFieldsTag)
+		ReadJSONFieldsTo(ctx, code, model.MetaFileFieldsTag)
 	if err != nil {
 		l.errors.Append(err)
 	}
@@ -193,7 +193,7 @@ func (l *localLoader) blockDirs() []string {
 	return dirs
 }
 
-func (l *localLoader) codeDirs(block *model.Block) []string {
+func (l *localLoader) codeDirs(_ context.Context, block *model.Block) []string {
 	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), block.Path())
 	if err != nil {
 		l.errors.Append(errors.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))

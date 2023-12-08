@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -100,7 +102,7 @@ func (f *fileToLoad) RemoveMetadata(key string) *fileToLoad {
 	return f
 }
 
-func (f *fileToLoad) ReadFile() (*filesystem.RawFile, error) {
+func (f *fileToLoad) ReadFile(ctx context.Context) (*filesystem.RawFile, error) {
 	file, err := f.fsLoader.ReadRawFile(f.FileDef)
 	if err != nil {
 		return nil, err
@@ -109,7 +111,7 @@ func (f *fileToLoad) ReadFile() (*filesystem.RawFile, error) {
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJSONFieldsTo(target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (f *fileToLoad) ReadJSONFieldsTo(ctx context.Context, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
 	file, tagFound, err := f.fsLoader.ReadJSONFieldsTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
@@ -120,7 +122,7 @@ func (f *fileToLoad) ReadJSONFieldsTo(target interface{}, tag string) (*filesyst
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadJSONMapTo(target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (f *fileToLoad) ReadJSONMapTo(ctx context.Context, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
 	file, tagFound, err := f.fsLoader.ReadJSONMapTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
@@ -131,7 +133,7 @@ func (f *fileToLoad) ReadJSONMapTo(target interface{}, tag string) (*filesystem.
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadFileContentTo(target interface{}, tag string) (*filesystem.RawFile, bool, error) {
+func (f *fileToLoad) ReadFileContentTo(ctx context.Context, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
 	file, tagFound, err := f.fsLoader.ReadFileContentTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
@@ -142,7 +144,7 @@ func (f *fileToLoad) ReadFileContentTo(target interface{}, tag string) (*filesys
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadJSONFile() (*filesystem.JSONFile, error) {
+func (f *fileToLoad) ReadJSONFile(ctx context.Context) (*filesystem.JSONFile, error) {
 	file, err := f.fsLoader.ReadJSONFile(f.FileDef)
 	if err != nil {
 		return nil, err
@@ -151,7 +153,7 @@ func (f *fileToLoad) ReadJSONFile() (*filesystem.JSONFile, error) {
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJSONFileTo(target interface{}) (*filesystem.RawFile, error) {
+func (f *fileToLoad) ReadJSONFileTo(ctx context.Context, target interface{}) (*filesystem.RawFile, error) {
 	file, err := f.fsLoader.ReadJSONFileTo(f.FileDef, target)
 	if err != nil {
 		return nil, err
