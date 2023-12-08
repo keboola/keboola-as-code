@@ -37,8 +37,8 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			prj, _, err := d.LocalProject(force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
-					logger.Info()
-					logger.Info("Use --force to override the invalid local state.")
+					logger.InfoCtx(cmd.Context())
+					logger.InfoCtx(cmd.Context(), "Use --force to override the invalid local state.")
 				}
 				return err
 			}
@@ -47,8 +47,8 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			projectState, err := prj.LoadState(loadState.PullOptions(force), d)
 			if err != nil {
 				if !force && errors.As(err, &loadState.InvalidLocalStateError{}) {
-					logger.Info()
-					logger.Info("Use --force to override the invalid local state.")
+					logger.InfoCtx(cmd.Context())
+					logger.InfoCtx(cmd.Context(), "Use --force to override the invalid local state.")
 				}
 				return err
 			}

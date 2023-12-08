@@ -31,7 +31,7 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 	b := newSessionBackoff()
 	startTime := time.Now()
 	logger = logger.AddPrefix("[etcd-session]")
-	logger.Infof(`creating etcd session`)
+	logger.InfofCtx(ctx, `creating etcd session`)
 
 	wg.Add(1)
 	initDone := make(chan error, 1)
@@ -42,7 +42,7 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 			// Wait before re-creation attempt, except the initialization
 			if initDone == nil {
 				delay := b.NextBackOff()
-				logger.Infof("re-creating etcd session, backoff delay %s", delay)
+				logger.InfofCtx(ctx, "re-creating etcd session, backoff delay %s", delay)
 				<-time.After(delay)
 			}
 
@@ -51,7 +51,7 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 			if err != nil {
 				if initDone == nil {
 					// Try again
-					logger.Errorf(`cannot create etcd session: %s`, err)
+					logger.ErrorfCtx(ctx, `cannot create etcd session: %s`, err)
 					continue
 				} else {
 					// Stop initialization
@@ -75,13 +75,13 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 
 			// Reset session backoff
 			b.Reset()
-			logger.Infof("created etcd session | %s", time.Since(startTime))
+			logger.InfofCtx(ctx, "created etcd session | %s", time.Since(startTime))
 
 			// Start session dependent work
 			err = onSession(session)
 			if err != nil {
 				if initDone == nil {
-					logger.Errorf(`etcd session callback failed: %s`, err)
+					logger.ErrorfCtx(ctx, `etcd session callback failed: %s`, err)
 				} else {
 					// Stop initialization
 					_ = session.Close()
@@ -102,11 +102,11 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 			case <-ctx.Done():
 				// Context cancelled
 				startTime := time.Now()
-				logger.Info("closing etcd session")
+				logger.InfoCtx(ctx, "closing etcd session")
 				if err := session.Close(); err != nil {
-					logger.Warnf("cannot close etcd session: %s", err)
+					logger.WarnfCtx(ctx, "cannot close etcd session: %s", err)
 				} else {
-					logger.Infof("closed etcd session | %s", time.Since(startTime))
+					logger.InfofCtx(ctx, "closed etcd session | %s", time.Since(startTime))
 				}
 				return
 			case <-session.Done():

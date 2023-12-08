@@ -264,7 +264,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		defer func() {
 			if panicErr := recover(); panicErr != nil {
 				err := errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
-				logger.Errorf(`task panic: %s`, err)
+				logger.ErrorfCtx(ctx, `task panic: %s`, err)
 				if result.Error == nil {
 					result = ErrResult(err)
 				}
@@ -286,16 +286,16 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	if result.Error == nil {
 		task.Result = result.Result
 		if len(task.Outputs) > 0 {
-			logger.Infof(`task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
+			logger.InfofCtx(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.Infof(`task succeeded (%s): %s`, duration, task.Result)
+			logger.InfofCtx(ctx, `task succeeded (%s): %s`, duration, task.Result)
 		}
 	} else {
 		task.Error = result.Error.Error()
 		if len(task.Outputs) > 0 {
-			logger.Warnf(`task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
+			logger.WarnfCtx(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
+			logger.WarnfCtx(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
 		}
 	}
 
@@ -316,14 +316,14 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	)
 	if resp, err := finalizeTaskOp.Do(ctx, n.client); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
-		logger.Error(err)
+		logger.ErrorCtx(ctx, err)
 		return result, err
 	} else if !resp.Succeeded {
 		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
-		logger.Error(err)
+		logger.ErrorCtx(ctx, err)
 		return result, err
 	}
-	logger.Debugf(`lock released "%s"`, task.Lock.Key())
+	logger.DebugfCtx(ctx, `lock released "%s"`, task.Lock.Key())
 
 	return result, nil
 }

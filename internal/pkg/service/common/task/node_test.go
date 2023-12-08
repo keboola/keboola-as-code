@@ -67,7 +67,7 @@ func TestSuccessfulTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (1)")
+			logger.InfoCtx(ctx, "some message from the task (1)")
 			return task.OkResult("some result (1)").WithOutput("key", "value")
 		},
 	})
@@ -146,7 +146,7 @@ task/123/my-receiver/my-export/some.task/%s
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (2)")
+			logger.InfoCtx(ctx, "some message from the task (2)")
 			return task.OkResult("some result (2)")
 		},
 	})
@@ -343,7 +343,7 @@ func TestFailedTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (1)")
+			logger.InfoCtx(ctx, "some message from the task (1)")
 			return task.
 				ErrResult(task.WrapUserError(errors.New("some error (1) - expected"))).
 				WithOutput("key", "value")
@@ -424,7 +424,7 @@ task/123/my-receiver/my-export/some.task/%s
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (2)")
+			logger.InfoCtx(ctx, "some message from the task (2)")
 			return task.ErrResult(errors.New("some error (2) - unexpected"))
 		},
 	})
@@ -833,7 +833,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 			Operation: func(ctx context.Context, logger log.Logger) task.Result {
 				defer close(taskDone)
 				<-taskWork
-				logger.Info("some message from the task")
+				logger.InfoCtx(ctx, "some message from the task")
 				return task.OkResult("some result")
 			},
 		})

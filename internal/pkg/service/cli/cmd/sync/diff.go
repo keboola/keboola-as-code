@@ -54,8 +54,8 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 			// Print info about --details flag
 			if !options.PrintDetails && results.HasNotEqualResult {
 				logger := d.Logger()
-				logger.Info()
-				logger.Info(`Use --details flag to list the changed fields.`)
+				logger.InfoCtx(d.CommandCtx())
+				logger.InfoCtx(d.CommandCtx(), `Use --details flag to list the changed fields.`)
 			}
 			return nil
 		},

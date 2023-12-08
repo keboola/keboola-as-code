@@ -39,7 +39,7 @@ func (n *Node) Cleanup() (err error) {
 			err = n.taskEtcdPrefix.GetAll().Do(ctx, n.client).ForEachKV(func(kv op.KeyValueT[Task], header *iterator.Header) error {
 				if n.isForCleanup(kv.Value) {
 					if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, n.client); err == nil {
-						logger.Debugf(`deleted task "%s"`, kv.Value.Key.String())
+						logger.DebugfCtx(ctx, `deleted task "%s"`, kv.Value.Key.String())
 						deletedTasksCount++
 					} else {
 						errs.Append(err)
@@ -54,7 +54,7 @@ func (n *Node) Cleanup() (err error) {
 			// Track number of deleted tasks
 			trace.SpanFromContext(ctx).SetAttributes(attribute.Int64("task.cleanup.deletedTasksCount", deletedTasksCount))
 			infoMsg := fmt.Sprintf(`deleted "%d" tasks`, deletedTasksCount)
-			logger.Info(infoMsg)
+			logger.InfoCtx(ctx, infoMsg)
 
 			// Handle error
 			if errs.Len() > 0 {

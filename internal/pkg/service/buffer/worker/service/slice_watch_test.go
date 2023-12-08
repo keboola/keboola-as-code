@@ -57,7 +57,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 		defer wg.Done()
 		close(start)
 		assert.NoError(t, w.WaitUntilAllSlicesUploaded(ctx, logger, fileKey))
-		logger.Info("-----> all slices have been uploaded")
+		logger.InfoCtx(ctx, "-----> all slices have been uploaded")
 	}()
 	<-start
 
@@ -66,7 +66,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	assert.NoError(t, str.SetSliceState(ctx, &slice2, slicestate.Failed))
 	assert.NoError(t, str.SetSliceState(ctx, &slice2, slicestate.Uploading))
 	time.Sleep(100 * time.Millisecond)
-	logger.Info("-----> slice 2 uploaded")
+	logger.InfoCtx(ctx, "-----> slice 2 uploaded")
 	assert.NoError(t, str.SetSliceState(ctx, &slice2, slicestate.Uploaded))
 
 	// Simulate upload of slice1
@@ -75,7 +75,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	assert.NoError(t, str.SetSliceState(ctx, &slice1, slicestate.Failed))
 	assert.NoError(t, str.SetSliceState(ctx, &slice1, slicestate.Uploading))
 	time.Sleep(100 * time.Millisecond)
-	logger.Info("-----> slice 1 uploaded")
+	logger.InfoCtx(ctx, "-----> slice 1 uploaded")
 	assert.NoError(t, str.SetSliceState(ctx, &slice1, slicestate.Uploaded))
 
 	// Wait

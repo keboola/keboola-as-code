@@ -60,13 +60,13 @@ func (s *Service) closeSlices(d dependencies) <-chan error {
 				waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
 				defer waitCancel()
 				rev := event.Kv.CreateRevision
-				logger.Infof(`waiting until all API nodes switch to a revision >= %v`, rev)
+				logger.InfofCtx(ctx, `waiting until all API nodes switch to a revision >= %v`, rev)
 				if err := s.watcher.WaitForRevision(waitCtx, rev); err != nil {
 					if errors.Is(err, context.DeadlineExceeded) {
 						// We did not receive confirmation from all API nodes
 						// that they are no longer using the old slice,
 						// there is some bug in the mechanism.
-						logger.Error(errors.Errorf("a timeout occurred while waiting until all API nodes switch to a revision >= %v: %w", rev, err))
+						logger.ErrorCtx(ctx, errors.Errorf("a timeout occurred while waiting until all API nodes switch to a revision >= %v: %w", rev, err))
 						// We will not block close and upload operation, because it would completely block the data flow.
 						// Continue...
 					} else {

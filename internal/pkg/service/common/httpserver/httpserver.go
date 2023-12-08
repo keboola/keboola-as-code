@@ -50,7 +50,7 @@ func Start(d dependencies, cfg Config) error {
 	proc := d.Process()
 	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
-		logger.Infof("HTTP server listening on %q", cfg.ListenAddress)
+		logger.InfofCtx(ctx, "HTTP server listening on %q", cfg.ListenAddress)
 		shutdown(srv.ListenAndServe())
 	})
 

@@ -75,20 +75,20 @@ func newPublicScope(ctx context.Context, baseScp BaseScope, storageAPIHost strin
 	var index *keboola.Index
 	var indexWithComponents *keboola.IndexComponents
 	if cfg.preloadComponents {
-		logger.Info("loading Storage API index with components")
+		logger.InfoCtx(ctx, "loading Storage API index with components")
 		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
 		index = &indexWithComponents.Index
-		logger.Infof(`loaded Storage API index with "%d" components | %s`, len(indexWithComponents.Components), time.Since(startTime))
+		logger.InfofCtx(ctx, `loaded Storage API index with "%d" components | %s`, len(indexWithComponents.Components), time.Since(startTime))
 	} else {
-		logger.Info("loading Storage API index without components")
+		logger.InfoCtx(ctx, "loading Storage API index without components")
 		index, err = keboola.APIIndex(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
-		logger.Infof("loaded Storage API index without components | %s", time.Since(startTime))
+		logger.InfofCtx(ctx, "loaded Storage API index without components | %s", time.Since(startTime))
 	}
 
 	// Create API

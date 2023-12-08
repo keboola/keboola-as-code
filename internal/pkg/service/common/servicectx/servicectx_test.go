@@ -30,19 +30,19 @@ func TestProcess_Add(t *testing.T) {
 	// Do some work, operations run in parallel
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
-		logger.Info("end1")
+		logger.InfoCtx(ctx, "end1")
 		op1.Done()
 	})
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op1.Wait()
-		logger.Info("end2")
+		logger.InfoCtx(ctx, "end2")
 		op2.Done()
 	})
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op2.Wait()
-		logger.Info("end3")
+		logger.InfoCtx(ctx, "end3")
 		op3.Done()
 	})
 	startShutdown := make(chan struct{})
@@ -51,14 +51,14 @@ func TestProcess_Add(t *testing.T) {
 		shutdown(errors.New("operation failed"))
 	})
 	proc.OnShutdown(func() {
-		logger.Info("onShutdown1")
+		logger.InfoCtx(ctx, "onShutdown1")
 	})
 	proc.OnShutdown(func() {
-		logger.Info("onShutdown2")
+		logger.InfoCtx(ctx, "onShutdown2")
 	})
 	proc.OnShutdown(func() {
 		op3.Wait()
-		logger.Info("onShutdown3")
+		logger.InfoCtx(ctx, "onShutdown3")
 	})
 
 	// Wait can be called multiple times
@@ -106,30 +106,30 @@ func TestProcess_Shutdown(t *testing.T) {
 	// Do some work, operations run in parallel
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
-		logger.Info("end1")
+		logger.InfoCtx(ctx, "end1")
 		op1.Done()
 	})
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op1.Wait()
-		logger.Info("end2")
+		logger.InfoCtx(ctx, "end2")
 		op2.Done()
 	})
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op2.Wait()
-		logger.Info("end3")
+		logger.InfoCtx(ctx, "end3")
 		op3.Done()
 	})
 	proc.OnShutdown(func() {
-		logger.Info("onShutdown1")
+		logger.InfoCtx(ctx, "onShutdown1")
 	})
 	proc.OnShutdown(func() {
-		logger.Info("onShutdown2")
+		logger.InfoCtx(ctx, "onShutdown2")
 	})
 	proc.OnShutdown(func() {
 		op3.Wait()
-		logger.Info("onShutdown3")
+		logger.InfoCtx(ctx, "onShutdown3")
 	})
 	proc.Shutdown(errors.New("some error"))
 	proc.WaitForShutdown()

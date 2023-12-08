@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -109,7 +110,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	// File load handlers
 	handler1 := func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file1.txt"
-		logger.Info(`Handler 1`)
+		logger.InfoCtx(context.Background(), `Handler 1`)
 		if def.Path() == "file1.txt" {
 			return filesystem.NewRawFile("file1.txt", "handler1"), nil
 		}
@@ -117,7 +118,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	}
 	handler2 := func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file2.txt"
-		logger.Info(`Handler 2`)
+		logger.InfoCtx(context.Background(), `Handler 2`)
 		if def.Path() == "file2.txt" {
 			return filesystem.NewRawFile("file2.txt", "handler2"), nil
 		}
@@ -125,7 +126,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	}
 	handler3 := func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file3.txt"
-		logger.Info(`Handler 3`)
+		logger.InfoCtx(context.Background(), `Handler 3`)
 		if def.Path() == "file3.txt" {
 			return filesystem.NewRawFile("file3.txt", "handler3"), nil
 		}
