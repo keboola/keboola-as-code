@@ -59,7 +59,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	if len(o.Out) > 0 {
 		d.Logger().InfofCtx(ctx, `Writing table "%s" to file "%s"`, o.TableID, o.Out)
 		// write to file
-		file, err := d.Fs().Create(o.Out)
+		file, err := d.Fs().Create(ctx, o.Out)
 		if err != nil {
 			return err
 		}

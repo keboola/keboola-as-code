@@ -37,7 +37,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (inputs *templat
 	}
 
 	// Save
-	if err := inputs.Save(fs); err != nil {
+	if err := inputs.Save(ctx, fs); err != nil {
 		return nil, err
 	}
 

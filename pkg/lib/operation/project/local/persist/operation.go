@@ -35,7 +35,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	api := d.KeboolaProjectAPI()
 
 	// Get plan
-	plan, err := persist.NewPlan(projectState.State())
+	plan, err := persist.NewPlan(ctx, projectState.State())
 	if err != nil {
 		return err
 	}

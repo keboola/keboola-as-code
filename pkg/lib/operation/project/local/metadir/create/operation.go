@@ -18,7 +18,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.metadir.create")
 	defer span.End(&err)
 
-	if err := fs.Mkdir(filesystem.MetadataDir); err != nil {
+	if err := fs.Mkdir(ctx, filesystem.MetadataDir); err != nil {
 		return errors.Errorf("cannot create metadata directory \"%s\": %w", filesystem.MetadataDir, err)
 	}
 

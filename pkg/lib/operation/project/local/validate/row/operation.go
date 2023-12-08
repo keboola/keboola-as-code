@@ -40,7 +40,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Read file
 	fs := d.Fs()
-	f, err := fs.FileLoader().ReadJSONFile(filesystem.NewFileDef(filesystem.Join(fs.WorkingDir(), o.RowPath)))
+	f, err := fs.FileLoader().ReadJSONFile(ctx, filesystem.NewFileDef(filesystem.Join(fs.WorkingDir(), o.RowPath)))
 	if err != nil {
 		return err
 	}
