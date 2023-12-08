@@ -3,6 +3,7 @@ package aferofs
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -85,14 +86,14 @@ func (f *Fs) SetLogger(logger log.Logger) {
 }
 
 // Walk walks the file tree.
-func (f *Fs) Walk(root string, walkFn filepath.WalkFunc) error {
+func (f *Fs) Walk(ctx context.Context, root string, walkFn filepath.WalkFunc) error {
 	return f.fs.Walk(f.fs.FromSlash(root), func(path string, info fs.FileInfo, err error) error {
 		return walkFn(f.fs.ToSlash(path), info, err)
 	})
 }
 
 // Glob returns the names of all files matching pattern or nil.
-func (f *Fs) Glob(pattern string) (matches []string, err error) {
+func (f *Fs) Glob(ctx context.Context, pattern string) (matches []string, err error) {
 	matches, err = afero.Glob(f.fs, f.fs.FromSlash(pattern))
 	if err != nil {
 		return nil, err
@@ -108,16 +109,16 @@ func (f *Fs) Glob(pattern string) (matches []string, err error) {
 }
 
 // Stat returns a FileInfo.
-func (f *Fs) Stat(path string) (os.FileInfo, error) {
+func (f *Fs) Stat(ctx context.Context, path string) (os.FileInfo, error) {
 	return f.fs.Stat(f.fs.FromSlash(path))
 }
 
 // ReadDir - return list of sorted directory entries.
-func (f *Fs) ReadDir(path string) ([]os.FileInfo, error) {
+func (f *Fs) ReadDir(ctx context.Context, path string) ([]os.FileInfo, error) {
 	return f.fs.ReadDir(f.fs.FromSlash(path))
 }
 
-func (f *Fs) Exists(path string) bool {
+func (f *Fs) Exists(ctx context.Context, path string) bool {
 	if _, err := f.Stat(path); err == nil {
 		return true
 	} else if !os.IsNotExist(err) {
@@ -128,7 +129,7 @@ func (f *Fs) Exists(path string) bool {
 }
 
 // IsFile - true if path exists, and it is a file.
-func (f *Fs) IsFile(path string) bool {
+func (f *Fs) IsFile(ctx context.Context, path string) bool {
 	if s, err := f.Stat(path); err == nil {
 		return !s.IsDir()
 	} else if !os.IsNotExist(err) {
@@ -139,7 +140,7 @@ func (f *Fs) IsFile(path string) bool {
 }
 
 // IsDir - true if path exists, and it is a dir.
-func (f *Fs) IsDir(path string) bool {
+func (f *Fs) IsDir(ctx context.Context, path string) bool {
 	if s, err := f.Stat(path); err == nil {
 		return s.IsDir()
 	} else if !os.IsNotExist(err) {
@@ -150,24 +151,24 @@ func (f *Fs) IsDir(path string) bool {
 }
 
 // Create creates a file in the filesystem, returning the file.
-func (f *Fs) Create(name string) (afero.File, error) {
+func (f *Fs) Create(ctx context.Context, name string) (afero.File, error) {
 	return f.fs.Create(f.fs.FromSlash(name))
 }
 
 // Open opens a file readon.
-func (f *Fs) Open(name string) (afero.File, error) {
+func (f *Fs) Open(ctx context.Context, name string) (afero.File, error) {
 	return f.fs.Open(f.fs.FromSlash(name))
 }
 
 // OpenFile opens a file using the given flags and the given mode.
-func (f *Fs) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
+func (f *Fs) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (afero.File, error) {
 	return f.fs.OpenFile(f.fs.FromSlash(name), flag, perm)
 }
 
 // Mkdir - create directory.
 // If the directory already exists, it is a valid state.
 // ParentKey directories will also be created if necessary.
-func (f *Fs) Mkdir(path string) error {
+func (f *Fs) Mkdir(ctx context.Context, path string) error {
 	if err := f.fs.MkdirAll(f.fs.FromSlash(path), 0o755); err != nil {
 		return errors.Errorf(`cannot create directory "%s": %w`, path, err)
 	} else {
@@ -179,7 +180,7 @@ func (f *Fs) Mkdir(path string) error {
 // Copy src to dst.
 // Directories are copied recursively.
 // The destination path must not exist.
-func (f *Fs) Copy(src, dst string) error {
+func (f *Fs) Copy(ctx context.Context, src, dst string) error {
 	if f.Exists(dst) {
 		return errors.Errorf(`cannot copy "%s" -> "%s": destination exists`, src, dst)
 	}
@@ -196,7 +197,7 @@ func (f *Fs) Copy(src, dst string) error {
 // CopyForce src to dst.
 // Directories are copied recursively.
 // The destination is deleted and replaced if it exists.
-func (f *Fs) CopyForce(src, dst string) error {
+func (f *Fs) CopyForce(ctx context.Context, src, dst string) error {
 	if f.Exists(dst) {
 		if err := f.Remove(dst); err != nil {
 			return err
@@ -208,7 +209,7 @@ func (f *Fs) CopyForce(src, dst string) error {
 // Move src to dst.
 // Directories are moved recursively.
 // The destination path must not exist.
-func (f *Fs) Move(src, dst string) error {
+func (f *Fs) Move(ctx context.Context, src, dst string) error {
 	if f.Exists(dst) {
 		return errors.Errorf(`cannot move %s: destination exists`, strhelper.FormatPathChange(src, dst, true))
 	}
@@ -234,7 +235,7 @@ func (f *Fs) Move(src, dst string) error {
 // MoveForce src to dst.
 // Directories are moved recursively.
 // The destination is deleted and replaced if it exists.
-func (f *Fs) MoveForce(src, dst string) error {
+func (f *Fs) MoveForce(ctx context.Context, src, dst string) error {
 	if f.Exists(dst) {
 		if err := f.Remove(dst); err != nil {
 			return err
@@ -245,7 +246,7 @@ func (f *Fs) MoveForce(src, dst string) error {
 
 // Remove file or dir.
 // Directories are removed recursively.
-func (f *Fs) Remove(path string) error {
+func (f *Fs) Remove(ctx context.Context, path string) error {
 	err := f.fs.RemoveAll(f.fs.FromSlash(path))
 	if err == nil {
 		f.logger.Debugf(`Removed "%s"`, path)
@@ -258,7 +259,7 @@ func (f *Fs) FileLoader() filesystem.FileLoader {
 }
 
 // ReadFile content as string.
-func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
+func (f *Fs) ReadFile(ctx context.Context, def *filesystem.FileDef) (*filesystem.RawFile, error) {
 	file := def.ToEmptyFile()
 
 	// Check if is dir
@@ -293,7 +294,7 @@ func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
 }
 
 // WriteFile from string.
-func (f *Fs) WriteFile(file filesystem.File) error {
+func (f *Fs) WriteFile(ctx context.Context, file filesystem.File) error {
 	// Convert
 	fileRaw, err := file.ToRawFile()
 	if err != nil {
@@ -330,7 +331,7 @@ func (f *Fs) WriteFile(file filesystem.File) error {
 }
 
 // CreateOrUpdateFile lines.
-func (f *Fs) CreateOrUpdateFile(def *filesystem.FileDef, lines []filesystem.FileLine) (updated bool, err error) {
+func (f *Fs) CreateOrUpdateFile(ctx context.Context, def *filesystem.FileDef, lines []filesystem.FileLine) (updated bool, err error) {
 	// Create file OR read if exists
 	updated = false
 	file := def.ToEmptyFile()

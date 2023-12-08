@@ -2,6 +2,7 @@
 package filesystem
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"path"
@@ -75,26 +76,26 @@ type Fs interface {
 	SubDirFs(path string) (Fs, error)
 	Logger() log.Logger
 	SetLogger(logger log.Logger)
-	Walk(root string, walkFn WalkFunc) error
-	Glob(pattern string) (matches []string, err error)
-	Stat(path string) (os.FileInfo, error)
-	ReadDir(path string) ([]os.FileInfo, error)
-	Mkdir(path string) error
-	Exists(path string) bool
-	IsFile(path string) bool
-	IsDir(path string) bool
-	Create(name string) (afero.File, error)
-	Open(name string) (afero.File, error)
-	OpenFile(name string, flag int, perm os.FileMode) (afero.File, error)
-	Copy(src, dst string) error
-	CopyForce(src, dst string) error
-	Move(src, dst string) error
-	MoveForce(src, dst string) error
-	Remove(path string) error
+	Walk(ctx context.Context, root string, walkFn WalkFunc) error
+	Glob(ctx context.Context, pattern string) (matches []string, err error)
+	Stat(ctx context.Context, path string) (os.FileInfo, error)
+	ReadDir(ctx context.Context, path string) ([]os.FileInfo, error)
+	Mkdir(ctx context.Context, path string) error
+	Exists(ctx context.Context, path string) bool
+	IsFile(ctx context.Context, path string) bool
+	IsDir(ctx context.Context, path string) bool
+	Create(ctx context.Context, name string) (afero.File, error)
+	Open(ctx context.Context, name string) (afero.File, error)
+	OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (afero.File, error)
+	Copy(ctx context.Context, src, dst string) error
+	CopyForce(ctx context.Context, src, dst string) error
+	Move(ctx context.Context, src, dst string) error
+	MoveForce(ctx context.Context, src, dst string) error
+	Remove(ctx context.Context, path string) error
 	FileLoader() FileLoader
-	ReadFile(file *FileDef) (*RawFile, error)
-	WriteFile(file File) error
-	CreateOrUpdateFile(file *FileDef, lines []FileLine) (updated bool, err error)
+	ReadFile(ctx context.Context, file *FileDef) (*RawFile, error)
+	WriteFile(ctx context.Context, file File) error
+	CreateOrUpdateFile(ctx context.Context, file *FileDef, lines []FileLine) (updated bool, err error)
 }
 
 // LoadHandler callback modifies file loading process, see "fileloader" package.
@@ -102,20 +103,20 @@ type LoadHandler func(def *FileDef, fileType FileType) (File, error)
 
 type FileLoader interface {
 	WithJsonnetContext(ctx *jsonnet.Context) FileLoader
-	ReadRawFile(file *FileDef) (*RawFile, error)
-	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
-	ReadJSONFile(file *FileDef) (*JSONFile, error)
-	ReadJSONFileTo(file *FileDef, target interface{}) (*RawFile, error)
-	ReadJSONFieldsTo(file *FileDef, target interface{}, structTag string) (*JSONFile, bool, error)
-	ReadJSONMapTo(file *FileDef, target interface{}, structTag string) (*JSONFile, bool, error)
-	ReadYamlFile(file *FileDef) (*YamlFile, error)
-	ReadYamlFileTo(file *FileDef, target interface{}) (*RawFile, error)
-	ReadYamlFieldsTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
-	ReadYamlMapTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
-	ReadJsonnetFile(file *FileDef) (*JsonnetFile, error)
-	ReadJsonnetFileTo(file *FileDef, target interface{}) (*JsonnetFile, error)
-	ReadSubDirs(fs Fs, root string) ([]string, error)
-	IsIgnored(path string) (bool, error)
+	ReadRawFile(ctx context.Context, file *FileDef) (*RawFile, error)
+	ReadFileContentTo(ctx context.Context, file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
+	ReadJSONFile(ctx context.Context, file *FileDef) (*JSONFile, error)
+	ReadJSONFileTo(ctx context.Context, file *FileDef, target interface{}) (*RawFile, error)
+	ReadJSONFieldsTo(ctx context.Context, file *FileDef, target interface{}, structTag string) (*JSONFile, bool, error)
+	ReadJSONMapTo(ctx context.Context, file *FileDef, target interface{}, structTag string) (*JSONFile, bool, error)
+	ReadYamlFile(ctx context.Context, file *FileDef) (*YamlFile, error)
+	ReadYamlFileTo(ctx context.Context, file *FileDef, target interface{}) (*RawFile, error)
+	ReadYamlFieldsTo(ctx context.Context, file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
+	ReadYamlMapTo(ctx context.Context, file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
+	ReadJsonnetFile(ctx context.Context, file *FileDef) (*JsonnetFile, error)
+	ReadJsonnetFileTo(ctx context.Context, file *FileDef, target interface{}) (*JsonnetFile, error)
+	ReadSubDirs(ctx context.Context, fs Fs, root string) ([]string, error)
+	IsIgnored(ctx context.Context, path string) (bool, error)
 }
 
 func FromSlash(path string) string {
