@@ -10,14 +10,8 @@ func fileCore(logFile *File) zapcore.Core {
 	// Log all
 	fileLevels := zapcore.DebugLevel
 
-	// Log time, level, msg
-	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		TimeKey:     "time",
-		LevelKey:    "level",
-		MessageKey:  "message",
-		EncodeLevel: zapcore.LowercaseLevelEncoder,
-		EncodeTime:  zapcore.ISO8601TimeEncoder,
-	})
+	// Log file intentionally always uses json output.
+	encoder := newJSONEncoder()
 
 	return zapcore.NewCore(encoder, logFile.File(), fileLevels)
 }

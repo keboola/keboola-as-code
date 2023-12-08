@@ -9,7 +9,7 @@ import (
 )
 
 // stdoutCore writes to STDOUT output.
-func stdoutCore(stdout io.Writer, verbose bool) zapcore.Core {
+func stdoutCore(stdout io.Writer, logFormat LogFormat, verbose bool) zapcore.Core {
 	consoleLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 		// Log debug, info -> if verbose output enabled
 		if verbose {
@@ -20,19 +20,7 @@ func stdoutCore(stdout io.Writer, verbose bool) zapcore.Core {
 		return l == zapcore.InfoLevel
 	})
 
-	// Prefix messages with level only when verbose enabled
-	levelKey := ""
-	if verbose {
-		levelKey = "level"
-	}
-
-	// Create encoder
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		MessageKey:       "msg",
-		LevelKey:         levelKey,
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
-	})
+	encoder := newEncoder(logFormat, verbose)
 
 	return zapcore.NewCore(encoder, zapcore.AddSync(stdout), consoleLevels)
 }

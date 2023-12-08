@@ -102,6 +102,7 @@ Aliases:
 Flags:
   -h, --help                       print help for command
   -l, --log-file string            path to a log file for details
+      --log-format string          format of stdout and stderr (default "console")
       --non-interactive            disable interactive dialogs
   -t, --storage-api-token string   storage API token from your project
   -v, --verbose                    print details
