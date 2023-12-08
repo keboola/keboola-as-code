@@ -67,7 +67,7 @@ func run() error {
 
 	// Start CPU profiling, if enabled.
 	if cfg.CpuProfFilePath != "" {
-		stop, err := cpuprofile.Start(cfg.CpuProfFilePath, logger)
+		stop, err := cpuprofile.Start(ctx, cfg.CpuProfFilePath, logger)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
@@ -116,7 +116,7 @@ func run() error {
 
 	// Start HTTP server.
 	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
-	err = httpserver.Start(apiScp, httpserver.Config{
+	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,

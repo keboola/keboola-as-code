@@ -1,6 +1,7 @@
 package version
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -14,7 +15,7 @@ type versionInfo struct {
 	Version *int `json:"version"`
 }
 
-func CheckManifestVersion(logger log.Logger, fs filesystem.Fs, manifestPath string) (err error) {
+func CheckManifestVersion(ctx context.Context, logger log.Logger, fs filesystem.Fs, manifestPath string) (err error) {
 	// Read manifest file
 	file, err := fs.ReadFile(filesystem.NewFileDef(manifestPath).SetDescription(`manifest`))
 	if err != nil {
@@ -44,9 +45,9 @@ Warning: Your project needs to be migrated to the new version of the Keboola CLI
   2. Then run "kbc pull --force" to overwrite local state.
   3. Manually check that there are no unexpected changes in the project directory (git diff).
 		`
-		logger.Warn(strings.TrimLeft(warning, "\n"))
+		logger.WarnCtx(ctx, strings.TrimLeft(warning, "\n"))
 	} else {
-		logger.Debugf(`Version "%d" in "%s" is up to date.`, version, manifestPath)
+		logger.DebugfCtx(ctx, `Version "%d" in "%s" is up to date.`, version, manifestPath)
 	}
 
 	return nil

@@ -14,7 +14,7 @@ import (
 func Logger(baseLogger log.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// Skip access log if it is disabledd
+			// Skip access log if it is disabled
 			if isAccessLogDisabled(req) {
 				next.ServeHTTP(w, req)
 				return

@@ -63,7 +63,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Print remaining untracked paths
 	if o.LogUntrackedPaths {
-		projectState.LogUntrackedPaths(logger)
+		projectState.LogUntrackedPaths(ctx, logger)
 	}
 
 	// Normalize paths

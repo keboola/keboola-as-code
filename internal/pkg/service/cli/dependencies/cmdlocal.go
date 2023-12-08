@@ -96,7 +96,7 @@ func (v *localCommandScope) LocalProject(ignoreErrors bool) (*projectPkg.Project
 		}
 
 		// Check manifest compatibility
-		if err := version.CheckManifestVersion(v.Logger(), fs, projectManifest.Path()); err != nil {
+		if err := version.CheckManifestVersion(v.CommandCtx(), v.Logger(), fs, projectManifest.Path()); err != nil {
 			return localProjectValue{found: true}, err
 		}
 

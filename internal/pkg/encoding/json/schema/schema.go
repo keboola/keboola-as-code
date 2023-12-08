@@ -2,6 +2,7 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"sort"
 	"strings"
 
@@ -20,7 +21,7 @@ import (
 // pseudoSchemaFile - the validated schema is registered as this resource.
 const pseudoSchemaFile = "file:///schema.json"
 
-func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
+func ValidateObjects(ctx context.Context, logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
 		// Validate only local files
@@ -35,7 +36,7 @@ func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 
 		var schemaErr *SchemaError
 		if err := ValidateConfig(component, config.Local); errors.As(err, &schemaErr) {
-			logger.Warn(errors.PrefixErrorf(schemaErr.Unwrap(), `config JSON schema of the component "%s" is invalid, please contact support`, component.ID))
+			logger.WarnCtx(ctx, errors.PrefixErrorf(schemaErr.Unwrap(), `config JSON schema of the component "%s" is invalid, please contact support`, component.ID))
 		} else if err != nil {
 			errs.AppendWithPrefixf(err, "config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile))
 		}
@@ -54,7 +55,7 @@ func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 
 		var schemaErr *SchemaError
 		if err := ValidateConfigRow(component, row.Local); errors.As(err, &schemaErr) {
-			logger.Warn(errors.PrefixErrorf(schemaErr.Unwrap(), `config row JSON schema of the component "%s" is invalid, please contact support`, component.ID))
+			logger.WarnCtx(ctx, errors.PrefixErrorf(schemaErr.Unwrap(), `config row JSON schema of the component "%s" is invalid, please contact support`, component.ID))
 		} else if err != nil {
 			errs.AppendWithPrefixf(err, "config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile))
 		}
