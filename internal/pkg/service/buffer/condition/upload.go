@@ -35,8 +35,8 @@ func (c *Checker) shouldUpload(ctx context.Context, now time.Time, sliceKey key.
 	return ok, reason, nil
 }
 
-func (c *Checker) StartSwapSliceTask(fileManager *file.AuthorizedManager, sliceKey key.SliceKey) error {
-	return c.tasks.StartTaskOrErr(task.Config{
+func (c *Checker) StartSwapSliceTask(ctx context.Context, fileManager *file.AuthorizedManager, sliceKey key.SliceKey) error {
+	return c.tasks.StartTaskOrErr(ctx, task.Config{
 		Type: sliceSwapTaskType,
 		Key: task.Key{
 			ProjectID: sliceKey.ProjectID,

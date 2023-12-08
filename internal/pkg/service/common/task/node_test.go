@@ -57,7 +57,7 @@ func TestSuccessfulTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(task.Config{
+	_, err := node1.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -72,7 +72,7 @@ func TestSuccessfulTask(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -136,7 +136,7 @@ task/123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -333,7 +333,7 @@ func TestFailedTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(task.Config{
+	_, err := node1.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -350,7 +350,7 @@ func TestFailedTask(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -414,7 +414,7 @@ task/123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -654,7 +654,7 @@ func TestTaskTimeout(t *testing.T) {
 	tel.Reset()
 
 	// Start task
-	_, err := node1.StartTask(task.Config{
+	_, err := node1.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -823,7 +823,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	etcdhelper.ExpectModification(t, client, func() {
-		_, err := node1.StartTask(task.Config{
+		_, err := node1.StartTask(ctx, task.Config{
 			Key:  tKey,
 			Type: taskType,
 			Lock: lock,

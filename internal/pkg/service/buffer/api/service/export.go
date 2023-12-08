@@ -45,7 +45,7 @@ func (s *service) CreateExport(ctx context.Context, d dependencies.ProjectReques
 		return nil, err
 	}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := d.TaskNode().StartTask(ctx, task.Config{
 		Type: exportCreateTaskType,
 		Key: task.Key{
 			ProjectID: receiverKey.ProjectID,
@@ -93,7 +93,7 @@ func (s *service) UpdateExport(ctx context.Context, d dependencies.ProjectReques
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := d.TaskNode().StartTask(ctx, task.Config{
 		Type: exportUpdateTaskType,
 		Key: task.Key{
 			ProjectID: receiverKey.ProjectID,
