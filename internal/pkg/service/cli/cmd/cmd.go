@@ -396,7 +396,7 @@ func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
 		}
 
 		// Process panic
-		exitCode = cli.ProcessPanic(panicErr, root.logger, logFilePath)
+		exitCode = cli.ProcessPanic(root.Context(), panicErr, root.logger, logFilePath)
 	}
 
 	// Close log file
