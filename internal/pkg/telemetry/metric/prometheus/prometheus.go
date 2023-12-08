@@ -70,7 +70,7 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 		logger.InfofCtx(ctx, `HTTP server listening on "%s/%s"`, listenAddr, Endpoint)
 		shutdown(srv.ListenAndServe())
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfofCtx(ctx, `shutting down HTTP server at "%s"`, listenAddr)
 
 		// Shutdown gracefully with a 30s timeout.

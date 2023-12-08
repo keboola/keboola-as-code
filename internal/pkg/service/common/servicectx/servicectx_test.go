@@ -50,13 +50,13 @@ func TestProcess_Add(t *testing.T) {
 		<-startShutdown
 		shutdown(errors.New("operation failed"))
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfoCtx(ctx, "onShutdown1")
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfoCtx(ctx, "onShutdown2")
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		op3.Wait()
 		logger.InfoCtx(ctx, "onShutdown3")
 	})
@@ -121,13 +121,13 @@ func TestProcess_Shutdown(t *testing.T) {
 		logger.InfoCtx(ctx, "end3")
 		op3.Done()
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfoCtx(ctx, "onShutdown1")
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfoCtx(ctx, "onShutdown2")
 	})
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		op3.Wait()
 		logger.InfoCtx(ctx, "onShutdown3")
 	})

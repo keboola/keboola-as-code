@@ -55,7 +55,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	})
 
 	// Register graceful shutdown
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfofCtx(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
 
 		// Shutdown gracefully with a timeout.

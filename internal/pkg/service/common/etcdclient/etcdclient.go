@@ -191,7 +191,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	}
 
 	// Close client when shutting down the server
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		startTime := time.Now()
 		logger.InfoCtx(ctx, "closing etcd connection")
 		if err := c.Close(); err != nil {

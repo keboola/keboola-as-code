@@ -29,7 +29,7 @@ type Process struct {
 
 type Option func(c *config)
 
-type OnShutdownFn func()
+type OnShutdownFn func(ctx context.Context)
 
 type ShutdownFn func(error)
 
@@ -99,7 +99,7 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 
 		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
 		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
-			proc.onShutdown[i]()
+			proc.onShutdown[i](ctx)
 		}
 	})
 

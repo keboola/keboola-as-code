@@ -67,12 +67,12 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		d.Logger().Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		d.Logger().InfoCtx(ctx, "received shutdown request")
 		cancel()
-		d.Logger().Info("waiting for orchestrators")
+		d.Logger().InfoCtx(ctx, "waiting for orchestrators")
 		wg.Wait()
-		d.Logger().Info("shutdown done")
+		d.Logger().InfoCtx(ctx, "shutdown done")
 	})
 
 	// Tasks cleanup
