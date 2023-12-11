@@ -13,7 +13,7 @@ type ctxKey string
 
 const FileDefCtxKey = ctxKey("fileDef")
 
-func (m *jsonnetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
+func (m *jsonnetMapper) LoadLocalFile(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 	// Load Jsonnet file instead of Json file
 	if def.HasTag(model.FileTypeJSON) {
 		// Modify metadata
@@ -22,7 +22,7 @@ func (m *jsonnetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		def.SetPath(strings.TrimSuffix(def.Path(), `.json`) + `.jsonnet`)
 
 		// Load Jsonnet file
-		f, err := next(context.TODO(), def, filesystem.FileTypeJsonnet)
+		f, err := next(ctx, def, filesystem.FileTypeJsonnet)
 		if err != nil {
 			return nil, err
 		}
@@ -44,5 +44,5 @@ func (m *jsonnetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		}
 	}
 
-	return next(context.TODO(), def, fileType)
+	return next(ctx, def, fileType)
 }
