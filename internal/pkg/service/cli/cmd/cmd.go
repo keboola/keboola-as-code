@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -158,17 +157,16 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
 
 		// Create process abstraction
-		ctx, cancel := context.WithCancel(cmd.Context())
-		proc, err := servicectx.New(ctx, cancel)
+		proc, err := servicectx.New()
 		if err != nil {
 			return err
 		}
 
 		// Create dependencies provider
-		p.Set(dependencies.NewProvider(ctx, root.logger, proc, root.fs, dialog.New(prompt, root.options), root.options))
+		p.Set(dependencies.NewProvider(cmd.Context(), root.logger, proc, root.fs, dialog.New(prompt, root.options), root.options))
 
 		// Check version
-		if err := versionCheck.Run(ctx, root.options.GetBool("version-check"), p.BaseScope()); err != nil {
+		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseScope()); err != nil {
 			// Ignore error, send to logs
 			root.logger.DebugfCtx(cmd.Context(), `Version check: %s.`, err.Error())
 		} else {

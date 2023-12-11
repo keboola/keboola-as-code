@@ -274,7 +274,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Create service process
 	cfg.procOpts = append([]servicectx.Option{servicectx.WithLogger(logger)}, cfg.procOpts...)
-	proc := servicectx.NewForTest(t, cfg.ctx, cfg.procOpts...)
+	proc := servicectx.NewForTest(t, cfg.procOpts...)
 
 	// Create dependencies container
 	var err error
