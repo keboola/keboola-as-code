@@ -15,12 +15,11 @@ import (
 )
 
 type Process struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
+	uniqueID string
+
 	logger   log.Logger
 	wg       *sync.WaitGroup
 	errCh    chan error
-	uniqueID string
 
 	lock          *sync.Mutex
 	terminating   bool
@@ -53,7 +52,7 @@ func WithLogger(v log.Logger) Option {
 	}
 }
 
-func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Process, error) {
+func New(opts ...Option) (*Process, error) {
 	// Apply options
 	c := config{}
 	for _, o := range opts {
@@ -88,8 +87,6 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 	shutdownCtxCh := make(chan context.Context, 1)
 
 	proc := &Process{
-		ctx:           ctx,
-		cancel:        cancel,
 		logger:        c.logger,
 		wg:            &sync.WaitGroup{},
 		errCh:         errCh,
@@ -128,29 +125,21 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 	return proc, nil
 }
 
-func NewForTest(t *testing.T, ctx context.Context, opts ...Option) *Process {
+func NewForTest(t *testing.T, opts ...Option) *Process {
 	t.Helper()
 
-	ctx, cancel := context.WithCancel(ctx)
-	proc, err := New(ctx, cancel, opts...)
+	proc, err := New(opts...)
 	if err != nil {
 		t.Fatal(err)
 		return nil
 	}
 
 	t.Cleanup(func() {
-		proc.Shutdown(ctx, errors.New("test cleanup"))
+		proc.Shutdown(context.Background(), errors.New("test cleanup"))
 		proc.WaitForShutdown()
 	})
 
 	return proc
-}
-
-// Ctx returns context of the Process.
-// The context in canceled immediately as the process receives termination request.
-// Then follows a graceful shutdown during which the context is already canceled.
-func (v *Process) Ctx() context.Context {
-	return v.ctx
 }
 
 // Shutdown triggers termination of the Process.
