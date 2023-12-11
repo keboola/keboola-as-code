@@ -18,7 +18,7 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/push/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Command must be used in project directory
-			_, _, err := p.BaseScope().FsInfo().ProjectDir()
+			_, _, err := p.BaseScope().FsInfo().ProjectDir(cmd.Context())
 			if err != nil {
 				return err
 			}
