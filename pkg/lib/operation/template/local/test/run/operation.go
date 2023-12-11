@@ -53,7 +53,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}()
 
 	// Run through all tests
-	tests, err := tmpl.Tests()
+	tests, err := tmpl.Tests(ctx)
 	if err != nil {
 		return errors.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateID(), err)
 	}
@@ -131,7 +131,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDirFs, err := test.ExpectedOutDir()
+	expectedDirFs, err := test.ExpectedOutDir(ctx)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDirFs, err := test.ExpectedOutDir()
+	expectedDirFs, err := test.ExpectedOutDir(ctx)
 	if err != nil {
 		return err
 	}

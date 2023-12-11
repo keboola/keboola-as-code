@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 	defer unlockFn()
 
-	assert.True(t, repo.Fs().Exists("template1"))
+	assert.True(t, repo.Fs().Exists(context.Background(), "template1"))
 }
 
 func TestRepository(t *testing.T) {
@@ -117,10 +117,10 @@ func TestRepositoryUpdate(t *testing.T) {
 	// Check FS
 	repoInst, unlock, err := m.Repository(ctx, repo)
 	assert.NoError(t, err)
-	assert.True(t, repoInst.Fs().Exists(".keboola"))
-	assert.True(t, repoInst.Fs().Exists("_common"))
-	assert.True(t, repoInst.Fs().Exists("template1"))
-	assert.False(t, repoInst.Fs().Exists("template2"))
+	assert.True(t, repoInst.Fs().Exists(ctx, ".keboola"))
+	assert.True(t, repoInst.Fs().Exists(ctx, "_common"))
+	assert.True(t, repoInst.Fs().Exists(ctx, "template1"))
+	assert.False(t, repoInst.Fs().Exists(ctx, "template2"))
 	unlock()
 
 	// 1. update - no change
@@ -135,10 +135,10 @@ func TestRepositoryUpdate(t *testing.T) {
 	// Check FS
 	repoInst, unlock, err = m.Repository(ctx, repo)
 	assert.NoError(t, err)
-	assert.True(t, repoInst.Fs().Exists(".keboola"))
-	assert.False(t, repoInst.Fs().Exists("_common"))
-	assert.False(t, repoInst.Fs().Exists("template1"))
-	assert.True(t, repoInst.Fs().Exists("template2"))
+	assert.True(t, repoInst.Fs().Exists(ctx, ".keboola"))
+	assert.False(t, repoInst.Fs().Exists(ctx, "_common"))
+	assert.False(t, repoInst.Fs().Exists(ctx, "template1"))
+	assert.True(t, repoInst.Fs().Exists(ctx, "template2"))
 	unlock()
 
 	// Check metrics

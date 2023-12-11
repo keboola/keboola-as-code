@@ -3,8 +3,6 @@ package template
 import (
 	"context"
 	"fmt"
-	"io/fs"
-
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
@@ -217,9 +215,9 @@ func (t *Template) SrcDir() filesystem.Fs {
 	return t.srcDir
 }
 
-func (t *Template) TestsDir() (filesystem.Fs, error) {
+func (t *Template) TestsDir(ctx context.Context) (filesystem.Fs, error) {
 	if t.testsDir == nil {
-		if !t.fs.IsDir(TestsDirectory) {
+		if !t.fs.IsDir(ctx, TestsDirectory) {
 			return nil, errors.Errorf(`directory "%s" not found`, TestsDirectory)
 		}
 		testDir, err := t.fs.SubDirFs(TestsDirectory)
@@ -233,22 +231,22 @@ func (t *Template) TestsDir() (filesystem.Fs, error) {
 	return t.testsDir, nil
 }
 
-func (t *Template) Tests() (res []*Test, err error) {
-	testsDir, err := t.TestsDir()
+func (t *Template) Tests(ctx context.Context) (res []*Test, err error) {
+	testsDir, err := t.TestsDir(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// List sub files/directories
-	paths, err := testsDir.Glob("*")
+	paths, err := testsDir.Glob(ctx, "*")
 	if err != nil {
 		return nil, err
 	}
 
 	// Each subdirectory is a test
 	for _, testName := range paths {
-		if testsDir.IsDir(testName) {
-			test, err := t.Test(testName)
+		if testsDir.IsDir(ctx, testName) {
+			test, err := t.Test(ctx, testName)
 			if err != nil {
 				return nil, err
 			}
@@ -259,13 +257,13 @@ func (t *Template) Tests() (res []*Test, err error) {
 	return res, nil
 }
 
-func (t *Template) Test(testName string) (*Test, error) {
-	testsDir, err := t.TestsDir()
+func (t *Template) Test(ctx context.Context, testName string) (*Test, error) {
+	testsDir, err := t.TestsDir(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if !testsDir.IsDir(testName) {
+	if !testsDir.IsDir(ctx, testName) {
 		return nil, errors.Errorf(`test "%s" not found in template "%s"`, testName, t.FullName())
 	}
 
@@ -277,14 +275,14 @@ func (t *Template) Test(testName string) (*Test, error) {
 	return &Test{name: testName, tmpl: t, fs: testDir}, nil
 }
 
-func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjState *project.State, tmplInst string) error {
-	testsDir, err := t.TestsDir()
+func (t *Template) CreateTest(ctx context.Context, testName string, inputsValues InputsValues, prjState *project.State, tmplInst string) error {
+	testsDir, err := t.TestsDir(ctx)
 	if err != nil {
 		return err
 	}
 
-	if !testsDir.IsDir(testName) {
-		err = testsDir.Mkdir(testName)
+	if !testsDir.IsDir(ctx, testName) {
+		err = testsDir.Mkdir(ctx, testName)
 		if err != nil {
 			return err
 		}
@@ -298,13 +296,13 @@ func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjSta
 	test := &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}}
 
 	// Save gathered inputs to the template test inputs.json
-	err = test.saveInputs(inputsValues)
+	err = test.saveInputs(ctx, inputsValues)
 	if err != nil {
 		return err
 	}
 
 	// Save output from use template operation to the template test
-	return test.saveExpectedOutput(prjState, tmplInst)
+	return test.saveExpectedOutput(ctx, prjState, tmplInst)
 }
 
 func (t *Template) LongDesc() string {
@@ -327,8 +325,8 @@ func (t *Template) ManifestPath() string {
 	return templateManifest.Path()
 }
 
-func (t *Template) ManifestExists() (bool, error) {
-	return t.srcDir.IsFile(t.ManifestPath()), nil
+func (t *Template) ManifestExists(ctx context.Context) (bool, error) {
+	return t.srcDir.IsFile(ctx, t.ManifestPath()), nil
 }
 
 func (t *Template) LoadState(ctx Context, options loadState.Options, d dependencies) (*State, error) {
@@ -420,8 +418,8 @@ func (t *Test) Name() string {
 	return t.name
 }
 
-func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
-	if !t.fs.IsDir(ExpectedOutDirectory) {
+func (t *Test) ExpectedOutDir(ctx context.Context) (filesystem.Fs, error) {
+	if !t.fs.IsDir(ctx, ExpectedOutDirectory) {
 		return nil, errors.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, t.name)
 	}
 
@@ -440,9 +438,9 @@ func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
 	return copyFs, nil
 }
 
-func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
+func (t *Test) Inputs(ctx context.Context, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
 	// Read inputs file
-	file, err := t.fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
+	file, err := t.fs.ReadFile(ctx, filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +462,7 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	return inputs, nil
 }
 
-func (t *CreatedTest) saveInputs(inputsValues InputsValues) error {
+func (t *CreatedTest) saveInputs(ctx context.Context, inputsValues InputsValues) error {
 	res := make(map[string]interface{})
 	for k, v := range inputsValues.ToMap() {
 		res[k] = v.Value
@@ -478,13 +476,13 @@ func (t *CreatedTest) saveInputs(inputsValues InputsValues) error {
 
 	// Write file
 	f := filesystem.NewRawFile(InputsFile, jsonContent)
-	return t.fs.WriteFile(f)
+	return t.fs.WriteFile(ctx, f)
 }
 
-func (t *CreatedTest) saveExpectedOutput(prjState *project.State, tmplInst string) error {
+func (t *CreatedTest) saveExpectedOutput(ctx context.Context, prjState *project.State, tmplInst string) error {
 	// Get expected output dir
-	if !t.fs.IsDir(ExpectedOutDirectory) {
-		err := t.fs.Mkdir(ExpectedOutDirectory)
+	if !t.fs.IsDir(ctx, ExpectedOutDirectory) {
+		err := t.fs.Mkdir(ctx, ExpectedOutDirectory)
 		if err != nil {
 			return err
 		}
@@ -496,7 +494,7 @@ func (t *CreatedTest) saveExpectedOutput(prjState *project.State, tmplInst strin
 	}
 
 	// Replace real IDs for placeholders
-	err = replacePlaceholdersInManifest(prjState, tmplInst)
+	err = replacePlaceholdersInManifest(ctx, prjState, tmplInst)
 	if err != nil {
 		return err
 	}
@@ -504,8 +502,8 @@ func (t *CreatedTest) saveExpectedOutput(prjState *project.State, tmplInst strin
 	return aferofs.CopyFs2Fs(prjState.Fs(), "/", expectedFS, "/")
 }
 
-func replacePlaceholdersInManifest(prjState *project.State, tmplInst string) error {
-	file, err := prjState.Fs().ReadFile(filesystem.NewFileDef(".keboola/manifest.json"))
+func replacePlaceholdersInManifest(ctx context.Context, prjState *project.State, tmplInst string) error {
+	file, err := prjState.Fs().ReadFile(ctx, filesystem.NewFileDef(".keboola/manifest.json"))
 	if err != nil {
 		return err
 	}
@@ -543,5 +541,5 @@ func replacePlaceholdersInManifest(prjState *project.State, tmplInst string) err
 		MustCompile(`\\"rowId\\":\\"\d+\\"`).
 		ReplaceAllString(file.Content, `\"rowId\":\"%s\"`)
 
-	return prjState.Fs().WriteFile(file)
+	return prjState.Fs().WriteFile(ctx, file)
 }

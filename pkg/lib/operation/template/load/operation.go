@@ -61,7 +61,7 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 
 	// Check if template dir exists
 	templatePath := filesystem.Join(templateRecord.Path, versionRecord.Path)
-	if !repository.Fs().IsDir(templatePath) {
+	if !repository.Fs().IsDir(ctx, templatePath) {
 		return nil, errors.Errorf(`template dir "%s" not found`, templatePath)
 	}
 

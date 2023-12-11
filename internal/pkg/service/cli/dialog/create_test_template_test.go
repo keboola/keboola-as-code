@@ -83,7 +83,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 
 	// Run
 	o.Set(`test-name`, `one`)
-	opts, warnings, err := dialog.AskCreateTemplateTestOptions(tmpl)
+	opts, warnings, err := dialog.AskCreateTemplateTestOptions(context.Background(), tmpl)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
