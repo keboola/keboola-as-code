@@ -951,7 +951,7 @@ func (tc *testCase) run(t *testing.T) {
 	}
 
 	// Get plan
-	plan, err := NewPlan(ctx,projectState.State())
+	plan, err := NewPlan(ctx, projectState.State())
 	assert.NoError(t, err)
 
 	// Delete callbacks for easier comparison (we only check callbacks result)

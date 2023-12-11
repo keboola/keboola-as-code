@@ -2,6 +2,7 @@ package fsimporter
 
 import (
 	"context"
+
 	"github.com/google/go-jsonnet"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

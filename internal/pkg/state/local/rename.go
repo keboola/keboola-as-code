@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"

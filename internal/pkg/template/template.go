@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 

@@ -341,7 +341,7 @@ func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.F
 }
 
 func (*testCases) TestFileLoader_ReadSubDirs(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background();
+	ctx := context.Background()
 	// Create dirs and kbcdir files
 	assert.NoError(t, fs.Mkdir(ctx, "dir1"))
 	assert.NoError(t, fs.Mkdir(ctx, "dir2"))

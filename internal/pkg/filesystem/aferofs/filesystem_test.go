@@ -210,7 +210,7 @@ func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 
 	paths := make([]string, 0)
 	root := "."
-	err := fs.Walk(ctx, root, func(path string, info iofs.FileInfo,  err error) error {
+	err := fs.Walk(ctx, root, func(path string, info iofs.FileInfo, err error) error {
 		// Skip root
 		if root == path {
 			return nil
