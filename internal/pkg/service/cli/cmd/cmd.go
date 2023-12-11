@@ -145,7 +145,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		}
 
 		// Load values from flags and envs
-		if err = root.options.Load(root.logger, envs, root.fs, cmd.Flags()); err != nil {
+		if err = root.options.Load(cmd.Context(), root.logger, envs, root.fs, cmd.Flags()); err != nil {
 			return err
 		}
 
@@ -396,7 +396,7 @@ func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
 		}
 
 		// Process panic
-		exitCode = cli.ProcessPanic(panicErr, root.logger, logFilePath)
+		exitCode = cli.ProcessPanic(root.Context(), panicErr, root.logger, logFilePath)
 	}
 
 	// Close log file

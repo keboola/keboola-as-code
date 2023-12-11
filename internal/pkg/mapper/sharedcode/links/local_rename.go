@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
+func (m *mapper) onRename(ctx context.Context, renamedObjects []model.RenameAction) error {
 	errs := errors.NewMultiError()
 
 	// Find renamed shared codes
@@ -34,9 +34,9 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 
 	// Log
 	if len(renamedSharedCodes) > 0 {
-		m.logger.Debug(`Found renamed shared codes:`)
+		m.logger.DebugCtx(ctx, `Found renamed shared codes:`)
 		for _, key := range renamedSharedCodes {
-			m.logger.Debugf(`  - %s`, key.Desc())
+			m.logger.DebugfCtx(ctx, `  - %s`, key.Desc())
 		}
 	}
 
@@ -49,7 +49,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 		}
 
 		// Re-save config -> new "shared_code_path" will be saved.
-		m.logger.Debugf(`Need to update shared codes in "%s"`, configState.Path())
+		m.logger.DebugfCtx(ctx, `Need to update shared codes in "%s"`, configState.Path())
 		uow.SaveObject(configState, configState.Local, model.NewChangedFields("configuration"))
 	}
 

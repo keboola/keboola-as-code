@@ -43,7 +43,7 @@ func (s *service) CreateReceiver(ctx context.Context, d dependencies.ProjectRequ
 		}, "/")),
 	}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := d.TaskNode().StartTask(ctx, task.Config{
 		Type: receiverCreateTaskType,
 		Key:  taskKey,
 		Context: func() (context.Context, context.CancelFunc) {

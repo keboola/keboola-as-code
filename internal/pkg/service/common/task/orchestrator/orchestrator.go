@@ -93,7 +93,7 @@ func (o orchestrator[T]) watch(timeout time.Duration, onReady func()) error {
 		}).
 		WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, _ bool) {
 			for _, event := range events {
-				o.startTask(event)
+				o.startTask(ctx, event)
 			}
 		}).
 		StartConsumer(o.node.wg)
@@ -114,7 +114,7 @@ func (o orchestrator[T]) watch(timeout time.Duration, onReady func()) error {
 }
 
 // startTask for the event received from the watched prefix.
-func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
+func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT[T]) {
 	// Check event type
 	if event.Type != etcdop.CreateEvent {
 		return
@@ -161,7 +161,7 @@ func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 		Context:   o.config.TaskCtx,
 		Operation: taskFn,
 	}
-	if _, err := o.node.tasks.StartTask(taskCfg); err != nil {
+	if _, err := o.node.tasks.StartTask(ctx, taskCfg); err != nil {
 		o.logger.Error(err)
 	}
 }

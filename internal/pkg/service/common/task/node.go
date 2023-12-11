@@ -133,15 +133,15 @@ func (n *Node) TasksCount() int64 {
 }
 
 // StartTaskOrErr in background, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) StartTaskOrErr(cfg Config) error {
-	_, err := n.StartTask(cfg)
+func (n *Node) StartTaskOrErr(ctx context.Context, cfg Config) error {
+	_, err := n.StartTask(ctx, cfg)
 	return err
 }
 
 // StartTask in background, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) StartTask(cfg Config) (t *Task, err error) {
+func (n *Node) StartTask(ctx context.Context, cfg Config) (t *Task, err error) {
 	// Prepare task, acquire lock
-	task, fn, err := n.prepareTask(cfg)
+	task, fn, err := n.prepareTask(ctx, cfg)
 
 	// Run task in background, if it is prepared
 	if fn != nil {
@@ -163,7 +163,7 @@ func (n *Node) RunTaskOrErr(cfg Config) error {
 // RunTask in foreground, the task run at most once, it is provided by local lock and etcd transaction.
 func (n *Node) RunTask(cfg Config) (t *Task, err error) {
 	// Prepare task, acquire lock, handle error during prepare phase
-	task, fn, err := n.prepareTask(cfg)
+	task, fn, err := n.prepareTask(n.tasksCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (n *Node) RunTask(cfg Config) (t *Task, err error) {
 	return task, result.Error
 }
 
-func (n *Node) prepareTask(cfg Config) (t *Task, fn runTaskFn, err error) {
+func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTaskFn, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -227,13 +227,13 @@ func (n *Node) prepareTask(cfg Config) (t *Task, fn runTaskFn, err error) {
 		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
 		unlock()
-		logger.Infof(`task ignored, the lock "%s" is in use`, lock.Key())
+		logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil, nil
 	}
 
 	// Run operation in the background
-	logger.Infof(`started task`)
-	logger.Debugf(`lock acquired "%s"`, task.Lock.Key())
+	logger.InfofCtx(ctx, `started task`)
+	logger.DebugfCtx(ctx, `lock acquired "%s"`, task.Lock.Key())
 
 	// Return function, task is prepared, lock is locked, it can be run in background/foreground.
 	fn = func() (Result, error) {

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ func TestProcessPanic(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	logFilePath := "/foo/bar.log"
-	exitCode := ProcessPanic(errors.New("test"), logger, logFilePath)
+	exitCode := ProcessPanic(context.Background(), errors.New("test"), logger, logFilePath)
 	assert.Equal(t, 1, exitCode)
 	logStr := logger.AllMessages()
 	assert.Contains(t, logStr, "DEBUG  Unexpected panic: test")

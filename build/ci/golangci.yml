@@ -47,12 +47,12 @@ linters-settings:
       - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$(# "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client\.Transport = httpmock\.NewMockTransport() instead)?
       # Os ENVs singleton is forbidden, use env.Map instead
       - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$(# Os ENVs singleton is forbidden, use env\.Map instead)?
-      # No errors.Errorf, use errors.Errorf instead to include stack trace
+      # No fmt.Errorf, use errors.Errorf instead to include stack trace
       - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
       - ^gonanoid\..*$(# Use "internal/pkg/idgenerator" package instead)?
       # No logger calls without context, use a method with Ctx suffix instead
-      # - ^(l|(root\.)?logger)\.(Log|Debugf?|Infof?|Warnf?|Errorf?)$(# Use a method with Ctx suffix instead)?
+      - ^(l|(root\.)?logger)\.(Log|Debugf?|Infof?|Warnf?|Errorf?)$(# Use a method with Ctx suffix instead)?
   depguard:
     list-type: denylist
     include-go-root: true

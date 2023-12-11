@@ -213,7 +213,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 		TaskID:    task.ID(TemplateUseTaskType),
 	}
 
-	t, err := s.tasks.StartTask(task.Config{
+	t, err := s.tasks.StartTask(ctx, task.Config{
 		Type: TemplateUseTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -429,7 +429,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 		TaskID:    task.ID(TemplateUpgradeTaskType),
 	}
 
-	t, err := s.tasks.StartTask(task.Config{
+	t, err := s.tasks.StartTask(ctx, task.Config{
 		Type: TemplateUpgradeTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {

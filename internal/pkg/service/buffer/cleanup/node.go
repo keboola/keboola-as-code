@@ -99,7 +99,7 @@ func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) 
 		return nil, err
 	}
 
-	return n.tasks.StartTask(task.Config{
+	return n.tasks.StartTask(ctx, task.Config{
 		Type: taskTypeReceiverCleanup,
 		Key: task.Key{
 			ProjectID: k.ProjectID,

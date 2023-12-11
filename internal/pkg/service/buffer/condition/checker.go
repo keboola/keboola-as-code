@@ -150,7 +150,7 @@ func (c *Checker) check(ctx context.Context) {
 			c.logger.Error(err)
 		} else if importOk {
 			c.logger.Infof(`closing file "%s": %s`, slice.FileKey, reason)
-			if err := c.startSwapFileTask(fileManager, slice.FileKey); err != nil {
+			if err := c.startSwapFileTask(ctx, fileManager, slice.FileKey); err != nil {
 				c.logger.Error(err)
 			}
 		} else if reason != "" {
@@ -164,7 +164,7 @@ func (c *Checker) check(ctx context.Context) {
 				c.logger.Error(err)
 			} else if uploadOk {
 				c.logger.Infof(`closing slice "%s": %s`, slice.SliceKey, reason)
-				if err := c.StartSwapSliceTask(fileManager, slice.SliceKey); err != nil {
+				if err := c.StartSwapSliceTask(ctx, fileManager, slice.SliceKey); err != nil {
 					c.logger.Error(err)
 				}
 			} else if reason != "" {

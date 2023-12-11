@@ -1,6 +1,7 @@
 package options
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -46,9 +47,9 @@ func New() *Options {
 	}
 }
 
-func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
+func (o *Options) Load(ctx context.Context, logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
 	// Load ENVs from OS and files
-	o.envs = o.loadEnvFiles(logger, osEnvs, fs)
+	o.envs = o.loadEnvFiles(ctx, logger, osEnvs, fs)
 
 	// Bind all flags and corresponding ENVs
 	if setBy, err := cliconfig.BindToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
@@ -80,7 +81,7 @@ func (o *Options) KeySetBy(key string) cliconfig.SetBy {
 	return o.setBy[key]
 }
 
-func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs) *env.Map {
+func (o *Options) loadEnvFiles(ctx context.Context, logger log.Logger, osEnvs *env.Map, fs filesystem.Fs) *env.Map {
 	// File system basePath = projectDir, so here we are using current/top level dir
 	projectDir := `.` // nolint
 	workingDir := fs.WorkingDir()
@@ -93,7 +94,7 @@ func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem
 	}
 
 	// Load ENVs from files
-	return env.LoadDotEnv(logger, osEnvs, fs, dirs)
+	return env.LoadDotEnv(ctx, logger, osEnvs, fs, dirs)
 }
 
 // Dump Options for debugging, hide API token.
