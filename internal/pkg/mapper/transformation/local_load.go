@@ -47,7 +47,7 @@ type localLoader struct {
 
 func (l *localLoader) loadBlocks(ctx context.Context) error {
 	// Load blocks and codes from filesystem
-	for blockIndex, blockDir := range l.blockDirs() {
+	for blockIndex, blockDir := range l.blockDirs(ctx) {
 		block := l.addBlock(ctx, blockIndex, blockDir)
 		for codeIndex, codeDir := range l.codeDirs(ctx, block) {
 			l.addCode(ctx, block, codeIndex, codeDir)
@@ -118,7 +118,7 @@ func (l *localLoader) addCode(ctx context.Context, block *model.Block, codeIndex
 }
 
 func (l *localLoader) addScripts(ctx context.Context, code *model.Code) {
-	code.CodeFileName = l.codeFileName(code)
+	code.CodeFileName = l.codeFileName(ctx, code)
 	if code.CodeFileName == "" {
 		return
 	}
@@ -166,9 +166,9 @@ func (l *localLoader) loadCodeMetaFile(ctx context.Context, code *model.Code) {
 	}
 }
 
-func (l *localLoader) blockDirs() []string {
+func (l *localLoader) blockDirs(ctx context.Context) []string {
 	// Check if blocks dir exists
-	if !l.ObjectsRoot().IsDir(l.blocksDir) {
+	if !l.ObjectsRoot().IsDir(ctx, l.blocksDir) {
 		l.errors.Append(errors.Errorf(`missing blocks dir "%s"`, l.blocksDir))
 		return nil
 	}
@@ -177,15 +177,15 @@ func (l *localLoader) blockDirs() []string {
 	l.ObjectManifest.AddRelatedPath(l.blocksDir)
 
 	// Track .gitkeep, .gitignore
-	if path := filesystem.Join(l.blocksDir, `.gitkeep`); l.ObjectsRoot().IsFile(path) {
+	if path := filesystem.Join(l.blocksDir, `.gitkeep`); l.ObjectsRoot().IsFile(ctx, path) {
 		l.ObjectManifest.AddRelatedPath(path)
 	}
-	if path := filesystem.Join(l.blocksDir, `.gitignore`); l.ObjectsRoot().IsFile(path) {
+	if path := filesystem.Join(l.blocksDir, `.gitignore`); l.ObjectsRoot().IsFile(ctx, path) {
 		l.ObjectManifest.AddRelatedPath(path)
 	}
 
 	// Load all dir entries
-	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
+	dirs, err := l.FileLoader().ReadSubDirs(ctx, l.ObjectsRoot(), l.blocksDir)
 	if err != nil {
 		l.errors.Append(errors.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
 		return nil
@@ -193,8 +193,8 @@ func (l *localLoader) blockDirs() []string {
 	return dirs
 }
 
-func (l *localLoader) codeDirs(_ context.Context, block *model.Block) []string {
-	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), block.Path())
+func (l *localLoader) codeDirs(ctx context.Context, block *model.Block) []string {
+	dirs, err := l.FileLoader().ReadSubDirs(ctx, l.ObjectsRoot(), block.Path())
 	if err != nil {
 		l.errors.Append(errors.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil
@@ -202,10 +202,10 @@ func (l *localLoader) codeDirs(_ context.Context, block *model.Block) []string {
 	return dirs
 }
 
-func (l *localLoader) codeFileName(code *model.Code) string {
+func (l *localLoader) codeFileName(ctx context.Context, code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.ObjectsRoot().Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
+	matches, err := l.ObjectsRoot().Glob(ctx, filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
 	if err != nil {
 		l.errors.Append(errors.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
 		return ""
@@ -218,7 +218,7 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 			continue
 		}
 
-		if l.ObjectsRoot().IsFile(match) {
+		if l.ObjectsRoot().IsFile(ctx, match) {
 			files = append(files, relPath)
 		}
 	}

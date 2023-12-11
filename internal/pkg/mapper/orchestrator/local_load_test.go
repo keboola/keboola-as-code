@@ -63,7 +63,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			),
 	}
 	for _, file := range files {
-		assert.NoError(t, fs.WriteFile(file))
+		assert.NoError(t, fs.WriteFile(context.Background(), file))
 	}
 	logger.Truncate()
 
@@ -235,6 +235,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	logger := d.DebugLogger()
 	fs := state.ObjectsRoot()
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
+	ctx := context.Background()
 
 	// Local files
 	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
@@ -259,9 +260,9 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 			SetDescription(`task config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, fs.WriteFile(file))
+		assert.NoError(t, fs.WriteFile(ctx, file))
 	}
-	assert.NoError(t, fs.Mkdir(phasesDir+`/002-phase-with-deps`))
+	assert.NoError(t, fs.Mkdir(ctx, phasesDir+`/002-phase-with-deps`))
 	logger.Truncate()
 
 	// Load
@@ -291,6 +292,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	logger := d.DebugLogger()
 	fs := state.ObjectsRoot()
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
+	ctx := context.Background()
 	createTargetConfigs(t, state)
 
 	// Local files
@@ -322,7 +324,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 			SetDescription(`phase config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, fs.WriteFile(file))
+		assert.NoError(t, fs.WriteFile(ctx, file))
 	}
 	logger.Truncate()
 

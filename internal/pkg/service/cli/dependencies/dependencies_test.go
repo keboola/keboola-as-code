@@ -28,7 +28,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Create manifest
 	fs := aferofs.NewMemoryFs()
 	manifestContent := `{"version": 2, "project": {"id": 789, "apiHost": "mocked.transport.http"}}`
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
 
 	// Set token
 	opts := options.New()

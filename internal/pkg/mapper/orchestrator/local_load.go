@@ -43,7 +43,7 @@ type localLoader struct {
 
 func (l *localLoader) load(ctx context.Context) error {
 	// Load phases and tasks from filesystem
-	for phaseIndex, phaseDir := range l.phasesDirs() {
+	for phaseIndex, phaseDir := range l.phasesDirs(ctx) {
 		errs := errors.NewMultiError()
 
 		// Process phase
@@ -59,7 +59,7 @@ func (l *localLoader) load(ctx context.Context) error {
 
 		// Process tasks
 		if errs.Len() == 0 {
-			for taskIndex, taskDir := range l.tasksDirs(phase) {
+			for taskIndex, taskDir := range l.tasksDirs(ctx, phase) {
 				if task, err := l.addTask(ctx, taskIndex, phase, taskDir); err == nil {
 					phase.Tasks = append(phase.Tasks, task)
 				} else {
@@ -262,9 +262,9 @@ func (l *localLoader) getTargetConfig(targetPath string) (*model.Config, error) 
 	return configState.Local, nil
 }
 
-func (l *localLoader) phasesDirs() []string {
+func (l *localLoader) phasesDirs(ctx context.Context) []string {
 	// Check if blocks dir exists
-	if !l.ObjectsRoot().IsDir(l.phasesDir) {
+	if !l.ObjectsRoot().IsDir(ctx, l.phasesDir) {
 		l.errors.Append(errors.Errorf(`missing phases dir "%s"`, l.phasesDir))
 		return nil
 	}
@@ -273,15 +273,15 @@ func (l *localLoader) phasesDirs() []string {
 	l.manifest.AddRelatedPath(l.phasesDir)
 
 	// Track .gitkeep, .gitignore
-	if path := filesystem.Join(l.phasesDir, `.gitkeep`); l.ObjectsRoot().IsFile(path) {
+	if path := filesystem.Join(l.phasesDir, `.gitkeep`); l.ObjectsRoot().IsFile(ctx, path) {
 		l.manifest.AddRelatedPath(path)
 	}
-	if path := filesystem.Join(l.phasesDir, `.gitignore`); l.ObjectsRoot().IsFile(path) {
+	if path := filesystem.Join(l.phasesDir, `.gitignore`); l.ObjectsRoot().IsFile(ctx, path) {
 		l.manifest.AddRelatedPath(path)
 	}
 
 	// Load all dir entries
-	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), l.phasesDir)
+	dirs, err := l.FileLoader().ReadSubDirs(ctx, l.ObjectsRoot(), l.phasesDir)
 	if err != nil {
 		l.errors.Append(errors.Errorf(`cannot read orchestrator phases from "%s": %w`, l.phasesDir, err))
 		return nil
@@ -289,8 +289,8 @@ func (l *localLoader) phasesDirs() []string {
 	return dirs
 }
 
-func (l *localLoader) tasksDirs(phase *model.Phase) []string {
-	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), phase.Path())
+func (l *localLoader) tasksDirs(ctx context.Context, phase *model.Phase) []string {
+	dirs, err := l.FileLoader().ReadSubDirs(ctx, l.ObjectsRoot(), phase.Path())
 	if err != nil {
 		l.errors.Append(errors.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.Path(), err))
 		return nil

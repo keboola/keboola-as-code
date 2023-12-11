@@ -320,7 +320,7 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 			}),
 		},
 	})
-	registry := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByID)
+	registry := state.NewRegistry(knownpaths.NewNop(context.Background()), naming.NewRegistry(), components, model.SortByID)
 	assert.NoError(t, registry.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: model.ConfigKey{ComponentID: componentID}},
 		Local:          &model.Config{Content: someContent},

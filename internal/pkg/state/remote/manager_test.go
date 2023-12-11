@@ -490,7 +490,7 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	m := manifest.New(1, "foo.bar")
-	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(context.Background()), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

@@ -44,7 +44,7 @@ func TestKnownPathsIgnoredFile(t *testing.T) {
 func TestKnownPathsFilter(t *testing.T) {
 	t.Parallel()
 
-	paths, err := loadKnownPaths(t, "complex", WithFilter(func(path string) (bool, error) {
+	paths, err := loadKnownPaths(t, "complex", WithFilter(func(ctx context.Context, path string) (bool, error) {
 		isIgnored := strings.Contains(path, "123-branch") || strings.Contains(path, "extractor")
 		return isIgnored, nil
 	}))

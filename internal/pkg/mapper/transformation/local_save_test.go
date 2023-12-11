@@ -28,7 +28,7 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(configState.Manifest(), object, model.NewChangedFields())
 
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(context.Background(), blocksDir))
 
 	// Save
 	err := state.Mapper().MapBeforeLocalSave(context.Background(), recipe)
@@ -52,7 +52,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 
 	configDir := filesystem.Join(`branch`, `config`)
 	blocksDir := filesystem.Join(configDir, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(context.Background(), blocksDir))
 
 	// Prepare
 	object.Content.Set(`foo`, `bar`)

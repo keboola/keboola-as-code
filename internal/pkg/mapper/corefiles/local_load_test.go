@@ -19,6 +19,7 @@ func TestLoadCoreFiles(t *testing.T) {
 	t.Parallel()
 	state := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
+	ctx := context.Background()
 
 	metaFile := `{
   "myKey": "3",
@@ -32,9 +33,9 @@ func TestLoadCoreFiles(t *testing.T) {
 	// Save files
 	object := &fixtures.MockedObject{}
 	manifest := &fixtures.MockedManifest{}
-	assert.NoError(t, fs.Mkdir(manifest.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(manifest.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
+	assert.NoError(t, fs.Mkdir(ctx, manifest.Path()))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(manifest.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
 
 	// Call mapper
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), manifest, object)
