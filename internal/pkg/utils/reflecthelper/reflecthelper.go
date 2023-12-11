@@ -22,7 +22,7 @@ func (f *StructField) JSONName() string {
 	return f.StructField.Name
 }
 
-func MapFromTaggedFields(tag string, model interface{}) *orderedmap.OrderedMap {
+func MapFromTaggedFields(tag string, model any) *orderedmap.OrderedMap {
 	fields := GetFieldsWithTag(tag, model)
 	if len(fields) == 0 {
 		return nil
@@ -37,7 +37,7 @@ func MapFromTaggedFields(tag string, model interface{}) *orderedmap.OrderedMap {
 	return target
 }
 
-func MapFromOneTaggedField(tag string, model interface{}) *orderedmap.OrderedMap {
+func MapFromOneTaggedField(tag string, model any) *orderedmap.OrderedMap {
 	field := GetOneFieldWithTag(tag, model)
 	if field == nil {
 		return nil
@@ -47,7 +47,7 @@ func MapFromOneTaggedField(tag string, model interface{}) *orderedmap.OrderedMap
 	return m.Clone()
 }
 
-func StringFromOneTaggedField(tag string, model interface{}) (str string, found bool) {
+func StringFromOneTaggedField(tag string, model any) (str string, found bool) {
 	field := GetOneFieldWithTag(tag, model)
 	if field == nil {
 		return "", false
@@ -60,7 +60,7 @@ func StringFromOneTaggedField(tag string, model interface{}) (str string, found 
 	return reflection.FieldByName(field.Name).Interface().(string), true
 }
 
-func GetFieldsWithTag(tag string, model interface{}) []*StructField {
+func GetFieldsWithTag(tag string, model any) []*StructField {
 	parts := strings.SplitN(tag, ":", 2)
 	tagName, tagValue := parts[0], parts[1]
 
@@ -84,7 +84,7 @@ func GetFieldsWithTag(tag string, model interface{}) []*StructField {
 	return fields
 }
 
-func GetOneFieldWithTag(tag string, model interface{}) *StructField {
+func GetOneFieldWithTag(tag string, model any) *StructField {
 	fields := GetFieldsWithTag(tag, model)
 	if len(fields) > 1 {
 		panic(errors.Errorf("struct \"%T\" has multiple fields with tag `%s`, but only one allowed", model, tag))
@@ -97,7 +97,7 @@ func GetOneFieldWithTag(tag string, model interface{}) *StructField {
 	return nil
 }
 
-func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interface{}) {
+func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target any) {
 	reflection := unwrap(reflect.ValueOf(target))
 	for _, field := range fields {
 		// Set value, some values are optional, model will be validated later
@@ -107,7 +107,7 @@ func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interf
 	}
 }
 
-func SetField(field *StructField, value, target interface{}) {
+func SetField(field *StructField, value, target any) {
 	reflection := reflect.ValueOf(target).Elem()
 	reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
 }
@@ -118,7 +118,7 @@ type objectWithName interface {
 }
 
 // SortByName - in tests are IDs and sort random -> so we must sort by name.
-func SortByName(slice interface{}) interface{} {
+func SortByName(slice any) any {
 	// Check slice
 	t := reflect.TypeOf(slice)
 	if t.Kind() != reflect.Slice {

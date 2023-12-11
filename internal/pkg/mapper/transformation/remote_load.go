@@ -28,9 +28,9 @@ func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *m
 	}
 
 	// Get blocks
-	var blocks []interface{}
+	var blocks []any
 	blocksRaw, _ := parameters.Get(`blocks`)
-	if v, ok := blocksRaw.([]interface{}); ok {
+	if v, ok := blocksRaw.([]any); ok {
 		blocks = v
 	}
 

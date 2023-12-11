@@ -140,7 +140,7 @@ func (e chain) Unwrap() error {
 	return e[1:]
 }
 
-func (e chain) As(target interface{}) bool {
+func (e chain) As(target any) bool {
 	if len(e) == 0 {
 		return false
 	}

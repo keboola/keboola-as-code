@@ -44,14 +44,14 @@ func TestVmContext_Complex(t *testing.T) {
 	ctx.NativeFunction(&jsonnet.NativeFunction{
 		Name:   `func1`,
 		Params: ast.Identifiers{"param1", "param2"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			return fmt.Sprintf("---%s---%s---", params[0], params[1]), nil
 		},
 	})
 	ctx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
 		Name:   `func2`,
 		Params: ast.Identifiers{"param1", "param2"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			return fmt.Sprintf("***%s***%s***", params[0], params[1]), nil
 		},
 	})
@@ -171,7 +171,7 @@ func TestVmContext_Notifier(t *testing.T) {
 	ctx.NativeFunction(&NativeFunction{
 		Name:   `decorate`,
 		Params: ast.Identifiers{"str"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			return fmt.Sprintf("~%s~", params[0].(string)), nil
 		},
 	})
@@ -180,8 +180,8 @@ func TestVmContext_Notifier(t *testing.T) {
 	ctx.NativeFunction(&NativeFunction{
 		Name:   `keyValueObject`,
 		Params: ast.Identifiers{"key", "value"},
-		Func: func(params []interface{}) (interface{}, error) {
-			return map[string]interface{}{params[0].(string): params[1].(string)}, nil
+		Func: func(params []any) (any, error) {
+			return map[string]any{params[0].(string): params[1].(string)}, nil
 		},
 	})
 
@@ -239,15 +239,15 @@ Do()
 		// Objects merging
 		{
 			fnName:  "keyValueObject",
-			args:    []interface{}{"C", "CCC"},
+			args:    []any{"C", "CCC"},
 			partial: false,
-			partialValue: map[string]interface{}{
+			partialValue: map[string]any{
 				"C": "CCC",
 			},
-			finalValue: map[string]interface{}{
+			finalValue: map[string]any{
 				"C": "CCC",
 			},
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "myObject"},
 				jsonnet.ObjectFieldStep{Field: "mergedObject"},
 				jsonnet.ObjectFieldStep{Field: "sub"},
@@ -255,38 +255,38 @@ Do()
 		},
 		{
 			fnName:  "keyValueObject",
-			args:    []interface{}{"A", "AAA"},
+			args:    []any{"A", "AAA"},
 			partial: true,
-			partialValue: map[string]interface{}{
+			partialValue: map[string]any{
 				"A": "AAA",
 			},
-			finalValue: map[string]interface{}{
+			finalValue: map[string]any{
 				"A": "AAA",
 				"B": "BBB",
-				"sub": map[string]interface{}{
+				"sub": map[string]any{
 					"C": "CCC",
 				},
 			},
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "myObject"},
 				jsonnet.ObjectFieldStep{Field: "mergedObject"},
 			},
 		},
 		{
 			fnName:  "keyValueObject",
-			args:    []interface{}{"B", "BBB"},
+			args:    []any{"B", "BBB"},
 			partial: true,
-			partialValue: map[string]interface{}{
+			partialValue: map[string]any{
 				"B": "BBB",
 			},
-			finalValue: map[string]interface{}{
+			finalValue: map[string]any{
 				"A": "AAA",
 				"B": "BBB",
-				"sub": map[string]interface{}{
+				"sub": map[string]any{
 					"C": "CCC",
 				},
 			},
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "myObject"},
 				jsonnet.ObjectFieldStep{Field: "mergedObject"},
 			},
@@ -294,11 +294,11 @@ Do()
 		// Simple usage
 		{
 			fnName:       "decorate",
-			args:         []interface{}{"Foo"},
+			args:         []any{"Foo"},
 			partial:      false,
 			partialValue: "~Foo~",
 			finalValue:   "~Foo~",
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "other"},
 				jsonnet.ArrayIndexStep{Index: 0},
 				jsonnet.ObjectFieldStep{Field: "name"},
@@ -306,11 +306,11 @@ Do()
 		},
 		{
 			fnName:       "decorate",
-			args:         []interface{}{"Bar"},
+			args:         []any{"Bar"},
 			partial:      false,
 			partialValue: "~Bar~",
 			finalValue:   "~Bar~",
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "other"},
 				jsonnet.ArrayIndexStep{Index: 1},
 				jsonnet.ObjectFieldStep{Field: "name"},
@@ -318,22 +318,22 @@ Do()
 		},
 		{
 			fnName:       "decorate",
-			args:         []interface{}{"Alice"},
+			args:         []any{"Alice"},
 			partial:      false,
 			partialValue: "~Alice~",
 			finalValue:   "~Alice~",
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "person1"},
 				jsonnet.ObjectFieldStep{Field: "name"},
 			},
 		},
 		{
 			fnName:       "decorate",
-			args:         []interface{}{"Bob"},
+			args:         []any{"Bob"},
 			partial:      false,
 			partialValue: "~Bob~",
 			finalValue:   "~Bob~",
-			steps: []interface{}{
+			steps: []any{
 				jsonnet.ObjectFieldStep{Field: "person2"},
 				jsonnet.ObjectFieldStep{Field: "name"},
 			},
@@ -353,14 +353,14 @@ type testNotifier struct {
 
 type generatedValue struct {
 	fnName       string
-	args         []interface{}
+	args         []any
 	partial      bool
-	partialValue interface{}
-	finalValue   interface{}
-	steps        []interface{}
+	partialValue any
+	finalValue   any
+	steps        []any
 }
 
-func (n *testNotifier) OnGeneratedValue(fnName string, args []interface{}, partial bool, partialValue, finalValue interface{}, steps []interface{}) {
+func (n *testNotifier) OnGeneratedValue(fnName string, args []any, partial bool, partialValue, finalValue any, steps []any) {
 	n.values = append(n.values, generatedValue{
 		fnName:       fnName,
 		args:         args,

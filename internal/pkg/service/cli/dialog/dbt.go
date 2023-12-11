@@ -36,7 +36,7 @@ func (p *Dialogs) askTargetName() string {
 	return strings.TrimSpace(name)
 }
 
-func validateTargetName(val interface{}) error {
+func validateTargetName(val any) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
 		return errors.New(`target name is required`)

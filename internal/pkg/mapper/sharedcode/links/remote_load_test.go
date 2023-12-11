@@ -81,7 +81,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
-	transformation.Remote.Content.Set(model.SharedCodeRowsIDContentKey, []interface{}{`missing`}) // <<<<<<<<<<<
+	transformation.Remote.Content.Set(model.SharedCodeRowsIDContentKey, []any{`missing`}) // <<<<<<<<<<<
 
 	// Invoke
 	changes := model.NewRemoteChanges()

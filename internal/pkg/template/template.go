@@ -91,7 +91,7 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 	return file.Content, nil
 }
 
-func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
+func ParseInputValue(value any, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
@@ -439,7 +439,7 @@ func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
 	return copyFs, nil
 }
 
-func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
+func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) (string, error), envSeparator string) (map[string]any, error) {
 	// Read inputs file
 	file, err := t.fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
 	if err != nil {
@@ -447,7 +447,7 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	}
 
 	// Replace envs
-	inputs := map[string]interface{}{}
+	inputs := map[string]any{}
 	if replaceEnvsFn != nil {
 		file.Content, err = replaceEnvsFn(file.Content, provider, envSeparator)
 		if err != nil {
@@ -464,7 +464,7 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 }
 
 func (t *CreatedTest) saveInputs(inputsValues InputsValues) error {
-	res := make(map[string]interface{})
+	res := make(map[string]any)
 	for k, v := range inputsValues.ToMap() {
 		res[k] = v.Value
 	}

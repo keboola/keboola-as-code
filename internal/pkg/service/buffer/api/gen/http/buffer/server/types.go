@@ -1357,7 +1357,7 @@ func ValidateColumnRequestBody(body *ColumnRequestBody, errContext []string) (er
 	}
 	if body.Type != nil {
 		if !(*body.Type == "id" || *body.Type == "datetime" || *body.Type == "ip" || *body.Type == "body" || *body.Type == "headers" || *body.Type == "template") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []interface{}{"id", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"id", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
 		}
 	}
 	if body.Template != nil {
@@ -1379,7 +1379,7 @@ func ValidateTemplateRequestBody(body *TemplateRequestBody, errContext []string)
 	}
 	if body.Language != nil {
 		if !(*body.Language == "jsonnet") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "language"), "."), *body.Language, []interface{}{"jsonnet"}))
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "language"), "."), *body.Language, []any{"jsonnet"}))
 		}
 	}
 	if body.Content != nil {

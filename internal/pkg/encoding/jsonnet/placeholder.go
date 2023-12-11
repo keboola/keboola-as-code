@@ -42,7 +42,7 @@ func InputPlaceholder(inputID string) string {
 }
 
 // functionCallPlaceholder generates <<~~func:<FUNC_NAME>>:["<ARG1>","<ARG2>"]~~>>.
-func functionCallPlaceholder(funcName string, args ...interface{}) string {
+func functionCallPlaceholder(funcName string, args ...any) string {
 	return fmt.Sprintf(`%s%s:%s%s`, placeholderStart, funcName, json.MustEncode(args, false), placeholderEnd)
 }
 
@@ -72,7 +72,7 @@ func ReplacePlaceholders(node *ast.LiteralString) ast.Node {
 	}
 
 	// Replace placeholders with function call
-	replaceCallback := func(funcName string, args []interface{}) ast.Node {
+	replaceCallback := func(funcName string, args []any) ast.Node {
 		// Arguments definition, map args -> funcArgs
 		var funcArgs []ast.CommaSeparatedExpr
 		for _, value := range args {
@@ -93,7 +93,7 @@ func ReplacePlaceholders(node *ast.LiteralString) ast.Node {
 }
 
 // splitPlaceholders from str, see ReplacePlaceholders.
-func splitPlaceholders(str string, replace func(funcName string, args []interface{}) ast.Node) []ast.Node {
+func splitPlaceholders(str string, replace func(funcName string, args []any) ast.Node) []ast.Node {
 	matches := placeholderRegexp.FindAllStringSubmatchIndex(str, -1)
 
 	output := make([]ast.Node, 0)
@@ -106,7 +106,7 @@ func splitPlaceholders(str string, replace func(funcName string, args []interfac
 		}
 
 		funcName := str[indices[2]:indices[3]]
-		var args []interface{}
+		var args []any
 		json.MustDecodeString(str[indices[4]:indices[5]], &args)
 		output = append(output, replace(funcName, args))
 
@@ -158,7 +158,7 @@ func StripIDPlaceholder(str string) string {
 	return str
 }
 
-func parsePlaceholder(str string) (funcName string, args []interface{}, found bool) {
+func parsePlaceholder(str string) (funcName string, args []any, found bool) {
 	if !isPlaceholder(str) {
 		return "", nil, false
 	}

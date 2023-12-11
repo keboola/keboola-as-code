@@ -1231,23 +1231,23 @@ type ExampleStepGroupData struct {
 }
 
 type ExampleStepData struct {
-	ID                string      `json:"id" yaml:"id"`
-	Icon              string      `json:"icon" yaml:"icon"`
-	Name              string      `json:"name" yaml:"name"`
-	Description       string      `json:"description" yaml:"description"`
-	DialogName        string      `json:"dialogName" yaml:"dialogName"`
-	DialogDescription string      `json:"dialogDescription" yaml:"dialogDescription"`
-	Inputs            interface{} `json:"inputs" yaml:"inputs"`
+	ID                string `json:"id" yaml:"id"`
+	Icon              string `json:"icon" yaml:"icon"`
+	Name              string `json:"name" yaml:"name"`
+	Description       string `json:"description" yaml:"description"`
+	DialogName        string `json:"dialogName" yaml:"dialogName"`
+	DialogDescription string `json:"dialogDescription" yaml:"dialogDescription"`
+	Inputs            any    `json:"inputs" yaml:"inputs"`
 }
 
 type ExampleInputData struct {
-	ID          string      `json:"id" yaml:"id"`
-	Name        string      `json:"name" yaml:"name"`
-	Description string      `json:"description" yaml:"description"`
-	Type        string      `json:"type" yaml:"type"`
-	Kind        string      `json:"kind" yaml:"kind"`
-	Default     interface{} `json:"default" yaml:"default"`
-	Options     interface{} `json:"options" yaml:"options"`
+	ID          string `json:"id" yaml:"id"`
+	Name        string `json:"name" yaml:"name"`
+	Description string `json:"description" yaml:"description"`
+	Type        string `json:"type" yaml:"type"`
+	Kind        string `json:"kind" yaml:"kind"`
+	Default     any    `json:"default" yaml:"default"`
+	Options     any    `json:"options" yaml:"options"`
 }
 
 type ExampleInputOptionData struct {
@@ -1261,8 +1261,8 @@ type ExampleStepPayloadData struct {
 }
 
 type ExampleInputPayloadData struct {
-	ID    string      `json:"id" yaml:"id"`
-	Value interface{} `json:"value" yaml:"value"`
+	ID    string `json:"id" yaml:"id"`
+	Value any    `json:"value" yaml:"value"`
 }
 
 type ExampleValidationResultData struct {
@@ -1273,7 +1273,7 @@ type ExampleValidationResultData struct {
 type ExampleGroupValidationResultData struct {
 	Id    string                            `json:"id" yaml:"id"`
 	Valid bool                              `json:"valid" yaml:"valid"`
-	Error interface{}                       `json:"error" yaml:"error"`
+	Error any                               `json:"error" yaml:"error"`
 	Steps []ExampleStepValidationResultData `json:"steps" yaml:"steps"`
 }
 
@@ -1285,9 +1285,9 @@ type ExampleStepValidationResultData struct {
 }
 
 type ExampleInputValidationResultData struct {
-	Id      string      `json:"id" yaml:"id"`
-	Visible bool        `json:"visible" yaml:"visible"`
-	Error   interface{} `json:"error" yaml:"error"`
+	Id      string `json:"id" yaml:"id"`
+	Visible bool   `json:"visible" yaml:"visible"`
+	Error   any    `json:"error" yaml:"error"`
 }
 
 func ExampleError(statusCode int, name, message string) ExampleErrorData {
@@ -1641,7 +1641,7 @@ func ExampleInputs() []ExampleInputData {
 			Description: "Please select at least one country.",
 			Type:        "string[]",
 			Kind:        "multiselect",
-			Default:     []interface{}{"value1", "value3"},
+			Default:     []any{"value1", "value3"},
 			Options:     ExampleInputOptions(),
 		},
 	}
@@ -1685,7 +1685,7 @@ func ExampleInputPayload2() ExampleInputPayloadData {
 	}
 }
 
-func ExampleValidationResult() interface{} {
+func ExampleValidationResult() any {
 	return ExampleValidationResultData{
 		Valid: false,
 		StepGroups: []ExampleGroupValidationResultData{

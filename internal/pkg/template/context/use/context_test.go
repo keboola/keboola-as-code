@@ -47,7 +47,7 @@ func TestContext(t *testing.T) {
 	// Mocked tickets
 	var ticketResponses []*http.Response
 	for i := 1; i <= 2; i++ {
-		response, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": cast.ToString(1000 + i)})
+		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
 		assert.NoError(t, err)
 		ticketResponses = append(ticketResponses, response)
 	}

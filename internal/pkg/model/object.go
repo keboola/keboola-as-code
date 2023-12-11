@@ -507,10 +507,10 @@ type ConfigRow struct {
 
 // Job - Storage API job.
 type Job struct {
-	ID      int                    `json:"id" validate:"required"`
-	Status  string                 `json:"status" validate:"required"`
-	URL     string                 `json:"url" validate:"required"`
-	Results map[string]interface{} `json:"results"`
+	ID      int            `json:"id" validate:"required"`
+	Status  string         `json:"status" validate:"required"`
+	URL     string         `json:"url" validate:"required"`
+	Results map[string]any `json:"results"`
 }
 
 func (b *Branch) ObjectName() string {

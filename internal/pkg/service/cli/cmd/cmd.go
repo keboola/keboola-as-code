@@ -393,7 +393,7 @@ func (root *RootCommand) setupLogger() {
 }
 
 // tearDown does clean-up after command execution.
-func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
+func (root *RootCommand) tearDown(exitCode int, panicErr any) int {
 	// Logger may be uninitialized, if error occurred before initialization
 	if _, ok := root.logger.(*log.MemoryLogger); ok {
 		root.setupLogger()

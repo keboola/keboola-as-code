@@ -33,7 +33,7 @@ func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
 		Default:     d.defaultValue(),
-		Validator: func(val interface{}) error {
+		Validator: func(val any) error {
 			_, err := d.parse(val.(string))
 			if err != nil {
 				// Print errors to new line
@@ -256,7 +256,7 @@ Preview of steps and groups you created:
 		lines.WriteString(fmt.Sprintf("showIf: %s\n", i.If))
 
 		// Default
-		if slice, ok := i.Default.([]interface{}); ok && i.Kind == input.KindMultiSelect {
+		if slice, ok := i.Default.([]any); ok && i.Kind == input.KindMultiSelect {
 			var items []string
 			for _, item := range slice {
 				items = append(items, item.(string))

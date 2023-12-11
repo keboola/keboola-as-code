@@ -14,7 +14,7 @@ func (p *Prompt) IsInteractive() bool {
 	return false
 }
 
-func (p *Prompt) Printf(_ string, _ ...interface{}) {
+func (p *Prompt) Printf(_ string, _ ...any) {
 	// nop
 }
 

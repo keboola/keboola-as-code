@@ -251,20 +251,20 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 
 	// Mocked API response
 	d := dependencies.NewMocked(t)
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":                     "ex-generic-v2",
 		"type":                   "extractor",
 		"name":                   "Generic",
-		"configurationSchema":    map[string]interface{}{},
-		"configurationRowSchema": map[string]interface{}{},
+		"configurationSchema":    map[string]any{},
+		"configurationRowSchema": map[string]any{},
 	})
 	assert.NoError(t, err)
-	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":                     "keboola.ex-db-mysql",
 		"type":                   "extractor",
 		"name":                   "MySQL",
-		"configurationSchema":    map[string]interface{}{},
-		"configurationRowSchema": map[string]interface{}{},
+		"configurationSchema":    map[string]any{},
+		"configurationRowSchema": map[string]any{},
 	})
 	assert.NoError(t, err)
 	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)

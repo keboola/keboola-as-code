@@ -11,7 +11,7 @@ import (
 
 func RegisterPlugin(pkgPath string) {
 	addPackageImport := func(s *codegen.SectionTemplate) {
-		data := s.Data.(map[string]interface{})
+		data := s.Data.(map[string]any)
 		imports := data["Imports"].([]*codegen.ImportSpec)
 		imports = append(imports, &codegen.ImportSpec{Name: "dependencies", Path: pkgPath})
 		data["Imports"] = imports

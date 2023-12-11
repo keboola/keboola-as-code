@@ -70,7 +70,7 @@ func OptionsFromString(str string) (out Options, err error) {
 }
 
 // validateDefaultOptions - default options must be present in the input allowed Options.
-func validateDefaultOptions(value interface{}, kind Kind, options Options) bool {
+func validateDefaultOptions(value any, kind Kind, options Options) bool {
 	// Default options must be present in the input allowed Options.
 	switch kind {
 	case KindSelect:
@@ -81,7 +81,7 @@ func validateDefaultOptions(value interface{}, kind Kind, options Options) bool 
 			return true
 		}
 	case KindMultiSelect:
-		if values, ok := value.([]interface{}); ok {
+		if values, ok := value.([]any); ok {
 			for _, value := range values {
 				if valueStr, ok := value.(string); !ok || !options.ContainsID(valueStr) {
 					// Invalid type or not found

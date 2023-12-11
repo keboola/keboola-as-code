@@ -117,7 +117,7 @@ func (d *branchesDialog) askBranchesList() model.AllowedBranches {
 			"- branch ID\n" +
 			"- branch name, with optional wildcards, eg. \"Foo Bar\", \"Dev:*\"\n" +
 			"- branch directory (normalized) name, with optional wildcards, eg. \"foo-bar\", \"dev-*\"\n",
-		Validator: func(val interface{}) error {
+		Validator: func(val any) error {
 			// At least one existing branch must match user definition
 			matched := 0
 			for _, branch := range d.allBranches {

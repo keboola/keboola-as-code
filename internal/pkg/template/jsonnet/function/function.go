@@ -23,11 +23,11 @@ const (
 
 // ConfigID Jsonnet function maps configuration ID used in the template
 // to configuration ID used in the project.
-func ConfigID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
+func ConfigID(idMapper func(id any) string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `ConfigId`,
 		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
@@ -41,11 +41,11 @@ func ConfigID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 
 // ConfigRowID Jsonnet function maps configuration row ID used in the template
 // to configuration ID used in the project.
-func ConfigRowID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
+func ConfigRowID(idMapper func(id any) string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `ConfigRowId`,
 		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
@@ -62,7 +62,7 @@ func Input(inputValueProvider func(inputID string) (input.Value, bool)) *jsonnet
 	return &jsonnet.NativeFunction{
 		Name:   `Input`,
 		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
@@ -86,7 +86,7 @@ func InputIsAvailable(inputValueProvider func(inputID string) (input.Value, bool
 	return &jsonnet.NativeFunction{
 		Name:   `InputIsAvailable`,
 		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
@@ -105,7 +105,7 @@ func InstanceID(instanceID string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `InstanceId`,
 		Params: ast.Identifiers{},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			return instanceID, nil
 		},
 	}
@@ -116,7 +116,7 @@ func InstanceIDShort(instanceIDShort string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `InstanceIdShort`,
 		Params: ast.Identifiers{},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			return instanceIDShort, nil
 		},
 	}
@@ -127,7 +127,7 @@ func ComponentIsAvailable(components *model.ComponentsMap) *jsonnet.NativeFuncti
 	return &jsonnet.NativeFunction{
 		Name:   `ComponentIsAvailable`,
 		Params: ast.Identifiers{"componentId"},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if componentID, ok := params[0].(string); !ok {
@@ -145,7 +145,7 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 	return &jsonnet.NativeFunction{
 		Name:   `SnowflakeWriterComponentId`,
 		Params: ast.Identifiers{},
-		Func: func(params []interface{}) (interface{}, error) {
+		Func: func(params []any) (any, error) {
 			if _, found := components.Get(SnowflakeWriterIDAws); found {
 				return SnowflakeWriterIDAws.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {

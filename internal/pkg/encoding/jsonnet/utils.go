@@ -7,7 +7,7 @@ import (
 )
 
 // ValueToLiteral converts Go value to jsonnet.Ast literal.
-func ValueToLiteral(v interface{}) ast.Node {
+func ValueToLiteral(v any) ast.Node {
 	if v == nil {
 		return &ast.LiteralNull{}
 	}

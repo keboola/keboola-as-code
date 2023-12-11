@@ -46,15 +46,15 @@ func (p *phaseParser) name() (string, error) {
 }
 
 func (p *phaseParser) dependsOnIds() ([]int, error) {
-	var rawSlice []interface{}
+	var rawSlice []any
 	raw, found := p.content.Get(`dependsOn`)
 	if found {
-		if v, ok := raw.([]interface{}); ok {
+		if v, ok := raw.([]any); ok {
 			rawSlice = v
 		}
 	}
 
-	// Convert []interface{} -> []int
+	// Convert []any -> []int
 	value := make([]int, 0)
 	for i, itemRaw := range rawSlice {
 		if item, ok := itemRaw.(float64); ok { // JSON int is float64, by default in Go
@@ -72,15 +72,15 @@ func (p *phaseParser) dependsOnIds() ([]int, error) {
 }
 
 func (p *phaseParser) dependsOnPaths() ([]string, error) {
-	var rawSlice []interface{}
+	var rawSlice []any
 	raw, found := p.content.Get(`dependsOn`)
 	if found {
-		if v, ok := raw.([]interface{}); ok {
+		if v, ok := raw.([]any); ok {
 			rawSlice = v
 		}
 	}
 
-	// Convert []interface{} -> []string
+	// Convert []any -> []string
 	value := make([]string, 0)
 	for i, item := range rawSlice {
 		if itemStr, ok := item.(string); ok {

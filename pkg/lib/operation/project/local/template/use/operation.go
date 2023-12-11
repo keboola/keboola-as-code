@@ -277,7 +277,7 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 		var oauthWarnings []string
 		inputValuesMap := p.options.Inputs.ToMap()
 		for inputName, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
-			if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {
+			if len(inputValuesMap[inputName].Value.(map[string]any)) == 0 {
 				oauthWarnings = append(oauthWarnings, fmt.Sprintf("- %s/admin/projects/%d/components/%s/%s", p.deps.StorageAPIHost(), p.deps.ProjectID(), cKey.ComponentID, cKey.ID))
 			}
 		}

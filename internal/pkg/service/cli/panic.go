@@ -29,7 +29,7 @@ We take privacy seriously, and do not perform any automated log file collection.
 
 Thank you kindly!`
 
-func ProcessPanic(err interface{}, logger log.Logger, logFilePath string) int {
+func ProcessPanic(err any, logger log.Logger, logFilePath string) int {
 	logger.Debugf("Unexpected panic: %s", err)
 	logger.Debugf("Trace:\n" + string(debug.Stack()))
 	logger.Info(panicMessage(logFilePath))
