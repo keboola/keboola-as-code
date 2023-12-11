@@ -19,7 +19,7 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 			options := p.BaseScope().Dialogs().AskWorkflowsOptions()
 
 			// Get dependencies
-			d, err := p.LocalCommandScope()
+			d, err := p.LocalCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}

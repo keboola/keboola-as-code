@@ -26,7 +26,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Authentication
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}

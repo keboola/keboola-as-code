@@ -27,7 +27,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

@@ -64,9 +64,9 @@ func (v *baseScope) Options() *options.Options {
 	return v.options
 }
 
-func (v *baseScope) EmptyDir() (filesystem.Fs, error) {
+func (v *baseScope) EmptyDir(ctx context.Context) (filesystem.Fs, error) {
 	return v.emptyDir.InitAndGet(func() (filesystem.Fs, error) {
-		if err := v.fsInfo.AssertEmptyDir(context.TODO()); err != nil {
+		if err := v.fsInfo.AssertEmptyDir(ctx); err != nil {
 			return nil, err
 		}
 		return v.fs, nil

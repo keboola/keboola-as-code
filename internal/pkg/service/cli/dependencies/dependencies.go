@@ -46,7 +46,7 @@ type BaseScope interface {
 	FsInfo() FsInfo
 	Dialogs() *dialog.Dialogs
 	Options() *options.Options
-	EmptyDir() (filesystem.Fs, error)
+	EmptyDir(ctx context.Context) (filesystem.Fs, error)
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
@@ -72,14 +72,14 @@ type RemoteCommandScope interface {
 // Provider of CLI dependencies.
 type Provider interface {
 	BaseScope() BaseScope
-	LocalCommandScope(opts ...Option) (LocalCommandScope, error)
-	RemoteCommandScope(opts ...Option) (RemoteCommandScope, error)
+	LocalCommandScope(ctx context.Context, opts ...Option) (LocalCommandScope, error)
+	RemoteCommandScope(ctx context.Context, opts ...Option) (RemoteCommandScope, error)
 	// LocalProject method can be used by a CLI command that must be run in the local project directory.
 	// First, the local project is loaded, and then the authentication is performed,
 	// so the error that we are not in a project directory takes precedence over an invalid/missing token.
-	LocalProject(ignoreErrors bool, ops ...Option) (*projectPkg.Project, RemoteCommandScope, error)
+	LocalProject(ctx context.Context, ignoreErrors bool, ops ...Option) (*projectPkg.Project, RemoteCommandScope, error)
 	// LocalRepository method can be used by a CLI command that must be run in the local repository directory.
-	LocalRepository(ops ...Option) (*repository.Repository, LocalCommandScope, error)
+	LocalRepository(ctx context.Context, ops ...Option) (*repository.Repository, LocalCommandScope, error)
 	// LocalDbtProject method can be used by a CLI command that must be run in the dbt project directory.
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
