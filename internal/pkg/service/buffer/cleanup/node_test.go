@@ -249,7 +249,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, node.Check(ctx))
 
 	// Shutdown - wait for tasks
-	workerScp.Process().Shutdown(errors.New("bye bye"))
+	workerScp.Process().Shutdown(ctx, errors.New("bye bye"))
 	workerScp.Process().WaitForShutdown()
 
 	// Check logs

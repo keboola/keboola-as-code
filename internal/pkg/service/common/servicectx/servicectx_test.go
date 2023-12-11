@@ -48,7 +48,7 @@ func TestProcess_Add(t *testing.T) {
 	startShutdown := make(chan struct{})
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-startShutdown
-		shutdown(errors.New("operation failed"))
+		shutdown(ctx, errors.New("operation failed"))
 	})
 	proc.OnShutdown(func(ctx context.Context) {
 		logger.InfoCtx(ctx, "onShutdown1")
@@ -69,9 +69,9 @@ func TestProcess_Add(t *testing.T) {
 	proc.WaitForShutdown()
 
 	// Shutdown can be called multiple times
-	proc.Shutdown(errors.New("ignore duplicated shutdown"))
-	proc.Shutdown(errors.New("ignore duplicated shutdown"))
-	proc.Shutdown(errors.New("ignore duplicated shutdown"))
+	proc.Shutdown(ctx, errors.New("ignore duplicated shutdown"))
+	proc.Shutdown(ctx, errors.New("ignore duplicated shutdown"))
+	proc.Shutdown(ctx, errors.New("ignore duplicated shutdown"))
 
 	// Check logs
 	expected := `
@@ -131,7 +131,7 @@ func TestProcess_Shutdown(t *testing.T) {
 		op3.Wait()
 		logger.InfoCtx(ctx, "onShutdown3")
 	})
-	proc.Shutdown(errors.New("some error"))
+	proc.Shutdown(ctx, errors.New("some error"))
 	proc.WaitForShutdown()
 
 	// Check logs

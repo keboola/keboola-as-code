@@ -139,9 +139,9 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}, 30*time.Second, 100*time.Millisecond)
 
 	// Shutdown
-	apiScp.Process().Shutdown(errors.New("bye bye API 1"))
+	apiScp.Process().Shutdown(ctx, errors.New("bye bye API 1"))
 	apiScp.Process().WaitForShutdown()
-	workerScp.Process().Shutdown(errors.New("bye bye Worker"))
+	workerScp.Process().Shutdown(ctx, errors.New("bye bye Worker"))
 	workerScp.Process().WaitForShutdown()
 
 	// Orchestrator logs

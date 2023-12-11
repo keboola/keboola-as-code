@@ -22,16 +22,17 @@ type Process struct {
 	errCh    chan error
 	uniqueID string
 
-	lock        *sync.Mutex
-	terminating bool
-	onShutdown  []OnShutdownFn
+	lock          *sync.Mutex
+	terminating   bool
+	onShutdown    []OnShutdownFn
+	shutdownCtxCh chan context.Context
 }
 
 type Option func(c *config)
 
-type OnShutdownFn func(ctx context.Context)
+type OnShutdownFn func(context.Context)
 
-type ShutdownFn func(error)
+type ShutdownFn func(context.Context, error)
 
 type config struct {
 	uniqueID string
@@ -83,23 +84,28 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 	// to notify the main goroutine when to stop the server.
 	errCh := make(chan error, 1)
 
+	// Create channel used to pass the shutdown context to OnShutdownFn callbacks.
+	shutdownCtxCh := make(chan context.Context, 1)
+
 	proc := &Process{
-		ctx:      ctx,
-		cancel:   cancel,
-		logger:   c.logger,
-		wg:       &sync.WaitGroup{},
-		errCh:    errCh,
-		uniqueID: c.uniqueID,
-		lock:     &sync.Mutex{},
+		ctx:           ctx,
+		cancel:        cancel,
+		logger:        c.logger,
+		wg:            &sync.WaitGroup{},
+		errCh:         errCh,
+		uniqueID:      c.uniqueID,
+		lock:          &sync.Mutex{},
+		shutdownCtxCh: shutdownCtxCh,
 	}
 
 	// Register onShutdown operation
 	proc.Add(func(ctx context.Context, _ ShutdownFn) {
 		<-ctx.Done()
+		shutdownCtx := <-proc.shutdownCtxCh
 
 		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
 		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
-			proc.onShutdown[i](ctx)
+			proc.onShutdown[i](shutdownCtx)
 		}
 	})
 
@@ -114,7 +120,7 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 			// Shutdown was triggered by another way
 		case sig := <-sigCh:
 			// Shutdown signal
-			proc.Shutdown(errors.Errorf("%s", sig))
+			proc.Shutdown(ctx, errors.Errorf("%s", sig))
 		}
 	}()
 
@@ -133,7 +139,7 @@ func NewForTest(t *testing.T, ctx context.Context, opts ...Option) *Process {
 	}
 
 	t.Cleanup(func() {
-		proc.Shutdown(errors.New("test cleanup"))
+		proc.Shutdown(ctx, errors.New("test cleanup"))
 		proc.WaitForShutdown()
 	})
 
@@ -148,7 +154,7 @@ func (v *Process) Ctx() context.Context {
 }
 
 // Shutdown triggers termination of the Process.
-func (v *Process) Shutdown(err error) {
+func (v *Process) Shutdown(ctx context.Context, err error) {
 	v.lock.Lock()
 	if v.terminating {
 		v.lock.Unlock()
@@ -160,6 +166,8 @@ func (v *Process) Shutdown(err error) {
 	v.logger.Infof("exiting (%v)", err)
 	v.errCh <- err
 	close(v.errCh)
+	v.shutdownCtxCh <- ctx
+	close(v.shutdownCtxCh)
 }
 
 func (v *Process) WaitForShutdown() {

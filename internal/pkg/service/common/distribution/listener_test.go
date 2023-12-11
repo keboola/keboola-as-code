@@ -60,7 +60,7 @@ func TestOnChangeListener(t *testing.T) {
 	}, 10*time.Second, 10*time.Millisecond, "timeout")
 
 	// Stop node 2
-	d2.Process().Shutdown(errors.New("test"))
+	d2.Process().Shutdown(ctx, errors.New("test"))
 	d2.Process().WaitForShutdown()
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `the node "node2" gone`)
@@ -73,11 +73,11 @@ func TestOnChangeListener(t *testing.T) {
 	_, d4 = createNode(t, clk, etcdCredentials, "node4")
 
 	// Stop all nodes (listener is stopped, no log msg expected)
-	d1.Process().Shutdown(errors.New("test"))
+	d1.Process().Shutdown(ctx, errors.New("test"))
 	d1.Process().WaitForShutdown()
-	d3.Process().Shutdown(errors.New("test"))
+	d3.Process().Shutdown(ctx, errors.New("test"))
 	d3.Process().WaitForShutdown()
-	d4.Process().Shutdown(errors.New("test"))
+	d4.Process().Shutdown(ctx, errors.New("test"))
 	d4.Process().WaitForShutdown()
 
 	// Check logs

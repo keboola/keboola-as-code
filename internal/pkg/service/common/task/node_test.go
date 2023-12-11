@@ -842,7 +842,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	// Shutdown node
 	shutdownDone := make(chan struct{})
-	d.Process().Shutdown(errors.New("some reason"))
+	d.Process().Shutdown(ctx, errors.New("some reason"))
 	go func() {
 		defer close(shutdownDone)
 		d.Process().WaitForShutdown()

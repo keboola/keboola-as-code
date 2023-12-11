@@ -115,7 +115,7 @@ func TestCleanup(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Shutdown
-	workerScp.Process().Shutdown(errors.New("bye bye Worker 1"))
+	workerScp.Process().Shutdown(ctx, errors.New("bye bye Worker 1"))
 	workerScp.Process().WaitForShutdown()
 
 	// Check logs
