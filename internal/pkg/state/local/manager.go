@@ -131,7 +131,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 	persist := !manifest.State().IsPersisted()
 	u.
 		workersFor(manifest.Level()).
-		AddWorker(func() error {
+		AddWorker(func(ctx context.Context) error {
 			// Has been parent loaded?
 			if parentKey, err := manifest.Key().ParentKey(); err != nil {
 				return err
@@ -214,7 +214,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	isNew := !objectState.Manifest().State().IsPersisted()
 	u.
 		workersFor(objectState.Level()).
-		AddWorker(func() error {
+		AddWorker(func(ctx context.Context) error {
 			if err := u.Manager.saveObject(u.ctx, objectState.Manifest(), object, changedFields); err != nil {
 				return err
 			}
@@ -231,7 +231,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.ObjectManifest) {
 	u.
 		workersFor(manifest.Level()).
-		AddWorker(func() error {
+		AddWorker(func(ctx context.Context) error {
 			if err := u.Manager.deleteObject(manifest); err != nil {
 				return err
 			}
@@ -247,7 +247,7 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.
 func (u *UnitOfWork) Rename(actions []model.RenameAction) {
 	u.
 		workersFor(1000). // rename at the end
-		AddWorker(func() error {
+		AddWorker(func(ctx context.Context) error {
 			if err := u.rename(actions); err != nil {
 				return err
 			}
