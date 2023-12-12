@@ -58,6 +58,10 @@ func (v *TxnOp) Then(ops ...Op) *TxnOp {
 	return v
 }
 
+func (v *TxnOp) Empty() bool {
+	return len(v.ifs) == 0 && len(v.thenOps) == 0 && len(v.elseOps) == 0 && len(v.andOps) == 0
+}
+
 // If takes a list of comparison.
 // If all comparisons passed in succeed, the operations passed into Then() will be executed,
 // otherwise the operations passed into Else() will be executed.
