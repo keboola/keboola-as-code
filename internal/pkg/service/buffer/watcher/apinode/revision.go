@@ -95,7 +95,7 @@ func newSyncer(ctx context.Context, wg *sync.WaitGroup, clk clock.Clock, logger 
 				case <-ticker.C:
 					if err := s.sync(session); err != nil {
 						if !errors.Is(err, context.Canceled) {
-							s.logger.Errorf(`sync error: %s`, err)
+							s.logger.ErrorfCtx(ctx, `sync error: %s`, err)
 						}
 					}
 				}

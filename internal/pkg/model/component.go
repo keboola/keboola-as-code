@@ -41,7 +41,7 @@ func (p *ComponentsProvider) Components() *ComponentsMap {
 func (p *ComponentsProvider) UpdateAsync(ctx context.Context) {
 	go func() {
 		if err := p.Update(ctx); err != nil {
-			p.logger.Errorf("components update failed: %s", err)
+			p.logger.ErrorfCtx(ctx, "components update failed: %s", err)
 		}
 	}()
 }
