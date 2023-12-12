@@ -74,7 +74,7 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 	}
 
 	// Free all repositories on server shutdown
-	d.Process().OnShutdown(func() {
+	d.Process().OnShutdown(func(_ context.Context) {
 		m.Free()
 	})
 

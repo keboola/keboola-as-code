@@ -66,16 +66,17 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	handler := http.NewServeMux()
 	handler.Handle("/"+Endpoint, promhttp.HandlerFor(registry, opts))
 	srv := &http.Server{Addr: listenAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
+	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		logger.InfofCtx(ctx, `HTTP server listening on "%s/%s"`, listenAddr, Endpoint)
-		shutdown(srv.ListenAndServe())
+		serverErr := srv.ListenAndServe() // ListenAndServe blocks while the server is running
+		shutdown(context.Background(), serverErr)
 	})
-	proc.OnShutdown(func() {
-		logger.InfofCtx(ctx, `shutting down HTTP server at "%s"`, listenAddr)
-
+	proc.OnShutdown(func(ctx context.Context) {
 		// Shutdown gracefully with a 30s timeout.
-		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 		defer cancel()
+
+		logger.InfofCtx(ctx, `shutting down HTTP server at "%s"`, listenAddr)
 
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)

@@ -100,16 +100,16 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	n.tasksCtx, cancelTasks = context.WithCancel(context.Background())
 	sessionWg := &sync.WaitGroup{}
 	sessionCtx, cancelSession := context.WithCancel(context.Background())
-	proc.OnShutdown(func() {
-		n.logger.Info("received shutdown request")
+	proc.OnShutdown(func(ctx context.Context) {
+		n.logger.InfoCtx(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
-			n.logger.Infof(`waiting for "%d" tasks to be finished`, c)
+			n.logger.InfofCtx(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
 		cancelTasks()
 		n.tasksWg.Wait()
 		cancelSession()
 		sessionWg.Wait()
-		n.logger.Info("shutdown done")
+		n.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Create etcd session

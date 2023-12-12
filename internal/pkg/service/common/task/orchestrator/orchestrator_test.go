@@ -118,9 +118,9 @@ func TestOrchestrator(t *testing.T) {
 
 	cancel()
 	wg.Wait()
-	d1.Process().Shutdown(errors.New("bye bye 1"))
+	d1.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d1.Process().WaitForShutdown()
-	d2.Process().Shutdown(errors.New("bye bye 2"))
+	d2.Process().Shutdown(ctx, errors.New("bye bye 2"))
 	d2.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `
@@ -210,7 +210,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 
 	cancel()
 	wg.Wait()
-	d.Process().Shutdown(errors.New("bye bye 1"))
+	d.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `
@@ -302,7 +302,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 
 	cancel()
 	wg.Wait()
-	d.Process().Shutdown(errors.New("bye bye"))
+	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `

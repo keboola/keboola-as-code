@@ -74,11 +74,11 @@ func NewCollector(d collectorDeps) *Collector {
 	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		c.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		c.logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		c.logger.Info("shutdown done")
+		c.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Receive notifications and periodically trigger sync

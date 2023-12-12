@@ -65,13 +65,13 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	watchCtx, watchCancel := context.WithCancel(context.Background())
 	sessionCtx, sessionCancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	n.proc.OnShutdown(func() {
-		n.logger.Info("received shutdown request")
+	n.proc.OnShutdown(func(ctx context.Context) {
+		n.logger.InfoCtx(ctx, "received shutdown request")
 		watchCancel()
 		n.unregister(c.shutdownTimeout)
 		sessionCancel()
 		wg.Wait()
-		n.logger.Info("shutdown done")
+		n.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {

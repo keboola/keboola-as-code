@@ -53,12 +53,12 @@ func New(d Dependencies) (*Node, error) {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		n.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		n.logger.InfoCtx(ctx, "received shutdown request")
 		n.listeners.wait()
 		cancel()
 		wg.Wait()
-		n.logger.Info("shutdown done")
+		n.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Watch revisions of all API nodes

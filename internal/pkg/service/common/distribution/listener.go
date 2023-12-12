@@ -40,7 +40,7 @@ func newListeners(n *Node) *listeners {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	n.proc.OnShutdown(func() {
+	n.proc.OnShutdown(func(ctx context.Context) {
 		logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()

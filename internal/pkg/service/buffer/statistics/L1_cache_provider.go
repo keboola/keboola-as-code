@@ -40,11 +40,11 @@ func NewL1CacheProvider(d l1CachedProviderDeps) (*L1CacheProvider, error) {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		p.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		p.logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		p.logger.Info("shutdown done")
+		p.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Start watcher to sync cache

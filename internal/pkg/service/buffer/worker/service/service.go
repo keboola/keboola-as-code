@@ -86,12 +86,12 @@ func New(d dependencies) (*Service, error) {
 	var cancel context.CancelFunc
 	s.ctx, cancel = context.WithCancel(context.Background())
 	s.wg = &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		s.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		s.logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
-		s.logger.Info("waiting for background operations")
+		s.logger.InfoCtx(ctx, "waiting for background operations")
 		s.wg.Wait()
-		s.logger.Info("shutdown done")
+		s.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Create orchestrators
