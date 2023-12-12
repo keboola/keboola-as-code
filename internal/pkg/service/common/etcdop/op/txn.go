@@ -133,7 +133,7 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 		if lowLevel, err := op.Op(ctx); err == nil {
 			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		} else {
-			errs.Append(errors.Errorf("cannot create operation [then][%d]: %w", i, err))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [then][%d]", i))
 		}
 	}
 
@@ -143,7 +143,7 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 		if lowLevel, err := op.Op(ctx); err == nil {
 			out.addElse(lowLevel.Op, lowLevel.MapResponse)
 		} else {
-			errs.Append(errors.Errorf("cannot create operation [else][%d]: %w", i, err))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [else][%d]", i))
 		}
 	}
 
@@ -152,7 +152,7 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 		// Create low-level operation
 		lowLevel, err := op.Op(ctx)
 		if err != nil {
-			errs.Append(errors.Errorf("cannot create operation [and][%d]: %w", i, err))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [and][%d]", i))
 			continue
 		}
 
