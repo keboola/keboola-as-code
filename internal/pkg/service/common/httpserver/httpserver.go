@@ -48,19 +48,20 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
 	proc := d.Process()
-	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
+	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
 		logger.InfofCtx(ctx, "HTTP server listening on %q", cfg.ListenAddress)
-		shutdown(ctx, srv.ListenAndServe())
+		serverErr := srv.ListenAndServe() // ListenAndServe blocks while the server is running
+		shutdown(context.Background(), serverErr)
 	})
 
 	// Register graceful shutdown
 	proc.OnShutdown(func(ctx context.Context) {
-		logger.InfofCtx(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
-
 		// Shutdown gracefully with a timeout.
 		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 		defer cancel()
+
+		logger.InfofCtx(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
 
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)

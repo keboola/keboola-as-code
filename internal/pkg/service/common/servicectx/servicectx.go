@@ -14,25 +14,51 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	// ctxShutdownReasonKey stores the error that triggered shutdown.
+	ctxShutdownReasonKey = ctxKey("shutdownReason")
+)
+
+// Process is a stack of shutdown callbacks.
+// Callbacks are invoked sequentially, in LIFO order.
+// This makes it possible to register resource graceful shutdown callback when creating the resource.
+// It is simple approach for complex applications.
+//
+// Callbacks are registered via the OnShutdown method.
+//
+// Root goroutines are registered via the Add method.
+// Graceful shutdown waits for all root goroutines and shutdown callbacks.
+//
+// Graceful shutdown can be triggered by:
+//   - Signals SIGINT, SIGTERM
+//   - Call of the Shutdown method.
+//   - Call of the ShutdownFn function provided by the Add method.
 type Process struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	logger   log.Logger
-	wg       *sync.WaitGroup
-	errCh    chan error
 	uniqueID string
 
-	lock          *sync.Mutex
-	terminating   bool
-	onShutdown    []OnShutdownFn
-	shutdownCtxCh chan context.Context
+	logger log.Logger
+	// wg waits for all goroutines registered by the Add method.
+	wg *sync.WaitGroup
+	// done is closed when all OnShutdown callbacks and all goroutines, registered via Add, have been finished.
+	done chan struct{}
+
+	// lock synchronizes Add, OnShutdown and Shutdown methods, so these methods are atomic.
+	lock *sync.Mutex
+	// onShutdown is a list of shutdown callbacks invoked in LIFO order.
+	onShutdown []OnShutdownFn
+	// terminating is closed by the Shutdown method.
+	terminating chan struct{}
+	// shutdownCtx is set by the Shutdown method, before closing the "terminating" channel.
+	shutdownCtx context.Context
 }
 
-type Option func(c *config)
+type ctxKey string
 
-type OnShutdownFn func(context.Context)
+type OnShutdownFn func(ctx context.Context)
 
 type ShutdownFn func(context.Context, error)
+
+type Option func(c *config)
 
 type config struct {
 	uniqueID string
@@ -53,7 +79,7 @@ func WithLogger(v log.Logger) Option {
 	}
 }
 
-func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Process, error) {
+func New(opts ...Option) (*Process, error) {
 	// Apply options
 	c := config{}
 	for _, o := range opts {
@@ -80,112 +106,87 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 		c.uniqueID = fmt.Sprintf(`%s-%05d`, hostname, pid)
 	}
 
-	// Create channel used by both the signal handler and service goroutines
-	// to notify the main goroutine when to stop the server.
-	errCh := make(chan error, 1)
-
-	// Create channel used to pass the shutdown context to OnShutdownFn callbacks.
-	shutdownCtxCh := make(chan context.Context, 1)
-
-	proc := &Process{
-		ctx:           ctx,
-		cancel:        cancel,
-		logger:        c.logger,
-		wg:            &sync.WaitGroup{},
-		errCh:         errCh,
-		uniqueID:      c.uniqueID,
-		lock:          &sync.Mutex{},
-		shutdownCtxCh: shutdownCtxCh,
+	v := &Process{
+		uniqueID:    c.uniqueID,
+		logger:      c.logger,
+		wg:          &sync.WaitGroup{},
+		done:        make(chan struct{}),
+		lock:        &sync.Mutex{},
+		terminating: make(chan struct{}),
 	}
 
-	// Register onShutdown operation
-	proc.Add(func(ctx context.Context, _ ShutdownFn) {
-		<-ctx.Done()
-		shutdownCtx := <-proc.shutdownCtxCh
+	// Execute OnShutdown callbacks and then, after all work, unblock WaitForShutdown via done channel
+	go func() {
+		// Wait for shutdown, see Shutdown function
+		<-v.terminating
 
 		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
-		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
-			proc.onShutdown[i](shutdownCtx)
+		for i := len(v.onShutdown) - 1; i >= 0; i-- {
+			v.onShutdown[i](v.shutdownCtx)
 		}
-	})
 
-	// Setup interrupt handler,
-	// so SIGINT and SIGTERM signals cause the services to stop gracefully.
+		// Wait for all work
+		v.wg.Wait()
+
+		// Log message after successful termination
+		v.logger.InfoCtx(v.shutdownCtx, "exited")
+
+		// Unblock WaitForShutdown method calls
+		close(v.done)
+	}()
+
+	// Setup interrupt handler, so SIGINT and SIGTERM signals trigger shutdown.
 	go func() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 		select {
-		case <-ctx.Done():
-			// Shutdown was triggered by another way
 		case sig := <-sigCh:
-			// Shutdown signal
-			proc.Shutdown(ctx, errors.Errorf("%s", sig))
+			// Trigger shutdown on signal
+			v.Shutdown(context.Background(), errors.Errorf("%s", sig))
+		case <-v.terminating:
+			// The Process was shut down by another trigger, stop goroutine
+			return
 		}
 	}()
 
-	proc.logger.Infof(`process unique id "%s"`, proc.UniqueID())
-	return proc, nil
+	// The unique id will be removed from the package.
+	v.logger.InfofCtx(context.TODO(), `process unique id "%s"`, v.UniqueID())
+	return v, nil
 }
 
-func NewForTest(t *testing.T, ctx context.Context, opts ...Option) *Process {
+func NewForTest(t *testing.T, opts ...Option) *Process {
 	t.Helper()
 
-	ctx, cancel := context.WithCancel(ctx)
-	proc, err := New(ctx, cancel, opts...)
+	proc, err := New(opts...)
 	if err != nil {
 		t.Fatal(err)
 		return nil
 	}
 
 	t.Cleanup(func() {
-		proc.Shutdown(ctx, errors.New("test cleanup"))
+		proc.Shutdown(context.Background(), errors.New("test cleanup"))
 		proc.WaitForShutdown()
 	})
 
 	return proc
 }
 
-// Ctx returns context of the Process.
-// The context in canceled immediately as the process receives termination request.
-// Then follows a graceful shutdown during which the context is already canceled.
-func (v *Process) Ctx() context.Context {
-	return v.ctx
-}
-
 // Shutdown triggers termination of the Process.
 func (v *Process) Shutdown(ctx context.Context, err error) {
+	ctx = context.WithValue(ctx, ctxShutdownReasonKey, err) // see ShutdownReason function
+
 	v.lock.Lock()
-	if v.terminating {
-		v.lock.Unlock()
+	defer v.lock.Unlock()
+
+	select {
+	case <-v.terminating:
 		return
+	default:
+		v.shutdownCtx = ctx
+		v.logger.InfofCtx(ctx, "exiting (%v)", err)
+		close(v.terminating)
 	}
-	v.terminating = true
-	v.lock.Unlock()
-
-	v.logger.Infof("exiting (%v)", err)
-	v.errCh <- err
-	close(v.errCh)
-	v.shutdownCtxCh <- ctx
-	close(v.shutdownCtxCh)
-}
-
-func (v *Process) WaitForShutdown() {
-	// Wait for signal
-	_, ok := <-v.errCh
-	if !ok {
-		// Channel is closed, the process is already terminating, wait for completion
-		v.wg.Wait()
-		return
-	}
-
-	// Send cancellation signal to the goroutines.
-	v.cancel()
-
-	// Wait for all operations
-	v.wg.Wait()
-
-	v.logger.Info("exited")
 }
 
 // UniqueID returns unique process ID, it consists of hostname and PID.
@@ -193,26 +194,45 @@ func (v *Process) UniqueID() string {
 	return v.uniqueID
 }
 
-// Add an operation.
-// The Process is graceful terminated when all operations are completed.
-// The ctx parameter can be used to wait for the service termination.
-// The errCh parameter can be used to stop the service with an error.
-func (v *Process) Add(operation func(context.Context, ShutdownFn)) {
-	v.wg.Add(1)
-	go func() {
-		defer v.wg.Done()
-		operation(v.ctx, v.Shutdown)
-	}()
+// Add a root operation.
+// The operation can terminate the entire process by calling the shutdown callback with an error.
+func (v *Process) Add(operation func(ShutdownFn)) {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
+	select {
+	case <-v.terminating:
+		v.logger.ErrorfCtx(v.shutdownCtx, `cannot Add operation: the Process is terminating`)
+	default:
+		v.wg.Add(1)
+		go func() {
+			defer v.wg.Done()
+			operation(v.Shutdown)
+		}()
+	}
 }
 
 // OnShutdown registers a callback that is invoked when the process is terminating.
 // Graceful shutdown waits until the callback has finished.
-// Callbacks are invoked sequentially, in LIFO order, see the New function.
+// Callbacks are invoked sequentially, in LIFO order.
 func (v *Process) OnShutdown(fn OnShutdownFn) {
 	v.lock.Lock()
-	if v.terminating {
-		v.logger.Errorf(`cannot register OnShutdown callback: the process is terminating`)
+	defer v.lock.Unlock()
+
+	select {
+	case <-v.terminating:
+		v.logger.ErrorfCtx(v.shutdownCtx, `cannot register OnShutdown callback: the Process is terminating`)
+	default:
+		v.onShutdown = append(v.onShutdown, fn)
 	}
-	v.onShutdown = append(v.onShutdown, fn)
-	v.lock.Unlock()
+}
+
+func (v *Process) WaitForShutdown() {
+	<-v.done
+}
+
+// ShutdownReason gets the shutdown reason error.
+func ShutdownReason(ctx context.Context) error {
+	v, _ := ctx.Value(ctxShutdownReasonKey).(error)
+	return v
 }
