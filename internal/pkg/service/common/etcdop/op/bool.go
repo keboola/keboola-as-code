@@ -13,6 +13,6 @@ type BoolMapper func(ctx context.Context, r RawResponse) (bool, error)
 
 // NewBoolOp wraps an operation, the result of which us true/false value.
 // True means success of the operation.
-func NewBoolOp(client etcd.KV, factory Factory, mapper BoolMapper) BoolOp {
+func NewBoolOp(client etcd.KV, factory LowLevelFactory, mapper BoolMapper) BoolOp {
 	return NewForType[bool](client, factory, mapper)
 }

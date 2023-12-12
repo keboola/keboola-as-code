@@ -15,11 +15,11 @@ type GetOneMapper func(ctx context.Context, raw RawResponse) (*KeyValue, error)
 type GetOneTProcessor[T any] func(ctx context.Context, raw RawResponse) (*KeyValueT[T], error)
 
 // NewGetOneOp wraps an operation, the result of which is one KV pair.
-func NewGetOneOp(client etcd.KV, factory Factory, mapper GetOneMapper) GetOneOp {
+func NewGetOneOp(client etcd.KV, factory LowLevelFactory, mapper GetOneMapper) GetOneOp {
 	return NewForType[*KeyValue](client, factory, mapper)
 }
 
 // NewGetOneTOp wraps an operation, the result of which is one KV pair, value is encoded as the type T.
-func NewGetOneTOp[T any](client etcd.KV, factory Factory, mapper GetOneTProcessor[T]) ForType[*KeyValueT[T]] {
+func NewGetOneTOp[T any](client etcd.KV, factory LowLevelFactory, mapper GetOneTProcessor[T]) ForType[*KeyValueT[T]] {
 	return NewForType[*KeyValueT[T]](client, factory, mapper)
 }

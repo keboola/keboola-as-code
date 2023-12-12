@@ -37,24 +37,27 @@ type Header = etcdserverpb.ResponseHeader // shortcut
 // The R is result type.
 // The struct is immutable, see With* methods.
 type ForType[R any] struct {
-	factory
+	lowLevelFactory
 	client     etcd.KV
 	mapper     func(ctx context.Context, raw RawResponse) (result R, err error)
 	processors []func(ctx context.Context, r *Result[R])
 }
 
-// Factory creates a low-level etcd operation.
-type Factory func(ctx context.Context) (etcd.Op, error)
+// LowLevelFactory creates a low-level etcd operation.
+type LowLevelFactory func(ctx context.Context) (etcd.Op, error)
 
-type factory = Factory // alias for private embedding
+// HighLevelFactory creates a high-level etcd operation.
+type HighLevelFactory func() (Op, error)
 
-func NewForType[R any](client etcd.KV, factory Factory, mapper func(ctx context.Context, raw RawResponse) (result R, err error)) ForType[R] {
-	return ForType[R]{client: client, factory: factory, mapper: mapper}
+type lowLevelFactory = LowLevelFactory // alias for private embedding
+
+func NewForType[R any](client etcd.KV, factory LowLevelFactory, mapper func(ctx context.Context, raw RawResponse) (result R, err error)) ForType[R] {
+	return ForType[R]{client: client, lowLevelFactory: factory, mapper: mapper}
 }
 
 func (v ForType[R]) Op(ctx context.Context) (out LowLevelOp, err error) {
 	// Create low-level operation
-	if out.Op, err = v.factory(ctx); err != nil {
+	if out.Op, err = v.lowLevelFactory(ctx); err != nil {
 		return out, err
 	}
 
