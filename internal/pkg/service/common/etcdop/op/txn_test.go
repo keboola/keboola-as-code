@@ -84,7 +84,8 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 - cannot create operation [else][1]: some error
 - cannot create operation [and][0]: some error
 - cannot create operation [and][1]: some error
-- cannot create operation [and][2]: cannot create operation [then][0]: some error
+- cannot create operation [and][2]:
+  - cannot create operation [then][0]: some error
 `), err.Error())
 	}
 }
