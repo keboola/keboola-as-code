@@ -370,7 +370,7 @@ func (root *RootCommand) setupLogger() {
 
 	// Warn if user specified invalid log format
 	if logFormatErr != nil {
-		root.logger.Warnf("Invalid log format: %s", logFormatErr)
+		root.logger.WarnfCtx(root.Context(), "Invalid log format: %s", logFormatErr)
 	}
 
 	// Log info
