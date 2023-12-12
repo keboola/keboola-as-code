@@ -374,13 +374,13 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 				etcd.OpPut("key/txn/succeeded", "false"),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
+					[]etcd.Op{},                                               // Then
+					[]etcd.Op{},                                               // Else
 				),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
+					[]etcd.Op{},                                                   // Then
+					[]etcd.Op{},                                                   // Else
 				),
 			},
 		), lowLevel.Op)
