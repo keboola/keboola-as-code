@@ -36,15 +36,20 @@ const (
 type Process struct {
 	uniqueID string
 
-	logger   log.Logger
-	wg       *sync.WaitGroup
-	shutdown chan context.Context
-	done     chan struct{}
+	logger log.Logger
+	// wg waits for all goroutines registered by the Add method.
+	wg *sync.WaitGroup
+	// done is closed when all OnShutdown callbacks and all goroutines, registered via Add, have been finished.
+	done chan struct{}
 
 	// lock synchronizes Add, OnShutdown and Shutdown methods, so these methods are atomic.
-	lock        *sync.Mutex
+	lock *sync.Mutex
+	// onShutdown is a list of shutdown callbacks invoked in LIFO order.
+	onShutdown []OnShutdownFn
+	// terminating is closed by the Shutdown method.
 	terminating chan struct{}
-	onShutdown  []OnShutdownFn
+	// shutdownCtx is set by the Shutdown method, before closing the "terminating" channel.
+	shutdownCtx context.Context
 }
 
 type ctxKey string
@@ -108,25 +113,23 @@ func New(opts ...Option) (*Process, error) {
 		done:        make(chan struct{}),
 		lock:        &sync.Mutex{},
 		terminating: make(chan struct{}),
-		shutdown:    make(chan context.Context, 1),
 	}
 
 	// Execute OnShutdown callbacks and then, after all work, unblock WaitForShutdown via done channel
 	go func() {
-
 		// Wait for shutdown, see Shutdown function
-		shutdownCtx := <-v.shutdown
+		<-v.terminating
 
 		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
 		for i := len(v.onShutdown) - 1; i >= 0; i-- {
-			v.onShutdown[i](shutdownCtx)
+			v.onShutdown[i](v.shutdownCtx)
 		}
 
 		// Wait for all work
 		v.wg.Wait()
 
 		// Log message after successful termination
-		v.logger.InfoCtx(shutdownCtx, "exited")
+		v.logger.InfoCtx(v.shutdownCtx, "exited")
 
 		// Unblock WaitForShutdown method calls
 		close(v.done)
@@ -180,10 +183,9 @@ func (v *Process) Shutdown(ctx context.Context, err error) {
 	case <-v.terminating:
 		return
 	default:
-		close(v.terminating)
+		v.shutdownCtx = ctx
 		v.logger.InfofCtx(ctx, "exiting (%v)", err)
-		v.shutdown <- ctx
-		close(v.shutdown)
+		close(v.terminating)
 	}
 }
 
@@ -200,7 +202,7 @@ func (v *Process) Add(operation func(ShutdownFn)) {
 
 	select {
 	case <-v.terminating:
-		v.logger.Errorf(`cannot Add operation: the Process is terminating`)
+		v.logger.ErrorfCtx(v.shutdownCtx, `cannot Add operation: the Process is terminating`)
 	default:
 		v.wg.Add(1)
 		go func() {
@@ -219,7 +221,7 @@ func (v *Process) OnShutdown(fn OnShutdownFn) {
 
 	select {
 	case <-v.terminating:
-		v.logger.Errorf(`cannot register OnShutdown callback: the Process is terminating`)
+		v.logger.ErrorfCtx(v.shutdownCtx, `cannot register OnShutdown callback: the Process is terminating`)
 	default:
 		v.onShutdown = append(v.onShutdown, fn)
 	}
