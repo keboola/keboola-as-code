@@ -12,6 +12,6 @@ type CountOp = ForType[int64]
 type CountMapper func(ctx context.Context, raw RawResponse) (int64, error)
 
 // NewCountOp wraps an operation, the result of which is a count.
-func NewCountOp(client etcd.KV, factory Factory, mapper CountMapper) CountOp {
+func NewCountOp(client etcd.KV, factory LowLevelFactory, mapper CountMapper) CountOp {
 	return NewForType[int64](client, factory, mapper)
 }
