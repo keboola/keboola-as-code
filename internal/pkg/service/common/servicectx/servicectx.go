@@ -41,6 +41,7 @@ type Process struct {
 	shutdown chan context.Context
 	done     chan struct{}
 
+	// lock synchronizes Add, OnShutdown and Shutdown methods, so these methods are atomic.
 	lock        *sync.Mutex
 	terminating chan struct{}
 	onShutdown  []OnShutdownFn
@@ -134,7 +135,7 @@ func New(opts ...Option) (*Process, error) {
 			// Trigger shutdown on signal
 			v.Shutdown(context.Background(), errors.Errorf("%s", sig))
 		case <-v.terminating:
-			// The process was shut down by another trigger, stop goroutine
+			// The Process was shut down by another trigger, stop goroutine
 			return
 		}
 	}()
