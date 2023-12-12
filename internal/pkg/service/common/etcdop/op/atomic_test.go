@@ -2,6 +2,7 @@ package op_test
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -31,19 +32,26 @@ func TestAtomicUpdate(t *testing.T) {
 	key6 := etcdop.Key("key6")
 	key7 := etcdop.Key("key7")
 	key8 := etcdop.Key("key8")
-	assert.NoError(t, key1.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key2.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key3.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key4.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key5.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key6.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key7.Put(client, "value").Do(ctx).Err())
-	assert.NoError(t, key8.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key1.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key2.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key3.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key4.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key5.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key6.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key7.Put(client, "value").Do(ctx).Err())
+	require.NoError(t, key8.Put(client, "value").Do(ctx).Err())
 
 	// Create atomic update operation
 	var beforeUpdate func() (clear bool)
 	var valueFromGetPhase string
-	atomicOp := op.Atomic(client)
+	var result string
+	atomicOp := op.Atomic(client, &result)
+	atomicOp.OnRead(func() {
+		result = "n/a"
+	})
+	atomicOp.OnReadOrErr(func() error {
+		return nil
+	})
 	atomicOp.ReadOp(nil)
 	atomicOp.ReadOp(key1.Get(client).WithOnResult(func(kv *op.KeyValue) {
 		valueFromGetPhase = string(kv.Value)
@@ -66,7 +74,7 @@ func TestAtomicUpdate(t *testing.T) {
 				Else(key7.Get(client)),
 		)
 	})
-	atomicOp.BeforeWrite(func() error {
+	atomicOp.BeforeWriteOrErr(func() error {
 		if beforeUpdate != nil {
 			if clear := beforeUpdate(); clear {
 				beforeUpdate = nil
@@ -79,54 +87,59 @@ func TestAtomicUpdate(t *testing.T) {
 		return key1.Put(client, "<"+valueFromGetPhase+">")
 	})
 	atomicOp.WriteOp(nil)
-	atomicOp.WriteOp(key8.Put(client, "value"))
+	atomicOp.WriteOp(key8.Put(client, "value").WithOnResult(func(_ op.NoResult) {
+		result = "ok"
+	}))
 
 	// 1. No modification during update, DoWithoutRetry, success
 	ok, err := atomicOp.DoWithoutRetry(ctx)
 	assert.True(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	r, err := key1.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "<value>", string(r.Value))
 
 	// 2. No modification during update, Do, success
 	err = atomicOp.Do(ctx).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "<<value>>", string(r.Value))
 
 	// 3. Modification during update, DoWithoutRetry, fail
 	beforeUpdate = func() (clear bool) {
-		assert.NoError(t, key1.Put(client, "newValue1").Do(ctx).Err())
+		require.NoError(t, key1.Put(client, "newValue1").Do(ctx).Err())
 		return true
 	}
 	ok, err = atomicOp.DoWithoutRetry(ctx)
 	assert.False(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "newValue1", string(r.Value))
 
 	// 4. Modification during update, Do, fail
 	beforeUpdate = func() (clear bool) {
-		assert.NoError(t, key1.Put(client, "newValue3").Do(ctx).Err())
+		require.NoError(t, key1.Put(client, "newValue3").Do(ctx).Err())
 		return false
 	}
-	err = atomicOp.Do(ctx, op.WithRetryMaxElapsedTime(100*time.Millisecond)).Err()
-	assert.Error(t, err)
-	wildcards.Assert(t, "atomic update failed: revision has been modified between GET and UPDATE op, attempt %d, elapsed time %s", err.Error())
+	atomicResult := atomicOp.Do(ctx, op.WithRetryMaxElapsedTime(100*time.Millisecond))
+	require.Error(t, atomicResult.Err())
+	wildcards.Assert(t, "atomic update failed: revision has been modified between GET and UPDATE op, attempt %d, elapsed time %s", atomicResult.Err().Error())
+	assert.Equal(t, "", atomicResult.Result()) // empty value on error
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "newValue3", string(r.Value))
 
 	// 5. Modification during update, Do, success
 	beforeUpdate = func() (clear bool) {
-		assert.NoError(t, key1.Put(client, "newValue2").Do(ctx).Err())
+		require.NoError(t, key1.Put(client, "newValue2").Do(ctx).Err())
 		return true
 	}
-	assert.NoError(t, atomicOp.Do(ctx).Err())
+	atomicResult = atomicOp.Do(ctx)
+	require.NoError(t, atomicResult.Err())
+	assert.Equal(t, "ok", atomicResult.Result())
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "<newValue2>", string(r.Value))
 }
