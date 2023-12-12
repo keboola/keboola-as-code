@@ -2,6 +2,7 @@
 package clifs
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,7 +25,7 @@ func TestFindProjectDir(t *testing.T) {
 	workingDir := filepath.Join(projectDir, `foo`, `bar`)
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	dir, err := find(log.NewNopLogger(), workingDir)
+	dir, err := find(context.Background(), log.NewNopLogger(), workingDir)
 	assert.NoError(t, err)
 	assert.Equal(t, projectDir, dir)
 }
@@ -40,7 +41,7 @@ func TestFindDbtDir(t *testing.T) {
 	workingDir := filepath.Join(projectDir, `foo`, `bar`)
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	dir, err := find(log.NewNopLogger(), workingDir)
+	dir, err := find(context.Background(), log.NewNopLogger(), workingDir)
 	assert.NoError(t, err)
 	assert.Equal(t, projectDir, dir)
 }
@@ -48,7 +49,7 @@ func TestFindDbtDir(t *testing.T) {
 func TestFindNothingFound(t *testing.T) {
 	t.Parallel()
 	workingDir := t.TempDir()
-	dir, err := find(log.NewNopLogger(), workingDir)
+	dir, err := find(context.Background(), log.NewNopLogger(), workingDir)
 	assert.NoError(t, err)
 	assert.Equal(t, workingDir, dir)
 }

@@ -2,6 +2,7 @@
 package filesystem
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"path"
@@ -60,7 +61,7 @@ func ProcessOptions(opts []Option) Config {
 	return c
 }
 
-type Factory func(opts ...Option) (fs Fs, err error)
+type Factory func(ctx context.Context, opts ...Option) (fs Fs, err error)
 
 type FileInfo = fs.FileInfo
 
