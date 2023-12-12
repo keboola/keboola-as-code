@@ -29,7 +29,6 @@ func (m *jsonnetMapper) LoadLocalFile(ctx context.Context, def *filesystem.FileD
 		jsonnetFile := f.(*filesystem.JsonnetFile)
 
 		// Set context (ctx, variables, ...)
-		ctx := m.jsonnetCtx.Ctx()
 		ctx = context.WithValue(ctx, FileDefCtxKey, def)
 		jsonnetFile.SetContext(m.jsonnetCtx.WithCtx(ctx))
 
