@@ -55,7 +55,7 @@ func New(d Dependencies) (*Node, error) {
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		n.logger.InfoCtx(ctx, "received shutdown request")
-		n.listeners.wait()
+		n.listeners.wait(ctx)
 		cancel()
 		wg.Wait()
 		n.logger.InfoCtx(ctx, "shutdown done")

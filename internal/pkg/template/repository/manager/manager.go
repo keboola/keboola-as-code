@@ -74,8 +74,8 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 	}
 
 	// Free all repositories on server shutdown
-	d.Process().OnShutdown(func(_ context.Context) {
-		m.Free()
+	d.Process().OnShutdown(func(ctx context.Context) {
+		m.Free(ctx)
 	})
 
 	// Init default repositories in parallel.
@@ -169,7 +169,7 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 				m.repositoriesLock.Unlock()
 
 				// Free previous value
-				oldValue.free()
+				oldValue.free(ctx)
 			}
 		}()
 	}
@@ -186,7 +186,7 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 	return errorCh
 }
 
-func (m *Manager) Free() {
+func (m *Manager) Free(ctx context.Context) {
 	m.repositoriesLock.RLock()
 	defer m.repositoriesLock.RUnlock()
 
@@ -196,12 +196,12 @@ func (m *Manager) Free() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			<-repo.free()
+			<-repo.free(ctx)
 		}()
 	}
 
 	wg.Wait()
-	m.logger.Infof("repository manager cleaned up")
+	m.logger.InfofCtx(ctx, "repository manager cleaned up")
 }
 
 func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) (*CachedRepository, error) {

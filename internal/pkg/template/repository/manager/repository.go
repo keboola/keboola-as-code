@@ -223,13 +223,13 @@ func (r *CachedRepository) lock() UnlockFn {
 
 // free is called when a new version of the repository is ready and the old one can be cleaned.
 // It is waiting until all the requests that use this repository are finished.
-func (r *CachedRepository) free() <-chan struct{} {
+func (r *CachedRepository) free(ctx context.Context) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		r.freeLock.Lock()
 		defer r.freeLock.Unlock()
 		r.unlockFn()
-		r.d.Logger().Infof(`cleaned repository cache "%s"`, r.String())
+		r.d.Logger().InfofCtx(ctx, `cleaned repository cache "%s"`, r.String())
 		close(done)
 	}()
 	return done
