@@ -2,6 +2,7 @@
 package log
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -12,11 +13,11 @@ func TestMemoryLogger(t *testing.T) {
 	t.Parallel()
 
 	mem := NewMemoryLogger()
-	mem.Debug(`Debug message.`)
-	mem.Info(`Info message.`)
+	mem.DebugCtx(context.Background(), `Debug message.`)
+	mem.InfoCtx(context.Background(), `Info message.`)
 	memWithCtx := mem.With("key1", "value1", "key2", "value2")
-	memWithCtx.Debug(`Debug message.`)
-	memWithCtx.Info(`Info message.`)
+	memWithCtx.DebugCtx(context.Background(), `Debug message.`)
+	memWithCtx.InfoCtx(context.Background(), `Info message.`)
 
 	target := NewDebugLogger()
 	mem.CopyLogsTo(target)

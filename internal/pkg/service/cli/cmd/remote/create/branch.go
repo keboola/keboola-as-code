@@ -42,8 +42,8 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 
 			// Run pull, if the command is run in a project directory
 			if prj, found, err := d.LocalProject(false); found {
-				d.Logger().Info()
-				d.Logger().Info(`Pulling objects to the local directory.`)
+				d.Logger().InfoCtx(d.CommandCtx())
+				d.Logger().InfoCtx(d.CommandCtx(), `Pulling objects to the local directory.`)
 
 				// Local project
 				if err != nil {

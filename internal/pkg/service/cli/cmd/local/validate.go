@@ -43,7 +43,7 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			d.Logger().Info("Everything is good.")
+			d.Logger().InfoCtx(d.CommandCtx(), "Everything is good.")
 			return nil
 		},
 	}
