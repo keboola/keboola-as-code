@@ -43,10 +43,10 @@ func TestWatchConsumer(t *testing.T) {
 		GetAllAndWatch(ctx, watchClient).
 		SetupConsumer(logger).
 		WithOnCreated(func(header *Header) {
-			logger.Infof(`OnCreated: created (rev %v)`, header.Revision)
+			logger.InfofCtx(ctx, `OnCreated: created (rev %v)`, header.Revision)
 		}).
 		WithOnRestarted(func(reason string, delay time.Duration) {
-			logger.Infof(`OnRestarted: %s`, reason)
+			logger.InfofCtx(ctx, `OnRestarted: %s`, reason)
 		}).
 		WithOnError(func(err error) {
 			if !strings.Contains(err.Error(), "mvcc: required revision has been compacted") {
@@ -65,7 +65,7 @@ func TestWatchConsumer(t *testing.T) {
 				str.Write(e.Kv.Key)
 				str.WriteString(`", `)
 			}
-			logger.Infof(`ForEach: restart=%t, events(%d): %s`, restart, len(events), strings.TrimSuffix(str.String(), ", "))
+			logger.InfofCtx(ctx, `ForEach: restart=%t, events(%d): %s`, restart, len(events), strings.TrimSuffix(str.String(), ", "))
 		}).
 		StartConsumer(ctx, wg)
 

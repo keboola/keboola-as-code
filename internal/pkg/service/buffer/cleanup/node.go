@@ -86,7 +86,7 @@ func (n *Node) Check(ctx context.Context) error {
 			}
 		})
 
-	n.logger.Infof(`started "%d" receiver cleanup tasks`, tasksCount)
+	n.logger.InfofCtx(ctx, `started "%d" receiver cleanup tasks`, tasksCount)
 	if err != nil {
 		return errors.Errorf(`receivers iterator failed: %w`, err)
 	}

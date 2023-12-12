@@ -114,14 +114,14 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.Infof(`registering the node "%s"`, n.nodeID)
+	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Put(n.nodeID, etcd.WithLease(session.Lease())).Do(ctx, session.Client()); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.Infof(`the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.InfofCtx(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
 	return nil
 }
 
@@ -130,19 +130,19 @@ func (n *Node) unregister(timeout time.Duration) {
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
+	n.logger.InfofCtx(ctx, `unregistering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
-		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
+		n.logger.WarnfCtx(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.Infof(`the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.InfofCtx(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
 }
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	n.logger.Info("watching for other nodes")
+	n.logger.InfoCtx(ctx, "watching for other nodes")
 	init := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).

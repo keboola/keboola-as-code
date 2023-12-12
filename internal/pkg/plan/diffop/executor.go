@@ -34,7 +34,7 @@ func (e *executor) invoke(ctx context.Context) error {
 	if err := e.Validate(); err != nil {
 		return err
 	}
-	e.logger.Debugf("Execution plan is valid.")
+	e.logger.DebugfCtx(ctx, "Execution plan is valid.")
 
 	// Invoke
 	for _, action := range e.actions {

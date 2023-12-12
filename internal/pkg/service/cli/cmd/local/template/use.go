@@ -64,7 +64,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 
 			if len(opResult.Warnings) > 0 {
 				for _, w := range opResult.Warnings {
-					d.Logger().Warn(w)
+					d.Logger().WarnCtx(cmd.Context(), w)
 				}
 			}
 

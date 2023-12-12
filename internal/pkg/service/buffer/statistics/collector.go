@@ -129,11 +129,11 @@ func (c *Collector) Sync(ctx context.Context) <-chan error {
 	if len(stats) > 0 {
 		go func() {
 			defer close(errCh)
-			c.logger.Debugf("syncing %d records", len(stats))
+			c.logger.DebugfCtx(ctx, "syncing %d records", len(stats))
 			if err := c.repository.Insert(ctx, c.nodeID, stats); err == nil {
-				c.logger.Debug("sync done")
+				c.logger.DebugCtx(ctx, "sync done")
 			} else {
-				c.logger.Errorf("cannot update stats in etcd: %s", err.Error())
+				c.logger.ErrorfCtx(ctx, "cannot update stats in etcd: %s", err.Error())
 				errCh <- err
 			}
 		}()

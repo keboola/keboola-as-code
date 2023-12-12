@@ -178,8 +178,8 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.API, start time.Tim
 
 	event, err = api.CreateEventRequest(event).Send(ctx)
 	if err == nil {
-		s.logger.Debugf("Sent \"%s\" event id: \"%s\"", task, event.ID)
+		s.logger.DebugfCtx(ctx, "Sent \"%s\" event id: \"%s\"", task, event.ID)
 	} else {
-		s.logger.Warnf("Cannot send \"%s\" event: %s", task, err)
+		s.logger.WarnfCtx(ctx, "Cannot send \"%s\" event: %s", task, err)
 	}
 }

@@ -137,7 +137,7 @@ func (l *localLoader) addScripts(ctx context.Context, code *model.Code) {
 
 	// Split to scripts
 	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentID)
-	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path())
+	l.logger.DebugfCtx(ctx, `Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path())
 }
 
 func (l *localLoader) loadBlockMetaFile(ctx context.Context, block *model.Block) {

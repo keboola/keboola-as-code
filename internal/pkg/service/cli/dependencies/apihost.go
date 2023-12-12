@@ -36,7 +36,7 @@ func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string) (st
 		// Get host from options (ENV/flag)
 		host = opts.GetString(options.StorageAPIHostOpt)
 		if opts.KeySetBy(options.StorageAPIHostOpt) == cliconfig.SetByEnv {
-			baseScp.Logger().Infof(`Storage API host "%s" set from ENV.`, host)
+			baseScp.Logger().InfofCtx(ctx, `Storage API host "%s" set from ENV.`, host)
 		}
 	}
 
