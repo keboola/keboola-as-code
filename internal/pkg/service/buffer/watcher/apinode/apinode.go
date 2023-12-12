@@ -202,6 +202,6 @@ func watch[T fmt.Stringer](n *Node, prefix etcdop.PrefixT[T], revSyncer *Revisio
 				revSyncer.Notify(header.Revision)
 			}
 		}).
-		StartConsumer(n.wg)
+		StartConsumer(n.ctx, n.wg)
 	return &stateOf[T]{tree, init}
 }

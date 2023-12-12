@@ -1,6 +1,7 @@
 package etcdop
 
 import (
+	"context"
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -42,7 +43,7 @@ func SetupMirror[T any, V any](
 	}
 }
 
-func (s MirrorSetup[T, V]) StartMirroring(wg *sync.WaitGroup) (mirror *Mirror[T, V], initErr <-chan error) {
+func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (mirror *Mirror[T, V], initErr <-chan error) {
 	mirror = &Mirror[T, V]{
 		stream:       s.stream,
 		tree:         prefixtree.New[V](),
@@ -93,10 +94,10 @@ func (s MirrorSetup[T, V]) StartMirroring(wg *sync.WaitGroup) (mirror *Mirror[T,
 				mirror.revisionLock.Lock()
 				mirror.revision = header.Revision
 				mirror.revisionLock.Unlock()
-				s.logger.Debugf(`synced to revision %d`, header.Revision)
+				s.logger.DebugfCtx(ctx, `synced to revision %d`, header.Revision)
 			})
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 	return mirror, errCh
 }
 

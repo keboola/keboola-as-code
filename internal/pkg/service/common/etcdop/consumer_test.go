@@ -67,7 +67,7 @@ func TestWatchConsumer(t *testing.T) {
 			}
 			logger.Infof(`ForEach: restart=%t, events(%d): %s`, restart, len(events), strings.TrimSuffix(str.String(), ", "))
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 
 	// Wait for initialization
 	assert.NoError(t, <-init)

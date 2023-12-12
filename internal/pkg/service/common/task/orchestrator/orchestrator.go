@@ -98,7 +98,7 @@ func (o orchestrator[T]) watch(ctx context.Context, span telemetry.Span, timeout
 				o.startTask(ctx, event)
 			}
 		}).
-		StartConsumer(o.node.wg)
+		StartConsumer(ctx, o.node.wg)
 	if err != nil {
 		return err
 	}

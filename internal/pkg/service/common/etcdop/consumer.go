@@ -77,7 +77,7 @@ func (c WatchConsumer[E]) WithOnClose(v onWatcherClose) WatchConsumer[E] {
 	return c
 }
 
-func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan error) {
+func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup) (initErr <-chan error) {
 	initErrCh := make(chan error, 1)
 	wg.Add(1)
 	go func() {
@@ -112,9 +112,9 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 				// It is suspicious if a short time has passed between two errors,
 				// then the error is logged with error log level.
 				if interval := time.Since(lastErrorAt); interval > watchErrorThreshold {
-					c.logger.Warn(resp.Err)
+					c.logger.WarnCtx(ctx, resp.Err)
 				} else {
-					c.logger.Error(errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval))
+					c.logger.ErrorCtx(ctx, errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval))
 				}
 				lastErrorAt = time.Now()
 				lastError = resp.Err
@@ -125,7 +125,7 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				c.logger.Info("restarted, ", resp.RestartReason)
+				c.logger.InfoCtx(ctx, "restarted, ", resp.RestartReason)
 				if c.onRestarted != nil {
 					c.onRestarted(resp.RestartReason, resp.RestartDelay)
 				}
