@@ -100,7 +100,7 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) (init <-chan error
 		WithForEach(func(events []etcdop.WatchEvent, header *etcdop.Header, restart bool) {
 			n.updateRevisionsFrom(ctx, events, restart)
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 }
 
 func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEvent, restart bool) {

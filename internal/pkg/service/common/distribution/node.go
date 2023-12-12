@@ -150,7 +150,7 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 			modifiedNodes := n.updateNodesFrom(events, restart)
 			n.listeners.Notify(modifiedNodes)
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 
 	// Wait for initial sync
 	if err := <-init; err != nil {

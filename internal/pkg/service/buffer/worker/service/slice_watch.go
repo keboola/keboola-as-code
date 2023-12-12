@@ -82,7 +82,7 @@ func NewActiveSlicesWatcher(ctx context.Context, wg *sync.WaitGroup, logger log.
 				w.lock.Unlock()
 			}
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 
 	return w, initDone
 }

@@ -202,7 +202,7 @@ func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		WithFilter(func(event etcdop.WatchEventT[model.ExportBase]) bool {
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// Mirror tokens
 	c.tokens, tokensErrCh = etcdop.
@@ -219,7 +219,7 @@ func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		WithFilter(func(event etcdop.WatchEventT[model.Token]) bool {
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// Mirror slices
 	c.activeSlices, slicesErrCh = etcdop.
@@ -239,7 +239,7 @@ func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		WithFilter(func(event etcdop.WatchEventT[model.Slice]) bool {
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// Wait for initialization
 	for _, errCh := range []<-chan error{exportsErrCh, tokensErrCh, slicesErrCh} {

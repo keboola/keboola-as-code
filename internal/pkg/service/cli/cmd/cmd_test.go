@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -219,7 +220,7 @@ func TestGetLogFileFromFlags(t *testing.T) {
 func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.AtomicWriter) {
 	in := ioutil.NewBufferedReader()
 	out := ioutil.NewAtomicWriter()
-	fsFactory := func(opts ...filesystem.Option) (filesystem.Fs, error) {
+	fsFactory := func(_ context.Context, opts ...filesystem.Option) (filesystem.Fs, error) {
 		return fs, nil
 	}
 

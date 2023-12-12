@@ -66,7 +66,7 @@ func (p *L1CacheProvider) setupCache(ctx context.Context, wg *sync.WaitGroup) <-
 	stream := p.schema.GetAllAndWatch(ctx, p.client)
 	mapKey := func(kv *op.KeyValue, _ Value) string { return string(kv.Key) }
 	mapValue := func(_ *op.KeyValue, stats Value) Value { return stats }
-	mirror, errCh := etcdop.SetupMirror(p.logger, stream, mapKey, mapValue).StartMirroring(wg)
+	mirror, errCh := etcdop.SetupMirror(p.logger, stream, mapKey, mapValue).StartMirroring(ctx, wg)
 	p.cache = mirror
 	return errCh
 }
