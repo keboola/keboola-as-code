@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,81 +23,81 @@ func TestKeyOperations(t *testing.T) {
 
 	// Get - not found
 	kv, err := k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, kv)
 
 	// Exists - not found
 	found, err := k.Exists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// ------
 	// Put
-	assert.NoError(t, k.Put(client, "bar").Do(ctx).Err())
+	require.NoError(t, k.Put(client, "bar").Do(ctx).Err())
 
 	// Get - found
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, []byte("bar"), kv.Value)
 
 	// Exists - found
 	found, err = k.Exists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// ------
 	// Delete - found
 	found, err = k.Delete(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// Delete - not found
 	found, err = k.Delete(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// Get - not found
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, kv)
 
 	// Exists - not found
 	found, err = k.Exists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// ------
 	// PutIfNotExists - key not found -> ok
 	ok, err := k.PutIfNotExists(client, "value1").Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, ok)
 
 	// Get - found - value 1
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, []byte("value1"), kv.Value)
 
 	// PutIfNotExists - key found -> not ok
 	ok, err = k.PutIfNotExists(client, "value1").Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, ok)
 
 	// Get - found - value 1
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, []byte("value1"), kv.Value)
 
 	// DeleteIfExists - found
 	ok, err = k.DeleteIfExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, ok)
 
 	// DeleteIfNotExists - not found
 	ok, err = k.DeleteIfExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, ok)
 }
 
@@ -110,82 +111,84 @@ func TestTypedKeyOperations(t *testing.T) {
 
 	// Get - not found
 	kv, err := k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, kv)
 
 	// Exists - not found
 	found, err := k.Exists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// ------
 	// Put
-	assert.NoError(t, k.Put(client, "bar").Do(ctx).Err())
+	result, err := k.Put(client, "bar").Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Equal(t, fooType("bar"), result)
 
 	// Get - found
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("bar"), kv.Value)
 
 	// Exists - found
 	found, err = k.Exists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// ------
 	// Delete - found
 	found, err = k.Delete(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// Delete - not found
 	found, err = k.Delete(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// Get - not found
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, kv)
 
 	// Exists - not found
 	found, err = k.Exists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// ------
 	// PutIfNotExists - key not found -> ok
 	ok, err := k.PutIfNotExists(client, "value1").Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, ok)
 
 	// Get - found - value 1
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), kv.Value)
 
 	// PutIfNotExists - key found -> not ok
 	ok, err = k.PutIfNotExists(client, "value1").Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, ok)
 
 	// Get - found - value 1
 	kv, err = k.Get(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), kv.Value)
 
 	// ------
 	// DeleteIfExists - found
 	ok, err = k.DeleteIfExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, ok)
 
 	// DeleteIfNotExists - not found
 	ok, err = k.DeleteIfExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, ok)
 }
 
