@@ -43,6 +43,8 @@ func TestTxnOp_Empty(t *testing.T) {
 
 	txn := NewTxnOp(client)
 
+	assert.True(t, txn.Empty())
+
 	// Validate low-level representation of the transaction
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
 		assert.Equal(t, etcd.OpTxn(
@@ -75,6 +77,8 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 		And(op).
 		And(op).
 		And(NewTxnOp(client).Then(op))
+
+	assert.False(t, txn.Empty())
 
 	if err := txn.Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
