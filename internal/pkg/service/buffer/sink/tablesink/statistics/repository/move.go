@@ -12,7 +12,7 @@ type transformFn func(value *statistics.Value)
 
 // Move returns an etcd operation to move slice statistics to a different storage level.
 // This operation should not be used separately but atomically together with changing the slice state.
-func (r *Repository) Move(sliceKey storage.SliceKey, from, to storage.Level, transform ...transformFn) *op.AtomicOp {
+func (r *Repository) Move(sliceKey storage.SliceKey, from, to storage.Level, transform ...transformFn) *op.AtomicOp[statistics.Value] {
 	if from == to {
 		panic(errors.Errorf(`from and to categories are same and equal to "%s"`, to))
 	}
@@ -20,8 +20,8 @@ func (r *Repository) Move(sliceKey storage.SliceKey, from, to storage.Level, tra
 	fromKey := r.schema.InLevel(from).InSlice(sliceKey)
 	toKey := r.schema.InLevel(to).InSlice(sliceKey)
 
-	ops := op.Atomic(r.client)
 	var value statistics.Value
+	ops := op.Atomic(r.client, &value)
 
 	// Load statistics value from the old key
 	ops.Read(func() op.Op {

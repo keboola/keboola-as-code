@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestMove_SameLevels_Panic(t *testing.T) {
+func TestRepository_Move_SameLevels_Panic(t *testing.T) {
 	t.Parallel()
 
 	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
@@ -26,7 +26,7 @@ func TestMove_SameLevels_Panic(t *testing.T) {
 	})
 }
 
-func TestMoveOp(t *testing.T) {
+func TestRepository_Move(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
