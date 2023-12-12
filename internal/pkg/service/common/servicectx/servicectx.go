@@ -111,10 +111,8 @@ func New(opts ...Option) (*Process, error) {
 		shutdown:    make(chan context.Context, 1),
 	}
 
-	// Execute OnShutdown callbacks and wait for them
-	v.wg.Add(1)
+	// Execute OnShutdown callbacks and then, after all work, unblock WaitForShutdown via done channel
 	go func() {
-		defer v.wg.Done()
 
 		// Wait for shutdown, see Shutdown function
 		shutdownCtx := <-v.shutdown
@@ -123,6 +121,15 @@ func New(opts ...Option) (*Process, error) {
 		for i := len(v.onShutdown) - 1; i >= 0; i-- {
 			v.onShutdown[i](shutdownCtx)
 		}
+
+		// Wait for all work
+		v.wg.Wait()
+
+		// Log message after successful termination
+		v.logger.InfoCtx(shutdownCtx, "exited")
+
+		// Unblock WaitForShutdown method calls
+		close(v.done)
 	}()
 
 	// Setup interrupt handler, so SIGINT and SIGTERM signals trigger shutdown.
@@ -140,19 +147,8 @@ func New(opts ...Option) (*Process, error) {
 		}
 	}()
 
-	// Finalizer
-	go func() {
-		// Wait for all work
-		v.wg.Wait()
-
-		// Log message after successful termination
-		v.logger.Info("exited")
-
-		// Unblock WaitForShutdown method calls
-		close(v.done)
-	}()
-
-	v.logger.Infof(`process unique id "%s"`, v.UniqueID())
+	// The unique id will be removed from the package.
+	v.logger.InfofCtx(context.TODO(), `process unique id "%s"`, v.UniqueID())
 	return v, nil
 }
 
@@ -185,7 +181,7 @@ func (v *Process) Shutdown(ctx context.Context, err error) {
 		return
 	default:
 		close(v.terminating)
-		v.logger.Infof("exiting (%v)", err)
+		v.logger.InfofCtx(ctx, "exiting (%v)", err)
 		v.shutdown <- ctx
 		close(v.shutdown)
 	}
