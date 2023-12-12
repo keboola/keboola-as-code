@@ -36,6 +36,7 @@ type Options struct {
 	Verbose     bool   // verbose mode, print details to console
 	VerboseAPI  bool   // log each API request and response
 	LogFilePath string // path to the log file
+	LogFormat   string // stdout and stderr format
 }
 
 func New() *Options {
@@ -44,6 +45,7 @@ func New() *Options {
 		envNaming: envNaming,
 		setBy:     make(map[string]cliconfig.SetBy),
 		parser:    viper.New(),
+		LogFormat: "console",
 	}
 }
 
@@ -64,6 +66,7 @@ func (o *Options) Load(ctx context.Context, logger log.Logger, osEnvs *env.Map, 
 	o.Verbose = o.GetBool(`verbose`)
 	o.VerboseAPI = o.GetBool(`verbose-api`)
 	o.LogFilePath = o.GetString(`log-file`)
+	o.LogFormat = o.GetString(`log-format`)
 	return nil
 }
 

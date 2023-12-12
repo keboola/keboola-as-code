@@ -98,6 +98,7 @@ func TestCliCmdPersistentFlags(t *testing.T) {
 	expected := []string{
 		"help",
 		"log-file",
+		"log-format",
 		"non-interactive",
 		"storage-api-token",
 		"verbose",

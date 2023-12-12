@@ -8,20 +8,8 @@ import (
 )
 
 // stderrCore writes to STDERR output.
-func stderrCore(stderr io.Writer, verbose bool) zapcore.Core {
-	// Prefix messages with level only when verbose enabled
-	levelKey := ""
-	if verbose {
-		levelKey = "level"
-	}
-
-	// Create encoder
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		MessageKey:       "msg",
-		LevelKey:         levelKey,
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
-	})
+func stderrCore(stderr io.Writer, logFormat LogFormat, verbose bool) zapcore.Core {
+	encoder := newEncoder(logFormat, verbose)
 
 	return zapcore.NewCore(encoder, zapcore.AddSync(stderr), zapcore.WarnLevel)
 }

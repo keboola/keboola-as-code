@@ -9,6 +9,7 @@
 {"level":"debug","time":"%s","message":"  version-check = \"false\""}
 {"level":"debug","time":"%s","message":"Default options:"}
 {"level":"debug","time":"%s","message":"  help = false"}
+{"level":"debug","time":"%s","message":"  log-format = \"console\""}
 {"level":"debug","time":"%s","message":"  non-interactive = false"}
 {"level":"debug","time":"%s","message":"  storage-api-token = \"\""}
 {"level":"debug","time":"%s","message":"  verbose = false"}
