@@ -19,7 +19,7 @@ type Repository struct {
 	sink   *SinkRepository
 }
 
-func NewRepository(d dependencies) *Repository {
+func New(d dependencies) *Repository {
 	r := &Repository{}
 	r.branch = newBranchRepository(d, r)
 	r.source = newSourceRepository(d, r)

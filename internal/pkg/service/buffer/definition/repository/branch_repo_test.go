@@ -20,8 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func branchTemplate() definition.Branch {
-	return definition.Branch{}
+func branchTemplate(k key.BranchKey) definition.Branch {
+	return definition.Branch{BranchKey: k}
 }
 
 func TestRepository_Branch(t *testing.T) {
@@ -30,23 +30,15 @@ func TestRepository_Branch(t *testing.T) {
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
-	branch1 := branchTemplate()
-	branch1.BranchKey = key.BranchKey{
-		ProjectID: 123,
-		BranchID:  567,
-	}
-	branch2 := branchTemplate()
-	branch2.BranchKey = key.BranchKey{
-		ProjectID: 456,
-		BranchID:  789,
-	}
+	branch1 := branchTemplate(key.BranchKey{ProjectID: 123, BranchID: 567})
+	branch2 := branchTemplate(key.BranchKey{ProjectID: 456, BranchID: 789})
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
 
 	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
 	client := d.TestEtcdClient()
-	r := NewRepository(d).Branch()
+	r := New(d).Branch()
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -92,8 +84,12 @@ func TestRepository_Branch(t *testing.T) {
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, r.Create(&branch1).Do(ctx).Err())
-		assert.NoError(t, r.Create(&branch2).Do(ctx).Err())
+		result1, err := r.Create(&branch1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, branch1, result1)
+		result2, err := r.Create(&branch2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, branch2, result2)
 	}
 	{
 		// List
@@ -142,32 +138,20 @@ func TestRepository_Branch(t *testing.T) {
 	var sink1, sink2, sink3 definition.Sink
 	{
 		// Create 3 sources
-		source1 = sourceTemplate()
-		source1.BranchKey = branch1.BranchKey
-		source1.SourceID = "source-1"
+		source1 = sourceTemplate(key.SourceKey{BranchKey: branch1.BranchKey, SourceID: "source-1"})
 		require.NoError(t, r.all.source.Create("Create source", &source1).Do(ctx).Err())
-		source2 = sourceTemplate()
-		source2.BranchKey = branch1.BranchKey
-		source2.SourceID = "source-2"
+		source2 = sourceTemplate(key.SourceKey{BranchKey: branch1.BranchKey, SourceID: "source-2"})
 		require.NoError(t, r.all.source.Create("Create source", &source2).Do(ctx).Err())
-		source3 = sourceTemplate()
-		source3.BranchKey = branch1.BranchKey
-		source3.SourceID = "source-3"
+		source3 = sourceTemplate(key.SourceKey{BranchKey: branch1.BranchKey, SourceID: "source-3"})
 		require.NoError(t, r.all.source.Create("Create source", &source3).Do(ctx).Err())
 	}
 	{
 		// Create 3 sinks
-		sink1 = sinkTemplate()
-		sink1.SourceKey = source1.SourceKey
-		sink1.SinkID = "sink-1"
+		sink1 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-1"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink1).Do(ctx).Err())
-		sink2 = sinkTemplate()
-		sink2.SourceKey = source1.SourceKey
-		sink2.SinkID = "sink-2"
+		sink2 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-2"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink2).Do(ctx).Err())
-		sink3 = sinkTemplate()
-		sink3.SourceKey = source1.SourceKey
-		sink3.SinkID = "sink-3"
+		sink3 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-3"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink3).Do(ctx).Err())
 	}
 	{
@@ -216,13 +200,23 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.SoftDelete(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
+		var errWithStatus serviceErrors.WithStatusCode
+		if assert.True(t, errors.As(err, &errWithStatus)) {
+			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+		}
 	}
 
 	// Undelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		assert.NoError(t, r.Undelete(branch1.BranchKey).Do(ctx).Err())
+		result, err := r.Undelete(branch1.BranchKey).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, keboola.BranchID(567), result.BranchID)
+	}
+	{
+		// ExistsOrErr
+		assert.NoError(t, r.ExistsOrErr(branch1.BranchKey).Do(ctx).Err())
 	}
 	{
 		// Get
@@ -260,6 +254,10 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Undelete(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
+		var errWithStatus serviceErrors.WithStatusCode
+		if assert.True(t, errors.As(err, &errWithStatus)) {
+			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+		}
 	}
 
 	// Re-create causes Undelete
@@ -270,11 +268,11 @@ func TestRepository_Branch(t *testing.T) {
 	}
 	{
 		//  Re-create
-		k := branch1.BranchKey
-		branch1 = branchTemplate()
-		branch1.BranchKey = k
+		branch1 = branchTemplate(branch1.BranchKey)
 		assert.NoError(t, r.Create(&branch1).Do(ctx).Err())
 		assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
+		assert.False(t, branch1.Deleted)
+		assert.Nil(t, branch1.DeletedAt)
 	}
 	{
 		// Get
@@ -397,8 +395,7 @@ definition/sink/version/123/567/source-1/sink-3/0000000001
 		txn := op.NewTxnOp(client)
 		ops := 0
 		for i := 2; i <= MaxBranchesPerProject; i++ {
-			v := branchTemplate()
-			v.BranchKey = key.BranchKey{ProjectID: branch1.ProjectID, BranchID: keboola.BranchID(1000 + i)}
+			v := branchTemplate(key.BranchKey{ProjectID: branch1.ProjectID, BranchID: keboola.BranchID(1000 + i)})
 			txn.Then(r.schema.Active().ByKey(v.BranchKey).Put(client, v))
 
 			// Send the txn it is full, or after the last item
@@ -417,11 +414,7 @@ definition/sink/version/123/567/source-1/sink-3/0000000001
 	}
 	{
 		// Exceed the limit
-		branch := branchTemplate()
-		branch.BranchKey = key.BranchKey{
-			ProjectID: 123,
-			BranchID:  111111,
-		}
+		branch := branchTemplate(key.BranchKey{ProjectID: 123, BranchID: 111111})
 		if err := r.Create(&branch).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, "branch count limit reached in the project, the maximum is 100", err.Error())
 			var errWithStatus serviceErrors.WithStatusCode
