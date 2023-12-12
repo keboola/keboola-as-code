@@ -22,8 +22,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func sinkTemplate() definition.Sink {
+func sinkTemplate(k key.SinkKey) definition.Sink {
 	return definition.Sink{
+		SinkKey:     k,
 		Type:        definition.SinkTypeTable,
 		Name:        "My Sink",
 		Description: "My Description",
@@ -45,38 +46,19 @@ func TestRepository_Sink(t *testing.T) {
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
-	nonExistentSinkKey := key.SinkKey{
-		SourceKey: key.SourceKey{
-			BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
-			SourceID:  "my-source",
-		},
-		SinkID: "non-existent",
-	}
-	sink1 := sinkTemplate()
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	nonExistentSinkKey := key.SinkKey{SourceKey: key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}, SinkID: "non-existent"}
+	sink1 := sinkTemplate(key.SinkKey{SourceKey: key.SourceKey{BranchKey: branchKey, SourceID: "my-source-1"}, SinkID: "my-sink-1"})
 	sink1.Name = "My Sink 1"
-	sink1.SinkKey = key.SinkKey{
-		SourceKey: key.SourceKey{
-			BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
-			SourceID:  "my-source-1",
-		},
-		SinkID: "my-sink-1",
-	}
-	sink2 := sinkTemplate()
+	sink2 := sinkTemplate(key.SinkKey{SourceKey: key.SourceKey{BranchKey: branchKey, SourceID: "my-source-2"}, SinkID: "my-sink-2"})
 	sink2.Name = "My Sink 2"
-	sink2.SinkKey = key.SinkKey{
-		SourceKey: key.SourceKey{
-			BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
-			SourceID:  "my-source-2",
-		},
-		SinkID: "my-sink-2",
-	}
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
 
 	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
 	client := d.TestEtcdClient()
-	r := NewRepository(d).Sink()
+	r := New(d).Sink()
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -144,24 +126,25 @@ func TestRepository_Sink(t *testing.T) {
 	// Create parent branch and sources
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch := branchTemplate()
-		branch.BranchKey = sink1.BranchKey
+		branch := branchTemplate(sink1.BranchKey)
 		require.NoError(t, r.all.Branch().Create(&branch).Do(ctx).Err())
-		source1 := sourceTemplate()
-		source1.SourceKey = sink1.SourceKey
+		source1 := sourceTemplate(sink1.SourceKey)
 		require.NoError(t, r.all.Source().Create("Create source", &source1).Do(ctx).Err())
-		source2 := sourceTemplate()
-		source2.SourceKey = sink2.SourceKey
+		source2 := sourceTemplate(sink2.SourceKey)
 		require.NoError(t, r.all.Source().Create("Create source", &source2).Do(ctx).Err())
 	}
 
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, r.Create("Create description", &sink1).Do(ctx).Err())
+		result1, err := r.Create("Create description", &sink1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, sink1, result1)
 		assert.Equal(t, definition.VersionNumber(1), sink1.VersionNumber())
 		assert.NotEmpty(t, sink1.VersionHash())
-		require.NoError(t, r.Create("Create description", &sink2).Do(ctx).Err())
+		result2, err := r.Create("Create description", &sink2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, sink2, result2)
 		assert.Equal(t, definition.VersionNumber(1), sink2.VersionNumber())
 		assert.NotEmpty(t, sink2.VersionHash())
 	}
@@ -228,14 +211,16 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		assert.NoError(t, r.Update(sink1.SinkKey, "Update description", func(v definition.Sink) definition.Sink {
+		result, err := r.Update(sink1.SinkKey, "Update description", func(v definition.Sink) definition.Sink {
 			v.Name = "Modified Name"
 			return v
-		}).Do(ctx).Err())
+		}).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, "Modified Name", result.Name)
+		assert.Equal(t, definition.VersionNumber(2), result.VersionNumber())
 		kv, err := r.Get(sink1.SinkKey).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
-		assert.Equal(t, "Modified Name", kv.Value.Name)
-		assert.Equal(t, definition.VersionNumber(2), kv.Value.VersionNumber())
+		require.NoError(t, err)
+		assert.Equal(t, result, kv.Value)
 	}
 	{
 		// Modify description
@@ -259,6 +244,10 @@ func TestRepository_Sink(t *testing.T) {
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source/non-existent" not found in the source`, err.Error())
+			var errWithStatus serviceErrors.WithStatusCode
+			if assert.True(t, errors.As(err, &errWithStatus)) {
+				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+			}
 		}
 	}
 
@@ -341,13 +330,20 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.SoftDelete(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
+		var errWithStatus serviceErrors.WithStatusCode
+		if assert.True(t, errors.As(err, &errWithStatus)) {
+			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+		}
 	}
 
 	// Undelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		assert.NoError(t, r.Undelete(sink1.SinkKey).Do(ctx).Err())
+		result, err := r.Undelete(sink1.SinkKey).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, "Modified Name", result.Name)
+		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 	}
 	{
 		// ExistsOrErr
@@ -390,6 +386,10 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Undelete(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
+		var errWithStatus serviceErrors.WithStatusCode
+		if assert.True(t, errors.As(err, &errWithStatus)) {
+			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+		}
 	}
 
 	// Re-create causes Undelete + new version record
@@ -401,13 +401,13 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		//  Re-create
-		k := sink1.SinkKey
-		sink1 = sinkTemplate()
-		sink1.SinkKey = k
+		sink1 = sinkTemplate(sink1.SinkKey)
 		assert.NoError(t, r.Create("Re-create", &sink1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
 		assert.Equal(t, "My Sink", sink1.Name)
 		assert.Equal(t, "My Description", sink1.Description)
+		assert.False(t, sink1.Deleted)
+		assert.Nil(t, sink1.DeletedAt)
 	}
 	{
 		// ExistsOrErr
@@ -576,9 +576,7 @@ definition/sink/version/123/456/my-source-2/my-sink-2/0000000001
 		txn := op.NewTxnOp(client)
 		ops := 0
 		for i := 2; i <= MaxSinksPerSource; i++ {
-			id := key.SinkID(fmt.Sprintf("my-sink-%d", i))
-			v := sinkTemplate()
-			v.SinkKey = key.SinkKey{SourceKey: sink1.SourceKey, SinkID: id}
+			v := sinkTemplate(key.SinkKey{SourceKey: sink1.SourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", i))})
 			v.IncrementVersion(v, clk.Now(), "Create")
 			txn.Then(r.schema.Active().ByKey(v.SinkKey).Put(client, v))
 
@@ -598,11 +596,7 @@ definition/sink/version/123/456/my-source-2/my-sink-2/0000000001
 	}
 	{
 		// Exceed the limit
-		sink := sinkTemplate()
-		sink.SinkKey = key.SinkKey{
-			SourceKey: sink1.SourceKey,
-			SinkID:    "over-maximum-count",
-		}
+		sink := sinkTemplate(key.SinkKey{SourceKey: sink1.SourceKey, SinkID: "over-maximum-count"})
 		if err := r.Create("Create description", &sink).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, "sink count limit reached in the source, the maximum is 100", err.Error())
 			var errWithStatus serviceErrors.WithStatusCode
