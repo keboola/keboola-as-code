@@ -11,7 +11,7 @@
 // A new operation can be defined as a:
 // New<Operation>(<operation factory>, <response processor>) function.
 //
-// On Operation.Do(ctx, etcdClient) call :
+// On Operation.Do(ctx) call :
 //   - The <operation factory> is executed, result is an etcd operation.
 //   - The etcd operation is executed, result is an etcd response.
 //   - The <response processor> is executed, to process the etcd response.
