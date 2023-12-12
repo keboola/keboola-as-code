@@ -229,7 +229,7 @@ func (s *State) validateRemote(ctx context.Context) (err error) {
 	return errs.ErrorOrNil()
 }
 
-func (s *State) ValidateValue(value interface{}) error {
+func (s *State) ValidateValue(value any) error {
 	return s.validator.ValidateCtx(s.Ctx(), value, "dive", "")
 }
 

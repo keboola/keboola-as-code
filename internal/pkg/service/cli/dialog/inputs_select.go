@@ -37,7 +37,7 @@ func (d *inputsSelectDialog) ask() (objectInputsMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please select which fields in the configurations should be user inputs.`,
 		Default:     d.defaultValue(),
-		Validator: func(val interface{}) error {
+		Validator: func(val any) error {
 			if err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
 				return errors.PrefixError(err, "\n")

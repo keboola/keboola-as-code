@@ -31,7 +31,7 @@ func (d *templateIdsDialog) ask() ([]create.ConfigDef, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please enter a human readable ID for each config and config row.`,
 		Default:     d.defaultValue(),
-		Validator: func(val interface{}) error {
+		Validator: func(val any) error {
 			if _, err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
 				return errors.PrefixError(err, "\n")

@@ -141,7 +141,7 @@ type Input struct {
 	// Kind of the input.
 	Kind string
 	// Default value, match defined type.
-	Default interface{}
+	Default any
 	// Input options for type = select OR multiselect.
 	Options []*InputOption
 	// Component id for "oauth" kind inputs.
@@ -173,7 +173,7 @@ type InputValue struct {
 	// Unique ID of the input.
 	ID string
 	// Input value filled in by user in the required type.
-	Value interface{}
+	Value any
 }
 
 // Inputs is the result type of the templates service InputsIndex method.

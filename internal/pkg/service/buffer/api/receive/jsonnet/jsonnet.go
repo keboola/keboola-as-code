@@ -91,7 +91,7 @@ func RegisterFunctions(c *jsonnet.Context, reqCtx *receivectx.Context) {
 func ipFn(fnName string, reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 0 {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
@@ -103,7 +103,7 @@ func ipFn(fnName string, reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 func headerStrFn(fnName string, reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 0 {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
@@ -116,7 +116,7 @@ func headerStrFn(fnName string, reqCtx *receivectx.Context) *jsonnet.NativeFunct
 func bodyStrFn(fnName string, reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 0 {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
@@ -185,7 +185,7 @@ func nowInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   nowFnName,
 		Params: ast.Identifiers{"format"},
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			}
@@ -208,7 +208,7 @@ func nowInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 func headersMapInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: headersMapFnName,
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 0 {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
@@ -221,7 +221,7 @@ func headerValueInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   headerFnName,
 		Params: ast.Identifiers{"path", "default"},
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 2 {
 				return nil, errors.Errorf("two parameters expected, found %d", len(params))
 			}
@@ -248,7 +248,7 @@ func headerValueInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 func bodyMapInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: bodyMapFnName,
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 0 {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
@@ -265,7 +265,7 @@ func bodyPathInternalFn(reqCtx *receivectx.Context) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   bodyPathFnName,
 		Params: ast.Identifiers{"path", "default"},
-		Func: func(params []interface{}) (any, error) {
+		Func: func(params []any) (any, error) {
 			if len(params) != 2 {
 				return nil, errors.Errorf("two parameters expected, found %d", len(params))
 			}

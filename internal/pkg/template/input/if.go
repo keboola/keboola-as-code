@@ -11,7 +11,7 @@ import (
 type If string
 
 // Evaluate condition.
-func (i If) Evaluate(params map[string]interface{}) (bool, error) {
+func (i If) Evaluate(params map[string]any) (bool, error) {
 	// No condition
 	if i == "" {
 		return true, nil

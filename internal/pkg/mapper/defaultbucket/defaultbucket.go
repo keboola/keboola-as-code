@@ -30,7 +30,7 @@ func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, conten
 ) error,
 ) error {
 	inputTablesRaw, _, _ := content.GetNested("storage.input.tables")
-	inputTables, ok := inputTablesRaw.([]interface{})
+	inputTables, ok := inputTablesRaw.([]any)
 	if !ok {
 		return nil
 	}

@@ -9,7 +9,7 @@ import (
 type FieldMetadata struct {
 	Title       string
 	Description string
-	Default     interface{}
+	Default     any
 	Required    bool
 }
 

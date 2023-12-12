@@ -36,7 +36,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 		configRecipe.Object.(*model.Config).Content.GetOrNil(model.ShareCodeTargetComponentKey),
 	)
 	assert.Equal(t,
-		[]interface{}{
+		[]any{
 			`foo`,
 			`bar`,
 		},

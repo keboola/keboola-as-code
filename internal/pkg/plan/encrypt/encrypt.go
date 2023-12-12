@@ -37,7 +37,7 @@ func (b *encryptPlanBuilder) processObject(objectState model.ObjectState) {
 	if o, ok := objectState.LocalState().(model.ObjectWithContent); ok {
 		// Wall through
 		var values []*UnencryptedValue
-		o.GetContent().VisitAllRecursive(func(path orderedmap.Path, value interface{}, parent interface{}) {
+		o.GetContent().VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
 			if v, ok := value.(string); ok {
 				if key, ok := path.Last().(orderedmap.MapStep); ok && keboola.IsKeyToEncrypt(key.Key()) && !keboola.IsEncrypted(v) {
 					values = append(values, &UnencryptedValue{path: path, value: v})

@@ -65,7 +65,7 @@ func (c *Client) APIRootIndex(ctx context.Context) (err error) {
 
 // APIVersionIndex calls the "ApiVersionIndex" endpoint of the "buffer" service.
 func (c *Client) APIVersionIndex(ctx context.Context) (res *ServiceDetail, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.APIVersionIndexEndpoint(ctx, nil)
 	if err != nil {
 		return
@@ -75,7 +75,7 @@ func (c *Client) APIVersionIndex(ctx context.Context) (res *ServiceDetail, err e
 
 // HealthCheck calls the "HealthCheck" endpoint of the "buffer" service.
 func (c *Client) HealthCheck(ctx context.Context) (res string, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.HealthCheckEndpoint(ctx, nil)
 	if err != nil {
 		return
@@ -89,7 +89,7 @@ func (c *Client) HealthCheck(ctx context.Context) (res string, err error) {
 //   - "buffer.resourceLimitReached" (type *GenericError): Resource limit reached.
 //   - error: internal error
 func (c *Client) CreateReceiver(ctx context.Context, p *CreateReceiverPayload) (res *Task, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.CreateReceiverEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -102,7 +102,7 @@ func (c *Client) CreateReceiver(ctx context.Context, p *CreateReceiverPayload) (
 //   - "buffer.receiverNotFound" (type *GenericError): Receiver not found error.
 //   - error: internal error
 func (c *Client) UpdateReceiver(ctx context.Context, p *UpdateReceiverPayload) (res *Receiver, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.UpdateReceiverEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -112,7 +112,7 @@ func (c *Client) UpdateReceiver(ctx context.Context, p *UpdateReceiverPayload) (
 
 // ListReceivers calls the "ListReceivers" endpoint of the "buffer" service.
 func (c *Client) ListReceivers(ctx context.Context, p *ListReceiversPayload) (res *ReceiversList, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.ListReceiversEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -125,7 +125,7 @@ func (c *Client) ListReceivers(ctx context.Context, p *ListReceiversPayload) (re
 //   - "buffer.receiverNotFound" (type *GenericError): Receiver not found error.
 //   - error: internal error
 func (c *Client) GetReceiver(ctx context.Context, p *GetReceiverPayload) (res *Receiver, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.GetReceiverEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -148,7 +148,7 @@ func (c *Client) DeleteReceiver(ctx context.Context, p *DeleteReceiverPayload) (
 //   - "buffer.receiverNotFound" (type *GenericError): Receiver not found error.
 //   - error: internal error
 func (c *Client) RefreshReceiverTokens(ctx context.Context, p *RefreshReceiverTokensPayload) (res *Receiver, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.RefreshReceiverTokensEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -163,7 +163,7 @@ func (c *Client) RefreshReceiverTokens(ctx context.Context, p *RefreshReceiverTo
 //   - "buffer.resourceLimitReached" (type *GenericError): Resource limit reached.
 //   - error: internal error
 func (c *Client) CreateExport(ctx context.Context, p *CreateExportPayload) (res *Task, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.CreateExportEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -177,7 +177,7 @@ func (c *Client) CreateExport(ctx context.Context, p *CreateExportPayload) (res 
 //   - "buffer.exportNotFound" (type *GenericError): Export not found error.
 //   - error: internal error
 func (c *Client) GetExport(ctx context.Context, p *GetExportPayload) (res *Export, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.GetExportEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -190,7 +190,7 @@ func (c *Client) GetExport(ctx context.Context, p *GetExportPayload) (res *Expor
 //   - "buffer.receiverNotFound" (type *GenericError): Receiver not found error.
 //   - error: internal error
 func (c *Client) ListExports(ctx context.Context, p *ListExportsPayload) (res *ExportsList, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.ListExportsEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -204,7 +204,7 @@ func (c *Client) ListExports(ctx context.Context, p *ListExportsPayload) (res *E
 //   - "buffer.exportNotFound" (type *GenericError): Export not found error.
 //   - error: internal error
 func (c *Client) UpdateExport(ctx context.Context, p *UpdateExportPayload) (res *Task, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.UpdateExportEndpoint(ctx, p)
 	if err != nil {
 		return
@@ -237,7 +237,7 @@ func (c *Client) Import(ctx context.Context, p *ImportPayload, req io.ReadCloser
 //   - "buffer.taskNotFound" (type *GenericError): Task not found error.
 //   - error: internal error
 func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
-	var ires interface{}
+	var ires any
 	ires, err = c.GetTaskEndpoint(ctx, p)
 	if err != nil {
 		return

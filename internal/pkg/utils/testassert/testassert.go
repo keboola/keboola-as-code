@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func DeepEqualNotSame(t *testing.T, a, b interface{}, path string) {
+func DeepEqualNotSame(t *testing.T, a, b any, path string) {
 	t.Helper()
 
 	// Equal

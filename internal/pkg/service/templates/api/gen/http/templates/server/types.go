@@ -911,7 +911,7 @@ type InputResponseBody struct {
 	// Kind of the input.
 	Kind string `form:"kind" json:"kind" xml:"kind"`
 	// Default value, match defined type.
-	Default interface{} `form:"default" json:"default" xml:"default"`
+	Default any `form:"default" json:"default" xml:"default"`
 	// Input options for type = select OR multiselect.
 	Options []*InputOptionResponseBody `form:"options,omitempty" json:"options,omitempty" xml:"options,omitempty"`
 	// Component id for "oauth" kind inputs.
@@ -1067,7 +1067,7 @@ type InputValueRequestBody struct {
 	// Unique ID of the input.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Input value filled in by user in the required type.
-	Value interface{} `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
+	Value any `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
 }
 
 // NewAPIVersionIndexResponseBody builds the HTTP response body from the result

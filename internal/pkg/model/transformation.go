@@ -54,8 +54,8 @@ type StaticScript struct {
 	Value string
 }
 
-func (v UsedSharedCodeRows) IdsSlice() []interface{} {
-	var ids []interface{}
+func (v UsedSharedCodeRows) IdsSlice() []any {
+	var ids []any
 	for _, rowKey := range v {
 		ids = append(ids, rowKey.ID.String())
 	}
@@ -111,8 +111,8 @@ func (c Code) String() string {
 	return fmt.Sprintf("## %s\n%s", c.Name, c.Scripts.String(c.ComponentID))
 }
 
-func (v Scripts) Slice() []interface{} {
-	var out []interface{}
+func (v Scripts) Slice() []any {
+	var out []any
 	for _, script := range v {
 		out = append(out, script.Content())
 	}
@@ -184,7 +184,7 @@ func ScriptsFromStr(content string, componentID keboola.ComponentID) Scripts {
 	return scripts
 }
 
-func ScriptsFromSlice(items []interface{}) Scripts {
+func ScriptsFromSlice(items []any) Scripts {
 	var scripts Scripts
 	for _, item := range items {
 		scripts = append(scripts, StaticScript{Value: cast.ToString(item)})

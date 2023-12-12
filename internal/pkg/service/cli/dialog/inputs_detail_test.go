@@ -235,7 +235,7 @@ func testInputs() input.InputsMap {
 		Description: "Description",
 		Type:        input.TypeStringArray,
 		Kind:        input.KindMultiSelect,
-		Default:     []interface{}{"value1", "value3"},
+		Default:     []any{"value1", "value3"},
 		Options: input.Options{
 			{
 				Value: "value1",

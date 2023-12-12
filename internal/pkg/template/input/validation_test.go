@@ -193,7 +193,7 @@ func TestValidationRules(t *testing.T) {
 					Description: "input desc",
 					Type:        "string[]",
 					Kind:        "multiselect",
-					Default:     []interface{}{"a", "d"},
+					Default:     []any{"a", "d"},
 					Options: Options{
 						{Value: "a", Label: "A"},
 						{Value: "b", Label: "B"},
@@ -212,7 +212,7 @@ func TestValidationRules(t *testing.T) {
 					Description: "input desc",
 					Type:        "string[]",
 					Kind:        "multiselect",
-					Default:     []interface{}{"a", "c"},
+					Default:     []any{"a", "c"},
 					Options: Options{
 						{Value: "a", Label: "A"},
 						{Value: "b", Label: "B"},

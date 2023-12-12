@@ -17,7 +17,7 @@ func TestValidate_Simple(t *testing.T) {
 
 	ctx.NativeFunctionWithAlias(&NativeFunction{
 		Name:   "test",
-		Func:   func(args []interface{}) (interface{}, error) { return nil, nil },
+		Func:   func(args []any) (any, error) { return nil, nil },
 		Params: []ast.Identifier{},
 	})
 
@@ -35,7 +35,7 @@ func TestValidate_ShadowedGlobal(t *testing.T) {
 
 	ctx.NativeFunctionWithAlias(&NativeFunction{
 		Name:   "test",
-		Func:   func(args []interface{}) (interface{}, error) { return nil, nil },
+		Func:   func(args []any) (any, error) { return nil, nil },
 		Params: []ast.Identifier{},
 	})
 

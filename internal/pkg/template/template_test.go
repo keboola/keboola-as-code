@@ -103,5 +103,5 @@ func TestTemplate_TestInputs(t *testing.T) {
 	assert.NoError(t, err)
 	res, err := test.Inputs(nil, nil, "")
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, res)
+	assert.Equal(t, map[string]any{"foo": "bar"}, res)
 }

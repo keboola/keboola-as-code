@@ -224,7 +224,7 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 	}
 
 	for _, item := range raw {
-		var obj map[string]interface{}
+		var obj map[string]any
 		if err := json.Unmarshal(item, &obj); err != nil {
 			return err
 		}

@@ -56,7 +56,7 @@ func TestInput_ValidateUserInputOAuth(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "oauth should be object, got slice", err.Error())
 
-	err = input.ValidateUserInput(map[string]interface{}{"a": "b"})
+	err = input.ValidateUserInput(map[string]any{"a": "b"})
 	assert.NoError(t, err)
 }
 
@@ -72,7 +72,7 @@ func TestInput_Available(t *testing.T) {
 		Kind:        "input",
 		If:          "facebook_integration == true",
 	}
-	params := make(map[string]interface{}, 1)
+	params := make(map[string]any, 1)
 	params["facebook_integration"] = true
 	v, err := input.Available(params)
 	assert.True(t, v)
@@ -99,7 +99,7 @@ func TestInput_Available(t *testing.T) {
 		Kind:        "input",
 		If:          "facebook_integration == true",
 	}
-	params = make(map[string]interface{}, 1)
+	params = make(map[string]any, 1)
 	params["facebook_integration"] = false
 	v, err = input.Available(params)
 	assert.False(t, v)

@@ -57,7 +57,7 @@ func (v *MountFs) BasePath() string {
 	return v.basePath
 }
 
-func (v *MountFs) SubDirFs(path string) (interface{}, error) {
+func (v *MountFs) SubDirFs(path string) (any, error) {
 	targetFs, _, targetPath := v.fsFor(path)
 
 	// Get backend

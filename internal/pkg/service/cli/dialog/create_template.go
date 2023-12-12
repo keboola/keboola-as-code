@@ -188,7 +188,7 @@ func (d *createTmplDialog) askDescription() string {
 	return strings.TrimSpace(result)
 }
 
-func validateTemplateName(val interface{}) error {
+func validateTemplateName(val any) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
 		return errors.New(`template name is required and cannot be empty`)
@@ -196,7 +196,7 @@ func validateTemplateName(val interface{}) error {
 	return nil
 }
 
-func validateTemplateDescription(val interface{}) error {
+func validateTemplateDescription(val any) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
 		return errors.New(`template description is required and cannot be empty`)
@@ -204,7 +204,7 @@ func validateTemplateDescription(val interface{}) error {
 	return nil
 }
 
-func validateID(val interface{}) error {
+func validateID(val any) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
 		return errors.New(`template ID is required`)

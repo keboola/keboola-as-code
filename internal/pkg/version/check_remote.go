@@ -73,7 +73,7 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 func (c *checker) getLatestVersion() (string, error) {
 	// Load releases
 	// The last release may be without assets (build in progress), so we load the last 5 releases.
-	result := make([]interface{}, 0)
+	result := make([]any, 0)
 	_, _, err := request.NewHTTPRequest(c.client).
 		WithGet("repos/keboola/keboola-as-code/releases?per_page=5").
 		WithResult(&result).
@@ -85,7 +85,7 @@ func (c *checker) getLatestVersion() (string, error) {
 	// Determine the latest version
 	for _, item := range result {
 		// Release is object
-		release, ok := item.(map[string]interface{})
+		release, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -97,7 +97,7 @@ func (c *checker) getLatestVersion() (string, error) {
 		}
 
 		// Assets is an array
-		assets, ok := assetsRaw.([]interface{})
+		assets, ok := assetsRaw.([]any)
 		if !ok {
 			continue
 		}

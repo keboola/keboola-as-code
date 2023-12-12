@@ -60,7 +60,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 
 	// Get shared code config rows IDs
 	sharedCodeRowsIdsRaw, found := transformation.Content.Get(model.SharedCodeRowsIDContentKey)
-	v, ok := sharedCodeRowsIdsRaw.([]interface{})
+	v, ok := sharedCodeRowsIdsRaw.([]any)
 	if !found {
 		return nil
 	} else if !ok {

@@ -18,7 +18,7 @@ func (p *Dialogs) AskStorageAPIHost() string {
 	return host
 }
 
-func StorageAPIHostValidator(val interface{}) error {
+func StorageAPIHostValidator(val any) error {
 	if str := val.(string); len(str) == 0 {
 		return errors.New("value is required")
 	} else if _, err := url.Parse(str); err != nil {

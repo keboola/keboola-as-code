@@ -63,7 +63,7 @@ func (fs *BasePathFs) BasePath() string {
 	return fs.basePath
 }
 
-func (fs *BasePathFs) SubDirFs(path string) (interface{}, error) {
+func (fs *BasePathFs) SubDirFs(path string) (any, error) {
 	return New(fs, path)
 }
 

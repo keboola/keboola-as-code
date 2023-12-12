@@ -92,7 +92,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 // NewAPIRootIndexEndpoint returns an endpoint function that calls the method
 // "ApiRootIndex" of service "templates".
 func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		return nil, s.APIRootIndex(ctx, deps)
 	}
@@ -101,7 +101,7 @@ func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 // NewAPIVersionIndexEndpoint returns an endpoint function that calls the
 // method "ApiVersionIndex" of service "templates".
 func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		return s.APIVersionIndex(ctx, deps)
 	}
@@ -110,7 +110,7 @@ func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 // NewHealthCheckEndpoint returns an endpoint function that calls the method
 // "HealthCheck" of service "templates".
 func NewHealthCheckEndpoint(s Service) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		return s.HealthCheck(ctx, deps)
 	}
@@ -119,7 +119,7 @@ func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 // NewRepositoriesIndexEndpoint returns an endpoint function that calls the
 // method "RepositoriesIndex" of service "templates".
 func NewRepositoriesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*RepositoriesIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -139,7 +139,7 @@ func NewRepositoriesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFun
 // NewRepositoryIndexEndpoint returns an endpoint function that calls the
 // method "RepositoryIndex" of service "templates".
 func NewRepositoryIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*RepositoryIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -159,7 +159,7 @@ func NewRepositoryIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 // NewTemplatesIndexEndpoint returns an endpoint function that calls the method
 // "TemplatesIndex" of service "templates".
 func NewTemplatesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*TemplatesIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -179,7 +179,7 @@ func NewTemplatesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 // NewTemplateIndexEndpoint returns an endpoint function that calls the method
 // "TemplateIndex" of service "templates".
 func NewTemplateIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*TemplateIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -199,7 +199,7 @@ func NewTemplateIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 // NewVersionIndexEndpoint returns an endpoint function that calls the method
 // "VersionIndex" of service "templates".
 func NewVersionIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*VersionIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -219,7 +219,7 @@ func NewVersionIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 // NewInputsIndexEndpoint returns an endpoint function that calls the method
 // "InputsIndex" of service "templates".
 func NewInputsIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*InputsIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -239,7 +239,7 @@ func NewInputsIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa
 // NewValidateInputsEndpoint returns an endpoint function that calls the method
 // "ValidateInputs" of service "templates".
 func NewValidateInputsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*ValidateInputsPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -259,7 +259,7 @@ func NewValidateInputsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 // NewUseTemplateVersionEndpoint returns an endpoint function that calls the
 // method "UseTemplateVersion" of service "templates".
 func NewUseTemplateVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UseTemplateVersionPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -279,7 +279,7 @@ func NewUseTemplateVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFu
 // NewInstancesIndexEndpoint returns an endpoint function that calls the method
 // "InstancesIndex" of service "templates".
 func NewInstancesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*InstancesIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -299,7 +299,7 @@ func NewInstancesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 // NewInstanceIndexEndpoint returns an endpoint function that calls the method
 // "InstanceIndex" of service "templates".
 func NewInstanceIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*InstanceIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -319,7 +319,7 @@ func NewInstanceIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 // NewUpdateInstanceEndpoint returns an endpoint function that calls the method
 // "UpdateInstance" of service "templates".
 func NewUpdateInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpdateInstancePayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -339,7 +339,7 @@ func NewUpdateInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 // NewDeleteInstanceEndpoint returns an endpoint function that calls the method
 // "DeleteInstance" of service "templates".
 func NewDeleteInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*DeleteInstancePayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -359,7 +359,7 @@ func NewDeleteInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 // NewUpgradeInstanceEndpoint returns an endpoint function that calls the
 // method "UpgradeInstance" of service "templates".
 func NewUpgradeInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpgradeInstancePayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -379,7 +379,7 @@ func NewUpgradeInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 // NewUpgradeInstanceInputsIndexEndpoint returns an endpoint function that
 // calls the method "UpgradeInstanceInputsIndex" of service "templates".
 func NewUpgradeInstanceInputsIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpgradeInstanceInputsIndexPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -399,7 +399,7 @@ func NewUpgradeInstanceInputsIndexEndpoint(s Service, authAPIKeyFn security.Auth
 // NewUpgradeInstanceValidateInputsEndpoint returns an endpoint function that
 // calls the method "UpgradeInstanceValidateInputs" of service "templates".
 func NewUpgradeInstanceValidateInputsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpgradeInstanceValidateInputsPayload)
 		var err error
 		sc := security.APIKeyScheme{
@@ -419,7 +419,7 @@ func NewUpgradeInstanceValidateInputsEndpoint(s Service, authAPIKeyFn security.A
 // NewGetTaskEndpoint returns an endpoint function that calls the method
 // "GetTask" of service "templates".
 func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetTaskPayload)
 		var err error
 		sc := security.APIKeyScheme{

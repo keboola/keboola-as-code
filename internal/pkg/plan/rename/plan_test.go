@@ -24,13 +24,13 @@ func TestRenameAllPlan(t *testing.T) {
 	d := dependencies.NewMocked(t)
 
 	// Mocked API response
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":   "ex-generic-v2",
 		"type": "extractor",
 		"name": "Generic",
 	})
 	assert.NoError(t, err)
-	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":   "keboola.ex-db-mysql",
 		"type": "extractor",
 		"name": "MySQL",

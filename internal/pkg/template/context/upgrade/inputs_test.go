@@ -17,14 +17,14 @@ type configInput struct {
 	id         string
 	inMetadata bool
 	inContent  bool
-	value      interface{}
+	value      any
 }
 
 type rowInput struct {
 	id         string
 	inMetadata bool
 	inContent  bool
-	value      interface{}
+	value      any
 }
 
 type testCase struct {

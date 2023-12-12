@@ -55,7 +55,7 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	if branch.IsDefault {
 		p.RelativePath = `main`
 	} else {
-		p.SetRelativePath(strhelper.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
+		p.SetRelativePath(strhelper.ReplacePlaceholders(string(g.template.Branch), map[string]any{
 			"branch_id":   branch.ID,
 			"branch_name": strhelper.NormalizeName(branch.Name),
 		}))
@@ -112,7 +112,7 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
 		"target_component_id": targetComponentID, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.ID,
@@ -146,7 +146,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component
 	case component.IsVariables():
 		template = string(g.template.VariablesValuesRow)
 		if row.Relations.Has(VariablesValuesForRelType) {
-			template = strhelper.ReplacePlaceholders(string(g.template.VariablesValuesRow), map[string]interface{}{
+			template = strhelper.ReplacePlaceholders(string(g.template.VariablesValuesRow), map[string]any{
 				"config_row_name": `default`,
 			})
 		}
@@ -169,7 +169,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component
 
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
 		"config_row_id":   jsonnet.StripIDPlaceholder(row.ID.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
@@ -183,7 +183,7 @@ func (g Generator) BlocksDir(configDir string) string {
 func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(strhelper.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(blockNameTemplate), map[string]any{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
 	}))
@@ -193,7 +193,7 @@ func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(strhelper.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(codeNameTemplate), map[string]any{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
@@ -219,7 +219,7 @@ func (g Generator) PhasesDir(configDir string) string {
 func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(strhelper.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(phaseNameTemplate), map[string]any{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
 	}))
@@ -233,7 +233,7 @@ func (g Generator) PhaseFilePath(phase *Phase) string {
 func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(strhelper.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(taskNameTemplate), map[string]any{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
 	}))
