@@ -34,11 +34,11 @@ type FileType string
 
 type FileKey struct {
 	key.SinkKey
-	FileID FileID `json:"fileId" validate:"required"`
+	FileID
 }
 
 type FileID struct {
-	OpenedAt utctime.UTCTime `json:"openedAt" validate:"required"`
+	OpenedAt utctime.UTCTime `json:"fileOpenedAt" validate:"required"`
 }
 
 func (v FileID) String() string {

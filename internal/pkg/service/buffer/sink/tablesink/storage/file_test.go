@@ -31,7 +31,7 @@ func TestFileID_Validation(t *testing.T) {
 	// Empty
 	err := val.Validate(ctx, FileID{})
 	if assert.Error(t, err) {
-		assert.Equal(t, `"openedAt" is a required field`, err.Error())
+		assert.Equal(t, `"fileOpenedAt" is a required field`, err.Error())
 	}
 }
 
@@ -64,7 +64,7 @@ func TestFileKey_Validation(t *testing.T) {
 - "branchId" is a required field
 - "sourceId" is a required field
 - "sinkId" is a required field
-- "fileId" is a required field
+- "fileOpenedAt" is a required field
 `), strings.TrimSpace(err.Error()))
 	}
 }
@@ -118,7 +118,7 @@ func TestFile_Validation(t *testing.T) {
 - "branchId" is a required field
 - "sourceId" is a required field
 - "sinkId" is a required field
-- "fileId" is a required field
+- "fileOpenedAt" is a required field
 - "type" is a required field
 - "state" is a required field
 - "columns" is a required field
