@@ -3,6 +3,7 @@ package workflows
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"embed"
 	"text/template"
 
@@ -34,12 +35,12 @@ type generator struct {
 	errors  errors.MultiError
 }
 
-func GenerateFiles(logger log.Logger, fs filesystem.Fs, options *Options) error {
+func GenerateFiles(ctx context.Context, logger log.Logger, fs filesystem.Fs, options *Options) error {
 	g := &generator{fs: fs, options: options, logger: logger, errors: errors.NewMultiError()}
-	return g.generateFiles()
+	return g.generateFiles(ctx)
 }
 
-func (g *generator) generateFiles() error {
+func (g *generator) generateFiles(ctx context.Context) error {
 	if !g.options.Enabled() {
 		g.logger.Info("")
 		g.logger.Info("No continuous integration action selected.")
@@ -52,23 +53,23 @@ func (g *generator) generateFiles() error {
 	workflowsDir := filesystem.Join(".github", "workflows")
 	actionsDir := filesystem.Join(".github", "actions")
 	installActDir := filesystem.Join(actionsDir, "install")
-	g.handleError(g.fs.Mkdir(workflowsDir))
-	g.handleError(g.fs.Mkdir(installActDir))
-	g.renderTemplate(`template/install.yml.tmpl`, filesystem.Join(installActDir, `action.yml`))
+	g.handleError(g.fs.Mkdir(ctx, workflowsDir))
+	g.handleError(g.fs.Mkdir(ctx, installActDir))
+	g.renderTemplate(ctx, `template/install.yml.tmpl`, filesystem.Join(installActDir, `action.yml`))
 
 	// Validate operation
 	if g.options.Validate {
-		g.renderTemplate(`template/validate.yml.tmpl`, filesystem.Join(workflowsDir, `validate.yml`))
+		g.renderTemplate(ctx, `template/validate.yml.tmpl`, filesystem.Join(workflowsDir, `validate.yml`))
 	}
 
 	// Push operation
 	if g.options.Push {
-		g.renderTemplate(`template/push.yml.tmpl`, filesystem.Join(workflowsDir, `push.yml`))
+		g.renderTemplate(ctx, `template/push.yml.tmpl`, filesystem.Join(workflowsDir, `push.yml`))
 	}
 
 	// Pull operation
 	if g.options.Pull {
-		g.renderTemplate(`template/pull.yml.tmpl`, filesystem.Join(workflowsDir, `pull.yml`))
+		g.renderTemplate(ctx, `template/pull.yml.tmpl`, filesystem.Join(workflowsDir, `pull.yml`))
 	}
 
 	if g.errors.Len() > 0 {
@@ -90,7 +91,7 @@ func (g *generator) handleError(err error) {
 	}
 }
 
-func (g *generator) renderTemplate(templatePath, targetPath string) {
+func (g *generator) renderTemplate(ctx context.Context, templatePath, targetPath string) {
 	// Load
 	content, err := templates.ReadFile(templatePath)
 	if err != nil {
@@ -116,7 +117,7 @@ func (g *generator) renderTemplate(templatePath, targetPath string) {
 	}
 
 	// Write
-	if err := g.fs.WriteFile(filesystem.NewRawFile(targetPath, buffer.String())); err == nil {
+	if err := g.fs.WriteFile(ctx, filesystem.NewRawFile(targetPath, buffer.String())); err == nil {
 		g.logger.Infof(`Created file "%s".`, targetPath)
 	} else {
 		g.errors.Append(err)

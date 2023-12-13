@@ -27,11 +27,12 @@ func TestRename(t *testing.T) {
 	validator := validatorPkg.New()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	manifest := projectManifest.New(1, "foo")
+	ctx := context.Background()
 
 	// Dir structure
-	assert.NoError(t, fs.Mkdir(`foo1/sub`))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`foo1/sub/file`), `content`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`foo2`), `content`)))
+	assert.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`foo1/sub/file`), `content`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`foo2`), `content`)))
 	logger.Truncate()
 
 	// Plan
@@ -53,17 +54,17 @@ func TestRename(t *testing.T) {
 	}
 
 	// NewPlan
-	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	assert.NoError(t, executor.invoke())
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `WARN`)
-	assert.True(t, fs.IsFile(`bar1/sub/file`))
-	assert.True(t, fs.IsFile(`bar2`))
-	assert.False(t, fs.Exists(`foo1/sub/file`))
-	assert.False(t, fs.Exists(`foo1`))
-	assert.False(t, fs.Exists(`foo2`))
+	assert.True(t, fs.IsFile(ctx, `bar1/sub/file`))
+	assert.True(t, fs.IsFile(ctx, `bar2`))
+	assert.False(t, fs.Exists(ctx, `foo1/sub/file`))
+	assert.False(t, fs.Exists(ctx, `foo1`))
+	assert.False(t, fs.Exists(ctx, `foo2`))
 
 	// Logs
 	expectedLog := `
@@ -83,12 +84,13 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	validator := validatorPkg.New()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	manifest := projectManifest.New(1, "foo")
+	ctx := context.Background()
 
 	// Dir structure
-	assert.NoError(t, fs.Mkdir(`foo1/sub`))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo1/sub/file`, `content`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo2`, `content`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo5`, `content`)))
+	assert.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo1/sub/file`, `content`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo2`, `content`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo5`, `content`)))
 	logger.Truncate()
 
 	// Plan
@@ -122,7 +124,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	}
 
 	// NewPlan
-	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	err := executor.invoke()
@@ -130,13 +132,13 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `WARN`)
 	assert.Contains(t, err.Error(), `cannot copy "missing3" -> "missing4"`)
-	assert.False(t, fs.Exists(`bar1/sub/file`))
-	assert.False(t, fs.Exists(`bar1`))
-	assert.False(t, fs.Exists(`bar2`))
-	assert.False(t, fs.Exists(`bar5`))
-	assert.True(t, fs.IsFile(`foo1/sub/file`))
-	assert.True(t, fs.IsFile(`foo2`))
-	assert.True(t, fs.IsFile(`foo5`))
+	assert.False(t, fs.Exists(ctx, `bar1/sub/file`))
+	assert.False(t, fs.Exists(ctx, `bar1`))
+	assert.False(t, fs.Exists(ctx, `bar2`))
+	assert.False(t, fs.Exists(ctx, `bar5`))
+	assert.True(t, fs.IsFile(ctx, `foo1/sub/file`))
+	assert.True(t, fs.IsFile(ctx, `foo2`))
+	assert.True(t, fs.IsFile(ctx, `foo5`))
 
 	// Logs
 	expectedLog := `

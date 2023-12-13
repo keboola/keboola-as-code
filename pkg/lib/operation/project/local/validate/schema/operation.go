@@ -26,14 +26,14 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Read schema
-	s, err := d.Fs().FileLoader().ReadRawFile(filesystem.NewFileDef(o.SchemaPath))
+	s, err := d.Fs().FileLoader().ReadRawFile(ctx, filesystem.NewFileDef(o.SchemaPath))
 	if err != nil {
 		return err
 	}
 
 	// Read file
 	fs := d.Fs()
-	f, err := d.Fs().FileLoader().ReadJSONFile(filesystem.NewFileDef(filesystem.Join(fs.WorkingDir(), o.FilePath)))
+	f, err := d.Fs().FileLoader().ReadJSONFile(ctx, filesystem.NewFileDef(filesystem.Join(fs.WorkingDir(), o.FilePath)))
 	if err != nil {
 		return err
 	}

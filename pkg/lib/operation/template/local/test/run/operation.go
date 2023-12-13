@@ -53,7 +53,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}()
 
 	// Run through all tests
-	tests, err := tmpl.Tests()
+	tests, err := tmpl.Tests(ctx)
 	if err != nil {
 		return errors.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateID(), err)
 	}
@@ -131,7 +131,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDirFs, err := test.ExpectedOutDir()
+	expectedDirFs, err := test.ExpectedOutDir(ctx)
 	if err != nil {
 		return err
 	}
@@ -140,17 +140,17 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
-	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+	testhelper.MustReplaceEnvsDir(ctx, prjState.Fs(), `/`, envProvider)
+	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, envProvider, "__")
 	// Replace secrets from env vars
 	osEnvs, err := env.FromOs()
 	if err != nil {
 		return err
 	}
-	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, osEnvs, "##")
+	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, osEnvs, "##")
 
 	// Compare actual and expected dirs
-	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
+	return testhelper.DirectoryContentsSame(ctx, expectedDirFs, `/`, prjState.Fs(), `/`)
 }
 
 func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Template, verbose bool, d dependencies) error {
@@ -194,7 +194,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDirFs, err := test.ExpectedOutDir()
+	expectedDirFs, err := test.ExpectedOutDir(ctx)
 	if err != nil {
 		return err
 	}
@@ -203,14 +203,14 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", prjState.MainBranch().ID.String())
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
-	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+	testhelper.MustReplaceEnvsDir(ctx, prjState.Fs(), `/`, envProvider)
+	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, envProvider, "__")
 	// Replace secrets from env vars
 	osEnvs, err := env.FromOs()
 	if err != nil {
 		return err
 	}
-	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, osEnvs, "##")
+	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, osEnvs, "##")
 
 	// E2E test
 	// Push the project

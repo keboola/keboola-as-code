@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"context"
 	"strings"
 
 	"github.com/umisama/go-regexpcache"
@@ -20,17 +21,17 @@ type createTmplTestDialog struct {
 }
 
 // AskCreateTemplateTestOptions - dialog for creating a template test.
-func (p *Dialogs) AskCreateTemplateTestOptions(template *template.Template) (createOp.Options, []string, error) {
+func (p *Dialogs) AskCreateTemplateTestOptions(ctx context.Context, template *template.Template) (createOp.Options, []string, error) {
 	dialog := &createTmplTestDialog{
 		Dialogs:  p,
 		template: template,
 	}
-	return dialog.ask()
+	return dialog.ask(ctx)
 }
 
-func (d *createTmplTestDialog) ask() (createOp.Options, []string, error) {
+func (d *createTmplTestDialog) ask(ctx context.Context) (createOp.Options, []string, error) {
 	// Instance name
-	if v, err := d.askTestName(); err != nil {
+	if v, err := d.askTestName(ctx); err != nil {
 		return d.out, nil, err
 	} else {
 		d.out.TestName = v
@@ -47,12 +48,12 @@ func (d *createTmplTestDialog) ask() (createOp.Options, []string, error) {
 	return d.out, warnings, nil
 }
 
-func (d *createTmplTestDialog) askTestName() (string, error) {
+func (d *createTmplTestDialog) askTestName(ctx context.Context) (string, error) {
 	// Is flag set?
 	if d.options.IsSet(testNameFlag) {
 		v := d.options.GetString(testNameFlag)
 		if len(v) > 0 {
-			err := d.checkTestNameIsUnique(v)
+			err := d.checkTestNameIsUnique(ctx, v)
 			if err != nil {
 				return "", err
 			}
@@ -74,7 +75,7 @@ func (d *createTmplTestDialog) askTestName() (string, error) {
 				return errors.Errorf(`invalid name "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
 			}
 
-			return d.checkTestNameIsUnique(str)
+			return d.checkTestNameIsUnique(ctx, str)
 		},
 	})
 	if len(v) == 0 {
@@ -83,8 +84,8 @@ func (d *createTmplTestDialog) askTestName() (string, error) {
 	return v, nil
 }
 
-func (d *createTmplTestDialog) checkTestNameIsUnique(str string) error {
-	_, err := d.template.Test(str)
+func (d *createTmplTestDialog) checkTestNameIsUnique(ctx context.Context, str string) error {
+	_, err := d.template.Test(ctx, str)
 	if err == nil {
 		return errors.Errorf(`test "%s" already exists`, str)
 	}

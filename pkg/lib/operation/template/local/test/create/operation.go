@@ -60,7 +60,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	// Create test files
-	err = tmpl.CreateTest(o.TestName, o.Inputs, prjState, opResult.InstanceID)
+	err = tmpl.CreateTest(ctx, o.TestName, o.Inputs, prjState, opResult.InstanceID)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -85,29 +86,29 @@ type LocalTemplatePath struct {
 }
 
 // AssertEmptyDir verifies that the directory is empty, so a new project or repository can be created in it.
-func (v FsInfo) AssertEmptyDir() error {
+func (v FsInfo) AssertEmptyDir(ctx context.Context) error {
 	// Project dir is not expected
-	if v.ProjectExists() {
+	if v.ProjectExists(ctx) {
 		return DirNotFoundError{path: v.fs.BasePath(), found: KbcProjectDir, expected: EmptyDir}
 	}
 
 	// Template dir is not expected
-	if v.TemplateExists() {
+	if v.TemplateExists(ctx) {
 		return DirNotFoundError{path: v.fs.BasePath(), found: TemplateDir, expected: EmptyDir}
 	}
 
 	// Repository dir is not expected
-	if v.TemplateRepositoryExists() {
+	if v.TemplateRepositoryExists(ctx) {
 		return DirNotFoundError{path: v.fs.BasePath(), found: TemplateRepositoryDir, expected: EmptyDir}
 	}
 
 	// Dbt project dir is not expected
-	if v.DbtProjectExists() {
+	if v.DbtProjectExists(ctx) {
 		return DirNotFoundError{path: v.fs.BasePath(), found: DbtProjectDir, expected: EmptyDir}
 	}
 
 	// Read directory
-	items, err := v.fs.ReadDir(`.`)
+	items, err := v.fs.ReadDir(ctx, `.`)
 	if err != nil {
 		return err
 	}
@@ -131,30 +132,30 @@ func (v FsInfo) AssertEmptyDir() error {
 	return nil
 }
 
-func (v FsInfo) ProjectExists() bool {
-	return v.fs.IsFile(projectManifest.Path())
+func (v FsInfo) ProjectExists(ctx context.Context) bool {
+	return v.fs.IsFile(ctx, projectManifest.Path())
 }
 
-func (v FsInfo) TemplateRepositoryExists() bool {
-	return v.fs.IsFile(repositoryManifest.Path())
+func (v FsInfo) TemplateRepositoryExists(ctx context.Context) bool {
+	return v.fs.IsFile(ctx, repositoryManifest.Path())
 }
 
-func (v FsInfo) TemplateExists() bool {
-	_, err := v.TemplatePath()
+func (v FsInfo) TemplateExists(ctx context.Context) bool {
+	_, err := v.TemplatePath(ctx)
 	return err == nil
 }
 
-func (v FsInfo) DbtProjectExists() bool {
-	return v.fs.IsFile(dbt.ProjectFilePath)
+func (v FsInfo) DbtProjectExists(ctx context.Context) bool {
+	return v.fs.IsFile(ctx, dbt.ProjectFilePath)
 }
 
 // TemplatePath returns local template path
 // if current working directory is a template directory or some of its subdirectories.
-func (v FsInfo) TemplatePath() (LocalTemplatePath, error) {
+func (v FsInfo) TemplatePath(ctx context.Context) (LocalTemplatePath, error) {
 	paths := LocalTemplatePath{}
 
 	// Get repository dir
-	repoFs, _, err := v.TemplateRepositoryDir()
+	repoFs, _, err := v.TemplateRepositoryDir(ctx)
 	if err != nil {
 		return paths, err
 	}
@@ -179,22 +180,22 @@ func (v FsInfo) TemplatePath() (LocalTemplatePath, error) {
 	paths.ManifestPath = filesystem.Join(paths.TemplateDirName, paths.VersionDirName, templateManifest.Path())
 
 	// Check if manifest exists
-	if !repoFs.IsFile(paths.ManifestPath) {
+	if !repoFs.IsFile(ctx, paths.ManifestPath) {
 		return paths, ErrTemplateManifestNotFound
 	}
 
 	return paths, nil
 }
 
-func (v FsInfo) ProjectDir() (filesystem.Fs, bool, error) {
-	if !v.ProjectExists() {
-		if v.TemplateExists() {
+func (v FsInfo) ProjectDir(ctx context.Context) (filesystem.Fs, bool, error) {
+	if !v.ProjectExists(ctx) {
+		if v.TemplateExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: KbcProjectDir, found: TemplateDir}
 		}
-		if v.TemplateRepositoryExists() {
+		if v.TemplateRepositoryExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: KbcProjectDir, found: TemplateRepositoryDir}
 		}
-		if v.DbtProjectExists() {
+		if v.DbtProjectExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: KbcProjectDir, found: DbtProjectDir}
 		}
 		return nil, false, ErrProjectManifestNotFound
@@ -202,12 +203,12 @@ func (v FsInfo) ProjectDir() (filesystem.Fs, bool, error) {
 	return v.fs, true, nil
 }
 
-func (v FsInfo) TemplateRepositoryDir() (filesystem.Fs, bool, error) {
-	if !v.TemplateRepositoryExists() {
-		if v.ProjectExists() {
+func (v FsInfo) TemplateRepositoryDir(ctx context.Context) (filesystem.Fs, bool, error) {
+	if !v.TemplateRepositoryExists(ctx) {
+		if v.ProjectExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: TemplateRepositoryDir, found: KbcProjectDir}
 		}
-		if v.DbtProjectExists() {
+		if v.DbtProjectExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: TemplateRepositoryDir, found: DbtProjectDir}
 		}
 		return nil, false, ErrRepositoryManifestNotFound
@@ -215,15 +216,15 @@ func (v FsInfo) TemplateRepositoryDir() (filesystem.Fs, bool, error) {
 	return v.fs, true, nil
 }
 
-func (v FsInfo) DbtProjectDir() (filesystem.Fs, bool, error) {
-	if !v.DbtProjectExists() {
-		if v.ProjectExists() {
+func (v FsInfo) DbtProjectDir(ctx context.Context) (filesystem.Fs, bool, error) {
+	if !v.DbtProjectExists(ctx) {
+		if v.ProjectExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: DbtProjectDir, found: KbcProjectDir}
 		}
-		if v.TemplateExists() {
+		if v.TemplateExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: DbtProjectDir, found: TemplateDir}
 		}
-		if v.TemplateRepositoryExists() {
+		if v.TemplateRepositoryExists(ctx) {
 			return nil, false, DirNotFoundError{path: v.fs.BasePath(), expected: DbtProjectDir, found: TemplateRepositoryDir}
 		}
 		return nil, false, ErrDbtProjectNotFound

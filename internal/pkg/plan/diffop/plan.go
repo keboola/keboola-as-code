@@ -37,7 +37,7 @@ func (p *Plan) AllowRemoteDelete() {
 
 func (p *Plan) Invoke(logger log.Logger, ctx context.Context, localManager *local.Manager, remoteManager *remote.Manager, changeDescription string) error {
 	executor := newExecutor(p, logger, ctx, localManager, remoteManager, changeDescription)
-	return executor.invoke()
+	return executor.invoke(ctx)
 }
 
 func (p *Plan) Log(logger log.Logger) {

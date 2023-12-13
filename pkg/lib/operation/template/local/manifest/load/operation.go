@@ -20,7 +20,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (m *template.Man
 
 	logger := d.Logger()
 
-	m, err = template.LoadManifest(fs)
+	m, err = template.LoadManifest(ctx, fs)
 	if err != nil {
 		return nil, err
 	}

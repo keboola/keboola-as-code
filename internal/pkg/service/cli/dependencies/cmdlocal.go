@@ -42,11 +42,11 @@ type localTemplateValue struct {
 	value *template.Template
 }
 
-func newLocalCommandScope(baseScp BaseScope, opts ...Option) (*localCommandScope, error) {
+func newLocalCommandScope(ctx context.Context, baseScp BaseScope, opts ...Option) (*localCommandScope, error) {
 	cfg := newConfig(opts)
 
 	// Get Storage API host
-	host, err := storageAPIHost(baseScp, cfg.defaultStorageAPIHost)
+	host, err := storageAPIHost(ctx, baseScp, cfg.defaultStorageAPIHost)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (v *localCommandScope) Template(ctx context.Context, reference model.Templa
 func (v *localCommandScope) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error) {
 	// Check version field
 	value, err := v.localProject.InitAndGet(func() (localProjectValue, error) {
-		fs, found, err := v.FsInfo().ProjectDir()
+		fs, found, err := v.FsInfo().ProjectDir(v.CommandCtx())
 		if err != nil {
 			return localProjectValue{found: found}, err
 		}
@@ -109,7 +109,7 @@ func (v *localCommandScope) LocalProject(ignoreErrors bool) (*projectPkg.Project
 
 func (v *localCommandScope) LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error) {
 	value, err := v.localTemplateRepository.InitAndGet(func() (localRepositoryValue, error) {
-		reference, found, err := v.localTemplateRepositoryRef()
+		reference, found, err := v.localTemplateRepositoryRef(ctx)
 		if err != nil {
 			return localRepositoryValue{found: found}, err
 		}
@@ -122,7 +122,7 @@ func (v *localCommandScope) LocalTemplateRepository(ctx context.Context) (*repos
 func (v *localCommandScope) LocalTemplate(ctx context.Context) (*template.Template, bool, error) {
 	value, err := v.localTemplate.InitAndGet(func() (localTemplateValue, error) {
 		// Get template path from current working dir
-		paths, err := v.FsInfo().TemplatePath()
+		paths, err := v.FsInfo().TemplatePath(ctx)
 		if err != nil {
 			return localTemplateValue{found: false}, err
 		}
@@ -153,7 +153,7 @@ func (v *localCommandScope) LocalTemplate(ctx context.Context) (*template.Templa
 
 		// Set working directory
 		if workingDir, err := filepath.Rel(tmpl.Fs().BasePath(), filepath.Join(v.Fs().BasePath(), filesystem.FromSlash(v.Fs().WorkingDir()))); err == nil { // nolint: forbidigo
-			tmpl.Fs().SetWorkingDir(workingDir)
+			tmpl.Fs().SetWorkingDir(ctx, workingDir)
 		}
 
 		return localTemplateValue{found: true, value: tmpl}, nil
@@ -164,7 +164,7 @@ func (v *localCommandScope) LocalTemplate(ctx context.Context) (*template.Templa
 
 func (v *localCommandScope) templateRepository(ctx context.Context, reference model.TemplateRepository, _ ...loadRepositoryOp.Option) (*repository.Repository, error) {
 	// Handle CLI only features
-	reference = v.mapRepositoryRelPath(reference)
+	reference = v.mapRepositoryRelPath(ctx, reference)
 
 	// Load repository
 	repo, err := loadRepositoryOp.Run(ctx, v, reference)
@@ -174,7 +174,7 @@ func (v *localCommandScope) templateRepository(ctx context.Context, reference mo
 
 	// Set working directory to repo FS
 	if repo.Fs().BasePath() == v.Fs().BasePath() {
-		repo.Fs().SetWorkingDir(v.Fs().WorkingDir())
+		repo.Fs().SetWorkingDir(ctx, v.Fs().WorkingDir())
 	}
 
 	return repo, nil
@@ -182,10 +182,10 @@ func (v *localCommandScope) templateRepository(ctx context.Context, reference mo
 
 // mapRepositoryRelPath adds support for relative repository path.
 // This feature is only available in the CLI.
-func (v *localCommandScope) mapRepositoryRelPath(reference model.TemplateRepository) model.TemplateRepository {
+func (v *localCommandScope) mapRepositoryRelPath(ctx context.Context, reference model.TemplateRepository) model.TemplateRepository {
 	if reference.Type == model.RepositoryTypeDir {
 		// Convert relative path to absolute
-		if !filepath.IsAbs(reference.URL) && v.FsInfo().ProjectExists() { // nolint: forbidigo
+		if !filepath.IsAbs(reference.URL) && v.FsInfo().ProjectExists(ctx) { // nolint: forbidigo
 			// Relative to the remote directory
 			reference.URL = filepath.Join(v.Fs().BasePath(), reference.URL) // nolint: forbidigo
 		}
@@ -193,9 +193,9 @@ func (v *localCommandScope) mapRepositoryRelPath(reference model.TemplateReposit
 	return reference
 }
 
-func (v *localCommandScope) localTemplateRepositoryRef() (model.TemplateRepository, bool, error) {
+func (v *localCommandScope) localTemplateRepositoryRef(ctx context.Context) (model.TemplateRepository, bool, error) {
 	// Get repository dir
-	fs, exists, err := v.FsInfo().TemplateRepositoryDir()
+	fs, exists, err := v.FsInfo().TemplateRepositoryDir(ctx)
 	if err != nil {
 		return model.TemplateRepository{}, exists, err
 	}

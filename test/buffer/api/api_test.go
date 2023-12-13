@@ -31,6 +31,7 @@ func TestBufferApiE2E(t *testing.T) {
 	}
 
 	binaryPath := testhelper.CompileBinary(t, "buffer-api", "build-buffer-api")
+	ctx := context.Background()
 
 	runner.
 		NewRunner(t).
@@ -41,7 +42,7 @@ func TestBufferApiE2E(t *testing.T) {
 
 			// Init etcd state
 			etcdStateFile := "initial-etcd-kvs.txt"
-			if test.TestDirFS().IsFile(etcdStateFile) {
+			if test.TestDirFS().IsFile(ctx, etcdStateFile) {
 				etcdStateFileContentStr := test.ReadFileFromTestDir(etcdStateFile)
 				err := etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
 				assert.NoError(test.T(), err)
@@ -60,7 +61,7 @@ func TestBufferApiE2E(t *testing.T) {
 			requestDecoratorFn := func(request *runner.APIRequestDef) {
 				// Replace placeholder by secret loaded from the etcd.
 				if strings.Contains(request.Path, receiverSecretPlaceholder) {
-					resp, err := etcdClient.Get(context.Background(), "config/receiver/", etcd.WithPrefix())
+					resp, err := etcdClient.Get(ctx, "config/receiver/", etcd.WithPrefix())
 					if assert.NoError(t, err) && assert.Len(t, resp.Kvs, 1) {
 						receiver := make(map[string]any)
 						json.MustDecode(resp.Kvs[0].Value, &receiver)
@@ -82,13 +83,13 @@ func TestBufferApiE2E(t *testing.T) {
 			)
 
 			// Write current etcd KVs
-			etcdDump, err := etcdhelper.DumpAllToString(context.Background(), etcdClient)
+			etcdDump, err := etcdhelper.DumpAllToString(ctx, etcdClient)
 			assert.NoError(test.T(), err)
-			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
+			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(ctx, filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
 
 			// Assert current etcd state against expected state.
 			expectedEtcdKVsPath := "expected-etcd-kvs.txt"
-			if test.TestDirFS().IsFile(expectedEtcdKVsPath) {
+			if test.TestDirFS().IsFile(ctx, expectedEtcdKVsPath) {
 				// Compare expected and actual kvs
 				etcdhelper.AssertKVsString(test.T(), etcdClient, test.ReadFileFromTestDir(expectedEtcdKVsPath))
 			}

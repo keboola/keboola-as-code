@@ -23,7 +23,7 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentID))
 
 	// Create dir
-	assert.NoError(t, state.ObjectsRoot().Mkdir(filesystem.Dir(codeFilePath)))
+	assert.NoError(t, state.ObjectsRoot().Mkdir(context.Background(), filesystem.Dir(codeFilePath)))
 
 	// Save to file
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))

@@ -115,7 +115,7 @@ func createDir(ctx context.Context, o Options, d dependencies, repositoryDir fil
 	}
 
 	// Create src dir
-	if err := fs.Mkdir(template.SrcDirectory); err != nil {
+	if err := fs.Mkdir(ctx, template.SrcDirectory); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +124,7 @@ func createDir(ctx context.Context, o Options, d dependencies, repositoryDir fil
 		NewRawFile(filesystem.Join(template.TestsDirectory, ".gitkeep"), "\n").
 		AddTag(model.FileKindGitKeep).
 		AddTag(model.FileTypeOther)
-	if err := fs.WriteFile(gitKeepFile); err != nil {
+	if err := fs.WriteFile(ctx, gitKeepFile); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +148,7 @@ func createLongDesc(ctx context.Context, o Options, d dependencies, fs filesyste
 	content := "### %s\n\n%s\n\n"
 	path := filesystem.Join("src", template.LongDescriptionFile)
 	file := filesystem.NewRawFile(path, fmt.Sprintf(content, o.Name, `Extended description`)).SetDescription(`extended description`)
-	if err := fs.WriteFile(file); err != nil {
+	if err := fs.WriteFile(ctx, file); err != nil {
 		return err
 	}
 	d.Logger().InfofCtx(ctx, "Created extended description file \"%s\".", file.Path())
@@ -159,7 +159,7 @@ func createReadme(ctx context.Context, o Options, d dependencies, fs filesystem.
 	content := "### %s\n\n%s\n\n"
 	path := filesystem.Join("src", template.ReadmeFile)
 	file := filesystem.NewRawFile(path, fmt.Sprintf(content, o.Name, o.Description)).SetDescription(`readme`)
-	if err := fs.WriteFile(file); err != nil {
+	if err := fs.WriteFile(ctx, file); err != nil {
 		return err
 	}
 	d.Logger().InfofCtx(ctx, "Created readme file \"%s\".", file.Path())

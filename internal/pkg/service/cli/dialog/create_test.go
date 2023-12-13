@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -57,6 +58,7 @@ func TestAskCreateConfig(t *testing.T) {
 	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMocked(t)
+	ctx := context.Background()
 
 	// Create manifest file
 	manifestContent := `
@@ -73,14 +75,14 @@ func TestAskCreateConfig(t *testing.T) {
   "branches": [{"id": 123, "path": "main"}]
 }
 `
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
 		fmt.Sprintf(manifestContent, 123, `foo.bar.com`),
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Load project
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)
@@ -129,6 +131,7 @@ func TestAskCreateRow(t *testing.T) {
 	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMocked(t)
+	ctx := context.Background()
 
 	// Create manifest file
 	manifestContent := `
@@ -153,20 +156,20 @@ func TestAskCreateRow(t *testing.T) {
   ]
 }
 `
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
 		fmt.Sprintf(manifestContent, 123, `foo.bar.com`),
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Create config files
 	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `my-config`)
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.MetaFile), `{"name": "My Config"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(configDir, naming.MetaFile), `{"name": "My Config"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
 	// Test dependencies
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)

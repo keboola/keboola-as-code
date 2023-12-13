@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"runtime"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -9,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-func LoadFS(dirName string, envs testhelper.EnvProvider) (filesystem.Fs, error) {
+func LoadFS(ctx context.Context, dirName string, envs testhelper.EnvProvider) (filesystem.Fs, error) {
 	// nolint: dogsled
 	_, thisFile, _, _ := runtime.Caller(0)
 	fixturesDir := filesystem.Dir(thisFile)
@@ -17,18 +18,18 @@ func LoadFS(dirName string, envs testhelper.EnvProvider) (filesystem.Fs, error) 
 
 	// Create Fs
 	fs := aferofs.NewMemoryFsFrom(stateDir)
-	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(ctx, fs, `/`, envs)
 
 	return fs, nil
 }
 
-func LoadManifest(dirName string, envs testhelper.EnvProvider) (*manifest.Manifest, filesystem.Fs, error) {
-	fs, err := LoadFS(dirName, envs)
+func LoadManifest(ctx context.Context, dirName string, envs testhelper.EnvProvider) (*manifest.Manifest, filesystem.Fs, error) {
+	fs, err := LoadFS(ctx, dirName, envs)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	m, err := manifest.Load(fs, false)
+	m, err := manifest.Load(ctx, fs, false)
 	if err != nil {
 		return nil, nil, err
 	}

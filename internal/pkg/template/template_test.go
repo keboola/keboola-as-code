@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,15 +41,17 @@ func TestTemplate_TestsDir(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	assert.NoError(t, fs.Mkdir("tests/one"))
-	assert.NoError(t, fs.Mkdir("tests/two"))
+	ctx := context.Background()
+
+	assert.NoError(t, fs.Mkdir(ctx, "tests/one"))
+	assert.NoError(t, fs.Mkdir(ctx, "tests/two"))
 
 	tmpl := initTemplate(t, fs)
 
-	res, err := tmpl.TestsDir()
+	res, err := tmpl.TestsDir(ctx)
 	assert.NoError(t, err)
-	assert.True(t, res.IsDir("one"))
-	assert.True(t, res.IsDir("two"))
+	assert.True(t, res.IsDir(ctx, "one"))
+	assert.True(t, res.IsDir(ctx, "two"))
 }
 
 func TestTemplate_Test(t *testing.T) {
@@ -56,16 +59,18 @@ func TestTemplate_Test(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	assert.NoError(t, fs.Mkdir("tests/one"))
-	assert.NoError(t, fs.Mkdir("tests/one/sub1"))
-	assert.NoError(t, fs.Mkdir("tests/two"))
-	assert.NoError(t, fs.Mkdir("tests/two/sub2"))
+	ctx := context.Background()
+
+	assert.NoError(t, fs.Mkdir(ctx, "tests/one"))
+	assert.NoError(t, fs.Mkdir(ctx, "tests/one/sub1"))
+	assert.NoError(t, fs.Mkdir(ctx, "tests/two"))
+	assert.NoError(t, fs.Mkdir(ctx, "tests/two/sub2"))
 
 	tmpl := initTemplate(t, fs)
 
-	test, err := tmpl.Test("one")
+	test, err := tmpl.Test(ctx, "one")
 	assert.NoError(t, err)
-	assert.True(t, test.fs.IsDir("sub1"))
+	assert.True(t, test.fs.IsDir(ctx, "sub1"))
 }
 
 func TestTemplate_Tests(t *testing.T) {
@@ -73,12 +78,14 @@ func TestTemplate_Tests(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	assert.NoError(t, fs.Mkdir("tests/one"))
-	assert.NoError(t, fs.Mkdir("tests/two"))
+	ctx := context.Background()
+
+	assert.NoError(t, fs.Mkdir(ctx, "tests/one"))
+	assert.NoError(t, fs.Mkdir(ctx, "tests/two"))
 
 	tmpl := initTemplate(t, fs)
 
-	tests, err := tmpl.Tests()
+	tests, err := tmpl.Tests(ctx)
 	assert.NoError(t, err)
 
 	testNames := make([]string, 0)
@@ -94,14 +101,16 @@ func TestTemplate_TestInputs(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	assert.NoError(t, fs.Mkdir("tests/one"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("tests/one/inputs.json", `{"foo":"bar"}`)))
+	ctx := context.Background()
+
+	assert.NoError(t, fs.Mkdir(ctx, "tests/one"))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("tests/one/inputs.json", `{"foo":"bar"}`)))
 
 	tmpl := initTemplate(t, fs)
 
-	test, err := tmpl.Test("one")
+	test, err := tmpl.Test(ctx, "one")
 	assert.NoError(t, err)
-	res, err := test.Inputs(nil, nil, "")
+	res, err := test.Inputs(ctx, nil, nil, "")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, res)
 }

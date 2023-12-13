@@ -44,7 +44,7 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 	manifest.SetAllowedBranches(o.AllowedBranches)
 
 	// Save
-	if err := manifest.Save(fs); err != nil {
+	if err := manifest.Save(ctx, fs); err != nil {
 		return nil, err
 	}
 

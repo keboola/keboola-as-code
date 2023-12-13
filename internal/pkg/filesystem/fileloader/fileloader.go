@@ -1,6 +1,7 @@
 package fileloader
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -21,7 +22,7 @@ const (
 
 // loadHandlerWithNext callback modifies file loading process.
 // In addition to filesystem.LoadHandler, it contains reference to the "next" handler.
-type loadHandlerWithNext func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
+type loadHandlerWithNext func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
 
 // loader implements filesystem.FileLoader.
 type loader struct {
@@ -48,8 +49,8 @@ func (l *loader) WithJsonnetContext(ctx *jsonnet.Context) filesystem.FileLoader 
 }
 
 // ReadRawFile - file content is loaded as a string.
-func (l *loader) ReadRawFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
-	file, err := l.loadFile(def, filesystem.FileTypeRaw)
+func (l *loader) ReadRawFile(ctx context.Context, def *filesystem.FileDef) (*filesystem.RawFile, error) {
+	file, err := l.loadFile(ctx, def, filesystem.FileTypeRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +63,9 @@ func (l *loader) ReadRawFile(def *filesystem.FileDef) (*filesystem.RawFile, erro
 }
 
 // ReadFileContentTo to tagged field in target struct as string.
-func (l *loader) ReadFileContentTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
+func (l *loader) ReadFileContentTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := l.ReadRawFile(def); err == nil {
+		if file, err := l.ReadRawFile(ctx, def); err == nil {
 			content := strings.TrimRight(file.Content, " \r\n\t")
 			reflecthelper.SetField(field, content, target)
 			return file, true, nil
@@ -76,8 +77,8 @@ func (l *loader) ReadFileContentTo(def *filesystem.FileDef, target interface{}, 
 }
 
 // ReadJSONFile as an ordered map.
-func (l *loader) ReadJSONFile(def *filesystem.FileDef) (*filesystem.JSONFile, error) {
-	file, err := l.loadFile(def, filesystem.FileTypeJSON)
+func (l *loader) ReadJSONFile(ctx context.Context, def *filesystem.FileDef) (*filesystem.JSONFile, error) {
+	file, err := l.loadFile(ctx, def, filesystem.FileTypeJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +86,8 @@ func (l *loader) ReadJSONFile(def *filesystem.FileDef) (*filesystem.JSONFile, er
 }
 
 // ReadJSONFileTo to the target struct.
-func (l *loader) ReadJSONFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
-	file, err := l.ReadRawFile(def)
+func (l *loader) ReadJSONFileTo(ctx context.Context, def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
+	file, err := l.ReadRawFile(ctx, def)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +100,9 @@ func (l *loader) ReadJSONFileTo(def *filesystem.FileDef, target interface{}) (*f
 }
 
 // ReadJSONFieldsTo tagged fields in the target struct.
-func (l *loader) ReadJSONFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (l *loader) ReadJSONFieldsTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
 	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
-		if file, err := l.ReadJSONFile(def); err == nil {
+		if file, err := l.ReadJSONFile(ctx, def); err == nil {
 			reflecthelper.SetFields(fields, file.Content, target)
 			return file, true, nil
 		} else {
@@ -113,9 +114,9 @@ func (l *loader) ReadJSONFieldsTo(def *filesystem.FileDef, target interface{}, t
 }
 
 // ReadJSONMapTo tagged field in the target struct as ordered map.
-func (l *loader) ReadJSONMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (l *loader) ReadJSONMapTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := l.ReadJSONFile(def); err == nil {
+		if file, err := l.ReadJSONFile(ctx, def); err == nil {
 			reflecthelper.SetField(field, file.Content, target)
 			return file, true, nil
 		} else {
@@ -128,8 +129,8 @@ func (l *loader) ReadJSONMapTo(def *filesystem.FileDef, target interface{}, tag 
 }
 
 // ReadYamlFile as an ordered map.
-func (l *loader) ReadYamlFile(def *filesystem.FileDef) (*filesystem.YamlFile, error) {
-	file, err := l.loadFile(def, filesystem.FileTypeYaml)
+func (l *loader) ReadYamlFile(ctx context.Context, def *filesystem.FileDef) (*filesystem.YamlFile, error) {
+	file, err := l.loadFile(ctx, def, filesystem.FileTypeYaml)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +138,8 @@ func (l *loader) ReadYamlFile(def *filesystem.FileDef) (*filesystem.YamlFile, er
 }
 
 // ReadYamlFileTo to the target struct.
-func (l *loader) ReadYamlFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
-	file, err := l.ReadRawFile(def)
+func (l *loader) ReadYamlFileTo(ctx context.Context, def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
+	file, err := l.ReadRawFile(ctx, def)
 	if err != nil {
 		return nil, err
 	}
@@ -151,9 +152,9 @@ func (l *loader) ReadYamlFileTo(def *filesystem.FileDef, target interface{}) (*f
 }
 
 // ReadYamlFieldsTo tagged fields in the target struct.
-func (l *loader) ReadYamlFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
+func (l *loader) ReadYamlFieldsTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
 	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
-		if file, err := l.ReadYamlFile(def); err == nil {
+		if file, err := l.ReadYamlFile(ctx, def); err == nil {
 			reflecthelper.SetFields(fields, file.Content, target)
 			return file, true, nil
 		} else {
@@ -165,9 +166,9 @@ func (l *loader) ReadYamlFieldsTo(def *filesystem.FileDef, target interface{}, t
 }
 
 // ReadYamlMapTo tagged field in the target struct as ordered map.
-func (l *loader) ReadYamlMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
+func (l *loader) ReadYamlMapTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := l.ReadYamlFile(def); err == nil {
+		if file, err := l.ReadYamlFile(ctx, def); err == nil {
 			reflecthelper.SetField(field, file.Content, target)
 			return file, true, nil
 		} else {
@@ -180,8 +181,8 @@ func (l *loader) ReadYamlMapTo(def *filesystem.FileDef, target interface{}, tag 
 }
 
 // ReadJsonnetFile as AST.
-func (l *loader) ReadJsonnetFile(def *filesystem.FileDef) (*filesystem.JsonnetFile, error) {
-	file, err := l.loadFile(def, filesystem.FileTypeJsonnet)
+func (l *loader) ReadJsonnetFile(ctx context.Context, def *filesystem.FileDef) (*filesystem.JsonnetFile, error) {
+	file, err := l.loadFile(ctx, def, filesystem.FileTypeJsonnet)
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +190,8 @@ func (l *loader) ReadJsonnetFile(def *filesystem.FileDef) (*filesystem.JsonnetFi
 }
 
 // ReadJsonnetFileTo the target struct.
-func (l *loader) ReadJsonnetFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.JsonnetFile, error) {
-	jsonnetFile, err := l.ReadJsonnetFile(def)
+func (l *loader) ReadJsonnetFileTo(ctx context.Context, def *filesystem.FileDef, target interface{}) (*filesystem.JsonnetFile, error) {
+	jsonnetFile, err := l.ReadJsonnetFile(ctx, def)
 	if err != nil {
 		return nil, formatFileError(def, err)
 	}
@@ -208,14 +209,14 @@ func (l *loader) ReadJsonnetFileTo(def *filesystem.FileDef, target interface{}) 
 }
 
 // ReadSubDirs filter out ignored directories.
-func (l *loader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
-	subDirs, err := filesystem.ReadSubDirs(fs, root)
+func (l *loader) ReadSubDirs(ctx context.Context, fs filesystem.Fs, root string) ([]string, error) {
+	subDirs, err := filesystem.ReadSubDirs(ctx, fs, root)
 	if err != nil {
 		return nil, err
 	}
 	res := make([]string, 0)
 	for _, subDir := range subDirs {
-		isIgnored, err := l.IsIgnored(filesystem.Join(root, subDir))
+		isIgnored, err := l.IsIgnored(ctx, filesystem.Join(root, subDir))
 		if err != nil {
 			return nil, err
 		}
@@ -227,14 +228,14 @@ func (l *loader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
 }
 
 // IsIgnored checks if the dir is ignored.
-func (l *loader) IsIgnored(path string) (bool, error) {
-	if !l.fs.IsDir(path) {
+func (l *loader) IsIgnored(ctx context.Context, path string) (bool, error) {
+	if !l.fs.IsDir(ctx, path) {
 		return false, nil
 	}
 	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
 	fileDef.AddTag(`json`) // `json` is a constant model.FileTypeJSON but cannot be imported due to cyclic imports, it will be refactored
 
-	file, err := l.ReadJSONFile(fileDef)
+	file, err := l.ReadJSONFile(ctx, fileDef)
 	if err != nil {
 		if errors.Is(err, filesystem.ErrNotExist) {
 			return false, err
@@ -256,16 +257,16 @@ func formatFileError(def *filesystem.FileDef, err error) error {
 	return errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, def.Path())
 }
 
-func (l *loader) loadFile(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
+func (l *loader) loadFile(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
 	if l.handler != nil {
-		return l.handler(def, fileType, l.defaultHandler)
+		return l.handler(ctx, def, fileType, l.defaultHandler)
 	}
-	return l.defaultHandler(def, fileType)
+	return l.defaultHandler(ctx, def, fileType)
 }
 
-func (l *loader) defaultHandler(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
+func (l *loader) defaultHandler(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
 	// Load
-	rawFile, err := l.fs.ReadFile(def)
+	rawFile, err := l.fs.ReadFile(ctx, def)
 	if err != nil {
 		return nil, err
 	}

@@ -131,7 +131,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 	persist := !manifest.State().IsPersisted()
 	u.
 		workersFor(manifest.Level()).
-		AddWorker(func() error {
+		AddWorker(func(ctx context.Context) error {
 			// Has been parent loaded?
 			if parentKey, err := manifest.Key().ParentKey(); err != nil {
 				return err
@@ -153,7 +153,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 
 			// Load object from filesystem
 			object := manifest.NewEmptyObject()
-			if found, err := u.Manager.loadObject(u.ctx, manifest, object); err != nil {
+			if found, err := u.Manager.loadObject(ctx, manifest, object); err != nil {
 				manifest.State().SetInvalid()
 				if !found {
 					manifest.State().SetNotFound()
@@ -214,8 +214,8 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	isNew := !objectState.Manifest().State().IsPersisted()
 	u.
 		workersFor(objectState.Level()).
-		AddWorker(func() error {
-			if err := u.Manager.saveObject(u.ctx, objectState.Manifest(), object, changedFields); err != nil {
+		AddWorker(func(ctx context.Context) error {
+			if err := u.Manager.saveObject(ctx, objectState.Manifest(), object, changedFields); err != nil {
 				return err
 			}
 			objectState.SetLocalState(object)
@@ -231,8 +231,8 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.ObjectManifest) {
 	u.
 		workersFor(manifest.Level()).
-		AddWorker(func() error {
-			if err := u.Manager.deleteObject(manifest); err != nil {
+		AddWorker(func(ctx context.Context) error {
+			if err := u.Manager.deleteObject(ctx, manifest); err != nil {
 				return err
 			}
 			// ObjectState can be nil, if object exists only in manifest, but not in local/remote state
@@ -247,8 +247,8 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.
 func (u *UnitOfWork) Rename(actions []model.RenameAction) {
 	u.
 		workersFor(1000). // rename at the end
-		AddWorker(func() error {
-			if err := u.rename(actions); err != nil {
+		AddWorker(func(ctx context.Context) error {
+			if err := u.rename(ctx, actions); err != nil {
 				return err
 			}
 			u.changes.AddRenamed(actions...)
@@ -279,13 +279,13 @@ func (u *UnitOfWork) Invoke() error {
 
 	if u.errors.Len() == 0 {
 		// Delete empty directories, eg. no extractor of a type left -> dir is empty
-		if err := DeleteEmptyDirectories(u.fs, u.state.TrackedPaths()); err != nil {
+		if err := DeleteEmptyDirectories(u.ctx, u.fs, u.state.TrackedPaths()); err != nil {
 			u.errors.Append(err)
 		}
 	}
 
 	// Update tracked paths
-	if err := u.state.ReloadPathsState(); err != nil {
+	if err := u.state.ReloadPathsState(u.ctx); err != nil {
 		u.errors.Append(err)
 	}
 

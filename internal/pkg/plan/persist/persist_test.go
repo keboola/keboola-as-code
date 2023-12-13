@@ -910,6 +910,8 @@ func TestPersistScheduler(t *testing.T) {
 func (tc *testCase) run(t *testing.T) {
 	t.Helper()
 
+	ctx := context.Background()
+
 	// Init project dir
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
@@ -919,7 +921,7 @@ func (tc *testCase) run(t *testing.T) {
 	fs := aferofs.NewMemoryFsFrom(inputDir)
 	envs := env.Empty()
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
-	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(ctx, fs, `/`, envs)
 
 	// Container
 	d := dependencies.NewMocked(t)
@@ -949,7 +951,7 @@ func (tc *testCase) run(t *testing.T) {
 	}
 
 	// Get plan
-	plan, err := NewPlan(projectState.State())
+	plan, err := NewPlan(ctx, projectState.State())
 	assert.NoError(t, err)
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
@@ -963,9 +965,9 @@ func (tc *testCase) run(t *testing.T) {
 	assert.Equalf(t, tc.expectedPlan, plan.actions, `unexpected persist plan`)
 
 	// Invoke
-	plan, err = NewPlan(projectState.State()) // plan with callbacks
+	plan, err = NewPlan(ctx, projectState.State()) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(context.Background(), d.Logger(), d.KeboolaProjectAPI(), projectState.State()))
+	assert.NoError(t, plan.Invoke(ctx, d.Logger(), d.KeboolaProjectAPI(), projectState.State()))
 
 	// Assert new IDs requests count
 	assert.Equal(t, tc.expectedNewIds, d.MockedHTTPTransport().GetCallCountInfo()["POST =~/storage/tickets"])

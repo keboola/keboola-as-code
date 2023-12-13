@@ -31,12 +31,13 @@ func TestTemplatesApiE2E(t *testing.T) {
 	}
 
 	binaryPath := testhelper.CompileBinary(t, "templates-api", "build-templates-api")
+	ctx := context.Background()
 
 	runner.
 		NewRunner(t).
 		ForEachTest(func(test *runner.Test) {
 			var repositories string
-			if test.TestDirFS().Exists("repository") {
+			if test.TestDirFS().Exists(ctx, "repository") {
 				repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(test.TestDirFS().BasePath(), "repository"))
 			} else {
 				repositories = "keboola|https://github.com/keboola/keboola-as-code-templates.git|main"
@@ -89,13 +90,13 @@ func TestTemplatesApiE2E(t *testing.T) {
 			)
 
 			// Write current etcd KVs
-			etcdDump, err := etcdhelper.DumpAllToString(context.Background(), etcdClient)
+			etcdDump, err := etcdhelper.DumpAllToString(ctx, etcdClient)
 			assert.NoError(test.T(), err)
-			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
+			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(ctx, filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
 
 			// Assert current etcd state against expected state.
 			expectedEtcdKVsPath := "expected-etcd-kvs.txt"
-			if test.TestDirFS().IsFile(expectedEtcdKVsPath) {
+			if test.TestDirFS().IsFile(ctx, expectedEtcdKVsPath) {
 				// Compare expected and actual kvs
 				etcdhelper.AssertKVsString(test.T(), etcdClient, test.ReadFileFromTestDir(expectedEtcdKVsPath))
 			}

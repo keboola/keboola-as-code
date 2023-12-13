@@ -81,7 +81,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	// Create file loader
 	fileLoader := mapperInst.NewFileLoader(container.ObjectsRoot())
 
-	knownPaths, err := knownpaths.New(container.ObjectsRoot(), knownpaths.WithFilter(fileLoader.IsIgnored))
+	knownPaths, err := knownpaths.New(ctx, container.ObjectsRoot(), knownpaths.WithFilter(fileLoader.IsIgnored))
 	if err != nil {
 		return nil, errors.PrefixError(err, "error loading directory structure")
 	}

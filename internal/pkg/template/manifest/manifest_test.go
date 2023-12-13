@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
@@ -39,15 +40,16 @@ func cases() []test {
 
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
 		// Write file
 		path := Path()
-		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.jsonnet)))
+		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.jsonnet)))
 
 		// Load
-		manifestFile, err := Load(fs)
+		manifestFile, err := Load(ctx, fs)
 		assert.NotNil(t, manifestFile)
 		assert.NoError(t, err)
 
@@ -64,6 +66,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
@@ -71,10 +74,10 @@ func TestSaveManifestFile(t *testing.T) {
 		manifest := New()
 		manifest.mainConfig = c.mainConfig
 		assert.NoError(t, manifest.records.SetRecords(c.records))
-		assert.NoError(t, manifest.Save(fs))
+		assert.NoError(t, manifest.Save(ctx, fs))
 
 		// Load file
-		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
+		file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
 		assert.Equal(t, wildcards.EscapeWhitespaces(c.jsonnet), wildcards.EscapeWhitespaces(file.Content), c.name)
 	}

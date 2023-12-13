@@ -28,7 +28,7 @@ type Options struct {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	EmptyDir() (filesystem.Fs, error)
+	EmptyDir(ctx context.Context) (filesystem.Fs, error)
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Options() *options.Options
@@ -44,7 +44,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	fs, err := d.EmptyDir()
+	fs, err := d.EmptyDir(ctx)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -14,8 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func Load(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
-	f, err := loadFile(fs, ctx)
+func Load(ctx context.Context, fs filesystem.Fs, jsonnetCtx *jsonnet.Context) (StepsGroups, error) {
+	f, err := loadFile(ctx, fs, jsonnetCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +26,8 @@ func Load(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
 type StepsGroups []StepsGroup
 
 // Save inputs to the FileName.
-func (g StepsGroups) Save(fs filesystem.Fs) error {
-	if err := saveFile(fs, &file{StepsGroups: g}); err != nil {
+func (g StepsGroups) Save(ctx context.Context, fs filesystem.Fs) error {
+	if err := saveFile(ctx, fs, &file{StepsGroups: g}); err != nil {
 		return err
 	}
 	return nil

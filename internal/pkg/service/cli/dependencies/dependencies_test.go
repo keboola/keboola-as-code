@@ -28,7 +28,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Create manifest
 	fs := aferofs.NewMemoryFs()
 	manifestContent := `{"version": 2, "project": {"id": 789, "apiHost": "mocked.transport.http"}}`
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
 
 	// Set token
 	opts := options.New()
@@ -69,11 +69,12 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	)
 
 	// Assert
+	ctx := context.Background()
 	proc := servicectx.NewForTest(t)
-	baseScp := newBaseScope(context.Background(), logger, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
-	localScp, err := newLocalCommandScope(baseScp)
+	baseScp := newBaseScope(ctx, logger, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
+	localScp, err := newLocalCommandScope(ctx, baseScp)
 	assert.NoError(t, err)
-	_, err = newRemoteCommandScope(context.Background(), localScp)
+	_, err = newRemoteCommandScope(ctx, localScp)
 	expected := `given token is from the project "12345", but in manifest is defined project "789"`
 	assert.Error(t, err)
 	assert.Equal(t, expected, err.Error())

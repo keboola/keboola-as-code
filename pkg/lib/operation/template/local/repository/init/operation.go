@@ -11,7 +11,7 @@ import (
 )
 
 type dependencies interface {
-	EmptyDir() (filesystem.Fs, error)
+	EmptyDir(ctx context.Context) (filesystem.Fs, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
@@ -23,7 +23,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Empty dir
-	emptyDir, err := d.EmptyDir()
+	emptyDir, err := d.EmptyDir(ctx)
 	if err != nil {
 		return err
 	}

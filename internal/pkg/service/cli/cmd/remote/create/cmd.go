@@ -16,7 +16,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/short`),
 		Long:  helpmsg.Read(`remote/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}

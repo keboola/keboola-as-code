@@ -17,7 +17,7 @@ type versionInfo struct {
 
 func CheckManifestVersion(ctx context.Context, logger log.Logger, fs filesystem.Fs, manifestPath string) (err error) {
 	// Read manifest file
-	file, err := fs.ReadFile(filesystem.NewFileDef(manifestPath).SetDescription(`manifest`))
+	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(manifestPath).SetDescription(`manifest`))
 	if err != nil {
 		return err
 	}

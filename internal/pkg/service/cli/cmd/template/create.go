@@ -15,7 +15,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in template repository
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}

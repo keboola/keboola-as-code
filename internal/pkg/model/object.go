@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"time"
@@ -91,7 +92,7 @@ type ObjectStates interface {
 	GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error)
 	Set(objectState ObjectState) error
 	TrackedPaths() []string
-	ReloadPathsState() error
+	ReloadPathsState(ctx context.Context) error
 	IsFile(path string) bool
 	IsDir(path string) bool
 }

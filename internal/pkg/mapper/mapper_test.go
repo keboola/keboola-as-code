@@ -96,46 +96,47 @@ INFO  Handler 2
 }
 
 type testFileLoadMapper struct {
-	callback func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
+	callback func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
 }
 
-func (m *testFileLoadMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
-	return m.callback(def, fileType, next)
+func (m *testFileLoadMapper) LoadLocalFile(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
+	return m.callback(ctx, def, fileType, next)
 }
 
 func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected filesystem.File, expectedLogs string) {
 	t.Helper()
 	logger := log.NewDebugLogger()
+	ctx := context.Background()
 
 	// File load handlers
-	handler1 := func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
+	handler1 := func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file1.txt"
 		logger.InfoCtx(context.Background(), `Handler 1`)
 		if def.Path() == "file1.txt" {
 			return filesystem.NewRawFile("file1.txt", "handler1"), nil
 		}
-		return next(def, fileType)
+		return next(ctx, def, fileType)
 	}
-	handler2 := func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
+	handler2 := func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file2.txt"
 		logger.InfoCtx(context.Background(), `Handler 2`)
 		if def.Path() == "file2.txt" {
 			return filesystem.NewRawFile("file2.txt", "handler2"), nil
 		}
-		return next(def, fileType)
+		return next(ctx, def, fileType)
 	}
-	handler3 := func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
+	handler3 := func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file3.txt"
 		logger.InfoCtx(context.Background(), `Handler 3`)
 		if def.Path() == "file3.txt" {
 			return filesystem.NewRawFile("file3.txt", "handler3"), nil
 		}
-		return next(def, fileType)
+		return next(ctx, def, fileType)
 	}
 
 	// Default file
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("file.txt", "default")))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("file.txt", "default")))
 	logger.Truncate()
 
 	// Create mapper
@@ -147,7 +148,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	)
 
 	// Invoke
-	output, err := mapper.NewFileLoader(fs).ReadRawFile(input)
+	output, err := mapper.NewFileLoader(fs).ReadRawFile(ctx, input)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, output)
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())

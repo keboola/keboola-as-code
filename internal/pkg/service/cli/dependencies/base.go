@@ -64,9 +64,9 @@ func (v *baseScope) Options() *options.Options {
 	return v.options
 }
 
-func (v *baseScope) EmptyDir() (filesystem.Fs, error) {
+func (v *baseScope) EmptyDir(ctx context.Context) (filesystem.Fs, error) {
 	return v.emptyDir.InitAndGet(func() (filesystem.Fs, error) {
-		if err := v.fsInfo.AssertEmptyDir(); err != nil {
+		if err := v.fsInfo.AssertEmptyDir(ctx); err != nil {
 			return nil, err
 		}
 		return v.fs, nil
@@ -76,7 +76,7 @@ func (v *baseScope) EmptyDir() (filesystem.Fs, error) {
 func (v *baseScope) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
 	value, err := v.localDbtProject.InitAndGet(func() (dbtProjectValue, error) {
 		// Get directory
-		fs, _, err := v.FsInfo().DbtProjectDir()
+		fs, _, err := v.FsInfo().DbtProjectDir(ctx)
 		if err != nil {
 			return dbtProjectValue{found: false, value: nil}, err
 		}

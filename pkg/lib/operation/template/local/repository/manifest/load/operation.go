@@ -20,7 +20,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (m *repositoryMa
 
 	logger := d.Logger()
 
-	m, err = repositoryManifest.Load(fs)
+	m, err = repositoryManifest.Load(ctx, fs)
 	if err != nil {
 		return nil, err
 	}

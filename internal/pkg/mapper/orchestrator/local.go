@@ -18,7 +18,7 @@ func (m *orchestratorMapper) AfterLocalOperation(ctx context.Context, changes *m
 			continue
 		} else if ok {
 			configState := objectState.(*model.ConfigState)
-			if err := m.onLocalLoad(configState.Local, configState.ConfigManifest, allObjects); err != nil {
+			if err := m.onLocalLoad(ctx, configState.Local, configState.ConfigManifest, allObjects); err != nil {
 				errs.Append(err)
 			}
 		}

@@ -17,7 +17,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/file/upload/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}

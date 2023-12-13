@@ -10,7 +10,7 @@ import (
 // loadObject from manifest and filesystem.
 func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest, object model.Object) (found bool, err error) {
 	// Check if directory exists
-	if !m.fs.IsDir(manifest.Path()) {
+	if !m.fs.IsDir(ctx, manifest.Path()) {
 		return false, errors.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
 	}
 

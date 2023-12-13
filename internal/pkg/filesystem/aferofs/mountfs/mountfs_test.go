@@ -1,6 +1,7 @@
 package mountfs_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,7 @@ func TestMountFs_Rename(t *testing.T) {
 	t.Parallel()
 
 	// Create FS
+	ctx := context.Background()
 	root := aferofs.NewMemoryFs()
 	dir1 := aferofs.NewMemoryFs()
 	dir2 := aferofs.NewMemoryFs()
@@ -34,16 +36,16 @@ func TestMountFs_Rename(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create file
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("/sub/dir1/foo", "abc")))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("/sub/dir1/foo", "abc")))
 
 	// Move file within mount point - no error
-	assert.NoError(t, fs.Move("/sub/dir1/foo", "/sub/dir1/bar"))
-	assert.False(t, fs.IsFile("/sub/dir1/foo"))
-	assert.True(t, fs.IsFile("/sub/dir1/bar"))
+	assert.NoError(t, fs.Move(ctx, "/sub/dir1/foo", "/sub/dir1/bar"))
+	assert.False(t, fs.IsFile(ctx, "/sub/dir1/foo"))
+	assert.True(t, fs.IsFile(ctx, "/sub/dir1/bar"))
 
 	// Move file outside mount point - error
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("/sub/dir1/foo", "abc")))
-	err = fs.Move("/sub/dir1/foo", "/bar")
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("/sub/dir1/foo", "abc")))
+	err = fs.Move(ctx, "/sub/dir1/foo", "/bar")
 	assert.Error(t, err)
 	assert.Equal(t, `path "/sub/dir1/foo" cannot be moved outside mount dir "/sub/dir1" to "/bar"`, err.Error())
 }

@@ -20,7 +20,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/template/use/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}

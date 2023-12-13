@@ -33,7 +33,7 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (err 
 		return nil
 	}
 
-	return workflows.GenerateFiles(d.Logger(), fs, &workflows.Options{
+	return workflows.GenerateFiles(ctx, d.Logger(), fs, &workflows.Options{
 		Validate:   o.Validate,
 		Push:       o.Push,
 		Pull:       o.Pull,

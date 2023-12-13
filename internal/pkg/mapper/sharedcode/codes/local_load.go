@@ -30,7 +30,7 @@ func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadR
 	} else if ok {
 		row := recipe.Object.(*model.ConfigRow)
 		config := m.state.MustGet(row.ConfigKey()).LocalState().(*model.Config)
-		if err := m.onRowLocalLoad(config, row, recipe); err != nil {
+		if err := m.onRowLocalLoad(ctx, config, row, recipe); err != nil {
 			errs.Append(err)
 		}
 	}
@@ -64,7 +64,7 @@ func (m *mapper) onConfigLocalLoad(config *model.Config) error {
 	return nil
 }
 
-func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, recipe *model.LocalLoadRecipe) error {
+func (m *mapper) onRowLocalLoad(ctx context.Context, config *model.Config, row *model.ConfigRow, recipe *model.LocalLoadRecipe) error {
 	if config.SharedCode == nil {
 		return nil
 	}
@@ -76,7 +76,7 @@ func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, reci
 		SetDescription("shared code").
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeSharedCode).
-		ReadFile()
+		ReadFile(ctx)
 	if err != nil {
 		return err
 	}

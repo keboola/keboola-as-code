@@ -29,7 +29,7 @@ func (m *branchMetadataMapper) MapAfterLocalLoad(ctx context.Context, recipe *mo
 			SetDescription("project description").
 			AddTag(model.FileTypeMarkdown).
 			AddTag(model.FileKindProjectDescription)
-		file, err := fileToLoad.ReadFile()
+		file, err := fileToLoad.ReadFile(ctx)
 		if err != nil && !strings.HasPrefix(err.Error(), "missing project description file") {
 			return err
 		}
