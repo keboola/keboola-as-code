@@ -276,7 +276,7 @@ func (r *RemoteRepository) runGitCmd(ctx context.Context, args ...string) (cmdRe
 func (r *RemoteRepository) doRunGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
 	r.cmdLock.Lock()
 	defer r.cmdLock.Unlock()
-	r.logger.Debug(fmt.Sprintf(`Running git command: git %s`, strings.Join(args, " ")))
+	r.logger.DebugfCtx(ctx, `Running git command: git %s`, strings.Join(args, " "))
 
 	var stdOutBuffer bytes.Buffer
 	var stdErrBuffer bytes.Buffer

@@ -9,7 +9,7 @@ import (
 )
 
 // AfterLocalOperation links relation sides on local load.
-func (m *relationsMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
+func (m *relationsMapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.LocalObjects()
 	for _, objectState := range changes.Loaded() {
@@ -20,14 +20,14 @@ func (m *relationsMapper) AfterLocalOperation(_ context.Context, changes *model.
 
 	// Log errors as warning
 	if errs.Len() > 0 {
-		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 
 	return nil
 }
 
 // AfterRemoteOperation links relation sides on remote load.
-func (m *relationsMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
+func (m *relationsMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
@@ -38,7 +38,7 @@ func (m *relationsMapper) AfterRemoteOperation(_ context.Context, changes *model
 
 	// Log errors as warning
 	if errs.Len() > 0 {
-		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 
 	return nil

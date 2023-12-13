@@ -9,11 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *ignoreMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
+func (m *ignoreMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	// Ignore objects
 	ignored := make(map[string]bool)
 	for _, object := range changes.Loaded() {
-		if m.isIgnored(object.RemoteState()) {
+		if m.isIgnored(ctx, object.RemoteState()) {
 			ignored[object.Key().String()] = true
 			if object.HasLocalState() {
 				// Clear remote state
@@ -38,18 +38,18 @@ func (m *ignoreMapper) AfterRemoteOperation(_ context.Context, changes *model.Re
 	return nil
 }
 
-func (m *ignoreMapper) isIgnored(object model.Object) bool {
+func (m *ignoreMapper) isIgnored(ctx context.Context, object model.Object) bool {
 	switch o := object.(type) {
 	case *model.Branch:
 		return false
 	case *model.Config:
-		return m.isIgnoredConfig(o)
+		return m.isIgnoredConfig(ctx, o)
 	case *model.ConfigRow:
 		// Check parent config
 		if configState, found := m.state.Get(o.ConfigKey()); !found {
 			return true
 		} else if configState.HasRemoteState() {
-			return m.isIgnoredConfig(configState.RemoteState().(*model.Config))
+			return m.isIgnoredConfig(ctx, configState.RemoteState().(*model.Config))
 		}
 		return false
 	default:
@@ -58,12 +58,12 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 }
 
 // isIgnoredConfig ignores all variables configs which are not attached to a config.
-func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
+func (m *ignoreMapper) isIgnoredConfig(ctx context.Context, config *model.Config) bool {
 	// Variables config
 	if config.ComponentID == keboola.VariablesComponentID {
 		// Without target config
 		if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
-			m.logger.Debugf("Ignored unattached variables %s", config.Desc())
+			m.logger.DebugfCtx(ctx, "Ignored unattached variables %s", config.Desc())
 			return true
 		}
 		return false
@@ -87,7 +87,7 @@ func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 
 		// Configuration must exists
 		if _, found := m.state.RemoteObjects().Get(targetConfigKey); !found {
-			m.logger.Debugf("Ignored scheduler %s, target %s not found", config.Desc(), targetConfigKey.Desc())
+			m.logger.DebugfCtx(ctx, "Ignored scheduler %s, target %s not found", config.Desc(), targetConfigKey.Desc())
 			return true
 		}
 	}

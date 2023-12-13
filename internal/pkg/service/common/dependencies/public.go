@@ -115,7 +115,7 @@ func storageAPIIndexWithComponents(ctx context.Context, d BaseScope, keboolaPubl
 	if err != nil {
 		return nil, err
 	}
-	d.Logger().Debugf("Storage API index with components loaded | %s", time.Since(startTime))
+	d.Logger().DebugfCtx(ctx, "Storage API index with components loaded | %s", time.Since(startTime))
 	return index, nil
 }
 

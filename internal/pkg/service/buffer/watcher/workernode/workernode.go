@@ -55,7 +55,7 @@ func New(d Dependencies) (*Node, error) {
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		n.logger.InfoCtx(ctx, "received shutdown request")
-		n.listeners.wait()
+		n.listeners.wait(ctx)
 		cancel()
 		wg.Wait()
 		n.logger.InfoCtx(ctx, "shutdown done")
@@ -127,15 +127,15 @@ func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEve
 		// Trigger listeners if the minimal version has changed
 		if count := n.listeners.onChange(ctx, n.minRevision); count > 0 {
 			if rev == noAPINode {
-				n.logger.Infof(`all API nodes are gone, unblocked "%d" listeners`, count)
+				n.logger.InfofCtx(ctx, `all API nodes are gone, unblocked "%d" listeners`, count)
 			} else {
-				n.logger.Infof(`revision updated to "%v", unblocked "%d" listeners`, rev, count)
+				n.logger.InfofCtx(ctx, `revision updated to "%v", unblocked "%d" listeners`, rev, count)
 			}
 		} else {
 			if rev == noAPINode {
-				n.logger.Info(`all API nodes are gone`)
+				n.logger.InfoCtx(ctx, `all API nodes are gone`)
 			} else {
-				n.logger.Infof(`revision updated to "%v"`, rev)
+				n.logger.InfofCtx(ctx, `revision updated to "%v"`, rev)
 			}
 		}
 	}

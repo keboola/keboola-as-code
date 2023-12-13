@@ -68,7 +68,7 @@ func (v *Container) InvokeIfErr(ctx context.Context, errPtr *error) {
 
 func (v *Container) Invoke(ctx context.Context) {
 	if err := v.container.invokeOrErr(ctx); err != nil {
-		v.logger.Warn(errors.PrefixError(err, "rollback failed"))
+		v.logger.WarnCtx(ctx, errors.PrefixError(err, "rollback failed"))
 	}
 }
 

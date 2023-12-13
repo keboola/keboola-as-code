@@ -17,7 +17,7 @@ import (
 func TestCheckIfLatestVersionDev(t *testing.T) {
 	t.Parallel()
 	c, _ := createMockedChecker(t)
-	err := c.CheckIfLatest(build.DevVersionValue)
+	err := c.CheckIfLatest(context.Background(), build.DevVersionValue)
 	assert.NotNil(t, err)
 	assert.Equal(t, `skipped, found dev build`, err.Error())
 }
@@ -25,7 +25,7 @@ func TestCheckIfLatestVersionDev(t *testing.T) {
 func TestCheckIfLatestVersionEqual(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
-	err := c.CheckIfLatest(`v1.2.3`)
+	err := c.CheckIfLatest(context.Background(), `v1.2.3`)
 	assert.Nil(t, err)
 	assert.NotContains(t, logs.AllMessages(), `WARN`)
 }
@@ -33,7 +33,7 @@ func TestCheckIfLatestVersionEqual(t *testing.T) {
 func TestCheckIfLatestVersionGreater(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
-	err := c.CheckIfLatest(`v1.2.5`)
+	err := c.CheckIfLatest(context.Background(), `v1.2.5`)
 	assert.Nil(t, err)
 	assert.NotContains(t, logs.AllMessages(), `WARN`)
 }
@@ -41,7 +41,7 @@ func TestCheckIfLatestVersionGreater(t *testing.T) {
 func TestCheckIfLatestVersionLess(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
-	err := c.CheckIfLatest(`v1.2.2`)
+	err := c.CheckIfLatest(context.Background(), `v1.2.2`)
 	assert.Nil(t, err)
 	expected := `
 WARN  *******************************************************

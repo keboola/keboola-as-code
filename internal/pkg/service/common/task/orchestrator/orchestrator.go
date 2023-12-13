@@ -129,14 +129,14 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	// Error is not expected, there is present always at least one node - self.
 	if !o.node.dist.MustCheckIsOwner(distributionKey) {
 		// Another node handles the resource.
-		o.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
+		o.logger.DebugfCtx(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
 	}
 
 	// Should be the task started?
 	if o.config.StartTaskIf != nil {
 		if skipReason, start := o.config.StartTaskIf(event); !start {
-			o.logger.Debugf(`skipped "%s", %s`, taskKey.String(), skipReason)
+			o.logger.DebugfCtx(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
 			return
 		}
 	}
@@ -144,7 +144,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	// Create task handler
 	taskFn := o.config.TaskFactory(event)
 	if taskFn == nil {
-		o.logger.Infof(`skipped "%s"`, taskKey)
+		o.logger.InfofCtx(ctx, `skipped "%s"`, taskKey)
 		return
 	}
 
@@ -155,7 +155,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	}
 
 	// Run task in the background
-	o.logger.Infof(`assigned "%s"`, taskKey)
+	o.logger.InfofCtx(ctx, `assigned "%s"`, taskKey)
 	taskCfg := task.Config{
 		Type:      o.config.Name,
 		Key:       taskKey,

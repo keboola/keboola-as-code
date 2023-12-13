@@ -73,9 +73,9 @@ func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, 
 		Results:     results,
 	}).Send(ctx)
 	if err == nil {
-		s.logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.ID)
+		s.logger.DebugfCtx(ctx, "Sent \"%s\" successful event id: \"%s\"", cmd, event.ID)
 	} else {
-		s.logger.Warnf("Cannot send \"%s\" successful event: %s", cmd, err)
+		s.logger.WarnfCtx(ctx, "Cannot send \"%s\" successful event: %s", cmd, err)
 	}
 }
 
@@ -98,8 +98,8 @@ func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err 
 		Results:     results,
 	}).Send(ctx)
 	if err == nil {
-		s.logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.ID)
+		s.logger.DebugfCtx(ctx, "Sent \"%s\" failed event id: \"%s\"", cmd, event.ID)
 	} else {
-		s.logger.Warnf("Cannot send \"%s\" failed event: %s", cmd, err)
+		s.logger.WarnfCtx(ctx, "Cannot send \"%s\" failed event: %s", cmd, err)
 	}
 }

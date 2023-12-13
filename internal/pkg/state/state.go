@@ -127,7 +127,7 @@ func (s *State) Load(ctx context.Context, options LoadOptions) (ok bool, localEr
 
 	// Remote
 	if options.LoadRemoteState {
-		s.logger.Debugf("Loading project remote state.")
+		s.logger.DebugfCtx(ctx, "Loading project remote state.")
 		if err := s.loadRemoteState(ctx, options.RemoteFilter); err != nil {
 			remoteErrors.Append(err)
 		}
@@ -135,7 +135,7 @@ func (s *State) Load(ctx context.Context, options LoadOptions) (ok bool, localEr
 
 	// Local
 	if options.LoadLocalState {
-		s.logger.Debugf("Loading local state.")
+		s.logger.DebugfCtx(ctx, "Loading local state.")
 		if err := s.loadLocalState(ctx, options.LocalFilter, options.IgnoreNotFoundErr); err != nil {
 			localErrors.Append(err)
 		}

@@ -20,5 +20,5 @@ func Run(ctx context.Context, skip bool, d dependencies) (err error) {
 
 	return version.
 		NewGitHubChecker(ctx, d.Logger(), skip).
-		CheckIfLatest(build.BuildVersion)
+		CheckIfLatest(ctx, build.BuildVersion)
 }

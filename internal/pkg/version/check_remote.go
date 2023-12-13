@@ -29,7 +29,7 @@ func NewGitHubChecker(parentCtx context.Context, logger log.Logger, skip bool) *
 	return &checker{ctx: ctx, client: c, cancel: cancel, logger: logger, skip: skip}
 }
 
-func (c *checker) CheckIfLatest(currentVersion string) error {
+func (c *checker) CheckIfLatest(ctx context.Context, currentVersion string) error {
 	defer c.cancel()
 
 	// Dev build
@@ -58,13 +58,13 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 	}
 
 	if latest.GreaterThan(current) {
-		c.logger.Warn(`*******************************************************`)
-		c.logger.Warnf(`WARNING: A new version "%s" is available.`, latestVersion)
-		c.logger.Warnf(`You are currently using version "%s".`, current.String())
-		c.logger.Warn(`Please update to get the latest features and bug fixes.`)
-		c.logger.Warn(`Read more: https://github.com/keboola/keboola-as-code/releases`)
-		c.logger.Warn(`*******************************************************`)
-		c.logger.Warn()
+		c.logger.WarnCtx(ctx, `*******************************************************`)
+		c.logger.WarnfCtx(ctx, `WARNING: A new version "%s" is available.`, latestVersion)
+		c.logger.WarnfCtx(ctx, `You are currently using version "%s".`, current.String())
+		c.logger.WarnCtx(ctx, `Please update to get the latest features and bug fixes.`)
+		c.logger.WarnCtx(ctx, `Read more: https://github.com/keboola/keboola-as-code/releases`)
+		c.logger.WarnCtx(ctx, `*******************************************************`)
+		c.logger.WarnCtx(ctx)
 	}
 
 	return nil

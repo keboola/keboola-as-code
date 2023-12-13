@@ -114,14 +114,14 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.Infof(`registering the node "%s"`, n.nodeID)
+	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Put(n.nodeID, etcd.WithLease(session.Lease())).Do(ctx, session.Client()); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.Infof(`the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.InfofCtx(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
 	return nil
 }
 
@@ -130,24 +130,24 @@ func (n *Node) unregister(timeout time.Duration) {
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
+	n.logger.InfofCtx(ctx, `unregistering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
-		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
+		n.logger.WarnfCtx(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.Infof(`the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.InfofCtx(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
 }
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	n.logger.Info("watching for other nodes")
+	n.logger.InfoCtx(ctx, "watching for other nodes")
 	init := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
 		WithForEach(func(events []etcdop.WatchEvent, _ *etcdop.Header, restart bool) {
-			modifiedNodes := n.updateNodesFrom(events, restart)
+			modifiedNodes := n.updateNodesFrom(ctx, events, restart)
 			n.listeners.Notify(modifiedNodes)
 		}).
 		StartConsumer(ctx, wg)
@@ -166,7 +166,7 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 }
 
 // updateNodesFrom events. The operation is atomic.
-func (n *Node) updateNodesFrom(events []etcdop.WatchEvent, reset bool) Events {
+func (n *Node) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent, reset bool) Events {
 	n.assigner.lock()
 	defer n.assigner.unlock()
 
@@ -182,13 +182,13 @@ func (n *Node) updateNodesFrom(events []etcdop.WatchEvent, reset bool) Events {
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
 			n.assigner.addNode(nodeID)
-			n.logger.Infof(event.Message)
+			n.logger.InfofCtx(ctx, event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
 			n.assigner.removeNode(nodeID)
-			n.logger.Infof(event.Message)
+			n.logger.InfofCtx(ctx, event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}

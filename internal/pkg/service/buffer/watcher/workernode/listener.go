@@ -80,13 +80,13 @@ func (l *listeners) waitForRevision(requestedRev int64, currentRev *atomic.Int64
 	return out
 }
 
-func (l *listeners) wait() {
+func (l *listeners) wait(ctx context.Context) {
 	l.lock.Lock()
 	count := len(l.listeners)
 	l.lock.Unlock()
 
 	if count > 0 {
-		l.logger.Infof(`waiting for "%d" listeners`, count)
+		l.logger.InfofCtx(ctx, `waiting for "%d" listeners`, count)
 	}
 	l.wg.Wait()
 }
