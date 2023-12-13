@@ -15,7 +15,6 @@ const (
 )
 
 type Logger interface {
-	baseLogger
 	contextLogger
 	toWriter
 	withPrefix
@@ -40,13 +39,11 @@ type DebugLogger interface {
 }
 
 type baseLogger interface {
-	Log(level string, args ...any)
 	Debug(args ...any)
 	Info(args ...any)
 	Warn(args ...any)
 	Error(args ...any)
 
-	With(args ...any) Logger // creates a child logger and adds structured context to it.
 	Debugf(template string, args ...any)
 	Infof(template string, args ...any)
 	Warnf(template string, args ...any)
@@ -66,6 +63,8 @@ type contextLogger interface {
 	InfofCtx(ctx context.Context, template string, args ...any)
 	WarnfCtx(ctx context.Context, template string, args ...any)
 	ErrorfCtx(ctx context.Context, template string, args ...any)
+
+	Sync() error
 }
 
 type toWriter interface {

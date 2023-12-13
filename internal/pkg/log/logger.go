@@ -11,13 +11,13 @@ import (
 // zapLogger is default implementation of the Logger interface.
 // It is wrapped zap.SugaredLogger.
 type zapLogger struct {
-	*zap.SugaredLogger
-	core   zapcore.Core
-	prefix string
+	sugaredLogger *zap.SugaredLogger
+	core          zapcore.Core
+	prefix        string
 }
 
 func loggerFromZapCore(core zapcore.Core, with ...interface{}) *zapLogger {
-	return &zapLogger{SugaredLogger: zap.New(core).Sugar().With(with...), core: core}
+	return &zapLogger{sugaredLogger: zap.New(core).Sugar().With(with...), core: core}
 }
 
 // With creates a child logger and adds structured context to it.
@@ -33,94 +33,77 @@ func (l *zapLogger) AddPrefix(prefix string) Logger {
 	return clone
 }
 
-func (l *zapLogger) Log(level string, args ...any) {
-	switch level {
-	case "debug", "DEBUG":
-		l.Debug(args...)
-	case "info", "INFO":
-		l.Info(args...)
-	case "warn", "WARN":
-		l.Warn(args...)
-	case "error", "ERROR":
-		l.Error(args...)
-	case "dpanic", "DPANIC":
-		l.DPanic(args...)
-	case "panic", "PANIC":
-		l.Panic(args...)
-	case "fatal", "FATAL":
-		l.Fatal(args...)
-	default:
-		l.Info(args...)
-	}
-}
-
 func (l *zapLogger) LogCtx(ctx context.Context, level string, args ...any) {
 	switch level {
 	case "debug", "DEBUG":
-		l.Debug(args...)
+		l.sugaredLogger.Debug(args...)
 	case "info", "INFO":
-		l.Info(args...)
+		l.sugaredLogger.Info(args...)
 	case "warn", "WARN":
-		l.Warn(args...)
+		l.sugaredLogger.Warn(args...)
 	case "error", "ERROR":
-		l.Error(args...)
+		l.sugaredLogger.Error(args...)
 	case "dpanic", "DPANIC":
-		l.DPanic(args...)
+		l.sugaredLogger.DPanic(args...)
 	case "panic", "PANIC":
-		l.Panic(args...)
+		l.sugaredLogger.Panic(args...)
 	case "fatal", "FATAL":
-		l.Fatal(args...)
+		l.sugaredLogger.Fatal(args...)
 	default:
-		l.Info(args...)
+		l.sugaredLogger.Info(args...)
 	}
 }
 
 func (l *zapLogger) DebugCtx(ctx context.Context, args ...any) {
-	l.Debug(args...)
+	l.sugaredLogger.Debug(args...)
 }
 
 func (l *zapLogger) InfoCtx(ctx context.Context, args ...any) {
-	l.Info(args...)
+	l.sugaredLogger.Info(args...)
 }
 
 func (l *zapLogger) WarnCtx(ctx context.Context, args ...any) {
-	l.Warn(args...)
+	l.sugaredLogger.Warn(args...)
 }
 
 func (l *zapLogger) ErrorCtx(ctx context.Context, args ...any) {
-	l.Error(args...)
+	l.sugaredLogger.Error(args...)
 }
 
 func (l *zapLogger) DebugfCtx(ctx context.Context, template string, args ...any) {
-	l.Debugf(template, args...)
+	l.sugaredLogger.Debugf(template, args...)
 }
 
 func (l *zapLogger) InfofCtx(ctx context.Context, template string, args ...any) {
-	l.Infof(template, args...)
+	l.sugaredLogger.Infof(template, args...)
 }
 
 func (l *zapLogger) WarnfCtx(ctx context.Context, template string, args ...any) {
-	l.Warnf(template, args...)
+	l.sugaredLogger.Warnf(template, args...)
 }
 
 func (l *zapLogger) ErrorfCtx(ctx context.Context, template string, args ...any) {
-	l.Errorf(template, args...)
+	l.sugaredLogger.Errorf(template, args...)
+}
+
+func (l *zapLogger) Sync() error {
+	return l.sugaredLogger.Sync()
 }
 
 func (l *zapLogger) DebugWriter() *LevelWriter {
-	return &LevelWriter{logger: l, level: DebugLevel}
+	return &LevelWriter{logger: l.sugaredLogger, level: DebugLevel}
 }
 
 func (l *zapLogger) InfoWriter() *LevelWriter {
-	return &LevelWriter{logger: l, level: InfoLevel}
+	return &LevelWriter{logger: l.sugaredLogger, level: InfoLevel}
 }
 
 func (l *zapLogger) WarnWriter() *LevelWriter {
-	return &LevelWriter{logger: l, level: WarnLevel}
+	return &LevelWriter{logger: l.sugaredLogger, level: WarnLevel}
 }
 
 func (l *zapLogger) ErrorWriter() *LevelWriter {
-	return &LevelWriter{logger: l, level: ErrorLevel}
+	return &LevelWriter{logger: l.sugaredLogger, level: ErrorLevel}
 }
 
 func (l *zapLogger) zapCore() zapcore.Core {
