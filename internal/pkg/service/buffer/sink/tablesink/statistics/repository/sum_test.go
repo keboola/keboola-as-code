@@ -48,6 +48,7 @@ func TestSumStats(t *testing.T) {
 		RecordsCount:     32,
 		UncompressedSize: 16,
 		CompressedSize:   3,
+		StagingSize:      1,
 	}).Do(ctx).Err())
 
 	// Sum
@@ -59,5 +60,6 @@ func TestSumStats(t *testing.T) {
 		RecordsCount:     44,
 		UncompressedSize: 22,
 		CompressedSize:   6,
+		StagingSize:      1,
 	}, sum)
 }
