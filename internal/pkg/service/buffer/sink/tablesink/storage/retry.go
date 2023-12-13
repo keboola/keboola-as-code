@@ -60,8 +60,12 @@ func (b *retryBackoff) RetryAt(failedAt time.Time, attempt int) (retryAt time.Ti
 		panic(errors.New("attempt must be greater than 0"))
 	}
 
-	max := float64(b.MaxInterval)
-	interval := time.Duration(math.Min(float64(b.InitialInterval)*math.Pow(b.Multiplier, float64(attempt-1)), max))
+	interval := time.Duration(
+		math.Min(
+			float64(b.InitialInterval)*math.Pow(b.Multiplier, float64(attempt-1)),
+			float64(b.MaxInterval),
+		),
+	)
 
 	random := rand.New(rand.NewSource(failedAt.UnixNano()))
 	randomFactor := 1 - b.RandomizationFactor + random.Float64()*2*b.RandomizationFactor // 1 ± RandomizationFactor
