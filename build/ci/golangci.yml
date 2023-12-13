@@ -71,6 +71,7 @@ linters:
   enable:
     - asciicheck
     #- bodyclose # Not compatible with go 1.18, temporary disable
+    - contextcheck
     - depguard
     - dogsled
     - dupl
@@ -157,6 +158,7 @@ issues:
         - dupl
         - dogsled
         - bodyclose
+        - contextcheck
     # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
     - linters:
         - paralleltest
