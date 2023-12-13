@@ -95,7 +95,7 @@ func TestRetryable_Validation(t *testing.T) {
 func TestRetryable_IncrementRetry(t *testing.T) {
 	t.Parallel()
 
-	backoff := DefaultRetryBackoff()
+	backoff := NoRandomizationBackoff()
 	backoff.(*retryBackoff).RandomizationFactor = 0
 
 	v := Retryable{}
@@ -153,10 +153,43 @@ func TestRetryable_ResetRetry(t *testing.T) {
 	}, v)
 }
 
-func TestRetryBackoff_RetryAt(t *testing.T) {
+func TestRetryBackoff_RetryAt_Stable(t *testing.T) {
 	t.Parallel()
 
-	backoff := DefaultRetryBackoff()
+	backoff := NoRandomizationBackoff()
+	now := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
+
+	assert.Panics(t, func() {
+		backoff.RetryAt(now, -1)
+	})
+
+	assert.Panics(t, func() {
+		backoff.RetryAt(now, 0)
+	})
+
+	// Assert static delays
+	expected := []string{
+		"2000-01-01T00:02:00.000Z", // +2 min
+		"2000-01-01T00:10:00.000Z", // +8 min (x4)
+		"2000-01-01T00:42:00.000Z", // +32 min (x4)
+		"2000-01-01T02:50:00.000Z", // +128 min (x4)
+		"2000-01-01T05:50:00.000Z", // +3h (max)
+		"2000-01-01T08:50:00.000Z", // +3h
+		"2000-01-01T11:50:00.000Z", // +3h
+	}
+
+	now = utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
+	for i, e := range expected {
+		retryAt := backoff.RetryAt(now, i+1)
+		assert.Equal(t, e, utctime.From(retryAt).String())
+		now = retryAt
+	}
+}
+
+func TestRetryBackoff_RetryAt_Random(t *testing.T) {
+	t.Parallel()
+
+	backoff := DefaultBackoff()
 	now := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
 
 	assert.Panics(t, func() {
@@ -168,7 +201,7 @@ func TestRetryBackoff_RetryAt(t *testing.T) {
 	})
 
 	// Assert randomized delays, the failedAt value is used as a random seed, so results are stable
-	expectedRandom := []string{
+	expected := []string{
 		"2000-01-01T00:01:50.098Z", // +2 min
 		"2000-01-01T00:09:25.554Z", // +8 min (x4)
 		"2000-01-01T00:38:31.057Z", // +32 min (x4)
@@ -179,26 +212,7 @@ func TestRetryBackoff_RetryAt(t *testing.T) {
 	}
 
 	now = utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
-	for i, e := range expectedRandom {
-		retryAt := backoff.RetryAt(now, i+1)
-		assert.Equal(t, e, utctime.From(retryAt).String())
-		now = retryAt
-	}
-
-	// Assert static delays
-	backoff.(*retryBackoff).RandomizationFactor = 0
-	expectedStatic := []string{
-		"2000-01-01T00:02:00.000Z", // +2 min
-		"2000-01-01T00:10:00.000Z", // +8 min (x4)
-		"2000-01-01T00:42:00.000Z", // +32 min (x4)
-		"2000-01-01T02:50:00.000Z", // +128 min (x4)
-		"2000-01-01T05:50:00.000Z", // +3h (max)
-		"2000-01-01T08:50:00.000Z", // +3h
-		"2000-01-01T11:50:00.000Z", // +3h
-	}
-
-	now = utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
-	for i, e := range expectedStatic {
+	for i, e := range expected {
 		retryAt := backoff.RetryAt(now, i+1)
 		assert.Equal(t, e, utctime.From(retryAt).String())
 		now = retryAt

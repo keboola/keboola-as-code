@@ -28,19 +28,31 @@ type retryBackoff struct {
 	*backoff.ExponentialBackOff
 }
 
-func NewRetryBackoff(wrapped *backoff.ExponentialBackOff) RetryBackoff {
+func NewBackoff(wrapped *backoff.ExponentialBackOff) RetryBackoff {
 	return &retryBackoff{ExponentialBackOff: wrapped}
 }
 
-func DefaultRetryBackoff() RetryBackoff {
+func DefaultBackoff() RetryBackoff {
+	b := newBackoff()
+	b.Reset()
+	return NewBackoff(newBackoff())
+}
+
+func NoRandomizationBackoff() RetryBackoff {
+	b := newBackoff()
+	b.RandomizationFactor = 0
+	b.Reset()
+	return NewBackoff(b)
+}
+
+func newBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0.1
 	b.Multiplier = 4
 	b.InitialInterval = 2 * time.Minute
 	b.MaxInterval = 3 * time.Hour
 	b.MaxElapsedTime = 0 // don't stop
-	b.Reset()
-	return NewRetryBackoff(b)
+	return b
 }
 
 func (b *retryBackoff) RetryAt(failedAt time.Time, attempt int) (retryAt time.Time) {
