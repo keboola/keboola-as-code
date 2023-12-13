@@ -35,7 +35,7 @@ func NewBackoff(wrapped *backoff.ExponentialBackOff) RetryBackoff {
 func DefaultBackoff() RetryBackoff {
 	b := newBackoff()
 	b.Reset()
-	return NewBackoff(newBackoff())
+	return NewBackoff(b)
 }
 
 func NoRandomizationBackoff() RetryBackoff {
