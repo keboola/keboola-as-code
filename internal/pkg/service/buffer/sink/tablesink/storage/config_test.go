@@ -48,6 +48,7 @@ func TestConfig_With(t *testing.T) {
 		Size:        10 * datasize.MB,
 		SizePercent: 150,
 	}
+	maxSlicesPerFile := 1000
 	sliceUploadTrigger := staging.SliceUploadTrigger{
 		Count:    30000,
 		Size:     4 * datasize.MB,
@@ -69,6 +70,7 @@ func TestConfig_With(t *testing.T) {
 	expectedCfg := defaultCfg
 	expectedCfg.Local.Compression = compressionCfg
 	expectedCfg.Local.VolumesAssignment = volumesAssigmentCfg
+	expectedCfg.Staging.MaxSlicesPerFile = maxSlicesPerFile
 	expectedCfg.Staging.Upload.Trigger = sliceUploadTrigger
 	patchedConfig1 := defaultCfg.With(&ConfigPatch{
 		Local: &local.ConfigPatch{
@@ -76,6 +78,7 @@ func TestConfig_With(t *testing.T) {
 			VolumesAssignment: &volumesAssigmentCfg,
 		},
 		Staging: &staging.ConfigPatch{
+			MaxSlicesPerFile: &maxSlicesPerFile,
 			Upload: &staging.UploadConfigPatch{
 				Trigger: &sliceUploadTrigger,
 			},

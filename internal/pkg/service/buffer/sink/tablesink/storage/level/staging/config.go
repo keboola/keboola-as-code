@@ -7,7 +7,8 @@ import (
 
 // Config contains default configuration for the staging storage.
 type Config struct {
-	Upload UploadConfig `configKey:"upload"`
+	MaxSlicesPerFile int          `configKey:"maxSlicesPerFile" configUsage:"Maximum number of slices in a file, a new file is created after reaching it." validate:"required,min=1,max=50000"`
+	Upload           UploadConfig `configKey:"upload"`
 }
 
 type UploadConfig struct {
@@ -18,7 +19,8 @@ type UploadConfig struct {
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It is part of the definition.TableSink structure to allow modification of the default configuration.
 type ConfigPatch struct {
-	Upload *UploadConfigPatch `json:"upload,omitempty"`
+	MaxSlicesPerFile *int               `json:"maxSlicesPerFile,omitempty" validate:"min=1,max=50000"`
+	Upload           *UploadConfigPatch `json:"upload,omitempty"`
 }
 
 type UploadConfigPatch struct {
@@ -27,6 +29,9 @@ type UploadConfigPatch struct {
 
 // With copies values from the ConfigPatch, if any.
 func (c Config) With(v ConfigPatch) Config {
+	if v.MaxSlicesPerFile != nil {
+		c.MaxSlicesPerFile = *v.MaxSlicesPerFile
+	}
 	if v.Upload != nil {
 		if v.Upload.Trigger != nil {
 			c.Upload.Trigger = *v.Upload.Trigger
@@ -37,6 +42,7 @@ func (c Config) With(v ConfigPatch) Config {
 
 func NewConfig() Config {
 	return Config{
+		MaxSlicesPerFile: 100,
 		Upload: UploadConfig{
 			MinInterval: 5 * time.Second,
 			Trigger:     DefaultSliceUploadTrigger(),

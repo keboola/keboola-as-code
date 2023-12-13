@@ -117,6 +117,8 @@ sink:
                     # Allocate disk space as % from the previous slice size. Validation rules: min=0,max=200
                     sizePercent: 110
             staging:
+                # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
+                maxSlicesPerFile: 100
                 upload:
                     # Minimal interval between uploads. Validation rules: required,minDuration=1s,maxDuration=5m
                     minInterval: 5s
