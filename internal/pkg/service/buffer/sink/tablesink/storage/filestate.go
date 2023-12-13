@@ -1,5 +1,12 @@
 package storage
 
+import (
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"time"
+)
+
 // FileWriting
 // It is the initial state of the File.
 // API nodes writes records to the File slices in the local volumes.
@@ -37,3 +44,23 @@ const FileImported FileState = "imported"
 //  FileImporting    SliceUploaded    SliceUploaded    SliceUploaded
 //  FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
+
+func (f *File) StateTransition(at time.Time, to FileState) error {
+	from := f.State
+	atUTC := utctime.From(at)
+
+	switch {
+	case from == FileWriting && to == FileClosing:
+		f.ClosingAt = &atUTC
+	case from == FileClosing && to == FileImporting:
+		f.ImportingAt = &atUTC
+	case from == FileImporting && to == FileImported:
+		f.ImportedAt = &atUTC
+	default:
+		return serviceError.NewBadRequestError(errors.Errorf(`unexpected file "%s" state transition from "%s" to "%s"`, f.FileKey, from, to))
+	}
+
+	f.State = to
+	f.ResetRetry()
+	return nil
+}
