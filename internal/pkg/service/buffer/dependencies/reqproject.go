@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target/table"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/usererror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 )
