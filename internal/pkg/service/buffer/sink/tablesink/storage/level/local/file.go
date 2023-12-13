@@ -17,3 +17,13 @@ type File struct {
 	// DiskAllocation configures pre-allocation of the disk space for file slices.
 	DiskAllocation DiskAllocation `json:"diskAllocation"`
 }
+
+func NewFile(cfg Config, fileDir string) File {
+	return File{
+		Dir:               fileDir,
+		Compression:       cfg.Compression.Simplify(),
+		DiskSync:          cfg.DiskSync,
+		VolumesAssignment: cfg.VolumesAssignment,
+		DiskAllocation:    cfg.DiskAllocation,
+	}
+}
