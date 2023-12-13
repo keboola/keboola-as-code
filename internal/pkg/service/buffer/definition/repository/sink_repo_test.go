@@ -18,7 +18,6 @@ import (
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -84,30 +83,21 @@ func TestRepository_Sink(t *testing.T) {
 		// ExistsOrErr - not found
 		if err := r.ExistsOrErr(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// Get - not found
 		if err := r.Get(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - not found
 		if err := r.GetDeleted(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 
@@ -116,10 +106,7 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		if err := r.Create("Create description", &sink1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 
@@ -182,10 +169,7 @@ func TestRepository_Sink(t *testing.T) {
 		// GetDeleted - not found
 		if err := r.GetDeleted(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
@@ -200,10 +184,7 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		if err := r.Create("Create description", &sink1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" already exists in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusConflict, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
 
@@ -244,10 +225,7 @@ func TestRepository_Sink(t *testing.T) {
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source/non-existent" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 
@@ -267,10 +245,7 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		if err := r.Version(sink1.SinkKey, 10).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink version "123/456/my-source-1/my-sink-1/0000000010" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 
@@ -283,20 +258,14 @@ func TestRepository_Sink(t *testing.T) {
 		// ExistsOrErr - not found
 		if err := r.ExistsOrErr(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// Get - not found
 		if err := r.Get(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
@@ -330,10 +299,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.SoftDelete(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-		var errWithStatus serviceErrors.WithStatusCode
-		if assert.True(t, errors.As(err, &errWithStatus)) {
-			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-		}
+		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
 	// Undelete
@@ -362,10 +328,7 @@ func TestRepository_Sink(t *testing.T) {
 		// GetDeleted - not found
 		if err := r.GetDeleted(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
@@ -386,10 +349,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Undelete(sink1.SinkKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted sink "123/456/my-source-1/my-sink-1" not found in the source`, err.Error())
-		var errWithStatus serviceErrors.WithStatusCode
-		if assert.True(t, errors.As(err, &errWithStatus)) {
-			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-		}
+		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
 	// Re-create causes Undelete + new version record
@@ -599,10 +559,7 @@ definition/sink/version/123/456/my-source-2/my-sink-2/0000000001
 		sink := sinkTemplate(key.SinkKey{SourceKey: sink1.SourceKey, SinkID: "over-maximum-count"})
 		if err := r.Create("Create description", &sink).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, "sink count limit reached in the source, the maximum is 100", err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusConflict, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
 
@@ -641,10 +598,7 @@ definition/sink/version/123/456/my-source-2/my-sink-2/0000000001
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, "version count limit reached in the sink, the maximum is 1000", err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusConflict, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
 }
