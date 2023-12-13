@@ -95,11 +95,12 @@ func TestCliLogger_JSONVerboseFalse(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, false)
+	ctx := context.Background()
 
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -121,10 +122,12 @@ func TestCliLogger_JSONVerboseTrue(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, true)
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	ctx := context.Background()
+
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout

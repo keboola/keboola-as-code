@@ -32,7 +32,8 @@ type errLogger struct {
 }
 
 func (l *errLogger) Println(v ...any) {
-	l.logger.Error(v...)
+	// The prometheus library doesn't provide a context of the message, so we have no choice but to use context.Background().
+	l.logger.ErrorCtx(context.Background(), v...)
 }
 
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.
