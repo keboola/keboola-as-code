@@ -38,7 +38,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Mocked API scope
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithCtx(ctx), dependencies.WithMultipleTokenVerification(true))
+	apiScp, mock := NewMockedAPIScope(t, config.New(), dependencies.WithCtx(ctx), dependencies.WithMultipleTokenVerification(true))
 	manager := apiScp.RepositoryManager()
 
 	// Mocked request scope
@@ -158,7 +158,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	// Mocked API scope
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithCtx(ctx), dependencies.WithMultipleTokenVerification(true))
+	apiScp, mock := NewMockedAPIScope(t, config.New(), dependencies.WithCtx(ctx), dependencies.WithMultipleTokenVerification(true))
 	manager := apiScp.RepositoryManager()
 
 	// Mocked request scope

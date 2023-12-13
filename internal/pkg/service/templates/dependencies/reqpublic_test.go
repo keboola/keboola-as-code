@@ -29,7 +29,7 @@ func TestPublicRequestScope_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Mocked API scope
-	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithMockedComponents(components1))
+	apiScp, mock := NewMockedAPIScope(t, config.New(), dependencies.WithMockedComponents(components1))
 
 	// Request 1 gets "components1"
 	req1Scp := NewPublicRequestScope(apiScp, httptest.NewRequest("GET", "/req1", nil))
