@@ -21,8 +21,9 @@ type IteratorT[T any] struct {
 
 // ForEachOpT definition, it can be part of a transaction.
 type ForEachOpT[T any] struct {
-	def DefinitionT[T]
-	fn  func(value T, header *Header) error
+	def     DefinitionT[T]
+	onPage  []onPageFn
+	onValue func(value T, header *Header) error
 }
 
 func NewTyped[R any](client etcd.KV, serde *serde.Serde, start string, opts ...Option) DefinitionT[R] {
@@ -38,7 +39,37 @@ func (v DefinitionT[T]) Do(ctx context.Context, opts ...op.Option) *IteratorT[T]
 
 // ForEachOp method converts iterator to for each operation definition, so it can be part of a transaction.
 func (v DefinitionT[T]) ForEachOp(fn func(value T, header *Header) error) *ForEachOpT[T] {
-	return &ForEachOpT[T]{def: v, fn: fn}
+	return &ForEachOpT[T]{def: v, onValue: fn}
+}
+
+// WithResultTo method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v DefinitionT[T]) WithResultTo(slice *[]T) *ForEachOpT[T] {
+	return v.
+		ForEachOp(func(value T, header *Header) error {
+			*slice = append(*slice, value)
+			return nil
+		}).
+		AndOnFirstPage(func(response *etcd.GetResponse) error {
+			*slice = nil
+			return nil
+		})
+}
+
+// AndOnFirstPage registers a callback that is executed after the first page is successfully loaded.
+func (v *ForEachOpT[T]) AndOnFirstPage(fn func(response *etcd.GetResponse) error) *ForEachOpT[T] {
+	return v.AndOnPage(func(pageIndex int, response *etcd.GetResponse) error {
+		if pageIndex == 0 {
+			return fn(response)
+		}
+		return nil
+	})
+}
+
+// AndOnPage registers a callback that is executed after each page is successfully loaded.
+func (v *ForEachOpT[T]) AndOnPage(fn onPageFn) *ForEachOpT[T] {
+	clone := *v
+	clone.onPage = append(clone.onPage, fn)
+	return &clone
 }
 
 func (v *ForEachOpT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
@@ -56,7 +87,7 @@ func (v *ForEachOpT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 		Op: firstPageOp.Op,
 		MapResponse: func(ctx context.Context, response op.RawResponse) (result any, err error) {
 			// Create iterator, see comment above.
-			itr := v.def.Do(ctx, response.Options...)
+			itr := v.def.Do(ctx, response.Options...).OnPage(v.onPage...)
 			itr.config.client = response.Client
 
 			// Inject the first page, from the response
@@ -64,21 +95,33 @@ func (v *ForEachOpT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 			itr.currentIndex--
 
 			// Process all records from the first page and load next pages, if any.
-			return op.NoResult{}, itr.ForEachValue(v.fn)
+			return op.NoResult{}, itr.ForEachValue(v.onValue)
 		},
 	}, nil
 }
 
 func (v *ForEachOpT[T]) Do(ctx context.Context, opts ...op.Option) (out Result) {
 	// See comment in the Op method.
-	itr := v.def.Do(ctx, opts...)
-	if err := itr.ForEachValue(v.fn); err != nil {
+	itr := v.def.Do(ctx, opts...).OnPage(v.onPage...)
+	if err := itr.ForEachValue(v.onValue); err != nil {
 		out.error = err
 		return out
 	}
 
 	out.header = itr.header
 	return out
+}
+
+// OnFirstPage registers a callback that is executed after the first page is successfully loaded.
+func (v *IteratorT[T]) OnFirstPage(fns ...func(response *etcd.GetResponse) error) *IteratorT[T] {
+	v.Iterator.OnFirstPage(fns...)
+	return v
+}
+
+// OnPage registers a callback that is executed after each page is successfully loaded.
+func (v *IteratorT[T]) OnPage(fns ...onPageFn) *IteratorT[T] {
+	v.Iterator.OnPage(fns...)
+	return v
 }
 
 // Next returns true if there is a next value.

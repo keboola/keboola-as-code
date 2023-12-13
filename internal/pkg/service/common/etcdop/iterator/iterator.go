@@ -35,12 +35,14 @@ type Iterator struct {
 	values       []*op.KeyValue // values in the page
 	header       *Header        // page response header
 	currentValue *op.KeyValue   // currentValue in the page, match currentIndex
+	onPage       []onPageFn
 }
 
 // ForEachOp definition, it can be part of a transaction.
 type ForEachOp struct {
-	def Definition
-	fn  func(value *op.KeyValue, header *Header) error
+	def    Definition
+	onPage []onPageFn
+	fn     func(value *op.KeyValue, header *Header) error
 }
 
 // Result of the ForEachOp and ForEachOpT operations.
@@ -48,6 +50,8 @@ type Result struct {
 	header *Header
 	error  error
 }
+
+type onPageFn func(pageIndex int, response *etcd.GetResponse) error
 
 func New(client etcd.KV, start string, opts ...Option) Definition {
 	return newIterator(newConfig(client, nil, start, opts))
@@ -82,7 +86,7 @@ func (v *ForEachOp) Op(ctx context.Context) (op.LowLevelOp, error) {
 		Op: firstPageOp.Op,
 		MapResponse: func(ctx context.Context, response op.RawResponse) (result any, err error) {
 			// Create iterator, see comment above.
-			itr := v.def.Do(ctx, response.Options...)
+			itr := v.def.Do(ctx, response.Options...).OnPage(v.onPage...)
 			itr.config.client = response.Client
 
 			// Inject the first page, from the response
@@ -98,13 +102,32 @@ func (v *ForEachOp) Op(ctx context.Context) (op.LowLevelOp, error) {
 
 func (v *ForEachOp) Do(ctx context.Context, opts ...op.Option) (out Result) {
 	// See comment in the Op method.
-	itr := v.def.Do(ctx, opts...)
+	itr := v.def.Do(ctx, opts...).OnPage(v.onPage...)
 	if err := itr.ForEach(v.fn); err != nil {
 		out.error = err
 		return out
 	}
 	out.header = itr.header
 	return out
+}
+
+// OnFirstPage registers a callback that is executed after the first page is successfully loaded.
+func (v *Iterator) OnFirstPage(fns ...func(response *etcd.GetResponse) error) *Iterator {
+	for _, fn := range fns {
+		v.onPage = append(v.onPage, func(pageIndex int, response *etcd.GetResponse) error {
+			if pageIndex == 0 {
+				return fn(response)
+			}
+			return nil
+		})
+	}
+	return v
+}
+
+// OnPage registers a callback that is executed after each page is successfully loaded.
+func (v *Iterator) OnPage(fns ...onPageFn) *Iterator {
+	v.onPage = append(v.onPage, fns...)
+	return v
 }
 
 // Next returns true if there is a next value.
@@ -222,6 +245,14 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 	kvs := resp.Kvs
 	header := resp.Header
 	more := resp.More
+
+	// Invoke callbacks
+	for _, cb := range v.onPage {
+		if err := cb(v.page, resp); err != nil {
+			v.err = err
+			return false
+		}
+	}
 
 	// Handle empty result
 	v.values = kvs
