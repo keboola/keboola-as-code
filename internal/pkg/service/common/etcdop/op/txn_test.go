@@ -43,6 +43,8 @@ func TestTxnOp_Empty(t *testing.T) {
 
 	txn := NewTxnOp(client)
 
+	assert.True(t, txn.Empty())
+
 	// Validate low-level representation of the transaction
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
 		assert.Equal(t, etcd.OpTxn(
@@ -76,6 +78,8 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 		And(op).
 		And(NewTxnOp(client).Then(op))
 
+	assert.False(t, txn.Empty())
+
 	if err := txn.Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 - cannot create operation [then][0]: some error
@@ -84,7 +88,8 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 - cannot create operation [else][1]: some error
 - cannot create operation [and][0]: some error
 - cannot create operation [and][1]: some error
-- cannot create operation [and][2]: cannot create operation [then][0]: some error
+- cannot create operation [and][2]:
+  - cannot create operation [then][0]: some error
 `), err.Error())
 	}
 }
@@ -373,13 +378,13 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 				etcd.OpPut("key/txn/succeeded", "false"),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
+					[]etcd.Op{},                                               // Then
+					[]etcd.Op{},                                               // Else
 				),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
+					[]etcd.Op{},                                                   // Then
+					[]etcd.Op{},                                                   // Else
 				),
 			},
 		), lowLevel.Op)

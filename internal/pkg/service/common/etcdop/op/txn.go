@@ -58,6 +58,10 @@ func (v *TxnOp) Then(ops ...Op) *TxnOp {
 	return v
 }
 
+func (v *TxnOp) Empty() bool {
+	return len(v.ifs) == 0 && len(v.thenOps) == 0 && len(v.elseOps) == 0 && len(v.andOps) == 0
+}
+
 // If takes a list of comparison.
 // If all comparisons passed in succeed, the operations passed into Then() will be executed,
 // otherwise the operations passed into Else() will be executed.
@@ -133,7 +137,7 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 		if lowLevel, err := op.Op(ctx); err == nil {
 			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		} else {
-			errs.Append(errors.Errorf("cannot create operation [then][%d]: %w", i, err))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [then][%d]", i))
 		}
 	}
 
@@ -143,7 +147,7 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 		if lowLevel, err := op.Op(ctx); err == nil {
 			out.addElse(lowLevel.Op, lowLevel.MapResponse)
 		} else {
-			errs.Append(errors.Errorf("cannot create operation [else][%d]: %w", i, err))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [else][%d]", i))
 		}
 	}
 
@@ -152,7 +156,7 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 		// Create low-level operation
 		lowLevel, err := op.Op(ctx)
 		if err != nil {
-			errs.Append(errors.Errorf("cannot create operation [and][%d]: %w", i, err))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [and][%d]", i))
 			continue
 		}
 
