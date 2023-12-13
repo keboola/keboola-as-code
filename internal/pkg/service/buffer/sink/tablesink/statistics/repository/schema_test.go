@@ -20,6 +20,10 @@ func TestSchema(t *testing.T) {
 
 	cases := []schemaTestCase{
 		{
+			s.Prefix(),
+			"storage/stats/",
+		},
+		{
 			s.InLevel(storage.LevelLocal).Prefix(),
 			"storage/stats/local/",
 		},
@@ -30,6 +34,10 @@ func TestSchema(t *testing.T) {
 		{
 			s.InLevel(storage.LevelTarget).Prefix(),
 			"storage/stats/target/",
+		},
+		{
+			s.InLevel(storage.LevelLocal).InObject(sliceKey.ProjectID).Prefix(),
+			"storage/stats/local/123/",
 		},
 		{
 			s.InLevel(storage.LevelLocal).InProject(sliceKey.ProjectID).Prefix(),

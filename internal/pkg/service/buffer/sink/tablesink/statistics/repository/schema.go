@@ -20,28 +20,20 @@ const (
 	rollupSumKey = "_sum"
 )
 
-type prefix = PrefixT[statistics.Value]
+type (
+	schema         struct{ PrefixT[statistics.Value] }
+	schemaInLevel  schema
+	schemaInObject schema
+)
 
-type schemaRoot struct {
-	prefix
+func newSchema(s *serde.Serde) schema {
+	return schema{PrefixT: NewTypedPrefix[statistics.Value]("storage/stats", s)}
 }
 
-type schemaInLevel struct {
-	prefix
-}
-
-type schemaInObject struct {
-	prefix
-}
-
-func newSchema(s *serde.Serde) schemaRoot {
-	return schemaRoot{prefix: NewTypedPrefix[statistics.Value]("storage/stats", s)}
-}
-
-func (s schemaRoot) InLevel(level Level) schemaInLevel {
+func (s schema) InLevel(level Level) schemaInLevel {
 	switch level {
 	case LevelLocal, LevelStaging, LevelTarget:
-		return schemaInLevel{prefix: s.prefix.Add(level.String())}
+		return schemaInLevel{PrefixT: s.PrefixT.Add(level.String())}
 	default:
 		panic(errors.Errorf(`unexpected storage level "%v"`, level))
 	}
@@ -99,9 +91,9 @@ func (v schemaInLevel) InSlice(k SliceKey) KeyT[statistics.Value] {
 }
 
 func (v schemaInLevel) inObject(objectKey fmt.Stringer) schemaInObject {
-	return schemaInObject{prefix: v.prefix.Add(objectKey.String())}
+	return schemaInObject{PrefixT: v.PrefixT.Add(objectKey.String())}
 }
 
 func (v schemaInObject) Sum() KeyT[statistics.Value] {
-	return v.prefix.Key(rollupSumKey)
+	return v.PrefixT.Key(rollupSumKey)
 }
