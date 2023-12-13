@@ -39,13 +39,13 @@ func NewFileKeyOpenedAt(openedAtStr string) storage.FileKey {
 	}
 }
 
-func NewFile() *storage.File {
+func NewFile() storage.File {
 	return NewFileOpenedAt("2000-01-01T19:00:00.000Z")
 }
 
-func NewFileOpenedAt(openedAtStr string) *storage.File {
+func NewFileOpenedAt(openedAtStr string) storage.File {
 	openedAt := utctime.MustParse(openedAtStr)
-	return &storage.File{
+	return storage.File{
 		FileKey: NewFileKeyOpenedAt(openedAtStr),
 		Type:    storage.FileTypeCSV,
 		State:   storage.FileWriting,

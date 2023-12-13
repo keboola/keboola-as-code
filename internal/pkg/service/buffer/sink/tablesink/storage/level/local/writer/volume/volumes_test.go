@@ -358,7 +358,7 @@ func createVolumes(t *testing.T, volumesPath string, volumes []string) {
 	}
 }
 
-func newStorageFile(t *testing.T, openedAt utctime.UTCTime) *storage.File {
+func newStorageFile(t *testing.T, openedAt utctime.UTCTime) storage.File {
 	t.Helper()
 	f := test.NewFileOpenedAt(openedAt.String())
 
