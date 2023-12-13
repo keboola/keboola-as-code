@@ -31,31 +31,50 @@ import (
 // - The DoWithoutRetry method returns false.
 //
 // Retries on network errors are always performed.
-type AtomicOp struct {
+type AtomicOp[R any] struct {
 	client     etcd.KV
-	readPhase  []func() (Op, error)
-	writePhase []func() (Op, error)
+	result     *R
+	readPhase  []HighLevelFactory
+	writePhase []HighLevelFactory
 }
 
-type AtomicResult struct {
+type AtomicResult[R any] struct {
+	result      *R
 	error       error
 	attempt     int
 	elapsedTime time.Duration
 }
 
-func Atomic(client etcd.KV) *AtomicOp {
-	return &AtomicOp{client: client}
+type atomicOpInterface interface {
+	ReadPhaseOps() []HighLevelFactory
+	WritePhaseOps() []HighLevelFactory
 }
 
-func (v *AtomicOp) AddFrom(ops ...*AtomicOp) *AtomicOp {
+func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
+	return &AtomicOp[R]{client: client, result: result}
+}
+
+func (v *AtomicOp[R]) AddFrom(ops ...atomicOpInterface) *AtomicOp[R] {
 	for _, op := range ops {
-		v.readPhase = append(v.readPhase, op.readPhase...)
-		v.writePhase = append(v.writePhase, op.writePhase...)
+		v.readPhase = append(v.readPhase, op.ReadPhaseOps()...)
+		v.writePhase = append(v.writePhase, op.WritePhaseOps()...)
 	}
 	return v
 }
 
-func (v *AtomicOp) ReadOp(ops ...Op) *AtomicOp {
+func (v *AtomicOp[R]) ReadPhaseOps() (out []HighLevelFactory) {
+	out = make([]HighLevelFactory, len(v.readPhase))
+	copy(out, v.readPhase)
+	return out
+}
+
+func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
+	out = make([]HighLevelFactory, len(v.writePhase))
+	copy(out, v.writePhase)
+	return out
+}
+
+func (v *AtomicOp[R]) ReadOp(ops ...Op) *AtomicOp[R] {
 	for _, op := range ops {
 		v.Read(func() Op {
 			return op
@@ -64,7 +83,7 @@ func (v *AtomicOp) ReadOp(ops ...Op) *AtomicOp {
 	return v
 }
 
-func (v *AtomicOp) Read(factories ...func() Op) *AtomicOp {
+func (v *AtomicOp[R]) Read(factories ...func() Op) *AtomicOp[R] {
 	for _, fn := range factories {
 		v.ReadOrErr(func() (Op, error) {
 			return fn(), nil
@@ -73,12 +92,31 @@ func (v *AtomicOp) Read(factories ...func() Op) *AtomicOp {
 	return v
 }
 
-func (v *AtomicOp) ReadOrErr(factories ...func() (Op, error)) *AtomicOp {
+func (v *AtomicOp[R]) OnRead(fns ...func()) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.ReadOrErr(func() (Op, error) {
+			fn()
+			return nil, nil
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) OnReadOrErr(fns ...func() error) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.ReadOrErr(func() (Op, error) {
+			return nil, fn()
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) ReadOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
 	v.readPhase = append(v.readPhase, factories...)
 	return v
 }
 
-func (v *AtomicOp) Write(factories ...func() Op) *AtomicOp {
+func (v *AtomicOp[R]) Write(factories ...func() Op) *AtomicOp[R] {
 	for _, fn := range factories {
 		v.WriteOrErr(func() (Op, error) {
 			return fn(), nil
@@ -87,7 +125,17 @@ func (v *AtomicOp) Write(factories ...func() Op) *AtomicOp {
 	return v
 }
 
-func (v *AtomicOp) BeforeWrite(fns ...func() error) *AtomicOp {
+func (v *AtomicOp[R]) BeforeWrite(fns ...func()) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.WriteOrErr(func() (Op, error) {
+			fn()
+			return nil, nil
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) BeforeWriteOrErr(fns ...func() error) *AtomicOp[R] {
 	for _, fn := range fns {
 		v.WriteOrErr(func() (Op, error) {
 			return nil, fn()
@@ -96,7 +144,7 @@ func (v *AtomicOp) BeforeWrite(fns ...func() error) *AtomicOp {
 	return v
 }
 
-func (v *AtomicOp) WriteOp(ops ...Op) *AtomicOp {
+func (v *AtomicOp[R]) WriteOp(ops ...Op) *AtomicOp[R] {
 	for _, op := range ops {
 		v.Write(func() Op {
 			return op
@@ -105,12 +153,12 @@ func (v *AtomicOp) WriteOp(ops ...Op) *AtomicOp {
 	return v
 }
 
-func (v *AtomicOp) WriteOrErr(factories ...func() (Op, error)) *AtomicOp {
+func (v *AtomicOp[R]) WriteOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
 	v.writePhase = append(v.writePhase, factories...)
 	return v
 }
 
-func (v *AtomicOp) Do(ctx context.Context, opts ...Option) AtomicResult {
+func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	b := newBackoff(opts...)
 	attempt := 0
 
@@ -140,10 +188,10 @@ func (v *AtomicOp) Do(ctx context.Context, opts ...Option) AtomicResult {
 		)
 	}
 
-	return AtomicResult{error: err, attempt: attempt, elapsedTime: elapsedTime}
+	return AtomicResult[R]{result: v.result, error: err, attempt: attempt, elapsedTime: elapsedTime}
 }
 
-func (v *AtomicOp) DoWithoutRetry(ctx context.Context, opts ...Option) (bool, error) {
+func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool, error) {
 	// Create GET operations
 	var getOps []Op
 	for _, opFactory := range v.readPhase {
@@ -225,14 +273,33 @@ func (v *AtomicOp) DoWithoutRetry(ctx context.Context, opts ...Option) (bool, er
 	return txnResp.Succeeded(), txnResp.Err()
 }
 
-func (v AtomicResult) Err() error {
+func (v AtomicResult[R]) Result() R {
+	var empty R
+	if v.error != nil || v.result == nil {
+		return empty
+	}
+	return *v.result
+}
+
+func (v AtomicResult[R]) Err() error {
 	return v.error
 }
 
-func (v AtomicResult) Attempt() int {
+func (v AtomicResult[R]) ResultOrErr() (R, error) {
+	var empty R
+	if v.error != nil {
+		return empty, v.error
+	}
+	if v.result == nil {
+		return empty, nil
+	}
+	return *v.result, nil
+}
+
+func (v AtomicResult[R]) Attempt() int {
 	return v.attempt
 }
 
-func (v AtomicResult) ElapsedTime() time.Duration {
+func (v AtomicResult[R]) ElapsedTime() time.Duration {
 	return v.elapsedTime
 }

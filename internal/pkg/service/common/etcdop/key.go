@@ -152,8 +152,8 @@ func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyVa
 	)
 }
 
-func (v KeyT[T]) Put(client etcd.KV, val T, opts ...etcd.OpOption) op.NoResultOp {
-	return op.NewNoResultOp(
+func (v KeyT[T]) Put(client etcd.KV, val T, opts ...etcd.OpOption) op.ForType[T] {
+	return op.NewForType[T](
 		client,
 		func(ctx context.Context) (etcd.Op, error) {
 			encoded, err := v.serde.Encode(ctx, &val)
@@ -162,9 +162,9 @@ func (v KeyT[T]) Put(client etcd.KV, val T, opts ...etcd.OpOption) op.NoResultOp
 			}
 			return etcd.OpPut(v.Key(), encoded, opts...), nil
 		},
-		func(_ context.Context, _ op.RawResponse) error {
-			// response is always OK
-			return nil
+		func(_ context.Context, _ op.RawResponse) (T, error) {
+			// Result is inserted value
+			return val, nil
 		},
 	)
 }
@@ -190,5 +190,5 @@ func (v KeyT[T]) PutIfNotExists(client etcd.KV, val T, opts ...etcd.OpOption) op
 }
 
 func invalidValueError(key string, err error) error {
-	return errors.Errorf(`invalid value for "%s": %w`, key, err)
+	return errors.PrefixErrorf(err, `invalid value for "%s"`, key)
 }

@@ -21,8 +21,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func sourceTemplate() definition.Source {
+func sourceTemplate(k key.SourceKey) definition.Source {
 	return definition.Source{
+		SourceKey:   k,
 		Type:        definition.SourceTypeHTTP,
 		Name:        "My Source",
 		Description: "My Description",
@@ -40,25 +41,17 @@ func TestRepository_Source(t *testing.T) {
 		BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
 		SourceID:  "non-existent",
 	}
-	source1 := sourceTemplate()
+	source1 := sourceTemplate(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "my-source-1"})
 	source1.Name = "My Source 1"
-	source1.SourceKey = key.SourceKey{
-		BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
-		SourceID:  "my-source-1",
-	}
-	source2 := sourceTemplate()
+	source2 := sourceTemplate(key.SourceKey{BranchKey: key.BranchKey{ProjectID: 123, BranchID: 789}, SourceID: "my-source-2"})
 	source2.Name = "My Source 2"
-	source2.SourceKey = key.SourceKey{
-		BranchKey: key.BranchKey{ProjectID: 123, BranchID: 789},
-		SourceID:  "my-source-2",
-	}
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
 
 	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
 	client := d.TestEtcdClient()
-	r := NewRepository(d).Source()
+	r := New(d).Source()
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -116,22 +109,24 @@ func TestRepository_Source(t *testing.T) {
 	// Create parent branches
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch1 := branchTemplate()
-		branch1.BranchKey = source1.BranchKey
+		branch1 := branchTemplate(source1.BranchKey)
 		branch1.IsDefault = true
 		require.NoError(t, r.all.Branch().Create(&branch1).Do(ctx).Err())
-		branch2 := branchTemplate()
-		branch2.BranchKey = source2.BranchKey
+		branch2 := branchTemplate(source2.BranchKey)
 		require.NoError(t, r.all.Branch().Create(&branch2).Do(ctx).Err())
 	}
 
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, r.Create("Create description", &source1).Do(ctx).Err())
+		result1, err := r.Create("Create description", &source1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, result1, source1)
 		assert.Equal(t, definition.VersionNumber(1), source1.VersionNumber())
 		assert.NotEmpty(t, source1.VersionHash())
-		require.NoError(t, r.Create("Create description", &source2).Do(ctx).Err())
+		result2, err := r.Create("Create description", &source2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, result2, source2)
 		assert.Equal(t, definition.VersionNumber(1), source2.VersionNumber())
 		assert.NotEmpty(t, source2.VersionHash())
 	}
@@ -150,11 +145,11 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Get
 		result1, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Source 1", result1.Value.Name)
 		assert.Equal(t, definition.VersionNumber(1), result1.Value.VersionNumber())
 		result2, err := r.Get(source2.SourceKey).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Source 2", result2.Value.Name)
 		assert.Equal(t, definition.VersionNumber(1), result2.Value.VersionNumber())
 	}
@@ -191,25 +186,29 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		assert.NoError(t, r.Update(source1.SourceKey, "Update description", func(v definition.Source) definition.Source {
+		result, err := r.Update(source1.SourceKey, "Update description", func(v definition.Source) definition.Source {
 			v.Name = "Modified Name"
 			return v
-		}).Do(ctx).Err())
+		}).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, "Modified Name", result.Name)
+		assert.Equal(t, definition.VersionNumber(2), result.VersionNumber())
 		kv, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
-		assert.Equal(t, "Modified Name", kv.Value.Name)
-		assert.Equal(t, definition.VersionNumber(2), kv.Value.VersionNumber())
+		require.NoError(t, err)
+		assert.Equal(t, result, kv.Value)
 	}
 	{
 		// Modify description
-		assert.NoError(t, r.Update(source1.SourceKey, "Update description", func(v definition.Source) definition.Source {
+		result, err := r.Update(source1.SourceKey, "Update description", func(v definition.Source) definition.Source {
 			v.Description = "Modified Description"
 			return v
-		}).Do(ctx).Err())
+		}).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, "Modified Description", result.Description)
+		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 		kv, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
-		assert.Equal(t, "Modified Description", kv.Value.Description)
-		assert.Equal(t, definition.VersionNumber(3), kv.Value.VersionNumber())
+		require.NoError(t, err)
+		assert.Equal(t, result, kv.Value)
 		source1 = kv.Value
 	}
 
@@ -222,6 +221,10 @@ func TestRepository_Source(t *testing.T) {
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `source "123/456/non-existent" not found in the branch`, err.Error())
+			var errWithStatus serviceErrors.WithStatusCode
+			if assert.True(t, errors.As(err, &errWithStatus)) {
+				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+			}
 		}
 	}
 
@@ -253,17 +256,11 @@ func TestRepository_Source(t *testing.T) {
 	var sink1, sink2, sink3 definition.Sink
 	{
 		// Create 3 sinks
-		sink1 = sinkTemplate()
-		sink1.SourceKey = source1.SourceKey
-		sink1.SinkID = "sink-1"
+		sink1 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-1"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink1).Do(ctx).Err())
-		sink2 = sinkTemplate()
-		sink2.SourceKey = source1.SourceKey
-		sink2.SinkID = "sink-2"
+		sink2 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-2"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink2).Do(ctx).Err())
-		sink3 = sinkTemplate()
-		sink3.SourceKey = source1.SourceKey
-		sink3.SinkID = "sink-3"
+		sink3 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-3"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink3).Do(ctx).Err())
 	}
 	{
@@ -289,7 +286,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// GetDeleted - found
 		result, err := r.GetDeleted(source1.SourceKey).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Value.Name)
 		assert.Equal(t, definition.VersionNumber(3), result.Value.VersionNumber())
 	}
@@ -317,13 +314,24 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.SoftDelete(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
+		var errWithStatus serviceErrors.WithStatusCode
+		if assert.True(t, errors.As(err, &errWithStatus)) {
+			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+		}
 	}
 
 	// Undelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		assert.NoError(t, r.Undelete(source1.SourceKey).Do(ctx).Err())
+		result, err := r.Undelete(source1.SourceKey).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, "Modified Name", result.Name)
+		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
+	}
+	{
+		// ExistsOrErr
+		assert.NoError(t, r.ExistsOrErr(source1.SourceKey).Do(ctx).Err())
 	}
 	{
 		// Get
@@ -362,6 +370,10 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Undelete(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
+		var errWithStatus serviceErrors.WithStatusCode
+		if assert.True(t, errors.As(err, &errWithStatus)) {
+			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
+		}
 	}
 
 	// Re-create causes Undelete + new version record
@@ -373,9 +385,7 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		//  Re-create
-		k := source1.SourceKey
-		source1 = sourceTemplate()
-		source1.SourceKey = k
+		source1 = sourceTemplate(source1.SourceKey)
 		assert.NoError(t, r.Create("Re-create", &source1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), source1.VersionNumber())
 		assert.Equal(t, "My Source", source1.Name)
@@ -555,9 +565,7 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 		txn := op.NewTxnOp(client)
 		ops := 0
 		for i := 2; i <= MaxSourcesPerBranch; i++ {
-			id := key.SourceID(fmt.Sprintf("my-source-%d", i))
-			v := sourceTemplate()
-			v.SourceKey = key.SourceKey{BranchKey: source1.BranchKey, SourceID: id}
+			v := sourceTemplate(key.SourceKey{BranchKey: source1.BranchKey, SourceID: key.SourceID(fmt.Sprintf("my-source-%d", i))})
 			v.IncrementVersion(v, clk.Now(), "Create")
 			txn.Then(r.schema.Active().ByKey(v.SourceKey).Put(client, v))
 
@@ -577,11 +585,7 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 	}
 	{
 		// Exceed the limit
-		source := sourceTemplate()
-		source.SourceKey = key.SourceKey{
-			BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
-			SourceID:  "over-maximum-count",
-		}
+		source := sourceTemplate(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "over-maximum-count"})
 		if err := r.Create("Create description", &source).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, "source count limit reached in the branch, the maximum is 100", err.Error())
 			var errWithStatus serviceErrors.WithStatusCode
