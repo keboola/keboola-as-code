@@ -1,24 +1,18 @@
 package storage
 
 import (
-	"context"
-	"strings"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestRetryable_Validation(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		Name          string
-		ExpectedError string
-		Value         Retryable
-	}{
+	cases := testvalidation.TestCases[Retryable]{
 		{
 			Name:  "empty",
 			Value: Retryable{},
@@ -62,16 +56,5 @@ func TestRetryable_Validation(t *testing.T) {
 	}
 
 	// Run test cases
-	ctx := context.Background()
-	val := validator.New()
-	for _, tc := range cases {
-		err := val.Validate(ctx, tc.Value)
-		if tc.ExpectedError == "" {
-			assert.NoError(t, err, tc.Name)
-		} else {
-			if assert.Error(t, err, tc.Name) {
-				assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
-			}
-		}
-	}
+	cases.Run(t)
 }
