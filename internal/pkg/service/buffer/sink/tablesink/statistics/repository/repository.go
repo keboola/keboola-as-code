@@ -48,7 +48,7 @@ type Repository struct {
 	_provider
 	telemetry telemetry.Telemetry
 	client    *etcd.Client
-	schema    schemaRoot
+	schema    schema
 }
 
 type dependencies interface {
