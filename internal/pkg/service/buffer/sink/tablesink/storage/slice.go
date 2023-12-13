@@ -32,8 +32,8 @@ type SliceKey struct {
 }
 
 type SliceID struct {
+	OpenedAt utctime.UTCTime `json:"sliceOpenedAt" validate:"required"`
 	VolumeID VolumeID        `json:"volumeId" validate:"required"`
-	OpenedAt utctime.UTCTime `json:"openedAt" validate:"required"`
 }
 
 func (v SliceID) String() string {
