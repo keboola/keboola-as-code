@@ -16,7 +16,7 @@ const SliceClosing SliceState = "closing"
 const SliceUploading SliceState = "uploading"
 
 // SliceUploaded
-// The Slice has been successfully uploaded.
+// The Slice has been successfully uploaded to the staging storage.
 // The Slice can be removed from the local storage.
 const SliceUploaded SliceState = "uploaded"
 
@@ -25,4 +25,5 @@ const SliceUploaded SliceState = "uploaded"
 // The Slice can be removed from the staging storage, if needed.
 const SliceImported SliceState = "imported"
 
+// SliceState is an enum type for slice states, see also FileState.
 type SliceState string
