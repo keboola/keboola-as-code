@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -50,11 +51,11 @@ func NewInputs() *Inputs {
 	return &inputs
 }
 
-func (i Inputs) ValidateDefinitions() error {
+func (i Inputs) ValidateDefinitions(ctx context.Context) error {
 	errs := errors.NewMultiError()
 
 	// Validate rules
-	if err := validateDefinitions(i); err != nil {
+	if err := validateDefinitions(ctx, i); err != nil {
 		errs.Append(err)
 	}
 

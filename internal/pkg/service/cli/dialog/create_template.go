@@ -124,7 +124,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Ask for user inputs
-	objectInputs, stepsGroups, err := d.askNewTemplateInputs(d.deps, d.selectedBranch, d.selectedConfigs)
+	objectInputs, stepsGroups, err := d.askNewTemplateInputs(ctx, d.deps, d.selectedBranch, d.selectedConfigs)
 	if err != nil {
 		return d.out, err
 	}

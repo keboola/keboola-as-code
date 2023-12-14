@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func validateDefinitions(value any) error {
-	return validator.New(inputDefinitionExtraRules()...).Validate(context.Background(), value)
+func validateDefinitions(ctx context.Context, value any) error {
+	return validator.New(inputDefinitionExtraRules()...).Validate(ctx, value)
 }
 
 func inputDefinitionExtraRules() []validator.Rule {

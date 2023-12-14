@@ -42,7 +42,7 @@ func loadFile(ctx context.Context, fs filesystem.Fs, jsonnetCtx *jsonnet.Context
 	}
 
 	// Validate
-	if err := content.validate(); err != nil {
+	if err := content.validate(ctx); err != nil {
 		return nil, err
 	}
 
@@ -51,7 +51,7 @@ func loadFile(ctx context.Context, fs filesystem.Fs, jsonnetCtx *jsonnet.Context
 
 func saveFile(ctx context.Context, fs filesystem.Fs, content *file) error {
 	// Validate
-	if err := content.validate(); err != nil {
+	if err := content.validate(ctx); err != nil {
 		return err
 	}
 
@@ -76,6 +76,6 @@ func saveFile(ctx context.Context, fs filesystem.Fs, content *file) error {
 	return nil
 }
 
-func (f file) validate() error {
-	return f.StepsGroups.ValidateDefinitions()
+func (f file) validate(ctx context.Context) error {
+	return f.StepsGroups.ValidateDefinitions(ctx)
 }
