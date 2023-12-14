@@ -3,6 +3,7 @@ package iterator_test
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
 
@@ -281,7 +282,15 @@ func TestIteratorT_ForEachOp(t *testing.T) {
 	getAllOp := prefix.
 		GetAll(tracker, iterator.WithPageSize(2)).
 		ForEachOp(func(value obj, header *iterator.Header) error {
-			_, _ = out.WriteString(fmt.Sprintf("%s\n", value.Value))
+			_, _ = out.WriteString(fmt.Sprintf("value: %s\n", value.Value))
+			return nil
+		}).
+		AndOnFirstPage(func(response *etcd.GetResponse) error {
+			_, _ = out.WriteString("first page\n")
+			return nil
+		}).
+		AndOnPage(func(pageIndex int, response *etcd.GetResponse) error {
+			_, _ = out.WriteString(fmt.Sprintf("page index: %d\n", pageIndex))
 			return nil
 		})
 
@@ -297,12 +306,34 @@ func TestIteratorT_ForEachOp(t *testing.T) {
 
 	// All values have been received
 	assert.Equal(t, strings.TrimSpace(`
-bar001
-bar002
-bar003
-bar004
-bar005
+first page
+page index: 0
+value: bar001
+value: bar002
+page index: 1
+value: bar003
+value: bar004
+page index: 2
+value: bar005
 `), strings.TrimSpace(out.String()))
+}
+
+func TestIteratorT_WithResultTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target []obj
+	require.NoError(t, prefix.GetAll(client).WithResultTo(&target).Do(ctx).Err())
+	assert.Equal(t, []obj{
+		{Value: "bar001"},
+		{Value: "bar002"},
+		{Value: "bar003"},
+		{Value: "bar004"},
+		{Value: "bar005"},
+	}, target)
 }
 
 func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context) []resultT {
