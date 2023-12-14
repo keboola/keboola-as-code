@@ -15,7 +15,25 @@ const FileClosing FileState = "closing"
 const FileImporting FileState = "importing"
 
 // FileImported
-// The File has been successfully imported.
+// The File has been successfully imported to the target table.
 const FileImported FileState = "imported"
 
+// FileState is an enum type for file states.
+//
+// Example File and Slice transitions.
+//
+//      FILE            SLICE1           SLICE2           SLICE3
+//  -----------------------------------------------------------------
+//  FileWriting      SliceWriting     -------------    --------------
+//  FileWriting      SliceClosing     SliceWriting     --------------
+//  FileWriting      SliceUploading   SliceWriting     --------------
+//  FileWriting      SliceUploaded    SliceWriting     --------------
+//  FileWriting      SliceUploaded    SliceClosing     --------------
+//  ...
+//  FileWriting      SliceUploaded    SliceUploaded    SliceWriting
+//  FileClosing      SliceUploaded    SliceUploaded    SliceClosing
+//  FileClosing      SliceUploaded    SliceUploaded    SliceUploading
+//  FileClosing      SliceUploaded    SliceUploaded    SliceUploaded
+//  FileImporting    SliceUploaded    SliceUploaded    SliceUploaded
+//  FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
