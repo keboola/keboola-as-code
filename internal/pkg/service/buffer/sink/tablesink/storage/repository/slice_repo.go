@@ -148,7 +148,7 @@ func (r *SliceRepository) deleteAll(parentKey fmt.Stringer) *op.TxnOp {
 // - "All" prefix is used for classic CRUD operations.
 // - "InLevel" prefix is used for effective watching of the storage level.
 func (r *SliceRepository) put(oldValue, newValue storage.Slice, create bool) *op.TxnOp {
-	level := newValue.State.ToLevel()
+	level := newValue.State.Level()
 	etcdKey := r.schema.AllLevels().ByKey(newValue.SliceKey)
 
 	txn := op.NewTxnOp(r.client)
@@ -170,8 +170,8 @@ func (r *SliceRepository) put(oldValue, newValue storage.Slice, create bool) *op
 	txn.Then(r.schema.InLevel(level).ByKey(newValue.SliceKey).Put(r.client, newValue))
 
 	// Delete entity from old level, if needed.
-	if !create && newValue.State.ToLevel() != oldValue.State.ToLevel() {
-		txn.Then(r.schema.InLevel(oldValue.State.ToLevel()).ByKey(oldValue.SliceKey).Delete(r.client))
+	if !create && newValue.State.Level() != oldValue.State.Level() {
+		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.SliceKey).Delete(r.client))
 	}
 
 	return txn

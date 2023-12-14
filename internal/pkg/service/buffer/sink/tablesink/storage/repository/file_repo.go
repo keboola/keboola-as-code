@@ -133,7 +133,7 @@ func (r *FileRepository) get(k storage.FileKey) op.ForType[*op.KeyValueT[storage
 // - "All" prefix is used for classic CRUD operations.
 // - "InLevel" prefix is used for effective watching of the storage level.
 func (r *FileRepository) put(v storage.File, create bool) *op.TxnOp {
-	level := v.State.ToLevel()
+	level := v.State.Level()
 	etcdKey := r.schema.AllLevels().ByKey(v.FileKey)
 
 	txn := op.NewTxnOp(r.client)
