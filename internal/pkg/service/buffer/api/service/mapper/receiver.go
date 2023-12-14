@@ -1,6 +1,8 @@
 package mapper
 
 import (
+	"context"
+
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -27,12 +29,12 @@ func (m Mapper) ReceiverPayload(model model.Receiver) *buffer.Receiver {
 	}
 }
 
-func (m Mapper) CreateReceiverModel(projectID keboola.ProjectID, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+func (m Mapper) CreateReceiverModel(ctx context.Context, projectID keboola.ProjectID, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
 	receiverBase := m.createReceiverBaseModel(projectID, secret, payload)
 
 	exports := make([]model.Export, 0, len(payload.Exports))
 	for _, exportData := range payload.Exports {
-		export, err := m.createExportBaseModel(receiverBase.ReceiverKey, *exportData)
+		export, err := m.createExportBaseModel(ctx, receiverBase.ReceiverKey, *exportData)
 		if err != nil {
 			return model.Receiver{}, err
 		}
