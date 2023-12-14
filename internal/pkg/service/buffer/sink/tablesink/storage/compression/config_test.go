@@ -106,7 +106,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "gzip: block size under min",
-			ExpectedError: `"gzip.blockSize" must be 16,384 or greater`,
+			ExpectedError: `"gzip.blockSize" must be 16KB or greater`,
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
@@ -118,7 +118,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "gzip: block size over max",
-			ExpectedError: `"gzip.blockSize" must be 104,857,600 or less`,
+			ExpectedError: `"gzip.blockSize" must be 100MB or less`,
 			Config: Config{
 				Type: TypeGZIP,
 				GZIP: &GZIPConfig{
@@ -169,7 +169,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "zstd: window size under min",
-			ExpectedError: `"zstd.windowSize" must be 1,024 or greater`,
+			ExpectedError: `"zstd.windowSize" must be 1KB or greater`,
 			Config: Config{
 				Type: TypeZSTD,
 				ZSTD: &ZSTDConfig{
@@ -181,7 +181,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "zstd: window size over max",
-			ExpectedError: `"zstd.windowSize" must be 536,870,912 or less`,
+			ExpectedError: `"zstd.windowSize" must be 512MB or less`,
 			Config: Config{
 				Type: TypeZSTD,
 				ZSTD: &ZSTDConfig{
@@ -206,4 +206,23 @@ func TestConfig_Validation(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestConfig_Simplify(t *testing.T) {
+	t.Parallel()
+
+	gzipCfg := DefaultGZIPConfig().GZIP
+	zstdCfg := DefaultZSTDConfig().ZSTD
+
+	// None
+	cfg := Config{Type: TypeNone, GZIP: gzipCfg, ZSTD: zstdCfg}
+	assert.Equal(t, Config{Type: TypeNone}, cfg.Simplify())
+
+	// GZIP
+	cfg = Config{Type: TypeGZIP, GZIP: gzipCfg, ZSTD: zstdCfg}
+	assert.Equal(t, Config{Type: TypeGZIP, GZIP: gzipCfg}, cfg.Simplify())
+
+	// ZSTD
+	cfg = Config{Type: TypeZSTD, GZIP: gzipCfg, ZSTD: zstdCfg}
+	assert.Equal(t, Config{Type: TypeZSTD, ZSTD: zstdCfg}, cfg.Simplify())
 }
