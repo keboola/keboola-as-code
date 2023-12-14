@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/condition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
