@@ -100,11 +100,11 @@ func (r *SliceRepository) StateTransition(k storage.SliceKey, to storage.SliceSt
 			}
 
 			// Switch slice state
-			if err := slice.StateTransition(r.clock.Now(), to); err == nil {
-				return slice, nil
-			} else {
+			if err := slice.StateTransition(r.clock.Now(), to); err != nil {
 				return storage.Slice{}, err
 			}
+
+			return slice, nil
 		}).
 		ReadOp(r.all.file.Get(k.FileKey).WithResultTo(&file))
 }
