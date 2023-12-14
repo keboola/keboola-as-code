@@ -50,7 +50,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskUpgradeTemplateOptions(d, projectState.State(), branchKey, *instance, template.Inputs())
+			options, err := d.Dialogs().AskUpgradeTemplateOptions(cmd.Context(), d, projectState.State(), branchKey, *instance, template.Inputs())
 			if err != nil {
 				return err
 			}

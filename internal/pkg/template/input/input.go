@@ -124,11 +124,11 @@ type Input struct {
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
-func (i Input) ValidateUserInput(value any) error {
+func (i Input) ValidateUserInput(ctx context.Context, value any) error {
 	if err := i.Type.ValidateValue(reflect.ValueOf(value)); err != nil {
 		return errors.Errorf("%s %w", i.Name, err)
 	}
-	return i.Rules.ValidateValue(i, value)
+	return i.Rules.ValidateValue(ctx, i, value)
 }
 
 // Available decides if the input should be visible to user according to Input.If.

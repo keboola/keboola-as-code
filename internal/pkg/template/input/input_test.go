@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,16 +18,16 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Kind:        "input",
 		Rules:       "gte=5,lte=10",
 	}
-	err := input.ValidateUserInput(1)
+	err := input.ValidateUserInput(context.Background(), 1)
 	assert.Error(t, err)
 	assert.Equal(t, "my input must be 5 or greater", err.Error())
 
-	err = input.ValidateUserInput("1")
+	err = input.ValidateUserInput(context.Background(), "1")
 	assert.Error(t, err)
 	assert.Equal(t, "my input should be int, got string", err.Error())
 
 	assert.Error(t, err)
-	assert.NoError(t, input.ValidateUserInput(7))
+	assert.NoError(t, input.ValidateUserInput(context.Background(), 7))
 
 	input = Input{
 		ID:          "input.id",
@@ -35,10 +36,10 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Type:        "bool",
 		Kind:        "confirm",
 	}
-	err = input.ValidateUserInput(1)
+	err = input.ValidateUserInput(context.Background(), 1)
 	assert.Error(t, err)
 	assert.Equal(t, "input should be bool, got int", err.Error())
-	assert.NoError(t, input.ValidateUserInput(true))
+	assert.NoError(t, input.ValidateUserInput(context.Background(), true))
 }
 
 func TestInput_ValidateUserInputOAuth(t *testing.T) {
@@ -52,11 +53,11 @@ func TestInput_ValidateUserInputOAuth(t *testing.T) {
 		Kind:        "oauth",
 		ComponentID: "foo.bar",
 	}
-	err := input.ValidateUserInput([]string{"one", "two"})
+	err := input.ValidateUserInput(context.Background(), []string{"one", "two"})
 	assert.Error(t, err)
 	assert.Equal(t, "oauth should be object, got slice", err.Error())
 
-	err = input.ValidateUserInput(map[string]interface{}{"a": "b"})
+	err = input.ValidateUserInput(context.Background(), map[string]interface{}{"a": "b"})
 	assert.NoError(t, err)
 }
 

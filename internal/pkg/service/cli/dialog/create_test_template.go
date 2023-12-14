@@ -38,7 +38,7 @@ func (d *createTmplTestDialog) ask(ctx context.Context) (createOp.Options, []str
 	}
 
 	// User inputs
-	v, warnings, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), true)
+	v, warnings, err := d.askUseTemplateInputs(ctx, d.template.Inputs().ToExtended(), true)
 	if err != nil {
 		return d.out, nil, err
 	} else {

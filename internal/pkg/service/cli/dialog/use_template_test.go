@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -185,7 +186,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
+	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -306,7 +307,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
+	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -452,7 +453,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
+	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -550,7 +551,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
+	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	// Assert
@@ -644,7 +645,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		},
 	}
 
-	_, err = dialog.AskUseTemplateOptions(projectState, stepsGroups)
+	_, err = dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
 	expectedErr := `
 steps group 1 "Please select which steps you want to fill." is invalid:
 - all steps (3) must be selected

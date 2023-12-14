@@ -167,7 +167,7 @@ func (s *service) ValidateInputs(ctx context.Context, d dependencies.ProjectRequ
 	}
 
 	// Process inputs
-	result, _, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	result, _, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
 	return result, err
 }
 
@@ -196,7 +196,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	}
 
 	// Process inputs
-	result, values, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	result, values, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +412,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 	}
 
 	// Process inputs
-	result, values, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	result, values, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
 	if err != nil {
 		return nil, err
 	}

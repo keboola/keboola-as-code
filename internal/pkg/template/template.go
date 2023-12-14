@@ -91,7 +91,7 @@ func LoadReadme(ctx context.Context, fs filesystem.Fs) (string, error) {
 	return file.Content, nil
 }
 
-func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
+func ParseInputValue(ctx context.Context, value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
@@ -100,7 +100,7 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 
 	// Validate all except oauth inputs
 	if isFilled && inputDef.Kind != templateInput.KindOAuth && inputDef.Kind != templateInput.KindOAuthAccounts {
-		if err := inputDef.ValidateUserInput(value); err != nil {
+		if err := inputDef.ValidateUserInput(ctx, value); err != nil {
 			return InputValue{}, errors.Errorf("invalid template input: %w", err)
 		}
 	}

@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -177,7 +178,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := dialog.AskUpgradeTemplateOptions(d, projectState, branchKey, instance, stepsGroups)
+	output, err := dialog.AskUpgradeTemplateOptions(context.Background(), d, projectState, branchKey, instance, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
