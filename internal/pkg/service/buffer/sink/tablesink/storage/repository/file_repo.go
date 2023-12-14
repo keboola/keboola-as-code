@@ -92,11 +92,10 @@ func (r *FileRepository) StateTransition(k storage.FileKey, to storage.FileState
 	now := r.clock.Now()
 	return r.
 		update(k, func(file storage.File) (storage.File, error) {
-			if err := file.StateTransition(now, to); err == nil {
-				return file, nil
-			} else {
+			if err := file.StateTransition(now, to); err != nil {
 				return storage.File{}, err
 			}
+			return file, nil
 		}).
 		AddFrom(r.all.slice.onFileStateTransition(k, now, to))
 }
