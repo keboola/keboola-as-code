@@ -80,7 +80,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 
 	// Graceful shutdown
 	var cancel context.CancelFunc
-	n.ctx, cancel = context.WithCancel(context.Background())
+	n.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	n.wg = &sync.WaitGroup{}
 	proc.OnShutdown(func(ctx context.Context) {
 		n.logger.InfoCtx(ctx, "received shutdown request")

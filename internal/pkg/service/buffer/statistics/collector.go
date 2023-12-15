@@ -70,9 +70,10 @@ func NewCollector(d collectorDeps) *Collector {
 		statsPerSlice: make(map[key.SliceKey]*sliceStats),
 	}
 
+	// Graceful shutdown
 	// The context is cancelled on shutdown, after the HTTP server.
 	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		c.logger.InfoCtx(ctx, "received shutdown request")

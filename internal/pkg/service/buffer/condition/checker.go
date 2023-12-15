@@ -83,7 +83,7 @@ func NewChecker(d dependencies) <-chan error {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		c.logger.InfoCtx(ctx, "received shutdown request")

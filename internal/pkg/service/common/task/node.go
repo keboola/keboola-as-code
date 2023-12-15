@@ -97,9 +97,9 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	// Graceful shutdown
 	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
-	n.tasksCtx, cancelTasks = context.WithCancel(context.Background())
+	n.tasksCtx, cancelTasks = context.WithCancel(context.Background()) // nolint: contextcheck
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(context.Background())
+	sessionCtx, cancelSession := context.WithCancel(context.Background()) // nolint: contextcheck
 	proc.OnShutdown(func(ctx context.Context) {
 		n.logger.InfoCtx(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {

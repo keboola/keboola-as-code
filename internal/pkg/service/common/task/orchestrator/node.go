@@ -58,7 +58,7 @@ func NewNode(d dependencies) *Node {
 
 	// Graceful shutdown
 	var cancel context.CancelFunc
-	n.ctx, cancel = context.WithCancel(context.Background())
+	n.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	n.wg = &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		n.logger.InfoCtx(ctx, "received shutdown request")
