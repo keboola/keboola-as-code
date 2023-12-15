@@ -29,7 +29,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 			var tableID keboola.TableID
 			var primaryKey []string
 			if len(args) < 1 {
-				id, createNew, err := askTable(d, true)
+				id, createNew, err := askTable(cmd.Context(), d, true)
 				if err != nil {
 					return err
 				}
@@ -48,7 +48,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 
 			var fileID int
 			if len(args) < 2 {
-				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(d.CommandCtx())
+				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(cmd.Context())
 				if err != nil {
 					return err
 				}
@@ -77,9 +77,9 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-import")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-import")
 
-			return tableImport.Run(d.CommandCtx(), opts, d)
+			return tableImport.Run(cmd.Context(), opts, d)
 		},
 	}
 

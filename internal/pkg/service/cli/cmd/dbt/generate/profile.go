@@ -28,7 +28,7 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 			// Get dependencies
 			d := p.BaseScope()
 
-			return profile.Run(d.CommandCtx(), profile.Options{TargetName: targetName}, d)
+			return profile.Run(cmd.Context(), profile.Options{TargetName: targetName}, d)
 		},
 	}
 

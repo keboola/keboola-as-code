@@ -45,7 +45,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load template
-			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repositoryDef, templateID, version))
+			template, err := d.Template(cmd.Context(), model.NewTemplateRef(repositoryDef, templateID, version))
 			if err != nil {
 				return err
 			}
@@ -57,7 +57,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Use template
-			opResult, err := useOp.Run(d.CommandCtx(), projectState, template, options, d)
+			opResult, err := useOp.Run(cmd.Context(), projectState, template, options, d)
 			if err != nil {
 				return err
 			}

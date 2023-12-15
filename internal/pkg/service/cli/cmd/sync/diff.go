@@ -28,7 +28,7 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get local project
-			prj, _, err := d.LocalProject(false)
+			prj, _, err := d.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -46,7 +46,7 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Print diff
-			results, err := printdiff.Run(d.CommandCtx(), projectState, options, d)
+			results, err := printdiff.Run(cmd.Context(), projectState, options, d)
 			if err != nil {
 				return err
 			}
@@ -54,8 +54,8 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 			// Print info about --details flag
 			if !options.PrintDetails && results.HasNotEqualResult {
 				logger := d.Logger()
-				logger.InfoCtx(d.CommandCtx())
-				logger.InfoCtx(d.CommandCtx(), `Use --details flag to list the changed fields.`)
+				logger.InfoCtx(cmd.Context())
+				logger.InfoCtx(cmd.Context(), `Use --details flag to list the changed fields.`)
 			}
 			return nil
 		},

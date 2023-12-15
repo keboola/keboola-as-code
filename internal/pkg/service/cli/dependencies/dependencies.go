@@ -41,7 +41,6 @@ var (
 // BaseScope interface provides basic CLI dependencies.
 type BaseScope interface {
 	dependencies.BaseScope
-	CommandCtx() context.Context
 	Fs() filesystem.Fs
 	FsInfo() FsInfo
 	Dialogs() *dialog.Dialogs
@@ -56,7 +55,7 @@ type LocalCommandScope interface {
 	BaseScope
 	dependencies.PublicScope
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
-	LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error)
+	LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 }

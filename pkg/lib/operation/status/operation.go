@@ -14,7 +14,7 @@ import (
 
 type dependencies interface {
 	Fs() filesystem.Fs
-	LocalProject(ignoreErrors bool) (*project.Project, bool, error)
+	LocalProject(ctx context.Context, ignoreErrors bool) (*project.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
@@ -28,7 +28,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	if prj, found, err := d.LocalProject(false); found {
+	if prj, found, err := d.LocalProject(ctx, false); found {
 		if err != nil {
 			return err
 		}

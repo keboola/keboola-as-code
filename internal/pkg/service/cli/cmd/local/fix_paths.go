@@ -34,7 +34,7 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Rename
-			_, err = rename.Run(d.CommandCtx(), projectState, options, d)
+			_, err = rename.Run(cmd.Context(), projectState, options, d)
 			return err
 		},
 	}

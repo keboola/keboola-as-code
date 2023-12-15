@@ -21,7 +21,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Describe template
-			return listOp.Run(d.CommandCtx(), repo, d)
+			return listOp.Run(cmd.Context(), repo, d)
 		},
 	}
 

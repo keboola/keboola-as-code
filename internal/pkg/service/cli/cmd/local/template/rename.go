@@ -34,7 +34,7 @@ func RenameCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Rename template instance
-			return renameOp.Run(d.CommandCtx(), projectState, renameOpts, d)
+			return renameOp.Run(cmd.Context(), projectState, renameOpts, d)
 		},
 	}
 

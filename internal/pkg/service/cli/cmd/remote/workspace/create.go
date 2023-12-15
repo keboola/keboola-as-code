@@ -29,10 +29,10 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-workspace")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-workspace")
 
 			// Run operation
-			err = create.Run(d.CommandCtx(), options, d)
+			err = create.Run(cmd.Context(), options, d)
 			if err != nil {
 				return err
 			}

@@ -29,16 +29,16 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get init options
-			options, err := projectDeps.Dialogs().AskInitOptions(projectDeps.CommandCtx(), projectDeps)
+			options, err := projectDeps.Dialogs().AskInitOptions(cmd.Context(), projectDeps)
 			if err != nil {
 				return err
 			}
 
 			// Send cmd successful/failed event
-			defer projectDeps.EventSender().SendCmdEvent(projectDeps.CommandCtx(), time.Now(), &cmdErr, "sync-init")
+			defer projectDeps.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "sync-init")
 
 			// Init
-			return initOp.Run(projectDeps.CommandCtx(), options, projectDeps)
+			return initOp.Run(cmd.Context(), options, projectDeps)
 		},
 	}
 

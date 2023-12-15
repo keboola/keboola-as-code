@@ -41,7 +41,7 @@ func newRemoteCommandScope(ctx context.Context, localCmdScp LocalCommandScope, o
 	}
 
 	// Storage Api token project ID and manifest remote ID must be same
-	if prj, exists, err := localCmdScp.LocalProject(false); exists && err == nil {
+	if prj, exists, err := localCmdScp.LocalProject(ctx, false); exists && err == nil {
 		tokenProjectID := prjScp.ProjectID()
 		manifest := prj.ProjectManifest()
 		if manifest != nil && manifest.ProjectID() != tokenProjectID {

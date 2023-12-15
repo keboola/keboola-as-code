@@ -28,9 +28,9 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-bucket")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-bucket")
 
-			return bucket.Run(d.CommandCtx(), opts, d)
+			return bucket.Run(cmd.Context(), opts, d)
 		},
 	}
 

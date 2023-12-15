@@ -35,7 +35,7 @@ func EncryptCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Encrypt
-			return encrypt.Run(d.CommandCtx(), projectState, options, d)
+			return encrypt.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

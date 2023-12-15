@@ -67,7 +67,7 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Create config
-			return createConfig.Run(d.CommandCtx(), projectState, options, d)
+			return createConfig.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 
@@ -104,7 +104,7 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Create row
-			return createRow.Run(d.CommandCtx(), projectState, options, d)
+			return createRow.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 

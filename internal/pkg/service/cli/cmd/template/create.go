@@ -21,13 +21,13 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskCreateTemplateOpts(d.CommandCtx(), d)
+			options, err := d.Dialogs().AskCreateTemplateOpts(cmd.Context(), d)
 			if err != nil {
 				return err
 			}
 
 			// Create template
-			return createOp.Run(d.CommandCtx(), options, d)
+			return createOp.Run(cmd.Context(), options, d)
 		},
 	}
 

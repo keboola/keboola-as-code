@@ -23,13 +23,13 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			prj, _, err := d.LocalProject(false)
+			prj, _, err := d.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
 
 			// Generate workflows
-			return workflowsGen.Run(d.CommandCtx(), prj.Fs(), options, d)
+			return workflowsGen.Run(cmd.Context(), prj.Fs(), options, d)
 		},
 	}
 

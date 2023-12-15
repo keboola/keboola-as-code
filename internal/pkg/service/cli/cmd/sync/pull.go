@@ -34,7 +34,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			// Get local project
 			logger := d.Logger()
 			force := d.Options().GetBool(`force`)
-			prj, _, err := d.LocalProject(force)
+			prj, _, err := d.LocalProject(cmd.Context(), force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
 					logger.InfoCtx(cmd.Context())
@@ -60,10 +60,10 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "sync-pull")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "sync-pull")
 
 			// Pull
-			return pull.Run(d.CommandCtx(), projectState, options, d)
+			return pull.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 
