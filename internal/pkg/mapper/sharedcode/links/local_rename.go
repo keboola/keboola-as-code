@@ -41,7 +41,7 @@ func (m *mapper) onRename(ctx context.Context, renamedObjects []model.RenameActi
 	}
 
 	// Find transformations using these shared codes
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
+	uow := m.state.LocalManager().NewUnitOfWork(ctx)
 	for _, objectState := range m.state.All() {
 		configState := m.getDependentConfig(objectState, renamedSharedCodes)
 		if configState == nil {

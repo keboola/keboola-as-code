@@ -68,7 +68,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	}))
 
 	// Load
-	uow := state.LocalManager().NewUnitOfWork(context.Background())
+	uow := state.LocalManager().NewUnitOfWork(ctx)
 	uow.LoadObject(record, model.NoFilter())
 	err := uow.Invoke()
 
