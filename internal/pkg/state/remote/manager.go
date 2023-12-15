@@ -237,7 +237,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	// Invoke mapper
 	apiObject := deepcopy.Copy(object).(model.Object)
 	recipe := model.NewRemoteSaveRecipe(objectState.Manifest(), apiObject, changedFields)
-	if err := u.mapper.MapBeforeRemoteSave(context.Background(), recipe); err != nil {
+	if err := u.mapper.MapBeforeRemoteSave(u.ctx, recipe); err != nil {
 		u.errors.Append(err)
 		return
 	}
