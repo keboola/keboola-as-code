@@ -18,6 +18,7 @@ type Repository struct {
 	sink  *defRepository.SinkRepository
 	file  *FileRepository
 	slice *SliceRepository
+	token *TokenRepository
 }
 
 func New(d dependencies, definitionRepo *defRepository.Repository, cfg storage.Config) *Repository {
@@ -29,6 +30,7 @@ func newWithBackoff(d dependencies, definitionRepo *defRepository.Repository, cf
 	r.sink = definitionRepo.Sink()
 	r.file = newFileRepository(d, cfg, backoff, r)
 	r.slice = newSliceRepository(d, backoff, r)
+	r.token = newTokenRepository(d, r)
 	return r
 }
 
@@ -38,4 +40,8 @@ func (r *Repository) File() *FileRepository {
 
 func (r *Repository) Slice() *SliceRepository {
 	return r.slice
+}
+
+func (r *Repository) Token() *TokenRepository {
+	return r.token
 }
