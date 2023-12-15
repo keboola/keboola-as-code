@@ -84,6 +84,8 @@ func TestRepository_File(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
+	fileKey1 := storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
+	fileKey2 := storage.FileKey{SinkKey: sinkKey2, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	credentials := &keboola.FileUploadCredentials{
 		S3UploadParams: &s3.UploadParams{
 			Credentials: s3.Credentials{
@@ -126,7 +128,7 @@ func TestRepository_File(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	// Entity exists only in memory
 	{
-		if err := r.Create(sinkKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source/my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -147,16 +149,15 @@ func TestRepository_File(t *testing.T) {
 
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
-	var fileKey1, fileKey2 storage.FileKey
 	{
 		// Create 2 files in different sinks
-		file1, err := r.Create(sinkKey1, credentials).Do(ctx).ResultOrErr()
+		file1, err := r.Create(fileKey1, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		fileKey1 = file1.FileKey
+		assert.Equal(t, credentials, file1.StagingStorage.UploadCredentials)
 
-		file2, err := r.Create(sinkKey2, credentials).Do(ctx).ResultOrErr()
+		file2, err := r.Create(fileKey2, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		fileKey2 = file2.FileKey
+		assert.Equal(t, credentials, file2.StagingStorage.UploadCredentials)
 	}
 	{
 		// List
@@ -189,7 +190,7 @@ func TestRepository_File(t *testing.T) {
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := r.Create(sinkKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z" already exists in the sink`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -403,11 +404,12 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 	t.Parallel()
 
 	// Fixtures
+	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
+	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	cfg := storage.NewConfig()
 	mapping := definition.TableMapping{
 		TableID: keboola.MustParseTableID("in.bucket.table"),
@@ -428,7 +430,7 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 	cfg.Local.Compression.Type = compression.TypeZSTD
 
 	// Assert
-	_, err := newFile(now, cfg, sinkKey, mapping, credentials)
+	_, err := newFile(fileKey, cfg, mapping, credentials)
 	require.Error(t, err)
 	assert.Equal(t, `file compression type "zstd" is not supported`, err.Error())
 }
