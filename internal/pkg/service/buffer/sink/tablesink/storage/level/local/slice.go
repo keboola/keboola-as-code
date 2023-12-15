@@ -35,9 +35,9 @@ func (f File) NewSlice(sliceDir string, previousSliceSize datasize.ByteSize) (Sl
 	var allocatedDiskSpace datasize.ByteSize
 	if f.DiskAllocation.Enabled {
 		if f.DiskAllocation.SizePercent > 0 && previousSliceSize > 0 {
-			allocatedDiskSpace = previousSliceSize
+			allocatedDiskSpace = (previousSliceSize * datasize.ByteSize(f.DiskAllocation.SizePercent)) / 100
 		} else {
-			allocatedDiskSpace = (f.DiskAllocation.Size * datasize.ByteSize(f.DiskAllocation.SizePercent)) / 100
+			allocatedDiskSpace = f.DiskAllocation.Size
 		}
 	}
 
