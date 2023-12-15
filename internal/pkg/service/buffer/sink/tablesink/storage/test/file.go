@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
@@ -23,16 +22,7 @@ func NewFileKey() storage.FileKey {
 func NewFileKeyOpenedAt(openedAtStr string) storage.FileKey {
 	openedAt := utctime.MustParse(openedAtStr)
 	return storage.FileKey{
-		SinkKey: key.SinkKey{
-			SourceKey: key.SourceKey{
-				BranchKey: key.BranchKey{
-					ProjectID: 123,
-					BranchID:  456,
-				},
-				SourceID: "my-source",
-			},
-			SinkID: "my-sink",
-		},
+		SinkKey: NewSinkKey(),
 		FileID: storage.FileID{
 			OpenedAt: openedAt,
 		},
