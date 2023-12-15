@@ -8,12 +8,12 @@ import (
 
 func TestSliceState_ToLevel(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, LevelLocal, SliceWriting.ToLevel())
-	assert.Equal(t, LevelLocal, SliceClosing.ToLevel())
-	assert.Equal(t, LevelLocal, SliceUploading.ToLevel())
-	assert.Equal(t, LevelStaging, SliceUploaded.ToLevel())
-	assert.Equal(t, LevelTarget, SliceImported.ToLevel())
+	assert.Equal(t, LevelLocal, SliceWriting.Level())
+	assert.Equal(t, LevelLocal, SliceClosing.Level())
+	assert.Equal(t, LevelLocal, SliceUploading.Level())
+	assert.Equal(t, LevelStaging, SliceUploaded.Level())
+	assert.Equal(t, LevelTarget, SliceImported.Level())
 	assert.PanicsWithError(t, `unexpected slice state "foo"`, func() {
-		SliceState("foo").ToLevel()
+		SliceState("foo").Level()
 	})
 }

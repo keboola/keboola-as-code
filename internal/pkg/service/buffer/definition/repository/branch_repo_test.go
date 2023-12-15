@@ -16,7 +16,6 @@ import (
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -64,20 +63,14 @@ func TestRepository_Branch(t *testing.T) {
 		// Get - not found
 		if err := r.Get(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - not found
 		if err := r.GetDeleted(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 
@@ -113,10 +106,7 @@ func TestRepository_Branch(t *testing.T) {
 		// GetDeleted - not found
 		if err := r.GetDeleted(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 
@@ -125,10 +115,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		if err := r.Create(&branch1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/567" already exists in the project`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusConflict, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
 
@@ -171,10 +158,7 @@ func TestRepository_Branch(t *testing.T) {
 		// Get - not found
 		if err := r.Get(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
@@ -200,10 +184,7 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.SoftDelete(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
-		var errWithStatus serviceErrors.WithStatusCode
-		if assert.True(t, errors.As(err, &errWithStatus)) {
-			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-		}
+		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
 	// Undelete
@@ -230,10 +211,7 @@ func TestRepository_Branch(t *testing.T) {
 		// GetDeleted - not found
 		if err := r.GetDeleted(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
@@ -254,10 +232,7 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Undelete(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
-		var errWithStatus serviceErrors.WithStatusCode
-		if assert.True(t, errors.As(err, &errWithStatus)) {
-			assert.Equal(t, http.StatusNotFound, errWithStatus.StatusCode())
-		}
+		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
 	// Re-create causes Undelete
@@ -417,10 +392,7 @@ definition/sink/version/123/567/source-1/sink-3/0000000001
 		branch := branchTemplate(key.BranchKey{ProjectID: 123, BranchID: 111111})
 		if err := r.Create(&branch).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, "branch count limit reached in the project, the maximum is 100", err.Error())
-			var errWithStatus serviceErrors.WithStatusCode
-			if assert.True(t, errors.As(err, &errWithStatus)) {
-				assert.Equal(t, http.StatusConflict, errWithStatus.StatusCode())
-			}
+			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
 }

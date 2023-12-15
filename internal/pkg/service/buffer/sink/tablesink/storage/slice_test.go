@@ -33,8 +33,8 @@ func TestSliceID_Validation(t *testing.T) {
 	err := val.Validate(ctx, SliceID{})
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
+- "sliceOpenedAt" is a required field
 - "volumeId" is a required field
-- "openedAt" is a required field
 `), strings.TrimSpace(err.Error()))
 	}
 }
@@ -76,9 +76,9 @@ func TestSliceKey_Validation(t *testing.T) {
 - "branchId" is a required field
 - "sourceId" is a required field
 - "sinkId" is a required field
-- "fileId" is a required field
+- "fileOpenedAt" is a required field
+- "sliceOpenedAt" is a required field
 - "volumeId" is a required field
-- "openedAt" is a required field
 `), strings.TrimSpace(err.Error()))
 	}
 }
@@ -137,9 +137,9 @@ func TestSlice_Validation(t *testing.T) {
 - "branchId" is a required field
 - "sourceId" is a required field
 - "sinkId" is a required field
-- "fileId" is a required field
+- "fileOpenedAt" is a required field
+- "sliceOpenedAt" is a required field
 - "volumeId" is a required field
-- "openedAt" is a required field
 - "type" is a required field
 - "state" is a required field
 - "columns" is a required field

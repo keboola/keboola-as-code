@@ -39,7 +39,7 @@ func (v *Volumes) Events() *writer.Events {
 
 // VolumesFor returns volumes list according to the file settings.
 // One slice of the file should be written simultaneously to each volume.
-func (v *Volumes) VolumesFor(file *storage.File) []*Volume {
+func (v *Volumes) VolumesFor(file storage.File) []*Volume {
 	return v.assignVolumes(
 		file.LocalStorage.VolumesAssignment.PerPod,
 		file.LocalStorage.VolumesAssignment.PreferredTypes,

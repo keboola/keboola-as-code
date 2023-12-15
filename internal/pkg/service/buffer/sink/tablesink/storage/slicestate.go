@@ -1,5 +1,12 @@
 package storage
 
+import (
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"time"
+)
+
 // SliceWriting
 // It is the initial state of the Slice.
 // API node writes records to the local file.
@@ -16,7 +23,7 @@ const SliceClosing SliceState = "closing"
 const SliceUploading SliceState = "uploading"
 
 // SliceUploaded
-// The Slice has been successfully uploaded.
+// The Slice has been successfully uploaded to the staging storage.
 // The Slice can be removed from the local storage.
 const SliceUploaded SliceState = "uploaded"
 
@@ -25,4 +32,27 @@ const SliceUploaded SliceState = "uploaded"
 // The Slice can be removed from the staging storage, if needed.
 const SliceImported SliceState = "imported"
 
+// SliceState is an enum type for slice states, see also FileState.
 type SliceState string
+
+func (s *Slice) StateTransition(at time.Time, to SliceState) error {
+	from := s.State
+	atUTC := utctime.From(at)
+
+	switch {
+	case from == SliceWriting && to == SliceClosing:
+		s.ClosingAt = &atUTC
+	case from == SliceClosing && to == SliceUploading:
+		s.UploadingAt = &atUTC
+	case from == SliceUploading && to == SliceUploaded:
+		s.UploadedAt = &atUTC
+	case from == SliceUploaded && to == SliceImported:
+		s.ImportedAt = &atUTC
+	default:
+		return serviceError.NewBadRequestError(errors.Errorf(`unexpected slice "%s" state transition from "%s" to "%s"`, s.SliceKey, from, to))
+	}
+
+	s.State = to
+	s.ResetRetry()
+	return nil
+}

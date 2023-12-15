@@ -1,5 +1,12 @@
 package storage
 
+import (
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"time"
+)
+
 // FileWriting
 // It is the initial state of the File.
 // API nodes writes records to the File slices in the local volumes.
@@ -15,7 +22,45 @@ const FileClosing FileState = "closing"
 const FileImporting FileState = "importing"
 
 // FileImported
-// The File has been successfully imported.
+// The File has been successfully imported to the target table.
 const FileImported FileState = "imported"
 
+// FileState is an enum type for file states.
+//
+// Example File and Slice transitions.
+//
+//      FILE            SLICE1           SLICE2           SLICE3
+//  -----------------------------------------------------------------
+//  FileWriting      SliceWriting     -------------    --------------
+//  FileWriting      SliceClosing     SliceWriting     --------------
+//  FileWriting      SliceUploading   SliceWriting     --------------
+//  FileWriting      SliceUploaded    SliceWriting     --------------
+//  FileWriting      SliceUploaded    SliceClosing     --------------
+//  ...
+//  FileWriting      SliceUploaded    SliceUploaded    SliceWriting
+//  FileClosing      SliceUploaded    SliceUploaded    SliceClosing
+//  FileClosing      SliceUploaded    SliceUploaded    SliceUploading
+//  FileClosing      SliceUploaded    SliceUploaded    SliceUploaded
+//  FileImporting    SliceUploaded    SliceUploaded    SliceUploaded
+//  FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
+
+func (f *File) StateTransition(at time.Time, to FileState) error {
+	from := f.State
+	atUTC := utctime.From(at)
+
+	switch {
+	case from == FileWriting && to == FileClosing:
+		f.ClosingAt = &atUTC
+	case from == FileClosing && to == FileImporting:
+		f.ImportingAt = &atUTC
+	case from == FileImporting && to == FileImported:
+		f.ImportedAt = &atUTC
+	default:
+		return serviceError.NewBadRequestError(errors.Errorf(`unexpected file "%s" state transition from "%s" to "%s"`, f.FileKey, from, to))
+	}
+
+	f.State = to
+	f.ResetRetry()
+	return nil
+}
