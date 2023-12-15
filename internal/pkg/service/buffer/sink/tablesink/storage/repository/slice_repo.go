@@ -48,7 +48,7 @@ func (r *SliceRepository) Get(k storage.SliceKey) op.ForType[*op.KeyValueT[stora
 		})
 }
 
-func (r *SliceRepository) Create(fileKey storage.FileKey, volumeID storage.VolumeID) *op.AtomicOp[storage.Slice] {
+func (r *SliceRepository) Create(fileKey storage.FileKey, volumeID storage.VolumeID, prevSliceSize datasize.ByteSize) *op.AtomicOp[storage.Slice] {
 	var fileKV *op.KeyValueT[storage.File]
 	var result storage.Slice
 
@@ -73,7 +73,7 @@ func (r *SliceRepository) Create(fileKey storage.FileKey, volumeID storage.Volum
 		// Save
 		WriteOrErr(func() (op op.Op, err error) {
 			// Create entity
-			result, err = newSlice(r.clock.Now(), fileKV.Value, volumeID, 0)
+			result, err = newSlice(r.clock.Now(), fileKV.Value, volumeID, prevSliceSize)
 			if err != nil {
 				return nil, err
 			}
