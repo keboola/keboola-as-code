@@ -67,13 +67,13 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		file, err = r.File().Create(sinkKey, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		clk.Add(time.Hour)
-		slice1, err = r.Slice().Create(file.FileKey, volumeID).Do(ctx).ResultOrErr()
+		slice1, err = r.Slice().Create(file.FileKey, volumeID, 0).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		clk.Add(time.Hour)
-		slice2, err = r.Slice().Create(file.FileKey, volumeID).Do(ctx).ResultOrErr()
+		slice2, err = r.Slice().Create(file.FileKey, volumeID, 0).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		clk.Add(time.Hour)
-		slice3, err = r.Slice().Create(file.FileKey, volumeID).Do(ctx).ResultOrErr()
+		slice3, err = r.Slice().Create(file.FileKey, volumeID, 0).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 	}
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
@@ -39,7 +40,6 @@ func TestRepository_Slice(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 	volumeID := storage.VolumeID("my-volume")
-	cfg := storage.NewConfig()
 	credentials := &keboola.FileUploadCredentials{
 		S3UploadParams: &s3.UploadParams{
 			Credentials: s3.Credentials{
@@ -55,6 +55,7 @@ func TestRepository_Slice(t *testing.T) {
 	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
 	client := d.TestEtcdClient()
 	defRepo := defRepository.New(d)
+	cfg := storage.NewConfig()
 	backoff := storage.NoRandomizationBackoff()
 	r := newWithBackoff(d, defRepo, cfg, backoff).Slice()
 
@@ -81,7 +82,7 @@ func TestRepository_Slice(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		fileKey := test.NewFileKey()
-		if err := r.Create(fileKey, volumeID).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source/my-sink" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -119,7 +120,7 @@ func TestRepository_Slice(t *testing.T) {
 	{
 		fileKey := test.NewFileKey()
 		fileKey.SinkKey = sinkKey
-		if err := r.Create(fileKey, volumeID).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `file "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z" not found in the sink`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -130,7 +131,7 @@ func TestRepository_Slice(t *testing.T) {
 	{
 		require.NoError(t, r.all.File().StateTransition(fileKey3, storage.FileClosing).Do(ctx).Err())
 
-		if err := r.Create(fileKey3, volumeID).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey3, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `slice cannot be created: unexpected file "123/456/my-source/my-sink/2000-01-03T04:00:00.000Z" state "closing", expected "writing"`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 		}
@@ -141,11 +142,11 @@ func TestRepository_Slice(t *testing.T) {
 	var sliceKey1, sliceKey2 storage.SliceKey
 	{
 		// Create 2 slices in different files
-		slice1, err := r.Create(fileKey1, volumeID).Do(ctx).ResultOrErr()
+		slice1, err := r.Create(fileKey1, volumeID, 500*datasize.MB).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		sliceKey1 = slice1.SliceKey
 
-		slice2, err := r.Create(fileKey2, volumeID).Do(ctx).ResultOrErr()
+		slice2, err := r.Create(fileKey2, volumeID, 0).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		sliceKey2 = slice2.SliceKey
 	}
@@ -183,7 +184,7 @@ func TestRepository_Slice(t *testing.T) {
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := r.Create(fileKey2, volumeID).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey2, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" already exists in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -391,7 +392,7 @@ storage/slice/all/123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2
       "bytesTrigger": "100KB",
       "intervalTrigger": 100000000
     },
-    "allocatedDiskSpace": "110MB"
+    "allocatedDiskSpace": "550MB"
   },
   "staging": {
     "path": "2000-01-03T04:00:00.000Z_my-volume.gz",

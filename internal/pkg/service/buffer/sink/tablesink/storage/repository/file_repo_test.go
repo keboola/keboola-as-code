@@ -84,7 +84,6 @@ func TestRepository_File(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
-	cfg := storage.NewConfig()
 	credentials := &keboola.FileUploadCredentials{
 		S3UploadParams: &s3.UploadParams{
 			Credentials: s3.Credentials{
@@ -100,6 +99,7 @@ func TestRepository_File(t *testing.T) {
 	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
 	client := d.TestEtcdClient()
 	defRepo := defRepository.New(d)
+	cfg := storage.NewConfig()
 	backoff := storage.NoRandomizationBackoff()
 	r := newWithBackoff(d, defRepo, cfg, backoff).File()
 
