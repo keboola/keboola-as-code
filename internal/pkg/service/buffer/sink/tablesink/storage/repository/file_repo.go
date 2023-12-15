@@ -6,7 +6,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
@@ -15,11 +14,9 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	etcd "go.etcd.io/etcd/client/v3"
 	"path/filepath"
-	"time"
 )
 
 type FileRepository struct {
@@ -52,12 +49,12 @@ func (r *FileRepository) Get(k storage.FileKey) op.ForType[*op.KeyValueT[storage
 	})
 }
 
-func (r *FileRepository) Create(sinkKey key.SinkKey, credentials *keboola.FileUploadCredentials) *op.AtomicOp[storage.File] {
+func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.FileUploadCredentials) *op.AtomicOp[storage.File] {
 	var sinkKV *op.KeyValueT[definition.Sink]
 	var result storage.File
 	return op.Atomic(r.client, &result).
 		// Sink must exist
-		ReadOp(r.all.sink.Get(sinkKey).WithResultTo(&sinkKV)).
+		ReadOp(r.all.sink.Get(fileKey.SinkKey).WithResultTo(&sinkKV)).
 		// Save
 		WriteOrErr(func() (op op.Op, err error) {
 			sink := sinkKV.Value
@@ -71,7 +68,7 @@ func (r *FileRepository) Create(sinkKey key.SinkKey, credentials *keboola.FileUp
 			cfg := r.config.With(sink.Table.Storage)
 
 			// Create entity
-			result, err = newFile(r.clock.Now(), cfg, sink.SinkKey, sink.Table.Mapping, credentials)
+			result, err = newFile(fileKey, cfg, sink.Table.Mapping, credentials)
 			if err != nil {
 				return nil, err
 			}
@@ -180,7 +177,7 @@ func (r *FileRepository) update(k storage.FileKey, updateFn func(storage.File) (
 }
 
 // newFile creates file definition.
-func newFile(now time.Time, cfg storage.Config, sinkKey key.SinkKey, mapping definition.TableMapping, credentials *keboola.FileUploadCredentials) (f storage.File, err error) {
+func newFile(fileKey storage.FileKey, cfg storage.Config, mapping definition.TableMapping, credentials *keboola.FileUploadCredentials) (f storage.File, err error) {
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.
@@ -191,7 +188,6 @@ func newFile(now time.Time, cfg storage.Config, sinkKey key.SinkKey, mapping def
 	}
 
 	// Convert path separator, on Windows
-	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	fileDir := filepath.FromSlash(fileKey.String()) //nolint:forbidigo
 
 	f.FileKey = fileKey

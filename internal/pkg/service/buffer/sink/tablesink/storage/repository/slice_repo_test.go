@@ -40,6 +40,12 @@ func TestRepository_Slice(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 	volumeID := storage.VolumeID("my-volume")
+	clk.Add(time.Hour)
+	fileKey1 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	clk.Add(time.Hour)
+	fileKey2 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	clk.Add(time.Hour)
+	fileKey3 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
 	credentials := &keboola.FileUploadCredentials{
 		S3UploadParams: &s3.UploadParams{
 			Credentials: s3.Credentials{
@@ -90,7 +96,6 @@ func TestRepository_Slice(t *testing.T) {
 
 	// Create parent branch, source, sink and files
 	// -----------------------------------------------------------------------------------------------------------------
-	var fileKey1, fileKey2, fileKey3 storage.FileKey
 	{
 		branch := branchTemplate(branchKey)
 		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
@@ -99,18 +104,15 @@ func TestRepository_Slice(t *testing.T) {
 		sink := sinkTemplate(sinkKey)
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 
-		clk.Add(time.Hour)
-		file1, err := r.all.file.Create(sink.SinkKey, credentials).Do(ctx).ResultOrErr()
+		file1, err := r.all.file.Create(fileKey1, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey1 = file1.FileKey
 
-		clk.Add(time.Hour)
-		file2, err := r.all.file.Create(sink.SinkKey, credentials).Do(ctx).ResultOrErr()
+		file2, err := r.all.file.Create(fileKey2, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey2 = file2.FileKey
 
-		clk.Add(time.Hour)
-		file3, err := r.all.file.Create(sink.SinkKey, credentials).Do(ctx).ResultOrErr()
+		file3, err := r.all.file.Create(fileKey3, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey3 = file3.FileKey
 	}
@@ -432,11 +434,12 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 	t.Parallel()
 
 	// Fixtures
+	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
+	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	cfg := storage.NewConfig()
 	mapping := definition.TableMapping{
 		TableID: keboola.MustParseTableID("in.bucket.table"),
@@ -454,7 +457,7 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 	}
 
 	// Create file
-	file, err := newFile(now, cfg, sinkKey, mapping, credentials)
+	file, err := newFile(fileKey, cfg, mapping, credentials)
 	require.NoError(t, err)
 
 	// Set unsupported compression type
