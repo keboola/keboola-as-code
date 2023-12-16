@@ -43,6 +43,10 @@ func (r *FileRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[stora
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 
+func (r *FileRepository) ListInLevel(level storage.Level, parentKey fmt.Stringer) iterator.DefinitionT[storage.File] {
+	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
+}
+
 func (r *FileRepository) Get(k storage.FileKey) op.ForType[*op.KeyValueT[storage.File]] {
 	return r.get(k).WithEmptyResultAsError(func() error {
 		return serviceError.NewResourceNotFoundError("file", k.String(), "sink")
@@ -51,11 +55,40 @@ func (r *FileRepository) Get(k storage.FileKey) op.ForType[*op.KeyValueT[storage
 
 func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.FileUploadCredentials) *op.AtomicOp[storage.File] {
 	var sinkKV *op.KeyValueT[definition.Sink]
+	var oldLocalFiles []storage.File
 	var result storage.File
 	return op.Atomic(r.client, &result).
-		// Sink must exist
+		// Get sink, it must exist
 		ReadOp(r.all.sink.Get(fileKey.SinkKey).WithResultTo(&sinkKV)).
-		// Save
+		// There can be a maximum of one old file in the storage.FileWriting state,
+		// it is atomically switched to the storage.FileClosing state.
+		ReadOp(r.ListInLevel(storage.LevelLocal, fileKey.SinkKey).WithResultTo(&oldLocalFiles)).
+		WriteOrErr(func() (op.Op, error) {
+			var count int
+			var closeFileOp op.Op
+			for _, oldFile := range oldLocalFiles {
+				if oldFile.FileKey == fileKey {
+					// File already exists
+					return nil, serviceError.NewResourceAlreadyExistsError("file", fileKey.String(), "sink")
+				}
+				if oldFile.State == storage.FileWriting {
+					modified := oldFile
+					if err := modified.StateTransition(fileKey.OpenedAt().Time(), storage.FileClosing); err != nil {
+						return nil, err
+					}
+
+					count++
+					closeFileOp = r.put(oldFile, modified, false)
+				}
+			}
+
+			if count > 1 {
+				return nil, errors.Errorf(`unexpected state, found %d opened files in sink "%s"`, count, fileKey.SinkKey)
+			}
+
+			return closeFileOp, nil
+		}).
+		// Save the new file
 		WriteOrErr(func() (op op.Op, err error) {
 			sink := sinkKV.Value
 
@@ -74,7 +107,7 @@ func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.Fi
 			}
 
 			// Save operation
-			return r.put(result, true), nil
+			return r.put(result, result, true), nil
 		})
 }
 
@@ -128,9 +161,9 @@ func (r *FileRepository) get(k storage.FileKey) op.ForType[*op.KeyValueT[storage
 // The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
 // - "All" prefix is used for classic CRUD operations.
 // - "InLevel" prefix is used for effective watching of the storage level.
-func (r *FileRepository) put(v storage.File, create bool) *op.TxnOp {
-	level := v.State.Level()
-	etcdKey := r.schema.AllLevels().ByKey(v.FileKey)
+func (r *FileRepository) put(oldValue, newValue storage.File, create bool) *op.TxnOp {
+	level := newValue.State.Level()
+	etcdKey := r.schema.AllLevels().ByKey(newValue.FileKey)
 
 	txn := op.NewTxnOp(r.client)
 	if create {
@@ -139,40 +172,38 @@ func (r *FileRepository) put(v storage.File, create bool) *op.TxnOp {
 			If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
 			AddProcessor(func(ctx context.Context, r *op.TxnResult) {
 				if r.Err() == nil && !r.Succeeded() {
-					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", v.FileKey.String(), "sink"))
+					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", newValue.FileKey.String(), "sink"))
 				}
 			})
 	}
 
 	// Put entity to All and InLevel prefixes
-	txn.Then(etcdKey.Put(r.client, v))
-	txn.Then(r.schema.InLevel(level).ByKey(v.FileKey).Put(r.client, v))
+	txn.Then(etcdKey.Put(r.client, newValue))
+	txn.Then(r.schema.InLevel(level).ByKey(newValue.FileKey).Put(r.client, newValue))
 
-	// Delete entity from other levels, if any
-	// This simply handles the entity transition between different levels.
-	for _, l := range storage.AllLevels() {
-		if l != level {
-			txn.Then(r.schema.InLevel(l).ByKey(v.FileKey).Delete(r.client))
-		}
+	// Delete entity from old level, if needed.
+	if !create && newValue.State.Level() != oldValue.State.Level() {
+		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.FileKey).Delete(r.client))
 	}
 
 	return txn
 }
 
 func (r *FileRepository) update(k storage.FileKey, updateFn func(storage.File) (storage.File, error)) *op.AtomicOp[storage.File] {
-	var result storage.File
+	var oldValue, newValue storage.File
 	var kv *op.KeyValueT[storage.File]
-	return op.Atomic(r.client, &result).
+	return op.Atomic(r.client, &newValue).
 		// Read entity for modification
 		ReadOp(r.Get(k).WithResultTo(&kv)).
 		// Prepare the new value
 		BeforeWriteOrErr(func() (err error) {
-			result, err = updateFn(kv.Value)
+			oldValue = kv.Value
+			newValue, err = updateFn(oldValue)
 			return err
 		}).
 		// Save the updated object
 		Write(func() op.Op {
-			return r.put(result, false)
+			return r.put(oldValue, newValue, false)
 		})
 }
 
