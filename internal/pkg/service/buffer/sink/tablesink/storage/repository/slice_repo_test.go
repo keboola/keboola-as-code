@@ -38,14 +38,16 @@ func TestRepository_Slice(t *testing.T) {
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
+	sinkKey3 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-3"}
 	volumeID := storage.VolumeID("my-volume")
 	clk.Add(time.Hour)
-	fileKey1 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	fileKey1 := storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
 	clk.Add(time.Hour)
-	fileKey2 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	fileKey2 := storage.FileKey{SinkKey: sinkKey2, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
 	clk.Add(time.Hour)
-	fileKey3 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	fileKey3 := storage.FileKey{SinkKey: sinkKey3, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
 	credentials := &keboola.FileUploadCredentials{
 		S3UploadParams: &s3.UploadParams{
 			Credentials: s3.Credentials{
@@ -54,7 +56,7 @@ func TestRepository_Slice(t *testing.T) {
 		},
 	}
 	nonExistentSliceKey := storage.SliceKey{
-		FileKey: storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.MustParse("2000-01-02T01:00:00.000Z")}},
+		FileKey: storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.MustParse("2000-01-02T01:00:00.000Z")}},
 		SliceID: storage.SliceID{VolumeID: volumeID, OpenedAt: utctime.MustParse("2000-01-02T02:00:00.000Z")},
 	}
 
@@ -72,14 +74,14 @@ func TestRepository_Slice(t *testing.T) {
 		slices, err := r.List(projectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, slices)
-		slices, err = r.List(sinkKey).Do(ctx).All()
+		slices, err = r.List(sinkKey1).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, slices)
 	}
 	{
 		// Get - not found
 		if err := r.Get(nonExistentSliceKey).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -101,8 +103,12 @@ func TestRepository_Slice(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
 		source := sourceTemplate(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
-		sink := sinkTemplate(sinkKey)
-		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
+		sink1 := sinkTemplate(sinkKey1)
+		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
+		sink2 := sinkTemplate(sinkKey2)
+		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
+		sink3 := sinkTemplate(sinkKey3)
+		require.NoError(t, defRepo.Sink().Create("Create sink", &sink3).Do(ctx).Err())
 
 		file1, err := r.all.file.Create(fileKey1, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
@@ -121,9 +127,9 @@ func TestRepository_Slice(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		fileKey := test.NewFileKey()
-		fileKey.SinkKey = sinkKey
+		fileKey.SinkKey = sinkKey1
 		if err := r.Create(fileKey, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `file "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z" not found in the sink`, err.Error())
+			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z" not found in the sink`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -134,7 +140,7 @@ func TestRepository_Slice(t *testing.T) {
 		require.NoError(t, r.all.File().StateTransition(fileKey3, storage.FileClosing).Do(ctx).Err())
 
 		if err := r.Create(fileKey3, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice cannot be created: unexpected file "123/456/my-source/my-sink/2000-01-03T04:00:00.000Z" state "closing", expected "writing"`, err.Error())
+			assert.Equal(t, `slice cannot be created: unexpected file "123/456/my-source/my-sink-3/2000-01-03T04:00:00.000Z" state "closing", expected "writing"`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 		}
 	}
@@ -163,9 +169,9 @@ func TestRepository_Slice(t *testing.T) {
 		slices, err = r.List(sourceKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 2)
-		slices, err = r.List(sinkKey).Do(ctx).All()
+		slices, err = r.List(sinkKey1).Do(ctx).All()
 		assert.NoError(t, err)
-		assert.Len(t, slices, 2)
+		assert.Len(t, slices, 1)
 		slices, err = r.List(fileKey1).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
@@ -187,7 +193,7 @@ func TestRepository_Slice(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		if err := r.Create(fileKey2, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" already exists in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-2/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" already exists in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
@@ -215,7 +221,7 @@ func TestRepository_Slice(t *testing.T) {
 			return v, nil
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -265,14 +271,14 @@ func TestRepository_Slice(t *testing.T) {
 	// Switch slice state - already in the state
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.StateTransition(sliceKey1, storage.SliceUploaded).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state transition from "uploaded" to "uploaded"`, err.Error())
+		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state transition from "uploaded" to "uploaded"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
 	// Switch slice state - unexpected transition (1)
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.StateTransition(sliceKey1, storage.SliceUploading).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state transition from "uploaded" to "uploading"`, err.Error())
+		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state transition from "uploaded" to "uploading"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
@@ -280,7 +286,7 @@ func TestRepository_Slice(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.StateTransition(sliceKey1, storage.SliceImported).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
-unexpected slice "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state:
+unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state:
 - unexpected combination: file state "writing" and slice state "imported"
 `), err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
@@ -322,7 +328,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2
 	{
 		// Get - not found
 		if err := r.Get(sliceKey2).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" not found in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-2/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" not found in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -336,7 +342,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2
 	// Delete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Delete(nonExistentSliceKey).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
+		assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
@@ -348,13 +354,13 @@ unexpected slice "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2
 func expectedSliceEtcdState() string {
 	return `
 <<<<<
-storage/slice/all/123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z
+storage/slice/all/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
-  "sinkId": "my-sink",
+  "sinkId": "my-sink-1",
   "fileOpenedAt": "2000-01-03T02:00:00.000Z",
   "sliceOpenedAt": "2000-01-03T04:00:00.000Z",
   "volumeId": "my-volume",
@@ -375,7 +381,7 @@ storage/slice/all/123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2
     }
   ],
   "local": {
-    "dir": "123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/2000-01-03T04:00:00.000Z",
+    "dir": "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/2000-01-03T04:00:00.000Z",
     "filename": "slice.csv.gz",
     "compression": {
       "type": "gzip",
@@ -412,13 +418,13 @@ storage/slice/all/123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2
 >>>>>
 
 <<<<<
-storage/slice/level/target/123/456/my-source/my-sink/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z
+storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
-  "sinkId": "my-sink",
+  "sinkId": "my-sink-1",
   "fileOpenedAt": "2000-01-03T02:00:00.000Z",
   "sliceOpenedAt": "2000-01-03T04:00:00.000Z",
   "volumeId": "my-volume",
@@ -438,7 +444,7 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	cfg := storage.NewConfig()
 	mapping := definition.TableMapping{
