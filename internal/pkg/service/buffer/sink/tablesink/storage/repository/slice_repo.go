@@ -40,7 +40,7 @@ func (r *SliceRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[stor
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 
-func (r *SliceRepository) Get(k storage.SliceKey) op.ForType[*op.KeyValueT[storage.Slice]] {
+func (r *SliceRepository) Get(k storage.SliceKey) op.ForType[storage.Slice] {
 	return r.schema.
 		AllLevels().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -49,31 +49,27 @@ func (r *SliceRepository) Get(k storage.SliceKey) op.ForType[*op.KeyValueT[stora
 }
 
 func (r *SliceRepository) Create(fileKey storage.FileKey, volumeID storage.VolumeID, prevSliceSize datasize.ByteSize) *op.AtomicOp[storage.Slice] {
-	var fileKV *op.KeyValueT[storage.File]
+	var file storage.File
 	var result storage.Slice
 
 	// Save the slice
 	return op.Atomic(r.client, &result).
-		// Sink must exist
+		// Get sink, it must exist
 		ReadOp(r.all.sink.ExistsOrErr(fileKey.SinkKey)).
-		// File must exist and be in the FileWriting state
-		ReadOp(r.all.file.get(fileKey).WithResultTo(&fileKV)).
-		BeforeWriteOrErr(func() error {
-			if fileKV == nil {
-				return serviceError.NewResourceNotFoundError("file", fileKey.String(), "sink")
-			} else if fileState := fileKV.Value.State; fileState != storage.FileWriting {
-				return serviceError.NewBadRequestError(errors.Errorf(
+		// Get file, it must exist
+		ReadOp(r.all.file.Get(fileKey).WithResultTo(&file)).
+		// Save
+		WriteOrErr(func() (op op.Op, err error) {
+			// File must be in the storage.FileWriting state
+			if fileState := file.State; fileState != storage.FileWriting {
+				return nil, serviceError.NewBadRequestError(errors.Errorf(
 					`slice cannot be created: unexpected file "%s" state "%s", expected "%s"`,
 					fileKey.String(), fileState, storage.FileWriting,
 				))
-			} else {
-				return nil
 			}
-		}).
-		// Save
-		WriteOrErr(func() (op op.Op, err error) {
+
 			// Create entity
-			result, err = newSlice(r.clock.Now(), fileKV.Value, volumeID, prevSliceSize)
+			result, err = newSlice(r.clock.Now(), file, volumeID, prevSliceSize)
 			if err != nil {
 				return nil, err
 			}
@@ -91,11 +87,11 @@ func (r *SliceRepository) IncrementRetry(k storage.SliceKey, reason string) *op.
 }
 
 func (r *SliceRepository) StateTransition(k storage.SliceKey, to storage.SliceState) *op.AtomicOp[storage.Slice] {
-	var file *op.KeyValueT[storage.File]
+	var file storage.File
 	return r.
 		readAndUpdate(k, func(slice storage.Slice) (storage.Slice, error) {
 			// Validate file and slice state combination
-			if err := validateFileAndSliceStates(file.Value.State, to); err != nil {
+			if err := validateFileAndSliceStates(file.State, to); err != nil {
 				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
 			}
 
@@ -204,13 +200,11 @@ func (r *SliceRepository) update(oldValue, newValue storage.Slice) *op.TxnOp {
 
 func (r *SliceRepository) readAndUpdate(k storage.SliceKey, updateFn func(slice storage.Slice) (storage.Slice, error)) *op.AtomicOp[storage.Slice] {
 	var oldValue, newValue storage.Slice
-	var kv *op.KeyValueT[storage.Slice]
 	return op.Atomic(r.client, &newValue).
 		// Read entity for modification
-		ReadOp(r.Get(k).WithResultTo(&kv)).
+		ReadOp(r.Get(k).WithResultTo(&oldValue)).
 		// Prepare the new value
 		BeforeWriteOrErr(func() (err error) {
-			oldValue = kv.Value
 			newValue, err = updateFn(oldValue)
 			return err
 		}).

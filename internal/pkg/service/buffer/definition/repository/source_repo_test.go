@@ -40,10 +40,8 @@ func TestRepository_Source(t *testing.T) {
 		BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456},
 		SourceID:  "non-existent",
 	}
-	source1 := sourceTemplate(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "my-source-1"})
-	source1.Name = "My Source 1"
-	source2 := sourceTemplate(key.SourceKey{BranchKey: key.BranchKey{ProjectID: 123, BranchID: 789}, SourceID: "my-source-2"})
-	source2.Name = "My Source 2"
+	sourceKey1 := key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "my-source-1"}
+	sourceKey2 := key.SourceKey{BranchKey: key.BranchKey{ProjectID: 123, BranchID: 789}, SourceID: "my-source-2"}
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -59,7 +57,7 @@ func TestRepository_Source(t *testing.T) {
 		sources, err := r.List(projectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, sources)
-		sources, err = r.List(source1.BranchKey).Do(ctx).All()
+		sources, err = r.List(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, sources)
 	}
@@ -68,20 +66,20 @@ func TestRepository_Source(t *testing.T) {
 		sources, err := r.ListDeleted(projectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, sources)
-		sources, err = r.ListDeleted(source1.BranchKey).Do(ctx).All()
+		sources, err = r.ListDeleted(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 	{
 		// Get - not found
-		if err := r.Get(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Get(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - not found
-		if err := r.GetDeleted(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.GetDeleted(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -90,6 +88,7 @@ func TestRepository_Source(t *testing.T) {
 	// Create - parent Branch doesn't exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		source1 := sourceTemplate(sourceKey1)
 		if err := r.Create("Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/456" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
@@ -99,21 +98,26 @@ func TestRepository_Source(t *testing.T) {
 	// Create parent branches
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch1 := branchTemplate(source1.BranchKey)
+		branch1 := branchTemplate(sourceKey1.BranchKey)
 		branch1.IsDefault = true
 		require.NoError(t, r.all.Branch().Create(&branch1).Do(ctx).Err())
-		branch2 := branchTemplate(source2.BranchKey)
+		branch2 := branchTemplate(sourceKey2.BranchKey)
 		require.NoError(t, r.all.Branch().Create(&branch2).Do(ctx).Err())
 	}
 
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		source1 := sourceTemplate(sourceKey1)
+		source1.Name = "My Source 1"
 		result1, err := r.Create("Create description", &source1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, result1, source1)
 		assert.Equal(t, definition.VersionNumber(1), source1.VersionNumber())
 		assert.NotEmpty(t, source1.VersionHash())
+
+		source2 := sourceTemplate(sourceKey2)
+		source2.Name = "My Source 2"
 		result2, err := r.Create("Create description", &source2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, result2, source2)
@@ -125,34 +129,34 @@ func TestRepository_Source(t *testing.T) {
 		sources, err := r.List(projectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, 2)
-		sources, err = r.List(source1.BranchKey).Do(ctx).All()
+		sources, err = r.List(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, 1)
-		sources, err = r.List(source2.BranchKey).Do(ctx).All()
+		sources, err = r.List(sourceKey2.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, 1)
 	}
 	{
 		// Get
-		result1, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
+		result1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, "My Source 1", result1.Value.Name)
-		assert.Equal(t, definition.VersionNumber(1), result1.Value.VersionNumber())
-		result2, err := r.Get(source2.SourceKey).Do(ctx).ResultOrErr()
+		assert.Equal(t, "My Source 1", result1.Name)
+		assert.Equal(t, definition.VersionNumber(1), result1.VersionNumber())
+		result2, err := r.Get(sourceKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, "My Source 2", result2.Value.Name)
-		assert.Equal(t, definition.VersionNumber(1), result2.Value.VersionNumber())
+		assert.Equal(t, "My Source 2", result2.Name)
+		assert.Equal(t, definition.VersionNumber(1), result2.VersionNumber())
 	}
 	{
 		// GetDeleted - not found
-		if err := r.GetDeleted(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.GetDeleted(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// Versions
-		versions, err := r.Versions(source1.SourceKey).Do(ctx).All()
+		versions, err := r.Versions(sourceKey1).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, versions, 1)
 	}
@@ -160,6 +164,7 @@ func TestRepository_Source(t *testing.T) {
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		source1 := sourceTemplate(sourceKey1)
 		if err := r.Create("Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "123/456/my-source-1" already exists in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
@@ -170,30 +175,31 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		result, err := r.Update(source1.SourceKey, "Update description", func(v definition.Source) definition.Source {
+		result, err := r.Update(sourceKey1, "Update description", func(v definition.Source) definition.Source {
 			v.Name = "Modified Name"
 			return v
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
 		assert.Equal(t, definition.VersionNumber(2), result.VersionNumber())
-		kv, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
+
+		source1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, result, kv.Value)
+		assert.Equal(t, result, source1)
 	}
 	{
 		// Modify description
-		result, err := r.Update(source1.SourceKey, "Update description", func(v definition.Source) definition.Source {
+		result, err := r.Update(sourceKey1, "Update description", func(v definition.Source) definition.Source {
 			v.Description = "Modified Description"
 			return v
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Description", result.Description)
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
-		kv, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
+
+		source1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, result, kv.Value)
-		source1 = kv.Value
+		assert.Equal(t, result, source1)
 	}
 
 	// Update - not found
@@ -212,18 +218,18 @@ func TestRepository_Source(t *testing.T) {
 	// Version - found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		source, err := r.Version(source1.SourceKey, 1).Do(ctx).ResultOrErr()
+		source, err := r.Version(sourceKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, "My Source 1", source.Value.Name)
-		source, err = r.Version(source1.SourceKey, 2).Do(ctx).ResultOrErr()
+		assert.Equal(t, "My Source 1", source.Name)
+		source, err = r.Version(sourceKey1, 2).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, "Modified Name", source.Value.Name)
+		assert.Equal(t, "Modified Name", source.Name)
 	}
 
 	// Version - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := r.Version(source1.SourceKey, 10).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Version(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source version "123/456/my-source-1/0000000010" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -234,11 +240,11 @@ func TestRepository_Source(t *testing.T) {
 	var sink1, sink2, sink3 definition.Sink
 	{
 		// Create 3 sinks
-		sink1 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-1"})
+		sink1 = sinkTemplate(key.SinkKey{SourceKey: sourceKey1, SinkID: "sink-1"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink1).Do(ctx).Err())
-		sink2 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-2"})
+		sink2 = sinkTemplate(key.SinkKey{SourceKey: sourceKey1, SinkID: "sink-2"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink2).Do(ctx).Err())
-		sink3 = sinkTemplate(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-3"})
+		sink3 = sinkTemplate(key.SinkKey{SourceKey: sourceKey1, SinkID: "sink-3"})
 		require.NoError(t, r.all.sink.Create("Create sink", &sink3).Do(ctx).Err())
 	}
 	{
@@ -249,45 +255,45 @@ func TestRepository_Source(t *testing.T) {
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, r.SoftDelete(source1.SourceKey).Do(ctx).Err())
+		assert.NoError(t, r.SoftDelete(sourceKey1).Do(ctx).Err())
 	}
 	{
 		// Get - not found
-		if err := r.Get(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Get(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - found
-		result, err := r.GetDeleted(source1.SourceKey).Do(ctx).ResultOrErr()
+		result, err := r.GetDeleted(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, "Modified Name", result.Value.Name)
-		assert.Equal(t, definition.VersionNumber(3), result.Value.VersionNumber())
+		assert.Equal(t, "Modified Name", result.Name)
+		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 	}
 	{
 		// Version - found
-		result, err := r.Version(source1.SourceKey, 1).Do(ctx).ResultOrErr()
+		result, err := r.Version(sourceKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, "My Source 1", result.Value.Name)
-		assert.Equal(t, definition.VersionNumber(1), result.Value.VersionNumber())
+		assert.Equal(t, "My Source 1", result.Name)
+		assert.Equal(t, definition.VersionNumber(1), result.VersionNumber())
 	}
 	{
 		// List - empty
-		sources, err := r.List(source1.BranchKey).Do(ctx).All()
+		sources, err := r.List(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 	{
 		// ListDeleted
-		sources, err := r.ListDeleted(source1.BranchKey).Do(ctx).All()
+		sources, err := r.ListDeleted(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, 1)
 	}
 
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := r.SoftDelete(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+	if err := r.SoftDelete(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -296,48 +302,47 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		result, err := r.Undelete(source1.SourceKey).Do(ctx).ResultOrErr()
+		result, err := r.Undelete(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, r.ExistsOrErr(source1.SourceKey).Do(ctx).Err())
+		assert.NoError(t, r.ExistsOrErr(sourceKey1).Do(ctx).Err())
 	}
 	{
 		// Get
-		kv, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
+		source1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
-			source1 = kv.Value
 			assert.Equal(t, "Modified Name", source1.Name)
 			assert.Equal(t, definition.VersionNumber(3), source1.VersionNumber())
 		}
 	}
 	{
 		// GetDeleted - not found
-		if err := r.GetDeleted(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.GetDeleted(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// List
-		sources, err := r.List(source1.BranchKey).Do(ctx).All()
+		sources, err := r.List(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, 1)
 
 	}
 	{
 		// ListDeleted - empty
-		sources, err := r.ListDeleted(source1.BranchKey).Do(ctx).All()
+		sources, err := r.ListDeleted(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := r.Undelete(source1.SourceKey).Do(ctx).Err(); assert.Error(t, err) {
+	if err := r.Undelete(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -346,12 +351,14 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// SoftDelete
+		source1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(3), source1.VersionNumber())
-		assert.NoError(t, r.SoftDelete(source1.SourceKey).Do(ctx).Err())
+		assert.NoError(t, r.SoftDelete(sourceKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
-		source1 = sourceTemplate(source1.SourceKey)
+		source1 := sourceTemplate(sourceKey1)
 		assert.NoError(t, r.Create("Re-create", &source1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), source1.VersionNumber())
 		assert.Equal(t, "My Source", source1.Name)
@@ -359,9 +366,8 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// Get
-		kv, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
+		source1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
-			source1 = kv.Value
 			assert.Equal(t, definition.VersionNumber(4), source1.VersionNumber())
 			assert.Equal(t, "My Source", source1.Name)
 			assert.Equal(t, "My Description", source1.Description)
@@ -369,7 +375,7 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// Versions
-		versions, err := r.Versions(source1.SourceKey).Do(ctx).All()
+		versions, err := r.Versions(sourceKey1).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, versions, 4)
 	}
@@ -378,15 +384,15 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, r.Rollback(source1.SourceKey, 2).Do(ctx).Err())
+		assert.NoError(t, r.Rollback(sourceKey1, 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
-		result1, err := r.Get(source1.SourceKey).Do(ctx).ResultOrErr()
+		result1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, "My Description", result1.Value.Description)
-		assert.Equal(t, definition.VersionNumber(5), result1.Value.VersionNumber())
-		assert.Equal(t, "Rollback to version 2", result1.Value.VersionDescription())
+		assert.Equal(t, "My Description", result1.Description)
+		assert.Equal(t, definition.VersionNumber(5), result1.VersionNumber())
+		assert.Equal(t, "Rollback to version 2", result1.VersionDescription())
 	}
 
 	// Rollback version - object not found
@@ -397,7 +403,7 @@ func TestRepository_Source(t *testing.T) {
 
 	// Rollback version - version not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := r.Rollback(source1.SourceKey, 10).Do(ctx).Err(); assert.Error(t, err) {
+	if err := r.Rollback(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source version "123/456/my-source-1/0000000010" not found in the branch`, err.Error())
 	}
 
@@ -531,7 +537,7 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 		txn := op.NewTxnOp(client)
 		ops := 0
 		for i := 2; i <= MaxSourcesPerBranch; i++ {
-			v := sourceTemplate(key.SourceKey{BranchKey: source1.BranchKey, SourceID: key.SourceID(fmt.Sprintf("my-source-%d", i))})
+			v := sourceTemplate(key.SourceKey{BranchKey: sourceKey1.BranchKey, SourceID: key.SourceID(fmt.Sprintf("my-source-%d", i))})
 			v.IncrementVersion(v, clk.Now(), "Create")
 			txn.Then(r.schema.Active().ByKey(v.SourceKey).Put(client, v))
 
@@ -545,7 +551,7 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 				txn = op.NewTxnOp(client)
 			}
 		}
-		sources, err := r.List(source1.BranchKey).Do(ctx).All()
+		sources, err := r.List(sourceKey1.BranchKey).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, MaxSourcesPerBranch)
 	}
@@ -561,6 +567,9 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 	// Test limit: versions per source limit
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		source1, err := r.Get(sourceKey1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+
 		// Create versions up to maximum count
 		// Note: multiple puts are merged to a transaction to improve test speed
 		txn := op.NewTxnOp(client)
@@ -568,7 +577,7 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 		for i := source1.VersionNumber() + 1; i <= MaxSourceVersionsPerSource; i++ {
 			source1.Description = fmt.Sprintf("Description %04d", i)
 			source1.IncrementVersion(source1, clk.Now(), "Some Update")
-			txn.Then(r.schema.Versions().Of(source1.SourceKey).Version(source1.VersionNumber()).Put(client, source1))
+			txn.Then(r.schema.Versions().Of(sourceKey1).Version(source1.VersionNumber()).Put(client, source1))
 
 			// Send the txn it is full, or after the last item
 			ops++
@@ -581,13 +590,13 @@ definition/sink/version/123/456/my-source-1/sink-3/0000000001
 			}
 		}
 		// Check that the maximum count is reached
-		sources, err := r.Versions(source1.SourceKey).Do(ctx).All()
+		sources, err := r.Versions(sourceKey1).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, sources, MaxSourceVersionsPerSource)
 	}
 	{
 		// Exceed the limit
-		err := r.Update(source1.SourceKey, "Some update", func(v definition.Source) definition.Source {
+		err := r.Update(sourceKey1, "Some update", func(v definition.Source) definition.Source {
 			v.Description = "foo"
 			return v
 		}).Do(ctx).Err()

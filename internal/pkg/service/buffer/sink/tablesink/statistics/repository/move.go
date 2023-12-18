@@ -25,7 +25,7 @@ func (r *Repository) Move(sliceKey storage.SliceKey, from, to storage.Level, tra
 
 	// Load statistics value from the old key
 	ops.Read(func() op.Op {
-		return fromKey.Get(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
+		return fromKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
 			if result != nil {
 				value = result.Value
 			}

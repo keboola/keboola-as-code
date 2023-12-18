@@ -29,8 +29,8 @@ func TestRepository_Branch(t *testing.T) {
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
-	branch1 := branchTemplate(key.BranchKey{ProjectID: 123, BranchID: 567})
-	branch2 := branchTemplate(key.BranchKey{ProjectID: 456, BranchID: 789})
+	branchKey1 := key.BranchKey{ProjectID: 123, BranchID: 567}
+	branchKey2 := key.BranchKey{ProjectID: 456, BranchID: 789}
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -46,7 +46,7 @@ func TestRepository_Branch(t *testing.T) {
 		branches, err := r.List(projectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, branches)
-		branches, err = r.List(branch1.ProjectID).Do(ctx).All()
+		branches, err = r.List(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, branches)
 	}
@@ -55,20 +55,20 @@ func TestRepository_Branch(t *testing.T) {
 		branches, err := r.ListDeleted(projectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, branches)
-		branches, err = r.ListDeleted(branch1.ProjectID).Do(ctx).All()
+		branches, err = r.ListDeleted(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 	{
 		// Get - not found
-		if err := r.Get(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Get(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - not found
-		if err := r.GetDeleted(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -77,6 +77,9 @@ func TestRepository_Branch(t *testing.T) {
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		branch1 := branchTemplate(branchKey1)
+		branch2 := branchTemplate(branchKey2)
+
 		result1, err := r.Create(&branch1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch1, result1)
@@ -86,25 +89,25 @@ func TestRepository_Branch(t *testing.T) {
 	}
 	{
 		// List
-		branches, err := r.List(branch1.ProjectID).Do(ctx).All()
+		branches, err := r.List(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, branches, 1)
-		branches, err = r.List(branch2.ProjectID).Do(ctx).All()
+		branches, err = r.List(branchKey2.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, branches, 1)
 	}
 	{
 		// Get
-		result1, err := r.Get(branch1.BranchKey).Do(ctx).ResultOrErr()
+		result1, err := r.Get(branchKey1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, keboola.BranchID(567), result1.Value.BranchID)
-		result2, err := r.Get(branch2.BranchKey).Do(ctx).ResultOrErr()
+		assert.Equal(t, keboola.BranchID(567), result1.BranchID)
+		result2, err := r.Get(branchKey2).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, keboola.BranchID(789), result2.Value.BranchID)
+		assert.Equal(t, keboola.BranchID(789), result2.BranchID)
 	}
 	{
 		// GetDeleted - not found
-		if err := r.GetDeleted(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -113,6 +116,7 @@ func TestRepository_Branch(t *testing.T) {
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		branch1 := branchTemplate(branchKey1)
 		if err := r.Create(&branch1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/567" already exists in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
@@ -125,11 +129,11 @@ func TestRepository_Branch(t *testing.T) {
 	var sink1, sink2, sink3 definition.Sink
 	{
 		// Create 3 sources
-		source1 = sourceTemplate(key.SourceKey{BranchKey: branch1.BranchKey, SourceID: "source-1"})
+		source1 = sourceTemplate(key.SourceKey{BranchKey: branchKey1, SourceID: "source-1"})
 		require.NoError(t, r.all.source.Create("Create source", &source1).Do(ctx).Err())
-		source2 = sourceTemplate(key.SourceKey{BranchKey: branch1.BranchKey, SourceID: "source-2"})
+		source2 = sourceTemplate(key.SourceKey{BranchKey: branchKey1, SourceID: "source-2"})
 		require.NoError(t, r.all.source.Create("Create source", &source2).Do(ctx).Err())
-		source3 = sourceTemplate(key.SourceKey{BranchKey: branch1.BranchKey, SourceID: "source-3"})
+		source3 = sourceTemplate(key.SourceKey{BranchKey: branchKey1, SourceID: "source-3"})
 		require.NoError(t, r.all.source.Create("Create source", &source3).Do(ctx).Err())
 	}
 	{
@@ -152,37 +156,37 @@ func TestRepository_Branch(t *testing.T) {
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, r.SoftDelete(branch1.BranchKey).Do(ctx).Err())
+		assert.NoError(t, r.SoftDelete(branchKey1).Do(ctx).Err())
 	}
 	{
 		// Get - not found
-		if err := r.Get(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Get(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - found
-		result, err := r.GetDeleted(branch1.BranchKey).Do(ctx).ResultOrErr()
+		result, err := r.GetDeleted(branchKey1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		assert.Equal(t, keboola.BranchID(567), result.Value.BranchID)
+		assert.Equal(t, keboola.BranchID(567), result.BranchID)
 	}
 	{
 		// List - empty
-		branches, err := r.List(branch1.ProjectID).Do(ctx).All()
+		branches, err := r.List(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 	{
 		// ListDeleted
-		branches, err := r.ListDeleted(branch1.ProjectID).Do(ctx).All()
+		branches, err := r.ListDeleted(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, branches, 1)
 	}
 
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := r.SoftDelete(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+	if err := r.SoftDelete(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -191,46 +195,45 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		result, err := r.Undelete(branch1.BranchKey).Do(ctx).ResultOrErr()
+		result, err := r.Undelete(branchKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, keboola.BranchID(567), result.BranchID)
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, r.ExistsOrErr(branch1.BranchKey).Do(ctx).Err())
+		assert.NoError(t, r.ExistsOrErr(branchKey1).Do(ctx).Err())
 	}
 	{
 		// Get
-		kv, err := r.Get(branch1.BranchKey).Do(ctx).ResultOrErr()
+		branch1, err := r.Get(branchKey1).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
-			branch1 = kv.Value
 			assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
 		}
 	}
 	{
 		// GetDeleted - not found
-		if err := r.GetDeleted(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// List
-		branches, err := r.List(branch1.ProjectID).Do(ctx).All()
+		branches, err := r.List(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, branches, 1)
 
 	}
 	{
 		// ListDeleted - empty
-		branches, err := r.ListDeleted(branch1.ProjectID).Do(ctx).All()
+		branches, err := r.ListDeleted(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := r.Undelete(branch1.BranchKey).Do(ctx).Err(); assert.Error(t, err) {
+	if err := r.Undelete(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -239,11 +242,11 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// SoftDelete
-		assert.NoError(t, r.SoftDelete(branch1.BranchKey).Do(ctx).Err())
+		assert.NoError(t, r.SoftDelete(branchKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
-		branch1 = branchTemplate(branch1.BranchKey)
+		branch1 := branchTemplate(branchKey1)
 		assert.NoError(t, r.Create(&branch1).Do(ctx).Err())
 		assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
 		assert.False(t, branch1.Deleted)
@@ -251,9 +254,8 @@ func TestRepository_Branch(t *testing.T) {
 	}
 	{
 		// Get
-		kv, err := r.Get(branch1.BranchKey).Do(ctx).ResultOrErr()
+		branch1, err := r.Get(branchKey1).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
-			branch1 = kv.Value
 			assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
 		}
 	}
@@ -370,7 +372,7 @@ definition/sink/version/123/567/source-1/sink-3/0000000001
 		txn := op.NewTxnOp(client)
 		ops := 0
 		for i := 2; i <= MaxBranchesPerProject; i++ {
-			v := branchTemplate(key.BranchKey{ProjectID: branch1.ProjectID, BranchID: keboola.BranchID(1000 + i)})
+			v := branchTemplate(key.BranchKey{ProjectID: branchKey1.ProjectID, BranchID: keboola.BranchID(1000 + i)})
 			txn.Then(r.schema.Active().ByKey(v.BranchKey).Put(client, v))
 
 			// Send the txn it is full, or after the last item
@@ -383,7 +385,7 @@ definition/sink/version/123/567/source-1/sink-3/0000000001
 				txn = op.NewTxnOp(client)
 			}
 		}
-		branches, err := r.List(branch1.ProjectID).Do(ctx).All()
+		branches, err := r.List(branchKey1.ProjectID).Do(ctx).All()
 		assert.NoError(t, err)
 		assert.Len(t, branches, MaxBranchesPerProject)
 	}

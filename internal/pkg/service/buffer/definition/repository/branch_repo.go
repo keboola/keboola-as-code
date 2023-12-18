@@ -52,7 +52,7 @@ func (r *BranchRepository) ExistsOrErr(k key.BranchKey) op.ForType[bool] {
 		})
 }
 
-func (r *BranchRepository) Get(k key.BranchKey) op.ForType[*op.KeyValueT[definition.Branch]] {
+func (r *BranchRepository) Get(k key.BranchKey) op.ForType[definition.Branch] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -60,7 +60,7 @@ func (r *BranchRepository) Get(k key.BranchKey) op.ForType[*op.KeyValueT[definit
 		})
 }
 
-func (r *BranchRepository) GetDeleted(k key.BranchKey) op.ForType[*op.KeyValueT[definition.Branch]] {
+func (r *BranchRepository) GetDeleted(k key.BranchKey) op.ForType[definition.Branch] {
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -77,9 +77,9 @@ func (r *BranchRepository) Create(input *definition.Branch) *op.AtomicOp[definit
 	return op.Atomic(r.client, &result).
 		ReadOp(r.checkMaxBranchesPerProject(result.ProjectID, 1)).
 		// Get gets actual version to check if the object already exists
-		ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithResultTo(&actual)).
+		ReadOp(r.schema.Active().ByKey(k).GetKV(r.client).WithResultTo(&actual)).
 		// GetDelete gets deleted version to check if we have to do undelete
-		ReadOp(r.schema.Deleted().ByKey(k).Get(r.client).WithResultTo(&deleted)).
+		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Object must not exists
 		BeforeWriteOrErr(func() error {
 			if actual != nil {
@@ -114,11 +114,11 @@ func (r *BranchRepository) Create(input *definition.Branch) *op.AtomicOp[definit
 
 func (r *BranchRepository) SoftDelete(k key.BranchKey) *op.AtomicOp[op.NoResult] {
 	// Move object from the active to the deleted prefix
-	var kv *op.KeyValueT[definition.Branch]
+	var value definition.Branch
 	return op.Atomic(r.client, &op.NoResult{}).
 		// Move object from the active prefix to the deleted prefix
-		ReadOp(r.Get(k).WithResultTo(&kv)).
-		Write(func() op.Op { return r.softDeleteValue(kv.Value) }).
+		ReadOp(r.Get(k).WithResultTo(&value)).
+		Write(func() op.Op { return r.softDeleteValue(value) }).
 		// Delete children
 		AddFrom(r.all.source.softDeleteAllFrom(k))
 }
@@ -137,13 +137,10 @@ func (r *BranchRepository) softDeleteValue(v definition.Branch) *op.TxnOp {
 func (r *BranchRepository) Undelete(k key.BranchKey) *op.AtomicOp[definition.Branch] {
 	// Move object from the deleted to the active prefix
 	var result definition.Branch
-	var kv *op.KeyValueT[definition.Branch]
 	return op.Atomic(r.client, &result).
 		ReadOp(r.checkMaxBranchesPerProject(k.ProjectID, 1)).
 		// Move object from the deleted prefix to the active prefix
-		ReadOp(r.GetDeleted(k).WithResultTo(&kv)).
-		// Unwrap KV
-		BeforeWrite(func() { result = kv.Value }).
+		ReadOp(r.GetDeleted(k).WithResultTo(&result)).
 		// Undelete
 		Write(func() op.Op { return r.undeleteValue(result) }).
 		// Undelete children

@@ -181,10 +181,10 @@ func TestRepository_File(t *testing.T) {
 		// Get
 		result1, err := r.Get(fileKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, now, result1.Value.OpenedAt().Time())
+		assert.Equal(t, now, result1.OpenedAt().Time())
 		result2, err := r.Get(fileKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, now, result2.Value.OpenedAt().Time())
+		assert.Equal(t, now, result2.OpenedAt().Time())
 	}
 
 	// Create - already exists
@@ -207,9 +207,10 @@ func TestRepository_File(t *testing.T) {
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.False(t, result.LocalStorage.DiskSync.Wait)
-		kv, err := r.Get(fileKey1).Do(ctx).ResultOrErr()
+
+		file1, err := r.Get(fileKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, result, kv.Value)
+		assert.Equal(t, result, file1)
 	}
 
 	// Update - not found
@@ -233,9 +234,10 @@ func TestRepository_File(t *testing.T) {
 		assert.Equal(t, "some error", result.RetryReason)
 		assert.Equal(t, "2000-01-01T20:00:00.000Z", result.LastFailedAt.String())
 		assert.Equal(t, "2000-01-01T20:02:00.000Z", result.RetryAfter.String())
-		kv, err := r.Get(fileKey1).Do(ctx).ResultOrErr()
+
+		file1, err := r.Get(fileKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, result, kv.Value)
+		assert.Equal(t, result, file1)
 	}
 
 	// Switch file state

@@ -101,10 +101,10 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		require.NoError(t, r.Slice().StateTransition(slice2.SliceKey, storage.SliceClosing).Do(ctx).Err())
 		slice1KV, err := r.Slice().Get(slice1.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceClosing, slice1KV.Value.State)
+		assert.Equal(t, storage.SliceClosing, slice1KV.State)
 		slice2KV, err := r.Slice().Get(slice2.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceClosing, slice2KV.Value.State)
+		assert.Equal(t, storage.SliceClosing, slice2KV.State)
 	}
 
 	// VALID: FileClosing, slices in SliceWriting state are switched to SliceClosing state
@@ -113,10 +113,10 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		require.NoError(t, r.File().StateTransition(file.FileKey, storage.FileClosing).Do(ctx).Err())
 		fileKV, err := r.File().Get(file.FileKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.FileClosing, fileKV.Value.State)
+		assert.Equal(t, storage.FileClosing, fileKV.State)
 		slice3KV, err := r.Slice().Get(slice3.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceClosing, slice3KV.Value.State)
+		assert.Equal(t, storage.SliceClosing, slice3KV.State)
 	}
 
 	// VALID: SliceUploading
@@ -126,10 +126,10 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		require.NoError(t, r.Slice().StateTransition(slice2.SliceKey, storage.SliceUploading).Do(ctx).Err())
 		slice1KV, err := r.Slice().Get(slice1.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploading, slice1KV.Value.State)
+		assert.Equal(t, storage.SliceUploading, slice1KV.State)
 		slice2KV, err := r.Slice().Get(slice2.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploading, slice2KV.Value.State)
+		assert.Equal(t, storage.SliceUploading, slice2KV.State)
 	}
 
 	// VALID: SliceUploaded
@@ -139,10 +139,10 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		require.NoError(t, r.Slice().StateTransition(slice2.SliceKey, storage.SliceUploaded).Do(ctx).Err())
 		slice1KV, err := r.Slice().Get(slice1.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploaded, slice1KV.Value.State)
+		assert.Equal(t, storage.SliceUploaded, slice1KV.State)
 		slice2KV, err := r.Slice().Get(slice2.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploaded, slice2KV.Value.State)
+		assert.Equal(t, storage.SliceUploaded, slice2KV.State)
 	}
 
 	// INVALID: FileImporting (1) - a slice is not uploaded
@@ -162,7 +162,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2
 		require.NoError(t, r.Slice().StateTransition(slice3.SliceKey, storage.SliceUploading).Do(ctx).Err())
 		slice1KV, err := r.Slice().Get(slice3.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploading, slice1KV.Value.State)
+		assert.Equal(t, storage.SliceUploading, slice1KV.State)
 	}
 
 	// INVALID: FileImporting (2) - a slice is not uploaded
@@ -182,7 +182,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2
 		require.NoError(t, r.Slice().StateTransition(slice3.SliceKey, storage.SliceUploaded).Do(ctx).Err())
 		slice1KV, err := r.Slice().Get(slice3.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploaded, slice1KV.Value.State)
+		assert.Equal(t, storage.SliceUploaded, slice1KV.State)
 	}
 
 	// VALID: FileImporting - all slices are in SliceUploaded state
@@ -191,10 +191,10 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2
 		require.NoError(t, r.File().StateTransition(file.FileKey, storage.FileImporting).Do(ctx).Err())
 		fileKV, err := r.File().Get(file.FileKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.FileImporting, fileKV.Value.State)
+		assert.Equal(t, storage.FileImporting, fileKV.State)
 		slice3KV, err := r.Slice().Get(slice3.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceUploaded, slice3KV.Value.State)
+		assert.Equal(t, storage.SliceUploaded, slice3KV.State)
 	}
 
 	// VALID: FileImported - slices in SliceUploaded state are switched to SliceImported state
@@ -203,9 +203,9 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2
 		require.NoError(t, r.File().StateTransition(file.FileKey, storage.FileImported).Do(ctx).Err())
 		fileKV, err := r.File().Get(file.FileKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.FileImported, fileKV.Value.State)
+		assert.Equal(t, storage.FileImported, fileKV.State)
 		slice3KV, err := r.Slice().Get(slice3.SliceKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storage.SliceImported, slice3KV.Value.State)
+		assert.Equal(t, storage.SliceImported, slice3KV.State)
 	}
 }

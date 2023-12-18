@@ -26,7 +26,7 @@ func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 			sumKey := r.schema.InLevel(storage.LevelTarget).InParentOf(objectKey).Sum()
 
 			// Get sum from the parent object
-			ops.ReadOp(sumKey.Get(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
+			ops.ReadOp(sumKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
 				if result == nil {
 					parentSum = statistics.Value{}
 				} else {
