@@ -198,12 +198,12 @@ func TestRepository_Slice(t *testing.T) {
 		}
 	}
 
-	// Update (update is private method, public methods IncrementRetry and StateTransition are tested bellow)
+	// Update (readAndUpdate is private method, public methods IncrementRetry and StateTransition are tested bellow)
 	// -----------------------------------------------------------------------------------------------------------------
 	clk.Add(time.Hour)
 	{
 		// Increment retry
-		result, err := r.update(sliceKey1, func(v storage.Slice) (storage.Slice, error) {
+		result, err := r.readAndUpdate(sliceKey1, func(v storage.Slice) (storage.Slice, error) {
 			v.LocalStorage.DiskSync.Wait = false
 			return v, nil
 		}).Do(ctx).ResultOrErr()
@@ -217,7 +217,7 @@ func TestRepository_Slice(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := r.update(nonExistentSliceKey, func(v storage.Slice) (storage.Slice, error) {
+		err := r.readAndUpdate(nonExistentSliceKey, func(v storage.Slice) (storage.Slice, error) {
 			return v, nil
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {

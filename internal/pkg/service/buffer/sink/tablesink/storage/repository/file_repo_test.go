@@ -196,12 +196,12 @@ func TestRepository_File(t *testing.T) {
 		}
 	}
 
-	// Update (update is private method, public methods IncrementRetry and StateTransition are tested bellow)
+	// Update (readAndUpdate is private method, public methods IncrementRetry and StateTransition are tested bellow)
 	// -----------------------------------------------------------------------------------------------------------------
 	clk.Add(time.Hour)
 	{
 		// Modify configuration
-		result, err := r.update(fileKey1, func(v storage.File) (storage.File, error) {
+		result, err := r.readAndUpdate(fileKey1, func(v storage.File) (storage.File, error) {
 			v.LocalStorage.DiskSync.Wait = false
 			return v, nil
 		}).Do(ctx).ResultOrErr()
@@ -215,7 +215,7 @@ func TestRepository_File(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := r.update(nonExistentFileKey, func(v storage.File) (storage.File, error) {
+		err := r.readAndUpdate(nonExistentFileKey, func(v storage.File) (storage.File, error) {
 			return v, nil
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {

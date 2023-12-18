@@ -78,7 +78,7 @@ func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.Fi
 					}
 
 					count++
-					closeFileOp = r.put(oldFile, modified, false)
+					closeFileOp = r.update(oldFile, modified)
 				}
 			}
 
@@ -106,13 +106,13 @@ func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.Fi
 				return nil, err
 			}
 
-			// Save operation
-			return r.put(result, result, true), nil
+			// Save
+			return r.create(result), nil
 		})
 }
 
 func (r *FileRepository) IncrementRetry(k storage.FileKey, reason string) *op.AtomicOp[storage.File] {
-	return r.update(k, func(slice storage.File) (storage.File, error) {
+	return r.readAndUpdate(k, func(slice storage.File) (storage.File, error) {
 		slice.IncrementRetry(r.backoff, r.clock.Now(), reason)
 		return slice, nil
 	})
@@ -121,7 +121,7 @@ func (r *FileRepository) IncrementRetry(k storage.FileKey, reason string) *op.At
 func (r *FileRepository) StateTransition(k storage.FileKey, to storage.FileState) *op.AtomicOp[storage.File] {
 	now := r.clock.Now()
 	return r.
-		update(k, func(file storage.File) (storage.File, error) {
+		readAndUpdate(k, func(file storage.File) (storage.File, error) {
 			if err := file.StateTransition(now, to); err != nil {
 				return storage.File{}, err
 			}
@@ -157,39 +157,43 @@ func (r *FileRepository) get(k storage.FileKey) op.ForType[*op.KeyValueT[storage
 	return r.schema.AllLevels().ByKey(k).Get(r.client)
 }
 
-// put saves the file.
+// create saves a new entity, see also update method.
 // The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
 // - "All" prefix is used for classic CRUD operations.
 // - "InLevel" prefix is used for effective watching of the storage level.
-func (r *FileRepository) put(oldValue, newValue storage.File, create bool) *op.TxnOp {
-	level := newValue.State.Level()
-	etcdKey := r.schema.AllLevels().ByKey(newValue.FileKey)
-
-	txn := op.NewTxnOp(r.client)
-	if create {
+func (r *FileRepository) create(value storage.File) *op.TxnOp {
+	etcdKey := r.schema.AllLevels().ByKey(value.FileKey)
+	return op.NewTxnOp(r.client).
 		// Entity must not exist on create
-		txn.
-			If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
-			AddProcessor(func(ctx context.Context, r *op.TxnResult) {
-				if r.Err() == nil && !r.Succeeded() {
-					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", newValue.FileKey.String(), "sink"))
-				}
-			})
-	}
+		If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
+		AddProcessor(func(ctx context.Context, r *op.TxnResult) {
+			if r.Err() == nil && !r.Succeeded() {
+				r.AddErr(serviceError.NewResourceAlreadyExistsError("file", value.FileKey.String(), "sink"))
+			}
+		}).
+		// Put entity to All and InLevel prefixes
+		Then(etcdKey.Put(r.client, value)).
+		Then(r.schema.InLevel(value.State.Level()).ByKey(value.FileKey).Put(r.client, value))
+}
+
+// update saves an existing entity, see also create method.
+func (r *FileRepository) update(oldValue, newValue storage.File) *op.TxnOp {
+	txn := op.NewTxnOp(r.client)
 
 	// Put entity to All and InLevel prefixes
-	txn.Then(etcdKey.Put(r.client, newValue))
-	txn.Then(r.schema.InLevel(level).ByKey(newValue.FileKey).Put(r.client, newValue))
+	txn.
+		Then(r.schema.AllLevels().ByKey(newValue.FileKey).Put(r.client, newValue)).
+		Then(r.schema.InLevel(newValue.State.Level()).ByKey(newValue.FileKey).Put(r.client, newValue))
 
 	// Delete entity from old level, if needed.
-	if !create && newValue.State.Level() != oldValue.State.Level() {
+	if newValue.State.Level() != oldValue.State.Level() {
 		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.FileKey).Delete(r.client))
 	}
 
 	return txn
 }
 
-func (r *FileRepository) update(k storage.FileKey, updateFn func(storage.File) (storage.File, error)) *op.AtomicOp[storage.File] {
+func (r *FileRepository) readAndUpdate(k storage.FileKey, updateFn func(storage.File) (storage.File, error)) *op.AtomicOp[storage.File] {
 	var oldValue, newValue storage.File
 	var kv *op.KeyValueT[storage.File]
 	return op.Atomic(r.client, &newValue).
@@ -202,9 +206,7 @@ func (r *FileRepository) update(k storage.FileKey, updateFn func(storage.File) (
 			return err
 		}).
 		// Save the updated object
-		Write(func() op.Op {
-			return r.put(oldValue, newValue, false)
-		})
+		Write(func() op.Op { return r.update(oldValue, newValue) })
 }
 
 // newFile creates file definition.
