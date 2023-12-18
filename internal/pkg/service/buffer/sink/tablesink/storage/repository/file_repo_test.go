@@ -400,6 +400,95 @@ storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
 `
 }
 
+func TestRepository_File_Create_InTheSameSink(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
+	clk := clock.NewMock()
+	clk.Set(now)
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	credentials := &keboola.FileUploadCredentials{
+		S3UploadParams: &s3.UploadParams{
+			Credentials: s3.Credentials{
+				Expiration: iso8601.Time{Time: now.Add(time.Hour)},
+			},
+		},
+	}
+
+	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
+	client := d.TestEtcdClient()
+	defRepo := defRepository.New(d)
+	cfg := storage.NewConfig()
+	backoff := storage.NoRandomizationBackoff()
+	r := newWithBackoff(d, defRepo, cfg, backoff).File()
+
+	// Create sink
+	branch := branchTemplate(branchKey)
+	require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
+	source := sourceTemplate(sourceKey)
+	require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
+	sink := sinkTemplate(sinkKey)
+	require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
+
+	// Create 3 files
+	clk.Add(time.Hour)
+	fileKey1 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	require.NoError(t, r.Create(fileKey1, credentials).Do(ctx).Err())
+	clk.Add(time.Hour)
+	fileKey2 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	require.NoError(t, r.Create(fileKey2, credentials).Do(ctx).Err())
+	clk.Add(time.Hour)
+	fileKey3 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	require.NoError(t, r.Create(fileKey3, credentials).Do(ctx).Err())
+
+	// Old file is always switched from the FileWriting state, to the FileClosing state
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T20:00:00.000Z
+-----
+{
+  %A
+  "fileOpenedAt": "2000-01-01T20:00:00.000Z",
+  %A
+  "state": "closing",
+  "closingAt": "2000-01-01T21:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T21:00:00.000Z
+-----
+{
+  %A
+  "fileOpenedAt": "2000-01-01T21:00:00.000Z",
+  %A
+  "state": "closing",
+  "closingAt": "2000-01-01T22:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T22:00:00.000Z
+-----
+{
+  %A
+  "fileOpenedAt": "2000-01-01T22:00:00.000Z",
+  %A
+  "state": "writing",
+  %A
+}
+>>>>>
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all"))
+}
+
 func TestNewFile_InvalidCompressionType(t *testing.T) {
 	t.Parallel()
 
