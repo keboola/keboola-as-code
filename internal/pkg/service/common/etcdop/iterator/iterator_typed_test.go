@@ -230,7 +230,7 @@ func TestIteratorT_Revision(t *testing.T) {
 	assert.NoError(t, prefix.Key("foo003").Put(client, obj{Value: "bar003"}).Do(ctx).Err())
 
 	// Get current revision
-	r, err := prefix.Key("foo003").Get(client).Do(ctx).ResultOrErr()
+	r, err := prefix.Key("foo003").GetKV(client).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	revision := r.Kv.ModRevision
 

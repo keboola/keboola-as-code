@@ -131,7 +131,7 @@ func (v Key) PutIfNotExists(client etcd.KV, val string, opts ...etcd.OpOption) o
 	)
 }
 
-func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
+func (v KeyT[T]) GetKV(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 	return op.NewGetOneTOp(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
@@ -156,7 +156,7 @@ func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyVa
 	)
 }
 
-func (v KeyT[T]) GetValue(client etcd.KV, opts ...etcd.OpOption) op.ForType[T] {
+func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.ForType[T] {
 	return op.NewForType(
 		client,
 		func(_ context.Context) (etcd.Op, error) {

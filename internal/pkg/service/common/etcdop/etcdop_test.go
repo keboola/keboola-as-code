@@ -36,8 +36,8 @@ func TestValidationError(t *testing.T) {
 	// Create key
 	assert.NoError(t, pfxNoValidation.Key("my-key").Put(client, `"foo"`).Do(ctx).Err())
 
-	// Test Get
-	err = pfxFailingValidation.Key("my-key").Get(client).Do(ctx).Err()
+	// Test GetKV
+	err = pfxFailingValidation.Key("my-key").GetKV(client).Do(ctx).Err()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd operation "get" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
@@ -78,8 +78,8 @@ func TestEncodeDecodeError(t *testing.T) {
 	// Create key
 	assert.NoError(t, pfxNoValidation.Key("my-key").Put(client, `"foo"`).Do(ctx).Err())
 
-	// Test Get
-	err = pfxFailingEncode.Key("my-key").Get(client).Do(ctx).Err()
+	// Test GetKV
+	err = pfxFailingEncode.Key("my-key").GetKV(client).Do(ctx).Err()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd operation "get" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
 
