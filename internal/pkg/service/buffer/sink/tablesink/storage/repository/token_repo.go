@@ -35,7 +35,7 @@ func (r *TokenRepository) Put(k key.SinkKey, token keboola.Token) *op.AtomicOp[s
 		WriteOp(r.schema.ByKey(k).Put(r.client, result))
 }
 
-func (r *TokenRepository) Get(k key.SinkKey) op.ForType[*op.KeyValueT[storage.Token]] {
+func (r *TokenRepository) Get(k key.SinkKey) op.ForType[storage.Token] {
 	return r.schema.ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("token", k.String(), "sink")

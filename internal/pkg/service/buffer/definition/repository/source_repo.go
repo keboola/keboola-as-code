@@ -54,7 +54,7 @@ func (r *SourceRepository) ExistsOrErr(k key.SourceKey) op.ForType[bool] {
 		})
 }
 
-func (r *SourceRepository) Get(k key.SourceKey) op.ForType[*op.KeyValueT[definition.Source]] {
+func (r *SourceRepository) Get(k key.SourceKey) op.ForType[definition.Source] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -62,7 +62,7 @@ func (r *SourceRepository) Get(k key.SourceKey) op.ForType[*op.KeyValueT[definit
 		})
 }
 
-func (r *SourceRepository) GetDeleted(k key.SourceKey) op.ForType[*op.KeyValueT[definition.Source]] {
+func (r *SourceRepository) GetDeleted(k key.SourceKey) op.ForType[definition.Source] {
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -80,9 +80,9 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 		ReadOp(r.all.branch.ExistsOrErr(result.BranchKey)).
 		ReadOp(r.checkMaxSourcesPerBranch(result.BranchKey, 1)).
 		// Get gets actual version to check if the object already exists
-		ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithResultTo(&actual)).
+		ReadOp(r.schema.Active().ByKey(k).GetKV(r.client).WithResultTo(&actual)).
 		// GetDelete gets deleted version to check if we have to do undelete
-		ReadOp(r.schema.Deleted().ByKey(k).Get(r.client).WithResultTo(&deleted)).
+		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Object must not exists
 		BeforeWriteOrErr(func() error {
 			if actual != nil {
@@ -125,14 +125,12 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 
 func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, updateFn func(definition.Source) definition.Source) *op.AtomicOp[definition.Source] {
 	var result definition.Source
-	var kv *op.KeyValueT[definition.Source]
 	return op.Atomic(r.client, &result).
 		ReadOp(r.checkMaxSourcesVersionsPerSource(k, 1)).
 		// Read and modify the object
-		ReadOp(r.Get(k).WithResultTo(&kv)).
+		ReadOp(r.Get(k).WithResultTo(&result)).
 		// Prepare the new value
 		BeforeWrite(func() {
-			result = kv.Value
 			result = updateFn(result)
 			result.IncrementVersion(result, r.clock.Now(), versionDescription)
 		}).
@@ -152,11 +150,11 @@ func (r *SourceRepository) SoftDelete(k key.SourceKey) *op.AtomicOp[op.NoResult]
 
 func (r *SourceRepository) softDelete(k key.SourceKey, deletedWithParent bool) *op.AtomicOp[op.NoResult] {
 	// Move object from the active to the deleted prefix
-	var kv *op.KeyValueT[definition.Source]
+	var value definition.Source
 	return op.Atomic(r.client, &op.NoResult{}).
 		// Move object from the active prefix to the deleted prefix
-		ReadOp(r.Get(k).WithResultTo(&kv)).
-		Write(func() op.Op { return r.softDeleteValue(kv.Value, deletedWithParent) }).
+		ReadOp(r.Get(k).WithResultTo(&value)).
+		Write(func() op.Op { return r.softDeleteValue(value, deletedWithParent) }).
 		// Delete children
 		AddFrom(r.all.sink.softDeleteAllFrom(k))
 }
@@ -192,16 +190,13 @@ func (r *SourceRepository) softDeleteValue(v definition.Source, deletedWithParen
 func (r *SourceRepository) Undelete(k key.SourceKey) *op.AtomicOp[definition.Source] {
 	// Move object from the deleted to the active prefix
 	var result definition.Source
-	var kv *op.KeyValueT[definition.Source]
 	return op.Atomic(r.client, &result).
 		ReadOp(r.all.branch.ExistsOrErr(k.BranchKey)).
 		ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
 		// Move object from the deleted prefix to the active prefix
-		ReadOp(r.GetDeleted(k).WithResultTo(&kv)).
-		// Unwrap KV
-		BeforeWrite(func() { result = kv.Value }).
+		ReadOp(r.GetDeleted(k).WithResultTo(&result)).
 		// Undelete
-		Write(func() op.Op { return r.undeleteValue(kv.Value) }).
+		Write(func() op.Op { return r.undeleteValue(result) }).
 		// Undelete children
 		AddFrom(r.all.sink.undeleteAllFrom(k))
 }
@@ -244,7 +239,7 @@ func (r *SourceRepository) Versions(k key.SourceKey) iterator.DefinitionT[defini
 
 // Version fetch object version.
 // The method can be used also for deleted objects.
-func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNumber) op.ForType[*op.KeyValueT[definition.Source]] {
+func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNumber) op.ForType[definition.Source] {
 	return r.schema.
 		Versions().Of(k).Version(version).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -260,7 +255,7 @@ func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber
 		// Get latest version to calculate next version number
 		ReadOp(r.schema.Versions().Of(k).GetOne(r.client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).WithResultTo(&latest)).
 		// Get target version
-		ReadOp(r.schema.Versions().Of(k).Version(to).Get(r.client).WithResultTo(&target)).
+		ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&target)).
 		// Return the most significant error
 		BeforeWriteOrErr(func() error {
 			if latest == nil {

@@ -91,7 +91,10 @@ func TestRepository_Slice(t *testing.T) {
 	{
 		fileKey := test.NewFileKey()
 		if err := r.Create(fileKey, volumeID, 0).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `sink "123/456/my-source/my-sink" not found in the source`, err.Error())
+			assert.Equal(t, strings.TrimSpace(`
+- sink "123/456/my-source/my-sink" not found in the source
+- file "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z" not found in the sink
+`), err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -183,10 +186,10 @@ func TestRepository_Slice(t *testing.T) {
 		// Get
 		result1, err := r.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), result1.Value.OpenedAt().Time())
+		assert.Equal(t, clk.Now(), result1.OpenedAt().Time())
 		result2, err := r.Get(sliceKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), result2.Value.OpenedAt().Time())
+		assert.Equal(t, clk.Now(), result2.OpenedAt().Time())
 	}
 
 	// Create - already exists
@@ -209,9 +212,10 @@ func TestRepository_Slice(t *testing.T) {
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.False(t, result.LocalStorage.DiskSync.Wait)
-		kv, err := r.Get(sliceKey1).Do(ctx).ResultOrErr()
+
+		slice1, err := r.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, result, kv.Value)
+		assert.Equal(t, result, slice1)
 	}
 
 	// Update - not found
@@ -235,9 +239,10 @@ func TestRepository_Slice(t *testing.T) {
 		assert.Equal(t, "some error", result.RetryReason)
 		assert.Equal(t, "2000-01-03T05:00:00.000Z", result.LastFailedAt.String())
 		assert.Equal(t, "2000-01-03T05:02:00.000Z", result.RetryAfter.String())
-		kv, err := r.Get(sliceKey1).Do(ctx).ResultOrErr()
+
+		slice1, err := r.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, result, kv.Value)
+		assert.Equal(t, result, slice1)
 	}
 
 	// Switch slice state

@@ -47,21 +47,21 @@ func (r *FileRepository) ListInLevel(level storage.Level, parentKey fmt.Stringer
 	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
 }
 
-func (r *FileRepository) Get(k storage.FileKey) op.ForType[*op.KeyValueT[storage.File]] {
-	return r.get(k).WithEmptyResultAsError(func() error {
+func (r *FileRepository) Get(k storage.FileKey) op.ForType[storage.File] {
+	return r.schema.AllLevels().ByKey(k).Get(r.client).WithEmptyResultAsError(func() error {
 		return serviceError.NewResourceNotFoundError("file", k.String(), "sink")
 	})
 }
 
 func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.FileUploadCredentials) *op.AtomicOp[storage.File] {
-	var sinkKV *op.KeyValueT[definition.Sink]
+	var sink definition.Sink
 	var oldLocalFiles []storage.File
 	var result storage.File
 	return op.Atomic(r.client, &result).
 		// Get sink, it must exist
-		ReadOp(r.all.sink.Get(fileKey.SinkKey).WithResultTo(&sinkKV)).
+		ReadOp(r.all.sink.Get(fileKey.SinkKey).WithResultTo(&sink)).
 		// There can be a maximum of one old file in the storage.FileWriting state,
-		// it is atomically switched to the storage.FileClosing state.
+		// if present, it is atomically switched to the storage.FileClosing state.
 		ReadOp(r.ListInLevel(storage.LevelLocal, fileKey.SinkKey).WithResultTo(&oldLocalFiles)).
 		WriteOrErr(func() (op.Op, error) {
 			var count int
@@ -83,15 +83,13 @@ func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.Fi
 			}
 
 			if count > 1 {
-				return nil, errors.Errorf(`unexpected state, found %d opened files in sink "%s"`, count, fileKey.SinkKey)
+				return nil, errors.Errorf(`unexpected state, found %d opened files in the sink "%s"`, count, fileKey.SinkKey)
 			}
 
 			return closeFileOp, nil
 		}).
 		// Save the new file
 		WriteOrErr(func() (op op.Op, err error) {
-			sink := sinkKV.Value
-
 			// File should be created only for the table sinks
 			if sink.Type != definition.SinkTypeTable {
 				return nil, errors.Errorf(`unexpected sink type "%s", expected table sink`, sink.Type)
@@ -153,10 +151,6 @@ func (r *FileRepository) Delete(k storage.FileKey) *op.TxnOp {
 	return txn
 }
 
-func (r *FileRepository) get(k storage.FileKey) op.ForType[*op.KeyValueT[storage.File]] {
-	return r.schema.AllLevels().ByKey(k).Get(r.client)
-}
-
 // create saves a new entity, see also update method.
 // The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
 // - "All" prefix is used for classic CRUD operations.
@@ -195,13 +189,11 @@ func (r *FileRepository) update(oldValue, newValue storage.File) *op.TxnOp {
 
 func (r *FileRepository) readAndUpdate(k storage.FileKey, updateFn func(storage.File) (storage.File, error)) *op.AtomicOp[storage.File] {
 	var oldValue, newValue storage.File
-	var kv *op.KeyValueT[storage.File]
 	return op.Atomic(r.client, &newValue).
 		// Read entity for modification
-		ReadOp(r.Get(k).WithResultTo(&kv)).
+		ReadOp(r.Get(k).WithResultTo(&oldValue)).
 		// Prepare the new value
 		BeforeWriteOrErr(func() (err error) {
-			oldValue = kv.Value
 			newValue, err = updateFn(oldValue)
 			return err
 		}).
