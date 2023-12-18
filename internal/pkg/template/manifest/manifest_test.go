@@ -54,7 +54,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Evaluate
-		manifest, err := manifestFile.Evaluate(nil)
+		manifest, err := manifestFile.Evaluate(context.Background(), nil)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 

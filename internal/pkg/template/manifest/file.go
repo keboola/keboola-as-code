@@ -31,7 +31,7 @@ func newFile() *file {
 	}
 }
 
-func evaluateFile(file *filesystem.RawFile, jsonnetCtx *jsonnet.Context) (*file, error) {
+func evaluateFile(ctx context.Context, file *filesystem.RawFile, jsonnetCtx *jsonnet.Context) (*file, error) {
 	// Evaluate Jsonnet code
 	jsonContent, err := jsonnet.Evaluate(file.Content, jsonnetCtx)
 	if err != nil {
@@ -44,7 +44,7 @@ func evaluateFile(file *filesystem.RawFile, jsonnetCtx *jsonnet.Context) (*file,
 	}
 
 	// Validate
-	if err := content.validate(); err != nil {
+	if err := content.validate(ctx); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func evaluateFile(file *filesystem.RawFile, jsonnetCtx *jsonnet.Context) (*file,
 
 func saveFile(ctx context.Context, fs filesystem.Fs, content *file) error {
 	// Validate
-	if err := content.validate(); err != nil {
+	if err := content.validate(ctx); err != nil {
 		return err
 	}
 
@@ -78,8 +78,8 @@ func saveFile(ctx context.Context, fs filesystem.Fs, content *file) error {
 	return nil
 }
 
-func (f *file) validate() error {
-	ctx := context.WithValue(context.Background(), validator.DisableRequiredInProjectKey, true)
+func (f *file) validate(ctx context.Context) error {
+	ctx = context.WithValue(ctx, validator.DisableRequiredInProjectKey, true)
 	if err := validator.New().ValidateCtx(ctx, f, "dive", ""); err != nil {
 		return errors.PrefixError(err, "manifest is not valid")
 	}
