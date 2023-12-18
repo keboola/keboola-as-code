@@ -9,6 +9,7 @@ package op
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"reflect"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
@@ -119,8 +120,11 @@ func (v ForType[R]) WithOnResult(fn func(result R)) ForType[R] {
 // then the callback is executed and returned error is added to the Result.
 func (v ForType[R]) WithEmptyResultAsError(fn func() error) ForType[R] {
 	return v.WithProcessor(func(_ context.Context, result *Result[R]) {
-		if result.Err() == nil && reflect.ValueOf(result.result).IsZero() {
+		emptyValue := result.Err() == nil && reflect.ValueOf(result.result).IsZero()
+		emptyValueErr := errors.As(result.Err(), &EmptyResultError{})
+		if emptyValue || emptyValueErr {
 			if err := fn(); err != nil {
+				result.ResetErr()
 				result.AddErr(err)
 			}
 		}

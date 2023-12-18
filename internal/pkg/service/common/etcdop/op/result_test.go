@@ -46,6 +46,10 @@ func TestResult(t *testing.T) {
 	if err := result.Err(); assert.Error(t, err) {
 		assert.Equal(t, "- error1\n- error2", err.Error())
 	}
+
+	// Reset
+	result.ResetErr()
+	assert.Nil(t, result.Err())
 }
 
 func TestTxnResult(t *testing.T) {
@@ -87,8 +91,14 @@ func TestTxnResult(t *testing.T) {
 		assert.Equal(t, "- error1\n- error2", err.Error())
 	}
 
-	// Succeeded
+	// Succeeded - false
 	assert.False(t, result.Succeeded())
+
+	// Reset
+	result.ResetErr()
+	assert.Nil(t, result.Err())
+
+	// Succeeded - true
 	result.succeeded = true
 	assert.True(t, result.Succeeded())
 }

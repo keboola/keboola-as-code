@@ -152,6 +152,30 @@ func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyVa
 	)
 }
 
+func (v KeyT[T]) GetValue(client etcd.KV, opts ...etcd.OpOption) op.ForType[T] {
+	return op.NewForType(
+		client,
+		func(_ context.Context) (etcd.Op, error) {
+			return etcd.OpGet(v.Key(), opts...), nil
+		},
+		func(ctx context.Context, raw op.RawResponse) (T, error) {
+			var target T
+			count := raw.Get().Count
+			if count == 0 {
+				return target, op.NewEmptyResultError(errors.Errorf(`key "%s" not found`, v.Key()))
+			} else if count == 1 {
+				kv := raw.Get().Kvs[0]
+				if err := v.serde.Decode(ctx, kv, &target); err != nil {
+					return target, errors.Errorf("etcd operation \"get\" failed: %w", invalidValueError(v.Key(), err))
+				}
+				return target, nil
+			} else {
+				return target, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
+			}
+		},
+	)
+}
+
 func (v KeyT[T]) Put(client etcd.KV, val T, opts ...etcd.OpOption) op.ForType[T] {
 	return op.NewForType[T](
 		client,
