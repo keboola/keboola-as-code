@@ -6,7 +6,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
@@ -15,11 +14,9 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	etcd "go.etcd.io/etcd/client/v3"
 	"path/filepath"
-	"time"
 )
 
 type FileRepository struct {
@@ -46,19 +43,52 @@ func (r *FileRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[stora
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 
+func (r *FileRepository) ListInLevel(level storage.Level, parentKey fmt.Stringer) iterator.DefinitionT[storage.File] {
+	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
+}
+
 func (r *FileRepository) Get(k storage.FileKey) op.ForType[*op.KeyValueT[storage.File]] {
 	return r.get(k).WithEmptyResultAsError(func() error {
 		return serviceError.NewResourceNotFoundError("file", k.String(), "sink")
 	})
 }
 
-func (r *FileRepository) Create(sinkKey key.SinkKey, credentials *keboola.FileUploadCredentials) *op.AtomicOp[storage.File] {
+func (r *FileRepository) Create(fileKey storage.FileKey, credentials *keboola.FileUploadCredentials) *op.AtomicOp[storage.File] {
 	var sinkKV *op.KeyValueT[definition.Sink]
+	var oldLocalFiles []storage.File
 	var result storage.File
 	return op.Atomic(r.client, &result).
-		// Sink must exist
-		ReadOp(r.all.sink.Get(sinkKey).WithResultTo(&sinkKV)).
-		// Save
+		// Get sink, it must exist
+		ReadOp(r.all.sink.Get(fileKey.SinkKey).WithResultTo(&sinkKV)).
+		// There can be a maximum of one old file in the storage.FileWriting state,
+		// it is atomically switched to the storage.FileClosing state.
+		ReadOp(r.ListInLevel(storage.LevelLocal, fileKey.SinkKey).WithResultTo(&oldLocalFiles)).
+		WriteOrErr(func() (op.Op, error) {
+			var count int
+			var closeFileOp op.Op
+			for _, oldFile := range oldLocalFiles {
+				if oldFile.FileKey == fileKey {
+					// File already exists
+					return nil, serviceError.NewResourceAlreadyExistsError("file", fileKey.String(), "sink")
+				}
+				if oldFile.State == storage.FileWriting {
+					modified := oldFile
+					if err := modified.StateTransition(fileKey.OpenedAt().Time(), storage.FileClosing); err != nil {
+						return nil, err
+					}
+
+					count++
+					closeFileOp = r.update(oldFile, modified)
+				}
+			}
+
+			if count > 1 {
+				return nil, errors.Errorf(`unexpected state, found %d opened files in sink "%s"`, count, fileKey.SinkKey)
+			}
+
+			return closeFileOp, nil
+		}).
+		// Save the new file
 		WriteOrErr(func() (op op.Op, err error) {
 			sink := sinkKV.Value
 
@@ -71,18 +101,18 @@ func (r *FileRepository) Create(sinkKey key.SinkKey, credentials *keboola.FileUp
 			cfg := r.config.With(sink.Table.Storage)
 
 			// Create entity
-			result, err = newFile(r.clock.Now(), cfg, sink.SinkKey, sink.Table.Mapping, credentials)
+			result, err = newFile(fileKey, cfg, sink.Table.Mapping, credentials)
 			if err != nil {
 				return nil, err
 			}
 
-			// Save operation
-			return r.put(result, true), nil
+			// Save
+			return r.create(result), nil
 		})
 }
 
 func (r *FileRepository) IncrementRetry(k storage.FileKey, reason string) *op.AtomicOp[storage.File] {
-	return r.update(k, func(slice storage.File) (storage.File, error) {
+	return r.readAndUpdate(k, func(slice storage.File) (storage.File, error) {
 		slice.IncrementRetry(r.backoff, r.clock.Now(), reason)
 		return slice, nil
 	})
@@ -91,7 +121,7 @@ func (r *FileRepository) IncrementRetry(k storage.FileKey, reason string) *op.At
 func (r *FileRepository) StateTransition(k storage.FileKey, to storage.FileState) *op.AtomicOp[storage.File] {
 	now := r.clock.Now()
 	return r.
-		update(k, func(file storage.File) (storage.File, error) {
+		readAndUpdate(k, func(file storage.File) (storage.File, error) {
 			if err := file.StateTransition(now, to); err != nil {
 				return storage.File{}, err
 			}
@@ -127,60 +157,60 @@ func (r *FileRepository) get(k storage.FileKey) op.ForType[*op.KeyValueT[storage
 	return r.schema.AllLevels().ByKey(k).Get(r.client)
 }
 
-// put saves the file.
+// create saves a new entity, see also update method.
 // The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
 // - "All" prefix is used for classic CRUD operations.
 // - "InLevel" prefix is used for effective watching of the storage level.
-func (r *FileRepository) put(v storage.File, create bool) *op.TxnOp {
-	level := v.State.Level()
-	etcdKey := r.schema.AllLevels().ByKey(v.FileKey)
-
-	txn := op.NewTxnOp(r.client)
-	if create {
+func (r *FileRepository) create(value storage.File) *op.TxnOp {
+	etcdKey := r.schema.AllLevels().ByKey(value.FileKey)
+	return op.NewTxnOp(r.client).
 		// Entity must not exist on create
-		txn.
-			If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
-			AddProcessor(func(ctx context.Context, r *op.TxnResult) {
-				if r.Err() == nil && !r.Succeeded() {
-					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", v.FileKey.String(), "sink"))
-				}
-			})
-	}
+		If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
+		AddProcessor(func(ctx context.Context, r *op.TxnResult) {
+			if r.Err() == nil && !r.Succeeded() {
+				r.AddErr(serviceError.NewResourceAlreadyExistsError("file", value.FileKey.String(), "sink"))
+			}
+		}).
+		// Put entity to All and InLevel prefixes
+		Then(etcdKey.Put(r.client, value)).
+		Then(r.schema.InLevel(value.State.Level()).ByKey(value.FileKey).Put(r.client, value))
+}
+
+// update saves an existing entity, see also create method.
+func (r *FileRepository) update(oldValue, newValue storage.File) *op.TxnOp {
+	txn := op.NewTxnOp(r.client)
 
 	// Put entity to All and InLevel prefixes
-	txn.Then(etcdKey.Put(r.client, v))
-	txn.Then(r.schema.InLevel(level).ByKey(v.FileKey).Put(r.client, v))
+	txn.
+		Then(r.schema.AllLevels().ByKey(newValue.FileKey).Put(r.client, newValue)).
+		Then(r.schema.InLevel(newValue.State.Level()).ByKey(newValue.FileKey).Put(r.client, newValue))
 
-	// Delete entity from other levels, if any
-	// This simply handles the entity transition between different levels.
-	for _, l := range storage.AllLevels() {
-		if l != level {
-			txn.Then(r.schema.InLevel(l).ByKey(v.FileKey).Delete(r.client))
-		}
+	// Delete entity from old level, if needed.
+	if newValue.State.Level() != oldValue.State.Level() {
+		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.FileKey).Delete(r.client))
 	}
 
 	return txn
 }
 
-func (r *FileRepository) update(k storage.FileKey, updateFn func(storage.File) (storage.File, error)) *op.AtomicOp[storage.File] {
-	var result storage.File
+func (r *FileRepository) readAndUpdate(k storage.FileKey, updateFn func(storage.File) (storage.File, error)) *op.AtomicOp[storage.File] {
+	var oldValue, newValue storage.File
 	var kv *op.KeyValueT[storage.File]
-	return op.Atomic(r.client, &result).
+	return op.Atomic(r.client, &newValue).
 		// Read entity for modification
 		ReadOp(r.Get(k).WithResultTo(&kv)).
 		// Prepare the new value
 		BeforeWriteOrErr(func() (err error) {
-			result, err = updateFn(kv.Value)
+			oldValue = kv.Value
+			newValue, err = updateFn(oldValue)
 			return err
 		}).
 		// Save the updated object
-		Write(func() op.Op {
-			return r.put(result, false)
-		})
+		Write(func() op.Op { return r.update(oldValue, newValue) })
 }
 
 // newFile creates file definition.
-func newFile(now time.Time, cfg storage.Config, sinkKey key.SinkKey, mapping definition.TableMapping, credentials *keboola.FileUploadCredentials) (f storage.File, err error) {
+func newFile(fileKey storage.FileKey, cfg storage.Config, mapping definition.TableMapping, credentials *keboola.FileUploadCredentials) (f storage.File, err error) {
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.
@@ -191,7 +221,6 @@ func newFile(now time.Time, cfg storage.Config, sinkKey key.SinkKey, mapping def
 	}
 
 	// Convert path separator, on Windows
-	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	fileDir := filepath.FromSlash(fileKey.String()) //nolint:forbidigo
 
 	f.FileKey = fileKey

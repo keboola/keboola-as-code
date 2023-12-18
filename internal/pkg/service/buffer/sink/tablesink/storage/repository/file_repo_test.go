@@ -84,6 +84,8 @@ func TestRepository_File(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
+	fileKey1 := storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
+	fileKey2 := storage.FileKey{SinkKey: sinkKey2, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	credentials := &keboola.FileUploadCredentials{
 		S3UploadParams: &s3.UploadParams{
 			Credentials: s3.Credentials{
@@ -126,7 +128,7 @@ func TestRepository_File(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	// Entity exists only in memory
 	{
-		if err := r.Create(sinkKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "123/456/my-source/my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -147,16 +149,15 @@ func TestRepository_File(t *testing.T) {
 
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
-	var fileKey1, fileKey2 storage.FileKey
 	{
 		// Create 2 files in different sinks
-		file1, err := r.Create(sinkKey1, credentials).Do(ctx).ResultOrErr()
+		file1, err := r.Create(fileKey1, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		fileKey1 = file1.FileKey
+		assert.Equal(t, credentials, file1.StagingStorage.UploadCredentials)
 
-		file2, err := r.Create(sinkKey2, credentials).Do(ctx).ResultOrErr()
+		file2, err := r.Create(fileKey2, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		fileKey2 = file2.FileKey
+		assert.Equal(t, credentials, file2.StagingStorage.UploadCredentials)
 	}
 	{
 		// List
@@ -189,18 +190,18 @@ func TestRepository_File(t *testing.T) {
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := r.Create(sinkKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Create(fileKey1, credentials).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z" already exists in the sink`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
 
-	// Update (update is private method, public methods IncrementRetry and StateTransition are tested bellow)
+	// Update (readAndUpdate is private method, public methods IncrementRetry and StateTransition are tested bellow)
 	// -----------------------------------------------------------------------------------------------------------------
 	clk.Add(time.Hour)
 	{
 		// Modify configuration
-		result, err := r.update(fileKey1, func(v storage.File) (storage.File, error) {
+		result, err := r.readAndUpdate(fileKey1, func(v storage.File) (storage.File, error) {
 			v.LocalStorage.DiskSync.Wait = false
 			return v, nil
 		}).Do(ctx).ResultOrErr()
@@ -214,7 +215,7 @@ func TestRepository_File(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := r.update(nonExistentFileKey, func(v storage.File) (storage.File, error) {
+		err := r.readAndUpdate(nonExistentFileKey, func(v storage.File) (storage.File, error) {
 			return v, nil
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
@@ -399,15 +400,105 @@ storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
 `
 }
 
-func TestNewFile_InvalidCompressionType(t *testing.T) {
+func TestRepository_File_Create_InTheSameSink(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
+
+	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
+	clk := clock.NewMock()
+	clk.Set(now)
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	credentials := &keboola.FileUploadCredentials{
+		S3UploadParams: &s3.UploadParams{
+			Credentials: s3.Credentials{
+				Expiration: iso8601.Time{Time: now.Add(time.Hour)},
+			},
+		},
+	}
+
+	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
+	client := d.TestEtcdClient()
+	defRepo := defRepository.New(d)
+	cfg := storage.NewConfig()
+	backoff := storage.NoRandomizationBackoff()
+	r := newWithBackoff(d, defRepo, cfg, backoff).File()
+
+	// Create sink
+	branch := branchTemplate(branchKey)
+	require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
+	source := sourceTemplate(sourceKey)
+	require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
+	sink := sinkTemplate(sinkKey)
+	require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
+
+	// Create 3 files
+	clk.Add(time.Hour)
+	fileKey1 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	require.NoError(t, r.Create(fileKey1, credentials).Do(ctx).Err())
+	clk.Add(time.Hour)
+	fileKey2 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	require.NoError(t, r.Create(fileKey2, credentials).Do(ctx).Err())
+	clk.Add(time.Hour)
+	fileKey3 := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
+	require.NoError(t, r.Create(fileKey3, credentials).Do(ctx).Err())
+
+	// Old file is always switched from the FileWriting state, to the FileClosing state
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T20:00:00.000Z
+-----
+{
+  %A
+  "fileOpenedAt": "2000-01-01T20:00:00.000Z",
+  %A
+  "state": "closing",
+  "closingAt": "2000-01-01T21:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T21:00:00.000Z
+-----
+{
+  %A
+  "fileOpenedAt": "2000-01-01T21:00:00.000Z",
+  %A
+  "state": "closing",
+  "closingAt": "2000-01-01T22:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T22:00:00.000Z
+-----
+{
+  %A
+  "fileOpenedAt": "2000-01-01T22:00:00.000Z",
+  %A
+  "state": "writing",
+  %A
+}
+>>>>>
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all"))
+}
+
+func TestNewFile_InvalidCompressionType(t *testing.T) {
+	t.Parallel()
+
+	// Fixtures
 	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	cfg := storage.NewConfig()
 	mapping := definition.TableMapping{
 		TableID: keboola.MustParseTableID("in.bucket.table"),
@@ -428,7 +519,7 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 	cfg.Local.Compression.Type = compression.TypeZSTD
 
 	// Assert
-	_, err := newFile(now, cfg, sinkKey, mapping, credentials)
+	_, err := newFile(fileKey, cfg, mapping, credentials)
 	require.Error(t, err)
 	assert.Equal(t, `file compression type "zstd" is not supported`, err.Error())
 }

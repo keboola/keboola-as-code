@@ -31,6 +31,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
 	volumeID := storage.VolumeID("my-volume")
 	cfg := storage.NewConfig()
 	credentials := &keboola.FileUploadCredentials{
@@ -64,7 +65,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	var slice1, slice2, slice3 storage.Slice
 	{
 		var err error
-		file, err = r.File().Create(sinkKey, credentials).Do(ctx).ResultOrErr()
+		file, err = r.File().Create(fileKey, credentials).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		clk.Add(time.Hour)
 		slice1, err = r.Slice().Create(file.FileKey, volumeID, 0).Do(ctx).ResultOrErr()
