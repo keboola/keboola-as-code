@@ -47,3 +47,36 @@ func TestContextAttributes(t *testing.T) {
 	assert.True(t, fields[1].Equals(zap.Bool("isValid", false)))
 	assert.True(t, fields[2].Equals(zap.String("status", "success")))
 }
+
+func TestAttributeConversion(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, zap.Bool("isValid", true), convertAttributeToZapField(attribute.Bool("isValid", true)))
+	assert.Equal(t, zap.Int("count", 5), convertAttributeToZapField(attribute.Int("count", 5)))
+	assert.Equal(t, zap.Float64("result", 3.14), convertAttributeToZapField(attribute.Float64("result", 3.14)))
+	assert.Equal(t, zap.String("result", "success"), convertAttributeToZapField(attribute.String("result", "success")))
+
+	assert.Equal(
+		t,
+		zap.Bools("booleans", []bool{true, false}),
+		convertAttributeToZapField(attribute.BoolSlice("booleans", []bool{true, false})),
+	)
+
+	assert.Equal(
+		t,
+		zap.Int64s("integers", []int64{0, 5, -10}),
+		convertAttributeToZapField(attribute.IntSlice("integers", []int{0, 5, -10})),
+	)
+
+	assert.Equal(
+		t,
+		zap.Float64s("floats", []float64{0.0, 5.4, -10.7}),
+		convertAttributeToZapField(attribute.Float64Slice("floats", []float64{0.0, 5.4, -10.7})),
+	)
+
+	assert.Equal(
+		t,
+		zap.Strings("strings", []string{"success", "error"}),
+		convertAttributeToZapField(attribute.StringSlice("strings", []string{"success", "error"})),
+	)
+}
