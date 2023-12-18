@@ -38,6 +38,10 @@ func ContextWith(ctx context.Context, attributes ...attribute.KeyValue) context.
 }
 
 func Attributes(ctx context.Context) *attribute.Set {
+	if ctx == nil {
+		return attribute.EmptySet()
+	}
+
 	value := ctx.Value(contextAttributes)
 	if value != nil {
 		return value.(*attribute.Set)
@@ -47,6 +51,10 @@ func Attributes(ctx context.Context) *attribute.Set {
 }
 
 func ZapFields(ctx context.Context) []zap.Field {
+	if ctx == nil {
+		return []zap.Field{}
+	}
+
 	value := ctx.Value(contextZapFields)
 	if value != nil {
 		return value.([]zap.Field)

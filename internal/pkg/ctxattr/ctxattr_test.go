@@ -18,6 +18,7 @@ func TestContextAttributes(t *testing.T) {
 	set := Attributes(ctx)
 	_, ok := set.Value("isValid")
 	assert.False(t, ok)
+	assert.Equal(t, 0, set.Len())
 
 	fields := ZapFields(ctx)
 	assert.Empty(t, fields)
@@ -79,4 +80,11 @@ func TestAttributeConversion(t *testing.T) {
 		zap.Strings("strings", []string{"success", "error"}),
 		convertAttributeToZapField(attribute.StringSlice("strings", []string{"success", "error"})),
 	)
+}
+
+func TestNilContext(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, 0, Attributes(nil).Len()) // nolint: staticcheck
+	assert.Len(t, ZapFields(nil), 0)          // nolint: staticcheck
 }
