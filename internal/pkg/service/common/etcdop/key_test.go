@@ -2,6 +2,8 @@ package etcdop
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/stretchr/testify/require"
 	"testing"
 
@@ -109,10 +111,17 @@ func TestTypedKeyOperations(t *testing.T) {
 
 	k := typedKeyForTest()
 
-	// Get - not found
-	kv, err := k.Get(client).Do(ctx).ResultOrErr()
+	// GetKV - not found
+	kv, err := k.GetKV(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Nil(t, kv)
+
+	// Get - not found
+	result, err := k.Get(client).Do(ctx).ResultOrErr()
+	if assert.Error(t, err) {
+		assert.True(t, errors.As(err, &op.EmptyResultError{}))
+		assert.Empty(t, result)
+	}
 
 	// Exists - not found
 	found, err := k.Exists(client).Do(ctx).ResultOrErr()
@@ -121,15 +130,20 @@ func TestTypedKeyOperations(t *testing.T) {
 
 	// ------
 	// Put
-	result, err := k.Put(client, "bar").Do(ctx).ResultOrErr()
+	result, err = k.Put(client, "bar").Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Equal(t, fooType("bar"), result)
 
-	// Get - found
-	kv, err = k.Get(client).Do(ctx).ResultOrErr()
+	// GetKV - found
+	kv, err = k.GetKV(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("bar"), kv.Value)
+
+	// Get - found
+	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Equal(t, fooType("bar"), result)
 
 	// Exists - found
 	found, err = k.Exists(client).Do(ctx).ResultOrErr()
@@ -147,10 +161,17 @@ func TestTypedKeyOperations(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, found)
 
-	// Get - not found
-	kv, err = k.Get(client).Do(ctx).ResultOrErr()
+	// GetKV - not found
+	kv, err = k.GetKV(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Nil(t, kv)
+
+	// Get - not found
+	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	if assert.Error(t, err) {
+		assert.True(t, errors.As(err, &op.EmptyResultError{}))
+		assert.Empty(t, result)
+	}
 
 	// Exists - not found
 	found, err = k.Exists(client).Do(ctx).ResultOrErr()
@@ -163,22 +184,34 @@ func TestTypedKeyOperations(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, ok)
 
-	// Get - found - value 1
-	kv, err = k.Get(client).Do(ctx).ResultOrErr()
+	// GetKV - found - value 1
+	kv, err = k.GetKV(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), kv.Value)
+
+	// Get - found - value 1
+	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.NotNil(t, kv)
+	assert.Equal(t, fooType("value1"), result)
 
 	// PutIfNotExists - key found -> not ok
 	ok, err = k.PutIfNotExists(client, "value1").Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.False(t, ok)
 
-	// Get - found - value 1
-	kv, err = k.Get(client).Do(ctx).ResultOrErr()
+	// GetKV - found - value 1
+	kv, err = k.GetKV(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), kv.Value)
+
+	// Get - found - value 1
+	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.NotNil(t, kv)
+	assert.Equal(t, fooType("value1"), result)
 
 	// ------
 	// DeleteIfExists - found
@@ -300,7 +333,7 @@ func BenchmarkKeyT_Exists(b *testing.B) {
 	}
 }
 
-func BenchmarkKeyT_Get(b *testing.B) {
+func BenchmarkKeyT_GetKV(b *testing.B) {
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
@@ -312,7 +345,7 @@ func BenchmarkKeyT_Get(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		kv, err := k.Get(client).Do(ctx).ResultOrErr()
+		kv, err := k.GetKV(client).Do(ctx).ResultOrErr()
 		if err != nil || kv == nil {
 			b.Fatalf("unexpected result")
 		}
