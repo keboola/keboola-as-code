@@ -53,6 +53,11 @@ type baseLogger interface {
 }
 
 type contextLogger interface {
+	Debug(ctx context.Context, template string)
+	Info(ctx context.Context, template string)
+	Warn(ctx context.Context, template string)
+	Error(ctx context.Context, template string)
+
 	LogCtx(ctx context.Context, level string, args ...any)
 	DebugCtx(ctx context.Context, args ...any)
 	InfoCtx(ctx context.Context, args ...any)

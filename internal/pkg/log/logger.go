@@ -4,6 +4,9 @@ package log
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -33,6 +36,41 @@ func (l *zapLogger) AddPrefix(prefix string) Logger {
 	clone := l.With(PrefixKey, prefix).(*zapLogger)
 	clone.prefix = prefix
 	return clone
+}
+
+func formatMessageUsingAttributes(message string, set *attribute.Set) string {
+	for _, keyValue := range set.ToSlice() {
+		message = strings.ReplaceAll(message, "%"+string(keyValue.Key)+"%", keyValue.Value.Emit())
+	}
+	return message
+}
+
+func (l *zapLogger) Debug(ctx context.Context, template string) {
+	l.sugaredLogger.Desugar().Debug(
+		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func (l *zapLogger) Info(ctx context.Context, template string) {
+	l.sugaredLogger.Desugar().Info(
+		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func (l *zapLogger) Warn(ctx context.Context, template string) {
+	l.sugaredLogger.Desugar().Warn(
+		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func (l *zapLogger) Error(ctx context.Context, template string) {
+	l.sugaredLogger.Desugar().Error(
+		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
 }
 
 func formatMessage(args ...any) string {
