@@ -91,7 +91,7 @@ func NewCollector(d collectorDeps) *Collector {
 		for {
 			select {
 			case <-ctx.Done():
-				<-c.Sync(context.Background())
+				<-c.Sync(context.Background()) // nolint: contextcheck
 				return
 			case <-ticker.C:
 				c.Sync(ctx)
