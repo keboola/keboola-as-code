@@ -1,7 +1,7 @@
 package op
 
 // EmptyResultError signals an empty result of the etcd operation.
-// See also ForType.WithEmptyResultAsError method.
+// See also WithResult.WithEmptyResultAsError method.
 type EmptyResultError struct {
 	error
 }

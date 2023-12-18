@@ -131,7 +131,7 @@ func (v Prefix) DeleteAll(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 	)
 }
 
-func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
+func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValueT[T]] {
 	return op.NewGetOneTOp(
 		client,
 		func(_ context.Context) (etcd.Op, error) {

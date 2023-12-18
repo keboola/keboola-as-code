@@ -46,7 +46,7 @@ func (r *SourceRepository) list(pfx sourceSchemaInState, parentKey any) iterator
 	return pfx.In(parentKey).GetAll(r.client)
 }
 
-func (r *SourceRepository) ExistsOrErr(k key.SourceKey) op.ForType[bool] {
+func (r *SourceRepository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] {
 	return r.schema.
 		Active().ByKey(k).Exists(r.client).
 		WithEmptyResultAsError(func() error {
@@ -54,7 +54,7 @@ func (r *SourceRepository) ExistsOrErr(k key.SourceKey) op.ForType[bool] {
 		})
 }
 
-func (r *SourceRepository) Get(k key.SourceKey) op.ForType[definition.Source] {
+func (r *SourceRepository) Get(k key.SourceKey) op.WithResult[definition.Source] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -62,7 +62,7 @@ func (r *SourceRepository) Get(k key.SourceKey) op.ForType[definition.Source] {
 		})
 }
 
-func (r *SourceRepository) GetDeleted(k key.SourceKey) op.ForType[definition.Source] {
+func (r *SourceRepository) GetDeleted(k key.SourceKey) op.WithResult[definition.Source] {
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -239,7 +239,7 @@ func (r *SourceRepository) Versions(k key.SourceKey) iterator.DefinitionT[defini
 
 // Version fetch object version.
 // The method can be used also for deleted objects.
-func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNumber) op.ForType[definition.Source] {
+func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNumber) op.WithResult[definition.Source] {
 	return r.schema.
 		Versions().Of(k).Version(version).Get(r.client).
 		WithEmptyResultAsError(func() error {

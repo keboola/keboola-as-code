@@ -47,7 +47,7 @@ func (r *FileRepository) ListInLevel(level storage.Level, parentKey fmt.Stringer
 	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
 }
 
-func (r *FileRepository) Get(k storage.FileKey) op.ForType[storage.File] {
+func (r *FileRepository) Get(k storage.FileKey) op.WithResult[storage.File] {
 	return r.schema.AllLevels().ByKey(k).Get(r.client).WithEmptyResultAsError(func() error {
 		return serviceError.NewResourceNotFoundError("file", k.String(), "sink")
 	})

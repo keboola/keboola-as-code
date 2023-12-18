@@ -38,7 +38,7 @@ func (v testOp) Op(_ context.Context) (op.LowLevelOp, error) {
 	return v.Operation, v.Error
 }
 
-func (tc opTestCase[R]) Run(t *testing.T, ctx context.Context, client etcd.KV, log *strings.Builder, expected *any, processorErrors *bool, targetPtr *R, op op.ForType[R]) {
+func (tc opTestCase[R]) Run(t *testing.T, ctx context.Context, client etcd.KV, log *strings.Builder, expected *any, processorErrors *bool, targetPtr *R, op op.WithResult[R]) {
 	t.Logf(`test case "%s"`, tc.Name)
 
 	// Prepare etcd database

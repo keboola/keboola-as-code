@@ -12,7 +12,7 @@ type NoResult struct{}
 // It is implemented a little differently than other operations,
 // because it has only one return value of type error (not two).
 type NoResultOp struct {
-	ForType[NoResult]
+	WithResult[NoResult]
 }
 
 // NoResultMapper checks and converts raw etcd response to an error or nil.
@@ -31,5 +31,5 @@ func NewNoResultOp(client etcd.KV, factory LowLevelFactory, mapper NoResultMappe
 }
 
 func (v NoResultOp) Do(ctx context.Context) *Result[NoResult] {
-	return v.ForType.Do(ctx)
+	return v.WithResult.Do(ctx)
 }

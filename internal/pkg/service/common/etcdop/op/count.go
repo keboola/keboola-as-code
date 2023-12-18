@@ -6,7 +6,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
-type CountOp = ForType[int64]
+type CountOp = WithResult[int64]
 
 // CountMapper an etcd response to a count.
 type CountMapper func(ctx context.Context, raw RawResponse) (int64, error)
