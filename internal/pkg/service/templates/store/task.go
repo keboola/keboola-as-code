@@ -10,7 +10,7 @@ func (s *Store) GetTask(taskKey task.Key) op.ForType[*op.KeyValueT[task.Task]] {
 	return s.schema.
 		Tasks().
 		ByKey(taskKey).
-		Get(s.client).
+		GetKV(s.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("task", taskKey.TaskID.String(), "project")
 		})
