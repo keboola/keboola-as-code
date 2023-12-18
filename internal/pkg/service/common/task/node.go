@@ -222,7 +222,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 		n.taskEtcdPrefix.Key(taskKey.String()).Put(task),
 		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
 	)
-	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
+	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil { // nolint: contextcheck
 		unlock()
 		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {

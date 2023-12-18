@@ -204,3 +204,8 @@ issues:
       text: "string `https?` has .+ occurrences, make it a constant"
       linters:
         - goconst
+    # Unfortunately contextcheck reports dome false positives
+    - path: ".*"
+      text: "Function `.*` should pass the context parameter"
+      linters:
+        - contextcheck

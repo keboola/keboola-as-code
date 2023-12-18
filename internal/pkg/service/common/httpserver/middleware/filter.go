@@ -19,7 +19,7 @@ type FilterFn func(*http.Request) bool
 func Filter(cfg Config) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			next.ServeHTTP(w, req.WithContext(ctxForFilteredRequest(cfg, req)))
+			next.ServeHTTP(w, req.WithContext(ctxForFilteredRequest(cfg, req))) // nolint: contextcheck
 		})
 	}
 }

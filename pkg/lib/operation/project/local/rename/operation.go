@@ -46,7 +46,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
+		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil { // nolint: contextcheck
 			return false, errors.PrefixError(err, "cannot rename objects")
 		}
 

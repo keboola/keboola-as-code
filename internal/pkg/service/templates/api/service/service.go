@@ -78,7 +78,7 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 	// Tasks cleanup
 	var init []<-chan error
 	if s.config.TasksCleanup {
-		init = append(init, s.cleanup(ctx, wg))
+		init = append(init, s.cleanup(ctx, wg)) // nolint: contextcheck
 	}
 
 	// Check initialization
