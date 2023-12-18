@@ -78,13 +78,13 @@ func (r *SliceRepository) Create(fileKey storage.FileKey, volumeID storage.Volum
 				return nil, err
 			}
 
-			// Save operation
-			return r.put(result, result, true), nil
+			// Save
+			return r.create(result), nil
 		})
 }
 
 func (r *SliceRepository) IncrementRetry(k storage.SliceKey, reason string) *op.AtomicOp[storage.Slice] {
-	return r.update(k, func(slice storage.Slice) (storage.Slice, error) {
+	return r.readAndUpdate(k, func(slice storage.Slice) (storage.Slice, error) {
 		slice.IncrementRetry(r.backoff, r.clock.Now(), reason)
 		return slice, nil
 	})
@@ -93,7 +93,7 @@ func (r *SliceRepository) IncrementRetry(k storage.SliceKey, reason string) *op.
 func (r *SliceRepository) StateTransition(k storage.SliceKey, to storage.SliceState) *op.AtomicOp[storage.Slice] {
 	var file *op.KeyValueT[storage.File]
 	return r.
-		update(k, func(slice storage.Slice) (storage.Slice, error) {
+		readAndUpdate(k, func(slice storage.Slice) (storage.Slice, error) {
 			// Validate file and slice state combination
 			if err := validateFileAndSliceStates(file.Value.State, to); err != nil {
 				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
@@ -142,41 +142,6 @@ func (r *SliceRepository) deleteAll(parentKey fmt.Stringer) *op.TxnOp {
 
 	return txn
 }
-
-// put saves the slice.
-// The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
-// - "All" prefix is used for classic CRUD operations.
-// - "InLevel" prefix is used for effective watching of the storage level.
-func (r *SliceRepository) put(oldValue, newValue storage.Slice, create bool) *op.TxnOp {
-	level := newValue.State.Level()
-	etcdKey := r.schema.AllLevels().ByKey(newValue.SliceKey)
-
-	txn := op.NewTxnOp(r.client)
-	if create {
-		// Entity must not exist on create
-		txn.
-			If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
-			AddProcessor(func(ctx context.Context, r *op.TxnResult) {
-				if r.Err() == nil && !r.Succeeded() {
-					r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", newValue.SliceKey.String(), "file"))
-				}
-			})
-	}
-
-	// Save entity to All prefix
-	txn.Then(etcdKey.Put(r.client, newValue))
-
-	// Save entity to new level.
-	txn.Then(r.schema.InLevel(level).ByKey(newValue.SliceKey).Put(r.client, newValue))
-
-	// Delete entity from old level, if needed.
-	if !create && newValue.State.Level() != oldValue.State.Level() {
-		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.SliceKey).Delete(r.client))
-	}
-
-	return txn
-}
-
 func (r *SliceRepository) onFileStateTransition(k storage.FileKey, now time.Time, newFileState storage.FileState) *op.AtomicOp[op.NoResult] {
 	// Validate and modify slice state
 	return r.updateAllInFile(k, func(slice storage.Slice) (storage.Slice, error) {
@@ -201,7 +166,43 @@ func (r *SliceRepository) onFileStateTransition(k storage.FileKey, now time.Time
 	})
 }
 
-func (r *SliceRepository) update(k storage.SliceKey, updateFn func(slice storage.Slice) (storage.Slice, error)) *op.AtomicOp[storage.Slice] {
+// create saves a new entity, see also update method.
+// The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
+// - "All" prefix is used for classic CRUD operations.
+// - "InLevel" prefix is used for effective watching of the storage level.
+func (r *SliceRepository) create(value storage.Slice) *op.TxnOp {
+	etcdKey := r.schema.AllLevels().ByKey(value.SliceKey)
+	return op.NewTxnOp(r.client).
+		// Entity must not exist on create
+		If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
+		AddProcessor(func(ctx context.Context, r *op.TxnResult) {
+			if r.Err() == nil && !r.Succeeded() {
+				r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", value.SliceKey.String(), "file"))
+			}
+		}).
+		// Put entity to All and InLevel prefixes
+		Then(etcdKey.Put(r.client, value)).
+		Then(r.schema.InLevel(value.State.Level()).ByKey(value.SliceKey).Put(r.client, value))
+}
+
+// update saves an existing entity, see also create method.
+func (r *SliceRepository) update(oldValue, newValue storage.Slice) *op.TxnOp {
+	txn := op.NewTxnOp(r.client)
+
+	// Put entity to All and InLevel prefixes
+	txn.
+		Then(r.schema.AllLevels().ByKey(newValue.SliceKey).Put(r.client, newValue)).
+		Then(r.schema.InLevel(newValue.State.Level()).ByKey(newValue.SliceKey).Put(r.client, newValue))
+
+	// Delete entity from old level, if needed.
+	if newValue.State.Level() != oldValue.State.Level() {
+		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.SliceKey).Delete(r.client))
+	}
+
+	return txn
+}
+
+func (r *SliceRepository) readAndUpdate(k storage.SliceKey, updateFn func(slice storage.Slice) (storage.Slice, error)) *op.AtomicOp[storage.Slice] {
 	var oldValue, newValue storage.Slice
 	var kv *op.KeyValueT[storage.Slice]
 	return op.Atomic(r.client, &newValue).
@@ -215,7 +216,7 @@ func (r *SliceRepository) update(k storage.SliceKey, updateFn func(slice storage
 		}).
 		// Save the updated object
 		Write(func() op.Op {
-			return r.put(oldValue, newValue, false)
+			return r.update(oldValue, newValue)
 		})
 }
 
@@ -233,7 +234,7 @@ func (r *SliceRepository) updateAllInFile(parentKey storage.FileKey, updateFn fu
 				if newValue, err := updateFn(oldValue); err == nil {
 					// Save modified value, if here is a difference
 					if !reflect.DeepEqual(newValue, oldValue) {
-						txn.Then(r.put(oldValue, newValue, false))
+						txn.Then(r.update(oldValue, newValue))
 					}
 				} else {
 					errs.Append(err)
