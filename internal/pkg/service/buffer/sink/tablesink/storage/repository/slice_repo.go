@@ -40,7 +40,7 @@ func (r *SliceRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[stor
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 
-func (r *SliceRepository) Get(k storage.SliceKey) op.ForType[storage.Slice] {
+func (r *SliceRepository) Get(k storage.SliceKey) op.WithResult[storage.Slice] {
 	return r.schema.
 		AllLevels().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {

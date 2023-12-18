@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 )
 
-func (s *Store) GetTask(taskKey task.Key) op.ForType[*op.KeyValueT[task.Task]] {
+func (s *Store) GetTask(taskKey task.Key) op.WithResult[*op.KeyValueT[task.Task]] {
 	return s.schema.
 		Tasks().
 		ByKey(taskKey).

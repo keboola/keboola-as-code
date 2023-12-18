@@ -46,7 +46,7 @@ func (r *SinkRepository) list(pfx sinkSchemaInState, parentKey any) iterator.Def
 	return pfx.In(parentKey).GetAll(r.client)
 }
 
-func (r *SinkRepository) ExistsOrErr(k key.SinkKey) op.ForType[bool] {
+func (r *SinkRepository) ExistsOrErr(k key.SinkKey) op.WithResult[bool] {
 	return r.schema.
 		Active().ByKey(k).Exists(r.client).
 		WithEmptyResultAsError(func() error {
@@ -54,7 +54,7 @@ func (r *SinkRepository) ExistsOrErr(k key.SinkKey) op.ForType[bool] {
 		})
 }
 
-func (r *SinkRepository) Get(k key.SinkKey) op.ForType[definition.Sink] {
+func (r *SinkRepository) Get(k key.SinkKey) op.WithResult[definition.Sink] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -62,7 +62,7 @@ func (r *SinkRepository) Get(k key.SinkKey) op.ForType[definition.Sink] {
 		})
 }
 
-func (r *SinkRepository) GetDeleted(k key.SinkKey) op.ForType[definition.Sink] {
+func (r *SinkRepository) GetDeleted(k key.SinkKey) op.WithResult[definition.Sink] {
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -230,7 +230,7 @@ func (r *SinkRepository) Versions(k key.SinkKey) iterator.DefinitionT[definition
 
 // Version fetch object version.
 // The method can be used also for deleted objects.
-func (r *SinkRepository) Version(k key.SinkKey, version definition.VersionNumber) op.ForType[definition.Sink] {
+func (r *SinkRepository) Version(k key.SinkKey, version definition.VersionNumber) op.WithResult[definition.Sink] {
 	return r.schema.
 		Versions().Of(k).Version(version).Get(r.client).
 		WithEmptyResultAsError(func() error {

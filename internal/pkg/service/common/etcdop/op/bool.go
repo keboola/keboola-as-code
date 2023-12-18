@@ -6,7 +6,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
-type BoolOp = ForType[bool]
+type BoolOp = WithResult[bool]
 
 // BoolMapper converts an etcd response to true/false value.
 type BoolMapper func(ctx context.Context, r RawResponse) (bool, error)

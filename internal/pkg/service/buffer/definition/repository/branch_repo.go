@@ -44,7 +44,7 @@ func (r *BranchRepository) list(pfx branchSchemaInState, parentKey keboola.Proje
 	return pfx.InProject(parentKey).GetAll(r.client)
 }
 
-func (r *BranchRepository) ExistsOrErr(k key.BranchKey) op.ForType[bool] {
+func (r *BranchRepository) ExistsOrErr(k key.BranchKey) op.WithResult[bool] {
 	return r.schema.
 		Active().ByKey(k).Exists(r.client).
 		WithEmptyResultAsError(func() error {
@@ -52,7 +52,7 @@ func (r *BranchRepository) ExistsOrErr(k key.BranchKey) op.ForType[bool] {
 		})
 }
 
-func (r *BranchRepository) Get(k key.BranchKey) op.ForType[definition.Branch] {
+func (r *BranchRepository) Get(k key.BranchKey) op.WithResult[definition.Branch] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -60,7 +60,7 @@ func (r *BranchRepository) Get(k key.BranchKey) op.ForType[definition.Branch] {
 		})
 }
 
-func (r *BranchRepository) GetDeleted(k key.BranchKey) op.ForType[definition.Branch] {
+func (r *BranchRepository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch] {
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
