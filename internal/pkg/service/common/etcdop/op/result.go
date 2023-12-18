@@ -60,6 +60,11 @@ func (v *Result[R]) SetResult(result R) *Result[R] {
 	return v
 }
 
+func (v *Result[R]) ResetErr() *Result[R] {
+	v.errors = errors.NewMultiError()
+	return v
+}
+
 func (v *Result[R]) AddErr(err error) *Result[R] {
 	v.errors.Append(err)
 	return v
@@ -76,6 +81,11 @@ func (v *TxnResult) AddResult(result any) *TxnResult {
 
 func (v *TxnResult) AddErr(err error) *TxnResult {
 	v.txnResults.AddErr(err)
+	return v
+}
+
+func (v *TxnResult) ResetErr() *TxnResult {
+	v.txnResults.ResetErr()
 	return v
 }
 
