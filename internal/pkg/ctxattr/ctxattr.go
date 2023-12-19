@@ -10,8 +10,8 @@ import (
 type ctxKey string
 
 const (
-	contextAttributes = ctxKey("contextAttributes")
-	contextZapFields  = ctxKey("contextZapFields")
+	contextAttributes = ctxKey("Attributes")
+	contextZapFields  = ctxKey("ZapFields")
 )
 
 func ContextWith(ctx context.Context, attributes ...attribute.KeyValue) context.Context {
