@@ -33,7 +33,7 @@ func FieldMeta(schemaDef []byte, path orderedmap.Path) (out FieldMetadata, found
 func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Path) (out FieldMetadata, found bool) {
 	// Skip first step: component schema starts at "properties"
 	if path.First() != orderedmap.MapStep("parameters") {
-		return
+		return out, false
 	}
 	path = path.WithoutFirst()
 
