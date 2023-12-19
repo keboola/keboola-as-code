@@ -108,8 +108,6 @@ type workerNode struct {
 func newTestSuite(t *testing.T, ctx context.Context, testDir string, project *testproject.Project) *testSuite {
 	t.Helper()
 
-	rand.Seed(time.Now().UTC().UnixNano())
-
 	ts := &testSuite{
 		t:               t,
 		fatalCh:         make(chan error, 1),

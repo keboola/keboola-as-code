@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.19.3
+  GO_VERSION: 1.21.5
   TEST_PARALLELISM: 6
   TEST_PARALLELISM_PKG: 6
   TEST_PROJECTS_LINUX: |
@@ -47,7 +47,7 @@ jobs:
             os: macos-latest
             projects: TEST_PROJECTS_MACOS
           - name: windows
-            os: windows-2019
+            os: windows-2022
             projects: TEST_PROJECTS_WINDOWS
     runs-on: ${{ matrix.os }}
     steps:

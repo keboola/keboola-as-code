@@ -68,7 +68,10 @@ func spanEndAttrs(task *Task, r Result) []attribute.KeyValue {
 
 	// Add result/error
 	if task.IsSuccessful() {
-		attribute.String("result", task.Result)
+		out = append(
+			out,
+			attribute.String("result", task.Result),
+		)
 	} else {
 		out = append(
 			out,
