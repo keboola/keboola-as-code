@@ -30,9 +30,9 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-detail-workspace")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-detail-workspace")
 
-			return detail.Run(d.CommandCtx(), d, keboola.ConfigID(id))
+			return detail.Run(cmd.Context(), d, keboola.ConfigID(id))
 		},
 	}
 

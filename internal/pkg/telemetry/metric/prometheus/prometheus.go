@@ -69,8 +69,8 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	srv := &http.Server{Addr: listenAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		logger.InfofCtx(ctx, `HTTP server listening on "%s/%s"`, listenAddr, Endpoint)
-		serverErr := srv.ListenAndServe() // ListenAndServe blocks while the server is running
-		shutdown(context.Background(), serverErr)
+		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
+		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
 	proc.OnShutdown(func(ctx context.Context) {
 		// Shutdown gracefully with a 30s timeout.

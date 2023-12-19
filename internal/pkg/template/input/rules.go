@@ -27,7 +27,7 @@ func (r Rules) Empty() bool {
 	return len(r) == 0
 }
 
-func (r Rules) ValidateValue(input Input, value any) (err error) {
+func (r Rules) ValidateValue(ctx context.Context, input Input, value any) (err error) {
 	// Skip empty rules
 	if r.Empty() {
 		return nil
@@ -52,7 +52,7 @@ func (r Rules) ValidateValue(input Input, value any) (err error) {
 	}()
 
 	// Validate
-	if err := validator.New().ValidateCtx(context.Background(), value, rules, input.Name); err != nil {
+	if err := validator.New().ValidateCtx(ctx, value, rules, input.Name); err != nil {
 		// Un-quote input name
 		return errors.Wrap(err, strings.Replace(err.Error(), fmt.Sprintf(`"%s"`, input.Name), input.Name, 1))
 	}

@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -58,8 +59,8 @@ func (g StepsGroupsExt) ToValue() (out StepsGroups) {
 	return out
 }
 
-func (g StepsGroupsExt) ValidateDefinitions() error {
-	return g.ToValue().ValidateDefinitions()
+func (g StepsGroupsExt) ValidateDefinitions(ctx context.Context) error {
+	return g.ToValue().ValidateDefinitions(ctx)
 }
 
 type VisitStepsCallback func(group *StepsGroupExt, step *StepExt) error

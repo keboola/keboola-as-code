@@ -1,6 +1,7 @@
 package mapper_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -113,7 +114,7 @@ func TestReceiverModel(t *testing.T) {
 		},
 	}
 
-	out, err := mapper.CreateReceiverModel(projectID, secret, payload)
+	out, err := mapper.CreateReceiverModel(context.Background(), projectID, secret, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, out)
 }

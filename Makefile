@@ -94,6 +94,9 @@ mod:
 lint:
 	bash ./scripts/lint.sh
 
+lint-all:
+	bash ./scripts/lint.sh --max-issues-per-linter=0 --max-same-issues=0
+
 fix:
 	bash ./scripts/fix.sh
 

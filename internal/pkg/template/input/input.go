@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -50,11 +51,11 @@ func NewInputs() *Inputs {
 	return &inputs
 }
 
-func (i Inputs) ValidateDefinitions() error {
+func (i Inputs) ValidateDefinitions(ctx context.Context) error {
 	errs := errors.NewMultiError()
 
 	// Validate rules
-	if err := validateDefinitions(i); err != nil {
+	if err := validateDefinitions(ctx, i); err != nil {
 		errs.Append(err)
 	}
 
@@ -123,11 +124,11 @@ type Input struct {
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
-func (i Input) ValidateUserInput(value any) error {
+func (i Input) ValidateUserInput(ctx context.Context, value any) error {
 	if err := i.Type.ValidateValue(reflect.ValueOf(value)); err != nil {
 		return errors.Errorf("%s %w", i.Name, err)
 	}
-	return i.Rules.ValidateValue(i, value)
+	return i.Rules.ValidateValue(ctx, i, value)
 }
 
 // Available decides if the input should be visible to user according to Input.If.

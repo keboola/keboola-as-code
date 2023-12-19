@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -19,7 +20,7 @@ type inputsDialogDeps interface {
 
 // askNewTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askNewTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
+func (p *Dialogs) askNewTemplateInputs(ctx context.Context, deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
 	// Create empty inputs map
 	inputs := input.NewInputsMap()
 
@@ -38,13 +39,13 @@ func (p *Dialogs) askNewTemplateInputs(deps inputsDialogDeps, branch *model.Bran
 	}
 
 	// Define steps and steps groups for user inputs.
-	stepsGroups, err := newStepsDialog(p.Prompt).ask()
+	stepsGroups, err := newStepsDialog(p.Prompt).ask(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Define name/description for each user input and add inputs to steps groups.
-	stepsGroups, err = newInputsDetailsDialog(p.Prompt, inputs, stepsGroups).ask()
+	stepsGroups, err = newInputsDetailsDialog(p.Prompt, inputs, stepsGroups).ask(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

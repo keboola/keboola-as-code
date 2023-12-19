@@ -47,7 +47,7 @@ func (m *orchestratorMapper) onObjectsRename(ctx context.Context, renamed []mode
 	}
 
 	// Log and save
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
+	uow := m.state.LocalManager().NewUnitOfWork(ctx)
 	if len(orchestratorsToUpdate) > 0 {
 		m.logger.DebugCtx(ctx, `Need to update orchestrators:`)
 		for _, key := range orchestratorsToUpdate {

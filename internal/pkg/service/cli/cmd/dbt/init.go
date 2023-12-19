@@ -31,7 +31,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			return initOp.Run(d.CommandCtx(), opts, d)
+			return initOp.Run(cmd.Context(), opts, d)
 		},
 	}
 

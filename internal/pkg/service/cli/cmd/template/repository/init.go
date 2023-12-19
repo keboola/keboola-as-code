@@ -26,7 +26,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Init repository
-			return initOp.Run(d.CommandCtx(), d)
+			return initOp.Run(cmd.Context(), d)
 		},
 	}
 	return cmd

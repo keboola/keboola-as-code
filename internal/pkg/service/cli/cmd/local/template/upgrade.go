@@ -44,19 +44,19 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 
 			// Load template
 			version := d.Options().GetString("version")
-			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repositoryDef, instance.TemplateID, version))
+			template, err := d.Template(cmd.Context(), model.NewTemplateRef(repositoryDef, instance.TemplateID, version))
 			if err != nil {
 				return err
 			}
 
 			// Options
-			options, err := d.Dialogs().AskUpgradeTemplateOptions(d, projectState.State(), branchKey, *instance, template.Inputs())
+			options, err := d.Dialogs().AskUpgradeTemplateOptions(cmd.Context(), d, projectState.State(), branchKey, *instance, template.Inputs())
 			if err != nil {
 				return err
 			}
 
 			// Use template
-			opResult, err := upgradeOp.Run(d.CommandCtx(), projectState, template, options, d)
+			opResult, err := upgradeOp.Run(cmd.Context(), projectState, template, options, d)
 			if err != nil {
 				return err
 			}

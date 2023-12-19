@@ -35,7 +35,7 @@ func PersistCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Persist
-			return persist.Run(d.CommandCtx(), projectState, options, d)
+			return persist.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 

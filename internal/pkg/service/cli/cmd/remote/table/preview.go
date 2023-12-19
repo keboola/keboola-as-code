@@ -33,7 +33,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
-				tableID, _, err = askTable(d, false)
+				tableID, _, err = askTable(cmd.Context(), d, false)
 				if err != nil {
 					return err
 				}
@@ -51,9 +51,9 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-preview")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-preview")
 
-			return preview.Run(d.CommandCtx(), opts, d)
+			return preview.Run(cmd.Context(), opts, d)
 		},
 	}
 

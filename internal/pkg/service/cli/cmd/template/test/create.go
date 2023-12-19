@@ -27,7 +27,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			templateID := args[0]
 
 			// Get template repository
-			repo, _, err := d.LocalTemplateRepository(d.CommandCtx())
+			repo, _, err := d.LocalTemplateRepository(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -38,7 +38,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				versionArg = args[1]
 			}
 
-			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), templateID, versionArg))
+			tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), templateID, versionArg))
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			err = createOp.Run(d.CommandCtx(), tmpl, options, d)
+			err = createOp.Run(cmd.Context(), tmpl, options, d)
 			if err != nil {
 				return err
 			}

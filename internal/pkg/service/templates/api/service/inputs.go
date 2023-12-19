@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -8,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
+func validateInputs(ctx context.Context, groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
 	out = &ValidationResult{Valid: true}
 	stepInputs := inputsPayloadToMap(payload)
 
@@ -60,7 +62,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 				// Validate value
 				if outInput.Error == nil && outStep.Configured && outInput.Visible {
-					if err := input.ValidateUserInput(value); err != nil {
+					if err := input.ValidateUserInput(ctx, value); err != nil {
 						msg := err.Error()
 
 						// In other parts of the repository, the validation result is a bullet list.

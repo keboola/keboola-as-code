@@ -28,9 +28,9 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-file-upload")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-file-upload")
 
-			_, err = upload.Run(d.CommandCtx(), opts, d)
+			_, err = upload.Run(cmd.Context(), opts, d)
 			return err
 		},
 	}

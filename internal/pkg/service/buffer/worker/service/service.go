@@ -84,7 +84,7 @@ func New(d dependencies) (*Service, error) {
 
 	// Graceful shutdown
 	var cancel context.CancelFunc
-	s.ctx, cancel = context.WithCancel(context.Background())
+	s.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	s.wg = &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		s.logger.InfoCtx(ctx, "received shutdown request")

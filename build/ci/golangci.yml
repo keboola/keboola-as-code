@@ -51,8 +51,6 @@ linters-settings:
       - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
       - ^gonanoid\..*$(# Use "internal/pkg/idgenerator" package instead)?
-      # No logger calls without context, use a method with Ctx suffix instead
-      - ^(l|(root\.)?logger)\.(Log|Debugf?|Infof?|Warnf?|Errorf?)$(# Use a method with Ctx suffix instead)?
   depguard:
     list-type: denylist
     include-go-root: true
@@ -73,6 +71,7 @@ linters:
   enable:
     - asciicheck
     #- bodyclose # Not compatible with go 1.18, temporary disable
+    - contextcheck
     - depguard
     - dogsled
     - dupl
@@ -159,6 +158,7 @@ issues:
         - dupl
         - dogsled
         - bodyclose
+        - contextcheck
     # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
     - linters:
         - paralleltest
@@ -204,3 +204,8 @@ issues:
       text: "string `https?` has .+ occurrences, make it a constant"
       linters:
         - goconst
+    # Unfortunately contextcheck reports dome false positives
+    - path: ".*"
+      text: "Function `.*` should pass the context parameter"
+      linters:
+        - contextcheck

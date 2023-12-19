@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -59,7 +60,7 @@ icon: common:settings
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	stepsGroups, err := d.parse(in)
+	stepsGroups, err := d.parse(context.Background(), in)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedGroups, stepsGroups)
 }
@@ -118,7 +119,7 @@ description: Description
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	_, err := d.parse(in)
+	_, err := d.parse(context.Background(), in)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
@@ -135,7 +136,7 @@ at least one steps group must be defined
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	_, err := d.parse(in)
+	_, err := d.parse(context.Background(), in)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }

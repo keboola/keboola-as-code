@@ -27,7 +27,7 @@ func newExecutor(ctx context.Context, logger log.Logger, keboolaProjectAPI *kebo
 		State:   projectState,
 		logger:  logger,
 		tickets: keboola.NewTicketProvider(ctx, keboolaProjectAPI),
-		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
+		uow:     projectState.LocalManager().NewUnitOfWork(ctx),
 		errors:  errors.NewMultiError(),
 	}
 }

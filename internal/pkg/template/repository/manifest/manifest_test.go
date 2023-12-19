@@ -89,7 +89,7 @@ func TestSaveManifestFile(t *testing.T) {
 func TestManifestContentValidateEmpty(t *testing.T) {
 	t.Parallel()
 	c := &file{}
-	err := c.validate()
+	err := c.validate(context.Background())
 	assert.NotNil(t, err)
 	expected := "repository manifest is not valid:\n- \"version\" is a required field\n- \"author.name\" is a required field\n- \"author.url\" is a required field"
 	assert.Equal(t, expected, err.Error())
@@ -97,19 +97,19 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 
 func TestManifestContentValidateMinimal(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, minimalStruct().validate())
+	assert.NoError(t, minimalStruct().validate(context.Background()))
 }
 
 func TestManifestContentValidateFull(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, fullStruct().validate())
+	assert.NoError(t, fullStruct().validate(context.Background()))
 }
 
 func TestManifestContentValidateBadVersion(t *testing.T) {
 	t.Parallel()
 	manifestContent := minimalStruct()
 	manifestContent.Version = 123
-	err := manifestContent.validate()
+	err := manifestContent.validate(context.Background())
 	assert.Error(t, err)
 	expected := `
 repository manifest is not valid:
@@ -151,7 +151,7 @@ func TestManifestContentValidateRequiredTemplatePath(t *testing.T) {
 			},
 		},
 	}
-	err := manifestContent.validate()
+	err := manifestContent.validate(context.Background())
 	assert.Error(t, err)
 	expected := `
 repository manifest is not valid:
@@ -194,7 +194,7 @@ func TestManifestContentValidateExcludedTemplatePath(t *testing.T) {
 			},
 		},
 	}
-	err := manifestContent.validate()
+	err := manifestContent.validate(context.Background())
 	assert.Error(t, err)
 	expected := `
 repository manifest is not valid:

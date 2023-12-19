@@ -24,12 +24,12 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(d.CommandCtx())
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
-			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(d.CommandCtx(), branch.ID)
+			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(cmd.Context(), branch.ID)
 			if err != nil {
 				return err
 			}
@@ -40,9 +40,9 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-list-workspace")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-list-workspace")
 
-			return deleteOp.Run(d.CommandCtx(), d, branch.ID, sandbox)
+			return deleteOp.Run(cmd.Context(), d, branch.ID, sandbox)
 		},
 	}
 

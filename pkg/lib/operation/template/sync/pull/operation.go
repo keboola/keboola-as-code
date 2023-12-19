@@ -63,7 +63,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 
 	if !plan.Empty() {
 		// Invoke
-		if err := plan.Invoke(logger, templateState.Ctx(), templateState.LocalManager(), templateState.RemoteManager(), ``); err != nil {
+		if err := plan.Invoke(logger, templateState.Ctx(), templateState.LocalManager(), templateState.RemoteManager(), ``); err != nil { // nolint: contextcheck
 			return err
 		}
 

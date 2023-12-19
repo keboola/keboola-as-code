@@ -35,7 +35,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 
 			// Delete template
 			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceID, DryRun: d.Options().GetBool("dry-run")}
-			return deleteOp.Run(d.CommandCtx(), projectState, options, d)
+			return deleteOp.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 

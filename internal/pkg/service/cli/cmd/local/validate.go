@@ -39,11 +39,11 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Validate
-			if err := validate.Run(d.CommandCtx(), projectState, options, d); err != nil {
+			if err := validate.Run(cmd.Context(), projectState, options, d); err != nil {
 				return err
 			}
 
-			d.Logger().InfoCtx(d.CommandCtx(), "Everything is good.")
+			d.Logger().InfoCtx(cmd.Context(), "Everything is good.")
 			return nil
 		},
 	}

@@ -28,7 +28,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 			var allBuckets []*keboola.Bucket
 			if len(args) == 0 && !d.Options().IsSet("bucket") {
 				// Get buckets list for dialog select only if needed
-				allBucketsPtr, err := d.KeboolaProjectAPI().ListBucketsRequest().Send(d.CommandCtx())
+				allBucketsPtr, err := d.KeboolaProjectAPI().ListBucketsRequest().Send(cmd.Context())
 				if err != nil {
 					return err
 				}
@@ -39,9 +39,9 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-table")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-table")
 
-			return table.Run(d.CommandCtx(), opts, d)
+			return table.Run(cmd.Context(), opts, d)
 		},
 	}
 

@@ -69,7 +69,7 @@ func loadFile(ctx context.Context, fs filesystem.Fs) (*file, error) {
 	}
 
 	// Validate
-	if err := content.validate(); err != nil {
+	if err := content.validate(ctx); err != nil {
 		return content, err
 	}
 
@@ -78,7 +78,7 @@ func loadFile(ctx context.Context, fs filesystem.Fs) (*file, error) {
 
 func saveFile(ctx context.Context, fs filesystem.Fs, f *file) error {
 	// Validate
-	if err := f.validate(); err != nil {
+	if err := f.validate(ctx); err != nil {
 		return err
 	}
 
@@ -94,8 +94,8 @@ func saveFile(ctx context.Context, fs filesystem.Fs, f *file) error {
 	return nil
 }
 
-func (c *file) validate() error {
-	if err := validator.New().Validate(context.Background(), c); err != nil {
+func (c *file) validate(ctx context.Context) error {
+	if err := validator.New().Validate(ctx, c); err != nil {
 		return errors.PrefixError(err, "manifest is not valid")
 	}
 	return nil

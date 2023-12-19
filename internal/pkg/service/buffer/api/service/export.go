@@ -27,6 +27,7 @@ func (s *service) CreateExport(ctx context.Context, d dependencies.ProjectReques
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	export, err := s.mapper.CreateExportModel(
+		ctx,
 		receiverKey,
 		buffer.CreateExportData{
 			ID:         payload.ID,
@@ -113,7 +114,7 @@ func (s *service) UpdateExport(ctx context.Context, d dependencies.ProjectReques
 
 				return d.Store().UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
 					oldMapping := export.Mapping
-					if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
+					if err := s.mapper.UpdateExportModel(ctx, &export, payload); err != nil {
 						return export, err
 					}
 

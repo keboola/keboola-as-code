@@ -1,6 +1,8 @@
 package mapper
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -31,8 +33,8 @@ func (m Mapper) ExportPayload(model model.Export) *buffer.Export {
 	}
 }
 
-func (m Mapper) CreateExportModel(receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.Export, err error) {
-	export, err := m.createExportBaseModel(receiverKey, payload)
+func (m Mapper) CreateExportModel(ctx context.Context, receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.Export, err error) {
+	export, err := m.createExportBaseModel(ctx, receiverKey, payload)
 	if err != nil {
 		return model.Export{}, err
 	}
@@ -47,7 +49,7 @@ func (m Mapper) CreateExportModel(receiverKey key.ReceiverKey, payload buffer.Cr
 	}, nil
 }
 
-func (m Mapper) UpdateExportModel(export *model.Export, payload *buffer.UpdateExportPayload) error {
+func (m Mapper) UpdateExportModel(ctx context.Context, export *model.Export, payload *buffer.UpdateExportPayload) error {
 	if payload.Name != nil {
 		export.Name = *payload.Name
 	}
@@ -61,7 +63,7 @@ func (m Mapper) UpdateExportModel(export *model.Export, payload *buffer.UpdateEx
 	}
 
 	if payload.Conditions != nil {
-		newConditions, err := m.ConditionsModel(payload.Conditions)
+		newConditions, err := m.ConditionsModel(ctx, payload.Conditions)
 		if err != nil {
 			return err
 		}
@@ -71,7 +73,7 @@ func (m Mapper) UpdateExportModel(export *model.Export, payload *buffer.UpdateEx
 	return nil
 }
 
-func (m Mapper) createExportBaseModel(receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.ExportBase, err error) {
+func (m Mapper) createExportBaseModel(ctx context.Context, receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.ExportBase, err error) {
 	name := payload.Name
 
 	// Generate export ID from Name if needed
@@ -83,7 +85,7 @@ func (m Mapper) createExportBaseModel(receiverKey key.ReceiverKey, payload buffe
 	}
 
 	// Handle conditions with defaults
-	conditions, err := m.ConditionsModel(payload.Conditions)
+	conditions, err := m.ConditionsModel(ctx, payload.Conditions)
 	if err != nil {
 		return model.ExportBase{}, err
 	}

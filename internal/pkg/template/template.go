@@ -91,7 +91,7 @@ func LoadReadme(ctx context.Context, fs filesystem.Fs) (string, error) {
 	return file.Content, nil
 }
 
-func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
+func ParseInputValue(ctx context.Context, value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
@@ -100,7 +100,7 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 
 	// Validate all except oauth inputs
 	if isFilled && inputDef.Kind != templateInput.KindOAuth && inputDef.Kind != templateInput.KindOAuthAccounts {
-		if err := inputDef.ValidateUserInput(value); err != nil {
+		if err := inputDef.ValidateUserInput(ctx, value); err != nil {
 			return InputValue{}, errors.Errorf("invalid template input: %w", err)
 		}
 	}
@@ -330,10 +330,10 @@ func (t *Template) ManifestExists(ctx context.Context) (bool, error) {
 	return t.srcDir.IsFile(ctx, t.ManifestPath()), nil
 }
 
-func (t *Template) LoadState(ctx Context, options loadState.Options, d dependencies) (*State, error) {
+func (t *Template) LoadState(templateCtx Context, options loadState.Options, d dependencies) (*State, error) {
 	t.deps = d
-	localFilter := ctx.LocalObjectsFilter()
-	remoteFilter := ctx.RemoteObjectsFilter()
+	localFilter := templateCtx.LocalObjectsFilter()
+	remoteFilter := templateCtx.RemoteObjectsFilter()
 	loadOptions := loadState.OptionsWithFilter{
 		Options:      options,
 		LocalFilter:  &localFilter,
@@ -341,32 +341,32 @@ func (t *Template) LoadState(ctx Context, options loadState.Options, d dependenc
 	}
 
 	// Evaluate manifest
-	container, err := t.evaluate(ctx)
+	container, err := t.evaluate(templateCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load state
-	if s, err := loadState.Run(ctx, container, loadOptions, t.deps); err == nil {
+	if s, err := loadState.Run(templateCtx, container, loadOptions, t.deps); err == nil {
 		return NewState(s, container), nil
 	} else {
 		return nil, err
 	}
 }
 
-func (t *Template) evaluate(ctx Context) (tmpl *evaluatedTemplate, err error) {
-	_, span := t.deps.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.template.evaluate")
+func (t *Template) evaluate(templateCtx Context) (tmpl *evaluatedTemplate, err error) {
+	_, span := t.deps.Telemetry().Tracer().Start(templateCtx, "keboola.go.declarative.template.evaluate")
 	defer span.End(&err)
 
 	// Evaluate manifest
-	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JsonnetContext())
+	evaluatedManifest, err := t.manifestFile.Evaluate(templateCtx, templateCtx.JsonnetContext())
 	if err != nil {
 		return nil, err
 	}
 
 	return &evaluatedTemplate{
 		Template: t,
-		context:  ctx,
+		context:  templateCtx,
 		manifest: evaluatedManifest,
 	}, nil
 }

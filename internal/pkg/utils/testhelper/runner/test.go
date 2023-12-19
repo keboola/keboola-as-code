@@ -443,7 +443,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 		if dumpDir, ok := request.Context().Value(dumpDirCtxKey).(string); ok {
 			reqDump, err := httputil.DumpRequest(request, true)
 			assert.NoError(t.t, err)
-			assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump))))
+			assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump)))) // nolint: contextcheck
 		}
 		return nil
 	})

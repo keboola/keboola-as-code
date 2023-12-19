@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -29,12 +30,12 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs input.InputsMap, stepsG
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs, stepsGroups: stepsGroups}
 }
 
-func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
+func (d *inputsDetailDialog) ask(ctx context.Context) (input.StepsGroupsExt, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
 		Default:     d.defaultValue(),
 		Validator: func(val interface{}) error {
-			_, err := d.parse(val.(string))
+			_, err := d.parse(ctx, val.(string))
 			if err != nil {
 				// Print errors to new line
 				return errors.PrefixError(err, "\n")
@@ -43,10 +44,10 @@ func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
 			return nil
 		},
 	})
-	return d.parse(result)
+	return d.parse(ctx, result)
 }
 
-func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) {
+func (d *inputsDetailDialog) parse(ctx context.Context, result string) (input.StepsGroupsExt, error) {
 	result = strhelper.StripHTMLComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errs := errors.NewMultiError()
@@ -164,7 +165,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 	finalizeInput()
 
 	// Validate
-	if err := d.inputs.All().ValidateDefinitions(); err != nil {
+	if err := d.inputs.All().ValidateDefinitions(ctx); err != nil {
 		errs.Append(err)
 	}
 

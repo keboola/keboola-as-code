@@ -75,7 +75,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 		return nil, nil, err
 	}
 
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(context.Background()) // nolint: contextcheck
 	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
 	p.logf("□ Initializing project...")
 

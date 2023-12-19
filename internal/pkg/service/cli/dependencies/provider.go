@@ -82,7 +82,7 @@ func (v *provider) RemoteCommandScope(ctx context.Context, opts ...Option) (Remo
 			return nil, err
 		}
 
-		remoteScope, err := newRemoteCommandScope(localScope.CommandCtx(), localScope, opts...)
+		remoteScope, err := newRemoteCommandScope(ctx, localScope, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +98,7 @@ func (v *provider) LocalProject(ctx context.Context, ignoreErrors bool, ops ...O
 		return nil, nil, err
 	}
 
-	prj, _, err := localCmdScp.LocalProject(ignoreErrors)
+	prj, _, err := localCmdScp.LocalProject(ctx, ignoreErrors)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,7 +119,7 @@ func (v *provider) LocalRepository(ctx context.Context, ops ...Option) (*reposit
 		return nil, nil, err
 	}
 
-	repo, _, err := localCmdScp.LocalTemplateRepository(localCmdScp.CommandCtx())
+	repo, _, err := localCmdScp.LocalTemplateRepository(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

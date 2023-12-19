@@ -62,13 +62,13 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(context.Background())
-	sessionCtx, sessionCancel := context.WithCancel(context.Background())
+	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
+	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
 		n.logger.InfoCtx(ctx, "received shutdown request")
 		watchCancel()
-		n.unregister(c.shutdownTimeout)
+		n.unregister(ctx, c.shutdownTimeout)
 		sessionCancel()
 		wg.Wait()
 		n.logger.InfoCtx(ctx, "shutdown done")
@@ -125,8 +125,8 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	return nil
 }
 
-func (n *Node) unregister(timeout time.Duration) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	startTime := time.Now()

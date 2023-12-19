@@ -18,7 +18,7 @@ func StatusCommand(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return status.Run(d.CommandCtx(), d)
+			return status.Run(cmd.Context(), d)
 		},
 	}
 

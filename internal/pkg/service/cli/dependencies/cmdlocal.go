@@ -53,7 +53,7 @@ func newLocalCommandScope(ctx context.Context, baseScp BaseScope, opts ...Option
 
 	// Create common local dependencies
 	pubScp, err := dependencies.NewPublicScope(
-		baseScp.CommandCtx(), baseScp, host,
+		ctx, baseScp, host,
 		dependencies.WithPreloadComponents(true),
 	)
 	if err != nil {
@@ -87,21 +87,21 @@ func (v *localCommandScope) Template(ctx context.Context, reference model.Templa
 	return loadTemplateOp.Run(ctx, v, repo, reference)
 }
 
-func (v *localCommandScope) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error) {
+func (v *localCommandScope) LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error) {
 	// Check version field
 	value, err := v.localProject.InitAndGet(func() (localProjectValue, error) {
-		fs, found, err := v.FsInfo().ProjectDir(v.CommandCtx())
+		fs, found, err := v.FsInfo().ProjectDir(ctx)
 		if err != nil {
 			return localProjectValue{found: found}, err
 		}
 
 		// Check manifest compatibility
-		if err := version.CheckManifestVersion(v.CommandCtx(), v.Logger(), fs, projectManifest.Path()); err != nil {
+		if err := version.CheckManifestVersion(ctx, v.Logger(), fs, projectManifest.Path()); err != nil {
 			return localProjectValue{found: true}, err
 		}
 
 		// Create remote instance
-		p, err := projectPkg.New(v.CommandCtx(), fs, ignoreErrors)
+		p, err := projectPkg.New(ctx, fs, ignoreErrors)
 		return localProjectValue{found: found, value: p}, err
 	})
 	return value.value, value.found, err

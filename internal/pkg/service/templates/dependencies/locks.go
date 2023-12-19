@@ -49,7 +49,7 @@ func (l *Locker) TryLock(requestCtx context.Context, lockName string) (bool, Unl
 	return true, func() {
 		releaseCtx, cancelFn := context.WithTimeout(context.Background(), LockReleaseTimeout)
 		defer cancelFn()
-		if err := mtx.Unlock(releaseCtx); err != nil {
+		if err := mtx.Unlock(releaseCtx); err != nil { // nolint: contextcheck
 			l.d.Logger().WarnfCtx(requestCtx, `cannot unlock etcd lock "%s": %s`, lockName, err.Error())
 		}
 		if err := session.Close(); err != nil {

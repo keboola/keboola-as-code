@@ -110,7 +110,7 @@ func TestSaveManifestFile(t *testing.T) {
 func TestManifestValidateEmpty(t *testing.T) {
 	t.Parallel()
 	content := &file{}
-	err := content.validate()
+	err := content.validate(context.Background())
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
 - "version" is a required field
@@ -134,14 +134,14 @@ func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
-	assert.NoError(t, content.validate())
+	assert.NoError(t, content.validate(context.Background()))
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(fullRecords())
-	assert.NoError(t, content.validate())
+	assert.NoError(t, content.validate(context.Background()))
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
@@ -149,7 +149,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
 	content.Version = 123
-	err := content.validate()
+	err := content.validate(context.Background())
 	assert.Error(t, err)
 	expected := `manifest is not valid: "version" must be 2 or less`
 	assert.Equal(t, expected, err.Error())
@@ -168,7 +168,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 			),
 		},
 	})
-	err := content.validate()
+	err := content.validate(context.Background())
 	assert.Error(t, err)
 	expected := `manifest is not valid: "branches[0].id" is a required field`
 	assert.Equal(t, expected, err.Error())

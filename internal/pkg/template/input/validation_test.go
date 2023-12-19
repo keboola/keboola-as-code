@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -331,7 +332,7 @@ func TestValidationRules(t *testing.T) {
 	// Test all cases
 	for _, c := range cases {
 		stepsGroups[0].Steps[0].Inputs = c.inputs
-		err := stepsGroups.ValidateDefinitions()
+		err := stepsGroups.ValidateDefinitions(context.Background())
 		if c.error == "" {
 			// Expected nil errors.MultiError
 			assert.Nil(t, err, c.description)

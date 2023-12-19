@@ -35,9 +35,9 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-job-run")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-job-run")
 
-			return run.Run(d.CommandCtx(), opts, d)
+			return run.Run(cmd.Context(), opts, d)
 		},
 	}
 

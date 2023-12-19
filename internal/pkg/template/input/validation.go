@@ -11,11 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func validateDefinitions(value any) error {
-	return validator.New(inputDefinitionExtraRules()...).Validate(context.Background(), value)
+func validateDefinitions(ctx context.Context, value any) error {
+	return validator.New(inputDefinitionExtraRules(ctx)...).Validate(ctx, value)
 }
 
-func inputDefinitionExtraRules() []validator.Rule {
+func inputDefinitionExtraRules(ctx context.Context) []validator.Rule {
 	return []validator.Rule{
 		{
 			Tag: "template-input-id",
@@ -95,14 +95,14 @@ func inputDefinitionExtraRules() []validator.Rule {
 			Tag: "template-input-rules",
 			Func: func(fl goValidator.FieldLevel) (valid bool) {
 				// Run with an empty value to validate rules
-				err := fl.Field().Interface().(Rules).ValidateValue(Input{ID: "foo"}, "")
+				err := fl.Field().Interface().(Rules).ValidateValue(ctx, Input{ID: "foo"}, "")
 				if _, ok := err.(InvalidRulesError); ok { // nolint: errorlint
 					return false
 				}
 				return true
 			},
 			ErrorMsgFunc: func(fe goValidator.FieldError) string {
-				err := fe.Value().(Rules).ValidateValue(Input{ID: "foo"}, "")
+				err := fe.Value().(Rules).ValidateValue(ctx, Input{ID: "foo"}, "")
 				return fmt.Sprintf("%s is not valid: %s", fe.Field(), err.Error())
 			},
 		},
