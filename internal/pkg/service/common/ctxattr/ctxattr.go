@@ -18,27 +18,22 @@ const (
 	contextZapFields  = ctxKey("ZapFields")
 )
 
-func ContextWith(ctx context.Context, attributes ...attribute.KeyValue) context.Context {
-	// Add attributes to context.
-	var newAttributes []attribute.KeyValue
-	value := ctx.Value(contextAttributes)
-	if value != nil {
-		newAttributes = value.(*attribute.Set).ToSlice()
-		newAttributes = append(newAttributes, attributes...)
-	} else {
-		newAttributes = attributes
-	}
+func ContextWith(ctx context.Context, newAttributes ...attribute.KeyValue) context.Context {
+	// Merge old and new attributes
+	oldSet, _ := ctx.Value(contextAttributes).(*attribute.Set)
+	set := attribute.NewSet(append(oldSet.ToSlice(), newAttributes...)...)
 
-	set := attribute.NewSet(newAttributes...)
+	// Add telemetry attributes to the context
 	ctx = context.WithValue(ctx, contextAttributes, &set)
 
-	// Add attributes as zap fields for logger.
-	zapFields := make([]zap.Field, set.Len())
+	// Add logger attributes to the context
+	logFields := make([]zap.Field, set.Len())
 	for i, keyValue := range set.ToSlice() {
-		zapFields[i] = convertAttributeToZapField(keyValue)
+		logFields[i] = convertAttributeToZapField(keyValue)
 	}
+	ctx = context.WithValue(ctx, contextZapFields, logFields)
 
-	return context.WithValue(ctx, contextZapFields, zapFields)
+	return ctx
 }
 
 func Attributes(ctx context.Context) *attribute.Set {
