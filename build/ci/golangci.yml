@@ -52,12 +52,28 @@ linters-settings:
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
       - ^gonanoid\..*$(# Use "internal/pkg/idgenerator" package instead)?
   depguard:
-    list-type: denylist
-    include-go-root: true
-    packages-with-error-message:
-      - "errors": 'please use the package "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"'
-      - "go.uber.org/zap": 'please use "github.com/keboola/keboola-as-code/internal/pkg/log" package'
-      - "go.nhat.io/aferocopy/*": 'please use "aferofs.CopyFs2Fs" function'
+    rules:
+      errors:
+        list-mode: lax
+        files:
+          - "!**/internal/pkg/utils/errors/*"
+        deny:
+          - pkg: errors
+            desc: 'please use the package "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"'
+      zap:
+        list-mode: lax
+        files:
+          - "!**/internal/pkg/log/*"
+        deny:
+          - pkg: go.uber.org/zap
+            desc: 'please use "github.com/keboola/keboola-as-code/internal/pkg/log" package'
+      aferocopy:
+        list-mode: lax
+        files:
+          - "!**/internal/pkg/filesystem/aferofs/*"
+        deny:
+          - pkg: go.nhat.io/aferocopy/*
+            desc: 'please use "aferofs.CopyFs2Fs" function'
   stylecheck:
     checks:
       - all
@@ -161,25 +177,10 @@ issues:
     - linters:
         - paralleltest
       text: "Range statement for test TestCliE2E does not use range value in test Run"
-    # Allow standard errors package in internal errors package
-    - path: internal/pkg/utils/errors/.*
-      text: "errors"
-      linters:
-        - depguard
     - path: internal/pkg/utils/errors/.*
       text: "use of `fmt.Errorf` forbidden"
       linters:
         - forbidigo
-    # Allow Zap logger in internal log package
-    - path: internal/pkg/log/.*
-      text: "go.uber.org/zap"
-      linters:
-        - depguard
-    # Allow aferocopy package in internal aferofs package
-    - path: internal/pkg/filesystem/aferofs/.*
-      text: "go.nhat.io/aferocopy"
-      linters:
-        - depguard
     - path: api/.*
       linters:
         - stylecheck
