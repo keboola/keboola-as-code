@@ -41,9 +41,8 @@ func Attributes(ctx context.Context) *attribute.Set {
 		panic(errors.New("unexpected nil context"))
 	}
 
-	value := ctx.Value(contextAttributes)
-	if value != nil {
-		return value.(*attribute.Set)
+	if value, ok := ctx.Value(contextAttributes).(*attribute.Set); ok {
+		return value
 	}
 
 	return attribute.EmptySet()
@@ -54,9 +53,8 @@ func ZapFields(ctx context.Context) []zap.Field {
 		panic(errors.New("unexpected nil context"))
 	}
 
-	value := ctx.Value(contextZapFields)
-	if value != nil {
-		return value.([]zap.Field)
+	if value, ok := ctx.Value(contextZapFields).([]zap.Field); ok {
+		return value
 	}
 
 	return nil
