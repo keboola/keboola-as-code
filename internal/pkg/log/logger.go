@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
 
 // zapLogger is default implementation of the Logger interface.

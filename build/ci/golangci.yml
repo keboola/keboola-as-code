@@ -178,7 +178,7 @@ issues:
       linters:
         - depguard
     # Allow Zap logger in internal ctxattr package
-    - path: internal/pkg/ctxattr/.*
+    - path: internal/pkg/service/common/ctxattr/.*
       text: "go.uber.org/zap"
       linters:
         - depguard
