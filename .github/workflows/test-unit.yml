@@ -47,7 +47,7 @@ jobs:
             os: macos-latest
             projects: TEST_PROJECTS_MACOS
           - name: windows
-            os: windows-2019
+            os: windows-2022
             projects: TEST_PROJECTS_WINDOWS
     runs-on: ${{ matrix.os }}
     steps:
