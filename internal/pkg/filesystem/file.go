@@ -114,7 +114,7 @@ func (f *RawFile) ToRawFile() (*RawFile, error) {
 func (f *RawFile) ToJSONFile() (*JSONFile, error) {
 	jsonMap := orderedmap.New()
 	if err := json.DecodeString(f.Content, jsonMap); err != nil {
-		fileDesc := strings.TrimSpace(f.desc + " file")
+		fileDesc := formatFileDescription(f.desc)
 		return nil, errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, f.path)
 	}
 
@@ -127,7 +127,7 @@ func (f *RawFile) ToJSONFile() (*JSONFile, error) {
 func (f *RawFile) ToYamlFile() (*YamlFile, error) {
 	yamlMap := orderedmap.New()
 	if err := yaml.DecodeString(f.Content, yamlMap); err != nil {
-		fileDesc := strings.TrimSpace(f.desc + " file")
+		fileDesc := formatFileDescription(f.desc)
 		return nil, errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, f.path)
 	}
 
@@ -196,7 +196,7 @@ func (f *JSONFile) RemoveTag(tags ...string) File {
 func (f *JSONFile) ToRawFile() (*RawFile, error) {
 	content, err := json.EncodeString(f.Content, true)
 	if err != nil {
-		fileDesc := strings.TrimSpace(f.desc + " file")
+		fileDesc := formatFileDescription(f.desc)
 		return nil, errors.PrefixErrorf(err, "cannot encode %s \"%s\"", fileDesc, f.path)
 	}
 
@@ -253,7 +253,7 @@ func (f *YamlFile) RemoveTag(tags ...string) File {
 func (f *YamlFile) ToRawFile() (*RawFile, error) {
 	content, err := yaml.EncodeString(f.Content)
 	if err != nil {
-		fileDesc := strings.TrimSpace(f.desc + " file")
+		fileDesc := formatFileDescription(f.desc)
 		return nil, errors.PrefixErrorf(err, "cannot encode %s \"%s\"", fileDesc, f.path)
 	}
 
@@ -363,4 +363,8 @@ func (f *Files) GetByTag(tag string) []File {
 		}
 	}
 	return out
+}
+
+func formatFileDescription(fileDesc string) string {
+	return strings.TrimSpace(fileDesc + " file")
 }
