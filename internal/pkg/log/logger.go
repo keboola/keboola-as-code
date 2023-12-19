@@ -39,10 +39,11 @@ func (l *zapLogger) AddPrefix(prefix string) Logger {
 }
 
 func formatMessageUsingAttributes(message string, set *attribute.Set) string {
+	replacements := []string{}
 	for _, keyValue := range set.ToSlice() {
-		message = strings.ReplaceAll(message, "%"+string(keyValue.Key)+"%", keyValue.Value.Emit())
+		replacements = append(replacements, "%"+string(keyValue.Key)+"%", keyValue.Value.Emit())
 	}
-	return message
+	return strings.NewReplacer(replacements...).Replace(message)
 }
 
 func (l *zapLogger) Debug(ctx context.Context, template string) {
