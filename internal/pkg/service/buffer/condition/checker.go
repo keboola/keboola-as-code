@@ -146,28 +146,30 @@ func (c *Checker) check(ctx context.Context) {
 
 		// Try swap the file, it includes also swap of the slice
 		importOk, reason, err := c.shouldImport(ctx, now, slice.SliceKey, slice.CredExpiration)
-		if err != nil {
+		switch {
+		case err != nil:
 			c.logger.Error(err)
-		} else if importOk {
+		case importOk:
 			c.logger.Infof(`closing file "%s": %s`, slice.FileKey, reason)
 			if err := c.startSwapFileTask(fileManager, slice.FileKey); err != nil {
 				c.logger.Error(err)
 			}
-		} else if reason != "" {
+		case reason != "":
 			c.logger.Debugf(`skipped import of the file "%s": %s`, slice.FileKey, reason)
 		}
 
 		// Try swap the slice, if it didn't already happen during import
 		if !importOk {
 			uploadOk, reason, err := c.shouldUpload(ctx, now, slice.SliceKey)
-			if err != nil {
+			switch {
+			case err != nil:
 				c.logger.Error(err)
-			} else if uploadOk {
+			case uploadOk:
 				c.logger.Infof(`closing slice "%s": %s`, slice.SliceKey, reason)
 				if err := c.StartSwapSliceTask(fileManager, slice.SliceKey); err != nil {
 					c.logger.Error(err)
 				}
-			} else if reason != "" {
+			case reason != "":
 				c.logger.Debugf(`skipped upload of the slice "%s": %s`, slice.SliceKey, reason)
 			}
 		}

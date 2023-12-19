@@ -166,7 +166,7 @@ func AsSentence(msg string) string {
 
 	// Dot is added to the end, if message doesn't end with a special character.
 	if regexpcache.MustCompile(`[a-zA-Z0-9'"]$`).MatchString(out) {
-		out = out + "."
+		out += "."
 	}
 	return out
 }

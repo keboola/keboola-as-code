@@ -140,8 +140,6 @@ func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Wr
 			}
 		}()
 		reader = sliceReader
-	} else if slice == "" {
-		return errors.Errorf(`cannot download file: %w`, err)
 	} else {
 		return errors.Errorf(`cannot download file: %w`, err)
 	}

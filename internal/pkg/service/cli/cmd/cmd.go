@@ -305,13 +305,14 @@ func (root *RootCommand) printError(errRaw error) {
 		switch {
 		case errors.As(err, &errDirNotFound):
 			root.logger.Infof(`The path "%s" is %s.`, root.fs.BasePath(), errDirNotFound.Found())
-			if root.CalledAs() == `init` && errDirNotFound.Found() == dependencies.KbcProjectDir {
+			switch {
+			case root.CalledAs() == `init` && errDirNotFound.Found() == dependencies.KbcProjectDir:
 				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
 				root.logger.Info(`Or synchronize the current directory with the "pull" command.`)
-			} else if errDirNotFound.Expected() == dependencies.KbcProjectDir {
+			case errDirNotFound.Expected() == dependencies.KbcProjectDir:
 				root.logger.Infof(`Please change working directory to %s.`, errDirNotFound.Expected())
 				root.logger.Infof(`Or use the "sync init" command in %s.`, dependencies.EmptyDir)
-			} else {
+			default:
 				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
 			}
 			if errDirNotFound.Expected() == dependencies.EmptyDir {

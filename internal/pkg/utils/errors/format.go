@@ -77,8 +77,7 @@ func (f *formatter) WithPrefixFormatter(fn PrefixFormatter) Formatter {
 }
 
 func (f *formatter) Format(err error, opts ...FormatOption) string {
-	mergedOpts := append(f.options, opts...)
-	w := NewWriter(f.messageFormatter, f.prefixFormatter, mergedOpts...)
+	w := NewWriter(f.messageFormatter, f.prefixFormatter, append(f.options, opts...)...)
 	w.WriteError(err)
 	return w.String()
 }

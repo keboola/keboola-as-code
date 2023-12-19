@@ -178,10 +178,8 @@ func TestBufferJsonnetFunctions(t *testing.T) {
 			res = strings.TrimRight(res, "\n")
 			assert.Equal(t, tc.result, res, tc.name)
 			assert.NoError(t, err, tc.name)
-		} else {
-			if assert.Error(t, err) {
-				assert.Equal(t, tc.err, err.Error(), tc.name)
-			}
+		} else if assert.Error(t, err) {
+			assert.Equal(t, tc.err, err.Error(), tc.name)
 		}
 	}
 }

@@ -203,7 +203,8 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	}
 
 	// Load configPath, or configData and componentId
-	if parser.hasConfigPath() {
+	switch {
+	case parser.hasConfigPath():
 		// Get target config path
 		targetConfigPath, err := parser.configPath()
 		if err != nil {
@@ -220,7 +221,7 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 				markConfigUsedInOrchestrator(targetConfig, l.config)
 			}
 		}
-	} else if parser.hasConfigData() {
+	case parser.hasConfigData():
 		// Get config data
 		if task.ConfigData, err = parser.configData(); err != nil {
 			errs.Append(err)
@@ -228,7 +229,7 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 		if task.ComponentID, err = parser.componentID(); err != nil {
 			errs.Append(err)
 		}
-	} else {
+	default:
 		if task.Enabled {
 			errs.Append(errors.New("task.configPath, or task.configData and task.componentId must be specified"))
 		} else if task.ComponentID, err = parser.componentID(); err != nil {
