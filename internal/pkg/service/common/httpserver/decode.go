@@ -9,7 +9,5 @@ import (
 type Decoder func(*http.Request) goaHTTP.Decoder
 
 func NewDecoder() Decoder {
-	return func(r *http.Request) goaHTTP.Decoder {
-		return goaHTTP.RequestDecoder(r)
-	}
+	return goaHTTP.RequestDecoder
 }

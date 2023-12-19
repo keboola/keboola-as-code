@@ -29,11 +29,12 @@ func WaitForAPI(ctx context.Context, cmdWaitCh <-chan error, nodeID string, base
 		// Periodically test health check endpoint
 		case <-ticker.C:
 			resp, _, err := request.NewHTTPRequest(c).WithGet("/health-check").Send(ctx)
-			if err != nil && strings.Contains(err.Error(), "connection refused") {
+			switch {
+			case err != nil && strings.Contains(err.Error(), "connection refused"):
 				continue
-			} else if err != nil {
+			case err != nil:
 				return err
-			} else if resp.StatusCode() == 200 {
+			case resp.StatusCode() == 200:
 				return nil
 			}
 		}

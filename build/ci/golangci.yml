@@ -100,7 +100,7 @@ linters:
     - gochecknoglobals
     - gochecknoinits
     - goconst
-    #- gocritic # Not compatible with go 1.18, temporary disable
+    - gocritic
     - godot
     - godox
     - gofumpt

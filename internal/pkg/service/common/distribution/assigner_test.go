@@ -30,7 +30,7 @@ func TestConsistentHashLib(t *testing.T) {
 	for i := 1; i <= 100; i++ {
 		node, err := c.Get(fmt.Sprintf("foo%02d", i))
 		assert.NoError(t, err)
-		keysPerNode[node] = keysPerNode[node] + 1
+		keysPerNode[node]++
 	}
 	assert.Equal(t, map[string]int{
 		"node1": 27,
@@ -49,7 +49,7 @@ func TestConsistentHashLib(t *testing.T) {
 	for i := 1; i <= 100; i++ {
 		node, err := c.Get(fmt.Sprintf("foo%02d", i))
 		assert.NoError(t, err)
-		keysPerNode[node] = keysPerNode[node] + 1
+		keysPerNode[node]++
 	}
 	assert.Equal(t, map[string]int{
 		"node1": 47,

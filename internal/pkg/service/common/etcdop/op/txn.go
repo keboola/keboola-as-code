@@ -140,7 +140,7 @@ func (v *TxnOpDef) Txn(ctx context.Context) *TxnOp {
 		txn.Else(newInlineOp(etcd.OpTxn(subCmps, []etcd.Op{}, subElse), nil, item.MapResponse))
 	}
 
-	txn.processors = v.processors[:]
+	txn.processors = v.processors
 
 	return txn
 }
