@@ -16,8 +16,6 @@ func TestContextAttributes(t *testing.T) {
 	ctx := context.Background()
 
 	set := Attributes(ctx)
-	_, ok := set.Value("isValid")
-	assert.False(t, ok)
 	assert.Equal(t, 0, set.Len())
 
 	fields := ZapFields(ctx)
