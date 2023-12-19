@@ -128,7 +128,7 @@ linters:
     - unconvert
     - unparam
     - unused
-    #- wastedassign # Not compatible with go 1.18, temporary disable
+    - wastedassign
     - whitespace
     # DISABLED
     #- goimports # replaced with gci
@@ -197,3 +197,8 @@ issues:
       text: "string `https?` has .+ occurrences, make it a constant"
       linters:
         - goconst
+    # Allow overriding ctx even if not used yet
+    - path: ".*"
+      text: "assigned to ctx, but never used afterwards"
+      linters:
+        - wastedassign
