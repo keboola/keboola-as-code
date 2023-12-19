@@ -64,7 +64,7 @@ func ZapFields(ctx context.Context) []zap.Field {
 		return value.([]zap.Field)
 	}
 
-	return []zap.Field{}
+	return nil
 }
 
 func convertAttributeToZapField(keyValue attribute.KeyValue) zap.Field {
