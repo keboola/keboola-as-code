@@ -1,3 +1,5 @@
+// Package ctxattr provides a way to add open telemetry attributes into context.Context.
+// These attributes are automatically converted to zap Fields as well for out log package.
 package ctxattr
 
 import (
