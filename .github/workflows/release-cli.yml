@@ -313,7 +313,7 @@ jobs:
     outputs:
       msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
       msi_file: ${{ steps.build_msi.outputs.msi_file }}
-    runs-on: windows-2019
+    runs-on: windows-2022
     permissions:
       id-token: write
       contents: read
@@ -534,7 +534,7 @@ jobs:
       - update-repositories-windows
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Download MSI
         shell: bash
