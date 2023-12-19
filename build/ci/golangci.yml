@@ -176,10 +176,6 @@ issues:
         - dogsled
         - bodyclose
         - contextcheck
-    # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
-    - linters:
-        - paralleltest
-      text: "Range statement for test TestCliE2E does not use range value in test Run"
     - path: internal/pkg/utils/errors/.*
       text: "use of `fmt.Errorf` forbidden"
       linters:
