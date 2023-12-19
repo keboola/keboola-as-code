@@ -5,6 +5,8 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ctxKey string
@@ -39,7 +41,7 @@ func ContextWith(ctx context.Context, attributes ...attribute.KeyValue) context.
 
 func Attributes(ctx context.Context) *attribute.Set {
 	if ctx == nil {
-		return attribute.EmptySet()
+		panic(errors.New("unexpected nil context"))
 	}
 
 	value := ctx.Value(contextAttributes)
@@ -52,7 +54,7 @@ func Attributes(ctx context.Context) *attribute.Set {
 
 func ZapFields(ctx context.Context) []zap.Field {
 	if ctx == nil {
-		return []zap.Field{}
+		panic(errors.New("unexpected nil context"))
 	}
 
 	value := ctx.Value(contextZapFields)

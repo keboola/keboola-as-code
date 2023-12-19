@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -403,8 +404,13 @@ func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
 			logFilePath = root.logFile.Path()
 		}
 
+		ctx := root.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
 		// Process panic
-		exitCode = cli.ProcessPanic(root.Context(), panicErr, root.logger, logFilePath)
+		exitCode = cli.ProcessPanic(ctx, panicErr, root.logger, logFilePath)
 	}
 
 	// Close log file

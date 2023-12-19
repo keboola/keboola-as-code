@@ -81,10 +81,3 @@ func TestAttributeConversion(t *testing.T) {
 		convertAttributeToZapField(attribute.StringSlice("strings", []string{"success", "error"})),
 	)
 }
-
-func TestNilContext(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, 0, Attributes(nil).Len()) // nolint: staticcheck
-	assert.Len(t, ZapFields(nil), 0)          // nolint: staticcheck
-}
