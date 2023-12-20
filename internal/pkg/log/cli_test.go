@@ -151,3 +151,41 @@ func TestCliLogger_JSONVerboseTrue(t *testing.T) {
 	wildcards.Assert(t, expectedOut, stdout.String())
 	wildcards.Assert(t, expectedErr, stderr.String())
 }
+
+func TestCliLogger_AttributeReplace(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "log-file.txt")
+	file, err := NewLogFile(filePath)
+	assert.NoError(t, err)
+
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
+	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, true)
+
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"), attribute.Int("count", 4))
+
+	logger.Debug(ctx, "Debug msg %extra% (%count%)")
+	logger.Info(ctx, "Info msg %extra% (%count%)")
+	logger.Warn(ctx, "Warn msg %extra% (%count%)")
+	logger.Error(ctx, "Error msg %extra% (%count%)")
+	assert.NoError(t, file.File().Close())
+
+	// Assert, all levels logged with the level prefix
+	expected := `
+{"level":"debug","time":"%s","message":"Debug msg value (4)","count":4,"extra":"value"}
+{"level":"info","time":"%s","message":"Info msg value (4)","count":4,"extra":"value"}
+{"level":"warn","time":"%s","message":"Warn msg value (4)","count":4,"extra":"value"}
+{"level":"error","time":"%s","message":"Error msg value (4)","count":4,"extra":"value"}
+`
+
+	content, err := os.ReadFile(filePath)
+	assert.NoError(t, err)
+	wildcards.Assert(t, expected, string(content))
+
+	expectedOut := "DEBUG\tDebug msg value (4)\nINFO\tInfo msg value (4)\n"
+	expectedErr := "WARN\tWarn msg value (4)\nERROR\tError msg value (4)\n"
+	assert.Equal(t, expectedOut, stdout.String())
+	assert.Equal(t, expectedErr, stderr.String())
+}
