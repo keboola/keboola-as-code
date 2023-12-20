@@ -53,12 +53,14 @@ type baseLogger interface {
 }
 
 type contextLogger interface {
-	// Debug, Info, Warn and Error accept a template string which can contain placeholders to be replaced by ctxattr attributes.
-	// For example if the template contains "%status%" then this placeholder is replaced by an attribute with the key "status".
-	Debug(ctx context.Context, template string)
-	Info(ctx context.Context, template string)
-	Warn(ctx context.Context, template string)
-	Error(ctx context.Context, template string)
+	// Debug logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	Debug(ctx context.Context, message string)
+	// Info logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	Info(ctx context.Context, message string)
+	// Warn logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	Warn(ctx context.Context, message string)
+	// Error logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	Error(ctx context.Context, message string)
 
 	LogCtx(ctx context.Context, level string, args ...any)
 	DebugCtx(ctx context.Context, args ...any)

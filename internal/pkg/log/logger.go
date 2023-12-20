@@ -46,30 +46,30 @@ func formatMessageUsingAttributes(message string, set *attribute.Set) string {
 	return strings.NewReplacer(replacements...).Replace(message)
 }
 
-func (l *zapLogger) Debug(ctx context.Context, template string) {
+func (l *zapLogger) Debug(ctx context.Context, message string) {
 	l.sugaredLogger.Desugar().Debug(
-		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
 		ctxattr.ZapFields(ctx)...,
 	)
 }
 
-func (l *zapLogger) Info(ctx context.Context, template string) {
+func (l *zapLogger) Info(ctx context.Context, message string) {
 	l.sugaredLogger.Desugar().Info(
-		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
 		ctxattr.ZapFields(ctx)...,
 	)
 }
 
-func (l *zapLogger) Warn(ctx context.Context, template string) {
+func (l *zapLogger) Warn(ctx context.Context, message string) {
 	l.sugaredLogger.Desugar().Warn(
-		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
 		ctxattr.ZapFields(ctx)...,
 	)
 }
 
-func (l *zapLogger) Error(ctx context.Context, template string) {
+func (l *zapLogger) Error(ctx context.Context, message string) {
 	l.sugaredLogger.Desugar().Error(
-		formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)),
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
 		ctxattr.ZapFields(ctx)...,
 	)
 }
