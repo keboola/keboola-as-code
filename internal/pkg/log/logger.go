@@ -3,9 +3,14 @@ package log
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
 
 // zapLogger is default implementation of the Logger interface.
@@ -33,57 +38,104 @@ func (l *zapLogger) AddPrefix(prefix string) Logger {
 	return clone
 }
 
+func formatMessageUsingAttributes(message string, set *attribute.Set) string {
+	replacements := []string{}
+	for _, keyValue := range set.ToSlice() {
+		replacements = append(replacements, "%"+string(keyValue.Key)+"%", keyValue.Value.Emit())
+	}
+	return strings.NewReplacer(replacements...).Replace(message)
+}
+
+func (l *zapLogger) Debug(ctx context.Context, message string) {
+	l.sugaredLogger.Desugar().Debug(
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func (l *zapLogger) Info(ctx context.Context, message string) {
+	l.sugaredLogger.Desugar().Info(
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func (l *zapLogger) Warn(ctx context.Context, message string) {
+	l.sugaredLogger.Desugar().Warn(
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func (l *zapLogger) Error(ctx context.Context, message string) {
+	l.sugaredLogger.Desugar().Error(
+		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
+		ctxattr.ZapFields(ctx)...,
+	)
+}
+
+func formatMessage(args ...any) string {
+	if len(args) == 1 {
+		if str, ok := args[0].(string); ok {
+			return str
+		}
+	}
+	return fmt.Sprint(args...)
+}
+
 func (l *zapLogger) LogCtx(ctx context.Context, level string, args ...any) {
+	message := formatMessage(args...)
+	fields := ctxattr.ZapFields(ctx)
 	switch level {
 	case "debug", "DEBUG":
-		l.sugaredLogger.Debug(args...)
+		l.sugaredLogger.Desugar().Debug(message, fields...)
 	case "info", "INFO":
-		l.sugaredLogger.Info(args...)
+		l.sugaredLogger.Desugar().Info(message, fields...)
 	case "warn", "WARN":
-		l.sugaredLogger.Warn(args...)
+		l.sugaredLogger.Desugar().Warn(message, fields...)
 	case "error", "ERROR":
-		l.sugaredLogger.Error(args...)
+		l.sugaredLogger.Desugar().Error(message, fields...)
 	case "dpanic", "DPANIC":
-		l.sugaredLogger.DPanic(args...)
+		l.sugaredLogger.Desugar().DPanic(message, fields...)
 	case "panic", "PANIC":
-		l.sugaredLogger.Panic(args...)
+		l.sugaredLogger.Desugar().Panic(message, fields...)
 	case "fatal", "FATAL":
-		l.sugaredLogger.Fatal(args...)
+		l.sugaredLogger.Desugar().Fatal(message, fields...)
 	default:
-		l.sugaredLogger.Info(args...)
+		l.sugaredLogger.Desugar().Info(message, fields...)
 	}
 }
 
 func (l *zapLogger) DebugCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Debug(args...)
+	l.sugaredLogger.Desugar().Debug(formatMessage(args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) InfoCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Info(args...)
+	l.sugaredLogger.Desugar().Info(formatMessage(args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) WarnCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Warn(args...)
+	l.sugaredLogger.Desugar().Warn(formatMessage(args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) ErrorCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Error(args...)
+	l.sugaredLogger.Desugar().Error(formatMessage(args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) DebugfCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Debugf(template, args...)
+	l.sugaredLogger.Desugar().Debug(fmt.Sprintf(template, args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) InfofCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Infof(template, args...)
+	l.sugaredLogger.Desugar().Info(fmt.Sprintf(template, args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) WarnfCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Warnf(template, args...)
+	l.sugaredLogger.Desugar().Warn(fmt.Sprintf(template, args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) ErrorfCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Errorf(template, args...)
+	l.sugaredLogger.Desugar().Error(fmt.Sprintf(template, args...), ctxattr.ZapFields(ctx)...)
 }
 
 func (l *zapLogger) Sync() error {

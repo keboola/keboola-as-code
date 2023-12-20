@@ -177,6 +177,11 @@ issues:
       text: "go.uber.org/zap"
       linters:
         - depguard
+    # Allow Zap logger in internal ctxattr package
+    - path: internal/pkg/service/common/ctxattr/.*
+      text: "go.uber.org/zap"
+      linters:
+        - depguard
     # Allow aferocopy package in internal aferofs package
     - path: internal/pkg/filesystem/aferofs/.*
       text: "go.nhat.io/aferocopy"
