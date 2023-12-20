@@ -9,7 +9,9 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
@@ -56,11 +58,13 @@ func TestCliLogger_VerboseFalse(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatConsole, false)
+	// Check that context attributes don't appear in stdout/stderr.
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
 
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -76,10 +80,13 @@ func TestCliLogger_VerboseTrue(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatConsole, true)
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	// Check that context attributes don't appear in stdout/stderr.
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
+
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout
