@@ -83,13 +83,13 @@ func NewChecker(d dependencies) <-chan error {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		c.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		c.logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		c.logger.Info("shutdown done")
+		c.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Initialize
@@ -105,7 +105,7 @@ func NewChecker(d dependencies) <-chan error {
 			close(errCh)
 			return
 		}
-		c.logger.Infof(`initialized | %s`, c.clock.Since(startTime))
+		c.logger.InfofCtx(ctx, `initialized | %s`, c.clock.Since(startTime))
 
 		// Start ticker
 		ticker := c.clock.Ticker(c.config.CheckConditionsInterval)
@@ -147,28 +147,28 @@ func (c *Checker) check(ctx context.Context) {
 		// Try swap the file, it includes also swap of the slice
 		importOk, reason, err := c.shouldImport(ctx, now, slice.SliceKey, slice.CredExpiration)
 		if err != nil {
-			c.logger.Error(err)
+			c.logger.ErrorCtx(ctx, err)
 		} else if importOk {
-			c.logger.Infof(`closing file "%s": %s`, slice.FileKey, reason)
-			if err := c.startSwapFileTask(fileManager, slice.FileKey); err != nil {
-				c.logger.Error(err)
+			c.logger.InfofCtx(ctx, `closing file "%s": %s`, slice.FileKey, reason)
+			if err := c.startSwapFileTask(ctx, fileManager, slice.FileKey); err != nil {
+				c.logger.ErrorCtx(ctx, err)
 			}
 		} else if reason != "" {
-			c.logger.Debugf(`skipped import of the file "%s": %s`, slice.FileKey, reason)
+			c.logger.DebugfCtx(ctx, `skipped import of the file "%s": %s`, slice.FileKey, reason)
 		}
 
 		// Try swap the slice, if it didn't already happen during import
 		if !importOk {
 			uploadOk, reason, err := c.shouldUpload(ctx, now, slice.SliceKey)
 			if err != nil {
-				c.logger.Error(err)
+				c.logger.ErrorCtx(ctx, err)
 			} else if uploadOk {
-				c.logger.Infof(`closing slice "%s": %s`, slice.SliceKey, reason)
-				if err := c.StartSwapSliceTask(fileManager, slice.SliceKey); err != nil {
-					c.logger.Error(err)
+				c.logger.InfofCtx(ctx, `closing slice "%s": %s`, slice.SliceKey, reason)
+				if err := c.StartSwapSliceTask(ctx, fileManager, slice.SliceKey); err != nil {
+					c.logger.ErrorCtx(ctx, err)
 				}
 			} else if reason != "" {
-				c.logger.Debugf(`skipped upload of the slice "%s": %s`, slice.SliceKey, reason)
+				c.logger.DebugfCtx(ctx, `skipped upload of the slice "%s": %s`, slice.SliceKey, reason)
 			}
 		}
 
@@ -176,7 +176,7 @@ func (c *Checker) check(ctx context.Context) {
 		return false
 	})
 
-	c.logger.Debugf(`checked "%d" opened slices | %s`, checked, c.clock.Since(now))
+	c.logger.DebugfCtx(ctx, `checked "%d" opened slices | %s`, checked, c.clock.Since(now))
 }
 
 func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
@@ -202,7 +202,7 @@ func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		WithFilter(func(event etcdop.WatchEventT[model.ExportBase]) bool {
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// Mirror tokens
 	c.tokens, tokensErrCh = etcdop.
@@ -219,7 +219,7 @@ func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		WithFilter(func(event etcdop.WatchEventT[model.Token]) bool {
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// Mirror slices
 	c.activeSlices, slicesErrCh = etcdop.
@@ -239,7 +239,7 @@ func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		WithFilter(func(event etcdop.WatchEventT[model.Slice]) bool {
 			return c.dist.MustCheckIsOwner(event.Value.ReceiverKey.String())
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// Wait for initialization
 	for _, errCh := range []<-chan error{exportsErrCh, tokensErrCh, slicesErrCh} {

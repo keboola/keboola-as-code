@@ -18,27 +18,27 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Require empty dir
-			if _, err := p.BaseScope().EmptyDir(); err != nil {
+			if _, err := p.BaseScope().EmptyDir(cmd.Context()); err != nil {
 				return err
 			}
 
 			// Get dependencies
-			projectDeps, err := p.RemoteCommandScope()
+			projectDeps, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// Get init options
-			options, err := projectDeps.Dialogs().AskInitOptions(projectDeps.CommandCtx(), projectDeps)
+			options, err := projectDeps.Dialogs().AskInitOptions(cmd.Context(), projectDeps)
 			if err != nil {
 				return err
 			}
 
 			// Send cmd successful/failed event
-			defer projectDeps.EventSender().SendCmdEvent(projectDeps.CommandCtx(), time.Now(), &cmdErr, "sync-init")
+			defer projectDeps.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "sync-init")
 
 			// Init
-			return initOp.Run(projectDeps.CommandCtx(), options, projectDeps)
+			return initOp.Run(cmd.Context(), options, projectDeps)
 		},
 	}
 

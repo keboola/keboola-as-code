@@ -26,12 +26,12 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
 
-			return sources.Run(d.CommandCtx(), sources.Options{TargetName: targetName}, d)
+			return sources.Run(cmd.Context(), sources.Options{TargetName: targetName}, d)
 		},
 	}
 

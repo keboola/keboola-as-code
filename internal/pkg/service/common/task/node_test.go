@@ -57,7 +57,7 @@ func TestSuccessfulTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(task.Config{
+	_, err := node1.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -67,12 +67,12 @@ func TestSuccessfulTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (1)")
+			logger.InfoCtx(ctx, "some message from the task (1)")
 			return task.OkResult("some result (1)").WithOutput("key", "value")
 		},
 	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -136,7 +136,7 @@ task/123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -146,7 +146,7 @@ task/123/my-receiver/my-export/some.task/%s
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (2)")
+			logger.InfoCtx(ctx, "some message from the task (2)")
 			return task.OkResult("some result (2)")
 		},
 	})
@@ -333,7 +333,7 @@ func TestFailedTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(task.Config{
+	_, err := node1.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -343,14 +343,14 @@ func TestFailedTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (1)")
+			logger.InfoCtx(ctx, "some message from the task (1)")
 			return task.
 				ErrResult(task.WrapUserError(errors.New("some error (1) - expected"))).
 				WithOutput("key", "value")
 		},
 	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -414,7 +414,7 @@ task/123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(task.Config{
+	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -424,7 +424,7 @@ task/123/my-receiver/my-export/some.task/%s
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.Info("some message from the task (2)")
+			logger.InfoCtx(ctx, "some message from the task (2)")
 			return task.ErrResult(errors.New("some error (2) - unexpected"))
 		},
 	})
@@ -654,7 +654,7 @@ func TestTaskTimeout(t *testing.T) {
 	tel.Reset()
 
 	// Start task
-	_, err := node1.StartTask(task.Config{
+	_, err := node1.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -823,7 +823,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	etcdhelper.ExpectModification(t, client, func() {
-		_, err := node1.StartTask(task.Config{
+		_, err := node1.StartTask(ctx, task.Config{
 			Key:  tKey,
 			Type: taskType,
 			Lock: lock,
@@ -833,7 +833,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 			Operation: func(ctx context.Context, logger log.Logger) task.Result {
 				defer close(taskDone)
 				<-taskWork
-				logger.Info("some message from the task")
+				logger.InfoCtx(ctx, "some message from the task")
 				return task.OkResult("some result")
 			},
 		})
@@ -842,7 +842,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	// Shutdown node
 	shutdownDone := make(chan struct{})
-	d.Process().Shutdown(errors.New("some reason"))
+	d.Process().Shutdown(ctx, errors.New("some reason"))
 	go func() {
 		defer close(shutdownDone)
 		d.Process().WaitForShutdown()

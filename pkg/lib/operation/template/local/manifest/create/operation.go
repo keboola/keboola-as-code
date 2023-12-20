@@ -22,10 +22,10 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (m *template.Man
 	templateManifest := template.NewManifest()
 
 	// Save
-	if err := templateManifest.Save(fs); err != nil {
+	if err := templateManifest.Save(ctx, fs); err != nil {
 		return nil, err
 	}
 
-	d.Logger().Infof("Created template manifest file \"%s\".", templateManifest.Path())
+	d.Logger().InfofCtx(ctx, "Created template manifest file \"%s\".", templateManifest.Path())
 	return templateManifest, nil
 }

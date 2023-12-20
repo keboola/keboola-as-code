@@ -141,40 +141,39 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		// Create filesystem abstraction
 		var err error
 		workingDir, _ := cmd.Flags().GetString(`working-dir`)
-		root.fs, err = fsFactory(filesystem.WithLogger(root.logger), filesystem.WithWorkingDir(workingDir))
+		root.fs, err = fsFactory(cmd.Context(), filesystem.WithLogger(root.logger), filesystem.WithWorkingDir(workingDir))
 		if err != nil {
 			return err
 		}
 
 		// Load values from flags and envs
-		if err = root.options.Load(root.logger, envs, root.fs, cmd.Flags()); err != nil {
+		if err = root.options.Load(cmd.Context(), root.logger, envs, root.fs, cmd.Flags()); err != nil {
 			return err
 		}
 
 		// Setup logger
 		root.setupLogger()
 		root.fs.SetLogger(root.logger)
-		root.logger.Debug(`Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
+		root.logger.DebugCtx(cmd.Context(), `Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
 		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
 
 		// Create process abstraction
-		ctx, cancel := context.WithCancel(cmd.Context())
-		proc, err := servicectx.New(ctx, cancel)
+		proc, err := servicectx.New()
 		if err != nil {
 			return err
 		}
 
 		// Create dependencies provider
-		p.Set(dependencies.NewProvider(ctx, root.logger, proc, root.fs, dialog.New(prompt, root.options), root.options))
+		p.Set(dependencies.NewProvider(cmd.Context(), root.logger, proc, root.fs, dialog.New(prompt, root.options), root.options))
 
 		// Check version
-		if err := versionCheck.Run(ctx, root.options.GetBool("version-check"), p.BaseScope()); err != nil {
+		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseScope()); err != nil {
 			// Ignore error, send to logs
-			root.logger.Debugf(`Version check: %s.`, err.Error())
+			root.logger.DebugfCtx(cmd.Context(), `Version check: %s.`, err.Error())
 		} else {
-			root.logger.Debugf(`Version check: successful.`)
+			root.logger.DebugCtx(cmd.Context(), `Version check: successful.`)
 		}
 
 		return nil
@@ -304,15 +303,15 @@ func (root *RootCommand) printError(errRaw error) {
 	for _, err := range originalErrs.WrappedErrors() {
 		switch {
 		case errors.As(err, &errDirNotFound):
-			root.logger.Infof(`The path "%s" is %s.`, root.fs.BasePath(), errDirNotFound.Found())
+			root.logger.InfofCtx(root.Context(), `The path "%s" is %s.`, root.fs.BasePath(), errDirNotFound.Found())
 			if root.CalledAs() == `init` && errDirNotFound.Found() == dependencies.KbcProjectDir {
-				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
-				root.logger.Info(`Or synchronize the current directory with the "pull" command.`)
+				root.logger.InfofCtx(root.Context(), `Please use %s.`, errDirNotFound.Expected())
+				root.logger.InfoCtx(root.Context(), `Or synchronize the current directory with the "pull" command.`)
 			} else if errDirNotFound.Expected() == dependencies.KbcProjectDir {
-				root.logger.Infof(`Please change working directory to %s.`, errDirNotFound.Expected())
-				root.logger.Infof(`Or use the "sync init" command in %s.`, dependencies.EmptyDir)
+				root.logger.InfofCtx(root.Context(), `Please change working directory to %s.`, errDirNotFound.Expected())
+				root.logger.InfofCtx(root.Context(), `Or use the "sync init" command in %s.`, dependencies.EmptyDir)
 			} else {
-				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
+				root.logger.InfofCtx(root.Context(), `Please use %s.`, errDirNotFound.Expected())
 			}
 			if errDirNotFound.Expected() == dependencies.EmptyDir {
 				modifiedErrs.Append(errors.Wrapf(err, "directory is not empty"))
@@ -320,20 +319,20 @@ func (root *RootCommand) printError(errRaw error) {
 				modifiedErrs.Append(errors.Wrapf(err, "neither this nor any parent directory is %s", errDirNotFound.Expected()))
 			}
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
-			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
-			root.logger.Infof(`Please change working directory to a project directory.`)
-			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
+			root.logger.InfofCtx(root.Context(), `Project directory must contain the "%s" file.`, projectManifest.Path())
+			root.logger.InfofCtx(root.Context(), `Please change working directory to a project directory.`)
+			root.logger.InfofCtx(root.Context(), `Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrRepositoryManifestNotFound):
-			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
-			root.logger.Infof(`Please change working directory to a repository directory.`)
-			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
+			root.logger.InfofCtx(root.Context(), `Repository directory must contain the "%s" file.`, repositoryManifest.Path())
+			root.logger.InfofCtx(root.Context(), `Please change working directory to a repository directory.`)
+			root.logger.InfofCtx(root.Context(), `Or use the "template repository init" command in an empty directory.`)
 			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrTemplateManifestNotFound):
-			root.logger.Infof(`Template directory must contain the "%s" file.`, templateManifest.Path())
-			root.logger.Infof(`You are in the template repository, but not in the template directory.`)
-			root.logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
-			root.logger.Infof(`Or use the "template create" command.`)
+			root.logger.InfofCtx(root.Context(), `Template directory must contain the "%s" file.`, templateManifest.Path())
+			root.logger.InfofCtx(root.Context(), `You are in the template repository, but not in the template directory.`)
+			root.logger.InfofCtx(root.Context(), `Please change working directory to a template directory, for example "template/v1".`)
+			root.logger.InfofCtx(root.Context(), `Or use the "template create" command.`)
 			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is template dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageAPIHost), errors.Is(err, dialog.ErrMissingStorageAPIHost):
 			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageAPIHostOpt, root.options.GetEnvName(options.StorageAPIHostOpt)))
@@ -345,7 +344,7 @@ func (root *RootCommand) printError(errRaw error) {
 	}
 
 	fullErr := errors.PrefixError(modifiedErrs, "Error")
-	root.logger.Debugf("Error debug log:\n%s", errors.Format(fullErr, errors.FormatWithStack(), errors.FormatWithUnwrap()))
+	root.logger.DebugfCtx(root.Context(), "Error debug log:\n%s", errors.Format(fullErr, errors.FormatWithStack(), errors.FormatWithUnwrap()))
 	root.PrintErrln(errors.Format(fullErr, errors.FormatAsSentences()))
 }
 
@@ -367,12 +366,12 @@ func (root *RootCommand) setupLogger() {
 
 	// Warn if user specified log file + it cannot be opened
 	if logFileErr != nil && root.options.LogFilePath != "" {
-		root.logger.Warnf("Cannot open log file: %s", logFileErr)
+		root.logger.WarnfCtx(root.Context(), "Cannot open log file: %s", logFileErr)
 	}
 
 	// Warn if user specified invalid log format
 	if logFormatErr != nil {
-		root.logger.Warnf("Invalid log format: %s", logFormatErr)
+		root.logger.WarnfCtx(root.Context(), "Invalid log format: %s", logFormatErr)
 	}
 
 	// Log info
@@ -405,8 +404,13 @@ func (root *RootCommand) tearDown(exitCode int, panicErr any) int {
 			logFilePath = root.logFile.Path()
 		}
 
+		ctx := root.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
 		// Process panic
-		exitCode = cli.ProcessPanic(panicErr, root.logger, logFilePath)
+		exitCode = cli.ProcessPanic(ctx, panicErr, root.logger, logFilePath)
 	}
 
 	// Close log file

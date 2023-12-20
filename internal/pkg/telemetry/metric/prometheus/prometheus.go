@@ -32,7 +32,8 @@ type errLogger struct {
 }
 
 func (l *errLogger) Println(v ...any) {
-	l.logger.Error(v...)
+	// The prometheus library doesn't provide a context of the message, so we have no choice but to use context.Background().
+	l.logger.ErrorCtx(context.Background(), v...)
 }
 
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.
@@ -66,21 +67,22 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	handler := http.NewServeMux()
 	handler.Handle("/"+Endpoint, promhttp.HandlerFor(registry, opts))
 	srv := &http.Server{Addr: listenAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
-		logger.Infof(`HTTP server listening on "%s/%s"`, listenAddr, Endpoint)
-		shutdown(srv.ListenAndServe())
+	proc.Add(func(shutdown servicectx.ShutdownFn) {
+		logger.InfofCtx(ctx, `HTTP server listening on "%s/%s"`, listenAddr, Endpoint)
+		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
+		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
-	proc.OnShutdown(func() {
-		logger.Infof(`shutting down HTTP server at "%s"`, listenAddr)
-
+	proc.OnShutdown(func(ctx context.Context) {
 		// Shutdown gracefully with a 30s timeout.
-		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 		defer cancel()
 
+		logger.InfofCtx(ctx, `shutting down HTTP server at "%s"`, listenAddr)
+
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Errorf(`HTTP server shutdown error: %s`, err)
+			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)
 		}
-		logger.Info("HTTP server shutdown finished")
+		logger.InfoCtx(ctx, "HTTP server shutdown finished")
 	})
 
 	// Wait for server

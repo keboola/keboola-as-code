@@ -44,8 +44,8 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return errors.Errorf("could not list buckets: %w", err)
 	}
 
-	if !fs.Exists(dbt.SourcesPath) {
-		err = fs.Mkdir(dbt.SourcesPath)
+	if !fs.Exists(ctx, dbt.SourcesPath) {
+		err = fs.Mkdir(ctx, dbt.SourcesPath)
 		if err != nil {
 			return err
 		}
@@ -60,12 +60,12 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			return err
 		}
 
-		err = fs.WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), string(yamlEnc)))
+		err = fs.WriteFile(ctx, filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), string(yamlEnc)))
 		if err != nil {
 			return err
 		}
 	}
 
-	d.Logger().Infof(`Sources stored in "%s" directory.`, dbt.SourcesPath)
+	d.Logger().InfofCtx(ctx, `Sources stored in "%s" directory.`, dbt.SourcesPath)
 	return nil
 }

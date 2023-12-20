@@ -16,7 +16,7 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/fix-paths/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -34,7 +34,7 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Rename
-			_, err = rename.Run(d.CommandCtx(), projectState, options, d)
+			_, err = rename.Run(cmd.Context(), projectState, options, d)
 			return err
 		},
 	}

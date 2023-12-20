@@ -1,6 +1,8 @@
 package manifest
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -31,13 +33,13 @@ func New() *Manifest {
 }
 
 // Load manifest File.
-func Load(fs filesystem.Fs) (*File, error) {
+func Load(ctx context.Context, fs filesystem.Fs) (*File, error) {
 	path := Path()
-	if !fs.IsFile(path) {
+	if !fs.IsFile(ctx, path) {
 		return nil, errors.Errorf("manifest \"%s\" not found", path)
 	}
 
-	f, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("manifest"))
+	f, err := fs.ReadFile(ctx, filesystem.NewFileDef(path).SetDescription("manifest"))
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +48,9 @@ func Load(fs filesystem.Fs) (*File, error) {
 }
 
 // Evaluate Jsonnet content.
-func (f *File) Evaluate(jsonnetCtx *jsonnet.Context) (*Manifest, error) {
+func (f *File) Evaluate(ctx context.Context, jsonnetCtx *jsonnet.Context) (*Manifest, error) {
 	// Evaluate Jsonnet
-	content, err := evaluateFile(f.file, jsonnetCtx)
+	content, err := evaluateFile(ctx, f.file, jsonnetCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +74,14 @@ func (f *File) RawContent() string {
 	return f.file.Content
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
 	content.setRecords(m.records.All())
 	content.MainConfig = m.mainConfig
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(ctx, fs, content); err != nil {
 		return err
 	}
 

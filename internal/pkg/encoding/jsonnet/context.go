@@ -79,13 +79,6 @@ func (c *Context) WithImporter(importer jsonnet.Importer) *Context {
 	return &clone
 }
 
-func (c *Context) Ctx() context.Context {
-	if c == nil {
-		return context.Background()
-	}
-	return c.ctx
-}
-
 func (c *Context) Pretty() bool {
 	if c == nil {
 		return true

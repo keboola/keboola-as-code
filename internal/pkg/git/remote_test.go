@@ -61,7 +61,7 @@ func TestGit_Checkout(t *testing.T) {
 	fs1, unlockFS1 := r.Fs()
 
 	// Full checkout -> directory is not empty
-	subDirs, err := filesystem.ReadSubDirs(fs1, "/")
+	subDirs, err := filesystem.ReadSubDirs(ctx, fs1, "/")
 	assert.NoError(t, err)
 	assert.Greater(t, len(subDirs), 1)
 
@@ -77,12 +77,12 @@ func TestGit_Checkout(t *testing.T) {
 
 	// Test parallel access to FS
 	fs2, unlockFS2 := r.Fs()
-	assert.True(t, fs2.Exists("example-file.txt"))
+	assert.True(t, fs2.Exists(ctx, "example-file.txt"))
 
 	// Test pull
 	_, err = r.Pull(ctx)
 	assert.NoError(t, err)
-	assert.True(t, fs1.Exists("example-file.txt"))
+	assert.True(t, fs1.Exists(ctx, "example-file.txt"))
 
 	// Test free
 	basePath := fs1.BasePath()
@@ -131,7 +131,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	fs1, unlockFS1 := r.Fs()
 
 	// Sparse checkout -> directory is empty
-	subDirs, err := filesystem.ReadSubDirs(fs1, "/")
+	subDirs, err := filesystem.ReadSubDirs(ctx, fs1, "/")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{".git"}, subDirs)
 
@@ -147,12 +147,12 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 
 	// Test parallel access to FS
 	fs2, unlockFS2 := r.Fs()
-	assert.True(t, fs2.Exists(".git"))
+	assert.True(t, fs2.Exists(ctx, ".git"))
 
 	// Test pull
 	_, err = r.Pull(ctx)
 	assert.NoError(t, err)
-	assert.True(t, fs1.Exists(".git"))
+	assert.True(t, fs1.Exists(ctx, ".git"))
 
 	// Test free
 	basePath := fs1.BasePath()

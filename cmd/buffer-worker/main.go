@@ -52,11 +52,11 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferWorker]")
-	logger.Info("Configuration: ", cfg.Dump())
+	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
-		stop, err := cpuprofile.Start(cfg.CPUProfFilePath, logger)
+		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
@@ -64,7 +64,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
+	proc, err := servicectx.New(servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func run() error {
 	}
 
 	// Create service.
-	logger.Infof("starting Buffer Worker")
+	logger.InfofCtx(ctx, "starting Buffer Worker")
 	_, err = service.New(workerScp)
 	if err != nil {
 		return err

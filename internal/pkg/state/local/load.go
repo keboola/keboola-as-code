@@ -10,14 +10,14 @@ import (
 // loadObject from manifest and filesystem.
 func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest, object model.Object) (found bool, err error) {
 	// Check if directory exists
-	if !m.fs.IsDir(manifest.Path()) {
+	if !m.fs.IsDir(ctx, manifest.Path()) {
 		return false, errors.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
 	}
 
 	// Call mappers
 	errs := errors.NewMultiError()
 	recipe := model.NewLocalLoadRecipe(m.FileLoader(), manifest, object)
-	if err := m.mapper.MapAfterLocalLoad(context.Background(), recipe); err != nil {
+	if err := m.mapper.MapAfterLocalLoad(ctx, recipe); err != nil {
 		errs.Append(err)
 	}
 

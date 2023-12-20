@@ -14,11 +14,11 @@ func StatusCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`status/short`),
 		Long:  helpmsg.Read(`status/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
-			return status.Run(d.CommandCtx(), d)
+			return status.Run(cmd.Context(), d)
 		},
 	}
 

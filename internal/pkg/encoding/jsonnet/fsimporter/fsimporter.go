@@ -1,6 +1,8 @@
 package fsimporter
 
 import (
+	"context"
+
 	"github.com/google/go-jsonnet"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -21,7 +23,7 @@ func (i Importer) Import(importedFrom, filePath string) (contents jsonnet.Conten
 	}
 
 	// Load file
-	file, err := i.root.ReadFile(filesystem.NewFileDef(filePath))
+	file, err := i.root.ReadFile(context.TODO(), filesystem.NewFileDef(filePath))
 	if err != nil {
 		return jsonnet.Contents{}, "", err
 	}

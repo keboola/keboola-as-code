@@ -58,12 +58,12 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !plan.Empty() {
 		// Dry run?
 		if o.DryRun {
-			logger.Info("Dry run, nothing changed.")
+			logger.InfoCtx(ctx, "Dry run, nothing changed.")
 			return nil
 		}
 
 		// Invoke
-		if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil {
+		if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil { // nolint: contextcheck
 			return err
 		}
 
@@ -79,21 +79,21 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Validate schemas and encryption
 		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
-			logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-			logger.Warn()
-			logger.Warnf(`The project has been pulled, but it is not in a valid state.`)
-			logger.Warnf(`Please correct the problems listed above.`)
-			logger.Warnf(`Push operation is only possible when project is valid.`)
+			logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+			logger.WarnCtx(ctx)
+			logger.WarnCtx(ctx, `The project has been pulled, but it is not in a valid state.`)
+			logger.WarnCtx(ctx, `Please correct the problems listed above.`)
+			logger.WarnCtx(ctx, `Push operation is only possible when project is valid.`)
 		}
 	}
 
 	// Log untracked paths
 	if o.LogUntrackedPaths {
-		projectState.LogUntrackedPaths(logger)
+		projectState.LogUntrackedPaths(ctx, logger)
 	}
 
 	if !plan.Empty() {
-		logger.Info("Pull done.")
+		logger.InfoCtx(ctx, "Pull done.")
 	}
 
 	return nil

@@ -16,7 +16,7 @@ func ReadInputValues(ctx context.Context, tmpl *template.Template, test *templat
 	if err != nil {
 		return nil, err
 	}
-	inputsFile, err := test.Inputs(envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
+	inputsFile, err := test.Inputs(ctx, envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
 	if err != nil {
 		return nil, err
 	}
@@ -25,12 +25,12 @@ func ReadInputValues(ctx context.Context, tmpl *template.Template, test *templat
 	err = tmpl.Inputs().ToExtended().VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		var inputValue template.InputValue
 		if v, found := inputsFile[inputDef.ID]; found {
-			inputValue, err = template.ParseInputValue(v, inputDef, true)
+			inputValue, err = template.ParseInputValue(ctx, v, inputDef, true)
 			if err != nil {
 				return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
 			}
 		} else {
-			inputValue, err = template.ParseInputValue(inputDef.DefaultOrEmpty(), inputDef, true)
+			inputValue, err = template.ParseInputValue(ctx, inputDef.DefaultOrEmpty(), inputDef, true)
 			if err != nil {
 				return errors.NewNestedError(err, errors.New("please define value in the inputs JSON file"))
 			}

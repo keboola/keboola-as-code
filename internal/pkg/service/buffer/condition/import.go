@@ -49,8 +49,8 @@ func (c *Checker) shouldImport(ctx context.Context, now time.Time, sliceKey key.
 	return ok, reason, nil
 }
 
-func (c *Checker) startSwapFileTask(fileManager *file.AuthorizedManager, fileKey key.FileKey) error {
-	return c.tasks.StartTaskOrErr(task.Config{
+func (c *Checker) startSwapFileTask(ctx context.Context, fileManager *file.AuthorizedManager, fileKey key.FileKey) error {
+	return c.tasks.StartTaskOrErr(ctx, task.Config{
 		Type: fileSwapTaskType,
 		Key: task.Key{
 			ProjectID: fileKey.ProjectID,

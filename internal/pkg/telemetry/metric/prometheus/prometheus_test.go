@@ -80,7 +80,7 @@ target_info{service_name="my-service"} 1
 `, getBody(t, ctx, endpointURL))
 
 	// Shutdown the server
-	d.Process().Shutdown(errors.New("bye bye"))
+	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 
 	// Check logs

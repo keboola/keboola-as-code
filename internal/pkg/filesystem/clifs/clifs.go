@@ -3,7 +3,7 @@
 package clifs
 
 import (
-	"fmt"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +22,7 @@ import (
 //  1. ".keboola" directory, this indicates a local project or templates repository.
 //  2. "dbt_project.yml" file, this indicates a dbt project.
 //  3. If nothing can be found, returns the current working directory.
-func New(opts ...filesystem.Option) (fs filesystem.Fs, err error) {
+func New(ctx context.Context, opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	config := filesystem.ProcessOptions(opts)
 
 	if config.WorkingDir == "" {
@@ -39,7 +39,7 @@ func New(opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	}
 
 	// Find root directory
-	rootDir, err := find(config.Logger, config.WorkingDir)
+	rootDir, err := find(ctx, config.Logger, config.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func New(opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 }
 
 // Find searches for a directory known for the CLI. See New function.
-func find(logger log.Logger, workingDir string) (string, error) {
+func find(ctx context.Context, logger log.Logger, workingDir string) (string, error) {
 	// Working dir must be absolute
 
 	if !filepath.IsAbs(workingDir) {
@@ -84,10 +84,10 @@ func find(logger log.Logger, workingDir string) (string, error) {
 			if stat.IsDir() {
 				return actualDir, nil
 			} else {
-				logger.Debugf(fmt.Sprintf("Expected dir, but found file at \"%s\"", metadataDir))
+				logger.DebugfCtx(ctx, "Expected dir, but found file at \"%s\"", metadataDir)
 			}
 		} else if !os.IsNotExist(err) {
-			logger.Debugf(fmt.Sprintf("Cannot check if path \"%s\" exists: %s", metadataDir, err))
+			logger.DebugfCtx(ctx, "Cannot check if path \"%s\" exists: %s", metadataDir, err)
 		}
 
 		// Check "dbt_project.yml"
@@ -96,10 +96,10 @@ func find(logger log.Logger, workingDir string) (string, error) {
 			if !stat.IsDir() {
 				return actualDir, nil
 			} else {
-				logger.Debugf(fmt.Sprintf("Expected file, but found dir at \"%s\"", dbtFile))
+				logger.DebugfCtx(ctx, "Expected file, but found dir at \"%s\"", dbtFile)
 			}
 		} else if !os.IsNotExist(err) {
-			logger.Debugf(fmt.Sprintf("Cannot check if path \"%s\" exists: %s", dbtFile, err))
+			logger.DebugfCtx(ctx, "Cannot check if path \"%s\" exists: %s", dbtFile, err)
 		}
 
 		// Go up to the parent directory

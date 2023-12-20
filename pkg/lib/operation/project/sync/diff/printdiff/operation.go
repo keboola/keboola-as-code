@@ -34,22 +34,22 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Log untracked paths
 	if o.LogUntrackedPaths {
-		projectState.LogUntrackedPaths(logger)
+		projectState.LogUntrackedPaths(ctx, logger)
 	}
 
 	if results.Equal {
-		logger.Info("No difference.")
+		logger.InfoCtx(ctx, "No difference.")
 	} else {
 		// Explain
-		logger.Info(diff.ChangeMark + " changed")
-		logger.Info(diff.OnlyInRemoteMark + " remote state")
-		logger.Info(diff.OnlyInLocalMark + " local state")
-		logger.Info("")
+		logger.InfoCtx(ctx, diff.ChangeMark+" changed")
+		logger.InfoCtx(ctx, diff.OnlyInRemoteMark+" remote state")
+		logger.InfoCtx(ctx, diff.OnlyInLocalMark+" local state")
+		logger.InfoCtx(ctx, "")
 
 		// Print diff
-		logger.Info("Diff:")
+		logger.InfoCtx(ctx, "Diff:")
 		for _, line := range results.Format(o.PrintDetails) {
-			logger.Info(line)
+			logger.InfoCtx(ctx, line)
 		}
 	}
 

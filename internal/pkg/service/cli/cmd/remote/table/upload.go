@@ -20,7 +20,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -29,7 +29,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 			var tableID keboola.TableID
 			var primaryKey []string
 			if len(args) < 1 {
-				id, createNew, err := askTable(d, true)
+				id, createNew, err := askTable(cmd.Context(), d, true)
 				if err != nil {
 					return err
 				}
@@ -56,7 +56,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			file, err := fileUpload.Run(d.CommandCtx(), fileUploadOpts, d)
+			file, err := fileUpload.Run(cmd.Context(), fileUploadOpts, d)
 			if err != nil {
 				return err
 			}
@@ -74,9 +74,9 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-upload")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-upload")
 
-			return tableImport.Run(d.CommandCtx(), tableImportOpts, d)
+			return tableImport.Run(cmd.Context(), tableImportOpts, d)
 		},
 	}
 

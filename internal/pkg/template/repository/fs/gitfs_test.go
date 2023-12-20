@@ -25,6 +25,7 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	}
 
 	d := dependenciesLib.NewMocked(t)
+	ctx := context.Background()
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
@@ -66,18 +67,18 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	template = model.NewTemplateRef(repo, "template1", "1.0")
 	fs, err := gitFsFor(ctx, d, repo, OnlyForTemplate(template))
 	assert.NoError(t, err)
-	assert.True(t, fs.Exists("template1/v1/src/manifest.jsonnet"))
+	assert.True(t, fs.Exists(ctx, "template1/v1/src/manifest.jsonnet"))
 	// Common dir exist, in this "main" branch
-	assert.True(t, fs.Exists(filesystem.Join("_common", "foo.txt")))
+	assert.True(t, fs.Exists(ctx, filesystem.Join("_common", "foo.txt")))
 
 	// Checkout success because template2 exists only in branch b1
 	repo = model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
 	template = model.NewTemplateRef(repo, "template2", "2.1.0")
 	fs, err = gitFsFor(ctx, d, repo, OnlyForTemplate(template))
 	assert.NoError(t, err)
-	assert.True(t, fs.Exists("template2/v2/src/manifest.jsonnet"))
+	assert.True(t, fs.Exists(ctx, "template2/v2/src/manifest.jsonnet"))
 	// Another template folder should not exist
-	assert.False(t, fs.Exists("template1"))
+	assert.False(t, fs.Exists(ctx, "template1"))
 	// Common dir does not exist, in this "b1" branch
-	assert.False(t, fs.Exists("_common"))
+	assert.False(t, fs.Exists(ctx, "_common"))
 }

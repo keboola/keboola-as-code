@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -56,9 +57,9 @@ func New(projectID keboola.ProjectID, apiHost string) *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
+func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	// Load file content
-	content, err := loadFile(fs)
+	content, err := loadFile(ctx, fs)
 	if err != nil && (!ignoreErrors || content == nil) {
 		return nil, InvalidManifestError{err}
 	}
@@ -82,7 +83,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	return m, nil
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	// Create file content
 	content := newFile(m.ProjectID(), m.APIHost())
 	content.SortBy = m.SortBy()
@@ -93,7 +94,7 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	content.setRecords(m.records.All())
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(ctx, fs, content); err != nil {
 		return err
 	}
 

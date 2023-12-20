@@ -16,7 +16,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/test/create/short`),
 		Long:  helpmsg.Read(`template/test/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -27,7 +27,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			templateID := args[0]
 
 			// Get template repository
-			repo, _, err := d.LocalTemplateRepository(d.CommandCtx())
+			repo, _, err := d.LocalTemplateRepository(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -38,25 +38,25 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				versionArg = args[1]
 			}
 
-			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), templateID, versionArg))
+			tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), templateID, versionArg))
 			if err != nil {
 				return err
 			}
 
 			// Options
-			options, warnings, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl)
+			options, warnings, err := d.Dialogs().AskCreateTemplateTestOptions(cmd.Context(), tmpl)
 			if err != nil {
 				return err
 			}
 
-			err = createOp.Run(d.CommandCtx(), tmpl, options, d)
+			err = createOp.Run(cmd.Context(), tmpl, options, d)
 			if err != nil {
 				return err
 			}
 
 			if len(warnings) > 0 {
 				for _, w := range warnings {
-					d.Logger().Warnf(w)
+					d.Logger().WarnfCtx(cmd.Context(), w)
 				}
 			}
 			return nil

@@ -94,7 +94,7 @@ func (w *modelWriter) write() {
 		} else {
 			w.ObjectManifest.AddRelatedPath(fileRaw.Path())
 		}
-		if err := w.fs.WriteFile(fileRaw); err != nil {
+		if err := w.fs.WriteFile(w.ctx, fileRaw); err != nil {
 			w.errors.Append(err)
 		}
 	}
@@ -111,11 +111,11 @@ func (w *modelWriter) write() {
 func (w *modelWriter) softDelete(path string) error {
 	src := path
 	dst := src + `.old`
-	if !w.fs.IsFile(src) {
+	if !w.fs.IsFile(w.ctx, src) {
 		return nil
 	}
 
-	err := w.fs.Move(src, dst)
+	err := w.fs.Move(w.ctx, src, dst)
 	if err == nil {
 		w.backups[src] = dst
 	}
@@ -126,8 +126,8 @@ func (w *modelWriter) softDelete(path string) error {
 func (w *modelWriter) restoreBackups() {
 	if w.errors.Len() > 0 {
 		for dst, src := range w.backups {
-			if err := w.fs.Move(src, dst); err != nil {
-				w.logger.Debug(errors.Errorf(`cannot restore backup "%s" -> "%s": %s`, src, dst, err))
+			if err := w.fs.Move(w.ctx, src, dst); err != nil {
+				w.logger.DebugCtx(w.ctx, errors.Errorf(`cannot restore backup "%s" -> "%s": %s`, src, dst, err))
 			}
 		}
 	}
@@ -136,8 +136,8 @@ func (w *modelWriter) restoreBackups() {
 // removeBackups if all is ok.
 func (w *modelWriter) removeBackups() {
 	for _, path := range w.backups {
-		if err := w.fs.Remove(path); err != nil {
-			w.logger.Debug(errors.Errorf(`cannot remove backup "%s": %s`, path, err))
+		if err := w.fs.Remove(w.ctx, path); err != nil {
+			w.logger.DebugCtx(w.ctx, errors.Errorf(`cannot remove backup "%s": %s`, path, err))
 		}
 	}
 	w.backups = make(map[string]string)

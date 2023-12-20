@@ -18,10 +18,10 @@ func Run(ctx context.Context, stepGroups template.StepsGroups, fs filesystem.Fs,
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.inputs.create")
 	defer span.End(&err)
 
-	if err := stepGroups.Save(fs); err != nil {
+	if err := stepGroups.Save(ctx, fs); err != nil {
 		return err
 	}
 
-	d.Logger().Debugf(`Template inputs have been saved.`)
+	d.Logger().DebugfCtx(ctx, `Template inputs have been saved.`)
 	return nil
 }

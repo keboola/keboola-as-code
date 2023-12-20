@@ -50,7 +50,7 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 	if !d.options.ToStdout() {
 		defer func() {
 			if returnErr == nil {
-				d.Logger().Infof(`File "%d" downloaded to "%s".`, d.options.File.ID, d.options.FormattedOutput())
+				d.Logger().InfofCtx(ctx, `File "%d" downloaded to "%s".`, d.options.File.ID, d.options.FormattedOutput())
 			}
 		}()
 	}

@@ -14,12 +14,14 @@ func newConsoleEncoder(verbose bool) zapcore.Encoder {
 	}
 
 	// Create encoder
-	return zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		MessageKey:       "msg",
-		LevelKey:         levelKey,
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
-	})
+	return newNoFieldsEncoder(
+		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+			MessageKey:       "msg",
+			LevelKey:         levelKey,
+			EncodeLevel:      zapcore.CapitalLevelEncoder,
+			ConsoleSeparator: "\t",
+		}),
+	)
 }
 
 func newJSONEncoder() zapcore.Encoder {

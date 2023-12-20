@@ -22,7 +22,7 @@ func LoadProject(ctx context.Context, fs filesystem.Fs) (*Project, error) {
 
 	// Load project file
 	fileDef := filesystem.NewFileDef(ProjectFilePath).SetDescription("dbt project")
-	if _, err := fs.FileLoader().ReadYamlFileTo(fileDef, &out.projectFile); errors.Is(err, filesystem.ErrNotExist) {
+	if _, err := fs.FileLoader().ReadYamlFileTo(ctx, fileDef, &out.projectFile); errors.Is(err, filesystem.ErrNotExist) {
 		return nil, errors.Errorf(`missing  "%s" in the "%s"`, ProjectFilePath, fs.BasePath())
 	} else if err != nil {
 		return nil, err

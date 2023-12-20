@@ -17,19 +17,19 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/workspace/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// Ask options
-			err = list.Run(d.CommandCtx(), d)
+			err = list.Run(cmd.Context(), d)
 			if err != nil {
 				return err
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-list-workspace")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-list-workspace")
 
 			return nil
 		},

@@ -20,13 +20,13 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/pull/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Command must be used in project directory
-			_, _, err := p.BaseScope().FsInfo().ProjectDir()
+			_, _, err := p.BaseScope().FsInfo().ProjectDir(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// Authentication
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -34,11 +34,11 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			// Get local project
 			logger := d.Logger()
 			force := d.Options().GetBool(`force`)
-			prj, _, err := d.LocalProject(force)
+			prj, _, err := d.LocalProject(cmd.Context(), force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
-					logger.Info()
-					logger.Info("Use --force to override the invalid local state.")
+					logger.InfoCtx(cmd.Context())
+					logger.InfoCtx(cmd.Context(), "Use --force to override the invalid local state.")
 				}
 				return err
 			}
@@ -47,8 +47,8 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			projectState, err := prj.LoadState(loadState.PullOptions(force), d)
 			if err != nil {
 				if !force && errors.As(err, &loadState.InvalidLocalStateError{}) {
-					logger.Info()
-					logger.Info("Use --force to override the invalid local state.")
+					logger.InfoCtx(cmd.Context())
+					logger.InfoCtx(cmd.Context(), "Use --force to override the invalid local state.")
 				}
 				return err
 			}
@@ -60,10 +60,10 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "sync-pull")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "sync-pull")
 
 			// Pull
-			return pull.Run(d.CommandCtx(), projectState, options, d)
+			return pull.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 

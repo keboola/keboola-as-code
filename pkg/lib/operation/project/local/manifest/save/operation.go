@@ -20,12 +20,12 @@ func Run(ctx context.Context, m *project.Manifest, fs filesystem.Fs, d Dependenc
 
 	// Save if manifest is changed
 	if m.IsChanged() {
-		if err := m.Save(fs); err != nil {
+		if err := m.Save(ctx, fs); err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 
-	d.Logger().Debugf(`Project manifest has not changed.`)
+	d.Logger().DebugfCtx(ctx, `Project manifest has not changed.`)
 	return false, nil
 }

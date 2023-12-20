@@ -2,6 +2,7 @@
 package log
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -20,11 +21,8 @@ func TestCallbackLogger(t *testing.T) {
 	logger := NewCallbackLogger(func(entry zapcore.Entry, fields []zapcore.Field) {
 		records = append(records, record{entry: entry, fields: fields})
 	})
-	logger.Debug(`Debug message.`)
-	logger.Info(`Info message.`)
-	loggerWithFields := logger.With("key1", "value1", "key2", "value2")
-	loggerWithFields.Debug(`Debug message.`)
-	loggerWithFields.Info(`Info message.`)
+	logger.DebugCtx(context.Background(), `Debug message.`)
+	logger.InfoCtx(context.Background(), `Info message.`)
 
 	// Clear time
 	for i, r := range records {
@@ -36,13 +34,5 @@ func TestCallbackLogger(t *testing.T) {
 	assert.Equal(t, []record{
 		{entry: zapcore.Entry{Level: DebugLevel, Message: "Debug message."}},
 		{entry: zapcore.Entry{Level: InfoLevel, Message: "Info message."}},
-		{entry: zapcore.Entry{Level: DebugLevel, Message: "Debug message."}, fields: []zapcore.Field{
-			{Key: "key1", Type: zapcore.StringType, String: "value1"},
-			{Key: "key2", Type: zapcore.StringType, String: "value2"},
-		}},
-		{entry: zapcore.Entry{Level: InfoLevel, Message: "Info message."}, fields: []zapcore.Field{
-			{Key: "key1", Type: zapcore.StringType, String: "value1"},
-			{Key: "key2", Type: zapcore.StringType, String: "value2"},
-		}},
 	}, records)
 }

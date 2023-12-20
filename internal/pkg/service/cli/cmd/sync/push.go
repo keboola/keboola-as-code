@@ -18,19 +18,19 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/push/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Command must be used in project directory
-			_, _, err := p.BaseScope().FsInfo().ProjectDir()
+			_, _, err := p.BaseScope().FsInfo().ProjectDir(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// Get local project
-			prj, _, err := d.LocalProject(false)
+			prj, _, err := d.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -57,10 +57,10 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "sync-push")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "sync-push")
 
 			// Push
-			return push.Run(d.CommandCtx(), projectState, options, d)
+			return push.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 

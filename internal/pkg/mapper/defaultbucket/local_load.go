@@ -13,7 +13,7 @@ import (
 )
 
 // AfterLocalOperation - replace placeholders with default buckets in IM.
-func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
+func (m *defaultBucketMapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	warnings := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		config, ok := objectState.LocalState().(configOrRow)
@@ -27,13 +27,13 @@ func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *mo
 
 	// Log errors as warning
 	if warnings.Len() > 0 {
-		m.logger.Warn(errors.Format(errors.PrefixError(warnings, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(warnings, "warning"), errors.FormatAsSentences()))
 	}
 
 	// Process renamed objects
 	errs := errors.NewMultiError()
 	if len(changes.Renamed()) > 0 {
-		if err := m.onObjectsRename(changes.Renamed(), m.state.LocalObjects()); err != nil {
+		if err := m.onObjectsRename(ctx, changes.Renamed(), m.state.LocalObjects()); err != nil {
 			errs.Append(err)
 		}
 	}

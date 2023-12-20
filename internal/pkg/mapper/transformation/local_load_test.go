@@ -17,6 +17,7 @@ import (
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	d := dependencies.NewMocked(t)
 	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
@@ -43,22 +44,22 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 		ConfigKey: configKey,
 		Paths:     model.Paths{AbsPath: model.AbsPath{RelativePath: "config"}},
 	}
-	assert.NoError(t, fs.Mkdir(record.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(record.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.DescriptionFilePath(record.Path()), descFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.ConfigFilePath(record.Path()), configFile)))
+	assert.NoError(t, fs.Mkdir(ctx, record.Path()))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(namingGenerator.MetaFilePath(record.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(namingGenerator.DescriptionFilePath(record.Path()), descFile)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(namingGenerator.ConfigFilePath(record.Path()), configFile)))
 	blocksDir := namingGenerator.BlocksDir(record.Path())
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(ctx, blocksDir))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
 	block.AbsPath = namingGenerator.BlockPath(blocksDir, block)
-	assert.NoError(t, fs.Mkdir(block.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(block.Path()), blockMeta)))
+	assert.NoError(t, fs.Mkdir(ctx, block.Path()))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(namingGenerator.MetaFilePath(block.Path()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
 	code.AbsPath = namingGenerator.CodePath(block.Path(), code)
 	code.CodeFileName = namingGenerator.CodeFileName("foo.bar")
-	assert.NoError(t, fs.Mkdir(code.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(code.Path()), codeMeta)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.CodeFilePath(code), codeContent)))
+	assert.NoError(t, fs.Mkdir(ctx, code.Path()))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(namingGenerator.MetaFilePath(code.Path()), codeMeta)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(namingGenerator.CodeFilePath(code), codeContent)))
 
 	// Set parent
 	assert.NoError(t, state.Set(&model.BranchState{
@@ -67,7 +68,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	}))
 
 	// Load
-	uow := state.LocalManager().NewUnitOfWork(context.Background())
+	uow := state.LocalManager().NewUnitOfWork(ctx)
 	uow.LoadObject(record, model.NoFilter())
 	err := uow.Invoke()
 
@@ -91,15 +92,16 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
+	ctx := context.Background()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(ctx, blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
-	assert.NoError(t, fs.Mkdir(block1))
+	assert.NoError(t, fs.Mkdir(ctx, block1))
 
 	// Load, assert
 	err := state.Mapper().MapAfterLocalLoad(context.Background(), recipe)
@@ -113,18 +115,19 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
+	ctx := context.Background()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(ctx, blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
-	assert.NoError(t, fs.Mkdir(block1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1, `meta.json`), `{"name": "001"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1, `meta.json`), `{"name": "001"}`)))
 	block1Code1 := filesystem.Join(block1, `001-code-1`)
-	assert.NoError(t, fs.Mkdir(block1Code1))
+	assert.NoError(t, fs.Mkdir(ctx, block1Code1))
 
 	// Load, assert
 	err := state.Mapper().MapAfterLocalLoad(context.Background(), recipe)
@@ -141,34 +144,35 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
+	ctx := context.Background()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(ctx, blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
-	assert.NoError(t, fs.Mkdir(block1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1, `meta.json`), `{"name": "001"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1, `meta.json`), `{"name": "001"}`)))
 	block1Code1 := filesystem.Join(block1, `001-code-1`)
-	assert.NoError(t, fs.Mkdir(block1Code1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code1, `meta.json`), `{"name": "001-001"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code1, `code.sql`), `SELECT 1`)))
+	assert.NoError(t, fs.Mkdir(ctx, block1Code1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code1, `meta.json`), `{"name": "001-001"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code1, `code.sql`), `SELECT 1`)))
 	block1Code2 := filesystem.Join(blocksDir, `001-block-1`, `002-code-2`)
-	assert.NoError(t, fs.Mkdir(block1Code2))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code2, `meta.json`), `{"name": "001-002"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code2, `code.sql`), `SELECT 1; SELECT 2;`)))
+	assert.NoError(t, fs.Mkdir(ctx, block1Code2))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code2, `meta.json`), `{"name": "001-002"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code2, `code.sql`), `SELECT 1; SELECT 2;`)))
 	block2 := filesystem.Join(blocksDir, `002-block-2`)
-	assert.NoError(t, fs.Mkdir(block2))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block2, `meta.json`), `{"name": "002"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block2))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block2, `meta.json`), `{"name": "002"}`)))
 	block2Code1 := filesystem.Join(block2, `002-code-1`)
-	assert.NoError(t, fs.Mkdir(block2Code1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block2Code1, `meta.json`), `{"name": "002-001"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block2Code1, `code.sql`), `SELECT 3`)))
+	assert.NoError(t, fs.Mkdir(ctx, block2Code1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block2Code1, `meta.json`), `{"name": "002-001"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block2Code1, `code.sql`), `SELECT 3`)))
 	block3 := filesystem.Join(blocksDir, `003-block-3`)
-	assert.NoError(t, fs.Mkdir(block3))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block3))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
@@ -284,34 +288,35 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
+	ctx := context.Background()
 
 	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	assert.NoError(t, fs.Mkdir(ctx, blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
-	assert.NoError(t, fs.Mkdir(block1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1, `meta.json`), `{"name": "001"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1, `meta.json`), `{"name": "001"}`)))
 	block1Code1 := filesystem.Join(block1, `001-code-1`)
-	assert.NoError(t, fs.Mkdir(block1Code1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code1, `meta.json`), `{"name": "001-001"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code1, `code.py`), `print('1')`)))
+	assert.NoError(t, fs.Mkdir(ctx, block1Code1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code1, `meta.json`), `{"name": "001-001"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code1, `code.py`), `print('1')`)))
 	block1Code2 := filesystem.Join(blocksDir, `001-block-1`, `002-code-2`)
-	assert.NoError(t, fs.Mkdir(block1Code2))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code2, `meta.json`), `{"name": "001-002"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block1Code2, `code.py`), "print('1')\nprint('2')")))
+	assert.NoError(t, fs.Mkdir(ctx, block1Code2))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code2, `meta.json`), `{"name": "001-002"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block1Code2, `code.py`), "print('1')\nprint('2')")))
 	block2 := filesystem.Join(blocksDir, `002-block-2`)
-	assert.NoError(t, fs.Mkdir(block2))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block2, `meta.json`), `{"name": "002"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block2))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block2, `meta.json`), `{"name": "002"}`)))
 	block2Code1 := filesystem.Join(block2, `002-code-1`)
-	assert.NoError(t, fs.Mkdir(block2Code1))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block2Code1, `meta.json`), `{"name": "002-001"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block2Code1, `code.py`), `print('3')`)))
+	assert.NoError(t, fs.Mkdir(ctx, block2Code1))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block2Code1, `meta.json`), `{"name": "002-001"}`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block2Code1, `code.py`), `print('3')`)))
 	block3 := filesystem.Join(blocksDir, `003-block-3`)
-	assert.NoError(t, fs.Mkdir(block3))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
+	assert.NoError(t, fs.Mkdir(ctx, block3))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))

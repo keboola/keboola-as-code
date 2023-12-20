@@ -37,10 +37,10 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (inputs *templat
 	}
 
 	// Save
-	if err := inputs.Save(fs); err != nil {
+	if err := inputs.Save(ctx, fs); err != nil {
 		return nil, err
 	}
 
-	logger.Infof("Created template inputs file \"%s\".", inputs.Path())
+	logger.InfofCtx(ctx, "Created template inputs file \"%s\".", inputs.Path())
 	return inputs, nil
 }

@@ -179,7 +179,7 @@ func (t *Test) Run(opts ...Options) {
 	}
 
 	// Replace all %%ENV_VAR%% in all files of the working directory.
-	testhelper.MustReplaceEnvsDir(t.workingDirFS, `/`, t.envProvider)
+	testhelper.MustReplaceEnvsDir(t.ctx, t.workingDirFS, `/`, t.envProvider)
 
 	if c.cliBinaryPath != "" {
 		// Run a CLI binary
@@ -206,22 +206,22 @@ func (t *Test) Run(opts ...Options) {
 }
 
 func (t *Test) copyInToWorkingDir() {
-	if !t.testDirFS.IsDir(inDirName) {
+	if !t.testDirFS.IsDir(t.ctx, inDirName) {
 		t.t.Fatalf(`Missing directory "%s" in "%s".`, inDirName, t.testDir)
 	}
 	assert.NoError(t.t, aferofs.CopyFs2Fs(t.testDirFS, inDirName, t.workingDirFS, `/`))
 }
 
 func (t *Test) initProjectState() {
-	if t.testDirFS.IsFile(initialStateFileName) {
+	if t.testDirFS.IsFile(t.ctx, initialStateFileName) {
 		err := t.project.SetState(filesystem.Join(t.testDir, initialStateFileName))
 		assert.NoError(t.t, err)
 	}
 }
 
 func (t *Test) addEnvVarsFromFile() {
-	if t.testDirFS.Exists(envFileName) {
-		envFile, err := t.testDirFS.ReadFile(filesystem.NewFileDef(envFileName))
+	if t.testDirFS.Exists(t.ctx, envFileName) {
+		envFile, err := t.testDirFS.ReadFile(t.ctx, filesystem.NewFileDef(envFileName))
 		if err != nil {
 			t.t.Fatalf(`Cannot load "%s" file %s`, envFileName, err)
 		}
@@ -242,7 +242,7 @@ func (t *Test) addEnvVarsFromFile() {
 
 func (t *Test) runCLIBinary(path string) {
 	// Load command arguments from file
-	argsFile, err := t.TestDirFS().ReadFile(filesystem.NewFileDef("args"))
+	argsFile, err := t.TestDirFS().ReadFile(t.ctx, filesystem.NewFileDef("args"))
 	if err != nil {
 		t.T().Fatalf(`cannot open "%s" test file %s`, "args", err)
 	}
@@ -261,7 +261,7 @@ func (t *Test) runCLIBinary(path string) {
 	cmd.Dir = t.workingDir
 
 	// Setup command input/output
-	cmdInOut, err := setupCmdInOut(t.t, t.envProvider, t.testDirFS, cmd)
+	cmdInOut, err := setupCmdInOut(t.ctx, t.t, t.envProvider, t.testDirFS, cmd)
 	if err != nil {
 		t.t.Fatal(err.Error())
 	}
@@ -356,8 +356,8 @@ func (t *Test) runAPIServer(
 	stdout := newCmdOut()
 	stderr := newCmdOut()
 	t.T().Cleanup(func() {
-		assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
-		assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
+		assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+		assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("process-stderr.txt", stderr.String())))
 	})
 
 	// Start API server
@@ -404,11 +404,11 @@ func (t *Test) runAPIServer(
 
 	// Check API server stdout/stderr
 	if requestsOk {
-		if t.testDirFS.IsFile(expectedStdoutPath) {
+		if t.testDirFS.IsFile(t.ctx, expectedStdoutPath) {
 			expected := t.ReadFileFromTestDir(expectedStdoutPath)
 			wildcards.Assert(t.t, expected, stdout.String(), "Unexpected STDOUT.")
 		}
-		if t.testDirFS.IsFile(expectedStderrPath) {
+		if t.testDirFS.IsFile(t.ctx, expectedStderrPath) {
 			expected := t.ReadFileFromTestDir(expectedStderrPath)
 			wildcards.Assert(t.t, expected, stderr.String(), "Unexpected STDERR.")
 		}
@@ -443,13 +443,13 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 		if dumpDir, ok := request.Context().Value(dumpDirCtxKey).(string); ok {
 			reqDump, err := httputil.DumpRequest(request, true)
 			assert.NoError(t.t, err)
-			assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump))))
+			assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump)))) // nolint: contextcheck
 		}
 		return nil
 	})
 
 	// Request folders should be named e.g. 001-request1, 002-request2
-	dirs, err := t.testDirFS.Glob("[0-9][0-9][0-9]-*")
+	dirs, err := t.testDirFS.Glob(t.ctx, "[0-9][0-9][0-9]-*")
 	requests := make(map[string]*APIRequest, 0)
 	for _, requestDir := range dirs {
 		// Read the request file
@@ -510,7 +510,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 			if err == nil {
 				respDump, err := httputil.DumpResponse(resp.RawResponse, false)
 				assert.NoError(t.t, err)
-				assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+				assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
 			}
 
 			// Get the response body
@@ -602,7 +602,7 @@ func processPathReference(path string, requests map[string]*APIRequest) (string,
 }
 
 func (t *Test) ReadFileFromTestDir(path string) string {
-	file, err := t.testDirFS.ReadFile(filesystem.NewFileDef(path))
+	file, err := t.testDirFS.ReadFile(t.ctx, filesystem.NewFileDef(path))
 	assert.NoError(t.t, err)
 	return testhelper.MustReplaceEnvsString(strings.TrimSpace(file.Content), t.envProvider)
 }
@@ -610,20 +610,20 @@ func (t *Test) ReadFileFromTestDir(path string) string {
 func (t *Test) assertDirContent() {
 	// Expected state dir
 	expectedDir := "out"
-	if !t.testDirFS.IsDir(expectedDir) {
+	if !t.testDirFS.IsDir(t.ctx, expectedDir) {
 		t.t.Fatalf(`Missing directory "%s" in "%s".`, expectedDir, t.testDirFS.BasePath())
 	}
 
 	// Copy expected state and replace ENVs
 	expectedDirFS := aferofs.NewMemoryFsFrom(filesystem.Join(t.testDirFS.BasePath(), expectedDir))
-	testhelper.MustReplaceEnvsDir(expectedDirFS, `/`, t.envProvider)
+	testhelper.MustReplaceEnvsDir(t.ctx, expectedDirFS, `/`, t.envProvider)
 
 	// Compare actual and expected dirs
 	testhelper.AssertDirectoryContentsSame(t.t, expectedDirFS, `/`, t.workingDirFS, `/`)
 }
 
 func (t *Test) assertProjectState() {
-	if t.testDirFS.IsFile(expectedStatePath) {
+	if t.testDirFS.IsFile(t.ctx, expectedStatePath) {
 		expectedState := t.ReadFileFromTestDir(expectedStatePath)
 
 		// Load actual state
@@ -631,7 +631,7 @@ func (t *Test) assertProjectState() {
 		assert.NoError(t.t, err)
 
 		// Write actual state
-		err = t.workingDirFS.WriteFile(filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualState, true)))
+		err = t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualState, true)))
 		assert.NoError(t.t, err)
 
 		// Compare expected and actual state

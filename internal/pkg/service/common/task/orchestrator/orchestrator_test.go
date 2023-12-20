@@ -92,8 +92,8 @@ func TestOrchestrator(t *testing.T) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
-			return func(_ context.Context, logger log.Logger) task.Result {
-				logger.Info("message from the task")
+			return func(ctx context.Context, logger log.Logger) task.Result {
+				logger.InfoCtx(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -118,9 +118,9 @@ func TestOrchestrator(t *testing.T) {
 
 	cancel()
 	wg.Wait()
-	d1.Process().Shutdown(errors.New("bye bye 1"))
+	d1.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d1.Process().WaitForShutdown()
-	d2.Process().Shutdown(errors.New("bye bye 2"))
+	d2.Process().Shutdown(ctx, errors.New("bye bye 2"))
 	d2.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `
@@ -194,8 +194,8 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 			return "StartTaskIf condition evaluated as false", false
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
-			return func(_ context.Context, logger log.Logger) task.Result {
-				logger.Info("message from the task")
+			return func(ctx context.Context, logger log.Logger) task.Result {
+				logger.InfoCtx(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -210,7 +210,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 
 	cancel()
 	wg.Wait()
-	d.Process().Shutdown(errors.New("bye bye 1"))
+	d.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `
@@ -272,8 +272,8 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
-			return func(_ context.Context, logger log.Logger) task.Result {
-				logger.Info("message from the task")
+			return func(ctx context.Context, logger log.Logger) task.Result {
+				logger.InfoCtx(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -302,7 +302,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 
 	cancel()
 	wg.Wait()
-	d.Process().Shutdown(errors.New("bye bye"))
+	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `

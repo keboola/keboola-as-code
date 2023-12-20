@@ -29,12 +29,12 @@ func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, localManage
 	}
 }
 
-func (e *executor) invoke() error {
+func (e *executor) invoke(ctx context.Context) error {
 	// Validate
 	if err := e.Validate(); err != nil {
 		return err
 	}
-	e.logger.Debugf("Execution plan is valid.")
+	e.logger.DebugfCtx(ctx, "Execution plan is valid.")
 
 	// Invoke
 	for _, action := range e.actions {
@@ -65,7 +65,7 @@ func (e *executor) invoke() error {
 	}
 
 	// Delete invalid objects (eg. if pull --force used, and work continued even an invalid state found)
-	if err := e.localManager.DeleteInvalidObjects(); err != nil {
+	if err := e.localManager.DeleteInvalidObjects(ctx); err != nil {
 		e.errors.Append(err)
 	}
 

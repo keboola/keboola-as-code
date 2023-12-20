@@ -101,7 +101,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// File content has been mapped
-	configFile, err := fs.ReadFile(filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
+	configFile, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  \"key\": \"overwritten\",\n  \"new\": \"value\"\n}", strings.TrimSpace(configFile.Content))
 
@@ -134,10 +134,10 @@ func TestLocalLoadMapper(t *testing.T) {
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
 
 	// Load objects
-	m, err := projectManifest.Load(fs, false)
+	m, err := projectManifest.Load(context.Background(), fs, false)
 	assert.NoError(t, err)
 	uow.LoadAll(m, *m.Filter())
 	assert.NoError(t, uow.Invoke())

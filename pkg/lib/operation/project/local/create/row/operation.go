@@ -2,7 +2,6 @@ package row
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -64,6 +63,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.Info(fmt.Sprintf(`Created new %s "%s"`, key.Kind().Name, projectState.MustGet(key).Path()))
+	logger.InfofCtx(ctx, `Created new %s "%s"`, key.Kind().Name, projectState.MustGet(key).Path())
 	return nil
 }

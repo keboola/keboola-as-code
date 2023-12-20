@@ -50,7 +50,7 @@ func TestMirror(t *testing.T) {
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		StartMirroring(wg)
+		StartMirroring(ctx, wg)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

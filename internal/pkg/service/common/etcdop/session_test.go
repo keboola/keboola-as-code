@@ -38,7 +38,7 @@ func TestResistantSession(t *testing.T) {
 	logger := log.NewDebugLogger()
 	ttlSeconds := 1
 	assert.NoError(t, <-ResistantSession(ctx, wg, logger, client, ttlSeconds, func(session *concurrency.Session) error {
-		logger.Info("----> new session")
+		logger.InfoCtx(ctx, "----> new session")
 		return nil
 	}))
 

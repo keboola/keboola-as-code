@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
+func (m *mapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	// Process loaded objects
 	errs := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
@@ -18,7 +18,7 @@ func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteCh
 
 	if errs.Len() > 0 {
 		// Convert errors to warning
-		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 	return nil
 }

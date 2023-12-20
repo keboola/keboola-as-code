@@ -41,12 +41,12 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !plan.Empty() {
 		// Dry run?
 		if o.DryRun {
-			logger.Info("Dry run, nothing changed.")
+			logger.InfoCtx(ctx, "Dry run, nothing changed.")
 			return false, nil
 		}
 
 		// Invoke
-		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
+		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil { // nolint: contextcheck
 			return false, errors.PrefixError(err, "cannot rename objects")
 		}
 
@@ -55,7 +55,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return false, err
 		}
 
-		logger.Info(`Rename done.`)
+		logger.InfoCtx(ctx, `Rename done.`)
 	}
 
 	return !plan.Empty(), nil

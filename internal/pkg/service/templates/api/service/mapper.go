@@ -352,7 +352,7 @@ func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, ste
 
 	// Together with the inputs definitions, the initial state (initial validation) is generated.
 	// It is primarily intended for the upgrade operation, where the step may be pre-configured.
-	out.InitialState, _, _ = validateInputs(stepsGroups.ToValue(), initialValues)
+	out.InitialState, _, _ = validateInputs(ctx, stepsGroups.ToValue(), initialValues)
 	return out
 }
 

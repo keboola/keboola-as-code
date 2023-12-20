@@ -51,14 +51,14 @@ func New(d Dependencies) (*Node, error) {
 	n.listeners = newListeners(n.logger)
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		n.logger.Info("received shutdown request")
-		n.listeners.wait()
+	d.Process().OnShutdown(func(ctx context.Context) {
+		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.listeners.wait(ctx)
 		cancel()
 		wg.Wait()
-		n.logger.Info("shutdown done")
+		n.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Watch revisions of all API nodes
@@ -100,7 +100,7 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) (init <-chan error
 		WithForEach(func(events []etcdop.WatchEvent, header *etcdop.Header, restart bool) {
 			n.updateRevisionsFrom(ctx, events, restart)
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 }
 
 func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEvent, restart bool) {
@@ -127,15 +127,15 @@ func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEve
 		// Trigger listeners if the minimal version has changed
 		if count := n.listeners.onChange(ctx, n.minRevision); count > 0 {
 			if rev == noAPINode {
-				n.logger.Infof(`all API nodes are gone, unblocked "%d" listeners`, count)
+				n.logger.InfofCtx(ctx, `all API nodes are gone, unblocked "%d" listeners`, count)
 			} else {
-				n.logger.Infof(`revision updated to "%v", unblocked "%d" listeners`, rev, count)
+				n.logger.InfofCtx(ctx, `revision updated to "%v", unblocked "%d" listeners`, rev, count)
 			}
 		} else {
 			if rev == noAPINode {
-				n.logger.Info(`all API nodes are gone`)
+				n.logger.InfoCtx(ctx, `all API nodes are gone`)
 			} else {
-				n.logger.Infof(`revision updated to "%v"`, rev)
+				n.logger.InfofCtx(ctx, `revision updated to "%v"`, rev)
 			}
 		}
 	}

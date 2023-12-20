@@ -22,7 +22,7 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 
 	// Write file
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentID))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(codeFilePath, `foo bar`)))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(codeFilePath, `foo bar`)))
 	logger.Truncate()
 
 	// Load config

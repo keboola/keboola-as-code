@@ -20,12 +20,12 @@ func Run(ctx context.Context, m *repositoryManifest.Manifest, fs filesystem.Fs, 
 
 	// Save if manifest has been changed
 	if m.IsChanged() {
-		if err := m.Save(fs); err != nil {
+		if err := m.Save(ctx, fs); err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 
-	d.Logger().Debugf(`Repository manifest has not changed.`)
+	d.Logger().DebugfCtx(ctx, `Repository manifest has not changed.`)
 	return false, nil
 }

@@ -70,15 +70,16 @@ func NewCollector(d collectorDeps) *Collector {
 		statsPerSlice: make(map[key.SliceKey]*sliceStats),
 	}
 
+	// Graceful shutdown
 	// The context is cancelled on shutdown, after the HTTP server.
 	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		c.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		c.logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		c.logger.Info("shutdown done")
+		c.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Receive notifications and periodically trigger sync
@@ -90,7 +91,7 @@ func NewCollector(d collectorDeps) *Collector {
 		for {
 			select {
 			case <-ctx.Done():
-				<-c.Sync(context.Background())
+				<-c.Sync(context.Background()) // nolint: contextcheck
 				return
 			case <-ticker.C:
 				c.Sync(ctx)
@@ -129,11 +130,11 @@ func (c *Collector) Sync(ctx context.Context) <-chan error {
 	if len(stats) > 0 {
 		go func() {
 			defer close(errCh)
-			c.logger.Debugf("syncing %d records", len(stats))
+			c.logger.DebugfCtx(ctx, "syncing %d records", len(stats))
 			if err := c.repository.Insert(ctx, c.nodeID, stats); err == nil {
-				c.logger.Debug("sync done")
+				c.logger.DebugCtx(ctx, "sync done")
 			} else {
-				c.logger.Errorf("cannot update stats in etcd: %s", err.Error())
+				c.logger.ErrorfCtx(ctx, "cannot update stats in etcd: %s", err.Error())
 				errCh <- err
 			}
 		}()

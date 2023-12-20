@@ -20,12 +20,12 @@ func Run(ctx context.Context, m *template.Manifest, fs filesystem.Fs, d Dependen
 
 	// Save if manifest is changed
 	if m.IsChanged() {
-		if err := m.Save(fs); err != nil {
+		if err := m.Save(ctx, fs); err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 
-	d.Logger().Debugf(`Template manifest has not changed.`)
+	d.Logger().DebugfCtx(ctx, `Template manifest has not changed.`)
 	return false, nil
 }

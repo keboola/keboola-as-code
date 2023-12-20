@@ -24,10 +24,10 @@ func Run(ctx context.Context, emptyDir filesystem.Fs, d dependencies) (m *manife
 	repositoryManifest := manifest.New()
 
 	// Save
-	if err := repositoryManifest.Save(emptyDir); err != nil {
+	if err := repositoryManifest.Save(ctx, emptyDir); err != nil {
 		return nil, err
 	}
 
-	logger.Infof("Created repository manifest file \"%s\".", repositoryManifest.Path())
+	logger.InfofCtx(ctx, "Created repository manifest file \"%s\".", repositoryManifest.Path())
 	return repositoryManifest, nil
 }

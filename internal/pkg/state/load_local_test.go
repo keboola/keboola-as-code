@@ -291,7 +291,7 @@ func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, file
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	envs.Set("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	m, fs, err := fixtures.LoadManifest(projectDirName, envs)
+	m, fs, err := fixtures.LoadManifest(context.Background(), projectDirName, envs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

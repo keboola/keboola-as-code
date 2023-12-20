@@ -68,7 +68,7 @@ func Run(ctx context.Context, d dependencies, ref model.TemplateRepository, opts
 	// FS for the optional common dir.
 	// It contains common files that can be imported into all templates.
 	var commonDir filesystem.Fs
-	if root.IsDir(repository.CommonDirectory) {
+	if root.IsDir(ctx, repository.CommonDirectory) {
 		if v, err := root.SubDirFs(repository.CommonDirectory); err == nil {
 			commonDir = v
 		} else {

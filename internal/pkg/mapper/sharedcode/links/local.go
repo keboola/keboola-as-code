@@ -8,7 +8,7 @@ import (
 )
 
 // AfterLocalOperation - resolve shared codes paths, and replace them by IDs on local load.
-func (m *mapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
+func (m *mapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	// Process loaded objects
 	errs := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
@@ -19,7 +19,7 @@ func (m *mapper) AfterLocalOperation(_ context.Context, changes *model.LocalChan
 
 	// Process renamed objects
 	if len(changes.Renamed()) > 0 {
-		if err := m.onRename(changes.Renamed()); err != nil {
+		if err := m.onRename(ctx, changes.Renamed()); err != nil {
 			errs.Append(err)
 		}
 	}

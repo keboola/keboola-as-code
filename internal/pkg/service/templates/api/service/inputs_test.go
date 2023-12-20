@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -322,7 +323,7 @@ func TestValidateInputs(t *testing.T) {
 	// Test
 	for i, c := range cases {
 		desc := fmt.Sprintf("Case %d - %s", i+1, c.name)
-		result, values, err := validateInputs(c.groups, c.payload)
+		result, values, err := validateInputs(context.Background(), c.groups, c.payload)
 		if c.err == "" {
 			assert.NoError(t, err)
 			assert.Equal(t, c.result, result, desc)

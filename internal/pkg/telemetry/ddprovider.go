@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"context"
 	"sync"
 
 	octrace "go.opencensus.io/trace"
@@ -27,9 +28,9 @@ func NewDDTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...dd
 		lock:           &sync.Mutex{},
 		tracers:        make(map[string]trace.Tracer),
 	}
-	proc.OnShutdown(func() {
+	proc.OnShutdown(func(ctx context.Context) {
 		if err := tp.Shutdown(); err != nil {
-			logger.Error(err)
+			logger.ErrorCtx(ctx, err)
 		}
 	})
 

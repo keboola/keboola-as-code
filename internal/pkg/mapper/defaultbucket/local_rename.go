@@ -8,7 +8,7 @@ import (
 )
 
 // onObjectsRename - find renamed configurations that are used in default buckets placeholders.
-func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
+func (m *defaultBucketMapper) onObjectsRename(ctx context.Context, renamed []model.RenameAction, allObjects model.Objects) error {
 	// Find renamed configurations used in IM.
 	objectsToUpdate := make(map[string]model.Key)
 	for _, object := range renamed {
@@ -34,12 +34,12 @@ func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allO
 	}
 
 	// Log and save
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
+	uow := m.state.LocalManager().NewUnitOfWork(ctx)
 	errs := errors.NewMultiError()
 	if len(objectsToUpdate) > 0 {
-		m.logger.Debug(`Need to update configurations:`)
+		m.logger.DebugCtx(ctx, `Need to update configurations:`)
 		for _, key := range objectsToUpdate {
-			m.logger.Debugf(`  - %s`, key.Desc())
+			m.logger.DebugfCtx(ctx, `  - %s`, key.Desc())
 			objectState := m.state.MustGet(key)
 			uow.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields(`configuration`))
 		}

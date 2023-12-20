@@ -19,7 +19,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
-			_, d, err := p.LocalProject(false)
+			_, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/create/config/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -67,7 +67,7 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Create config
-			return createConfig.Run(d.CommandCtx(), projectState, options, d)
+			return createConfig.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 
@@ -86,7 +86,7 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/create/row/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -104,7 +104,7 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Create row
-			return createRow.Run(d.CommandCtx(), projectState, options, d)
+			return createRow.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 

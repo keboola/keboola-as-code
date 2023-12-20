@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	t.Parallel()
 	manager := newTestLocalManager(t, nil)
 	fs := manager.fs
+	ctx := context.Background()
 
 	record := &fixtures.MockedManifest{}
 	assert.NoError(t, manager.manifest.PersistRecord(record))
@@ -35,26 +37,27 @@ func TestLocalDeleteModel(t *testing.T) {
 `
 
 	// Save files
-	assert.NoError(t, fs.Mkdir(dirPath))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(metaFilePath, metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(configFilePath, configFile)))
+	assert.NoError(t, fs.Mkdir(ctx, dirPath))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(metaFilePath, metaFile)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(configFilePath, configFile)))
 	record.AddRelatedPath(metaFilePath)
 	record.AddRelatedPath(configFilePath)
 
 	// Delete
-	assert.NoError(t, manager.deleteObject(record))
+	assert.NoError(t, manager.deleteObject(ctx, record))
 
 	// Assert
 	_, found = manager.manifest.GetRecord(record.Key())
 	assert.False(t, found)
-	assert.False(t, fs.Exists(metaFilePath))
-	assert.False(t, fs.Exists(configFilePath))
-	assert.True(t, fs.Exists(dirPath)) // all empty directories are deleted at the end of delete operation
+	assert.False(t, fs.Exists(ctx, metaFilePath))
+	assert.False(t, fs.Exists(ctx, configFilePath))
+	assert.True(t, fs.Exists(ctx, dirPath)) // all empty directories are deleted at the end of delete operation
 }
 
 func TestDeleteEmptyDirectories(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
+	ctx := context.Background()
 
 	// Structure:
 	// D .hidden
@@ -72,16 +75,16 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	//    D .git
 
 	// Create structure
-	assert.NoError(t, fs.Mkdir(`.hidden`))
-	assert.NoError(t, fs.Mkdir(filesystem.Join(`.git`, `empty`)))
-	assert.NoError(t, fs.Mkdir(`tracked-empty`))
-	assert.NoError(t, fs.Mkdir(filesystem.Join(`tracked-empty-sub`, `abc`)))
-	assert.NoError(t, fs.Mkdir(`non-tracked-empty`))
-	assert.NoError(t, fs.Mkdir(`tracked`))
-	assert.NoError(t, fs.Mkdir(`non-tracked`))
-	assert.NoError(t, fs.Mkdir(filesystem.Join(`tracked-with-hidden`, `.git`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
+	assert.NoError(t, fs.Mkdir(ctx, `.hidden`))
+	assert.NoError(t, fs.Mkdir(ctx, filesystem.Join(`.git`, `empty`)))
+	assert.NoError(t, fs.Mkdir(ctx, `tracked-empty`))
+	assert.NoError(t, fs.Mkdir(ctx, filesystem.Join(`tracked-empty-sub`, `abc`)))
+	assert.NoError(t, fs.Mkdir(ctx, `non-tracked-empty`))
+	assert.NoError(t, fs.Mkdir(ctx, `tracked`))
+	assert.NoError(t, fs.Mkdir(ctx, `non-tracked`))
+	assert.NoError(t, fs.Mkdir(ctx, filesystem.Join(`tracked-with-hidden`, `.git`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
 
 	// Delete
 	trackedPaths := []string{
@@ -91,16 +94,16 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 		`tracked`,
 		`tracked-with-hidden`,
 	}
-	assert.NoError(t, DeleteEmptyDirectories(fs, trackedPaths))
+	assert.NoError(t, DeleteEmptyDirectories(ctx, fs, trackedPaths))
 
 	// Assert
-	assert.False(t, fs.Exists(`tracked-empty`))
-	assert.False(t, fs.Exists(`tracked-empty-sub`))
+	assert.False(t, fs.Exists(ctx, `tracked-empty`))
+	assert.False(t, fs.Exists(ctx, `tracked-empty-sub`))
 
-	assert.True(t, fs.Exists(`.hidden`))
-	assert.True(t, fs.Exists(filesystem.Join(`.git`, `empty`)))
-	assert.True(t, fs.Exists(`non-tracked-empty`))
-	assert.True(t, fs.Exists(filesystem.Join(`tracked-with-hidden`, `.git`)))
-	assert.True(t, fs.Exists(filesystem.Join(`tracked`, `foo.txt`)))
-	assert.True(t, fs.Exists(filesystem.Join(`non-tracked`, `foo.txt`)))
+	assert.True(t, fs.Exists(ctx, `.hidden`))
+	assert.True(t, fs.Exists(ctx, filesystem.Join(`.git`, `empty`)))
+	assert.True(t, fs.Exists(ctx, `non-tracked-empty`))
+	assert.True(t, fs.Exists(ctx, filesystem.Join(`tracked-with-hidden`, `.git`)))
+	assert.True(t, fs.Exists(ctx, filesystem.Join(`tracked`, `foo.txt`)))
+	assert.True(t, fs.Exists(ctx, filesystem.Join(`non-tracked`, `foo.txt`)))
 }

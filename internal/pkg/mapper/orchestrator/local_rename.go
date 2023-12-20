@@ -10,7 +10,7 @@ import (
 )
 
 // onObjectsRename - find renamed orchestrators and renamed configs used in an orchestrator.
-func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
+func (m *orchestratorMapper) onObjectsRename(ctx context.Context, renamed []model.RenameAction, allObjects model.Objects) error {
 	errs := errors.NewMultiError()
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator
@@ -47,11 +47,11 @@ func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allOb
 	}
 
 	// Log and save
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
+	uow := m.state.LocalManager().NewUnitOfWork(ctx)
 	if len(orchestratorsToUpdate) > 0 {
-		m.logger.Debug(`Need to update orchestrators:`)
+		m.logger.DebugCtx(ctx, `Need to update orchestrators:`)
 		for _, key := range orchestratorsToUpdate {
-			m.logger.Debugf(`  - %s`, key.Desc())
+			m.logger.DebugfCtx(ctx, `  - %s`, key.Desc())
 			orchestrator := m.state.MustGet(key)
 			uow.SaveObject(orchestrator, orchestrator.LocalState(), model.NewChangedFields(`orchestrator`))
 		}

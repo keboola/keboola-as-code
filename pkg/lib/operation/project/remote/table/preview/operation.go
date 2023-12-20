@@ -44,7 +44,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.preview")
 	defer span.End(&err)
 
-	d.Logger().Infof(`Fetching table "%s", please wait.`, o.TableID.String())
+	d.Logger().InfofCtx(ctx, `Fetching table "%s", please wait.`, o.TableID.String())
 
 	table, err := d.KeboolaProjectAPI().PreviewTableRequest(o.TableID, getPreviewOptions(&o)...).Send(ctx)
 	if err != nil {
@@ -57,9 +57,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	if len(o.Out) > 0 {
-		d.Logger().Infof(`Writing table "%s" to file "%s"`, o.TableID, o.Out)
+		d.Logger().InfofCtx(ctx, `Writing table "%s" to file "%s"`, o.TableID, o.Out)
 		// write to file
-		file, err := d.Fs().Create(o.Out)
+		file, err := d.Fs().Create(ctx, o.Out)
 		if err != nil {
 			return err
 		}
@@ -67,10 +67,10 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Logger().Info("Write done.")
+		d.Logger().InfoCtx(ctx, "Write done.")
 	} else {
 		// write to stdout
-		d.Logger().Infof("\n%s", rendered)
+		d.Logger().InfofCtx(ctx, "\n%s", rendered)
 	}
 
 	return nil

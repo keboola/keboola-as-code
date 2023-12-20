@@ -15,18 +15,18 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/repository/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Require empty dir
-			if _, err := p.BaseScope().EmptyDir(); err != nil {
+			if _, err := p.BaseScope().EmptyDir(cmd.Context()); err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
 
 			// Init repository
-			return initOp.Run(d.CommandCtx(), d)
+			return initOp.Run(cmd.Context(), d)
 		},
 	}
 	return cmd

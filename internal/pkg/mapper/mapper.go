@@ -46,7 +46,7 @@ type BeforePersistMapper interface {
 
 // LocalFileLoadMapper is intended to modify file load process.
 type LocalFileLoadMapper interface {
-	LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
+	LoadLocalFile(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
 }
 
 // OnObjectPathUpdateListener is called when a local path has been updated.
@@ -190,15 +190,15 @@ func (m *Mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistReci
 }
 
 // LoadLocalFile calls mappers with LocalFileLoadMapper interface implemented.
-func (m *Mapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, defaultHandler filesystem.LoadHandler) (filesystem.File, error) {
+func (m *Mapper) LoadLocalFile(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, defaultHandler filesystem.LoadHandler) (filesystem.File, error) {
 	handler := defaultHandler
 
 	// Generate handlers chain, eg.  mapper1(mapper2(mapper3(default())))
 	err := m.mappers.ForEachReverse(true, func(mapper any) error {
 		if mapper, ok := mapper.(LocalFileLoadMapper); ok {
 			next := handler
-			handler = func(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
-				return mapper.LoadLocalFile(def, fileType, next)
+			handler = func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
+				return mapper.LoadLocalFile(ctx, def, fileType, next)
 			}
 		}
 		return nil
@@ -208,7 +208,7 @@ func (m *Mapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.File
 	}
 
 	// Invoke handlers chain
-	return handler(def, fileType)
+	return handler(ctx, def, fileType)
 }
 
 // OnObjectPathUpdate calls mappers with OnObjectPathUpdateListener interface implemented.

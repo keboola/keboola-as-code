@@ -2,13 +2,16 @@
 package log
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
@@ -31,10 +34,10 @@ func TestCliLogger_File(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, false)
 
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
@@ -55,11 +58,13 @@ func TestCliLogger_VerboseFalse(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatConsole, false)
+	// Check that context attributes don't appear in stdout/stderr.
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
 
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -75,10 +80,13 @@ func TestCliLogger_VerboseTrue(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatConsole, true)
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	// Check that context attributes don't appear in stdout/stderr.
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
+
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout
@@ -94,11 +102,12 @@ func TestCliLogger_JSONVerboseFalse(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, false)
+	ctx := context.Background()
 
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -120,10 +129,12 @@ func TestCliLogger_JSONVerboseTrue(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, true)
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	ctx := context.Background()
+
+	logger.DebugCtx(ctx, "Debug msg")
+	logger.InfoCtx(ctx, "Info msg")
+	logger.WarnCtx(ctx, "Warn msg")
+	logger.ErrorCtx(ctx, "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout
@@ -139,4 +150,42 @@ func TestCliLogger_JSONVerboseTrue(t *testing.T) {
 
 	wildcards.Assert(t, expectedOut, stdout.String())
 	wildcards.Assert(t, expectedErr, stderr.String())
+}
+
+func TestCliLogger_AttributeReplace(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "log-file.txt")
+	file, err := NewLogFile(filePath)
+	assert.NoError(t, err)
+
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
+	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, true)
+
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"), attribute.Int("count", 4))
+
+	logger.Debug(ctx, "Debug msg %extra% (%count%)")
+	logger.Info(ctx, "Info msg %extra% (%count%)")
+	logger.Warn(ctx, "Warn msg %extra% (%count%)")
+	logger.Error(ctx, "Error msg %extra% (%count%)")
+	assert.NoError(t, file.File().Close())
+
+	// Assert, all levels logged with the level prefix
+	expected := `
+{"level":"debug","time":"%s","message":"Debug msg value (4)","count":4,"extra":"value"}
+{"level":"info","time":"%s","message":"Info msg value (4)","count":4,"extra":"value"}
+{"level":"warn","time":"%s","message":"Warn msg value (4)","count":4,"extra":"value"}
+{"level":"error","time":"%s","message":"Error msg value (4)","count":4,"extra":"value"}
+`
+
+	content, err := os.ReadFile(filePath)
+	assert.NoError(t, err)
+	wildcards.Assert(t, expected, string(content))
+
+	expectedOut := "DEBUG\tDebug msg value (4)\nINFO\tInfo msg value (4)\n"
+	expectedErr := "WARN\tWarn msg value (4)\nERROR\tError msg value (4)\n"
+	assert.Equal(t, expectedOut, stdout.String())
+	assert.Equal(t, expectedErr, stderr.String())
 }

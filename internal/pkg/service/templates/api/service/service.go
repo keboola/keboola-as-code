@@ -65,20 +65,20 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		d.Logger().Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		d.Logger().InfoCtx(ctx, "received shutdown request")
 		cancel()
-		d.Logger().Info("waiting for orchestrators")
+		d.Logger().InfoCtx(ctx, "waiting for orchestrators")
 		wg.Wait()
-		d.Logger().Info("shutdown done")
+		d.Logger().InfoCtx(ctx, "shutdown done")
 	})
 
 	// Tasks cleanup
 	var init []<-chan error
 	if s.config.TasksCleanup {
-		init = append(init, s.cleanup(ctx, wg))
+		init = append(init, s.cleanup(ctx, wg)) // nolint: contextcheck
 	}
 
 	// Check initialization
@@ -167,7 +167,7 @@ func (s *service) ValidateInputs(ctx context.Context, d dependencies.ProjectRequ
 	}
 
 	// Process inputs
-	result, _, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	result, _, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
 	return result, err
 }
 
@@ -196,7 +196,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	}
 
 	// Process inputs
-	result, values, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	result, values, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 		TaskID:    task.ID(TemplateUseTaskType),
 	}
 
-	t, err := s.tasks.StartTask(task.Config{
+	t, err := s.tasks.StartTask(ctx, task.Config{
 		Type: TemplateUseTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -412,7 +412,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 	}
 
 	// Process inputs
-	result, values, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	result, values, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +429,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 		TaskID:    task.ID(TemplateUpgradeTaskType),
 	}
 
-	t, err := s.tasks.StartTask(task.Config{
+	t, err := s.tasks.StartTask(ctx, task.Config{
 		Type: TemplateUpgradeTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -687,12 +687,12 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 
 // tryLockProject.
 func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (dependencies.UnlockFn, error) {
-	d.Logger().Infof(`requested lock for project "%d"`, d.ProjectID())
+	d.Logger().InfofCtx(ctx, `requested lock for project "%d"`, d.ProjectID())
 
 	// Try lock
 	locked, unlockFn := d.ProjectLocker().TryLock(ctx, fmt.Sprintf("project-%d", d.ProjectID()))
 	if !locked {
-		d.Logger().Infof(`project "%d" is locked by another request`, d.ProjectID())
+		d.Logger().InfofCtx(ctx, `project "%d" is locked by another request`, d.ProjectID())
 		return nil, &ProjectLockedError{
 			StatusCode: http.StatusServiceUnavailable,
 			Name:       "templates.projectLocked",

@@ -21,7 +21,7 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Command must be used in template repository
-			repo, d, err := p.LocalRepository(dependencies.WithDefaultStorageAPIHost())
+			repo, d, err := p.LocalRepository(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -33,13 +33,13 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load template
-			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
+			template, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
 			if err != nil {
 				return err
 			}
 
 			// Describe template
-			return describeOp.Run(d.CommandCtx(), template, d)
+			return describeOp.Run(cmd.Context(), template, d)
 		},
 	}
 

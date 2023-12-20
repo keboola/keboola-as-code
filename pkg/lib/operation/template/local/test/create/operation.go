@@ -33,7 +33,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil { // nolint: forbidigo
-			d.Logger().Warnf(`cannot remove temp dir "%s": %w`, tempDir, err)
+			d.Logger().WarnfCtx(ctx, `cannot remove temp dir "%s": %w`, tempDir, err)
 		}
 	}()
 
@@ -43,7 +43,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 		return err
 	}
 	defer unlockFn()
-	d.Logger().Debugf(`Working directory set up.`)
+	d.Logger().DebugfCtx(ctx, `Working directory set up.`)
 
 	// Run use template operation
 	tmplOpts := useTemplate.Options{
@@ -60,12 +60,12 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	// Create test files
-	err = tmpl.CreateTest(o.TestName, o.Inputs, prjState, opResult.InstanceID)
+	err = tmpl.CreateTest(ctx, o.TestName, o.Inputs, prjState, opResult.InstanceID)
 	if err != nil {
 		return err
 	}
 
-	d.Logger().Infof("The test was created in folder tests/%s.", o.TestName)
+	d.Logger().InfofCtx(ctx, "The test was created in folder tests/%s.", o.TestName)
 
 	return nil
 }

@@ -69,20 +69,20 @@ func (v *provider) BaseScope() BaseScope {
 	})
 }
 
-func (v *provider) LocalCommandScope(opts ...Option) (LocalCommandScope, error) {
+func (v *provider) LocalCommandScope(ctx context.Context, opts ...Option) (LocalCommandScope, error) {
 	return v.localCmdScp.InitAndGet(func() (*localCommandScope, error) {
-		return newLocalCommandScope(v.BaseScope(), opts...)
+		return newLocalCommandScope(ctx, v.BaseScope(), opts...)
 	})
 }
 
-func (v *provider) RemoteCommandScope(opts ...Option) (RemoteCommandScope, error) {
+func (v *provider) RemoteCommandScope(ctx context.Context, opts ...Option) (RemoteCommandScope, error) {
 	return v.remoteCmdScp.InitAndGet(func() (*remoteCommandScope, error) {
-		localScope, err := v.LocalCommandScope()
+		localScope, err := v.LocalCommandScope(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		remoteScope, err := newRemoteCommandScope(localScope.CommandCtx(), localScope, opts...)
+		remoteScope, err := newRemoteCommandScope(ctx, localScope, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -91,20 +91,20 @@ func (v *provider) RemoteCommandScope(opts ...Option) (RemoteCommandScope, error
 	})
 }
 
-func (v *provider) LocalProject(ignoreErrors bool, ops ...Option) (*project.Project, RemoteCommandScope, error) {
+func (v *provider) LocalProject(ctx context.Context, ignoreErrors bool, ops ...Option) (*project.Project, RemoteCommandScope, error) {
 	// Get local scope
-	localCmdScp, err := v.LocalCommandScope(ops...)
+	localCmdScp, err := v.LocalCommandScope(ctx, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	prj, _, err := localCmdScp.LocalProject(ignoreErrors)
+	prj, _, err := localCmdScp.LocalProject(ctx, ignoreErrors)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Authentication
-	remoteCmdScp, err := v.RemoteCommandScope()
+	remoteCmdScp, err := v.RemoteCommandScope(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,14 +112,14 @@ func (v *provider) LocalProject(ignoreErrors bool, ops ...Option) (*project.Proj
 	return prj, remoteCmdScp, nil
 }
 
-func (v *provider) LocalRepository(ops ...Option) (*repository.Repository, LocalCommandScope, error) {
+func (v *provider) LocalRepository(ctx context.Context, ops ...Option) (*repository.Repository, LocalCommandScope, error) {
 	// Get local repository
-	localCmdScp, err := v.LocalCommandScope(ops...)
+	localCmdScp, err := v.LocalCommandScope(ctx, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	repo, _, err := localCmdScp.LocalTemplateRepository(localCmdScp.CommandCtx())
+	repo, _, err := localCmdScp.LocalTemplateRepository(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

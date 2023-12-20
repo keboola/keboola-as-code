@@ -10,7 +10,7 @@ import (
 )
 
 // AfterRemoteOperation converts legacy "code_content" string -> []any.
-func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
+func (m *mapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {
@@ -25,7 +25,7 @@ func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteCh
 
 	if errs.Len() > 0 {
 		// Convert errors to warning
-		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 
 	return nil

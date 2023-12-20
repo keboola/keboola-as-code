@@ -1,12 +1,14 @@
 package local
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *Manager) rename(actions []model.RenameAction) error {
+func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) error {
 	// Nothing to do
 	if len(actions) == 0 {
 		return nil
@@ -17,10 +19,10 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 	warnings := errors.NewMultiError()
 	var newPaths []string
 	var pathsToRemove []string
-	m.logger.Debugf(`Starting renaming of the %d paths.`, len(actions))
+	m.logger.DebugfCtx(ctx, `Starting renaming of the %d paths.`, len(actions))
 	for _, action := range actions {
 		// Deep copy
-		err := m.fs.Copy(action.RenameFrom, action.NewPath)
+		err := m.fs.Copy(ctx, action.RenameFrom, action.NewPath)
 
 		if err != nil {
 			errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
@@ -41,27 +43,27 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 
 	if errs.Len() == 0 {
 		// No error -> remove old paths
-		m.logger.Debug("Removing old paths.")
+		m.logger.DebugCtx(ctx, "Removing old paths.")
 		for _, oldPath := range pathsToRemove {
-			if err := m.fs.Remove(oldPath); err != nil {
+			if err := m.fs.Remove(ctx, oldPath); err != nil {
 				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, oldPath)
 			}
 		}
 	} else {
 		// An error occurred -> keep old state -> remove new paths
-		m.logger.Debug("An error occurred, reverting rename.")
+		m.logger.DebugCtx(ctx, "An error occurred, reverting rename.")
 		for _, newPath := range newPaths {
-			if err := m.fs.Remove(newPath); err != nil {
+			if err := m.fs.Remove(ctx, newPath); err != nil {
 				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, newPath)
 			}
 		}
-		m.logger.Info(`Error occurred, the rename operation was reverted.`)
+		m.logger.InfoCtx(ctx, `Error occurred, the rename operation was reverted.`)
 	}
 
 	// Log warnings
 	if warnings.Len() > 0 {
 		err := errors.PrefixError(warnings, "cannot finish objects renaming")
-		m.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 
 	return errs.ErrorOrNil()

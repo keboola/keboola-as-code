@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -43,9 +44,9 @@ func (s *Registry) PathsState() *knownpaths.Paths {
 	return s.paths.Clone()
 }
 
-func (s *Registry) ReloadPathsState() error {
+func (s *Registry) ReloadPathsState(ctx context.Context) error {
 	// Create a new paths state -> all paths are untracked
-	if err := s.paths.Reset(); err != nil {
+	if err := s.paths.Reset(ctx); err != nil {
 		return errors.Errorf(`cannot reload paths state: %w`, err)
 	}
 

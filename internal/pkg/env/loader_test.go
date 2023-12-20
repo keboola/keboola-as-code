@@ -1,6 +1,7 @@
 package env
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -16,17 +17,18 @@ func TestLoadDotEnv(t *testing.T) {
 	// Memory fs
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
+	ctx := context.Background()
 
 	// Write envs to file
 	osEnvs := Empty()
 	osEnvs.Set(`FOO1`, `BAR1`)
 	osEnvs.Set(`OS_ONLY`, `123`)
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env.local", "FOO1=BAR2\nFOO2=BAR2\n")))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env", "FOO1=BAZ\nFOO3=BAR3\n")))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(".env.local", "FOO1=BAR2\nFOO2=BAR2\n")))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(".env", "FOO1=BAZ\nFOO3=BAR3\n")))
 
 	// Load envs
 	logger.Truncate()
-	envs := LoadDotEnv(logger, osEnvs, fs, []string{"."})
+	envs := LoadDotEnv(context.Background(), logger, osEnvs, fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{
@@ -52,11 +54,11 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	// Write envs to file
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env.local", "invalid")))
+	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(".env.local", "invalid")))
 
 	// Load envs
 	logger.Truncate()
-	envs := LoadDotEnv(logger, Empty(), fs, []string{"."})
+	envs := LoadDotEnv(context.Background(), logger, Empty(), fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{}, envs.ToMap())

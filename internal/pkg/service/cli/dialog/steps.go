@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"bufio"
+	"context"
 	"strings"
 
 	"github.com/umisama/go-regexpcache"
@@ -21,22 +22,22 @@ func newStepsDialog(prompt prompt.Prompt) *stepsDialog {
 	return &stepsDialog{prompt: prompt}
 }
 
-func (d *stepsDialog) ask() (input.StepsGroupsExt, error) {
+func (d *stepsDialog) ask(ctx context.Context) (input.StepsGroupsExt, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please define steps and groups for user inputs specification.`,
 		Default:     d.defaultValue(),
 		Validator: func(val any) error {
-			if _, err := d.parse(val.(string)); err != nil {
+			if _, err := d.parse(ctx, val.(string)); err != nil {
 				// Print errors to new line
 				return errors.PrefixError(err, "\n")
 			}
 			return nil
 		},
 	})
-	return d.parse(result)
+	return d.parse(ctx, result)
 }
 
-func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
+func (d *stepsDialog) parse(ctx context.Context, result string) (input.StepsGroupsExt, error) {
 	result = strhelper.StripHTMLComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errs := errors.NewMultiError()
@@ -146,7 +147,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 	}
 
 	// Validate
-	if err := stepsGroups.ValidateDefinitions(); err != nil {
+	if err := stepsGroups.ValidateDefinitions(ctx); err != nil {
 		errs.Append(err)
 	}
 

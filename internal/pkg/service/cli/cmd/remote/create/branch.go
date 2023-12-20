@@ -20,7 +20,7 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/branch/short`),
 		Long:  helpmsg.Read(`remote/create/branch/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d, err := p.RemoteCommandScope()
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -32,18 +32,18 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-branch")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-branch")
 
 			// Create branch
-			branch, err := createBranch.Run(d.CommandCtx(), options, d)
+			branch, err := createBranch.Run(cmd.Context(), options, d)
 			if err != nil {
 				return err
 			}
 
 			// Run pull, if the command is run in a project directory
-			if prj, found, err := d.LocalProject(false); found {
-				d.Logger().Info()
-				d.Logger().Info(`Pulling objects to the local directory.`)
+			if prj, found, err := d.LocalProject(cmd.Context(), false); found {
+				d.Logger().InfoCtx(cmd.Context())
+				d.Logger().InfoCtx(cmd.Context(), `Pulling objects to the local directory.`)
 
 				// Local project
 				if err != nil {
@@ -68,7 +68,7 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 
 				// Pull
 				pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
-				if err := pull.Run(d.CommandCtx(), projectState, pullOptions, d); err != nil {
+				if err := pull.Run(cmd.Context(), projectState, pullOptions, d); err != nil {
 					return errors.PrefixError(err, "pull failed")
 				}
 			}

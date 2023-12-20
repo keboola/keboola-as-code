@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -182,7 +183,7 @@ input "fb.extractor.username" is defined 4 times in:
 - group 2, step 2 "Step 3"
 `
 
-	err := groups.ValidateDefinitions()
+	err := groups.ValidateDefinitions(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }
@@ -226,7 +227,7 @@ func TestStepsGroups_Validate_InputsErrors(t *testing.T) {
 - group 1, step 1, input "input2": "type" bar is not allowed, allowed values: string, int, double, bool, string[], object
 `
 
-	err := groups.ValidateDefinitions()
+	err := groups.ValidateDefinitions(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }

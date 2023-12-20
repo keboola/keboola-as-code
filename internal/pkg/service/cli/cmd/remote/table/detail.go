@@ -19,7 +19,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -27,7 +27,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
-				tableID, _, err = askTable(d, false)
+				tableID, _, err = askTable(cmd.Context(), d, false)
 				if err != nil {
 					return err
 				}
@@ -40,9 +40,9 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-detail")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-detail")
 
-			return detail.Run(d.CommandCtx(), tableID, d)
+			return detail.Run(cmd.Context(), tableID, d)
 		},
 	}
 

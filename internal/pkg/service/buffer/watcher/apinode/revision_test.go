@@ -18,8 +18,8 @@ type statsSyncer struct {
 	logger log.Logger
 }
 
-func (s *statsSyncer) Sync(_ context.Context) <-chan error {
-	s.logger.Debug(">>> statistics sync")
+func (s *statsSyncer) Sync(ctx context.Context) <-chan error {
+	s.logger.DebugCtx(ctx, ">>> statistics sync")
 	errCh := make(chan error)
 	close(errCh)
 	return errCh

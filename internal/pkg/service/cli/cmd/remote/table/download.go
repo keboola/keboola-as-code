@@ -20,7 +20,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -28,7 +28,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
-				tableID, _, err = askTable(d, false)
+				tableID, _, err = askTable(cmd.Context(), d, false)
 				if err != nil {
 					return err
 				}
@@ -50,12 +50,12 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			unloadedFile, err := unload.Run(d.CommandCtx(), unloadOpts, d)
+			unloadedFile, err := unload.Run(cmd.Context(), unloadOpts, d)
 			if err != nil {
 				return err
 			}
 
-			fileWithCredentials, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(unloadedFile.ID).Send(d.CommandCtx())
+			fileWithCredentials, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(unloadedFile.ID).Send(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -67,9 +67,9 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-unload")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-unload")
 
-			return download.Run(d.CommandCtx(), downloadOpts, d)
+			return download.Run(cmd.Context(), downloadOpts, d)
 		},
 	}
 

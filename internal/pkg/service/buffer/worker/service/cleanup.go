@@ -19,7 +19,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.Infof("ready")
+		logger.InfofCtx(s.ctx, "ready")
 		close(initDone) // no error expected
 
 		for {
@@ -28,7 +28,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 				return
 			case <-ticker.C:
 				if err := node.Check(s.ctx); err != nil && !errors.Is(err, context.Canceled) {
-					logger.Error(err)
+					logger.ErrorCtx(s.ctx, err)
 				}
 			}
 		}
@@ -47,7 +47,7 @@ func (s *Service) cleanupTasks() <-chan error {
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.Infof("ready")
+		logger.InfofCtx(s.ctx, "ready")
 		close(initDone) // no error expected
 
 		for {
@@ -58,7 +58,7 @@ func (s *Service) cleanupTasks() <-chan error {
 				// Only one worker should do cleanup
 				if s.dist.MustCheckIsOwner("task.cleanup") {
 					if err := s.tasks.Cleanup(); err != nil && !errors.Is(err, context.Canceled) {
-						logger.Error(err)
+						logger.ErrorCtx(s.ctx, err)
 					}
 				}
 			}

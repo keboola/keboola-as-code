@@ -1,6 +1,7 @@
 package env
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -12,14 +13,14 @@ import (
 )
 
 // LoadDotEnv loads envs from ".env" if exists. Existing envs take precedence.
-func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string) *Map {
+func LoadDotEnv(ctx context.Context, logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string) *Map {
 	envs := FromMap(osEnvs.ToMap()) // copy
 
 	for _, dir := range dirs {
 		for _, file := range Files() {
 			// Check if exists
 			path := filesystem.Join(dir, file)
-			info, err := fs.Stat(path)
+			info, err := fs.Stat(ctx, path)
 			switch {
 			case err == nil && info.IsDir():
 				// Expected file found dir
@@ -28,16 +29,16 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 				// File doesn't exist
 				continue
 			case err != nil && !os.IsNotExist(err):
-				logger.Warnf(`Cannot check if path "%s" exists: %s`, path, err)
+				logger.WarnfCtx(ctx, `Cannot check if path "%s" exists: %s`, path, err)
 				continue
 			}
 
-			fileEnvs, err := LoadEnvFile(fs, path)
+			fileEnvs, err := LoadEnvFile(ctx, fs, path)
 			if err != nil {
-				logger.Warnf(`%s`, err.Error())
+				logger.WarnfCtx(ctx, `%s`, err.Error())
 				continue
 			}
-			logger.Infof("Loaded env file \"%s\".", path)
+			logger.InfofCtx(ctx, "Loaded env file \"%s\".", path)
 
 			// Merge ENVs, existing keys take precedence.
 			envs.Merge(fileEnvs, false)
@@ -47,8 +48,8 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 	return envs
 }
 
-func LoadEnvFile(fs filesystem.Fs, path string) (*Map, error) {
-	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
+func LoadEnvFile(ctx context.Context, fs filesystem.Fs, path string) (*Map, error) {
+	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(path).SetDescription("env file"))
 	if err != nil {
 		return nil, errors.Errorf(`cannot read env file "%s": %w`, path, err)
 	}

@@ -82,7 +82,7 @@ func NewActiveSlicesWatcher(ctx context.Context, wg *sync.WaitGroup, logger log.
 				w.lock.Unlock()
 			}
 		}).
-		StartConsumer(wg)
+		StartConsumer(ctx, wg)
 
 	return w, initDone
 }
@@ -95,7 +95,7 @@ func (w *activeSlicesWatcher) WaitUntilAllSlicesUploaded(ctx context.Context, lo
 	}
 
 	if logger != nil {
-		logger.Infof(`waiting for "%d" slices to be uploaded`, count)
+		logger.InfofCtx(ctx, `waiting for "%d" slices to be uploaded`, count)
 	}
 
 	// Wait

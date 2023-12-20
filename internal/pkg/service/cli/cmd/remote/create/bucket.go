@@ -17,7 +17,7 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/create/bucket/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -28,9 +28,9 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-bucket")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-bucket")
 
-			return bucket.Run(d.CommandCtx(), opts, d)
+			return bucket.Run(cmd.Context(), opts, d)
 		},
 	}
 

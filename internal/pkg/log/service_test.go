@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -14,17 +15,17 @@ func TestServiceLogger_VerboseFalse(t *testing.T) {
 	logger := NewServiceLogger(&out, false).AddPrefix("[prefix1]")
 
 	// Log messages
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 
 	// Log messages with a different prefix
 	logger = logger.AddPrefix("[prefix2]")
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 
 	// Assert
 	expected := `
@@ -45,17 +46,17 @@ func TestServiceLogger_VerboseTrue(t *testing.T) {
 	logger := NewServiceLogger(&out, true).AddPrefix("[prefix1]")
 
 	// Log messages
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 
 	// Log messages with a different prefix
 	logger = logger.AddPrefix("[prefix2]")
-	logger.Debug("Debug msg")
-	logger.Info("Info msg")
-	logger.Warn("Warn msg")
-	logger.Error("Error msg")
+	logger.DebugCtx(context.Background(), "Debug msg")
+	logger.InfoCtx(context.Background(), "Info msg")
+	logger.WarnCtx(context.Background(), "Warn msg")
+	logger.ErrorCtx(context.Background(), "Error msg")
 
 	// Assert
 	expected := `

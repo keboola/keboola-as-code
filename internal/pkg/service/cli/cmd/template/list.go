@@ -15,13 +15,13 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in template repository
-			repo, d, err := p.LocalRepository(dependencies.WithDefaultStorageAPIHost())
+			repo, d, err := p.LocalRepository(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
 
 			// Describe template
-			return listOp.Run(d.CommandCtx(), repo, d)
+			return listOp.Run(cmd.Context(), repo, d)
 		},
 	}
 

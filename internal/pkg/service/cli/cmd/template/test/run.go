@@ -27,13 +27,13 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
 
 			// Get template repository
-			repo, _, err := d.LocalTemplateRepository(d.CommandCtx())
+			repo, _, err := d.LocalTemplateRepository(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -46,7 +46,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 				if len(args) > 1 {
 					versionArg = args[1]
 				}
-				tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
+				tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
 				if err != nil {
 					return errors.Errorf(`loading test for template "%s" failed: %w`, args[0], err)
 				}
@@ -57,7 +57,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 					if err != nil {
 						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
 					}
-					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()))
+					tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()))
 					if err != nil {
 						return errors.Errorf(`loading test for template "%s" failed: %w`, t.ID, err)
 					}
@@ -68,7 +68,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			// Test templates
 			errs := errors.NewMultiError()
 			for _, tmpl := range templates {
-				err := testOp.Run(d.CommandCtx(), tmpl, options, d)
+				err := testOp.Run(cmd.Context(), tmpl, options, d)
 				if err != nil {
 					errs.Append(err)
 				}

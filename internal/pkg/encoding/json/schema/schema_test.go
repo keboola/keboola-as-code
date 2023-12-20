@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -319,7 +320,7 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 			}),
 		},
 	})
-	registry := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByID)
+	registry := state.NewRegistry(knownpaths.NewNop(context.Background()), naming.NewRegistry(), components, model.SortByID)
 	assert.NoError(t, registry.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: model.ConfigKey{ComponentID: componentID}},
 		Local:          &model.Config{Content: someContent},
@@ -332,7 +333,7 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 	// Validate, no error
 	content := orderedmap.New()
 	content.Set(`parameters`, orderedmap.New())
-	assert.NoError(t, ValidateObjects(logger, registry))
+	assert.NoError(t, ValidateObjects(context.Background(), logger, registry))
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 }
 

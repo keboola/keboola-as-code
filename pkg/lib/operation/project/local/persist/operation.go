@@ -35,7 +35,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	api := d.KeboolaProjectAPI()
 
 	// Get plan
-	plan, err := persist.NewPlan(projectState.State())
+	plan, err := persist.NewPlan(ctx, projectState.State())
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !plan.Empty() {
 		// Dry run?
 		if o.DryRun {
-			logger.Info("Dry run, nothing changed.")
+			logger.InfoCtx(ctx, "Dry run, nothing changed.")
 			return nil
 		}
 
@@ -63,7 +63,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Print remaining untracked paths
 	if o.LogUntrackedPaths {
-		projectState.LogUntrackedPaths(logger)
+		projectState.LogUntrackedPaths(ctx, logger)
 	}
 
 	// Normalize paths
@@ -71,6 +71,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.Info(`Persist done.`)
+	logger.InfoCtx(ctx, `Persist done.`)
 	return nil
 }

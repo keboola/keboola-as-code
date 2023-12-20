@@ -19,7 +19,6 @@ import (
 // baseScope dependencies container implements BaseScope interface.
 type baseScope struct {
 	dependencies.BaseScope
-	commandCtx      context.Context
 	fs              filesystem.Fs
 	fsInfo          FsInfo
 	dialogs         *dialog.Dialogs
@@ -35,17 +34,12 @@ type dbtProjectValue struct {
 
 func newBaseScope(ctx context.Context, logger log.Logger, proc *servicectx.Process, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *baseScope {
 	return &baseScope{
-		BaseScope:  dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), clock.New(), proc, httpClient),
-		commandCtx: ctx,
-		fs:         fs,
-		fsInfo:     FsInfo{fs: fs},
-		dialogs:    dialogs,
-		options:    opts,
+		BaseScope: dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), clock.New(), proc, httpClient),
+		fs:        fs,
+		fsInfo:    FsInfo{fs: fs},
+		dialogs:   dialogs,
+		options:   opts,
 	}
-}
-
-func (v *baseScope) CommandCtx() context.Context {
-	return v.commandCtx
 }
 
 func (v *baseScope) Fs() filesystem.Fs {
@@ -64,9 +58,9 @@ func (v *baseScope) Options() *options.Options {
 	return v.options
 }
 
-func (v *baseScope) EmptyDir() (filesystem.Fs, error) {
+func (v *baseScope) EmptyDir(ctx context.Context) (filesystem.Fs, error) {
 	return v.emptyDir.InitAndGet(func() (filesystem.Fs, error) {
-		if err := v.fsInfo.AssertEmptyDir(); err != nil {
+		if err := v.fsInfo.AssertEmptyDir(ctx); err != nil {
 			return nil, err
 		}
 		return v.fs, nil
@@ -76,7 +70,7 @@ func (v *baseScope) EmptyDir() (filesystem.Fs, error) {
 func (v *baseScope) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
 	value, err := v.localDbtProject.InitAndGet(func() (dbtProjectValue, error) {
 		// Get directory
-		fs, _, err := v.FsInfo().DbtProjectDir()
+		fs, _, err := v.FsInfo().DbtProjectDir(ctx)
 		if err != nil {
 			return dbtProjectValue{found: false, value: nil}, err
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -28,7 +29,7 @@ func (o orchestrator[T]) start() <-chan error {
 	o.node.wg.Add(1)
 	go func() {
 		defer o.node.wg.Done()
-		defer o.logger.Info("stopped")
+		defer o.logger.InfoCtx(o.node.ctx, "stopped")
 
 		initDone := initDone
 		b := newRetryBackoff()
@@ -38,16 +39,18 @@ func (o orchestrator[T]) start() <-chan error {
 			case <-o.node.ctx.Done():
 				return
 			default:
+				ctx, span := o.node.tracer.Start(o.node.ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
+
 				// The watcher is periodically restarted to rescan existing keys.
 				if initDone == nil {
-					o.logger.Debug("restart")
+					o.logger.DebugCtx(ctx, "restart")
 				}
 
 				// Run the watch operation for the RestartInterval.
-				err := o.watch(o.config.Source.RestartInterval, func() {
+				err := o.watch(ctx, span, o.config.Source.RestartInterval, func() {
 					if initDone != nil {
 						// Initialization was successful
-						o.logger.Info("ready")
+						o.logger.InfoCtx(ctx, "ready")
 						close(initDone)
 						initDone = nil
 					}
@@ -69,7 +72,7 @@ func (o orchestrator[T]) start() <-chan error {
 
 					// An error occurred, wait before reset.
 					delay := b.NextBackOff()
-					o.logger.Warnf("re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
+					o.logger.WarnfCtx(ctx, "re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
 					<-time.After(delay)
 				}
 			}
@@ -78,12 +81,11 @@ func (o orchestrator[T]) start() <-chan error {
 	return initDone
 }
 
-func (o orchestrator[T]) watch(timeout time.Duration, onReady func()) error {
+func (o orchestrator[T]) watch(ctx context.Context, span telemetry.Span, timeout time.Duration, onReady func()) error {
 	done := make(chan struct{})
-	ctx, cancel := context.WithCancel(o.node.ctx)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	ctx, span := o.node.tracer.Start(ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
 	err := <-o.config.Source.WatchPrefix.
 		GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...).
 		SetupConsumer(o.logger).
@@ -93,10 +95,10 @@ func (o orchestrator[T]) watch(timeout time.Duration, onReady func()) error {
 		}).
 		WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, _ bool) {
 			for _, event := range events {
-				o.startTask(event)
+				o.startTask(ctx, event)
 			}
 		}).
-		StartConsumer(o.node.wg)
+		StartConsumer(ctx, o.node.wg)
 	if err != nil {
 		return err
 	}
@@ -114,7 +116,7 @@ func (o orchestrator[T]) watch(timeout time.Duration, onReady func()) error {
 }
 
 // startTask for the event received from the watched prefix.
-func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
+func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT[T]) {
 	// Check event type
 	if event.Type != etcdop.CreateEvent {
 		return
@@ -127,14 +129,14 @@ func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 	// Error is not expected, there is present always at least one node - self.
 	if !o.node.dist.MustCheckIsOwner(distributionKey) {
 		// Another node handles the resource.
-		o.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
+		o.logger.DebugfCtx(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
 	}
 
 	// Should be the task started?
 	if o.config.StartTaskIf != nil {
 		if skipReason, start := o.config.StartTaskIf(event); !start {
-			o.logger.Debugf(`skipped "%s", %s`, taskKey.String(), skipReason)
+			o.logger.DebugfCtx(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
 			return
 		}
 	}
@@ -142,7 +144,7 @@ func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 	// Create task handler
 	taskFn := o.config.TaskFactory(event)
 	if taskFn == nil {
-		o.logger.Infof(`skipped "%s"`, taskKey)
+		o.logger.InfofCtx(ctx, `skipped "%s"`, taskKey)
 		return
 	}
 
@@ -153,7 +155,7 @@ func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 	}
 
 	// Run task in the background
-	o.logger.Infof(`assigned "%s"`, taskKey)
+	o.logger.InfofCtx(ctx, `assigned "%s"`, taskKey)
 	taskCfg := task.Config{
 		Type:      o.config.Name,
 		Key:       taskKey,
@@ -161,7 +163,7 @@ func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 		Context:   o.config.TaskCtx,
 		Operation: taskFn,
 	}
-	if _, err := o.node.tasks.StartTask(taskCfg); err != nil {
-		o.logger.Error(err)
+	if _, err := o.node.tasks.StartTask(ctx, taskCfg); err != nil {
+		o.logger.ErrorCtx(ctx, err)
 	}
 }

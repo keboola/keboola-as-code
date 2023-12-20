@@ -68,7 +68,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 						retryAt := calculateFileRetryTime(&fileRes, s.clock.Now())
 						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error, retryAt))
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
-							s.logger.Errorf(`cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
+							s.logger.ErrorfCtx(ctx, `cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}
 					}
 				}()
@@ -86,7 +86,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 
 					stats, statsErr := s.realtimeStats.FileStats(ctx, fileRes.FileKey)
 					if statsErr != nil {
-						s.logger.Errorf(`cannot send import event: cannot get file "%s" stats: %s`, fileRes.FileKey, statsErr)
+						s.logger.ErrorfCtx(ctx, `cannot send import event: cannot get file "%s" stats: %s`, fileRes.FileKey, statsErr)
 						return
 					}
 
@@ -100,7 +100,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 					// Delete the empty file resource
 					if err := fileManager.DeleteFile(ctx, fileRes); err != nil {
 						// The error is not critical
-						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err))
+						s.logger.ErrorCtx(ctx, errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err))
 					}
 
 					// Mark file imported

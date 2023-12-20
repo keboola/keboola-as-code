@@ -27,6 +27,7 @@ func (s *service) CreateExport(ctx context.Context, d dependencies.ProjectReques
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	export, err := s.mapper.CreateExportModel(
+		ctx,
 		receiverKey,
 		buffer.CreateExportData{
 			ID:         payload.ID,
@@ -45,7 +46,7 @@ func (s *service) CreateExport(ctx context.Context, d dependencies.ProjectReques
 		return nil, err
 	}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := d.TaskNode().StartTask(ctx, task.Config{
 		Type: exportCreateTaskType,
 		Key: task.Key{
 			ProjectID: receiverKey.ProjectID,
@@ -93,7 +94,7 @@ func (s *service) UpdateExport(ctx context.Context, d dependencies.ProjectReques
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := d.TaskNode().StartTask(ctx, task.Config{
 		Type: exportUpdateTaskType,
 		Key: task.Key{
 			ProjectID: receiverKey.ProjectID,
@@ -113,7 +114,7 @@ func (s *service) UpdateExport(ctx context.Context, d dependencies.ProjectReques
 
 				return d.Store().UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
 					oldMapping := export.Mapping
-					if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
+					if err := s.mapper.UpdateExportModel(ctx, &export, payload); err != nil {
 						return export, err
 					}
 

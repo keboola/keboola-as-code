@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
+func (m *orchestratorMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
@@ -21,13 +21,13 @@ func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *mo
 			continue
 		} else if ok {
 			configState := objectState.(*model.ConfigState)
-			m.onRemoteLoad(configState.Remote, configState.ConfigManifest, allObjects)
+			m.onRemoteLoad(ctx, configState.Remote, configState.ConfigManifest, allObjects)
 		}
 	}
 	return errs.ErrorOrNil()
 }
 
-func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
+func (m *orchestratorMapper) onRemoteLoad(ctx context.Context, config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
 	loader := &remoteLoader{
 		State:        m.state,
 		phasesSorter: newPhasesSorter(),
@@ -39,7 +39,7 @@ func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
 		err = errors.PrefixErrorf(err, `invalid orchestrator %s`, config.Desc())
-		m.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 }
 

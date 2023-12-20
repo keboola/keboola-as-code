@@ -21,7 +21,7 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -39,11 +39,11 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Validate
-			if err := validate.Run(d.CommandCtx(), projectState, options, d); err != nil {
+			if err := validate.Run(cmd.Context(), projectState, options, d); err != nil {
 				return err
 			}
 
-			d.Logger().Info("Everything is good.")
+			d.Logger().InfoCtx(cmd.Context(), "Everything is good.")
 			return nil
 		},
 	}
@@ -67,7 +67,7 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -90,7 +90,7 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
-			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

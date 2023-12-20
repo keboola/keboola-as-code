@@ -24,7 +24,7 @@ const (
 func (s *service) CreateReceiver(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.CreateReceiverPayload) (res *buffer.Task, err error) {
 	str := d.Store()
 
-	receiver, err := s.mapper.CreateReceiverModel(d.ProjectID(), idgenerator.ReceiverSecret(), *payload)
+	receiver, err := s.mapper.CreateReceiverModel(ctx, d.ProjectID(), idgenerator.ReceiverSecret(), *payload)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (s *service) CreateReceiver(ctx context.Context, d dependencies.ProjectRequ
 		}, "/")),
 	}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := d.TaskNode().StartTask(ctx, task.Config{
 		Type: receiverCreateTaskType,
 		Key:  taskKey,
 		Context: func() (context.Context, context.CancelFunc) {

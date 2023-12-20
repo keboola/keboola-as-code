@@ -17,7 +17,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/template/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
 				return err
 			}
@@ -36,7 +36,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 			branchState := projectState.MustGet(branch.BranchKey).(*model.BranchState)
 
 			// List template instances
-			return listOp.Run(d.CommandCtx(), branchState, d)
+			return listOp.Run(cmd.Context(), branchState, d)
 		},
 	}
 

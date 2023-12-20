@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -32,7 +33,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
-				tableID, _, err = askTable(d, false)
+				tableID, _, err = askTable(cmd.Context(), d, false)
 				if err != nil {
 					return err
 				}
@@ -44,15 +45,15 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 				tableID = id
 			}
 
-			opts, err := parsePreviewOptions(d.Options(), d.Fs(), tableID)
+			opts, err := parsePreviewOptions(cmd.Context(), d.Options(), d.Fs(), tableID)
 			if err != nil {
 				return err
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-preview")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-preview")
 
-			return preview.Run(d.CommandCtx(), opts, d)
+			return preview.Run(cmd.Context(), opts, d)
 		},
 	}
 
@@ -70,7 +71,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
-func parsePreviewOptions(options *options.Options, fs filesystem.Fs, tableID keboola.TableID) (preview.Options, error) {
+func parsePreviewOptions(ctx context.Context, options *options.Options, fs filesystem.Fs, tableID keboola.TableID) (preview.Options, error) {
 	o := preview.Options{TableID: tableID}
 
 	o.ChangedSince = options.GetString("changed-since")
@@ -81,7 +82,7 @@ func parsePreviewOptions(options *options.Options, fs filesystem.Fs, tableID keb
 	e := errors.NewMultiError()
 
 	o.Out = options.GetString("out")
-	if fs.Exists(o.Out) && !options.GetBool("force") {
+	if fs.Exists(ctx, o.Out) && !options.GetBool("force") {
 		e.Append(errors.Errorf(`file "%s" already exists, use the "--force" flag to overwrite it`, o.Out))
 	}
 

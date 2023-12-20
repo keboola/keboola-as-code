@@ -30,7 +30,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	// Validate schemas
 	errs := errors.NewMultiError()
 	if o.ValidateJSONSchema {
-		if err := schema.ValidateObjects(d.Logger(), projectState); err != nil {
+		if err := schema.ValidateObjects(ctx, d.Logger(), projectState); err != nil {
 			errs.Append(err)
 		}
 	}
@@ -48,6 +48,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return errors.PrefixError(err, "validation failed")
 	}
 
-	logger.Debug("Validation done.")
+	logger.DebugCtx(ctx, "Validation done.")
 	return nil
 }

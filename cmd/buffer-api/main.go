@@ -63,11 +63,11 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferApi]")
-	logger.Info("Configuration: ", cfg.Dump())
+	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
-		stop, err := cpuprofile.Start(cfg.CPUProfFilePath, logger)
+		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
@@ -75,7 +75,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
+	proc, err := servicectx.New(servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
 	if err != nil {
 		return err
 	}
@@ -116,8 +116,8 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.Infof("starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
-	err = httpserver.Start(apiScp, httpserver.Config{
+	logger.InfofCtx(ctx, "starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
+	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
@@ -154,7 +154,7 @@ func run() error {
 			// Mount endpoints
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
-				logger.Debugf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+				logger.DebugfCtx(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
 	})

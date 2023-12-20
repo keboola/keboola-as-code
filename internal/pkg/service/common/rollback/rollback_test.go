@@ -19,12 +19,12 @@ func TestRollback(t *testing.T) {
 	main := New(logger)
 
 	main.Add(func(ctx context.Context) error {
-		logger.Debug("main 1")
+		logger.DebugCtx(ctx, "main 1")
 		_ = logger.Sync()
 		return nil
 	})
 	main.Add(func(ctx context.Context) error {
-		logger.Debug("main 2")
+		logger.DebugCtx(ctx, "main 2")
 		_ = logger.Sync()
 		return nil
 	})
@@ -34,12 +34,12 @@ func TestRollback(t *testing.T) {
 
 	sub1 := main.AddParallel()
 	sub1.Add(func(ctx context.Context) error {
-		logger.Debug("parallel operation")
+		logger.DebugCtx(ctx, "parallel operation")
 		_ = logger.Sync()
 		return nil
 	})
 	sub1.Add(func(ctx context.Context) error {
-		logger.Debug("parallel operation")
+		logger.DebugCtx(ctx, "parallel operation")
 		_ = logger.Sync()
 		return nil
 	})
@@ -49,12 +49,12 @@ func TestRollback(t *testing.T) {
 
 	sub2 := main.AddLIFO()
 	sub2.Add(func(ctx context.Context) error {
-		logger.Debug("lifo 1")
+		logger.DebugCtx(ctx, "lifo 1")
 		_ = logger.Sync()
 		return nil
 	})
 	sub2.Add(func(ctx context.Context) error {
-		logger.Debug("lifo 2")
+		logger.DebugCtx(ctx, "lifo 2")
 		_ = logger.Sync()
 		return nil
 	})
@@ -63,7 +63,7 @@ func TestRollback(t *testing.T) {
 	})
 
 	main.Add(func(ctx context.Context) error {
-		logger.Debug("main 4")
+		logger.DebugCtx(ctx, "main 4")
 		_ = logger.Sync()
 		return nil
 	})

@@ -38,13 +38,13 @@ func NewL1CacheProvider(d l1CachedProviderDeps) (*L1CacheProvider, error) {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		p.logger.Info("received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		p.logger.InfoCtx(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		p.logger.Info("shutdown done")
+		p.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Start watcher to sync cache
@@ -66,7 +66,7 @@ func (p *L1CacheProvider) setupCache(ctx context.Context, wg *sync.WaitGroup) <-
 	stream := p.schema.GetAllAndWatch(ctx, p.client)
 	mapKey := func(kv *op.KeyValue, _ Value) string { return string(kv.Key) }
 	mapValue := func(_ *op.KeyValue, stats Value) Value { return stats }
-	mirror, errCh := etcdop.SetupMirror(p.logger, stream, mapKey, mapValue).StartMirroring(wg)
+	mirror, errCh := etcdop.SetupMirror(p.logger, stream, mapKey, mapValue).StartMirroring(ctx, wg)
 	p.cache = mirror
 	return errCh
 }

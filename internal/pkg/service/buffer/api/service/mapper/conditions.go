@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m Mapper) ConditionsModel(payload *buffer.Conditions) (conditions model.Conditions, err error) {
+func (m Mapper) ConditionsModel(ctx context.Context, payload *buffer.Conditions) (conditions model.Conditions, err error) {
 	conditions = model.DefaultImportConditions()
 	if payload != nil {
 		conditions.Count = uint64(payload.Count)
@@ -32,7 +32,7 @@ func (m Mapper) ConditionsModel(payload *buffer.Conditions) (conditions model.Co
 		}
 	}
 
-	if err := m.validator.Validate(context.Background(), conditions); err != nil {
+	if err := m.validator.Validate(ctx, conditions); err != nil {
 		return conditions, serviceError.NewBadRequestError(errors.Errorf(`invalid conditions: %w`, err))
 	}
 

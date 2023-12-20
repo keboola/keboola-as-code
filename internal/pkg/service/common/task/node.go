@@ -97,19 +97,19 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	// Graceful shutdown
 	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
-	n.tasksCtx, cancelTasks = context.WithCancel(context.Background())
+	n.tasksCtx, cancelTasks = context.WithCancel(context.Background()) // nolint: contextcheck
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(context.Background())
-	proc.OnShutdown(func() {
-		n.logger.Info("received shutdown request")
+	sessionCtx, cancelSession := context.WithCancel(context.Background()) // nolint: contextcheck
+	proc.OnShutdown(func(ctx context.Context) {
+		n.logger.InfoCtx(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
-			n.logger.Infof(`waiting for "%d" tasks to be finished`, c)
+			n.logger.InfofCtx(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
 		cancelTasks()
 		n.tasksWg.Wait()
 		cancelSession()
 		sessionWg.Wait()
-		n.logger.Info("shutdown done")
+		n.logger.InfoCtx(ctx, "shutdown done")
 	})
 
 	// Create etcd session
@@ -133,15 +133,15 @@ func (n *Node) TasksCount() int64 {
 }
 
 // StartTaskOrErr in background, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) StartTaskOrErr(cfg Config) error {
-	_, err := n.StartTask(cfg)
+func (n *Node) StartTaskOrErr(ctx context.Context, cfg Config) error {
+	_, err := n.StartTask(ctx, cfg)
 	return err
 }
 
 // StartTask in background, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) StartTask(cfg Config) (t *Task, err error) {
+func (n *Node) StartTask(ctx context.Context, cfg Config) (t *Task, err error) {
 	// Prepare task, acquire lock
-	task, fn, err := n.prepareTask(cfg)
+	task, fn, err := n.prepareTask(ctx, cfg)
 
 	// Run task in background, if it is prepared
 	if fn != nil {
@@ -163,7 +163,7 @@ func (n *Node) RunTaskOrErr(cfg Config) error {
 // RunTask in foreground, the task run at most once, it is provided by local lock and etcd transaction.
 func (n *Node) RunTask(cfg Config) (t *Task, err error) {
 	// Prepare task, acquire lock, handle error during prepare phase
-	task, fn, err := n.prepareTask(cfg)
+	task, fn, err := n.prepareTask(n.tasksCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (n *Node) RunTask(cfg Config) (t *Task, err error) {
 	return task, result.Error
 }
 
-func (n *Node) prepareTask(cfg Config) (t *Task, fn runTaskFn, err error) {
+func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTaskFn, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -222,18 +222,18 @@ func (n *Node) prepareTask(cfg Config) (t *Task, fn runTaskFn, err error) {
 		n.taskEtcdPrefix.Key(taskKey.String()).Put(task),
 		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
 	)
-	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
+	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil { // nolint: contextcheck
 		unlock()
 		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
 		unlock()
-		logger.Infof(`task ignored, the lock "%s" is in use`, lock.Key())
+		logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil, nil
 	}
 
 	// Run operation in the background
-	logger.Infof(`started task`)
-	logger.Debugf(`lock acquired "%s"`, task.Lock.Key())
+	logger.InfofCtx(ctx, `started task`)
+	logger.DebugfCtx(ctx, `lock acquired "%s"`, task.Lock.Key())
 
 	// Return function, task is prepared, lock is locked, it can be run in background/foreground.
 	fn = func() (Result, error) {
@@ -264,7 +264,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		defer func() {
 			if panicErr := recover(); panicErr != nil {
 				err := errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
-				logger.Errorf(`task panic: %s`, err)
+				logger.ErrorfCtx(ctx, `task panic: %s`, err)
 				if result.Error == nil {
 					result = ErrResult(err)
 				}
@@ -286,16 +286,16 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	if result.Error == nil {
 		task.Result = result.Result
 		if len(task.Outputs) > 0 {
-			logger.Infof(`task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
+			logger.InfofCtx(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.Infof(`task succeeded (%s): %s`, duration, task.Result)
+			logger.InfofCtx(ctx, `task succeeded (%s): %s`, duration, task.Result)
 		}
 	} else {
 		task.Error = result.Error.Error()
 		if len(task.Outputs) > 0 {
-			logger.Warnf(`task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
+			logger.WarnfCtx(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
+			logger.WarnfCtx(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
 		}
 	}
 
@@ -316,14 +316,14 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	)
 	if resp, err := finalizeTaskOp.Do(ctx, n.client); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
-		logger.Error(err)
+		logger.ErrorCtx(ctx, err)
 		return result, err
 	} else if !resp.Succeeded {
 		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
-		logger.Error(err)
+		logger.ErrorCtx(ctx, err)
 		return result, err
 	}
-	logger.Debugf(`lock released "%s"`, task.Lock.Key())
+	logger.DebugfCtx(ctx, `lock released "%s"`, task.Lock.Key())
 
 	return result, nil
 }

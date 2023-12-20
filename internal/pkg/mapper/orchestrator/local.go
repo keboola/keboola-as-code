@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *orchestratorMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
+func (m *orchestratorMapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.LocalObjects()
 
@@ -18,7 +18,7 @@ func (m *orchestratorMapper) AfterLocalOperation(_ context.Context, changes *mod
 			continue
 		} else if ok {
 			configState := objectState.(*model.ConfigState)
-			if err := m.onLocalLoad(configState.Local, configState.ConfigManifest, allObjects); err != nil {
+			if err := m.onLocalLoad(ctx, configState.Local, configState.ConfigManifest, allObjects); err != nil {
 				errs.Append(err)
 			}
 		}
@@ -26,7 +26,7 @@ func (m *orchestratorMapper) AfterLocalOperation(_ context.Context, changes *mod
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator
 	if len(changes.Renamed()) > 0 {
-		if err := m.onObjectsRename(changes.Renamed(), allObjects); err != nil {
+		if err := m.onObjectsRename(ctx, changes.Renamed(), allObjects); err != nil {
 			errs.Append(err)
 		}
 	}

@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -14,8 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func Load(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
-	f, err := loadFile(fs, ctx)
+func Load(ctx context.Context, fs filesystem.Fs, jsonnetCtx *jsonnet.Context) (StepsGroups, error) {
+	f, err := loadFile(ctx, fs, jsonnetCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +26,8 @@ func Load(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
 type StepsGroups []StepsGroup
 
 // Save inputs to the FileName.
-func (g StepsGroups) Save(fs filesystem.Fs) error {
-	if err := saveFile(fs, &file{StepsGroups: g}); err != nil {
+func (g StepsGroups) Save(ctx context.Context, fs filesystem.Fs) error {
+	if err := saveFile(ctx, fs, &file{StepsGroups: g}); err != nil {
 		return err
 	}
 	return nil
@@ -46,7 +47,7 @@ func (g StepsGroups) InputsMap() map[string]*Input {
 	return res
 }
 
-func (g StepsGroups) ValidateDefinitions() error {
+func (g StepsGroups) ValidateDefinitions(ctx context.Context) error {
 	errs := errors.NewMultiError()
 
 	if len(g) == 0 {
@@ -120,7 +121,7 @@ func (g StepsGroups) ValidateDefinitions() error {
 	}
 
 	// Validate other rules
-	if err := validateDefinitions(g); err != nil {
+	if err := validateDefinitions(ctx, g); err != nil {
 		errs.Append(err)
 	}
 

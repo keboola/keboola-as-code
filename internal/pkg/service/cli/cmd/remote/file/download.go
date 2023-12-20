@@ -19,7 +19,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.RemoteCommandScope(dependencies.WithoutMasterToken())
+			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -30,11 +30,11 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-file-download")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-file-download")
 
 			var fileID int
 			if len(args) == 0 {
-				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(d.CommandCtx())
+				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(cmd.Context())
 				if err != nil {
 					return err
 				}
@@ -50,7 +50,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				}
 			}
 
-			file, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(fileID).Send(d.CommandCtx())
+			file, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(fileID).Send(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -61,7 +61,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				AllowSliced: d.Options().GetBool("allow-sliced"),
 			}
 
-			return download.Run(d.CommandCtx(), opts, d)
+			return download.Run(cmd.Context(), opts, d)
 		},
 	}
 

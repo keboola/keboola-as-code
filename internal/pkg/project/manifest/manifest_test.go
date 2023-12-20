@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -56,7 +57,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(fs, false)
+	manifest, err := Load(context.Background(), fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -64,15 +65,16 @@ func TestManifestLoadNotFound(t *testing.T) {
 
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
 		// Write file
 		path := Path()
-		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.json)))
+		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(fs, false)
+		manifest, err := Load(ctx, fs, false)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -86,6 +88,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
@@ -95,10 +98,10 @@ func TestSaveManifestFile(t *testing.T) {
 		manifest.SetAllowedBranches(c.filter.AllowedBranches())
 		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
 		assert.NoError(t, manifest.records.SetRecords(c.records))
-		assert.NoError(t, manifest.Save(fs))
+		assert.NoError(t, manifest.Save(ctx, fs))
 
 		// Load file
-		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
+		file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
 		assert.Equal(t, wildcards.EscapeWhitespaces(c.json), wildcards.EscapeWhitespaces(file.Content), c.name)
 	}
@@ -107,7 +110,7 @@ func TestSaveManifestFile(t *testing.T) {
 func TestManifestValidateEmpty(t *testing.T) {
 	t.Parallel()
 	content := &file{}
-	err := content.validate()
+	err := content.validate(context.Background())
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
 - "version" is a required field
@@ -131,14 +134,14 @@ func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
-	assert.NoError(t, content.validate())
+	assert.NoError(t, content.validate(context.Background()))
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(fullRecords())
-	assert.NoError(t, content.validate())
+	assert.NoError(t, content.validate(context.Background()))
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
@@ -146,7 +149,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
 	content.Version = 123
-	err := content.validate()
+	err := content.validate(context.Background())
 	assert.Error(t, err)
 	expected := `manifest is not valid: "version" must be 2 or less`
 	assert.Equal(t, expected, err.Error())
@@ -165,7 +168,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 			),
 		},
 	})
-	err := content.validate()
+	err := content.validate(context.Background())
 	assert.Error(t, err)
 	expected := `manifest is not valid: "branches[0].id" is a required field`
 	assert.Equal(t, expected, err.Error())
@@ -174,13 +177,14 @@ func TestManifestValidateNestedField(t *testing.T) {
 func TestManifestCyclicDependency(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
+	ctx := context.Background()
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, cyclicDependencyJSON())))
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, cyclicDependencyJSON())))
 
 	// Load
-	manifest, err := Load(fs, false)
+	manifest, err := Load(ctx, fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
