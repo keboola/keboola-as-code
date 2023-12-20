@@ -171,7 +171,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue interface{}) *Reporter {
+func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any) *Reporter {
 	reporter := newReporter(objectState, d.objects)
 	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
 	return reporter
@@ -181,7 +181,7 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 	return cmp.Options{
 		cmp.Reporter(reporter),
 		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
-		cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) map[string]interface{} {
+		cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) map[string]any {
 			return m.ToMap()
 		}),
 		// Separately compares the relations for the manifest and API side

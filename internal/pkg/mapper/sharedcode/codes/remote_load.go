@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
+// AfterRemoteOperation converts legacy "code_content" string -> []any.
 func (m *mapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
@@ -81,7 +81,7 @@ func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) err
 	switch v := raw.(type) {
 	case string:
 		scripts = model.ScriptsFromStr(v, config.SharedCode.Target)
-	case []interface{}:
+	case []any:
 		scripts = model.ScriptsFromSlice(v)
 	default:
 		return errors.NewNestedError(

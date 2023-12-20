@@ -10,7 +10,7 @@ type Backend interface {
 	afero.Fs
 	Name() string
 	BasePath() string
-	SubDirFs(path string) (interface{}, error)
+	SubDirFs(path string) (any, error)
 	FromSlash(path string) string // returns OS representation of the path
 	ToSlash(path string) string   // returns internal representation of the path
 	Walk(root string, walkFn filesystem.WalkFunc) error

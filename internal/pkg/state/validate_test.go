@@ -27,7 +27,7 @@ func TestValidateState(t *testing.T) {
 	state := d.MockedState()
 
 	// Mocked component response
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":   "keboola.foo",
 		"type": "writer",
 		"name": "Foo",

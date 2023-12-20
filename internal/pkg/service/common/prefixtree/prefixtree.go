@@ -189,13 +189,13 @@ func (t *Tree[T]) Reset() {
 }
 
 func (t *Tree[T]) WalkPrefix(key string, fn func(key string, value T) (stop bool)) {
-	t.tree.WalkPrefix(key, func(key string, value interface{}) bool {
+	t.tree.WalkPrefix(key, func(key string, value any) bool {
 		return fn(key, value.(T))
 	})
 }
 
 func (t *Tree[T]) WalkAll(fn func(key string, value T) (stop bool)) {
-	t.tree.WalkPrefix("", func(key string, value interface{}) bool {
+	t.tree.WalkPrefix("", func(key string, value any) bool {
 		return fn(key, value.(T))
 	})
 }

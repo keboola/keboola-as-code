@@ -33,5 +33,5 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	assert.Equal(t, sharedCodeKey.ID.String(), id)
 	rows, found := object.Content.Get(model.SharedCodeRowsIDContentKey)
 	assert.True(t, found)
-	assert.Equal(t, []interface{}{sharedCodeRowsKeys[0].ObjectID(), sharedCodeRowsKeys[1].ObjectID()}, rows)
+	assert.Equal(t, []any{sharedCodeRowsKeys[0].ObjectID(), sharedCodeRowsKeys[1].ObjectID()}, rows)
 }

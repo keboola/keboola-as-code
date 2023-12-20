@@ -102,7 +102,7 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 
 	// Load template, there is used "single flight" library:
 	// the function is called only once, but every caller will get the same results.
-	ch := r.templatesInit.DoChan(name, func() (interface{}, error) {
+	ch := r.templatesInit.DoChan(name, func() (any, error) {
 		startTime := time.Now()
 		r.d.Logger().InfofCtx(ctx, `loading template "%s/%s"`, reference.FullName(), r.git.CommitHash())
 

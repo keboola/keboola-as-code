@@ -63,7 +63,7 @@ func (l *loader) ReadRawFile(ctx context.Context, def *filesystem.FileDef) (*fil
 }
 
 // ReadFileContentTo to tagged field in target struct as string.
-func (l *loader) ReadFileContentTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
+func (l *loader) ReadFileContentTo(ctx context.Context, def *filesystem.FileDef, target any, tag string) (*filesystem.RawFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := l.ReadRawFile(ctx, def); err == nil {
 			content := strings.TrimRight(file.Content, " \r\n\t")
@@ -86,7 +86,7 @@ func (l *loader) ReadJSONFile(ctx context.Context, def *filesystem.FileDef) (*fi
 }
 
 // ReadJSONFileTo to the target struct.
-func (l *loader) ReadJSONFileTo(ctx context.Context, def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
+func (l *loader) ReadJSONFileTo(ctx context.Context, def *filesystem.FileDef, target any) (*filesystem.RawFile, error) {
 	file, err := l.ReadRawFile(ctx, def)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (l *loader) ReadJSONFileTo(ctx context.Context, def *filesystem.FileDef, ta
 }
 
 // ReadJSONFieldsTo tagged fields in the target struct.
-func (l *loader) ReadJSONFieldsTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (l *loader) ReadJSONFieldsTo(ctx context.Context, def *filesystem.FileDef, target any, tag string) (*filesystem.JSONFile, bool, error) {
 	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
 		if file, err := l.ReadJSONFile(ctx, def); err == nil {
 			reflecthelper.SetFields(fields, file.Content, target)
@@ -114,7 +114,7 @@ func (l *loader) ReadJSONFieldsTo(ctx context.Context, def *filesystem.FileDef, 
 }
 
 // ReadJSONMapTo tagged field in the target struct as ordered map.
-func (l *loader) ReadJSONMapTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (l *loader) ReadJSONMapTo(ctx context.Context, def *filesystem.FileDef, target any, tag string) (*filesystem.JSONFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := l.ReadJSONFile(ctx, def); err == nil {
 			reflecthelper.SetField(field, file.Content, target)
@@ -138,7 +138,7 @@ func (l *loader) ReadYamlFile(ctx context.Context, def *filesystem.FileDef) (*fi
 }
 
 // ReadYamlFileTo to the target struct.
-func (l *loader) ReadYamlFileTo(ctx context.Context, def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
+func (l *loader) ReadYamlFileTo(ctx context.Context, def *filesystem.FileDef, target any) (*filesystem.RawFile, error) {
 	file, err := l.ReadRawFile(ctx, def)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (l *loader) ReadYamlFileTo(ctx context.Context, def *filesystem.FileDef, ta
 }
 
 // ReadYamlFieldsTo tagged fields in the target struct.
-func (l *loader) ReadYamlFieldsTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
+func (l *loader) ReadYamlFieldsTo(ctx context.Context, def *filesystem.FileDef, target any, tag string) (*filesystem.YamlFile, bool, error) {
 	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
 		if file, err := l.ReadYamlFile(ctx, def); err == nil {
 			reflecthelper.SetFields(fields, file.Content, target)
@@ -166,7 +166,7 @@ func (l *loader) ReadYamlFieldsTo(ctx context.Context, def *filesystem.FileDef, 
 }
 
 // ReadYamlMapTo tagged field in the target struct as ordered map.
-func (l *loader) ReadYamlMapTo(ctx context.Context, def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
+func (l *loader) ReadYamlMapTo(ctx context.Context, def *filesystem.FileDef, target any, tag string) (*filesystem.YamlFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := l.ReadYamlFile(ctx, def); err == nil {
 			reflecthelper.SetField(field, file.Content, target)
@@ -190,7 +190,7 @@ func (l *loader) ReadJsonnetFile(ctx context.Context, def *filesystem.FileDef) (
 }
 
 // ReadJsonnetFileTo the target struct.
-func (l *loader) ReadJsonnetFileTo(ctx context.Context, def *filesystem.FileDef, target interface{}) (*filesystem.JsonnetFile, error) {
+func (l *loader) ReadJsonnetFileTo(ctx context.Context, def *filesystem.FileDef, target any) (*filesystem.JsonnetFile, error) {
 	jsonnetFile, err := l.ReadJsonnetFile(ctx, def)
 	if err != nil {
 		return nil, formatFileError(def, err)

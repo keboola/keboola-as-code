@@ -1,19 +1,19 @@
 package filesystem
 
 type FileMetadata struct {
-	metadata map[string]interface{}
+	metadata map[string]any
 }
 
 func NewFileMetadata() *FileMetadata {
-	return &FileMetadata{metadata: make(map[string]interface{})}
+	return &FileMetadata{metadata: make(map[string]any)}
 }
 
-func (f *FileMetadata) Metadata(key string) (interface{}, bool) {
+func (f *FileMetadata) Metadata(key string) (any, bool) {
 	v, ok := f.metadata[key]
 	return v, ok
 }
 
-func (f *FileMetadata) MetadataOrNil(key string) interface{} {
+func (f *FileMetadata) MetadataOrNil(key string) any {
 	return f.metadata[key]
 }
 
@@ -22,7 +22,7 @@ func (f *FileMetadata) HasMetadata(key string) bool {
 	return found
 }
 
-func (f *FileMetadata) AddMetadata(key string, value interface{}) {
+func (f *FileMetadata) AddMetadata(key string, value any) {
 	f.metadata[key] = value
 }
 

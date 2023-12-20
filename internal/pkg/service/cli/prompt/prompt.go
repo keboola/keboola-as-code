@@ -20,7 +20,7 @@ type Question struct {
 	Description string
 	Default     string
 	Help        string
-	Validator   func(val interface{}) error
+	Validator   func(val any) error
 	Hidden      bool
 }
 
@@ -31,7 +31,7 @@ type Select struct {
 	Options     []string
 	Default     string
 	UseDefault  bool
-	Validator   func(val interface{}) error
+	Validator   func(val any) error
 }
 
 type SelectIndex struct {
@@ -41,7 +41,7 @@ type SelectIndex struct {
 	Options     []string
 	Default     int
 	UseDefault  bool
-	Validator   func(val interface{}) error
+	Validator   func(val any) error
 }
 
 type MultiSelect struct {
@@ -50,7 +50,7 @@ type MultiSelect struct {
 	Help        string
 	Options     []string
 	Default     []string
-	Validator   func(val interface{}) error
+	Validator   func(val any) error
 }
 
 type MultiSelectIndex struct {
@@ -59,12 +59,12 @@ type MultiSelectIndex struct {
 	Help        string
 	Options     []string
 	Default     []int
-	Validator   func(val interface{}) error
+	Validator   func(val any) error
 }
 
 type Prompt interface {
 	IsInteractive() bool
-	Printf(format string, a ...interface{})
+	Printf(format string, a ...any)
 	Confirm(c *Confirm) bool
 	Ask(q *Question) (result string, ok bool)
 	Select(s *Select) (value string, ok bool)
@@ -77,7 +77,7 @@ type Prompt interface {
 	Editor(fileExt string, q *Question) (result string, ok bool)
 }
 
-func ValueRequired(val interface{}) error {
+func ValueRequired(val any) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
 		return errors.New("value is required")
@@ -85,7 +85,7 @@ func ValueRequired(val interface{}) error {
 	return nil
 }
 
-func AtLeastOneRequired(val interface{}) error {
+func AtLeastOneRequired(val any) error {
 	items := val.([]core.OptionAnswer)
 	if len(items) == 0 {
 		return errors.New("at least one value is required")

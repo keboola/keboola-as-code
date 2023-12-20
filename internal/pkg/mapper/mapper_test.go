@@ -17,7 +17,7 @@ func TestMappers_ForEach_StopOnFailure(t *testing.T) {
 	t.Parallel()
 	callOrder := make([]string, 0)
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
-	err := mappers.ForEach(true, func(mapper interface{}) error {
+	err := mappers.ForEach(true, func(mapper any) error {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
@@ -30,7 +30,7 @@ func TestMappers_ForEach_DontStopOnFailure(t *testing.T) {
 	t.Parallel()
 	callOrder := make([]string, 0)
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
-	err := mappers.ForEach(false, func(mapper interface{}) error {
+	err := mappers.ForEach(false, func(mapper any) error {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
@@ -43,7 +43,7 @@ func TestMappers_ForEachReverse_StopOnFailure(t *testing.T) {
 	t.Parallel()
 	callOrder := make([]string, 0)
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
-	err := mappers.ForEachReverse(true, func(mapper interface{}) error {
+	err := mappers.ForEachReverse(true, func(mapper any) error {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
@@ -56,7 +56,7 @@ func TestMappers_ForEachReverse_DontStopOnFailure(t *testing.T) {
 	t.Parallel()
 	callOrder := make([]string, 0)
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
-	err := mappers.ForEachReverse(false, func(mapper interface{}) error {
+	err := mappers.ForEachReverse(false, func(mapper any) error {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})

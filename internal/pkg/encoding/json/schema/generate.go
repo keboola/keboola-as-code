@@ -28,7 +28,7 @@ func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 	return content, nil
 }
 
-func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
+func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	// Return default value
 	if schema.Default != nil {
 		return schema.Default
@@ -64,7 +64,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
 	switch getFirstType(schema) {
 	case `array`:
 		// Generate array with one item of each allowed type
-		values := make([]interface{}, 0)
+		values := make([]any, 0)
 		switch v := schema.Items.(type) {
 		case *jsonschema.Schema:
 			values = append(values, getDefaultValueFor(v, level+1))
@@ -154,7 +154,7 @@ func getPropertyOrder(schema *jsonschema.Schema) int64 {
 	return math.MaxInt64
 }
 
-func mergeDefaultValues(schemas []*jsonschema.Schema, level int) interface{} {
+func mergeDefaultValues(schemas []*jsonschema.Schema, level int) any {
 	// No schema
 	if len(schemas) == 0 {
 		return ``

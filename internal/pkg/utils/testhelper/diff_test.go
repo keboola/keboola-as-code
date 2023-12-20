@@ -19,7 +19,7 @@ type mockedT struct {
 }
 
 // Implements TestingT for mockedT.
-func (t *mockedT) Errorf(format string, args ...interface{}) {
+func (t *mockedT) Errorf(format string, args ...any) {
 	s := fmt.Sprintf(format, args...)
 	t.buf.WriteString(s)
 }

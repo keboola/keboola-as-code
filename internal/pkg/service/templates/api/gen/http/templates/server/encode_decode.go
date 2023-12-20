@@ -23,8 +23,8 @@ import (
 
 // EncodeAPIVersionIndexResponse returns an encoder for responses returned by
 // the templates ApiVersionIndex endpoint.
-func EncodeAPIVersionIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeAPIVersionIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.ServiceDetail)
 		enc := encoder(ctx, w)
 		body := NewAPIVersionIndexResponseBody(res)
@@ -35,8 +35,8 @@ func EncodeAPIVersionIndexResponse(encoder func(context.Context, http.ResponseWr
 
 // EncodeHealthCheckResponse returns an encoder for responses returned by the
 // templates HealthCheck endpoint.
-func EncodeHealthCheckResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeHealthCheckResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(string)
 		ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "text/plain")
 		enc := encoder(ctx, w)
@@ -48,8 +48,8 @@ func EncodeHealthCheckResponse(encoder func(context.Context, http.ResponseWriter
 
 // EncodeRepositoriesIndexResponse returns an encoder for responses returned by
 // the templates RepositoriesIndex endpoint.
-func EncodeRepositoriesIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeRepositoriesIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Repositories)
 		enc := encoder(ctx, w)
 		body := NewRepositoriesIndexResponseBody(res)
@@ -60,8 +60,8 @@ func EncodeRepositoriesIndexResponse(encoder func(context.Context, http.Response
 
 // DecodeRepositoriesIndexRequest returns a decoder for requests sent to the
 // templates RepositoriesIndex endpoint.
-func DecodeRepositoriesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeRepositoriesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			storageAPIToken string
 			err             error
@@ -86,8 +86,8 @@ func DecodeRepositoriesIndexRequest(mux goahttp.Muxer, decoder func(*http.Reques
 
 // EncodeRepositoryIndexResponse returns an encoder for responses returned by
 // the templates RepositoryIndex endpoint.
-func EncodeRepositoryIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeRepositoryIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Repository)
 		enc := encoder(ctx, w)
 		body := NewRepositoryIndexResponseBody(res)
@@ -98,8 +98,8 @@ func EncodeRepositoryIndexResponse(encoder func(context.Context, http.ResponseWr
 
 // DecodeRepositoryIndexRequest returns a decoder for requests sent to the
 // templates RepositoryIndex endpoint.
-func DecodeRepositoryIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeRepositoryIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
 			storageAPIToken string
@@ -141,7 +141,7 @@ func EncodeRepositoryIndexError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -158,8 +158,8 @@ func EncodeRepositoryIndexError(encoder func(context.Context, http.ResponseWrite
 
 // EncodeTemplatesIndexResponse returns an encoder for responses returned by
 // the templates TemplatesIndex endpoint.
-func EncodeTemplatesIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeTemplatesIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Templates)
 		enc := encoder(ctx, w)
 		body := NewTemplatesIndexResponseBody(res)
@@ -170,8 +170,8 @@ func EncodeTemplatesIndexResponse(encoder func(context.Context, http.ResponseWri
 
 // DecodeTemplatesIndexRequest returns a decoder for requests sent to the
 // templates TemplatesIndex endpoint.
-func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
 			storageAPIToken string
@@ -213,7 +213,7 @@ func EncodeTemplatesIndexError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -230,8 +230,8 @@ func EncodeTemplatesIndexError(encoder func(context.Context, http.ResponseWriter
 
 // EncodeTemplateIndexResponse returns an encoder for responses returned by the
 // templates TemplateIndex endpoint.
-func EncodeTemplateIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeTemplateIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.TemplateDetail)
 		enc := encoder(ctx, w)
 		body := NewTemplateIndexResponseBody(res)
@@ -242,8 +242,8 @@ func EncodeTemplateIndexResponse(encoder func(context.Context, http.ResponseWrit
 
 // DecodeTemplateIndexRequest returns a decoder for requests sent to the
 // templates TemplateIndex endpoint.
-func DecodeTemplateIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeTemplateIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
 			template        string
@@ -293,7 +293,7 @@ func EncodeTemplateIndexError(encoder func(context.Context, http.ResponseWriter)
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -307,7 +307,7 @@ func EncodeTemplateIndexError(encoder func(context.Context, http.ResponseWriter)
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -324,8 +324,8 @@ func EncodeTemplateIndexError(encoder func(context.Context, http.ResponseWriter)
 
 // EncodeVersionIndexResponse returns an encoder for responses returned by the
 // templates VersionIndex endpoint.
-func EncodeVersionIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeVersionIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.VersionDetailExtended)
 		enc := encoder(ctx, w)
 		body := NewVersionIndexResponseBody(res)
@@ -336,8 +336,8 @@ func EncodeVersionIndexResponse(encoder func(context.Context, http.ResponseWrite
 
 // DecodeVersionIndexRequest returns a decoder for requests sent to the
 // templates VersionIndex endpoint.
-func DecodeVersionIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeVersionIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
 			template        string
@@ -389,7 +389,7 @@ func EncodeVersionIndexError(encoder func(context.Context, http.ResponseWriter) 
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -403,7 +403,7 @@ func EncodeVersionIndexError(encoder func(context.Context, http.ResponseWriter) 
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -417,7 +417,7 @@ func EncodeVersionIndexError(encoder func(context.Context, http.ResponseWriter) 
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -434,8 +434,8 @@ func EncodeVersionIndexError(encoder func(context.Context, http.ResponseWriter) 
 
 // EncodeInputsIndexResponse returns an encoder for responses returned by the
 // templates InputsIndex endpoint.
-func EncodeInputsIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeInputsIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Inputs)
 		enc := encoder(ctx, w)
 		body := NewInputsIndexResponseBody(res)
@@ -446,8 +446,8 @@ func EncodeInputsIndexResponse(encoder func(context.Context, http.ResponseWriter
 
 // DecodeInputsIndexRequest returns a decoder for requests sent to the
 // templates InputsIndex endpoint.
-func DecodeInputsIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeInputsIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
 			template        string
@@ -499,7 +499,7 @@ func EncodeInputsIndexError(encoder func(context.Context, http.ResponseWriter) g
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -513,7 +513,7 @@ func EncodeInputsIndexError(encoder func(context.Context, http.ResponseWriter) g
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -527,7 +527,7 @@ func EncodeInputsIndexError(encoder func(context.Context, http.ResponseWriter) g
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -544,8 +544,8 @@ func EncodeInputsIndexError(encoder func(context.Context, http.ResponseWriter) g
 
 // EncodeValidateInputsResponse returns an encoder for responses returned by
 // the templates ValidateInputs endpoint.
-func EncodeValidateInputsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeValidateInputsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.ValidationResult)
 		enc := encoder(ctx, w)
 		body := NewValidateInputsResponseBody(res)
@@ -556,8 +556,8 @@ func EncodeValidateInputsResponse(encoder func(context.Context, http.ResponseWri
 
 // DecodeValidateInputsRequest returns a decoder for requests sent to the
 // templates ValidateInputs endpoint.
-func DecodeValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			body ValidateInputsRequestBody
 			err  error
@@ -624,7 +624,7 @@ func EncodeValidateInputsError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -638,7 +638,7 @@ func EncodeValidateInputsError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -652,7 +652,7 @@ func EncodeValidateInputsError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -669,8 +669,8 @@ func EncodeValidateInputsError(encoder func(context.Context, http.ResponseWriter
 
 // EncodeUseTemplateVersionResponse returns an encoder for responses returned
 // by the templates UseTemplateVersion endpoint.
-func EncodeUseTemplateVersionResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeUseTemplateVersionResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Task)
 		enc := encoder(ctx, w)
 		body := NewUseTemplateVersionResponseBody(res)
@@ -681,8 +681,8 @@ func EncodeUseTemplateVersionResponse(encoder func(context.Context, http.Respons
 
 // DecodeUseTemplateVersionRequest returns a decoder for requests sent to the
 // templates UseTemplateVersion endpoint.
-func DecodeUseTemplateVersionRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeUseTemplateVersionRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			body UseTemplateVersionRequestBody
 			err  error
@@ -749,7 +749,7 @@ func EncodeUseTemplateVersionError(encoder func(context.Context, http.ResponseWr
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -763,7 +763,7 @@ func EncodeUseTemplateVersionError(encoder func(context.Context, http.ResponseWr
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -777,7 +777,7 @@ func EncodeUseTemplateVersionError(encoder func(context.Context, http.ResponseWr
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -791,7 +791,7 @@ func EncodeUseTemplateVersionError(encoder func(context.Context, http.ResponseWr
 			errors.As(v, &res)
 
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -806,7 +806,7 @@ func EncodeUseTemplateVersionError(encoder func(context.Context, http.ResponseWr
 			errors.As(v, &res)
 
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -823,8 +823,8 @@ func EncodeUseTemplateVersionError(encoder func(context.Context, http.ResponseWr
 
 // EncodeInstancesIndexResponse returns an encoder for responses returned by
 // the templates InstancesIndex endpoint.
-func EncodeInstancesIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeInstancesIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Instances)
 		enc := encoder(ctx, w)
 		body := NewInstancesIndexResponseBody(res)
@@ -835,8 +835,8 @@ func EncodeInstancesIndexResponse(encoder func(context.Context, http.ResponseWri
 
 // DecodeInstancesIndexRequest returns a decoder for requests sent to the
 // templates InstancesIndex endpoint.
-func DecodeInstancesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeInstancesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			branch          string
 			storageAPIToken string
@@ -878,7 +878,7 @@ func EncodeInstancesIndexError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -895,8 +895,8 @@ func EncodeInstancesIndexError(encoder func(context.Context, http.ResponseWriter
 
 // EncodeInstanceIndexResponse returns an encoder for responses returned by the
 // templates InstanceIndex endpoint.
-func EncodeInstanceIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeInstanceIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.InstanceDetail)
 		enc := encoder(ctx, w)
 		body := NewInstanceIndexResponseBody(res)
@@ -907,8 +907,8 @@ func EncodeInstanceIndexResponse(encoder func(context.Context, http.ResponseWrit
 
 // DecodeInstanceIndexRequest returns a decoder for requests sent to the
 // templates InstanceIndex endpoint.
-func DecodeInstanceIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeInstanceIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			branch          string
 			instanceID      string
@@ -952,7 +952,7 @@ func EncodeInstanceIndexError(encoder func(context.Context, http.ResponseWriter)
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -966,7 +966,7 @@ func EncodeInstanceIndexError(encoder func(context.Context, http.ResponseWriter)
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -980,7 +980,7 @@ func EncodeInstanceIndexError(encoder func(context.Context, http.ResponseWriter)
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -997,8 +997,8 @@ func EncodeInstanceIndexError(encoder func(context.Context, http.ResponseWriter)
 
 // EncodeUpdateInstanceResponse returns an encoder for responses returned by
 // the templates UpdateInstance endpoint.
-func EncodeUpdateInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeUpdateInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.InstanceDetail)
 		enc := encoder(ctx, w)
 		body := NewUpdateInstanceResponseBody(res)
@@ -1009,8 +1009,8 @@ func EncodeUpdateInstanceResponse(encoder func(context.Context, http.ResponseWri
 
 // DecodeUpdateInstanceRequest returns a decoder for requests sent to the
 // templates UpdateInstance endpoint.
-func DecodeUpdateInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeUpdateInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			body UpdateInstanceRequestBody
 			err  error
@@ -1069,7 +1069,7 @@ func EncodeUpdateInstanceError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1083,7 +1083,7 @@ func EncodeUpdateInstanceError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1097,7 +1097,7 @@ func EncodeUpdateInstanceError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1115,8 +1115,8 @@ func EncodeUpdateInstanceError(encoder func(context.Context, http.ResponseWriter
 
 // EncodeDeleteInstanceResponse returns an encoder for responses returned by
 // the templates DeleteInstance endpoint.
-func EncodeDeleteInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeDeleteInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
@@ -1124,8 +1124,8 @@ func EncodeDeleteInstanceResponse(encoder func(context.Context, http.ResponseWri
 
 // DecodeDeleteInstanceRequest returns a decoder for requests sent to the
 // templates DeleteInstance endpoint.
-func DecodeDeleteInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeDeleteInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			branch          string
 			instanceID      string
@@ -1169,7 +1169,7 @@ func EncodeDeleteInstanceError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1183,7 +1183,7 @@ func EncodeDeleteInstanceError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1197,7 +1197,7 @@ func EncodeDeleteInstanceError(encoder func(context.Context, http.ResponseWriter
 			errors.As(v, &res)
 
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1215,8 +1215,8 @@ func EncodeDeleteInstanceError(encoder func(context.Context, http.ResponseWriter
 
 // EncodeUpgradeInstanceResponse returns an encoder for responses returned by
 // the templates UpgradeInstance endpoint.
-func EncodeUpgradeInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeUpgradeInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Task)
 		enc := encoder(ctx, w)
 		body := NewUpgradeInstanceResponseBody(res)
@@ -1227,8 +1227,8 @@ func EncodeUpgradeInstanceResponse(encoder func(context.Context, http.ResponseWr
 
 // DecodeUpgradeInstanceRequest returns a decoder for requests sent to the
 // templates UpgradeInstance endpoint.
-func DecodeUpgradeInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeUpgradeInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			body UpgradeInstanceRequestBody
 			err  error
@@ -1289,7 +1289,7 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1303,7 +1303,7 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1317,7 +1317,7 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1331,7 +1331,7 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1345,7 +1345,7 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1360,7 +1360,7 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 			errors.As(v, &res)
 
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1377,8 +1377,8 @@ func EncodeUpgradeInstanceError(encoder func(context.Context, http.ResponseWrite
 
 // EncodeUpgradeInstanceInputsIndexResponse returns an encoder for responses
 // returned by the templates UpgradeInstanceInputsIndex endpoint.
-func EncodeUpgradeInstanceInputsIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeUpgradeInstanceInputsIndexResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Inputs)
 		enc := encoder(ctx, w)
 		body := NewUpgradeInstanceInputsIndexResponseBody(res)
@@ -1389,8 +1389,8 @@ func EncodeUpgradeInstanceInputsIndexResponse(encoder func(context.Context, http
 
 // DecodeUpgradeInstanceInputsIndexRequest returns a decoder for requests sent
 // to the templates UpgradeInstanceInputsIndex endpoint.
-func DecodeUpgradeInstanceInputsIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeUpgradeInstanceInputsIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			branch          string
 			instanceID      string
@@ -1436,7 +1436,7 @@ func EncodeUpgradeInstanceInputsIndexError(encoder func(context.Context, http.Re
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1450,7 +1450,7 @@ func EncodeUpgradeInstanceInputsIndexError(encoder func(context.Context, http.Re
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1464,7 +1464,7 @@ func EncodeUpgradeInstanceInputsIndexError(encoder func(context.Context, http.Re
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1478,7 +1478,7 @@ func EncodeUpgradeInstanceInputsIndexError(encoder func(context.Context, http.Re
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1495,8 +1495,8 @@ func EncodeUpgradeInstanceInputsIndexError(encoder func(context.Context, http.Re
 
 // EncodeUpgradeInstanceValidateInputsResponse returns an encoder for responses
 // returned by the templates UpgradeInstanceValidateInputs endpoint.
-func EncodeUpgradeInstanceValidateInputsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeUpgradeInstanceValidateInputsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.ValidationResult)
 		enc := encoder(ctx, w)
 		body := NewUpgradeInstanceValidateInputsResponseBody(res)
@@ -1507,8 +1507,8 @@ func EncodeUpgradeInstanceValidateInputsResponse(encoder func(context.Context, h
 
 // DecodeUpgradeInstanceValidateInputsRequest returns a decoder for requests
 // sent to the templates UpgradeInstanceValidateInputs endpoint.
-func DecodeUpgradeInstanceValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeUpgradeInstanceValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			body UpgradeInstanceValidateInputsRequestBody
 			err  error
@@ -1569,7 +1569,7 @@ func EncodeUpgradeInstanceValidateInputsError(encoder func(context.Context, http
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1583,7 +1583,7 @@ func EncodeUpgradeInstanceValidateInputsError(encoder func(context.Context, http
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1597,7 +1597,7 @@ func EncodeUpgradeInstanceValidateInputsError(encoder func(context.Context, http
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1611,7 +1611,7 @@ func EncodeUpgradeInstanceValidateInputsError(encoder func(context.Context, http
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
@@ -1628,8 +1628,8 @@ func EncodeUpgradeInstanceValidateInputsError(encoder func(context.Context, http
 
 // EncodeGetTaskResponse returns an encoder for responses returned by the
 // templates GetTask endpoint.
-func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*templates.Task)
 		enc := encoder(ctx, w)
 		body := NewGetTaskResponseBody(res)
@@ -1640,8 +1640,8 @@ func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) go
 
 // DecodeGetTaskRequest returns a decoder for requests sent to the templates
 // GetTask endpoint.
-func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
-	return func(r *http.Request) (interface{}, error) {
+func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
 		var (
 			taskID          string
 			storageAPIToken string
@@ -1683,7 +1683,7 @@ func EncodeGetTaskError(encoder func(context.Context, http.ResponseWriter) goaht
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
 			enc := encoder(ctx, w)
-			var body interface{}
+			var body any
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {

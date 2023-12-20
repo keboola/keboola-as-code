@@ -15,7 +15,7 @@ func NewMapper(s *state.State) *transformationMapper {
 	return &transformationMapper{state: s, logger: s.Logger()}
 }
 
-func (m *transformationMapper) isTransformationConfig(object interface{}) (bool, error) {
+func (m *transformationMapper) isTransformationConfig(object any) (bool, error) {
 	v, ok := object.(*model.Config)
 	if !ok {
 		return false, nil

@@ -58,10 +58,10 @@ func (s Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, errPtr *er
 // sendCmdSuccessful send command successful event.
 func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, cmd, msg string) {
 	duration := time.Since(cmdStart)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"command": cmd,
 	}
-	results := map[string]interface{}{
+	results := map[string]any{
 		"projectId": s.projectID,
 	}
 	event, err := s.client.CreateEventRequest(&keboola.Event{
@@ -82,10 +82,10 @@ func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, 
 // sendCmdFailed send command failed event.
 func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err error, cmd, msg string) {
 	duration := time.Since(cmdStart)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"command": cmd,
 	}
-	results := map[string]interface{}{
+	results := map[string]any{
 		"projectId": s.projectID,
 		"error":     fmt.Sprintf("%s", err),
 	}

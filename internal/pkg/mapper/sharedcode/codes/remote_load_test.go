@@ -17,7 +17,7 @@ func TestSharedCodeRemoteLoad(t *testing.T) {
 	logger := d.DebugLogger()
 	configState, rowState := createRemoteSharedCode(t, state)
 
-	rowState.Remote.Content.Set(model.SharedCodeContentKey, []interface{}{
+	rowState.Remote.Content.Set(model.SharedCodeContentKey, []any{
 		"SELECT 1;",
 		"SELECT 2;",
 	})

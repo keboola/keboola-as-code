@@ -26,7 +26,7 @@ func (d *stepsDialog) ask(ctx context.Context) (input.StepsGroupsExt, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please define steps and groups for user inputs specification.`,
 		Default:     d.defaultValue(),
-		Validator: func(val interface{}) error {
+		Validator: func(val any) error {
 			if _, err := d.parse(ctx, val.(string)); err != nil {
 				// Print errors to new line
 				return errors.PrefixError(err, "\n")

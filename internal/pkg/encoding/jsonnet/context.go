@@ -21,7 +21,7 @@ type Context struct {
 }
 
 type (
-	variablesValues map[string]interface{}
+	variablesValues map[string]any
 	nativeFunctions []*NativeFunction
 	globalBinding   map[ast.Identifier]ast.Node
 )
@@ -95,7 +95,7 @@ func (c *Context) FilePath() string {
 
 // ExtVar registers variable to the Jsonnet context.
 // Variable can be used in the Jsonnet code by: std.extVar("<NAME>").
-func (c *Context) ExtVar(name string, value interface{}) {
+func (c *Context) ExtVar(name string, value any) {
 	c.extVariables.add(name, value)
 }
 
@@ -164,7 +164,7 @@ func (v globalBinding) registerTo(vm *jsonnet.VM) {
 	}
 }
 
-func (v variablesValues) add(name string, value interface{}) {
+func (v variablesValues) add(name string, value any) {
 	if _, found := v[name]; found {
 		panic(errors.Errorf(`variable "%s" is already defined`, name))
 	}

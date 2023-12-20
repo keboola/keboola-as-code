@@ -203,7 +203,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 			{ID: "age", Value: 25},
 			{ID: "restricted", Value: true},
 			{ID: "drink", Value: "wine"},
-			{ID: "drinks", Value: []interface{}{"rum", "whiskey"}},
+			{ID: "drinks", Value: []any{"rum", "whiskey"}},
 		},
 	}, output)
 }

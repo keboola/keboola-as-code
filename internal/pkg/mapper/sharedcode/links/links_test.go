@@ -149,7 +149,7 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 	t.Helper()
 
 	// Rows -> rows IDs
-	var rows []interface{}
+	var rows []any
 	for _, row := range sharedCodeRowsKeys {
 		rows = append(rows, row.ID.String())
 	}

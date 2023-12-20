@@ -117,12 +117,12 @@ func (l *remoteLoader) load() error {
 	return l.errors.ErrorOrNil()
 }
 
-func (l *remoteLoader) getPhases() ([]interface{}, error) {
+func (l *remoteLoader) getPhases() ([]any, error) {
 	phasesRaw, found := l.config.Content.Get(model.OrchestratorPhasesContentKey)
 	if !found {
 		return nil, nil
 	}
-	phases, ok := phasesRaw.([]interface{})
+	phases, ok := phasesRaw.([]any)
 	if !ok {
 		return nil, errors.Errorf(`missing "%s" key`, model.OrchestratorPhasesContentKey)
 	}
@@ -130,12 +130,12 @@ func (l *remoteLoader) getPhases() ([]interface{}, error) {
 	return phases, nil
 }
 
-func (l *remoteLoader) getTasks() ([]interface{}, error) {
+func (l *remoteLoader) getTasks() ([]any, error) {
 	tasksRaw, found := l.config.Content.Get(model.OrchestratorTasksContentKey)
 	if !found {
 		return nil, nil
 	}
-	tasks, ok := tasksRaw.([]interface{})
+	tasks, ok := tasksRaw.([]any)
 	if !ok {
 		return nil, errors.Errorf(`missing "%s" key`, model.OrchestratorTasksContentKey)
 	}
@@ -143,7 +143,7 @@ func (l *remoteLoader) getTasks() ([]interface{}, error) {
 	return tasks, nil
 }
 
-func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, []string, error) {
+func (l *remoteLoader) parsePhase(phaseRaw any) (*model.Phase, string, []string, error) {
 	errs := errors.NewMultiError()
 	content, ok := phaseRaw.(*orderedmap.OrderedMap)
 	if !ok {
@@ -187,7 +187,7 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 	return phase, cast.ToString(id), dependsOn, errs.ErrorOrNil()
 }
 
-func (l *remoteLoader) parseTask(taskRaw interface{}) error {
+func (l *remoteLoader) parseTask(taskRaw any) error {
 	errs := errors.NewMultiError()
 	content, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {

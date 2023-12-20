@@ -68,11 +68,11 @@ type Context struct {
 type _context context.Context
 
 // PlaceholdersMap -  original template value -> placeholder.
-type PlaceholdersMap map[interface{}]Placeholder
+type PlaceholdersMap map[any]Placeholder
 
 type Placeholder struct {
-	asString string      // placeholder as string for use in Json file, eg. string("<<~~placeholder:1~~>>)
-	asValue  interface{} // eg. ConfigId, RowID, eg. ConfigId("<<~~placeholder:1~~>>)
+	asString string // placeholder as string for use in Json file, eg. string("<<~~placeholder:1~~>>)
+	asValue  any    // eg. ConfigId, RowID, eg. ConfigId("<<~~placeholder:1~~>>)
 }
 
 func (v Placeholder) Value() any {
@@ -81,7 +81,7 @@ func (v Placeholder) Value() any {
 
 type PlaceholderResolver func(p Placeholder, cb ResolveCallback)
 
-type ResolveCallback func(newID interface{})
+type ResolveCallback func(newID any)
 
 type inputUsageNotifier struct {
 	*Context
@@ -194,7 +194,7 @@ func (c *Context) InputsUsage() *metadata.InputsUsage {
 }
 
 // RegisterPlaceholder for an object oldId, it can be resolved later/async.
-func (c *Context) RegisterPlaceholder(oldID interface{}, fn PlaceholderResolver) Placeholder {
+func (c *Context) RegisterPlaceholder(oldID any, fn PlaceholderResolver) Placeholder {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if _, found := c.placeholders[oldID]; !found {
@@ -216,7 +216,7 @@ func (c *Context) RegisterPlaceholder(oldID interface{}, fn PlaceholderResolver)
 		c.placeholders[oldID] = p
 
 		// Resolve newId async by provider function
-		fn(p, func(newId interface{}) {
+		fn(p, func(newId any) {
 			c.replacements.AddID(p.asValue, newId)
 			c.objectIds[newId] = oldID
 		})
@@ -237,10 +237,10 @@ func (c *Context) registerJsonnetFunctions() {
 
 // mapID maps ConfigId/ConfigRowId in Jsonnet files to a <<~~ticket:123~~>> placeholder.
 // When all Jsonnet files are processed, new IDs are generated in parallel.
-func (c *Context) mapID(oldID interface{}) string {
+func (c *Context) mapID(oldID any) string {
 	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
-		var newID interface{}
+		var newID any
 		c.tickets.Request(func(ticket *keboola.Ticket) {
 			switch p.asValue.(type) {
 			case keboola.ConfigID:
@@ -267,7 +267,7 @@ func (c *Context) registerInputsUsageNotifier() {
 	})
 }
 
-func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{}, partial bool, partialValue, _ interface{}, steps []interface{}) {
+func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []any, partial bool, partialValue, _ any, steps []any) {
 	// Only for Input function
 	if fnName != "Input" {
 		return

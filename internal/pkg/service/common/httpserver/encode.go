@@ -31,7 +31,7 @@ func NewEncoder(logger log.Logger, errorWriter ErrorWriter) Encoder {
 	}
 }
 
-func (w encoderWrapper) Encode(v interface{}) error {
+func (w encoderWrapper) Encode(v any) error {
 	if err, ok := v.(error); ok {
 		return w.errorWriter.WriteOrErr(w.ctx, w.writer, err)
 	}

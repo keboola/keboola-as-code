@@ -21,12 +21,12 @@ type zapLogger struct {
 	prefix        string
 }
 
-func loggerFromZapCore(core zapcore.Core, with ...interface{}) *zapLogger {
+func loggerFromZapCore(core zapcore.Core, with ...any) *zapLogger {
 	return &zapLogger{sugaredLogger: zap.New(core).Sugar().With(with...), core: core}
 }
 
 // With creates a child logger and adds structured context to it.
-func (l *zapLogger) With(args ...interface{}) Logger {
+func (l *zapLogger) With(args ...any) Logger {
 	return loggerFromZapCore(l.core, args...)
 }
 

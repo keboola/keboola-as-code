@@ -53,7 +53,7 @@ type stringWithoutANSIMatcher struct {
 	str string
 }
 
-func (m *stringWithoutANSIMatcher) Match(v interface{}) bool {
+func (m *stringWithoutANSIMatcher) Match(v any) bool {
 	buf, ok := v.(*bytes.Buffer)
 	if !ok {
 		return false
@@ -64,7 +64,7 @@ func (m *stringWithoutANSIMatcher) Match(v interface{}) bool {
 	return false
 }
 
-func (m *stringWithoutANSIMatcher) Criteria() interface{} {
+func (m *stringWithoutANSIMatcher) Criteria() any {
 	return m.str
 }
 

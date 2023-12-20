@@ -65,7 +65,7 @@ func (d *createTmplTestDialog) askTestName(ctx context.Context) (string, error) 
 	v, _ := d.Dialogs.Ask(&prompt.Question{
 		Label:       "Test Name",
 		Description: "Please enter a test name.",
-		Validator: func(val interface{}) error {
+		Validator: func(val any) error {
 			str := strings.TrimSpace(val.(string))
 			if len(str) == 0 {
 				return errors.New(`test name is required`)

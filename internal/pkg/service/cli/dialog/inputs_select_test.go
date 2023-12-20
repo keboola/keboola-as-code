@@ -204,7 +204,7 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 			Name:    "Strings",
 			Type:    input.TypeStringArray,
 			Kind:    input.KindMultiSelect,
-			Default: []interface{}{"foo", "bar"},
+			Default: []any{"foo", "bar"},
 			Options: input.Options{
 				{
 					Value: "foo",

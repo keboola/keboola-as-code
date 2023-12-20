@@ -18,7 +18,7 @@ type metadataMapper struct {
 }
 
 // ObjectIdsMap - generated object id -> template object id.
-type ObjectIdsMap map[interface{}]interface{}
+type ObjectIdsMap map[any]any
 
 // InputsUsage contains all uses of inputs per object.
 type InputsUsage struct {
@@ -48,7 +48,7 @@ type InputUsage struct {
 	ObjectKeys []string // list of object keys generated from the input (empty = all)
 }
 
-func (v ObjectIdsMap) IDInTemplate(idInProject interface{}) (interface{}, bool) {
+func (v ObjectIdsMap) IDInTemplate(idInProject any) (any, bool) {
 	id, found := v[idInProject]
 	return id, found
 }

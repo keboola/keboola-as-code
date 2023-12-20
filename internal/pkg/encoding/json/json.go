@@ -9,7 +9,7 @@ import (
 
 type RawMessage = json.RawMessage
 
-func Encode(v interface{}, pretty bool) ([]byte, error) {
+func Encode(v any, pretty bool) ([]byte, error) {
 	var data []byte
 	var err error
 	if pretty {
@@ -24,7 +24,7 @@ func Encode(v interface{}, pretty bool) ([]byte, error) {
 	return data, nil
 }
 
-func MustEncode(v interface{}, pretty bool) []byte {
+func MustEncode(v any, pretty bool) []byte {
 	data, err := Encode(v, pretty)
 	if err != nil {
 		panic(err)
@@ -32,12 +32,12 @@ func MustEncode(v interface{}, pretty bool) []byte {
 	return data
 }
 
-func EncodeString(v interface{}, pretty bool) (string, error) {
+func EncodeString(v any, pretty bool) (string, error) {
 	data, err := Encode(v, pretty)
 	return string(data), err
 }
 
-func MustEncodeString(v interface{}, pretty bool) string {
+func MustEncodeString(v any, pretty bool) string {
 	data, err := EncodeString(v, pretty)
 	if err != nil {
 		panic(err)
@@ -45,30 +45,30 @@ func MustEncodeString(v interface{}, pretty bool) string {
 	return data
 }
 
-func Decode(data []byte, m interface{}) error {
+func Decode(data []byte, m any) error {
 	if err := json.Unmarshal(data, m); err != nil {
 		return processJSONDecodeError(data, err)
 	}
 	return nil
 }
 
-func MustDecode(data []byte, m interface{}) {
+func MustDecode(data []byte, m any) {
 	if err := Decode(data, m); err != nil {
 		panic(err)
 	}
 }
 
-func DecodeString(data string, m interface{}) error {
+func DecodeString(data string, m any) error {
 	return Decode([]byte(data), m)
 }
 
-func MustDecodeString(data string, m interface{}) {
+func MustDecodeString(data string, m any) {
 	if err := DecodeString(data, m); err != nil {
 		panic(err)
 	}
 }
 
-func ConvertByJSON(input, target interface{}) error {
+func ConvertByJSON(input, target any) error {
 	data, err := Encode(input, false)
 	if err != nil {
 		return errors.Errorf(`encode error: %w`, err)

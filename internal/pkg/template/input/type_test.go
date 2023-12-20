@@ -63,19 +63,19 @@ func TestType_ValidateValue(t *testing.T) {
 
 	// String[]
 	assert.NoError(t, TypeStringArray.ValidateValue(reflect.ValueOf([]string{"foo", "bar"})))
-	assert.NoError(t, TypeStringArray.ValidateValue(reflect.ValueOf([]interface{}{"foo", "bar"})))
+	assert.NoError(t, TypeStringArray.ValidateValue(reflect.ValueOf([]any{"foo", "bar"})))
 	err = TypeStringArray.ValidateValue(reflect.ValueOf(nil))
 	assert.Error(t, err)
 	assert.Equal(t, "should be array, got null", err.Error())
 	err = TypeStringArray.ValidateValue(reflect.ValueOf("foo"))
 	assert.Error(t, err)
 	assert.Equal(t, "should be array, got string", err.Error())
-	err = TypeStringArray.ValidateValue(reflect.ValueOf([]interface{}{"foo", 123}))
+	err = TypeStringArray.ValidateValue(reflect.ValueOf([]any{"foo", 123}))
 	assert.Error(t, err)
 	assert.Equal(t, "all items should be string, got int, index 1", err.Error())
 
 	// Object
-	assert.NoError(t, TypeObject.ValidateValue(reflect.ValueOf(map[string]interface{}{"a": "b"})))
+	assert.NoError(t, TypeObject.ValidateValue(reflect.ValueOf(map[string]any{"a": "b"})))
 	err = TypeObject.ValidateValue(reflect.ValueOf(nil))
 	assert.Error(t, err)
 	assert.Equal(t, "should be object, got null", err.Error())
@@ -88,8 +88,8 @@ func TestType_ParseValue(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		t      Type
-		input  interface{}
-		output interface{}
+		input  any
+		output any
 		err    string
 	}{
 		{TypeInt, "", 0, ""},
@@ -117,12 +117,12 @@ func TestType_ParseValue(t *testing.T) {
 		{TypeString, 123.45, "123.45", ""},
 		{TypeString, true, "true", ""},
 		{TypeString, "abc", "abc", ""},
-		{TypeStringArray, "", []interface{}{}, ""},
-		{TypeStringArray, "a,b", []interface{}{"a", "b"}, ""},
-		{TypeStringArray, []string{}, []interface{}{}, ""},
-		{TypeStringArray, []string{"a", "b"}, []interface{}{"a", "b"}, ""},
-		{TypeStringArray, []interface{}{}, []interface{}{}, ""},
-		{TypeStringArray, []interface{}{"a", "b"}, []interface{}{"a", "b"}, ""},
+		{TypeStringArray, "", []any{}, ""},
+		{TypeStringArray, "a,b", []any{"a", "b"}, ""},
+		{TypeStringArray, []string{}, []any{}, ""},
+		{TypeStringArray, []string{"a", "b"}, []any{"a", "b"}, ""},
+		{TypeStringArray, []any{}, []any{}, ""},
+		{TypeStringArray, []any{"a", "b"}, []any{"a", "b"}, ""},
 		{TypeStringArray, 123, nil, "unexpected type \"int\""},
 	}
 
@@ -144,14 +144,14 @@ func TestType_EmptyValue(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		t      Type
-		output interface{}
+		output any
 	}{
 		{TypeInt, 0},
 		{TypeDouble, 0.0},
 		{TypeBool, false},
 		{TypeString, ""},
-		{TypeStringArray, []interface{}{}},
-		{TypeObject, make(map[string]interface{})},
+		{TypeStringArray, []any{}},
+		{TypeObject, make(map[string]any)},
 	}
 
 	// Assert

@@ -94,7 +94,7 @@ func BindToViper(v *viper.Viper, flags *pflag.FlagSet, envs env.Provider, envNam
 
 	// Search for ENV for each know flag
 	setBy := make(map[string]SetBy)
-	fromEnvs := make(map[string]interface{})
+	fromEnvs := make(map[string]any)
 	flags.VisitAll(func(flag *pflag.Flag) {
 		envName := envNaming.FlagToEnv(flag.Name)
 		if flag.Changed {
@@ -118,7 +118,7 @@ func BindToViper(v *viper.Viper, flags *pflag.FlagSet, envs env.Provider, envNam
 
 // unmarshallerHookFunc implements unmarshalling for custom types.
 func unmarshallerHookFunc() mapstructure.DecodeHookFuncType {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	return func(f reflect.Type, t reflect.Type, data any) (any, error) {
 		if t.Kind() == reflect.Pointer {
 			// Use nil value for pointer type, if the data is empty
 			if reflect.ValueOf(data).IsZero() {

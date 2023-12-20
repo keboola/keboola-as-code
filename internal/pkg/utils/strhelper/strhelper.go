@@ -148,7 +148,7 @@ func MustURLPathUnescape(in string) string {
 	return out
 }
 
-func ReplacePlaceholders(path string, placeholders map[string]interface{}) string {
+func ReplacePlaceholders(path string, placeholders map[string]any) string {
 	for key, value := range placeholders {
 		path = strings.ReplaceAll(path, "{"+key+"}", cast.ToString(value))
 	}

@@ -61,24 +61,24 @@ func TestValidateDefaultOptions(t *testing.T) {
 
 	// MultiSelect - valid
 	assert.True(t, validateDefaultOptions(
-		[]interface{}{"bar"},
+		[]any{"bar"},
 		KindMultiSelect,
 		Options{{Value: "foo", Label: "Foo"}, {Value: "bar", Label: "Bar"}},
 	))
 	assert.True(t, validateDefaultOptions(
-		[]interface{}{"bar", "foo"},
+		[]any{"bar", "foo"},
 		KindMultiSelect,
 		Options{{Value: "foo", Label: "Foo"}, {Value: "bar", Label: "Bar"}},
 	))
 
 	// MultiSelect - invalid
 	assert.False(t, validateDefaultOptions(
-		[]interface{}{"abc"},
+		[]any{"abc"},
 		KindMultiSelect,
 		Options{{Value: "foo", Label: "Foo"}, {Value: "bar", Label: "Bar"}},
 	))
 	assert.False(t, validateDefaultOptions(
-		[]interface{}{"bar", "foo", "abc"},
+		[]any{"bar", "foo", "abc"},
 		KindMultiSelect,
 		Options{{Value: "foo", Label: "Foo"}, {Value: "bar", Label: "Bar"}},
 	))

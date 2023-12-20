@@ -23,8 +23,8 @@ type Values struct {
 
 // Value to be replaced.
 type Value struct {
-	Search  interface{}
-	Replace interface{}
+	Search  any
+	Replace any
 }
 
 // SubString represents partial match in a string.
@@ -46,7 +46,7 @@ func (v *Values) Values() []Value {
 	return out
 }
 
-func (v *Values) AddValue(search, replace interface{}) {
+func (v *Values) AddValue(search, replace any) {
 	v.values = append(v.values, Value{Search: search, Replace: replace})
 }
 
@@ -68,7 +68,7 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 }
 
 // AddID replaces id with id.
-func (v *Values) AddID(oldID, newID interface{}) {
+func (v *Values) AddID(oldID, newID any) {
 	switch old := oldID.(type) {
 	case keboola.BranchID:
 		v.AddValue(old, newID.(keboola.BranchID))
@@ -86,11 +86,11 @@ func (v *Values) AddID(oldID, newID interface{}) {
 }
 
 // AddContentField sets nested value in config/row.Content ordered map.
-func (v *Values) AddContentField(objectKey model.Key, fieldPath orderedmap.Path, replace interface{}) {
+func (v *Values) AddContentField(objectKey model.Key, fieldPath orderedmap.Path, replace any) {
 	v.AddValue(ContentField{objectKey: objectKey, fieldPath: fieldPath}, replace)
 }
 
-func (v *Values) Replace(input interface{}) (interface{}, error) {
+func (v *Values) Replace(input any) (any, error) {
 	if err := v.validate(); err != nil {
 		return nil, err
 	}

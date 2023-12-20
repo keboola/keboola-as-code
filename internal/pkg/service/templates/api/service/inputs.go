@@ -16,7 +16,7 @@ func validateInputs(ctx context.Context, groups template.StepsGroups, payload []
 
 	errs := errors.NewMultiError()
 	allValues = make(template.InputsValues, 0)
-	allValuesMap := make(map[string]interface{})
+	allValuesMap := make(map[string]any)
 	allStepsIds := make(map[string]bool)
 
 	// Check each group
@@ -130,11 +130,11 @@ func validateInputs(ctx context.Context, groups template.StepsGroups, payload []
 }
 
 // inputsPayloadToMap returns map[StepId][InputId] -> value.
-func inputsPayloadToMap(payload []*StepPayload) map[string]map[string]interface{} {
-	v := make(map[string]map[string]interface{})
+func inputsPayloadToMap(payload []*StepPayload) map[string]map[string]any {
+	v := make(map[string]map[string]any)
 	for _, stepPayload := range payload {
 		if _, ok := v[stepPayload.ID]; !ok {
-			v[stepPayload.ID] = make(map[string]interface{})
+			v[stepPayload.ID] = make(map[string]any)
 		}
 		for _, inputPayload := range stepPayload.Inputs {
 			v[stepPayload.ID][inputPayload.ID] = inputPayload.Value

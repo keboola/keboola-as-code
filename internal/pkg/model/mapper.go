@@ -92,7 +92,7 @@ func (f *fileToLoad) RemoveTag(tag string) *fileToLoad {
 	return f
 }
 
-func (f *fileToLoad) AddMetadata(key string, value interface{}) *fileToLoad {
+func (f *fileToLoad) AddMetadata(key string, value any) *fileToLoad {
 	f.FileDef.AddMetadata(key, value)
 	return f
 }
@@ -111,7 +111,7 @@ func (f *fileToLoad) ReadFile(ctx context.Context) (*filesystem.RawFile, error) 
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJSONFieldsTo(ctx context.Context, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (f *fileToLoad) ReadJSONFieldsTo(ctx context.Context, target any, tag string) (*filesystem.JSONFile, bool, error) {
 	file, tagFound, err := f.fsLoader.ReadJSONFieldsTo(ctx, f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
@@ -122,7 +122,7 @@ func (f *fileToLoad) ReadJSONFieldsTo(ctx context.Context, target interface{}, t
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadJSONMapTo(ctx context.Context, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+func (f *fileToLoad) ReadJSONMapTo(ctx context.Context, target any, tag string) (*filesystem.JSONFile, bool, error) {
 	file, tagFound, err := f.fsLoader.ReadJSONMapTo(ctx, f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
@@ -133,7 +133,7 @@ func (f *fileToLoad) ReadJSONMapTo(ctx context.Context, target interface{}, tag 
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadFileContentTo(ctx context.Context, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
+func (f *fileToLoad) ReadFileContentTo(ctx context.Context, target any, tag string) (*filesystem.RawFile, bool, error) {
 	file, tagFound, err := f.fsLoader.ReadFileContentTo(ctx, f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
@@ -153,7 +153,7 @@ func (f *fileToLoad) ReadJSONFile(ctx context.Context) (*filesystem.JSONFile, er
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJSONFileTo(ctx context.Context, target interface{}) (*filesystem.RawFile, error) {
+func (f *fileToLoad) ReadJSONFileTo(ctx context.Context, target any) (*filesystem.RawFile, error) {
 	file, err := f.fsLoader.ReadJSONFileTo(ctx, f.FileDef, target)
 	if err != nil {
 		return nil, err
@@ -164,27 +164,27 @@ func (f *fileToLoad) ReadJSONFileTo(ctx context.Context, target interface{}) (*f
 
 // LocalLoadRecipe - all items related to the object, when loading from local fs.
 type LocalLoadRecipe struct {
-	ObjectManifest                        // manifest record, eg *ConfigManifest
-	Object         Object                 // object, eg. Config
-	Files          *FilesLoader           // eg. config.json, meta.json, description.md, ...
-	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	ObjectManifest                // manifest record, eg *ConfigManifest
+	Object         Object         // object, eg. Config
+	Files          *FilesLoader   // eg. config.json, meta.json, description.md, ...
+	Annotations    map[string]any // key/value pairs that can be used by to affect mappers behavior
 }
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
 type LocalSaveRecipe struct {
 	ChangedFields  ChangedFields
-	ObjectManifest                        // manifest record, eg *ConfigManifest
-	Object         Object                 // object, eg. Config
-	Files          *FilesToSave           // eg. config.json, meta.json, description.md, ...
-	ToDelete       []string               // paths to delete, on save
-	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	ObjectManifest                // manifest record, eg *ConfigManifest
+	Object         Object         // object, eg. Config
+	Files          *FilesToSave   // eg. config.json, meta.json, description.md, ...
+	ToDelete       []string       // paths to delete, on save
+	Annotations    map[string]any // key/value pairs that can be used by to affect mappers behavior
 }
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
 type RemoteLoadRecipe struct {
 	ObjectManifest
 	Object      Object
-	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	Annotations map[string]any // key/value pairs that can be used by to affect mappers behavior
 }
 
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
@@ -192,7 +192,7 @@ type RemoteSaveRecipe struct {
 	ChangedFields ChangedFields
 	ObjectManifest
 	Object      Object
-	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	Annotations map[string]any // key/value pairs that can be used by to affect mappers behavior
 }
 
 // PersistRecipe contains object to persist.
@@ -220,7 +220,7 @@ func NewLocalLoadRecipe(fsLoader filesystem.FileLoader, manifest ObjectManifest,
 		Object:         object,
 		ObjectManifest: manifest,
 		Files:          NewFilesLoader(fsLoader),
-		Annotations:    make(map[string]interface{}),
+		Annotations:    make(map[string]any),
 	}
 }
 
@@ -230,7 +230,7 @@ func NewLocalSaveRecipe(manifest ObjectManifest, object Object, changedFields Ch
 		Object:         object,
 		ObjectManifest: manifest,
 		Files:          NewFilesToSave(),
-		Annotations:    make(map[string]interface{}),
+		Annotations:    make(map[string]any),
 	}
 }
 
@@ -238,7 +238,7 @@ func NewRemoteLoadRecipe(manifest ObjectManifest, object Object) *RemoteLoadReci
 	return &RemoteLoadRecipe{
 		Object:         object,
 		ObjectManifest: manifest,
-		Annotations:    make(map[string]interface{}),
+		Annotations:    make(map[string]any),
 	}
 }
 
@@ -247,6 +247,6 @@ func NewRemoteSaveRecipe(manifest ObjectManifest, object Object, changedFields C
 		ChangedFields:  changedFields,
 		Object:         object,
 		ObjectManifest: manifest,
-		Annotations:    make(map[string]interface{}),
+		Annotations:    make(map[string]any),
 	}
 }

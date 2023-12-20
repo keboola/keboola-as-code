@@ -42,7 +42,7 @@ type Project struct {
 	stateFilePath     string
 	branchesByID      map[keboola.BranchID]*keboola.Branch
 	branchesByName    map[string]*keboola.Branch
-	logFn             func(format string, a ...interface{})
+	logFn             func(format string, a ...any)
 }
 
 type UnlockFn func()
@@ -60,9 +60,9 @@ func GetTestProjectForTest(t *testing.T) *Project {
 		unlockFn()
 	})
 
-	p.logFn = func(format string, a ...interface{}) {
+	p.logFn = func(format string, a ...any) {
 		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
-		a = append([]interface{}{p.ID(), t.Name(), seconds}, a...)
+		a = append([]any{p.ID(), t.Name(), seconds}, a...)
 		t.Logf("TestProject[%d][%s][%05.2fs]: "+format, a...)
 	}
 
@@ -692,7 +692,7 @@ func (p *Project) logEnvs() {
 	}
 }
 
-func (p *Project) logf(format string, a ...interface{}) {
+func (p *Project) logf(format string, a ...any) {
 	if testhelper.TestIsVerbose() && p.logFn != nil {
 		p.logFn(format, a...)
 	}

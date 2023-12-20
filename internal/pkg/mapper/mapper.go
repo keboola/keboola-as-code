@@ -70,10 +70,10 @@ type AfterRemoteOperationListener interface {
 	AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error
 }
 
-type Mappers []interface{}
+type Mappers []any
 
 // ForEach iterates over Mappers in the order in which they were defined.
-func (m Mappers) ForEach(stopOnFailure bool, callback func(mapper interface{}) error) error {
+func (m Mappers) ForEach(stopOnFailure bool, callback func(mapper any) error) error {
 	errs := errors.NewMultiError()
 	for _, mapper := range m {
 		if err := callback(mapper); err != nil {
@@ -87,7 +87,7 @@ func (m Mappers) ForEach(stopOnFailure bool, callback func(mapper interface{}) e
 }
 
 // ForEachReverse iterates over Mappers in the reverse order in which they were defined.
-func (m Mappers) ForEachReverse(stopOnFailure bool, callback func(mapper interface{}) error) error {
+func (m Mappers) ForEachReverse(stopOnFailure bool, callback func(mapper any) error) error {
 	errs := errors.NewMultiError()
 	l := len(m)
 	for i := l - 1; i >= 0; i-- {
@@ -124,14 +124,14 @@ func (m *Mapper) NewFileLoader(fs filesystem.Fs) filesystem.FileLoader {
 	return fileloader.NewWithHandler(fs, m.LoadLocalFile)
 }
 
-func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
+func (m *Mapper) AddMapper(mapper ...any) *Mapper {
 	m.mappers = append(m.mappers, mapper...)
 	return m
 }
 
 // MapBeforeLocalSave calls mappers with LocalSaveMapper interface implemented.
 func (m *Mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
-	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
+	return m.mappers.ForEachReverse(true, func(mapper any) error {
 		if mapper, ok := mapper.(LocalSaveMapper); ok {
 			if err := mapper.MapBeforeLocalSave(ctx, recipe); err != nil {
 				return err
@@ -143,7 +143,7 @@ func (m *Mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSave
 
 // MapAfterLocalLoad calls mappers with LocalLoadMapper interface implemented.
 func (m *Mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
-	return m.mappers.ForEach(true, func(mapper interface{}) error {
+	return m.mappers.ForEach(true, func(mapper any) error {
 		if mapper, ok := mapper.(LocalLoadMapper); ok {
 			if err := mapper.MapAfterLocalLoad(ctx, recipe); err != nil {
 				return err
@@ -155,7 +155,7 @@ func (m *Mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadR
 
 // MapBeforeRemoteSave calls mappers with RemoteSaveMapper interface implemented.
 func (m *Mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
-	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
+	return m.mappers.ForEachReverse(true, func(mapper any) error {
 		if mapper, ok := mapper.(RemoteSaveMapper); ok {
 			if err := mapper.MapBeforeRemoteSave(ctx, recipe); err != nil {
 				return err
@@ -167,7 +167,7 @@ func (m *Mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 
 // MapAfterRemoteLoad calls mappers with RemoteLoadMapper interface implemented.
 func (m *Mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
-	return m.mappers.ForEach(true, func(mapper interface{}) error {
+	return m.mappers.ForEach(true, func(mapper any) error {
 		if mapper, ok := mapper.(RemoteLoadMapper); ok {
 			if err := mapper.MapAfterRemoteLoad(ctx, recipe); err != nil {
 				return err
@@ -179,7 +179,7 @@ func (m *Mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoa
 
 // MapBeforePersist calls mappers with BeforePersistMapper interface implemented.
 func (m *Mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
+	return m.mappers.ForEach(false, func(mapper any) error {
 		if mapper, ok := mapper.(BeforePersistMapper); ok {
 			if err := mapper.MapBeforePersist(ctx, recipe); err != nil {
 				return err
@@ -194,7 +194,7 @@ func (m *Mapper) LoadLocalFile(ctx context.Context, def *filesystem.FileDef, fil
 	handler := defaultHandler
 
 	// Generate handlers chain, eg.  mapper1(mapper2(mapper3(default())))
-	err := m.mappers.ForEachReverse(true, func(mapper interface{}) error {
+	err := m.mappers.ForEachReverse(true, func(mapper any) error {
 		if mapper, ok := mapper.(LocalFileLoadMapper); ok {
 			next := handler
 			handler = func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
@@ -213,7 +213,7 @@ func (m *Mapper) LoadLocalFile(ctx context.Context, def *filesystem.FileDef, fil
 
 // OnObjectPathUpdate calls mappers with OnObjectPathUpdateListener interface implemented.
 func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
+	return m.mappers.ForEach(false, func(mapper any) error {
 		if mapper, ok := mapper.(OnObjectPathUpdateListener); ok {
 			if err := mapper.OnObjectPathUpdate(event); err != nil {
 				return err
@@ -225,7 +225,7 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 
 // AfterLocalOperation calls mappers with AfterLocalOperationListener interface implemented.
 func (m *Mapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
+	return m.mappers.ForEach(false, func(mapper any) error {
 		if mapper, ok := mapper.(AfterLocalOperationListener); ok {
 			if err := mapper.AfterLocalOperation(ctx, changes); err != nil {
 				return err
@@ -237,7 +237,7 @@ func (m *Mapper) AfterLocalOperation(ctx context.Context, changes *model.LocalCh
 
 // AfterRemoteOperation calls mappers with AfterRemoteOperationListener interface implemented.
 func (m *Mapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
+	return m.mappers.ForEach(false, func(mapper any) error {
 		if mapper, ok := mapper.(AfterRemoteOperationListener); ok {
 			if err := mapper.AfterRemoteOperation(ctx, changes); err != nil {
 				return err

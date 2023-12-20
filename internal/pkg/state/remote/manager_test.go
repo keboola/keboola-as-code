@@ -133,8 +133,8 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/dev-branches`,
-		httpmock.NewJsonResponderOrPanic(200, []interface{}{
-			map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, []any{
+			map[string]any{
 				"id":   123,
 				"name": "My branch",
 			},
@@ -166,14 +166,14 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/components`,
-		httpmock.NewJsonResponderOrPanic(200, []interface{}{
-			map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, []any{
+			map[string]any{
 				"id":   "foo.bar",
 				"name": "Foo Bar",
-				"configurations": []map[string]interface{}{
+				"configurations": []map[string]any{
 					{
 						"id": "456",
-						"configuration": map[string]interface{}{
+						"configuration": map[string]any{
 							"key": "api value",
 						},
 					},
@@ -215,8 +215,8 @@ func TestLoadConfigMetadata(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/dev-branches`,
-		httpmock.NewJsonResponderOrPanic(200, []interface{}{
-			map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, []any{
+			map[string]any{
 				"id":   123,
 				"name": "My branch",
 			},
@@ -266,22 +266,22 @@ func TestLoadConfigMetadata(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/components`,
-		httpmock.NewJsonResponderOrPanic(200, []interface{}{
-			map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, []any{
+			map[string]any{
 				"id":   "foo.bar",
 				"name": "Foo Bar",
-				"configurations": []map[string]interface{}{
+				"configurations": []map[string]any{
 					{
 						"id":   "456",
 						"name": "Config With Metadata",
-						"configuration": map[string]interface{}{
+						"configuration": map[string]any{
 							"key": "value",
 						},
 					},
 					{
 						"id":   "789",
 						"name": "Config Without Metadata",
-						"configuration": map[string]interface{}{
+						"configuration": map[string]any{
 							"key": "value",
 						},
 					},
@@ -463,7 +463,7 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 }
 
-func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
+func newTestRemoteUOW(t *testing.T, mappers ...any) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
 	c, httpTransport := client.NewMockedClient()
 	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
@@ -482,7 +482,7 @@ func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork,
 	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
 }
 
-func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *state.Registry) {
+func newTestLocalManager(t *testing.T, mappers []any) (*local.Manager, *state.Registry) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()

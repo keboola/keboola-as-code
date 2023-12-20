@@ -617,7 +617,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "variables",
-							Value: []interface{}{
+							Value: []any{
 								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
@@ -741,7 +741,7 @@ func TestPersistVariables(t *testing.T) {
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "variables",
-							Value: []interface{}{
+							Value: []any{
 								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
@@ -793,7 +793,7 @@ func TestPersistVariables(t *testing.T) {
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "values",
-							Value: []interface{}{
+							Value: []any{
 								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
@@ -929,7 +929,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Register new IDs API responses
 	var ticketResponses []*http.Response
 	for i := 1; i <= tc.expectedNewIds; i++ {
-		response, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": cast.ToString(1000 + i)})
+		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
 		assert.NoError(t, err)
 		ticketResponses = append(ticketResponses, response)
 	}

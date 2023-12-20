@@ -52,7 +52,7 @@ func (t Type) IsValid() bool {
 }
 
 // EmptyValue returns empty value for the type.
-func (t Type) EmptyValue() interface{} {
+func (t Type) EmptyValue() any {
 	switch t {
 	case TypeString:
 		return ""
@@ -63,9 +63,9 @@ func (t Type) EmptyValue() interface{} {
 	case TypeBool:
 		return false
 	case TypeStringArray:
-		return []interface{}{}
+		return []any{}
 	case TypeObject:
-		return make(map[string]interface{})
+		return make(map[string]any)
 	default:
 		panic(errors.Errorf(`unexpected input type "%s"`, t))
 	}
@@ -122,7 +122,7 @@ func (t Type) ValidateValue(value reflect.Value) error {
 	return nil
 }
 
-func (t Type) ParseValue(value interface{}) (interface{}, error) {
+func (t Type) ParseValue(value any) (any, error) {
 	switch t {
 	case TypeInt:
 		// Empty string
@@ -178,7 +178,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 	case TypeString:
 		return cast.ToString(value), nil
 	case TypeStringArray:
-		slice := make([]interface{}, 0)
+		slice := make([]any, 0)
 		values := make(map[string]bool)
 
 		if v, ok := value.(string); ok {
@@ -193,7 +193,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 		}
 
 		if items, ok := value.([]string); ok {
-			// Convert []string (Go type) -> []interface{} (JSON type, used in Jsonnet template)
+			// Convert []string (Go type) -> []any (JSON type, used in Jsonnet template)
 			// And return only unique values.
 			for _, item := range items {
 				if !values[item] {
@@ -202,7 +202,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 				}
 			}
 			return slice, nil
-		} else if items, ok := value.([]interface{}); ok {
+		} else if items, ok := value.([]any); ok {
 			// Return only unique values.
 			for _, itemRaw := range items {
 				item := itemRaw.(string)

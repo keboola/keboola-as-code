@@ -35,7 +35,7 @@ func (fs *MemoryFs) BasePath() string {
 	return "__memory__"
 }
 
-func (fs *MemoryFs) SubDirFs(path string) (interface{}, error) {
+func (fs *MemoryFs) SubDirFs(path string) (any, error) {
 	return basepathfs.New(fs, path)
 }
 
