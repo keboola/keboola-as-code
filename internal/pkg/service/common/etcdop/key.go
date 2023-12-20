@@ -33,11 +33,12 @@ func (v Key) Exists(opts ...etcd.OpOption) op.BoolOp {
 		},
 		func(_ context.Context, r etcd.OpResponse) (bool, error) {
 			count := r.Get().Count
-			if count == 0 {
+			switch count {
+			case 0:
 				return false, nil
-			} else if count == 1 {
+			case 1:
 				return true, nil
-			} else {
+			default:
 				return false, errors.Errorf(`etcd exists: at most one result result expected, found %d results`, count)
 			}
 		},
@@ -51,11 +52,12 @@ func (v Key) Get(opts ...etcd.OpOption) op.GetOneOp {
 		},
 		func(_ context.Context, r etcd.OpResponse) (*op.KeyValue, error) {
 			count := r.Get().Count
-			if count == 0 {
+			switch count {
+			case 0:
 				return nil, nil
-			} else if count == 1 {
+			case 1:
 				return r.Get().Kvs[0], nil
-			} else {
+			default:
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
 		},
@@ -69,11 +71,12 @@ func (v Key) Delete(opts ...etcd.OpOption) op.BoolOp {
 		},
 		func(_ context.Context, r etcd.OpResponse) (bool, error) {
 			count := r.Del().Deleted
-			if count == 0 {
+			switch count {
+			case 0:
 				return false, nil
-			} else if count == 1 {
+			case 1:
 				return true, nil
-			} else {
+			default:
 				return false, errors.Errorf(`etcd delete: at most one result result expected, found %d results`, count)
 			}
 		},
@@ -129,16 +132,17 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 		},
 		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
 			count := r.Get().Count
-			if count == 0 {
+			switch count {
+			case 0:
 				return nil, nil
-			} else if count == 1 {
+			case 1:
 				kv := r.Get().Kvs[0]
 				target := new(T)
 				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(v.Key(), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, Kv: kv}, nil
-			} else {
+			default:
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
 		},

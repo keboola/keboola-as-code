@@ -83,11 +83,9 @@ linters-settings:
 # https://golangci-lint.run/usage/linters
 linters:
   disable-all: true
-  # Some linters are not compatible with go 1.18, so they are temporarily disabled.
-  # See https://github.com/golangci/golangci-lint/issues/2649
   enable:
     - asciicheck
-    #- bodyclose # Not compatible with go 1.18, temporary disable
+    - bodyclose
     - contextcheck
     - depguard
     - dogsled
@@ -102,7 +100,7 @@ linters:
     - gochecknoglobals
     - gochecknoinits
     - goconst
-    #- gocritic # Not compatible with go 1.18, temporary disable
+    - gocritic
     - godot
     - godox
     - gofumpt
@@ -121,8 +119,8 @@ linters:
     - noctx
     - predeclared
     - promlinter
-    #- rowserrcheck # Not compatible with go 1.18, temporary disable
-    #- sqlclosecheck # Not compatible with go 1.18, temporary disable
+    - rowserrcheck
+    - sqlclosecheck
     - staticcheck
     - stylecheck
     - tagliatelle
@@ -132,7 +130,7 @@ linters:
     - unconvert
     - unparam
     - unused
-    #- wastedassign # Not compatible with go 1.18, temporary disable
+    - wastedassign
     - whitespace
     # DISABLED
     #- goimports # replaced with gci
@@ -207,3 +205,8 @@ issues:
       text: "Function `.*` should pass the context parameter"
       linters:
         - contextcheck
+    # Allow overriding ctx even if not used yet
+    - path: ".*"
+      text: "assigned to ctx, but never used afterwards"
+      linters:
+        - wastedassign

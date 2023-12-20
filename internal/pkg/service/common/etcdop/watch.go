@@ -371,7 +371,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 
 				// Handle initialization error
 				if err := resp.InitErr; err != nil {
-					if init {
+					if init { // nolint: gocritic
 						// Stop on initialization error
 						stream.channel <- resp
 						return

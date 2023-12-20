@@ -143,7 +143,8 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	}
 
 	// Set configId
-	if len(task.ConfigID) > 0 {
+	switch {
+	case len(task.ConfigID) > 0:
 		// Target key
 		targetKey := &model.ConfigKey{
 			BranchID:    task.BranchID,
@@ -166,10 +167,10 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		} else {
 			errs.Append(errors.Errorf(`%s not found`, targetKey.Desc()))
 		}
-	} else if task.ConfigData != nil {
+	case task.ConfigData != nil:
 		target.Set("configData", task.ConfigData)
 		target.Set(`componentId`, task.ComponentID)
-	} else {
+	default:
 		if task.Enabled {
 			errs.Append(errors.New("task.configId, or task.configData and task.componentId must be specified"))
 		} else {
