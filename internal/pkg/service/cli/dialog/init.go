@@ -45,10 +45,8 @@ func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Option
 			Pull:       p.options.GetBool("ci"),
 			MainBranch: p.options.GetString("ci-main-branch"),
 		}
-	} else {
-		if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
-			out.Workflows = p.AskWorkflowsOptions()
-		}
+	} else if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
+		out.Workflows = p.AskWorkflowsOptions()
 	}
 
 	return out, nil

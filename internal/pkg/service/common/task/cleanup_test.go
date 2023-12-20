@@ -177,6 +177,7 @@ task/_system_/tasks.cleanup/%s
 					attribute.String("duration_sec", "<dynamic>"),
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", true),
+					attribute.String("result", "deleted \"2\" tasks"),
 				},
 			},
 		},

@@ -99,11 +99,12 @@ func (v Prefix) GetOne(opts ...etcd.OpOption) op.GetOneOp {
 		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValue, error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(r.Get().Kvs)
-			if count == 0 {
+			switch count {
+			case 0:
 				return nil, nil
-			} else if count == 1 {
+			case 1:
 				return r.Get().Kvs[0], nil
-			} else {
+			default:
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
 		},
@@ -135,16 +136,17 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(r.Get().Kvs)
-			if count == 0 {
+			switch count {
+			case 0:
 				return nil, nil
-			} else if count == 1 {
+			case 1:
 				kv := r.Get().Kvs[0]
 				target := new(T)
 				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, Kv: kv}, nil
-			} else {
+			default:
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
 		},

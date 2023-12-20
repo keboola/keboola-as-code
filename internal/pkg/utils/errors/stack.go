@@ -45,7 +45,7 @@ func callers() StackTrace {
 	// Skip frames from errors package
 	var out []uintptr
 	for _, pc := range rpc {
-		pc = pc - 1
+		pc--
 		fn := runtime.FuncForPC(pc)
 		if !strings.Contains(fn.Name(), "utils/errors.") {
 			out = append(out, pc)

@@ -215,6 +215,8 @@ func (t Type) ParseValue(value any) (any, error) {
 		} else {
 			return nil, errors.Errorf("unexpected type \"%T\"", value)
 		}
+	case TypeObject:
+		return value, nil
 	}
 	return value, nil
 }

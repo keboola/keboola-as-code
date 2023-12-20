@@ -226,17 +226,18 @@ func (l *remoteLoader) parseTask(taskRaw any) error {
 
 	// ConfigID / ConfigData
 	if len(task.ComponentID) > 0 {
-		if parser.hasConfigID() {
+		switch {
+		case parser.hasConfigID():
 			task.ConfigID, err = parser.configID()
 			if err != nil {
 				errs.Append(err)
 			}
-		} else if parser.hasConfigData() {
+		case parser.hasConfigData():
 			task.ConfigData, err = parser.configData()
 			if err != nil {
 				errs.Append(err)
 			}
-		} else if task.Enabled {
+		case task.Enabled:
 			errs.Append(errors.New("task.configId, or task.configData and task.componentId must be specified"))
 		}
 	}
