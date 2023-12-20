@@ -34,7 +34,6 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
-	ctx := context.Background()
 
 	// Mocked API scope
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
