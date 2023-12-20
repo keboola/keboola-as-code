@@ -90,7 +90,7 @@ func validateDefaultOptions(value any, kind Kind, options Options) bool {
 			}
 		}
 		return true
+	default:
+		return true
 	}
-
-	return true
 }
