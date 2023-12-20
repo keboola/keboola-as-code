@@ -330,7 +330,6 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 			stream.sub = subStream
 			stream.lock.Unlock()
 
-		ChannelLoop:
 			for resp := range subStream.channel {
 				// Emit "restarted" event before the first event after the restart
 				if restart {
@@ -372,22 +371,21 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 
 				// Handle initialization error
 				if err := resp.InitErr; err != nil {
-					switch {
-					case init:
+					if init { // nolint: gocritic
 						// Stop on initialization error
 						stream.channel <- resp
 						return
-					case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
+					} else if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 						// Context cancelled event is forwarded only during the initialization.
 						// In other cases, closing the channel is sufficient.
 						continue
-					default:
+					} else {
 						// Convert initialization error
 						// from an 1+ attempt to a common error and restart watch.
 						resp.Err = err
 						resp.InitErr = nil
 						stream.channel <- resp
-						break ChannelLoop
+						break
 					}
 				}
 

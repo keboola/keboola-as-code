@@ -64,7 +64,7 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 
 		// Get optional usage tag
 		usage := field.Tag.Get("usage")
-		fieldPath := parents
+		fieldPath := append([]string(nil), parents...)
 		fieldPath = append(fieldPath, partialName)
 		flagName := strings.Join(fieldPath, ".")
 
