@@ -82,5 +82,6 @@ func DeepEqualNotSame(t *testing.T, a, b any, path string) {
 				path+`.`+cast.ToString(k.Interface()),
 			)
 		}
+	default: // intentionally empty
 	}
 }

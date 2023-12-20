@@ -79,6 +79,9 @@ linters-settings:
     checks:
       - all
       - "-ST1001" # Disable dot imports style check
+  exhaustive:
+    check-generated: true
+    default-signifies-exhaustive: true
 
 # https://golangci-lint.run/usage/linters
 linters:
@@ -96,6 +99,7 @@ linters:
     - errcheck
     - errname
     - errorlint
+    - exhaustive
     - exportloopref
     - forbidigo
     - gci
