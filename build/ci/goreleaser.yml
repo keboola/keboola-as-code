@@ -68,15 +68,15 @@ nfpms:
         key_name: keboola
         key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH"  }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
 
-scoop:
-  bucket:
-    owner: keboola
-    name: scoop-keboola-cli
-  homepage: https://www.keboola.com/product/cli
-  description: Operate your cloud data pipeline from the command line
-  license: Apache2
-  url_template: "{{ .Env.CLI_DIST_BASE_URL }}/zip/{{ .ArtifactName }}"
-  skip_upload: true
+scoops:
+  - repository:
+      owner: keboola
+      name: scoop-keboola-cli
+    homepage: https://www.keboola.com/product/cli
+    description: Operate your cloud data pipeline from the command line
+    license: Apache2
+    url_template: "{{ .Env.CLI_DIST_BASE_URL }}/zip/{{ .ArtifactName }}"
+    skip_upload: true
 
 publishers:
   - name: Upload artifacts to KAC Assets S3

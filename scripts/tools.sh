@@ -21,7 +21,7 @@ fi
 # goreleaser
 if ! command -v goreleaser &> /dev/null
 then
-  ./install-goreleaser.sh -b $(go env GOPATH)/bin v0.182.1
+  ./install-goreleaser.sh -b $(go env GOPATH)/bin v1.22.1
 fi
 
 # golangci-lint
