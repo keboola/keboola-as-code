@@ -187,6 +187,35 @@ jobs:
           path: target/keboola-cli.json
           retention-days: 1
 
+  test-expected-files:
+    needs:
+      - version
+      - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check expected files exist
+        run: |
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_checksums.txt"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_darwin_amd64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_darwin_arm64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.apk"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.deb"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.rpm"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.apk"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.deb"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.rpm"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.apk"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.deb"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.rpm"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_amd64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_arm64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_armv6.zip"
+
   update-repositories-homebrew:
     needs:
       - version
@@ -504,7 +533,6 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     steps:
-
       - name: Install on Linux by Homebrew
         if: always()
         run: |
