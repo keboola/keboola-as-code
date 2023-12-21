@@ -64,3 +64,4 @@ jobs:
         with:
           name: go-licenses
           path: /tmp/go-licenses/go-licenses.csv
+          if-no-files-found: error

@@ -178,6 +178,7 @@ jobs:
         with:
           name: homebrew-formulae
           path: target/homebrew/keboola-cli.rb
+          if-no-files-found: error
           retention-days: 1
 
       - name: Upload Scoop manifest
@@ -185,6 +186,7 @@ jobs:
         with:
           name: scoop-manifest
           path: target/keboola-cli.json
+          if-no-files-found: error
           retention-days: 1
 
   test-expected-files:
