@@ -161,6 +161,7 @@ jobs:
           tag: ${{ env.TAG }}
           overwrite: true
           file_glob: true
+          prerelease: true
 
       - name: Create Homebrew formulae
         run: |
