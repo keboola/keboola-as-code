@@ -401,7 +401,7 @@ jobs:
       - name: Push Chocolatey
         env:
           CHOCOLATEY_KEY: ${{ secrets.CHOCOLATEY_KEY }}
-          MSI_CHECKSUM: ${{ steps.checksum.msi_checksum }}
+          MSI_CHECKSUM: ${{ steps.checksum.outputs.msi_checksum }}
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         run: |
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push"
