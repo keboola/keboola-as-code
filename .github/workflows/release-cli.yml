@@ -39,7 +39,7 @@ jobs:
       - name: Set version
         id: version
         run: |
-          VERSION=$(echo "${{ github.ref_name }}" | sed -n -E 's:^v?([0-9]+\.[0-9]+\.[0-9]+)$:\1:p')
+          VERSION=$(echo "${{ github.ref_name }}" | sed -n -E 's:^v?([0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?)$:\1:p')
           if [ -z "$VERSION" ]; then
             echo "expected a semantic tag, found \"$TAG\""
             exit 1
