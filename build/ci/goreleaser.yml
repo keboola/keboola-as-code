@@ -49,7 +49,7 @@ nfpms:
     homepage: https://www.keboola.com/product/cli
     maintainer: Keboola <support@keboola.com>
     description: Keboola CLI tool.
-    license: MIT
+    license: Apache2
     bindir: /usr/bin
     formats:
       - apk
@@ -74,7 +74,7 @@ scoop:
     name: scoop-keboola-cli
   homepage: https://www.keboola.com/product/cli
   description: Operate your cloud data pipeline from the command line
-  license: MIT
+  license: Apache2
   url_template: "{{ .Env.CLI_DIST_BASE_URL }}/zip/{{ .ArtifactName }}"
   skip_upload: true
 
