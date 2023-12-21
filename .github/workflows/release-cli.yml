@@ -186,7 +186,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: scoop-manifest
-          path: target/keboola-cli.json
+          path: target/scoop/keboola-cli.json
           if-no-files-found: error
           retention-days: 1
 
