@@ -10,13 +10,13 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildVersion={{ if index .Env "VERSION"  }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
+      - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildVersion={{ if index .Env "VERSION" }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
       - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildDate={{.Date}}
       - -X github.com/keboola/keboola-as-code/internal/pkg/build.GitCommit={{.Commit}}
     hooks:
       post:
         # Copy binary to BUILD_TARGET_PATH if set
-        - '{{ if index .Env "BUILD_TARGET_PATH"  }}cp "{{ .Path }}" "{{ .Env.BUILD_TARGET_PATH }}"{{ else }}true{{ end }}'
+        - '{{ if index .Env "BUILD_TARGET_PATH" }}cp "{{ .Path }}" "{{ .Env.BUILD_TARGET_PATH }}"{{ else }}true{{ end }}'
 
 changelog:
   skip: true
@@ -41,7 +41,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  name_template: '{{ if index .Env "SNAPSHOT"  }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
+  name_template: '{{ if index .Env "SNAPSHOT" }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
 
 nfpms:
   - id: packages
@@ -59,14 +59,14 @@ nfpms:
       - git
     rpm:
       signature:
-        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH"  }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH" }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
     deb:
       signature:
-        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH"  }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH" }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
     apk:
       signature:
         key_name: keboola
-        key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH"  }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH" }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
 
 scoops:
   - repository:

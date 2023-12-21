@@ -173,7 +173,7 @@ extraDeploy:
                 app.kubernetes.io/component: defragmentation
             spec:
               {{- if .Values.nodeSelector }}
-              nodeSelector: {{-  toYaml .Values.nodeSelector | nindent 12  }}
+              nodeSelector: {{- toYaml .Values.nodeSelector | nindent 12 }}
               {{- end }}
               {{- if .Values.tolerations }}
               tolerations: {{- toYaml .Values.tolerations | nindent 12 }}
