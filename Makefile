@@ -14,16 +14,16 @@ generate-buffer-api:
 	SERVICE_NAME=buffer bash ./scripts/generate-api.sh
 
 build:
-	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
+	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --clean --snapshot -f ./build/ci/goreleaser.yml
 
 build-local:
-	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --rm-dist --snapshot -f ./build/ci/goreleaser.yml
+	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --clean --snapshot -f ./build/ci/goreleaser.yml
 
 release:
-	goreleaser release --rm-dist -f ./build/ci/goreleaser.yml
+	goreleaser release --clean -f ./build/ci/goreleaser.yml
 
 release-local:
-	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
+	goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
 
 build-templates-api:
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/templates/api)" ./cmd/templates-api

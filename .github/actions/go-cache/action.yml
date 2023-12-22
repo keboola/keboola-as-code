@@ -8,11 +8,10 @@ runs:
   using: "composite"
   steps:
     - name: Use GNU tar instead BSD tar
+      if: runner.os == 'Windows'
       shell: bash
-      run: |
-        if [[ "$RUNNER_OS" == 'Windows' ]]; then
-          echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
-        fi
+      run: echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
+
     - name: Load Go cache
       uses: actions/cache@v3
       with:
@@ -24,7 +23,7 @@ runs:
           ~/.cache/golangci-lint
           ~/Library/Caches/golangci-lint
           ~\AppData\Local\golangci-lint
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v4-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v5-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v4-
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v4-${{ inputs.key }}-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v5-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v5-${{ inputs.key }}-

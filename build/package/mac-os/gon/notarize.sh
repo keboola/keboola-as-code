@@ -19,10 +19,6 @@ TARGET_PATH=$2
 HASH=`echo "${ARTIFACT_PATH}" | md5`
 GON_CONFIG_FILE="gon.$HASH.json"
 
-# Change directory
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-cd "$SCRIPT_DIR"
-
 # Create config file
 cat <<EOT >> "./${GON_CONFIG_FILE}"
 {

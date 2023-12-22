@@ -266,10 +266,11 @@ jobs:
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-k8s-state
           path: /tmp/artifacts
+          if-no-files-found: error
 
       - name: Send PR comment
         uses: marocchino/sticky-pull-request-comment@v2

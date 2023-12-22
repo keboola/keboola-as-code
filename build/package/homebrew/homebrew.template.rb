@@ -1,7 +1,7 @@
 class KeboolaCli < Formula
   desc "Keboola CLI tool"
   homepage "https://www.keboola.com/product/cli"
-  license "MIT"
+  license "Apache2"
   version "${VERSION}"
 
   if OS.mac? && Hardware::CPU.arm?
