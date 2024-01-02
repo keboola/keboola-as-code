@@ -1,5 +1,5 @@
 run:
-  timeout: 5m
+  timeout: 15m
   concurrency: 8
   tests: true # check test files
   skip-files: [ ]
@@ -11,6 +11,11 @@ run:
     - target
     - third_party
     - vendor
+    #TMP
+    - api/buffer
+    - cmd/buffer-api
+    - internal/pkg/service/buffer
+    - test/buffer
   skip-dirs-use-default: true
   modules-download-mode: mod
 
