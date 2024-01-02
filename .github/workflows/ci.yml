@@ -12,11 +12,11 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/check-licenses.yml
 
-#  test-lint:
-#    name: "Lint"
-#    secrets: inherit
-#    uses: ./.github/workflows/test-lint.yml
-#
+  test-lint:
+    name: "Lint"
+    secrets: inherit
+    uses: ./.github/workflows/test-lint.yml
+
 #  test-unit:
 #    name: "Unit Tests"
 #    secrets: inherit
