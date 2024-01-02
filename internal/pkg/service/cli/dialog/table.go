@@ -64,7 +64,7 @@ func (p *Dialogs) AskTable(
 			return nil, err
 		}
 		for _, w := range allTables {
-			if w.ID == tableID {
+			if w.TableID == tableID {
 				return w, nil
 			}
 		}
@@ -77,7 +77,7 @@ func (p *Dialogs) AskTable(
 	}
 
 	for _, table := range allTables {
-		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, table.DisplayName, table.ID))
+		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, table.DisplayName, table.TableID))
 	}
 	index, ok := p.SelectIndex(&prompt.SelectIndex{
 		Label:      "Table",

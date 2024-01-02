@@ -76,7 +76,7 @@ type MockedConfig struct {
 	multipleTokenVerification bool
 
 	useRealAPIs       bool
-	keboolaProjectAPI *keboola.API
+	keboolaProjectAPI *keboola.AuthorizedAPI
 }
 
 type MockedOption func(c *MockedConfig)
@@ -293,7 +293,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	// Use real APIs
 	if cfg.useRealAPIs {
 		d.baseScope.httpClient = client.NewTestClient()
-		d.publicScope.keboolaPublicAPI = cfg.keboolaProjectAPI
+		d.publicScope.keboolaPublicAPI = cfg.keboolaProjectAPI.PublicAPI
 		d.projectScope.keboolaProjectAPI = cfg.keboolaProjectAPI
 		d.mockedHTTPTransport = nil
 	}

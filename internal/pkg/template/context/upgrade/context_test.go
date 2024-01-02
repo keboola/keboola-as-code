@@ -35,7 +35,7 @@ func TestContext(t *testing.T) {
 			"features": []
 		}`),
 	)
-	api, err := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAuthorizedAPI(context.Background(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	assert.NoError(t, err)
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 

@@ -11,43 +11,67 @@ func TestGroupTables(t *testing.T) {
 	t.Parallel()
 
 	mainBucket := &keboola.Bucket{
-		ID:          keboola.MustParseBucketID("out.c-main"),
+		BucketKey: keboola.BucketKey{
+			BranchID: 123,
+			BucketID: keboola.MustParseBucketID("out.c-main"),
+		},
 		DisplayName: "main",
 	}
 	secondBucket := &keboola.Bucket{
-		ID:          keboola.MustParseBucketID("out.c-second"),
+		BucketKey: keboola.BucketKey{
+			BranchID: 123,
+			BucketID: keboola.MustParseBucketID("out.c-second"),
+		},
 		DisplayName: "second",
 	}
 	linkedBucket := &keboola.Bucket{
-		ID:          keboola.MustParseBucketID("out.c-linked"),
+		BucketKey: keboola.BucketKey{
+			BranchID: 123,
+			BucketID: keboola.MustParseBucketID("out.c-linked"),
+		},
 		DisplayName: "linked",
 	}
 	mainTable1 := keboola.Table{
-		ID:          keboola.MustParseTableID("out.c-main.products"),
+		TableKey: keboola.TableKey{
+			BranchID: 123,
+			TableID:  keboola.MustParseTableID("out.c-main.products"),
+		},
 		Name:        "products",
 		DisplayName: "Products",
 		Bucket:      mainBucket,
 	}
 	mainTable2 := keboola.Table{
-		ID:          keboola.MustParseTableID("out.c-main.categories"),
+		TableKey: keboola.TableKey{
+			BranchID: 123,
+			TableID:  keboola.MustParseTableID("out.c-main.categories"),
+		},
 		Name:        "categories",
 		DisplayName: "Categories",
 		Bucket:      mainBucket,
 	}
 	secTable1 := keboola.Table{
-		ID:          keboola.MustParseTableID("out.c-second.products"),
+		TableKey: keboola.TableKey{
+			BranchID: 123,
+			TableID:  keboola.MustParseTableID("out.c-second.products"),
+		},
 		Name:        "products",
 		DisplayName: "Products",
 		Bucket:      secondBucket,
 	}
 	secTable2 := keboola.Table{
-		ID:          keboola.MustParseTableID("out.c-second.third"),
+		TableKey: keboola.TableKey{
+			BranchID: 123,
+			TableID:  keboola.MustParseTableID("out.c-second.third"),
+		},
 		Name:        "third",
 		DisplayName: "Third",
 		Bucket:      secondBucket,
 	}
 	linkedTable1 := keboola.Table{
-		ID: keboola.MustParseTableID("out.c-linked.foo"),
+		TableKey: keboola.TableKey{
+			BranchID: 123,
+			TableID:  keboola.MustParseTableID("out.c-linked.foo"),
+		},
 		SourceTable: &keboola.SourceTable{
 			Project: keboola.SourceProject{
 				ID:   12345,
@@ -61,7 +85,10 @@ func TestGroupTables(t *testing.T) {
 		Bucket:      linkedBucket,
 	}
 	linkedTable2 := keboola.Table{
-		ID: keboola.MustParseTableID("out.c-linked.bar"),
+		TableKey: keboola.TableKey{
+			BranchID: 123,
+			TableID:  keboola.MustParseTableID("out.c-linked.bar"),
+		},
 		SourceTable: &keboola.SourceTable{
 			Project: keboola.SourceProject{
 				ID:   12345,
@@ -80,21 +107,21 @@ func TestGroupTables(t *testing.T) {
 
 	assert.Equal(t, []Bucket{
 		{
-			SourceName:  mainBucket.ID.String(),
-			Schema:      mainBucket.ID.String(),
+			SourceName:  mainBucket.BucketID.String(),
+			Schema:      mainBucket.BucketID.String(),
 			DatabaseEnv: "DBT_KBC_TARGET1_DATABASE",
 			Tables:      []keboola.Table{mainTable1, mainTable2},
 		},
 		{
-			SourceName:  secondBucket.ID.String(),
-			Schema:      secondBucket.ID.String(),
+			SourceName:  secondBucket.BucketID.String(),
+			Schema:      secondBucket.BucketID.String(),
 			DatabaseEnv: "DBT_KBC_TARGET1_DATABASE",
 			Tables:      []keboola.Table{secTable1, secTable2},
 		},
 		{
 			LinkedProjectID: 12345,
-			SourceName:      linkedBucket.ID.String(), // defined by the linked bucket name
-			Schema:          "out.c-shared",           // defined by the source bucket name
+			SourceName:      linkedBucket.BucketID.String(), // defined by the linked bucket name
+			Schema:          "out.c-shared",                 // defined by the source bucket name
 			DatabaseEnv:     "DBT_KBC_TARGET1_12345_DATABASE",
 			Tables:          []keboola.Table{linkedTable1, linkedTable2},
 		},

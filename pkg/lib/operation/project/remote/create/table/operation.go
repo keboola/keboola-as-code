@@ -12,14 +12,14 @@ import (
 )
 
 type Options struct {
-	BucketID   keboola.BucketID
+	BucketKey  keboola.BucketKey
 	Columns    []string
 	Name       string
 	PrimaryKey []string
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
@@ -34,18 +34,19 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	rb := rollback.New(d.Logger())
-	err = tableImport.EnsureBucketExists(ctx, d, rb, o.BucketID)
+	err = tableImport.EnsureBucketExists(ctx, d, rb, o.BucketKey)
 	if err != nil {
 		return err
 	}
 
-	tableID := keboola.TableID{BucketID: o.BucketID, TableName: o.Name}
-	_, err = d.KeboolaProjectAPI().CreateTableRequest(tableID, o.Columns, opts...).Send(ctx)
+	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.Name}
+	tableKey := keboola.TableKey{BranchID: o.BucketKey.BranchID, TableID: tableID}
+	_, err = d.KeboolaProjectAPI().CreateTableRequest(tableKey, o.Columns, opts...).Send(ctx)
 	if err != nil {
 		rb.Invoke(ctx)
 		return err
 	}
 
-	d.Logger().InfofCtx(ctx, `Created table "%s".`, tableID.String())
+	d.Logger().InfofCtx(ctx, `Created table "%s".`, tableKey.TableID.String())
 	return nil
 }

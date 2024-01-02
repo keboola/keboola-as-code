@@ -25,7 +25,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	StorageAPIHost() string

@@ -9,11 +9,12 @@ import (
 )
 
 type Options struct {
+	BranchKey  keboola.BranchKey
 	TargetName string
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Telemetry() telemetry.Telemetry
 }
 
@@ -21,7 +22,7 @@ func Run(ctx context.Context, o Options, d dependencies) (buckets []Bucket, err 
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.dbt.listBuckets")
 	defer span.End(&err)
 
-	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
+	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(o.BranchKey.ID, keboola.WithBuckets()).Send(ctx)
 	if err != nil {
 		return nil, err
 	}

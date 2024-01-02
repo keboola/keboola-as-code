@@ -2,6 +2,7 @@ package writer
 
 import (
 	"context"
+
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"

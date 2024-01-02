@@ -2,6 +2,7 @@ package writer
 
 import (
 	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

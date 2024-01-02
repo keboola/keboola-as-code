@@ -11,14 +11,14 @@ import (
 )
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Fs() filesystem.Fs
 }
 
 type Options struct {
-	TableID      keboola.TableID
+	TableKey     keboola.TableKey
 	ChangedSince string
 	ChangedUntil string
 	Columns      []string
@@ -44,9 +44,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.preview")
 	defer span.End(&err)
 
-	d.Logger().InfofCtx(ctx, `Fetching table "%s", please wait.`, o.TableID.String())
+	d.Logger().InfofCtx(ctx, `Fetching table "%s", please wait.`, o.TableKey.TableID)
 
-	table, err := d.KeboolaProjectAPI().PreviewTableRequest(o.TableID, getPreviewOptions(&o)...).Send(ctx)
+	table, err := d.KeboolaProjectAPI().PreviewTableRequest(o.TableKey, getPreviewOptions(&o)...).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	if len(o.Out) > 0 {
-		d.Logger().InfofCtx(ctx, `Writing table "%s" to file "%s"`, o.TableID, o.Out)
+		d.Logger().InfofCtx(ctx, `Writing table "%s" to file "%s"`, o.TableKey.TableID, o.Out)
 		// write to file
 		file, err := d.Fs().Create(ctx, o.Out)
 		if err != nil {
@@ -77,7 +77,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 }
 
 func getPreviewOptions(o *Options) []keboola.PreviewOption {
-	opts := []keboola.PreviewOption{}
+	var opts []keboola.PreviewOption
 	if o.Limit > 0 {
 		opts = append(opts, keboola.WithLimitRows(o.Limit))
 	}

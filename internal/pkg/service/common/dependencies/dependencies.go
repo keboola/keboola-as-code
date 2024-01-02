@@ -94,7 +94,7 @@ type BaseScope interface {
 type PublicScope interface {
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
-	KeboolaPublicAPI() *keboola.API
+	KeboolaPublicAPI() *keboola.PublicAPI
 	StackFeatures() keboola.FeaturesMap
 	StackServices() keboola.ServicesMap
 	StorageAPIHost() string
@@ -102,7 +102,7 @@ type PublicScope interface {
 
 // ProjectScope dependencies require authentication - Storage API token.
 type ProjectScope interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	ProjectName() string
