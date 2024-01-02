@@ -21,11 +21,11 @@ jobs:
 #    name: "Unit Tests"
 #    secrets: inherit
 #    uses: ./.github/workflows/test-unit.yml
-#
-#  test-e2e-cli:
-#    name: "E2E: CLI"
-#    secrets: inherit
-#    uses: ./.github/workflows/test-e2e-cli.yml
+
+  test-e2e-cli:
+    name: "E2E: CLI"
+    secrets: inherit
+    uses: ./.github/workflows/test-e2e-cli.yml
 #
 #  test-e2e-service-buffer:
 #    name: "E2E: Buffer"
