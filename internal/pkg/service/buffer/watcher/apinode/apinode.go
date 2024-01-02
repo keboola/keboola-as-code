@@ -144,8 +144,8 @@ func (s *Node) GetReceiver(receiverKey key.ReceiverKey) (out ReceiverCore, found
 	slicePerExport := make(map[key.ExportKey]bool)
 	for _, slice := range s.slices.AllFromPrefix(receiverKey.String()) {
 		if slicePerExport[slice.ExportKey] {
-			unlockFn()
-			panic(errors.Errorf(`found multiple opened slices per export "%s"`, slice.ExportKey.String()))
+			s.logger.Warn(errors.Errorf(`found multiple opened slices per export "%s"`, slice.ExportKey.String()))
+			continue
 		}
 		slicePerExport[slice.ExportKey] = true
 		out.Slices = append(out.Slices, slice)
