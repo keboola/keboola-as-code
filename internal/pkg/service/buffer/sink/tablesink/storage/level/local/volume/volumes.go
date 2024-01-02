@@ -12,6 +12,7 @@
 package volume
 
 import (
+	"context"
 	"io/fs"
 	"path/filepath"
 	"sort"
@@ -31,7 +32,7 @@ type Volume interface {
 	Type() string
 	Label() string
 	ID() storage.VolumeID
-	Close() error
+	Close(context.Context) error
 }
 
 // Volumes manages volumes in the path, each instance has V type.
@@ -48,7 +49,7 @@ type Opener[V Volume] func(info Info) (V, error)
 
 // DetectVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
-func DetectVolumes[V Volume](logger log.Logger, volumesPath string, opener Opener[V]) (*Volumes[V], error) {
+func DetectVolumes[V Volume](ctx context.Context, logger log.Logger, volumesPath string, opener Opener[V]) (*Volumes[V], error) {
 	m := &Volumes[V]{
 		logger:  logger,
 		path:    volumesPath,
@@ -57,7 +58,7 @@ func DetectVolumes[V Volume](logger log.Logger, volumesPath string, opener Opene
 		byType:  make(map[string][]V),
 	}
 
-	if err := m.detect(); err != nil {
+	if err := m.detect(ctx); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +95,7 @@ func (v *Volumes[V]) All() (out []V) {
 }
 
 // Close all volumes.
-func (v *Volumes[V]) Close() error {
+func (v *Volumes[V]) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
 	for _, v := range v.byID {
@@ -102,7 +103,7 @@ func (v *Volumes[V]) Close() error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := v.Close(); err != nil {
+			if err := v.Close(ctx); err != nil {
 				errs.Append(err)
 			}
 		}()
@@ -113,8 +114,8 @@ func (v *Volumes[V]) Close() error {
 
 // detect volumes in the volumesPath.
 // Relative path of each Volume has format: {type}/{label}.
-func (v *Volumes[V]) detect() error {
-	v.logger.Infof(`searching for volumes in "%s"`, v.path)
+func (v *Volumes[V]) detect(ctx context.Context) error {
+	v.logger.InfofCtx(ctx, `searching for volumes in "%s"`, v.path)
 
 	lock := &sync.Mutex{}
 	errs := errors.NewMultiError()
@@ -142,15 +143,15 @@ func (v *Volumes[V]) detect() error {
 				// Create reference
 				typ, label := parts[0], parts[1]
 				typ = strings.ToLower(typ)
-				v.logger.Infof(`found volume, type="%s", path="%s"`, typ, label)
+				v.logger.InfofCtx(ctx, `found volume, type="%s", path="%s"`, typ, label)
 
 				// Open the volume
 				info := NewInfo(path, typ, label)
 				vol, err := v.factory(info)
 				if err == nil {
-					v.logger.Infof(`opened volume, id="%s", type="%s", path="%s"`, vol.ID(), vol.Type(), vol.Label())
+					v.logger.InfofCtx(ctx, `opened volume, id="%s", type="%s", path="%s"`, vol.ID(), vol.Type(), vol.Label())
 				} else {
-					v.logger.Errorf(`cannot open volume, type="%s", path="%s": %s`, err)
+					v.logger.ErrorfCtx(ctx, `cannot open volume, type="%s", path="%s": %s`, err)
 					errs.Append(err)
 					return
 				}
@@ -199,7 +200,7 @@ func (v *Volumes[V]) detect() error {
 		return errors.New("no volume found")
 	}
 
-	v.logger.Infof(`found "%d" volumes`, len(v.byID))
+	v.logger.InfofCtx(ctx, `found "%d" volumes`, len(v.byID))
 	return nil
 }
 

@@ -3,7 +3,6 @@ package volume
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -104,7 +104,7 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close())
+	assert.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -152,7 +152,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close())
+	assert.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -204,7 +204,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	err = vol.Close()
+	err = vol.Close(context.Background())
 	if assert.Error(t, err) {
 		// Order of the errors is random, writers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`

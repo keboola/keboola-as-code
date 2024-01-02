@@ -6,6 +6,7 @@
 package reader
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -15,6 +16,8 @@ import (
 
 type Reader interface {
 	io.ReadCloser
+
+	CloseCtx(ctx context.Context) error
 
 	SliceKey() storage.SliceKey
 

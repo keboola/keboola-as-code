@@ -25,6 +25,7 @@ type txnTestCase struct {
 }
 
 func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client, log *strings.Builder, txn *TxnOp) {
+	t.Helper()
 	t.Logf(`test case: %s`, tc.Name)
 
 	log.Reset()
@@ -378,13 +379,13 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 				etcd.OpPut("key/txn/succeeded", "false"),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, // If
-					[]etcd.Op{},                                               // Then
-					[]etcd.Op{},                                               // Else
+					[]etcd.Op{}, // Then
+					[]etcd.Op{}, // Else
 				),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, // If
-					[]etcd.Op{},                                                   // Then
-					[]etcd.Op{},                                                   // Else
+					[]etcd.Op{}, // Then
+					[]etcd.Op{}, // Else
 				),
 			},
 		), lowLevel.Op)
@@ -709,7 +710,8 @@ txn2 succeeded: false [{} <nil>]
 							&KeyValue{
 								Key:   []byte("txn1/else/get"),
 								Value: []byte("value"),
-							}},
+							},
+						},
 					},
 					// txn2
 					txnResult{

@@ -1,12 +1,12 @@
 package definition
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 

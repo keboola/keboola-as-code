@@ -64,7 +64,7 @@ func NewInfo(path, typ, label string) volume.Info {
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, info volumeInfo, opts ...Option) (*Volume, error) {
-	logger.Infof(`opening volume "%s"`, info.Path())
+	logger.InfofCtx(ctx, `opening volume "%s"`, info.Path())
 	v := &Volume{
 		volumeInfo:    info,
 		config:        newConfig(opts),
@@ -94,7 +94,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		// VolumeID file doesn't exist, create it
 		if errors.Is(err, os.ErrNotExist) {
 			id := storage.GenerateVolumeID()
-			logger.Infof(`generated volume ID "%s"`, id)
+			logger.InfofCtx(ctx, `generated volume ID "%s"`, id)
 			content = []byte(id)
 			err = createVolumeIDFile(idFilePath, content)
 		}
@@ -119,11 +119,11 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 	}
 
 	// Check drain file and watch it
-	if err := v.watchDrainFile(); err != nil {
+	if err := v.watchDrainFile(ctx); err != nil {
 		return nil, err
 	}
 
-	v.logger.Info("opened volume")
+	v.logger.InfoCtx(ctx, "opened volume")
 	return v, nil
 }
 
@@ -135,9 +135,9 @@ func (v *Volume) Events() *writer.Events {
 	return v.events
 }
 
-func (v *Volume) Close() error {
+func (v *Volume) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
-	v.logger.Info("closing volume")
+	v.logger.Info(ctx, "closing volume")
 
 	// Block NewWriterFor method, stop FS notifier
 	v.cancel()
@@ -148,7 +148,7 @@ func (v *Volume) Close() error {
 		v.wg.Add(1)
 		go func() {
 			defer v.wg.Done()
-			if err := w.Close(); err != nil {
+			if err := w.Close(ctx); err != nil {
 				errs.Append(errors.Errorf(`cannot close writer for slice "%s": %w`, w.SliceKey().String(), err))
 			}
 		}()
@@ -165,7 +165,7 @@ func (v *Volume) Close() error {
 		errs.Append(errors.Errorf(`cannot remove writer lock "%s": %w`, v.fsLock.Path(), err))
 	}
 
-	v.logger.Info("closed volume")
+	v.logger.Info(ctx, "closed volume")
 	return errs.ErrorOrNil()
 }
 

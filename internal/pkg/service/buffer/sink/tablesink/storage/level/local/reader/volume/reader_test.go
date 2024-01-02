@@ -70,7 +70,7 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close the volume
-	assert.NoError(t, vol.Close())
+	assert.NoError(t, vol.Close(context.Background()))
 
 	// Try crate a reader
 	_, err = tc.NewReader()

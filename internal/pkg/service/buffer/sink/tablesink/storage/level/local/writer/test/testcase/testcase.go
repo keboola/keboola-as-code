@@ -112,13 +112,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 		}
 
 		// Simulate pod failure, restart writer
-		require.NoError(t, w.Close())
+		require.NoError(t, w.Close(ctx))
 		w, err = vol.NewWriterFor(slice)
 		require.NoError(t, err)
 	}
 
 	// Close the writer
-	require.NoError(t, w.Close())
+	require.NoError(t, w.Close(ctx))
 	assert.Equal(t, uint64(rowsCount), w.RowsCount())
 	assert.NotEmpty(t, w.CompressedSize())
 	assert.NotEmpty(t, w.UncompressedSize())

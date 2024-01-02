@@ -130,12 +130,12 @@ func (w *Writer) Events() *writer.Events {
 	return w.base.Events()
 }
 
-func (w *Writer) Close() error {
+func (w *Writer) Close(ctx context.Context) error {
 	// Prevent new writes
 	w.cancel()
 
 	// Close the chain
-	err := w.base.Close()
+	err := w.base.Close(ctx)
 
 	// Wait for running writes
 	w.writeWg.Wait()
@@ -187,7 +187,7 @@ func (h *WriterHelper) TriggerSync(tb testing.TB) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(tb, w.base.TriggerSync(true).Wait())
+			assert.NoError(tb, w.base.TriggerSync(context.Background(), true).Wait())
 		}()
 	}
 	wg.Wait()

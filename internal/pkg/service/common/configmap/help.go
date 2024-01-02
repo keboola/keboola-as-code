@@ -29,7 +29,7 @@ func newHelpError(name string, flags *pflag.FlagSet, cfg BindSpec) HelpError {
 
 	if cfg.EnvNaming != nil && cfg.Envs != nil {
 		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("Flags can also be defined as ENV variables.\n"))
+		b.WriteString("Flags can also be defined as ENV variables.\n")
 		b.WriteString(fmt.Sprintf("For example, the flag \"--foo-bar\" becomes the \"%s\" ENV.\n", cfg.EnvNaming.FlagToEnv("foo-bar")))
 	}
 

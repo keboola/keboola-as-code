@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/store"
 
 	"github.com/benbjohnson/clock"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 

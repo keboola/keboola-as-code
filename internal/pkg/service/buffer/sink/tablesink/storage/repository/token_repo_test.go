@@ -2,8 +2,14 @@ package repository
 
 import (
 	"context"
+	"net/http"
+	"testing"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
@@ -11,10 +17,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"net/http"
-	"testing"
 )
 
 func TestRepository_Token(t *testing.T) {
@@ -160,7 +162,6 @@ func TestRepository_Token(t *testing.T) {
 		// No token in etcd
 		etcdhelper.AssertKVsString(t, client, "", etcdhelper.WithIgnoredKeyPattern("^definition/"))
 	}
-
 }
 
 func expectedTokenEtcdState() string {

@@ -39,6 +39,7 @@ func (v testOp) Op(_ context.Context) (op.LowLevelOp, error) {
 }
 
 func (tc opTestCase[R]) Run(t *testing.T, ctx context.Context, client etcd.KV, log *strings.Builder, expected *any, processorErrors *bool, targetPtr *R, op op.WithResult[R]) {
+	t.Helper()
 	t.Logf(`test case "%s"`, tc.Name)
 
 	// Prepare etcd database
@@ -67,12 +68,9 @@ func (tc opTestCase[R]) Run(t *testing.T, ctx context.Context, client etcd.KV, l
 	err := result.Err()
 	if tc.ExpectedError == "" {
 		assert.NoError(t, err)
-	} else {
-		if assert.Error(t, err) {
-			assert.Equal(t, tc.ExpectedError, err.Error())
-		}
+	} else if assert.Error(t, err) {
+		assert.Equal(t, tc.ExpectedError, err.Error())
 	}
-
 }
 
 // TestOpForType_WithProcessorMethods_ScalarType tests all With* methods with a scalar (string) value.

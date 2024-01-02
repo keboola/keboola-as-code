@@ -1,13 +1,15 @@
 package storage
 
 import (
-	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 func TestFile_StateTransition(t *testing.T) {

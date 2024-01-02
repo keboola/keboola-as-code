@@ -151,7 +151,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	closeDone := make(chan struct{})
 	go func() {
 		defer close(closeDone)
-		assert.NoError(t, w.Close())
+		assert.NoError(t, w.Close(ctx))
 	}()
 
 	// Unblock sync and wait for Close

@@ -24,7 +24,7 @@ type Volumes struct {
 func DetectVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, path string, opts ...Option) (out *Volumes, err error) {
 	events := writer.NewEvents()
 	out = &Volumes{events: events}
-	out.baseVolumes, err = volume.DetectVolumes(logger, path, func(info volumeInfo) (*Volume, error) {
+	out.baseVolumes, err = volume.DetectVolumes(ctx, logger, path, func(info volumeInfo) (*Volume, error) {
 		return Open(ctx, logger, clock, events.Clone(), info, opts...)
 	})
 	if err != nil {

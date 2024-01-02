@@ -3,12 +3,12 @@ package iterator_test
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"

@@ -2,6 +2,7 @@
 package readchain
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -102,19 +103,24 @@ func (c *Chain) Read(p []byte) (n int, err error) {
 
 // Close method flushes and closes all readers in the Chain and finally the underlying file.
 func (c *Chain) Close() error {
-	c.logger.Debugf("closing chain")
+	return c.CloseCtx(context.Background())
+}
+
+// CloseCtx method flushes and closes all readers in the Chain and finally the underlying file.
+func (c *Chain) CloseCtx(ctx context.Context) error {
+	c.logger.Debug(ctx, "closing chain")
 	errs := errors.NewMultiError()
 
 	// Close all reader in the chain
 	for _, item := range c.closers {
 		if err := item.Close(); err != nil {
 			err = errors.Errorf(`cannot close "%s": %w`, stringOrType(item), err)
-			c.logger.Error(err.Error())
+			c.logger.Error(ctx, err.Error())
 			errs.Append(err)
 		}
 	}
 
-	c.logger.Debug("chain closed")
+	c.logger.Debug(ctx, "chain closed")
 
 	if err := errs.ErrorOrNil(); err != nil {
 		return errors.PrefixError(err, "chain close error")

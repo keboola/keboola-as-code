@@ -1,6 +1,8 @@
 package config
 
 import (
+	"net/url"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/source"
@@ -10,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-	"net/url"
 )
 
 const (

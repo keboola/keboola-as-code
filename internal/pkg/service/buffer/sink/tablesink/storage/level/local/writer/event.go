@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"context"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -35,10 +36,10 @@ func NewEvents() *Events {
 }
 
 // Close overwrites the original Close method to dispatch "close" event.
-func (w *EventWriter) Close() error {
+func (w *EventWriter) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 
-	cErr := w.writer.Close()
+	cErr := w.writer.Close(ctx)
 	if cErr != nil {
 		errs.Append(cErr)
 	}

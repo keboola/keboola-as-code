@@ -2,12 +2,12 @@ package op_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"

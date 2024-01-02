@@ -123,16 +123,18 @@ func (d *Dumper) AsYAML() ([]byte, error) {
 }
 
 func dumpValue(vc *VisitContext) (value dumpedValue) {
-	if vc.Value.Kind() == reflect.Pointer && vc.Value.IsNil() {
+	switch {
+	case vc.Value.Kind() == reflect.Pointer && vc.Value.IsNil():
 		// Nil pointer -> null
 		return dumpedValue{Value: nil, HeadComment: vc.Usage}
-	} else if vc.PrimitiveValue.Kind() == reflect.Slice && vc.PrimitiveValue.IsNil() {
+	case vc.PrimitiveValue.Kind() == reflect.Slice && vc.PrimitiveValue.IsNil():
 		// Empty slice -> [] (not null)
 		emptySlice := reflect.MakeSlice(vc.PrimitiveValue.Type(), 0, 0).Interface()
 		return dumpedValue{Value: emptySlice, HeadComment: vc.Usage}
-	} else if vc.Sensitive {
+	case vc.Sensitive:
+		// Mask sensitive field
 		return dumpedValue{Value: sensitiveMask, HeadComment: vc.Usage}
-	} else {
+	default:
 		comment := vc.Usage
 		if vc.Validate != "" {
 			if comment != "" {

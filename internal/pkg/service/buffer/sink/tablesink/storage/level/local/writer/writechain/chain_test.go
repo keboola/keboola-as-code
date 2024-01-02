@@ -2,6 +2,7 @@ package writechain
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -139,26 +140,27 @@ func TestChain_PrependWriterOrErr_Error(t *testing.T) {
 // TestChain_Complex_Ok test operation of a complex Chain.
 func TestChain_Complex_Ok(t *testing.T) {
 	t.Parallel()
-	tc := newChainTestCase(t)
 
+	ctx := context.Background()
+	tc := newChainTestCase(t)
 	tc.SetupComplexChain()
 
 	// Flush
 	tc.WriteData([]string{"foo", "bar"})
 	tc.AssertFileContent("")
-	assert.NoError(t, tc.Chain.Flush())
+	assert.NoError(t, tc.Chain.Flush(ctx))
 	tc.AssertFileContent("foobar")
 
 	// Sync
 	tc.WriteData([]string{"123", "456"})
 	tc.AssertFileContent("foobar")
-	assert.NoError(t, tc.Chain.Sync())
+	assert.NoError(t, tc.Chain.Sync(ctx))
 	tc.AssertFileContent("foobar123456")
 
 	// Close
 	tc.WriteData([]string{"abc", "def"})
 	tc.AssertFileContent("foobar123456")
-	assert.NoError(t, tc.Chain.Close())
+	assert.NoError(t, tc.Chain.Close(ctx))
 	tc.AssertFileContent("foobar123456abcdef")
 
 	// Check logs
@@ -239,6 +241,8 @@ DEBUG  chain closed
 // TestChain_FlushError tests a flusher error.
 func TestChain_FlushError(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newChainTestCase(t)
 
 	writers := tc.SetupSimpleChain()
@@ -247,7 +251,7 @@ func TestChain_FlushError(t *testing.T) {
 	tc.WriteData([]string{"foo", "bar"})
 
 	// Flush
-	err := tc.Chain.Flush()
+	err := tc.Chain.Flush(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 chain flush error:
@@ -256,7 +260,7 @@ chain flush error:
 	}
 
 	// Sync
-	err = tc.Chain.Sync()
+	err = tc.Chain.Sync(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 chain sync error:
@@ -266,7 +270,7 @@ chain sync error:
 	}
 
 	// Close
-	assert.NoError(t, tc.Chain.Close())
+	assert.NoError(t, tc.Chain.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -300,6 +304,8 @@ DEBUG  chain closed
 // TestChain_CloseError tests a closer error.
 func TestChain_CloseError(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newChainTestCase(t)
 
 	writers := tc.SetupSimpleChain()
@@ -308,7 +314,7 @@ func TestChain_CloseError(t *testing.T) {
 	tc.WriteData([]string{"foo", "bar"})
 
 	// Close
-	err := tc.Chain.Close()
+	err := tc.Chain.Close(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 chain close error:
@@ -335,6 +341,8 @@ DEBUG  chain closed
 // TestChain_FileSyncError test an errror reported by the File.Sync().
 func TestChain_FileSyncError(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newChainTestCase(t)
 
 	tc.File.SyncError = errors.New("file sync error")
@@ -344,13 +352,13 @@ func TestChain_FileSyncError(t *testing.T) {
 	tc.WriteData([]string{"foo", "bar"})
 
 	// Sync
-	err := tc.Chain.Sync()
+	err := tc.Chain.Sync(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`chain sync error: cannot sync file: file sync error`), err.Error())
 	}
 
 	// Close
-	err = tc.Chain.Close()
+	err = tc.Chain.Close(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`chain close error: cannot sync file: file sync error`), err.Error())
 	}
@@ -381,6 +389,8 @@ DEBUG  chain closed
 // TestChain_FileCloseError tests an error reported by the File.Close().
 func TestChain_FileCloseError(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newChainTestCase(t)
 
 	tc.File.CloseError = errors.New("file close error")
@@ -390,7 +400,7 @@ func TestChain_FileCloseError(t *testing.T) {
 	tc.WriteData([]string{"foo", "bar"})
 
 	// Close
-	err := tc.Chain.Close()
+	err := tc.Chain.Close(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`chain close error: cannot close file: file close error`), err.Error())
 	}
@@ -472,17 +482,17 @@ type testFlusherCloser struct {
 }
 
 func (w *testFile) Write(p []byte) (int, error) {
-	w.Logger.Infof(`TEST: write "%s" to file`, string(p))
+	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to file`, string(p))
 	return w.OsFile.Write(p)
 }
 
 func (w *testFile) WriteString(s string) (int, error) {
-	w.Logger.Infof(`TEST: write string "%s" to file`, s)
+	w.Logger.InfofCtx(context.Background(), `TEST: write string "%s" to file`, s)
 	return w.OsFile.WriteString(s)
 }
 
 func (w *testFile) Sync() error {
-	w.Logger.Info("TEST: sync file")
+	w.Logger.Info(context.Background(), "TEST: sync file")
 	if w.SyncError != nil {
 		return w.SyncError
 	}
@@ -490,7 +500,7 @@ func (w *testFile) Sync() error {
 }
 
 func (w *testFile) Close() error {
-	w.Logger.Info("TEST: close file")
+	w.Logger.Info(context.Background(), "TEST: close file")
 	if w.CloseError != nil {
 		return w.CloseError
 	}
@@ -502,12 +512,12 @@ func (w *testBuffer) String() string {
 }
 
 func (w *testBuffer) Write(p []byte) (int, error) {
-	w.Logger.Infof(`TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Buffer.Write(p)
 }
 
 func (w *testBuffer) Flush() error {
-	w.Logger.Infof(`TEST: flush writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.Buffer.Flush()
 }
 
@@ -516,12 +526,12 @@ func (w *testWriterSimple) String() string {
 }
 
 func (w *testWriterSimple) Write(p []byte) (int, error) {
-	w.Logger.Infof(`TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterSimple) WriteString(s string) (int, error) {
-	w.Logger.Infof(`TEST: write string "%s" to writer "%s"`, s, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: write string "%s" to writer "%s"`, s, w.Name)
 	return w.Writer.WriteString(s)
 }
 
@@ -530,12 +540,12 @@ func (w *testWriterFlusher) String() string {
 }
 
 func (w *testWriterFlusher) Write(p []byte) (int, error) {
-	w.Logger.Infof(`TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterFlusher) Flush() error {
-	w.Logger.Infof(`TEST: flush writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.FlushError
 }
 
@@ -544,12 +554,12 @@ func (w *testWriterCloser) String() string {
 }
 
 func (w *testWriterCloser) Write(p []byte) (int, error) {
-	w.Logger.Infof(`TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterCloser) Close() error {
-	w.Logger.Infof(`TEST: close writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: close writer "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -558,17 +568,17 @@ func (w *testWriterFlusherCloser) String() string {
 }
 
 func (w *testWriterFlusherCloser) Write(p []byte) (int, error) {
-	w.Logger.Infof(`TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterFlusherCloser) Flush() error {
-	w.Logger.Infof(`TEST: flush writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.FlushError
 }
 
 func (w *testWriterFlusherCloser) Close() error {
-	w.Logger.Infof(`TEST: close writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: close writer "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -577,7 +587,7 @@ func (w *testFlusher) String() string {
 }
 
 func (w *testFlusher) Flush() error {
-	w.Logger.Infof(`TEST: flush writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.FlushError
 }
 
@@ -586,7 +596,7 @@ func (w *testCloser) String() string {
 }
 
 func (w *testCloser) Close() error {
-	w.Logger.Infof(`TEST: close writer "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: close writer "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -595,12 +605,12 @@ func (w *testFlusherCloser) String() string {
 }
 
 func (w *testFlusherCloser) Flush() error {
-	w.Logger.Infof(`TEST: flush "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: flush "%s"`, w.Name)
 	return w.FlushError
 }
 
 func (w *testFlusherCloser) Close() error {
-	w.Logger.Infof(`TEST: close "%s"`, w.Name)
+	w.Logger.InfofCtx(context.Background(), `TEST: close "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -720,11 +730,11 @@ func (tc *chainTestCase) SetupComplexChain() *complexChain {
 		return out.Buffer1
 	})
 	tc.Chain.PrependCloseFn("fn1", func() error {
-		tc.Logger.Info(`TEST: close "func"`)
+		tc.Logger.Info(context.Background(), `TEST: close "func"`)
 		return nil
 	})
 	tc.Chain.PrependFlushFn("fn2", func() error {
-		tc.Logger.Info(`TEST: flush "func"`)
+		tc.Logger.Info(context.Background(), `TEST: flush "func"`)
 		return nil
 	})
 	tc.Chain.PrependWriter(func(w Writer) io.Writer {

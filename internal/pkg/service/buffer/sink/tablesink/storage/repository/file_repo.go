@@ -3,8 +3,12 @@ package repository
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
@@ -15,8 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	etcd "go.etcd.io/etcd/client/v3"
-	"path/filepath"
 )
 
 type FileRepository struct {

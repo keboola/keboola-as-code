@@ -17,7 +17,7 @@ type Volumes struct {
 
 // DetectVolumes function detects and opens all volumes in the path.
 func DetectVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, path string, opts ...Option) (*Volumes, error) {
-	v, err := volume.DetectVolumes(logger, path, func(info volumeInfo) (*Volume, error) {
+	v, err := volume.DetectVolumes(ctx, logger, path, func(info volumeInfo) (*Volume, error) {
 		return Open(ctx, logger, clock, info, opts...)
 	})
 	if err != nil {

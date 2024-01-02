@@ -2,7 +2,9 @@ package repository
 
 import (
 	"fmt"
+
 	"github.com/keboola/go-client/pkg/keboola"
+
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"

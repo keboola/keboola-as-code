@@ -78,5 +78,5 @@ func TestVolumes(t *testing.T) {
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close())
+	assert.NoError(t, volumes.Close(ctx))
 }

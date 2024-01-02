@@ -44,7 +44,7 @@ type Syncer struct {
 	notifierLock *sync.RWMutex
 	notifier     *notify.Notifier
 
-	opFn func() error
+	opFn func(ctx context.Context) error
 }
 
 // chain is a resource responsible for synchronizing of file writers.
@@ -52,15 +52,15 @@ type chain interface {
 	io.Writer
 	io.StringWriter
 	// Flush data from memory to OS disk cache. Used if Config.Mode=ModeToCache.
-	Flush() error
+	Flush(ctx context.Context) error
 	// Sync data from memory to disk. Used if Config.Mode=ModeToDisk.
-	Sync() error
+	Sync(ctx context.Context) error
 }
 
 // NewSyncer may return nil if the synchronization is disabled by the Config.
 func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain) *Syncer {
 	// Process mode option
-	var opFn func() error
+	var opFn func(ctx context.Context) error
 	switch config.Mode {
 	case ModeDisabled:
 		opFn = nil
@@ -85,7 +85,7 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 		}
 	}
 
-	w := &Syncer{
+	s := &Syncer{
 		logger:        logger,
 		clock:         clock,
 		config:        config,
@@ -100,10 +100,11 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 		opFn:          opFn,
 	}
 
-	w.ctx, w.cancel = context.WithCancel(context.Background())
+	s.ctx, s.cancel = context.WithCancel(context.Background())
 
 	if opFn != nil {
-		w.logger.Infof(
+		s.logger.InfofCtx(
+			s.ctx,
 			`sync is enabled, mode=%s, sync each {count=%d or bytes=%s or interval=%s}, check each %s`,
 			config.Mode,
 			config.CountTrigger,
@@ -111,12 +112,12 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 			config.IntervalTrigger,
 			config.CheckInterval,
 		)
-		w.syncLoop()
+		s.syncLoop(s.ctx)
 	} else {
-		logger.Info("sync is disabled")
+		logger.Info(s.ctx, "sync is disabled")
 	}
 
-	return w
+	return s
 }
 
 // AddWriteOp increments number of high-level writer operations in progress,
@@ -193,23 +194,23 @@ func (s *Syncer) WriteString(str string) (n int, err error) {
 }
 
 // Stop periodical synchronization.
-func (s *Syncer) Stop() error {
+func (s *Syncer) Stop(ctx context.Context) error {
 	if err := s.ctx.Err(); err != nil {
 		return errors.Errorf(`syncer is already stopped: %w`, err)
 	}
 
-	s.logger.Debug(`stopping syncer`)
+	s.logger.Debug(ctx, `stopping syncer`)
 
 	// Stop sync loop
 	s.cancel()
 
 	// Run the last sync
-	err := s.TriggerSync(true).Wait()
+	err := s.TriggerSync(ctx, true).Wait()
 
 	// Wait for sync loop and running sync, if any
 	s.wg.Wait()
 
-	s.logger.Debug(`syncer stopped`)
+	s.logger.Debug(ctx, `syncer stopped`)
 	return err
 }
 
@@ -218,7 +219,7 @@ func (s *Syncer) Stop() error {
 // If force=false, is doesn't wait, a notifier for the running synchronization returns.
 // In both cases, the method doesn't wait for the synchronization to complete,
 // you can use the Wait() method of the returned *notify.Notifier for waiting.
-func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
+func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
 	// Check if the sync is disabled
 	if s.opFn == nil {
 		return nil
@@ -254,12 +255,12 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 		defer s.wg.Done()
 
 		// Invoke the operation
-		s.logger.Debugf(`starting sync to %s`, s.config.Mode)
-		err := s.opFn()
+		s.logger.DebugfCtx(ctx, `starting sync to %s`, s.config.Mode)
+		err := s.opFn(ctx)
 		if err == nil {
-			s.logger.Debugf(`sync to %s done`, s.config.Mode)
+			s.logger.DebugfCtx(ctx, `sync to %s done`, s.config.Mode)
 		} else {
-			s.logger.Errorf(`sync to %s failed: %s`, s.config.Mode, err)
+			s.logger.ErrorfCtx(ctx, `sync to %s failed: %s`, s.config.Mode, err)
 		}
 
 		// Release the lock
@@ -272,7 +273,7 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 	return notifier
 }
 
-func (s *Syncer) syncLoop() {
+func (s *Syncer) syncLoop(ctx context.Context) {
 	ticker := s.clock.Ticker(s.config.CheckInterval)
 
 	s.wg.Add(1)
@@ -283,7 +284,7 @@ func (s *Syncer) syncLoop() {
 		// Periodically check the conditions and start synchronization if any condition is met
 		for {
 			select {
-			case <-s.ctx.Done():
+			case <-ctx.Done():
 				// The Close method has been called
 				return
 			case <-ticker.C:
@@ -292,7 +293,7 @@ func (s *Syncer) syncLoop() {
 					bytesTrigger := datasize.ByteSize(s.bytesToSync.Load()) >= s.config.BytesTrigger
 					intervalTrigger := s.clock.Now().Sub(s.lastSyncAt.Load()) >= s.config.IntervalTrigger
 					if countTrigger || bytesTrigger || intervalTrigger {
-						s.TriggerSync(false)
+						s.TriggerSync(ctx, false)
 					}
 				}
 			}

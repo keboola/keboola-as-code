@@ -5,6 +5,7 @@
 package writer
 
 import (
+	"context"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -30,7 +31,7 @@ type Writer interface {
 	// WriteRow of tabular data.
 	WriteRow(timestamp time.Time, values []any) error
 	// Close the writer and sync data to the disk.
-	Close() error
+	Close(context.Context) error
 
 	// Events provides listening to the writer lifecycle.
 	Events() *Events

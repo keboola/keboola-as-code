@@ -90,7 +90,7 @@ func TestVolumes(t *testing.T) {
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close())
+	assert.NoError(t, volumes.Close(ctx))
 }
 
 type assignVolumesTestCase struct {
@@ -338,7 +338,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 			assert.Equal(t, tc.ExpectedVolumes, actualVolumes)
 
 			// Close volumes
-			assert.NoError(t, volumes.Close())
+			assert.NoError(t, volumes.Close(ctx))
 		})
 	}
 }

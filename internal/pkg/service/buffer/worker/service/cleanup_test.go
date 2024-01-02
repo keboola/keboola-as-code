@@ -2,7 +2,6 @@ package service_test
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"

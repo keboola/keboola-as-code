@@ -1,10 +1,11 @@
 package storage
 
 import (
+	"time"
+
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"time"
 )
 
 // SliceWriting

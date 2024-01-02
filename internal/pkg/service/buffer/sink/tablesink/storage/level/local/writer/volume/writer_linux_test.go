@@ -3,6 +3,7 @@
 package volume
 
 import (
+	"context"
 	"testing"
 
 	"github.com/c2h5oh/datasize"
@@ -14,6 +15,8 @@ import (
 
 func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 
 	expectedSize := 10 * datasize.KB
@@ -32,7 +35,7 @@ func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 	assert.Less(t, allocated, 2*expectedSize)
 
 	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`

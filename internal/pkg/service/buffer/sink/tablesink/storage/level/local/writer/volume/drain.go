@@ -1,6 +1,7 @@
 package volume
 
 import (
+	"context"
 	"os"
 
 	"github.com/fsnotify/fsnotify"
@@ -12,10 +13,10 @@ func (v *Volume) Drained() bool {
 	return v.drained.Load()
 }
 
-func (v *Volume) watchDrainFile() error {
+func (v *Volume) watchDrainFile(ctx context.Context) error {
 	// Check presence of the file
-	if err := v.checkDrainFile(); err != nil {
-		v.logger.Errorf(`cannot check the drain file: %s`, err)
+	if err := v.checkDrainFile(ctx); err != nil {
+		v.logger.ErrorfCtx(ctx, `cannot check the drain file: %s`, err)
 		return err
 	}
 
@@ -28,12 +29,12 @@ func (v *Volume) watchDrainFile() error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		// The error is not fatal, skip watching
-		v.logger.Errorf(`cannot create FS watcher: %s`, err)
+		v.logger.ErrorfCtx(ctx, `cannot create FS watcher: %s`, err)
 		return nil
 	}
 	if err := watcher.Add(v.Path()); err != nil {
 		// The error is not fatal, skip watching
-		v.logger.Errorf(`cannot add path to the FS watcher "%s": %s`, v.Path(), err)
+		v.logger.ErrorfCtx(ctx, `cannot add path to the FS watcher "%s": %s`, v.Path(), err)
 		return nil
 	}
 
@@ -43,7 +44,7 @@ func (v *Volume) watchDrainFile() error {
 
 		defer func() {
 			if err := watcher.Close(); err != nil {
-				v.logger.Warnf(`cannot close FS watcher: %s`, err)
+				v.logger.WarnfCtx(ctx, `cannot close FS watcher: %s`, err)
 			}
 		}()
 
@@ -56,15 +57,15 @@ func (v *Volume) watchDrainFile() error {
 					return
 				}
 				if event.Name == v.drainFilePath {
-					if err := v.checkDrainFile(); err != nil {
-						v.logger.Errorf(`cannot check the drain file: %s`, err)
+					if err := v.checkDrainFile(ctx); err != nil {
+						v.logger.ErrorfCtx(ctx, `cannot check the drain file: %s`, err)
 					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
-				v.logger.Errorf(`FS watcher error: %s`, err)
+				v.logger.ErrorfCtx(ctx, `FS watcher error: %s`, err)
 			}
 		}
 	}()
@@ -72,16 +73,16 @@ func (v *Volume) watchDrainFile() error {
 	return nil
 }
 
-func (v *Volume) checkDrainFile() error {
+func (v *Volume) checkDrainFile(ctx context.Context) error {
 	if _, err := os.Stat(v.drainFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	} else if errors.Is(err, os.ErrNotExist) {
 		if v.drained.Swap(false) {
-			v.logger.Info("set drained=false")
+			v.logger.Info(ctx, "set drained=false")
 		}
 	} else {
 		if !v.drained.Swap(true) {
-			v.logger.Info("set drained=true")
+			v.logger.Info(ctx, "set drained=true")
 		}
 	}
 	return nil

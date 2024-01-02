@@ -2,6 +2,7 @@
 package writechain
 
 import (
+	"context"
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -70,19 +71,19 @@ func (c *Chain) WriteString(s string) (n int, err error) {
 }
 
 // Flush data from writers internal buffers, see also Sync method.
-func (c *Chain) Flush() error {
-	c.logger.Debug("flushing writers")
+func (c *Chain) Flush(ctx context.Context) error {
+	c.logger.Debug(ctx, "flushing writers")
 	errs := errors.NewMultiError()
 
 	for _, item := range c.flushers {
 		if err := item.Flush(); err != nil {
 			err = errors.Errorf(`cannot flush "%s": %w`, stringOrType(item), err)
-			c.logger.Error(err.Error())
+			c.logger.Error(ctx, err.Error())
 			errs.Append(err)
 		}
 	}
 
-	c.logger.Debug("writers flushed")
+	c.logger.Debug(ctx, "writers flushed")
 
 	if err := errs.ErrorOrNil(); err != nil {
 		return errors.PrefixError(err, "chain flush error")
@@ -93,17 +94,17 @@ func (c *Chain) Flush() error {
 
 // Sync method flushes data from writers internal buffers and
 // then sync the in-memory copy of written data from the OS disk cache to the disk.
-func (c *Chain) Sync() error {
-	c.logger.Debug("syncing file")
+func (c *Chain) Sync(ctx context.Context) error {
+	c.logger.Debug(ctx, "syncing file")
 	errs := errors.NewMultiError()
 
 	// Flush all writers in the Chain before the underlying file
-	if err := c.Flush(); err != nil {
+	if err := c.Flush(ctx); err != nil {
 		errs.Append(err)
 	}
 
 	// Force sync of the in-memory data to the disk or OS disk cache
-	if err := c.syncFile(); err != nil {
+	if err := c.syncFile(ctx); err != nil {
 		errs.Append(err)
 	}
 
@@ -115,32 +116,32 @@ func (c *Chain) Sync() error {
 }
 
 // Close method flushes and closes all writers in the Chain and finally the underlying file.
-func (c *Chain) Close() error {
-	c.logger.Debugf("closing chain")
+func (c *Chain) Close(ctx context.Context) error {
+	c.logger.Debug(ctx, "closing chain")
 	errs := errors.NewMultiError()
 
 	// Close all writers in the chain before the underlying file
 	for _, item := range c.closers {
 		if err := item.Close(); err != nil {
 			err = errors.Errorf(`cannot close "%s": %w`, stringOrType(item), err)
-			c.logger.Error(err.Error())
+			c.logger.Error(ctx, err.Error())
 			errs.Append(err)
 		}
 	}
 
 	// Force sync of the in-memory data to the disk or OS disk cache
-	if err := c.syncFile(); err != nil {
+	if err := c.syncFile(ctx); err != nil {
 		errs.Append(err)
 	}
 
 	// Close the underlying file
 	if err := c.file.Close(); err != nil {
 		err = errors.Errorf(`cannot close file: %w`, err)
-		c.logger.Error(err.Error())
+		c.logger.Error(ctx, err.Error())
 		errs.Append(err)
 	}
 
-	c.logger.Debug("chain closed")
+	c.logger.Debug(ctx, "chain closed")
 
 	if err := errs.ErrorOrNil(); err != nil {
 		return errors.PrefixError(err, "chain close error")
@@ -241,16 +242,16 @@ func (c *Chain) PrependCloseFn(info any, fn func() error) {
 	c.addCloser(true, newCloseFn(info, fn))
 }
 
-func (c *Chain) syncFile() error {
-	c.logger.Debug("syncing file")
+func (c *Chain) syncFile(ctx context.Context) error {
+	c.logger.Debug(ctx, "syncing file")
 
 	if err := c.file.Sync(); err != nil {
 		err = errors.Errorf(`cannot sync file: %w`, err)
-		c.logger.Debug(err.Error())
+		c.logger.Debug(ctx, err.Error())
 		return err
 	}
 
-	c.logger.Debug("file synced")
+	c.logger.Debug(ctx, "file synced")
 	return nil
 }
 

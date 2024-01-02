@@ -98,7 +98,7 @@ func TestOpenVolume_Ok(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close())
+	assert.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -158,7 +158,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close())
+	assert.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -265,7 +265,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	err = vol.Close()
+	err = vol.Close(context.Background())
 	if assert.Error(t, err) {
 		// Order of the errors is random, readers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`

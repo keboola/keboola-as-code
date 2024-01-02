@@ -4,8 +4,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"net/http"
 	"os"
 
@@ -17,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -27,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

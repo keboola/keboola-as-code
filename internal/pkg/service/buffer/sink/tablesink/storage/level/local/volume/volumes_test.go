@@ -1,6 +1,7 @@
 package volume_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,7 +87,7 @@ func TestVolumes_Close_Error(t *testing.T) {
 	assert.Len(t, volumes.All(), 5)
 
 	// Close - all volumes are closed in parallel, errors are aggregated
-	err = volumes.Close()
+	err = volumes.Close(context.Background())
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.Repeat("- some close error\n", 5), err.Error()+"\n")
 	}
@@ -146,7 +147,7 @@ func TestVolumes_Ok(t *testing.T) {
 	}, volumes.All())
 
 	// Close - no error
-	assert.NoError(t, volumes.Close())
+	assert.NoError(t, volumes.Close(context.Background()))
 }
 
 type testVolume struct {
@@ -182,7 +183,7 @@ func (v *testVolume) ID() storage.VolumeID {
 	return v.IDValue
 }
 
-func (v *testVolume) Close() error {
+func (v *testVolume) Close(ctx context.Context) error {
 	return v.CloseError
 }
 
@@ -204,5 +205,5 @@ func newVolumesTestCase(t *testing.T) *volumesTestCase {
 }
 
 func (tc *volumesTestCase) DetectVolumes() (*volume.Volumes[*testVolume], error) {
-	return volume.DetectVolumes(tc.Logger, tc.Path, tc.Opener)
+	return volume.DetectVolumes(context.Background(), tc.Logger, tc.Path, tc.Opener)
 }

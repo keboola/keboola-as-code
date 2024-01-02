@@ -2,13 +2,15 @@ package repository
 
 import (
 	"fmt"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	etcd "go.etcd.io/etcd/client/v3"
 )
 
 type TokenRepository struct {

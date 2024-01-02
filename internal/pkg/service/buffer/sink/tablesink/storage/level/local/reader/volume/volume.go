@@ -48,7 +48,7 @@ type Volume struct {
 //   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
-	logger.Infof(`opening volume "%s"`, info.Path())
+	logger.InfofCtx(ctx, `opening volume "%s"`, info.Path())
 	v := &Volume{
 		volumeInfo:  info,
 		config:      newConfig(opts),
@@ -84,7 +84,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volume
 		}
 	}
 
-	v.logger.Info("opened volume")
+	v.logger.InfofCtx(ctx, "opened volume")
 	return v, nil
 }
 
@@ -92,9 +92,9 @@ func (v *Volume) ID() storage.VolumeID {
 	return v.id
 }
 
-func (v *Volume) Close() error {
+func (v *Volume) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
-	v.logger.Info("closing volume")
+	v.logger.InfofCtx(ctx, "closing volume")
 
 	// Block NewReaderFor method
 	v.cancel()
@@ -106,7 +106,7 @@ func (v *Volume) Close() error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := r.Close(); err != nil {
+			if err := r.CloseCtx(ctx); err != nil {
 				errs.Append(errors.Errorf(`cannot close reader for slice "%s": %w`, r.SliceKey().String(), err))
 			}
 		}()
@@ -121,7 +121,7 @@ func (v *Volume) Close() error {
 		errs.Append(errors.Errorf(`cannot remove reader lock "%s": %w`, v.fsLock.Path(), err))
 	}
 
-	v.logger.Info("closed volume")
+	v.logger.InfofCtx(ctx, "closed volume")
 	return errs.ErrorOrNil()
 }
 
@@ -143,7 +143,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (storage.VolumeID, error) 
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return "", errors.Errorf(`cannot open volume ID file "%s": %w`, path, err)
 		} else {
-			v.logger.Infof(`waiting for volume ID file`)
+			v.logger.InfofCtx(ctx, `waiting for volume ID file`)
 		}
 
 		select {

@@ -21,6 +21,7 @@ import (
 func TestBaseWriter(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	logger := log.NewDebugLogger()
 	clk := clock.New()
 	dirPath := t.TempDir()
@@ -62,10 +63,10 @@ func TestBaseWriter(t *testing.T) {
 	assert.NoError(t, notifier.Wait())
 
 	// Test Close method
-	assert.NoError(t, w.Close())
+	assert.NoError(t, w.Close(ctx))
 
 	// Try Close again
-	err = w.Close()
+	err = w.Close(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "syncer is already stopped: context canceled", err.Error())
 	}
@@ -79,6 +80,7 @@ func TestBaseWriter(t *testing.T) {
 func TestBaseWriter_CloseError(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -94,7 +96,7 @@ func TestBaseWriter_CloseError(t *testing.T) {
 	})
 
 	// Test Close method
-	err = w.Close()
+	err = w.Close(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "chain close error: cannot close \"my-closer\": some error", err.Error())
 	}

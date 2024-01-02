@@ -1,8 +1,9 @@
 package target
 
 import (
-	"github.com/c2h5oh/datasize"
 	"time"
+
+	"github.com/c2h5oh/datasize"
 )
 
 // Config contains default configuration for the target storage.

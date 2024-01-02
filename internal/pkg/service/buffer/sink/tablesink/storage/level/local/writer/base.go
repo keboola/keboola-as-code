@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"context"
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -85,19 +86,19 @@ func (w *BaseWriter) WriteString(s string) (int, error) {
 	return w.syncer.WriteString(s)
 }
 
-func (w *BaseWriter) Close() error {
-	w.logger.Debug("closing file")
+func (w *BaseWriter) Close(ctx context.Context) error {
+	w.logger.Debug(ctx, "closing file")
 
 	// Stop syncer, it triggers also the last sync
-	if err := w.syncer.Stop(); err != nil {
+	if err := w.syncer.Stop(ctx); err != nil {
 		return err
 	}
 
 	// Close chain, it closes all writers, sync and then close the file.
-	if err := w.chain.Close(); err != nil {
+	if err := w.chain.Close(ctx); err != nil {
 		return err
 	}
 
-	w.logger.Debug("closed file")
+	w.logger.Debug(ctx, "closed file")
 	return nil
 }

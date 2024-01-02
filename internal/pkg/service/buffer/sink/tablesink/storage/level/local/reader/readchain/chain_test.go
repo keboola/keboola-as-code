@@ -1,6 +1,7 @@
 package readchain
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -151,19 +152,19 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 		return &testReadCloser{inner: r, Logger: tc.Logger, Name: "RC2"}
 	})
 	tc.Chain.PrependCloseFn("FN1", func() error {
-		tc.Logger.Info(`TEST: close "FN1"`)
+		tc.Logger.Info(context.Background(), `TEST: close "FN1"`)
 		return nil
 	})
 	tc.Chain.PrependCloseFn("FN2", func() error {
-		tc.Logger.Info(`TEST: close "FN2"`)
+		tc.Logger.Info(context.Background(), `TEST: close "FN2"`)
 		return nil
 	})
 	tc.Chain.AppendCloseFn("FN3", func() error {
-		tc.Logger.Info(`TEST: close "FN3"`)
+		tc.Logger.Info(context.Background(), `TEST: close "FN3"`)
 		return nil
 	})
 	tc.Chain.AppendCloseFn("FN4", func() error {
-		tc.Logger.Info(`TEST: close "FN4"`)
+		tc.Logger.Info(context.Background(), `TEST: close "FN4"`)
 		return nil
 	})
 
@@ -291,7 +292,7 @@ func (r *testReader) String() string {
 }
 
 func (r *testReader) Read(p []byte) (int, error) {
-	r.Logger.Infof(`TEST: read "%s"`, r.Name)
+	r.Logger.InfofCtx(context.Background(), `TEST: read "%s"`, r.Name)
 	if r.ReadError != nil {
 		return 0, r.ReadError
 	}
@@ -311,7 +312,7 @@ func (r *testReadCloser) String() string {
 }
 
 func (r *testReadCloser) Read(p []byte) (int, error) {
-	r.Logger.Infof(`TEST: read "%s"`, r.Name)
+	r.Logger.InfofCtx(context.Background(), `TEST: read "%s"`, r.Name)
 	if r.ReadError != nil {
 		return 0, r.ReadError
 	}
@@ -319,7 +320,7 @@ func (r *testReadCloser) Read(p []byte) (int, error) {
 }
 
 func (r *testReadCloser) Close() error {
-	r.Logger.Infof(`TEST: close "%s"`, r.Name)
+	r.Logger.InfofCtx(context.Background(), `TEST: close "%s"`, r.Name)
 	return r.CloseError
 }
 
@@ -334,6 +335,6 @@ func (c *testCloser) String() string {
 }
 
 func (c *testCloser) Close() error {
-	c.Logger.Infof(`TEST: close "%s"`, c.Name)
+	c.Logger.InfofCtx(context.Background(), `TEST: close "%s"`, c.Name)
 	return c.CloseError
 }

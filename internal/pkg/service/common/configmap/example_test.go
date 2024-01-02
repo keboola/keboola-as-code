@@ -17,11 +17,11 @@ type ExampleConfig struct {
 	Interactive configmap.Value[bool] `configKey:"interactive"`
 }
 
-func (c ExampleConfig) Normalize() {
+func (c *ExampleConfig) Normalize() {
 	c.Username = strings.TrimSpace(c.Username)
 }
 
-func (c ExampleConfig) Validate() error {
+func (c *ExampleConfig) Validate() error {
 	if c.Username == "" {
 		return errors.New("username is required")
 	}

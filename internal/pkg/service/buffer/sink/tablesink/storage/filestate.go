@@ -1,10 +1,11 @@
 package storage
 
 import (
+	"time"
+
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"time"
 )
 
 // FileWriting
@@ -29,20 +30,20 @@ const FileImported FileState = "imported"
 //
 // Example File and Slice transitions.
 //
-//      FILE            SLICE1           SLICE2           SLICE3
-//  -----------------------------------------------------------------
-//  FileWriting      SliceWriting     -------------    --------------
-//  FileWriting      SliceClosing     SliceWriting     --------------
-//  FileWriting      SliceUploading   SliceWriting     --------------
-//  FileWriting      SliceUploaded    SliceWriting     --------------
-//  FileWriting      SliceUploaded    SliceClosing     --------------
-//  ...
-//  FileWriting      SliceUploaded    SliceUploaded    SliceWriting
-//  FileClosing      SliceUploaded    SliceUploaded    SliceClosing
-//  FileClosing      SliceUploaded    SliceUploaded    SliceUploading
-//  FileClosing      SliceUploaded    SliceUploaded    SliceUploaded
-//  FileImporting    SliceUploaded    SliceUploaded    SliceUploaded
-//  FileImported     SliceImported    SliceImported    SliceImported
+//	    FILE            SLICE1           SLICE2           SLICE3
+//	-----------------------------------------------------------------
+//	FileWriting      SliceWriting     -------------    --------------
+//	FileWriting      SliceClosing     SliceWriting     --------------
+//	FileWriting      SliceUploading   SliceWriting     --------------
+//	FileWriting      SliceUploaded    SliceWriting     --------------
+//	FileWriting      SliceUploaded    SliceClosing     --------------
+//	...
+//	FileWriting      SliceUploaded    SliceUploaded    SliceWriting
+//	FileClosing      SliceUploaded    SliceUploaded    SliceClosing
+//	FileClosing      SliceUploaded    SliceUploaded    SliceUploading
+//	FileClosing      SliceUploaded    SliceUploaded    SliceUploaded
+//	FileImporting    SliceUploaded    SliceUploaded    SliceUploaded
+//	FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
 
 func (f *File) StateTransition(at time.Time, to FileState) error {

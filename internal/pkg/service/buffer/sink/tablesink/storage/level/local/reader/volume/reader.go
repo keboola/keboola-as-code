@@ -44,7 +44,7 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error)
 		} else {
 			// Close resources
 			if chain != nil {
-				_ = chain.Close()
+				_ = chain.CloseCtx(v.ctx)
 			} else if file != nil {
 				_ = file.Close()
 			}
@@ -58,9 +58,9 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error)
 	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {
-		logger.Debug("opened file")
+		logger.Debug(v.ctx, "opened file")
 	} else {
-		logger.Error(`cannot open file "%s": %s`, filePath, err)
+		logger.ErrorfCtx(v.ctx, `cannot open file "%s": %s`, filePath, err)
 		return nil, err
 	}
 

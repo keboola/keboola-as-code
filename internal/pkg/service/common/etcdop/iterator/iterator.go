@@ -97,7 +97,6 @@ func (v *ForEachOp) Op(ctx context.Context) (op.LowLevelOp, error) {
 			return op.NoResult{}, itr.ForEach(v.fn)
 		},
 	}, nil
-
 }
 
 func (v *ForEachOp) Do(ctx context.Context, opts ...op.Option) (out Result) {

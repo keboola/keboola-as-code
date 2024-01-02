@@ -1,15 +1,17 @@
 package storage
 
 import (
+	"testing"
+	"time"
+
 	"github.com/c2h5oh/datasize"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestConfig_With(t *testing.T) {

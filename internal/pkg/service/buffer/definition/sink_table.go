@@ -2,9 +2,9 @@ package definition
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 )
 
 const (

@@ -144,7 +144,8 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 				// Fill context with field information
 				field := &VisitContext{}
 				field.StructField = vc.Type.Field(i)
-				field.OriginalPath = append(vc.OriginalPath, orderedmap.MapStep(field.StructField.Name))
+				field.OriginalPath = append(field.OriginalPath, vc.OriginalPath...)
+				field.OriginalPath = append(field.OriginalPath, orderedmap.MapStep(field.StructField.Name))
 				field.MappedPath = vc.MappedPath
 				field.Value = vc.Value.Field(i)
 				field.PrimitiveValue = field.Value

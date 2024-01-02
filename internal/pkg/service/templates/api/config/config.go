@@ -1,14 +1,14 @@
 package config
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"net/url"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )

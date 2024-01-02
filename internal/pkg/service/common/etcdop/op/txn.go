@@ -213,8 +213,6 @@ func (v *TxnOp) lowLevelTxn(ctx context.Context) (*lowLevelTxn, error) {
 			} else {
 				r.AddResult(err).AddErr(err)
 			}
-
-			return
 		})
 	}
 
@@ -252,11 +250,9 @@ func (v *lowLevelTxn) Do(ctx context.Context, opts ...Option) *TxnResult {
 	return v.mapResponse(ctx, response)
 }
 
-func (v *lowLevelTxn) addThen(op etcd.Op, mapper MapFn) (index int) {
-	index = len(v.thenOps)
+func (v *lowLevelTxn) addThen(op etcd.Op, mapper MapFn) {
 	v.thenOps = append(v.thenOps, op)
 	v.thenMappers = append(v.thenMappers, mapper)
-	return index
 }
 
 func (v *lowLevelTxn) addElse(op etcd.Op, mapper MapFn) (index int) {

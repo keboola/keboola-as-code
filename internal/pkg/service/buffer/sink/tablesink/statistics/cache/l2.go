@@ -3,8 +3,9 @@ package cache
 import (
 	"context"
 	"fmt"
-	"github.com/benbjohnson/clock"
 	"sync"
+
+	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"

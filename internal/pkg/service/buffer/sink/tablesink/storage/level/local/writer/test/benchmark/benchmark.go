@@ -107,7 +107,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	end := time.Now()
 
 	// Close volume
-	assert.NoError(b, vol.Close())
+	assert.NoError(b, vol.Close(ctx))
 
 	// Report extra metrics
 	duration := end.Sub(start)

@@ -5,7 +5,6 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
@@ -244,7 +244,7 @@ func collectValues(flags *pflag.FlagSet, flagToField FlagToFieldFn, envNaming *e
 	// Parse configuration files
 	for _, path := range configFiles {
 		// Read
-		content, err := os.ReadFile(path)
+		content, err := os.ReadFile(path) //nolint: forbidigo
 		if err != nil {
 			errs.Append(errors.Errorf(`cannot read config file "%s": %w`, path, err))
 			continue
@@ -252,7 +252,7 @@ func collectValues(flags *pflag.FlagSet, flagToField FlagToFieldFn, envNaming *e
 
 		// Decode
 		config := orderedmap.New()
-		ext := strings.ToLower(strings.TrimLeft(filepath.Ext(path), "."))
+		ext := strings.ToLower(strings.TrimLeft(filepath.Ext(path), ".")) //nolint: forbidigo
 		switch ext {
 		case "json":
 			if err := json.Unmarshal(content, config); err != nil {

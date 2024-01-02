@@ -69,9 +69,6 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 		config:      c,
 	}
 
-	// Log node ID
-	n.logger.Infof(`node ID "%s"`, nodeID)
-
 	// Graceful shutdown
 	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
 	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
@@ -84,6 +81,9 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 		wg.Wait()
 		n.logger.InfoCtx(ctx, "shutdown done")
 	})
+
+	// Log node ID
+	n.logger.InfofCtx(watchCtx, `node ID "%s"`, nodeID)
 
 	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
 		// Register node

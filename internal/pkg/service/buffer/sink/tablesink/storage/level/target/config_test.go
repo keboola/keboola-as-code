@@ -1,10 +1,12 @@
 package target
 
 import (
-	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 	"testing"
 	"time"
+
+	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 )
 
 func TestFileImportTrigger_Validation(t *testing.T) {

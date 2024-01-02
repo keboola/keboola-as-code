@@ -2,11 +2,11 @@ package configmap
 
 import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // BindToViper flags, ENVs and config files to the Viper configuration registry.

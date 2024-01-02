@@ -225,12 +225,12 @@ func (w *Writer) FilePath() string {
 	return w.base.FilePath()
 }
 
-func (w *Writer) Close() error {
+func (w *Writer) Close(ctx context.Context) error {
 	// Prevent new writes
 	w.cancel()
 
 	// Close the chain
-	err := w.base.Close()
+	err := w.base.Close(ctx)
 
 	// Wait for running writes
 	w.writeWg.Wait()

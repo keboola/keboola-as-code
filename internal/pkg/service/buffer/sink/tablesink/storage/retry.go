@@ -1,12 +1,14 @@
 package storage
 
 import (
-	"github.com/cenkalti/backoff/v4"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"math"
 	"math/rand"
 	"time"
+
+	"github.com/cenkalti/backoff/v4"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Retryable struct {

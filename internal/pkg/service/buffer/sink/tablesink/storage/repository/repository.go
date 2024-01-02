@@ -2,10 +2,11 @@ package repository
 
 import (
 	"github.com/benbjohnson/clock"
+	etcd "go.etcd.io/etcd/client/v3"
+
 	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	etcd "go.etcd.io/etcd/client/v3"
 )
 
 type dependencies interface {

@@ -3,8 +3,14 @@ package repository
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"reflect"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -12,10 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	etcd "go.etcd.io/etcd/client/v3"
-	"path/filepath"
-	"reflect"
-	"time"
 )
 
 type SliceRepository struct {
@@ -138,6 +140,7 @@ func (r *SliceRepository) deleteAll(parentKey fmt.Stringer) *op.TxnOp {
 
 	return txn
 }
+
 func (r *SliceRepository) onFileStateTransition(k storage.FileKey, now time.Time, newFileState storage.FileState) *op.AtomicOp[op.NoResult] {
 	// Validate and modify slice state
 	return r.updateAllInFile(k, func(slice storage.Slice) (storage.Slice, error) {

@@ -2,10 +2,19 @@ package repository
 
 import (
 	"context"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
+	"github.com/relvacode/iso8601"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
@@ -17,13 +26,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/relvacode/iso8601"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"net/http"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestRepository_Slice(t *testing.T) {

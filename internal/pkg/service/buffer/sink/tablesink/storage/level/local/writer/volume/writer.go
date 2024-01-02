@@ -53,7 +53,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, er
 		} else {
 			// Close resources
 			if chain != nil {
-				_ = chain.Close()
+				_ = chain.Close(v.ctx)
 			} else if file != nil {
 				_ = file.Close()
 			}
@@ -72,9 +72,9 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, er
 	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {
-		logger.Debug("opened file")
+		logger.Debug(v.ctx, "opened file")
 	} else {
-		logger.Error(`cannot open file "%s": %s`, filePath, err)
+		logger.ErrorfCtx(v.ctx, `cannot open file "%s": %s`, filePath, err)
 		return nil, err
 	}
 
@@ -88,15 +88,15 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, er
 	if isNew := stat.Size() == 0; isNew {
 		if size := slice.LocalStorage.AllocatedDiskSpace; size != 0 {
 			if ok, err := v.config.allocator.Allocate(file, size); ok {
-				logger.Debugf(`allocated disk space "%s"`, size)
+				logger.DebugfCtx(v.ctx, `allocated disk space "%s"`, size)
 			} else if err != nil {
 				// The error is not fatal
-				logger.Errorf(`cannot allocate disk space "%s", allocation skipped: %s`, size, err)
+				logger.ErrorfCtx(v.ctx, `cannot allocate disk space "%s", allocation skipped: %s`, size, err)
 			} else {
-				logger.Debug("disk space allocation is not supported")
+				logger.Debug(v.ctx, "disk space allocation is not supported")
 			}
 		} else {
-			logger.Debug("disk space allocation is disabled")
+			logger.Debug(v.ctx, "disk space allocation is disabled")
 		}
 	}
 

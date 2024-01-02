@@ -1,10 +1,10 @@
 package definition
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
 )
 
 func TestBranch_Validation(t *testing.T) {

@@ -2,20 +2,22 @@ package repository
 
 import (
 	"context"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
+	"github.com/relvacode/iso8601"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/relvacode/iso8601"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
@@ -43,7 +45,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	}
 
 	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
-	//client := d.TestEtcdClient()
+	// client := d.TestEtcdClient()
 	defRepo := defRepository.New(d)
 	backoff := storage.NoRandomizationBackoff()
 	r := newWithBackoff(d, defRepo, cfg, backoff)

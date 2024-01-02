@@ -2,6 +2,7 @@ package local
 
 import (
 	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 )

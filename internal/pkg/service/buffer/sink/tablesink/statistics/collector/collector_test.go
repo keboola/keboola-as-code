@@ -1,7 +1,7 @@
 package collector_test
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/collector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
@@ -167,7 +168,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 `)
 
 	// Stop periodical sync
-	col.Stop()
+	col.Stop(context.Background())
 
 	// Close writer 2
 	w2.RowsCountValue = 3
@@ -252,7 +253,7 @@ func (w *testWriter) WriteRow(_ time.Time, _ []any) error {
 	panic(errors.New("method should not be called"))
 }
 
-func (w *testWriter) Close() error {
+func (w *testWriter) Close(context.Context) error {
 	panic(errors.New("method should not be called"))
 }
 

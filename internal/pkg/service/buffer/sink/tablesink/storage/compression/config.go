@@ -2,6 +2,7 @@ package compression
 
 import (
 	"compress/gzip"
+
 	"github.com/c2h5oh/datasize"
 	"github.com/klauspost/compress/zstd"
 )

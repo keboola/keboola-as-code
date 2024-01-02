@@ -99,9 +99,6 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 		taskLocks:      make(map[string]bool),
 	}
 
-	// Log node ID
-	n.logger.Infof(`node ID "%s"`, n.nodeID)
-
 	// Graceful shutdown
 	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
@@ -119,6 +116,9 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 		sessionWg.Wait()
 		n.logger.InfoCtx(ctx, "shutdown done")
 	})
+
+	// Log node ID
+	n.logger.InfofCtx(n.tasksCtx, `node ID "%s"`, n.nodeID)
 
 	// Create etcd session
 	n.sessionLock = &sync.RWMutex{}

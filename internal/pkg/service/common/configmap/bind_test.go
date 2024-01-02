@@ -440,7 +440,7 @@ func TestBind_ValueType(t *testing.T) {
 	envs.Set("MY_APP_DURATION", "100s")
 	envs.Set("MY_APP_DURATION_NULLABLE", "100s")
 
-	configFilePath := filepath.Join(t.TempDir(), "config.yml")
+	configFilePath := filepath.Join(t.TempDir(), "config.yml") //nolint: forbidigo
 	spec := BindSpec{
 		Args: []string{
 			"--embedded", "flag takes precedence over ENV",

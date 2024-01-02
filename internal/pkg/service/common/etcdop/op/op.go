@@ -9,11 +9,12 @@ package op
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"reflect"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Op is common interface for all operations in the package.

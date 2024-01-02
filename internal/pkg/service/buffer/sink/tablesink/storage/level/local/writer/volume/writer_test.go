@@ -30,7 +30,7 @@ func TestVolume_NewWriterFor_Ok(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, tc.Volume.writers, 1)
 
-	assert.NoError(t, w.Close())
+	assert.NoError(t, w.Close(context.Background()))
 	assert.Len(t, tc.Volume.writers, 0)
 }
 
@@ -50,7 +50,7 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 	}
 	assert.Len(t, tc.Volume.writers, 1)
 
-	assert.NoError(t, w.Close())
+	assert.NoError(t, w.Close(context.Background()))
 	assert.Len(t, tc.Volume.writers, 0)
 }
 
@@ -60,7 +60,7 @@ func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
-	assert.NoError(t, vol.Close())
+	assert.NoError(t, vol.Close(context.Background()))
 
 	_, err = vol.NewWriterFor(test.NewSlice())
 	assert.Error(t, err)
@@ -74,7 +74,7 @@ func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
 	assert.NoError(t, err)
 	assert.FileExists(t, w.FilePath())
 
-	assert.NoError(t, w.Close())
+	assert.NoError(t, w.Close(context.Background()))
 	assert.FileExists(t, w.FilePath())
 }
 
@@ -112,6 +112,8 @@ func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
 
 func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = true
@@ -126,12 +128,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.Infof("TEST: write unblocked")
+		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.Infof("TEST: write unblocked")
+		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
@@ -142,7 +144,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
-		tc.Logger.Infof("TEST: write unblocked")
+		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
@@ -157,7 +159,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 
 	// Wait for goroutine
 	wg.Wait()
@@ -216,6 +218,8 @@ INFO  closed volume
 
 func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = true
@@ -230,12 +234,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.Infof("TEST: write unblocked")
+		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.Infof("TEST: write unblocked")
+		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
@@ -246,7 +250,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
-		tc.Logger.Infof("TEST: write unblocked")
+		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
@@ -261,7 +265,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 	wg.Wait()
 
 	// Check file content
@@ -309,6 +313,8 @@ INFO  closed volume
 
 func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = false
@@ -333,7 +339,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -386,6 +392,8 @@ INFO  closed volume
 
 func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = false
@@ -410,7 +418,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -454,6 +462,8 @@ INFO  closed volume
 
 func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync = disksync.Config{Mode: disksync.ModeDisabled}
 	w, err := tc.NewWriter()
@@ -475,7 +485,7 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -507,6 +517,8 @@ INFO  closed volume
 
 func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Allocator.Error = errors.New("some space allocation error")
 
@@ -515,7 +527,7 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 	assert.FileExists(t, w.FilePath())
 
 	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 	assert.FileExists(t, w.FilePath())
 
 	// Check logs
@@ -533,6 +545,8 @@ DEBUG  closing file
 
 func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Allocator.Ok = false
 
@@ -541,7 +555,7 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 	assert.FileExists(t, w.FilePath())
 
 	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 	assert.FileExists(t, w.FilePath())
 
 	// Check logs
@@ -559,6 +573,8 @@ DEBUG  closing file
 
 func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
 	w, err := tc.NewWriter(WithAllocator(allocate.DefaultAllocator{}))
@@ -570,7 +586,7 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	assert.Less(t, allocated, datasize.KB)
 
 	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close())
+	assert.NoError(t, tc.Volume.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
