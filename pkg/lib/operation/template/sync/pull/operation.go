@@ -21,7 +21,7 @@ type Options struct {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }

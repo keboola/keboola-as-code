@@ -27,22 +27,26 @@ func UnloadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			var tableID keboola.TableID
-			if len(args) == 0 {
-				tableID, _, err = askTable(cmd.Context(), d, false)
-				if err != nil {
-					return err
-				}
-			} else {
-				id, err := keboola.ParseTableID(args[0])
-				if err != nil {
-					return err
-				}
-				tableID = id
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			o, err := parseUnloadOptions(d.Options(), tableID)
+			// Ask options
+			tableKey := keboola.TableKey{BranchID: branch.ID}
+			if len(args) == 0 {
+				tableKey, _, err = askTable(cmd.Context(), d, branch.ID, false)
+				if err != nil {
+					return err
+				}
+			} else if id, err := keboola.ParseTableID(args[0]); err == nil {
+				tableKey.TableID = id
+			} else {
+				return err
+			}
+
+			o, err := parseUnloadOptions(d.Options(), tableKey)
 			if err != nil {
 				return err
 			}
@@ -69,8 +73,8 @@ func UnloadCommand(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
-func parseUnloadOptions(options *options.Options, tableID keboola.TableID) (unload.Options, error) {
-	o := unload.Options{TableID: tableID}
+func parseUnloadOptions(options *options.Options, tableKey keboola.TableKey) (unload.Options, error) {
+	o := unload.Options{TableKey: tableKey}
 
 	o.ChangedSince = options.GetString("changed-since")
 	o.ChangedUntil = options.GetString("changed-until")

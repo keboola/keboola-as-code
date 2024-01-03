@@ -12,16 +12,16 @@ import (
 )
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
 
-func Run(ctx context.Context, tableID keboola.TableID, d dependencies) (err error) {
+func Run(ctx context.Context, tableKey keboola.TableKey, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.detail")
 	defer span.End(&err)
 
-	table, err := d.KeboolaProjectAPI().GetTableRequest(tableID).Send(ctx)
+	table, err := d.KeboolaProjectAPI().GetTableRequest(tableKey).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func Run(ctx context.Context, tableID keboola.TableID, d dependencies) (err erro
   Created at: %s
   Last import at: %s
   Last changed at: %s`,
-		table.ID,
+		table.TableID,
 		table.DisplayName,
 		strings.Join(table.PrimaryKey, ", "),
 		strings.Join(table.Columns, ", "),

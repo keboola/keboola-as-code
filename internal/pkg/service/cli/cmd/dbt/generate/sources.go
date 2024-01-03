@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/sources"
 )
 
@@ -19,19 +20,25 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			targetName, err := p.BaseScope().Dialogs().AskTargetName()
-			if err != nil {
-				return err
-			}
-
 			// Get dependencies
 			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
 
-			return sources.Run(cmd.Context(), sources.Options{TargetName: targetName}, d)
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
+			// Ask options
+			targetName, err := p.BaseScope().Dialogs().AskTargetName()
+			if err != nil {
+				return err
+			}
+
+			return sources.Run(cmd.Context(), sources.Options{BranchKey: branch.BranchKey, TargetName: targetName}, d)
 		},
 	}
 

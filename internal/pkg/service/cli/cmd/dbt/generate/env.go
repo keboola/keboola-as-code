@@ -27,10 +27,10 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Options
+			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
-				return errors.Errorf("cannot find default branch: %w", err)
+				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
 			// Get all Snowflake workspaces for the dialog
@@ -44,7 +44,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}
-			opts, err := d.Dialogs().AskGenerateEnv(snowflakeWorkspaces)
+			opts, err := d.Dialogs().AskGenerateEnv(branch.BranchKey, snowflakeWorkspaces)
 			if err != nil {
 				return err
 			}

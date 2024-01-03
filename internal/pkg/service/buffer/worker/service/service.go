@@ -28,7 +28,7 @@ type Service struct {
 	wg            *sync.WaitGroup
 	clock         clock.Clock
 	logger        log.Logger
-	publicAPI     *keboola.API
+	publicAPI     *keboola.PublicAPI
 	store         *store.Store
 	fileManager   *file.Manager
 	etcdClient    *etcd.Client
@@ -48,7 +48,7 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	WorkerConfig() config.WorkerConfig
-	KeboolaPublicAPI() *keboola.API
+	KeboolaPublicAPI() *keboola.PublicAPI
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Schema() *schema.Schema

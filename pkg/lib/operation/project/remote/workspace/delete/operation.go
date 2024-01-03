@@ -13,7 +13,7 @@ import (
 type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	Logger() log.Logger
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
 func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *keboola.WorkspaceWithConfig) (err error) {

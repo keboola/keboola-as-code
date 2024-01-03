@@ -29,7 +29,7 @@ type Options struct {
 type dependencies interface {
 	Components() *model.ComponentsMap
 	EmptyDir(ctx context.Context) (filesystem.Fs, error)
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Options() *options.Options
 	ProjectID() keboola.ProjectID

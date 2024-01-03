@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
 
@@ -22,8 +23,14 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
 			// Ask options
-			opts, err := d.Dialogs().AskUploadFile("", "")
+			opts, err := d.Dialogs().AskUploadFile(branch.BranchKey, "", "")
 			if err != nil {
 				return err
 			}

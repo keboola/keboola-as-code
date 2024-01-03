@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/init"
 )
 
@@ -19,14 +20,20 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			opts, err := p.BaseScope().Dialogs().AskDbtInit()
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
 
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context())
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
+			// Ask options
+			opts, err := p.BaseScope().Dialogs().AskDbtInit(branch.BranchKey)
 			if err != nil {
 				return err
 			}

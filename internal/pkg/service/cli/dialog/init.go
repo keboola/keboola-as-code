@@ -14,7 +14,7 @@ import (
 )
 
 type initDeps interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
 func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Options, error) {

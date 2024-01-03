@@ -49,7 +49,7 @@ func validateTargetName(val any) error {
 	return nil
 }
 
-func (p *Dialogs) AskGenerateEnv(allWorkspaces []*keboola.WorkspaceWithConfig) (env.Options, error) {
+func (p *Dialogs) AskGenerateEnv(branchKey keboola.BranchKey, allWorkspaces []*keboola.WorkspaceWithConfig) (env.Options, error) {
 	targetName, err := p.AskTargetName()
 	if err != nil {
 		return env.Options{}, err
@@ -61,12 +61,13 @@ func (p *Dialogs) AskGenerateEnv(allWorkspaces []*keboola.WorkspaceWithConfig) (
 	}
 
 	return env.Options{
+		BranchKey:  branchKey,
 		TargetName: targetName,
 		Workspace:  workspace.Workspace,
 	}, nil
 }
 
-func (p *Dialogs) AskDbtInit() (initOp.DbtInitOptions, error) {
+func (p *Dialogs) AskDbtInit(branchKey keboola.BranchKey) (initOp.DbtInitOptions, error) {
 	targetName, err := p.AskTargetName()
 	if err != nil {
 		return initOp.DbtInitOptions{}, err
@@ -78,6 +79,7 @@ func (p *Dialogs) AskDbtInit() (initOp.DbtInitOptions, error) {
 	}
 
 	return initOp.DbtInitOptions{
+		BranchKey:     branchKey,
 		TargetName:    targetName,
 		WorkspaceName: workspaceName,
 	}, nil

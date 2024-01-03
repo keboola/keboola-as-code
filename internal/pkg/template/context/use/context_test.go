@@ -40,7 +40,7 @@ func TestContext(t *testing.T) {
 		}`),
 	)
 	ctx := context.Background()
-	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	assert.NoError(t, err)
 	tickets := keboola.NewTicketProvider(ctx, api)
 
@@ -195,7 +195,7 @@ func TestComponentsFunctions(t *testing.T) {
 		}`),
 	)
 	ctx := context.Background()
-	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	assert.NoError(t, err)
 
 	d := dependenciesPkg.NewMocked(t)

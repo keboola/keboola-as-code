@@ -34,7 +34,7 @@ type Options struct {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 	Logger() log.Logger
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)

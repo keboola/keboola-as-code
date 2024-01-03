@@ -13,12 +13,12 @@ import (
 
 type storageEnvTicketProvider struct {
 	ctx               context.Context
-	keboolaProjectAPI *keboola.API
+	keboolaProjectAPI *keboola.AuthorizedAPI
 	envs              *env.Map
 }
 
 // CreateStorageEnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateStorageEnvTicketProvider(ctx context.Context, keboolaProjectAPI *keboola.API, envs *env.Map) testhelper.EnvProvider {
+func CreateStorageEnvTicketProvider(ctx context.Context, keboolaProjectAPI *keboola.AuthorizedAPI, envs *env.Map) testhelper.EnvProvider {
 	return &storageEnvTicketProvider{ctx: ctx, keboolaProjectAPI: keboolaProjectAPI, envs: envs}
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/detail"
 )
 
@@ -24,25 +25,29 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
 			// Ask options
-			var tableID keboola.TableID
+			tableKey := keboola.TableKey{BranchID: branch.ID}
 			if len(args) == 0 {
-				tableID, _, err = askTable(cmd.Context(), d, false)
+				tableKey, _, err = askTable(cmd.Context(), d, branch.ID, false)
 				if err != nil {
 					return err
 				}
+			} else if id, err := keboola.ParseTableID(args[0]); err == nil {
+				tableKey.TableID = id
 			} else {
-				id, err := keboola.ParseTableID(args[0])
-				if err != nil {
-					return err
-				}
-				tableID = id
+				return err
 			}
 
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-detail")
 
-			return detail.Run(cmd.Context(), tableID, d)
+			return detail.Run(cmd.Context(), tableKey, d)
 		},
 	}
 
