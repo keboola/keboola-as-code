@@ -25,7 +25,7 @@ Other services send OpenTelemetry spans and metrics to DataDog.
 The official DataDog adapter [ddtrace/opentelemetry](https://gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry) is used to
 send spans.
 
-Customizations and improvements can be found in [datadogprovider.go](../internal/pkg/telemetry/datadog/provider.go)
+Customizations and improvements can be found in [datadog/provider.go](../internal/pkg/telemetry/datadog/provider.go)
 and [datadog/tracer.go](../internal/pkg/telemetry/datadog/tracer.go).
 
 #### Metrics
