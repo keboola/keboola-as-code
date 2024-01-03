@@ -114,15 +114,8 @@ func (l *debugLogger) allWriters() []*ioutil.AtomicWriter {
 }
 
 func debugCore(writer *ioutil.AtomicWriter, level zapcore.LevelEnabler) zapcore.Core {
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "  ",
-	}
 	return zapcore.NewCore(
-		newPrefixEncoder(zapcore.NewConsoleEncoder(encoderConfig)),
+		newJSONEncoder(),
 		writer,
 		level,
 	)
