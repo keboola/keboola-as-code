@@ -2,6 +2,7 @@ package log
 
 import (
 	"bufio"
+	"reflect"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
@@ -73,7 +74,7 @@ func valueMatches(value any, actualValue any) bool {
 		return false
 	}
 
-	return actualValue == value
+	return reflect.DeepEqual(actualValue, value)
 }
 
 // AssertJSONMessages checks that expected json messages appear in actual in the same order.

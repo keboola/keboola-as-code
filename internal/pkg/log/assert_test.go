@@ -126,6 +126,21 @@ func TestCompareJsonMessages(t *testing.T) {
 				`{"level":"info","message":"Opened file", "file":"file5"}`,
 			),
 		},
+		{
+			name:     "match not scalar fields",
+			expected: `{"level":"info","message":"Info msg","array":["foo","bar"],"object":{"foo":"bar"}}`,
+			actual:   `{"level":"info","message":"Info msg","array":["foo","bar"],"object":{"foo":"bar"}}`,
+		},
+		{
+			name:     "match not scalar fields - fail",
+			expected: `{"level":"info","message":"Info msg","array":["123","456"],"object":{"foo":"bar"}}`,
+			actual:   `{"level":"info","message":"Info msg","array":["foo","bar"],"object":{"foo":"bar"}}`,
+			err: errors.Errorf(
+				"Expected:\n-----\n%s\n-----\nActual:\n-----\n%s",
+				`{"level":"info","message":"Info msg","array":["123","456"],"object":{"foo":"bar"}}`,
+				`{"level":"info","message":"Info msg","array":["foo","bar"],"object":{"foo":"bar"}}`,
+			),
+		},
 	}
 
 	for _, c := range cases {
