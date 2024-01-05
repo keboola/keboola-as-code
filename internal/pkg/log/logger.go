@@ -47,7 +47,7 @@ func (l *zapLogger) WithComponent(component string) Logger {
 // AddPrefix creates a child logger with added prefix.
 func (l *zapLogger) AddPrefix(prefix string) Logger {
 	prefix = l.prefix + prefix
-	clone := l.With(PrefixKey, prefix).(*zapLogger)
+	clone := l.With("prefix", prefix).(*zapLogger)
 	clone.component = l.component
 	clone.prefix = prefix
 	return clone
