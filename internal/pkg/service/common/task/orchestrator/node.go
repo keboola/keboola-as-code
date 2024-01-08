@@ -49,7 +49,7 @@ type orchestratorInterface interface {
 func NewNode(d dependencies) *Node {
 	n := &Node{
 		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[orchestrator]"),
+		logger: d.Logger().WithComponent("orchestrator"),
 		tracer: d.Telemetry().Tracer(),
 		client: d.EtcdClient(),
 		tasks:  d.TaskNode(),

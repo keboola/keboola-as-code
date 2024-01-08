@@ -55,7 +55,7 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 		assigner:    newAssigner(d.Process().UniqueID()),
 		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", group)),
 		clock:       d.Clock(),
-		logger:      d.Logger().AddPrefix(fmt.Sprintf("[distribution][%s]", group)),
+		logger:      d.Logger().WithComponent("distribution." + group),
 		proc:        d.Process(),
 		client:      d.EtcdClient(),
 		config:      c,

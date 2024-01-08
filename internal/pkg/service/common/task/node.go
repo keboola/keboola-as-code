@@ -84,7 +84,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 		tracer:         d.Telemetry().Tracer(),
 		meters:         newMeters(d.Telemetry().Meter()),
 		clock:          d.Clock(),
-		logger:         d.Logger().AddPrefix("[task]"),
+		logger:         d.Logger().WithComponent("task"),
 		client:         d.EtcdClient(),
 		nodeID:         proc.UniqueID(),
 		config:         c,

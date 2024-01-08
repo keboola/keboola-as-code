@@ -29,7 +29,7 @@ type listeners struct {
 type listenerID string
 
 func newListeners(n *Node) *listeners {
-	logger := n.logger.AddPrefix("[listeners]")
+	logger := n.logger.WithComponent("listeners")
 
 	v := &listeners{
 		config:    n.config,

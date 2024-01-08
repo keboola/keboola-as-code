@@ -46,7 +46,7 @@ func NewActiveSlicesWatcher(ctx context.Context, wg *sync.WaitGroup, logger log.
 	// - Delete the slice key from the AtomicTree if the state is "uploaded".
 	initDone := schema.Slices().AllActive().
 		GetAllAndWatch(ctx, client, etcd.WithFilterDelete()).
-		SetupConsumer(logger.AddPrefix("[]")).
+		SetupConsumer(logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *op.Header, reset bool) {
 			w.slices.Atomic(func(t *prefixtree.Tree[bool]) {
 				if reset {

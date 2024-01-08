@@ -34,7 +34,7 @@ type l2CachedProviderDeps interface {
 func NewL2CacheProvider(cachedL1 *L1CacheProvider, d l2CachedProviderDeps) (*L2CacheProvider, error) {
 	p := &L2CacheProvider{
 		clock:     d.Clock(),
-		logger:    d.Logger().AddPrefix("[stats-cache-L2]"),
+		logger:    d.Logger().WithComponent("stats-cache-L2"),
 		cachedL1:  cachedL1,
 		cacheLock: &sync.RWMutex{},
 		cache:     make(l2CachePerObjectKey),

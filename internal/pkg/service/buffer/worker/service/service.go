@@ -69,7 +69,7 @@ type dependencies interface {
 func New(d dependencies) (*Service, error) {
 	s := &Service{
 		clock:         d.Clock(),
-		logger:        d.Logger().AddPrefix("[service]"),
+		logger:        d.Logger().WithComponent("service"),
 		store:         d.Store(),
 		fileManager:   d.FileManager(),
 		etcdClient:    d.EtcdClient(),

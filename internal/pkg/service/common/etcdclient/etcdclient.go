@@ -116,7 +116,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	}
 
 	// Setup logger
-	logger := cfg.logger.AddPrefix("[etcd-client]")
+	logger := cfg.logger.WithComponent("etcd-client")
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}

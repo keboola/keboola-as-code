@@ -32,7 +32,7 @@ func TestCleanup(t *testing.T) {
 	client := mock.TestEtcdClient()
 	schema := workerScp.Schema()
 	statsRepo := workerScp.StatisticsRepository()
-	node := cleanup.NewNode(workerScp, workerScp.Logger().AddPrefix("[cleanup]"))
+	node := cleanup.NewNode(workerScp, workerScp.Logger().WithComponent("cleanup"))
 
 	// Create receiver and 3 exports
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
