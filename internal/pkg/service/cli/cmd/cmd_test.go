@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 
@@ -172,7 +173,10 @@ func TestTearDown_Panic(t *testing.T) {
 	root.logger = logger
 	exitCode := root.tearDown(0, errors.New("panic error"))
 	assert.Equal(t, 1, exitCode)
-	expected := `INFO  
+	expected := `
+DEBUG  Unexpected panic: panic error
+%A
+INFO  
 ---------------------------------------------------
 Keboola CLI had a problem and crashed.
 
@@ -186,7 +190,7 @@ We take privacy seriously, and do not perform any automated log file collection.
 
 Thank you kindly!
 `
-	assert.Equal(t, expected, logger.AllMessagesTxt())
+	wildcards.Assert(t, expected, logger.AllMessagesTxt())
 }
 
 func TestGetLogFileTempFile(t *testing.T) {
