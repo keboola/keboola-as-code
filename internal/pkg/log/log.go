@@ -37,6 +37,8 @@ type DebugLogger interface {
 	WarnMessages() string
 	WarnAndErrorMessages() string
 	ErrorMessages() string
+
+	AllMessagesTxt() string
 }
 
 type baseLogger interface {
