@@ -9,9 +9,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -84,11 +84,11 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 
 	// Check operations order
-	wildcards.Assert(t, `
-INFO  waiting for "2" slices to be uploaded
-INFO  -----> slice 2 uploaded
-INFO  -----> slice 1 uploaded
-INFO  -----> all slices have been uploaded
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"waiting for \"2\" slices to be uploaded"}
+{"level":"info","message":"-----> slice 2 uploaded"}
+{"level":"info","message":"-----> slice 1 uploaded"}
+{"level":"info","message":"-----> all slices have been uploaded"}
 `, logger.AllMessages())
 
 	// Stop

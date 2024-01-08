@@ -3,7 +3,6 @@ package service_test
 import (
 	"context"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -11,10 +10,10 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	config "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
@@ -22,7 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type notRetryableError struct {
@@ -124,7 +122,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Wait for failed upload
 	assert.Eventually(t, func() bool {
-		return strings.Count(workerMock.DebugLogger().WarnMessages(), "WARN  task failed") == 1
+		return log.CompareJSONMessages(`{"level":"warn","message":"task failed %A"}`, workerMock.DebugLogger().WarnMessages()) == nil
 	}, 30*time.Second, 100*time.Millisecond)
 	workerMock.DebugLogger().Truncate()
 
@@ -135,7 +133,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Wait for retry
 	assert.Eventually(t, func() bool {
-		return strings.Count(workerMock.DebugLogger().WarnMessages(), "WARN  task failed") == 1
+		return log.CompareJSONMessages(`{"level":"warn","message":"task failed %A"}`, workerMock.DebugLogger().WarnMessages()) == nil
 	}, 30*time.Second, 100*time.Millisecond)
 
 	// Shutdown
@@ -145,24 +143,26 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	workerScp.Process().WaitForShutdown()
 
 	// Orchestrator logs
-	assert.Contains(t, workerMock.DebugLogger().AllMessages(), "[orchestrator][slice.retry.check]INFO  assigned")
-	wildcards.Assert(t, `
-[orchestrator][slice.retry.check]INFO  assigned "123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
-[orchestrator][slice.retry.check]INFO  stopped
-`, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerMock.DebugLogger().InfoMessages()))
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"assigned %s","prefix":"[orchestrator][slice.retry.check]"}
+`, workerMock.DebugLogger().AllMessages())
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"assigned \"123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check\"","prefix":"[orchestrator][slice.retry.check]"}
+{"level":"info","message":"stopped","prefix":"[orchestrator][slice.retry.check]"}
+`, workerMock.DebugLogger().InfoMessages())
 
 	// Retry check task
-	wildcards.Assert(t, `
-[task][%s]INFO  started task
-[task][%s]DEBUG  lock acquired "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
-[task][%s]INFO  task succeeded (%s): slice scheduled for retry
-[task][%s]DEBUG  lock released "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
-`, strhelper.FilterLines(`^(\[task\]\[.+\/slice.retry.check\/)`, workerMock.DebugLogger().AllMessages()))
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","prefix":"[task][%s/slice.retry.check/%s]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check\"","prefix":"[task][%s/slice.retry.check/%s]"}
+{"level":"info","message":"task succeeded (%s): slice scheduled for retry","prefix":"[task][%s/slice.retry.check/%s]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check\"","prefix":"[task][%s/slice.retry.check/%s]"}
+`, workerMock.DebugLogger().AllMessages())
 
 	// Retried upload
-	wildcards.Assert(t, `
-[task][%s]WARN  task failed (%s): slice upload failed: %s some network error, upload will be retried after "0001-01-01T00:%s" %s
-`, strhelper.FilterLines(`^\[task\]\[.+\/slice.upload\/`, workerMock.DebugLogger().WarnMessages()))
+	log.AssertJSONMessages(t, `
+{"level":"warn","message":"task failed (%s): slice upload failed: %A some network error, upload will be retried after \"0001-01-01T00:%s\" %A","prefix":"[task][%s/slice.upload/%s]"}
+`, workerMock.DebugLogger().WarnMessages())
 
 	// Check etcd state
 	assertStateAfterRetry(t, client)

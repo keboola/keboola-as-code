@@ -108,7 +108,7 @@ WARN  Warning: config "branch:123/component:keboola.ex-aws-s3/config:456" not fo
 - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
 - input mapping "in.c-keboola-ex-aws-s3-456.contacts"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.AllMessagesTxt())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(object.Content, false)
@@ -202,7 +202,7 @@ WARN  Warning: config "branch:123/component:keboola.ex-aws-s3/config:456" not fo
 - referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
 - input mapping "in.c-keboola-ex-aws-s3-456.contacts"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.AllMessagesTxt())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(object.Content, false)

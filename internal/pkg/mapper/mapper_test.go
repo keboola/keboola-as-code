@@ -2,7 +2,6 @@ package mapper
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,10 +67,10 @@ func TestMappers_ForEachReverse_DontStopOnFailure(t *testing.T) {
 func TestMapper_LoadLocalFile_DefaultHandler(t *testing.T) {
 	t.Parallel()
 	expectedLogs := `
-INFO  Handler 1
-INFO  Handler 2
-INFO  Handler 3
-DEBUG  Loaded "file.txt"
+{"level":"info","message":"Handler 1"}
+{"level":"info","message":"Handler 2"}
+{"level":"info","message":"Handler 3"}
+{"level":"debug","message":"Loaded \"file.txt\""}
 `
 	invokeLoadLocalFile(
 		t,
@@ -84,8 +83,8 @@ DEBUG  Loaded "file.txt"
 func TestMapper_LoadLocalFile_CustomHandler(t *testing.T) {
 	t.Parallel()
 	expectedLogs := `
-INFO  Handler 1
-INFO  Handler 2
+{"level":"info","message":"Handler 1"}
+{"level":"info","message":"Handler 2"}
 `
 	invokeLoadLocalFile(
 		t,
@@ -151,5 +150,5 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	output, err := mapper.NewFileLoader(fs).ReadRawFile(ctx, input)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, output)
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	log.AssertJSONMessages(t, expectedLogs, logger.AllMessages())
 }

@@ -2,7 +2,6 @@ package env
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,12 +38,12 @@ func TestLoadDotEnv(t *testing.T) {
 	}, envs.ToMap())
 
 	expected := `
-DEBUG  Loaded ".env.local"
-INFO  Loaded env file ".env.local".
-DEBUG  Loaded ".env"
-INFO  Loaded env file ".env".
+{"level":"debug","message":"Loaded \".env.local\""}
+{"level":"info","message":"Loaded env file \".env.local\"."}
+{"level":"debug","message":"Loaded \".env\""}
+{"level":"info","message":"Loaded env file \".env\"."}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	log.AssertJSONMessages(t, expected, logger.AllMessages())
 }
 
 func TestLoadDotEnv_Invalid(t *testing.T) {
@@ -63,8 +62,8 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 	// Assert
 	assert.Equal(t, map[string]string{}, envs.ToMap())
 	expected := `
-DEBUG  Loaded ".env.local"
-WARN  cannot parse env file ".env.local": unexpected character "\n" in variable name near "invalid\n"
+{"level":"debug","message":"Loaded \".env.local\""}
+{"level":"warn","message":"cannot parse env file \".env.local\": unexpected character \"\\n\" in variable name near \"invalid\\n\""}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	log.AssertJSONMessages(t, expected, logger.AllMessages())
 }

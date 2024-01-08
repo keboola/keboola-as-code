@@ -3,7 +3,6 @@ package servicectx
 import (
 	"context"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 
@@ -88,17 +87,17 @@ func TestProcess_Add(t *testing.T) {
 
 	// Check logs
 	expected := `
-INFO  process unique id "<id>"
-INFO  exiting (operation failed)
-INFO  end
-INFO  end
-INFO  end
-INFO  onShutdown3
-INFO  onShutdown2
-INFO  onShutdown1
-INFO  exited
+{"level":"info","message":"process unique id \"<id>\""}
+{"level":"info","message":"exiting (operation failed)"}
+{"level":"info","message":"end"}
+{"level":"info","message":"end"}
+{"level":"info","message":"end"}
+{"level":"info","message":"onShutdown3"}
+{"level":"info","message":"onShutdown2"}
+{"level":"info","message":"onShutdown1"}
+{"level":"info","message":"exited"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	log.AssertJSONMessages(t, expected, logger.AllMessages())
 }
 
 func TestProcess_Shutdown(t *testing.T) {
@@ -160,15 +159,15 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	// Check logs
 	expected := `
-INFO  process unique id "<id>"
-INFO  exiting (some error)
-INFO  end1
-INFO  end2
-INFO  end3
-INFO  onShutdown3
-INFO  onShutdown2
-INFO  onShutdown1
-INFO  exited
+{"level":"info","message":"process unique id \"<id>\""}
+{"level":"info","message":"exiting (some error)"}
+{"level":"info","message":"end1"}
+{"level":"info","message":"end2"}
+{"level":"info","message":"end3"}
+{"level":"info","message":"onShutdown3"}
+{"level":"info","message":"onShutdown2"}
+{"level":"info","message":"onShutdown1"}
+{"level":"info","message":"exited"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	log.AssertJSONMessages(t, expected, logger.AllMessages())
 }

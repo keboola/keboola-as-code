@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.etcd.io/etcd/tests/v3/integration"
@@ -51,15 +50,15 @@ func TestResistantSession(t *testing.T) {
 	// Stop and check logs
 	cancel()
 	wg.Wait()
-	wildcards.Assert(t, `
-[etcd-session]INFO  creating etcd session
-[etcd-session]INFO  created etcd session | %s
-INFO  ----> new session
-[etcd-session]INFO  re-creating etcd session, backoff delay %s
-[etcd-session]INFO  created etcd session | %s
-INFO  ----> new session
-[etcd-session]INFO  closing etcd session
-[etcd-session]INFO  closed etcd session | %s
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"creating etcd session","prefix":"[etcd-session]"}
+{"level":"info","message":"created etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"----> new session"}
+{"level":"info","message":"re-creating etcd session, backoff delay %s","prefix":"[etcd-session]"}
+{"level":"info","message":"created etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"----> new session"}
+{"level":"info","message":"closing etcd session","prefix":"[etcd-session]"}
+{"level":"info","message":"closed etcd session | %s","prefix":"[etcd-session]"}
 `, logger.AllMessages())
 }
 

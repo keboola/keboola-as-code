@@ -2,7 +2,6 @@ package rename
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +58,7 @@ func TestRename(t *testing.T) {
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	assert.NoError(t, executor.invoke())
 	logsStr := logger.AllMessages()
-	assert.NotContains(t, logsStr, `WARN`)
+	assert.NotContains(t, logsStr, `warn`)
 	assert.True(t, fs.IsFile(ctx, `bar1/sub/file`))
 	assert.True(t, fs.IsFile(ctx, `bar2`))
 	assert.False(t, fs.Exists(ctx, `foo1/sub/file`))
@@ -68,14 +67,14 @@ func TestRename(t *testing.T) {
 
 	// Logs
 	expectedLog := `
-DEBUG  Starting renaming of the 2 paths.
-DEBUG  Copied "foo1" -> "bar1"
-DEBUG  Copied "foo2" -> "bar2"
-DEBUG  Removing old paths.
-DEBUG  Removed "foo1"
-DEBUG  Removed "foo2"
+{"level":"debug","message":"Starting renaming of the 2 paths."}
+{"level":"debug","message":"Copied \"foo1\" -> \"bar1\""}
+{"level":"debug","message":"Copied \"foo2\" -> \"bar2\""}
+{"level":"debug","message":"Removing old paths."}
+{"level":"debug","message":"Removed \"foo1\""}
+{"level":"debug","message":"Removed \"foo2\""}
 `
-	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logsStr)
+	log.AssertJSONMessages(t, expectedLog, logsStr)
 }
 
 func TestRenameFailedKeepOldState(t *testing.T) {
@@ -130,7 +129,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	err := executor.invoke()
 	assert.Error(t, err)
 	logsStr := logger.AllMessages()
-	assert.NotContains(t, logsStr, `WARN`)
+	assert.NotContains(t, logsStr, `warn`)
 	assert.Contains(t, err.Error(), `cannot copy "missing3" -> "missing4"`)
 	assert.False(t, fs.Exists(ctx, `bar1/sub/file`))
 	assert.False(t, fs.Exists(ctx, `bar1`))
@@ -142,15 +141,15 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// Logs
 	expectedLog := `
-DEBUG  Starting renaming of the 4 paths.
-DEBUG  Copied "foo1" -> "bar1"
-DEBUG  Copied "foo2" -> "bar2"
-DEBUG  Copied "foo5" -> "bar5"
-DEBUG  An error occurred, reverting rename.
-DEBUG  Removed "bar1"
-DEBUG  Removed "bar2"
-DEBUG  Removed "bar5"
-INFO  Error occurred, the rename operation was reverted.
+{"level":"debug","message":"Starting renaming of the 4 paths."}
+{"level":"debug","message":"Copied \"foo1\" -> \"bar1\""}
+{"level":"debug","message":"Copied \"foo2\" -> \"bar2\""}
+{"level":"debug","message":"Copied \"foo5\" -> \"bar5\""}
+{"level":"debug","message":"An error occurred, reverting rename."}
+{"level":"debug","message":"Removed \"bar1\""}
+{"level":"debug","message":"Removed \"bar2\""}
+{"level":"debug","message":"Removed \"bar5\""}
+{"level":"info","message":"Error occurred, the rename operation was reverted."}
 `
-	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logsStr)
+	log.AssertJSONMessages(t, expectedLog, logsStr)
 }

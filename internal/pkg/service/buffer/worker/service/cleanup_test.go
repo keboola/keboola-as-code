@@ -8,9 +8,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
@@ -22,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -119,26 +118,26 @@ func TestCleanup(t *testing.T) {
 	workerScp.Process().WaitForShutdown()
 
 	// Check logs
-	wildcards.Assert(t, `
-[task][_system_/tasks.cleanup/%s]INFO  started task
-[task][_system_/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
-[task][_system_/tasks.cleanup/%s]INFO  deleted "0" tasks
-[task][_system_/tasks.cleanup/%s]INFO  task succeeded (0s): deleted "0" tasks
-[task][_system_/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
-	`, strhelper.FilterLines(`^\[task\]\[_system_/`, workerMock.DebugLogger().AllMessages()))
-	wildcards.Assert(t, `
-[service][cleanup]INFO  ready
-[service][cleanup]INFO  started "1" receiver cleanup tasks
-	`, strhelper.FilterLines(`^\[service\]\[cleanup\]`, workerMock.DebugLogger().AllMessages()))
-	wildcards.Assert(t, `
-[task][1000/github/receiver.cleanup/%s]INFO  started task
-[task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/first/%s"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/first/%s"
-[task][1000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "0" records
-[task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
-[task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
-	`, strhelper.FilterLines(`^\[task\]\[1000/github/receiver.cleanup`, workerMock.DebugLogger().AllMessages()))
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","prefix":"[task][_system_/tasks.cleanup/%s]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","prefix":"[task][_system_/tasks.cleanup/%s]"}
+{"level":"info","message":"deleted \"0\" tasks","prefix":"[task][_system_/tasks.cleanup/%s]"}
+{"level":"info","message":"task succeeded (0s): deleted \"0\" tasks","prefix":"[task][_system_/tasks.cleanup/%s]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","prefix":"[task][_system_/tasks.cleanup/%s]"}
+`, workerMock.DebugLogger().AllMessages())
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"ready","prefix":"[service][cleanup]"}
+{"level":"info","message":"started \"1\" receiver cleanup tasks","prefix":"[service][cleanup]"}
+`, workerMock.DebugLogger().AllMessages())
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/github/receiver.cleanup\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted slice \"1000/github/first/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted file \"1000/github/first/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"deleted \"1\" files, \"1\" slices, \"0\" records","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"task succeeded (%s): receiver \"1000/github\" has been cleaned","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/github/receiver.cleanup\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+`, workerMock.DebugLogger().AllMessages())
 
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `

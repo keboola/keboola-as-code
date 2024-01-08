@@ -2,10 +2,7 @@ package rollback_test
 
 import (
 	"context"
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -71,17 +68,14 @@ func TestRollback(t *testing.T) {
 	main.Invoke(context.Background())
 
 	expected := `
-DEBUG  main 4
-DEBUG  lifo 2
-DEBUG  lifo 1
-DEBUG  parallel operation
-DEBUG  parallel operation
-DEBUG  main 2
-DEBUG  main 1
-WARN  rollback failed:
-- lifo 3 failed
-- parallel operation failed
-- main 3 failed
+{"level":"debug","message":"main 4"}
+{"level":"debug","message":"lifo 2"}
+{"level":"debug","message":"lifo 1"}
+{"level":"debug","message":"parallel operation"}
+{"level":"debug","message":"parallel operation"}
+{"level":"debug","message":"main 2"}
+{"level":"debug","message":"main 1"}
+{"level":"warn","message":"rollback failed:\n- lifo 3 failed\n- parallel operation failed\n- main 3 failed"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	log.AssertJSONMessages(t, expected, logger.AllMessages())
 }

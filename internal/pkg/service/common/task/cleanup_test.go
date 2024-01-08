@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -15,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -102,22 +102,22 @@ func TestCleanup(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// Check logs
-	wildcards.Assert(t, `
-[node1][task][_system_/tasks.cleanup/%s]INFO  started task
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "123/some.task/2006-01-02T08:04:05.000Z_abcdef"
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
-[node1][task][_system_/tasks.cleanup/%s]INFO  deleted "2" tasks
-[node1][task][_system_/tasks.cleanup/%s]INFO  task succeeded (%s): deleted "2" tasks
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
-[node1]INFO  exiting (bye bye)
-[node1][task]INFO  received shutdown request
-[node1][task][etcd-session]INFO  closing etcd session
-[node1][task][etcd-session]INFO  closed etcd session | %s
-[node1][task]INFO  shutdown done
-[node1][etcd-client]INFO  closing etcd connection
-[node1][etcd-client]INFO  closed etcd connection | %s
-[node1]INFO  exited
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"info","message":"deleted \"2\" tasks","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
+{"level":"info","message":"exiting (bye bye)","prefix":"[node1]"}
+{"level":"info","message":"received shutdown request","prefix":"[node1][task]"}
+{"level":"info","message":"closing etcd session","prefix":"[node1][task][etcd-session]"}
+{"level":"info","message":"closed etcd session | %s","prefix":"[node1][task][etcd-session]"}
+{"level":"info","message":"shutdown done","prefix":"[node1][task]"}
+{"level":"info","message":"closing etcd connection","prefix":"[node1][etcd-client]"}
+{"level":"info","message":"closed etcd connection | %s","prefix":"[node1][etcd-client]"}
+{"level":"info","message":"exited","prefix":"[node1]"}
 `, d.DebugLogger().AllMessages())
 
 	// Check keys

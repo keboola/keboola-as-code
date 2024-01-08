@@ -2,11 +2,9 @@ package dependencies
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -54,10 +52,10 @@ func TestLocker_WithEtcd_TimeToLiveExpired(t *testing.T) {
 
 	// Check logged messages
 	expected := `
-INFO  acquired etcd lock "projectId=456/%s"
-INFO  etcd lock "projectId=456" is used
-INFO  acquired etcd lock "projectId=456/%s"
-INFO  released etcd lock "projectId=456"
+{"level":"info","message":"acquired etcd lock \"projectId=456/%s\""}
+{"level":"info","message":"etcd lock \"projectId=456\" is used"}
+{"level":"info","message":"acquired etcd lock \"projectId=456/%s\""}
+{"level":"info","message":"released etcd lock \"projectId=456\""}
 `
-	wildcards.Assert(t, strings.TrimLeft(expected, "\n"), d.logger.AllMessages())
+	log.AssertJSONMessages(t, expected, d.logger.AllMessages())
 }

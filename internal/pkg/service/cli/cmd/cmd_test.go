@@ -186,7 +186,7 @@ We take privacy seriously, and do not perform any automated log file collection.
 
 Thank you kindly!
 `
-	assert.Equal(t, expected, logger.InfoMessages())
+	assert.Equal(t, expected, logger.AllMessagesTxt())
 }
 
 func TestGetLogFileTempFile(t *testing.T) {

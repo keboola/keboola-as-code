@@ -2,7 +2,6 @@
 package log
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ func TestToDebugWriter(t *testing.T) {
 	writer := logger.DebugWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "DEBUG  test\n", logger.AllMessages())
+	AssertJSONMessages(t, `{"level":"debug","message":"test"}`, logger.AllMessages())
 }
 
 func TestToInfoWriter(t *testing.T) {
@@ -23,7 +22,7 @@ func TestToInfoWriter(t *testing.T) {
 	writer := logger.InfoWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "INFO  test\n", logger.AllMessages())
+	AssertJSONMessages(t, `{"level":"info","message":"test"}`, logger.AllMessages())
 }
 
 func TestToWarnWriter(t *testing.T) {
@@ -32,7 +31,7 @@ func TestToWarnWriter(t *testing.T) {
 	writer := logger.WarnWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "WARN  test\n", logger.AllMessages())
+	AssertJSONMessages(t, `{"level":"warn","message":"test"}`, logger.AllMessages())
 }
 
 func TestToErrorWriter(t *testing.T) {
@@ -41,7 +40,7 @@ func TestToErrorWriter(t *testing.T) {
 	writer := logger.ErrorWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "ERROR  test\n", logger.AllMessages())
+	AssertJSONMessages(t, `{"level":"error","message":"test"}`, logger.AllMessages())
 }
 
 func TestWriteStringIndent(t *testing.T) {
@@ -52,9 +51,9 @@ func TestWriteStringIndent(t *testing.T) {
 	writer.WriteStringIndent(2, "test2")
 	writer.WriteStringIndent(3, "test3")
 	expected := `
-INFO    test1
-INFO      test2
-INFO        test3
+{"level":"info","message":"  test1"}
+{"level":"info","message":"    test2"}
+{"level":"info","message":"      test3"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	AssertJSONMessages(t, expected, logger.AllMessages())
 }

@@ -2,7 +2,6 @@ package version
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -27,7 +26,7 @@ func TestCheckIfLatestVersionEqual(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(context.Background(), `v1.2.3`)
 	assert.Nil(t, err)
-	assert.NotContains(t, logs.AllMessages(), `WARN`)
+	assert.NotContains(t, logs.AllMessages(), `warn`)
 }
 
 func TestCheckIfLatestVersionGreater(t *testing.T) {
@@ -35,7 +34,7 @@ func TestCheckIfLatestVersionGreater(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(context.Background(), `v1.2.5`)
 	assert.Nil(t, err)
-	assert.NotContains(t, logs.AllMessages(), `WARN`)
+	assert.NotContains(t, logs.AllMessages(), `warn`)
 }
 
 func TestCheckIfLatestVersionLess(t *testing.T) {
@@ -44,15 +43,15 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	err := c.CheckIfLatest(context.Background(), `v1.2.2`)
 	assert.Nil(t, err)
 	expected := `
-WARN  *******************************************************
-WARN  WARNING: A new version "v1.2.3" is available.
-WARN  You are currently using version "1.2.2".
-WARN  Please update to get the latest features and bug fixes.
-WARN  Read more: https://github.com/keboola/keboola-as-code/releases
-WARN  *******************************************************
-WARN
+{"level":"warn","message":"*******************************************************"}
+{"level":"warn","message":"WARNING: A new version \"v1.2.3\" is available."}
+{"level":"warn","message":"You are currently using version \"1.2.2\"."}
+{"level":"warn","message":"Please update to get the latest features and bug fixes."}
+{"level":"warn","message":"Read more: https://github.com/keboola/keboola-as-code/releases"}
+{"level":"warn","message":"*******************************************************"}
+{"level":"warn","message":""}
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(logs.WarnMessages()))
+	log.AssertJSONMessages(t, expected, logs.WarnMessages())
 }
 
 func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
