@@ -51,14 +51,14 @@ func TestResistantSession(t *testing.T) {
 	cancel()
 	wg.Wait()
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"creating etcd session","prefix":"[etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"creating etcd session","component":"etcd-session"}
+{"level":"info","message":"created etcd session | %s","component":"etcd-session"}
 {"level":"info","message":"----> new session"}
-{"level":"info","message":"re-creating etcd session, backoff delay %s","prefix":"[etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"re-creating etcd session, backoff delay %s","component":"etcd-session"}
+{"level":"info","message":"created etcd session | %s","component":"etcd-session"}
 {"level":"info","message":"----> new session"}
-{"level":"info","message":"closing etcd session","prefix":"[etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"closing etcd session","component":"etcd-session"}
+{"level":"info","message":"closed etcd session | %s","component":"etcd-session"}
 `, logger.AllMessages())
 }
 

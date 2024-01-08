@@ -253,15 +253,15 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/github/receiver.cleanup\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"debug","message":"deleted slice \"1000/github/first/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"debug","message":"deleted file \"1000/github/first/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"debug","message":"deleted slice \"1000/github/third/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"debug","message":"deleted file \"1000/github/third/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"info","message":"deleted \"2\" files, \"2\" slices, \"2\" records","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"info","message":"task succeeded (%s): receiver \"1000/github\" has been cleaned","prefix":"[task][1000/github/receiver.cleanup/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/github/receiver.cleanup\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"started task","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/github/receiver.cleanup\"","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted slice \"1000/github/first/%s\"","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted file \"1000/github/first/%s\"","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted slice \"1000/github/third/%s\"","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted file \"1000/github/third/%s\"","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"deleted \"2\" files, \"2\" slices, \"2\" records","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"task succeeded (%s): receiver \"1000/github\" has been cleaned","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/github/receiver.cleanup\"","component":"task","prefix":"[1000/github/receiver.cleanup/%s]"}
 `, mock.DebugLogger().AllMessages())
 
 	// Check keys
