@@ -3,8 +3,6 @@ package log
 import (
 	"context"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDebugLogger_All(t *testing.T) {
@@ -14,7 +12,14 @@ func TestNewDebugLogger_All(t *testing.T) {
 	logger.InfoCtx(context.Background(), "info")
 	logger.WarnCtx(context.Background(), "warn")
 	logger.ErrorCtx(context.Background(), "error")
-	assert.Equal(t, "DEBUG  debug\nINFO  info\nWARN  warn\nERROR  error\n", logger.AllMessages())
+
+	expected := `
+{"level":"debug","message":"debug"}
+{"level":"info","message":"info"}
+{"level":"warn","message":"warn"}
+{"level":"error","message":"error"}
+`
+	AssertJSONMessages(t, expected, logger.AllMessages())
 }
 
 func TestNewDebugLogger_Debug(t *testing.T) {
@@ -24,7 +29,9 @@ func TestNewDebugLogger_Debug(t *testing.T) {
 	logger.InfoCtx(context.Background(), "info")
 	logger.WarnCtx(context.Background(), "warn")
 	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "DEBUG  debug\n", logger.DebugMessages())
+
+	expected := `{"level":"debug","message":"debug"}`
+	AssertJSONMessages(t, expected, logger.DebugMessages())
 }
 
 func TestNewDebugLogger_Info(t *testing.T) {
@@ -34,7 +41,9 @@ func TestNewDebugLogger_Info(t *testing.T) {
 	logger.InfoCtx(context.Background(), "info")
 	logger.WarnCtx(context.Background(), "warn")
 	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "INFO  info\n", logger.InfoMessages())
+
+	expected := `{"level":"info","message":"info"}`
+	AssertJSONMessages(t, expected, logger.InfoMessages())
 }
 
 func TestNewDebugLogger_Warn(t *testing.T) {
@@ -44,7 +53,9 @@ func TestNewDebugLogger_Warn(t *testing.T) {
 	logger.InfoCtx(context.Background(), "info")
 	logger.WarnCtx(context.Background(), "warn")
 	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "WARN  warn\n", logger.WarnMessages())
+
+	expected := `{"level":"warn","message":"warn"}`
+	AssertJSONMessages(t, expected, logger.WarnMessages())
 }
 
 func TestNewDebugLogger_WarnOrError(t *testing.T) {
@@ -54,7 +65,12 @@ func TestNewDebugLogger_WarnOrError(t *testing.T) {
 	logger.InfoCtx(context.Background(), "info")
 	logger.WarnCtx(context.Background(), "warn")
 	logger.ErrorCtx(context.Background(), "error")
-	assert.Equal(t, "WARN  warn\nERROR  error\n", logger.WarnAndErrorMessages())
+
+	expected := `
+{"level":"warn","message":"warn"}
+{"level":"error","message":"error"}
+`
+	AssertJSONMessages(t, expected, logger.WarnAndErrorMessages())
 }
 
 func TestNewDebugLogger_Error(t *testing.T) {
@@ -64,5 +80,7 @@ func TestNewDebugLogger_Error(t *testing.T) {
 	logger.InfoCtx(context.Background(), "info")
 	logger.WarnCtx(context.Background(), "warn")
 	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "ERROR  error\n", logger.ErrorMessages())
+
+	expected := `{"level":"error","message":"error"}`
+	AssertJSONMessages(t, expected, logger.ErrorMessages())
 }

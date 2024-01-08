@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -35,7 +36,7 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 	rowRecipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.Manifest(), rowState.Local)
 	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
 	assert.NoError(t, err)
-	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logger.AllMessages())
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"branch/config/row/code.py\""}`, logger.AllMessages())
 
 	// Structs are set
 	assert.Equal(t, &model.SharedCodeConfig{

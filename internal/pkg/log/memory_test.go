@@ -3,10 +3,7 @@ package log
 
 import (
 	"context"
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMemoryLogger(t *testing.T) {
@@ -23,10 +20,10 @@ func TestMemoryLogger(t *testing.T) {
 	mem.CopyLogsTo(target)
 
 	expected := `
-DEBUG  Debug message.
-INFO  Info message.
-DEBUG  Debug message.  {"key1": "value1", "key2": "value2"}
-INFO  Info message.  {"key1": "value1", "key2": "value2"}
+{"level":"debug","message":"Debug message."}
+{"level":"info","message":"Info message."}
+{"level":"debug","message":"Debug message.","key1": "value1", "key2": "value2"}
+{"level":"info","message":"Info message.","key1": "value1", "key2": "value2"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), target.AllMessages())
+	AssertJSONMessages(t, expected, target.AllMessages())
 }

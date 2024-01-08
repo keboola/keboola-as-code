@@ -2,10 +2,14 @@
 package log
 
 import (
+	"bufio"
 	"io"
+	"strings"
 
 	"go.uber.org/zap/zapcore"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
@@ -109,20 +113,46 @@ func (l *debugLogger) ErrorMessages() string {
 	return l.error.String()
 }
 
+// AllMessagesTxt returns all error messages as text only (without fields) and Truncate all messages.
+// Panics on a non-json message.
+func (l *debugLogger) AllMessagesTxt() string {
+	_ = l.Sync()
+
+	allMessages := l.all.String()
+	scanner := bufio.NewScanner(strings.NewReader(strings.Trim(allMessages, "\n")))
+
+	output := ""
+	for scanner.Scan() {
+		message := scanner.Text()
+		var messageData map[string]any
+		err := json.DecodeString(message, &messageData)
+		if err != nil {
+			panic(err)
+		}
+
+		message, ok := messageData["message"].(string)
+		if !ok {
+			panic(errors.New("log message is a json but does not have a \"message\" field"))
+		}
+
+		level, ok := messageData["level"].(string)
+		if !ok {
+			panic(errors.New("log message is a json but does not have a \"level\" field"))
+		}
+
+		output += strings.ToUpper(level) + "  " + message + "\n"
+	}
+
+	return output
+}
+
 func (l *debugLogger) allWriters() []*ioutil.AtomicWriter {
 	return []*ioutil.AtomicWriter{l.all, l.debug, l.info, l.warn, l.warnOrError, l.error}
 }
 
 func debugCore(writer *ioutil.AtomicWriter, level zapcore.LevelEnabler) zapcore.Core {
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "  ",
-	}
 	return zapcore.NewCore(
-		newPrefixEncoder(zapcore.NewConsoleEncoder(encoderConfig)),
+		newJSONEncoder(),
 		writer,
 		level,
 	)

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/tests/v3/integration"
 	"google.golang.org/grpc/connectivity"
@@ -73,7 +72,7 @@ func TestWatchConsumer(t *testing.T) {
 	assert.NoError(t, <-init)
 
 	// Expect created event
-	wildcards.Assert(t, "INFO  OnCreated: created (rev %d)", logger.AllMessages())
+	log.AssertJSONMessages(t, `{"level":"info","message":"OnCreated: created (rev 1)"}`, logger.AllMessages())
 	logger.Truncate()
 
 	// Put some key
@@ -83,8 +82,8 @@ func TestWatchConsumer(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
 	}, 5*time.Second, 10*time.Millisecond)
-	wildcards.Assert(t, `
-INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"ForEach: restart=false, events(1): create \"my/prefix/key1\""}
 `, logger.AllMessages())
 	logger.Truncate()
 
@@ -113,11 +112,11 @@ INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "my/prefix/key") == 3
 	}, 5*time.Second, 10*time.Millisecond)
-	wildcards.Assert(t, `
-WARN  watch error: etcdserver: mvcc: required revision has been compacted
-INFO  restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
-INFO  OnRestarted: backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
-INFO  ForEach: restart=true, events(3): create "my/prefix/key1", create "my/prefix/key2", create "my/prefix/key3"
+	log.AssertJSONMessages(t, `
+{"level":"warn","message":"watch error: etcdserver: mvcc: required revision has been compacted"}
+{"level":"info","message":"restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted"}
+{"level":"info","message":"OnRestarted: backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted"}
+{"level":"info","message":"ForEach: restart=true, events(3): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\""}
 `, logger.AllMessages())
 	logger.Truncate()
 
@@ -126,8 +125,8 @@ INFO  ForEach: restart=true, events(3): create "my/prefix/key1", create "my/pref
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
 	}, 5*time.Second, 10*time.Millisecond)
-	wildcards.Assert(t, `
-INFO  ForEach: restart=false, events(1): create "my/prefix/key4"
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"ForEach: restart=false, events(1): create \"my/prefix/key4\""}
 `, logger.AllMessages())
 	logger.Truncate()
 

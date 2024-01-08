@@ -59,7 +59,7 @@ WARN  Warning:
 - Missing shared code config "branch:123/component:keboola.shared-code/config:missing":
   - Referenced from config "branch:123/component:keboola.python-transformation-v2/config:001".
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 
 	// Link to shared code is not set
 	assert.Nil(t, transformation.Remote.Transformation.LinkToSharedCode)
@@ -92,7 +92,7 @@ WARN  Warning:
 - Missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
   - Referenced from config "branch:123/component:keboola.python-transformation-v2/config:001".
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 
 	// Link to shared code is set, but without invalid row
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey}, transformation.Remote.Transformation.LinkToSharedCode)

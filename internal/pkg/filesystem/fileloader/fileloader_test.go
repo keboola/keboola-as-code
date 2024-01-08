@@ -87,7 +87,7 @@ func (*testCases) TestFileLoader_ReadRawFile(t *testing.T, fs filesystem.Fs, log
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, "foo\n", file.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadRawFile_NotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -110,7 +110,7 @@ func (*testCases) TestFileLoader_ReadJsonFile(t *testing.T, fs filesystem.Fs, lo
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadJsonFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -125,7 +125,7 @@ func (*testCases) TestFileLoader_ReadJsonFileTo(t *testing.T, fs filesystem.Fs, 
 	assert.Equal(t, `{"foo": "bar"}`, file.Content)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadJsonFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -157,7 +157,7 @@ func (*testCases) TestFileLoader_ReadJsonnetFile(t *testing.T, fs filesystem.Fs,
 	assert.NotNil(t, file)
 	jsonnetCode := jsonnet.FormatAst(file.Content)
 	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetCode)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadJsonnetFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -172,7 +172,7 @@ func (*testCases) TestFileLoader_ReadJsonnetFileTo(t *testing.T, fs filesystem.F
 	assert.NotEmpty(t, file.Content)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadJsonnetFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -223,7 +223,7 @@ func (*testCases) TestFileLoader_ReadJSONFieldsTo(t *testing.T, fs filesystem.Fs
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `foo`, target.Field1)
 	assert.Equal(t, `bar`, target.Field2)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadJsonMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -240,7 +240,7 @@ func (*testCases) TestFileLoader_ReadJsonMapTo(t *testing.T, fs filesystem.Fs, l
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadYamlFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -254,7 +254,7 @@ func (*testCases) TestFileLoader_ReadYamlFile(t *testing.T, fs filesystem.Fs, lo
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `DEBUG  Loaded "file.yaml"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.yaml\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadYamlFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -269,7 +269,7 @@ func (*testCases) TestFileLoader_ReadYamlFileTo(t *testing.T, fs filesystem.Fs, 
 	assert.NoError(t, err)
 	assert.Equal(t, `foo: bar`, file.Content)
 	assert.Equal(t, `bar`, target.FooField)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadYamlFile_Invalid(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
@@ -303,7 +303,7 @@ func (*testCases) TestFileLoader_ReadYamlFieldsTo(t *testing.T, fs filesystem.Fs
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `foo`, target.Field1)
 	assert.Equal(t, `bar`, target.Field2)
-	assert.Equal(t, `DEBUG  Loaded "file.yaml"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.yaml\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadYamlMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -320,7 +320,7 @@ func (*testCases) TestFileLoader_ReadYamlMapTo(t *testing.T, fs filesystem.Fs, l
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
-	assert.Equal(t, `DEBUG  Loaded "file.yaml"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.yaml\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -337,7 +337,7 @@ func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.F
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, file.Content)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, target.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	log.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`, logger.AllMessages())
 }
 
 func (*testCases) TestFileLoader_ReadSubDirs(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {

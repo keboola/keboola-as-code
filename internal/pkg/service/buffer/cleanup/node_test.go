@@ -7,9 +7,9 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -22,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 func TestCleanup(t *testing.T) {
@@ -253,17 +252,17 @@ func TestCleanup(t *testing.T) {
 	workerScp.Process().WaitForShutdown()
 
 	// Check logs
-	wildcards.Assert(t, `
-[task][1000/github/receiver.cleanup/%s]INFO  started task
-[task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/first/%s"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/first/%s"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/third/%s"
-[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/third/%s"
-[task][1000/github/receiver.cleanup/%s]INFO  deleted "2" files, "2" slices, "2" records
-[task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
-[task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
-`, strhelper.FilterLines(`^\[task\]\[1000/`, mock.DebugLogger().AllMessages()))
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/github/receiver.cleanup\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted slice \"1000/github/first/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted file \"1000/github/first/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted slice \"1000/github/third/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"deleted file \"1000/github/third/%s\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"deleted \"2\" files, \"2\" slices, \"2\" records","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"info","message":"task succeeded (%s): receiver \"1000/github\" has been cleaned","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/github/receiver.cleanup\"","prefix":"[task][1000/github/receiver.cleanup/%s]"}
+`, mock.DebugLogger().AllMessages())
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `

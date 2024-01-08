@@ -334,7 +334,7 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 	content := orderedmap.New()
 	content.Set(`parameters`, orderedmap.New())
 	assert.NoError(t, ValidateObjects(context.Background(), logger, registry))
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 }
 
 func getTestSchema() []byte {

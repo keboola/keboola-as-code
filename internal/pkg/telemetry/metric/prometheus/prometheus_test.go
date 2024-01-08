@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -84,13 +85,14 @@ target_info{service_name="my-service"} 1
 	d.Process().WaitForShutdown()
 
 	// Check logs
-	wildcards.Assert(t, `
-[metrics]INFO  HTTP server listening on "localhost:%d/metrics"
-INFO  exiting (bye bye)
-[metrics]INFO  shutting down HTTP server at "localhost:%d"
-[metrics]INFO  HTTP server shutdown finished
-INFO  exited
-`, d.DebugLogger().AllMessages())
+	expected := `
+{"level":"info","message":"HTTP server listening on \"localhost:%d/metrics\"","prefix":"[metrics]"}
+{"level":"info","message":"exiting (bye bye)"}
+{"level":"info","message":"shutting down HTTP server at \"localhost:%d\"","prefix":"[metrics]"}
+{"level":"info","message":"HTTP server shutdown finished","prefix":"[metrics]"}
+{"level":"info","message":"exited"}
+`
+	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())
 }
 
 func getBody(t *testing.T, ctx context.Context, url string) string {
