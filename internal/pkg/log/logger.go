@@ -40,6 +40,7 @@ func (l *zapLogger) WithComponent(component string) Logger {
 	}
 	clone := loggerFromZapCore(l.core)
 	clone.component = component
+	clone.prefix = l.prefix
 	return clone
 }
 
@@ -47,6 +48,7 @@ func (l *zapLogger) WithComponent(component string) Logger {
 func (l *zapLogger) AddPrefix(prefix string) Logger {
 	prefix = l.prefix + prefix
 	clone := l.With(PrefixKey, prefix).(*zapLogger)
+	clone.component = l.component
 	clone.prefix = prefix
 	return clone
 }
