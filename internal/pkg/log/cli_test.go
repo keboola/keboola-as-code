@@ -189,3 +189,43 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 	assert.Equal(t, expectedOut, stdout.String())
 	assert.Equal(t, expectedErr, stderr.String())
 }
+
+func TestCliLogger_WithComponent(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "log-file.txt")
+	file, err := NewLogFile(filePath)
+	assert.NoError(t, err)
+
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
+	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, true)
+
+	logger = logger.WithComponent("component").WithComponent("subcomponent")
+
+	ctx := context.Background()
+
+	logger.Debug(ctx, "Debug msg")
+	logger.Info(ctx, "Info msg")
+	logger.Warn(ctx, "Warn msg")
+	logger.Error(ctx, "Error msg")
+	assert.NoError(t, file.File().Close())
+
+	// Assert, all levels logged with the level prefix
+	expected := `
+{"level":"debug","time":"%s","message":"Debug msg","component":"component.subcomponent"}
+{"level":"info","time":"%s","message":"Info msg","component":"component.subcomponent"}
+{"level":"warn","time":"%s","message":"Warn msg","component":"component.subcomponent"}
+{"level":"error","time":"%s","message":"Error msg","component":"component.subcomponent"}
+`
+
+	content, err := os.ReadFile(filePath)
+	assert.NoError(t, err)
+	wildcards.Assert(t, expected, string(content))
+
+	expectedOut := "DEBUG\tDebug msg\nINFO\tInfo msg\n"
+	expectedErr := "WARN\tWarn msg\nERROR\tError msg\n"
+	assert.Equal(t, expectedOut, stdout.String())
+	assert.Equal(t, expectedErr, stderr.String())
+}

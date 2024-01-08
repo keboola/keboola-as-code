@@ -17,6 +17,7 @@ const (
 type Logger interface {
 	contextLogger
 	toWriter
+	withFields
 	withPrefix
 }
 
@@ -81,6 +82,11 @@ type toWriter interface {
 	InfoWriter() *LevelWriter
 	WarnWriter() *LevelWriter
 	ErrorWriter() *LevelWriter
+}
+
+type withFields interface {
+	With(args ...any) Logger
+	WithComponent(component string) Logger
 }
 
 type withPrefix interface {
