@@ -5,25 +5,25 @@
 // This package extends common dependencies from [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies].
 //
 // Following dependencies containers are implemented:
-//   - [ServiceScope] contains common part of dependencies for [WorkerScope] and [APIScope].
-//   - [WorkerScope] contains long-lived dependencies that exist during the entire run of a Worker node.
+//   - [ServiceScope] contains common part of dependencies for all scopes.
 //   - [APIScope] contains long-lived dependencies that exist during the entire run of an API node.
 //   - [PublicRequestScope] contains short-lived dependencies for a public request without authentication.
 //   - [ProjectRequestScope] contains short-lived dependencies for a request with authentication.
+//   - [TableSinkScope] contains long-lived dependencies for table sink code.
 //
 // Dependency containers creation:
-//   - [ServiceScope] is created during the creation of [WorkerScope] or [APIScope].
-//   - [WorkerScope] is created at startup in the Worker main.go.
+//   - [ServiceScope] is created during the creation of [APIScope] or [TableSinkScope].
 //   - [APIScope] is created at startup in the API main.go.
 //   - [PublicRequestScope] is created for each HTTP request by Muxer.Use callback in main.go.
 //   - [ProjectRequestScope] is created for each authenticated HTTP request in the service.APIKeyAuth method.
+//   - [TableSinkScope] .....
 //
 // The package also provides mocked dependency implementations for tests:
 //   - [NewMockedServiceScope]
-//   - [NewMockedWorkerScope]
 //   - [NewMockedAPIScope]
 //   - [NewMockedPublicRequestScope]
 //   - [NewMockedProjectRequestScope]
+//   - [NewMockedTableSinkScope]
 //
 // Dependencies injection to service endpoints:
 //   - Each service endpoint method gets [PublicRequestScope] as a parameter.
@@ -34,9 +34,9 @@ package dependencies
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
@@ -45,29 +45,11 @@ type ServiceScope interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
-	ServiceConfig() config.ServiceConfig
-	Schema() *schema.Schema
-	Store() *store.Store
-	FileManager() *file.Manager
-	StatisticsRepository() *statistics.Repository
-	StatisticsL1Cache() *statistics.L1CacheProvider
-	StatisticsL2Cache() *statistics.L2CacheProvider
-}
-
-type WorkerScope interface {
-	ServiceScope
-	dependencies.DistributionScope
-	dependencies.OrchestratorScope
-	WorkerConfig() config.WorkerConfig
-	WatcherWorkerNode() *watcher.WorkerNode
-	EventSender() *event.Sender
+	Config() config.Config
 }
 
 type APIScope interface {
 	ServiceScope
-	APIConfig() config.APIConfig
-	StatsCollector() *statistics.Collector
-	WatcherAPINode() *watcher.APINode
 }
 
 type PublicRequestScope interface {
@@ -78,6 +60,15 @@ type PublicRequestScope interface {
 type ProjectRequestScope interface {
 	PublicRequestScope
 	dependencies.ProjectScope
-	TokenManager() *token.Manager
-	TableManager() *table.Manager
+}
+
+type DefinitionScope interface {
+	ServiceScope
+	DefinitionRepository() *definitionRepo.Repository
+}
+
+type TableSinkScope interface {
+	DefinitionScope
+	StatisticsRepository() *statsRepo.Repository
+	StorageRepository() *storageRepo.Repository
 }
