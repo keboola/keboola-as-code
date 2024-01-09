@@ -12,9 +12,7 @@ import (
 func TestSoftDeletable(t *testing.T) {
 	t.Parallel()
 
-	var v SoftDeletableInterface
-
-	v = &SoftDeletable{}
+	var v SoftDeletableInterface = &SoftDeletable{}
 	assert.False(t, v.IsDeleted())
 	assert.False(t, v.WasDeletedWithParent())
 	assert.Nil(t, v.GetDeletedAt())
