@@ -306,7 +306,7 @@ func TestIteratorT_Revision(t *testing.T) {
 		t,
 		prefix.
 			GetAll(client, iterator.WithRev(revision)).Do(ctx).
-			ForEachKV(func(kv op.KeyValueT[obj], _ *iterator.Header) error {
+			ForEachKV(func(kv *op.KeyValueT[obj], _ *iterator.Header) error {
 				actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 				return nil
 			}),
@@ -405,7 +405,7 @@ func TestIteratorT_WithAllKVsTo(t *testing.T) {
 
 	prefix := generateKVsT(t, 5, ctx, client)
 
-	var target []*op.KeyValueT[obj]
+	var target op.KeyValuesT[obj]
 	require.NoError(t, prefix.GetAll(client).WithAllKVsTo(&target).Do(ctx).Err())
 	assert.Len(t, target, 5)
 }

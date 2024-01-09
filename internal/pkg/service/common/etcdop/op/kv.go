@@ -7,7 +7,7 @@ import (
 // KeyValue - operation result.
 type KeyValue = mvccpb.KeyValue
 
-type KeyValuesT[T any] []KeyValueT[T]
+type KeyValuesT[T any] []*KeyValueT[T]
 
 // KeyValueT - typed operation result.
 type KeyValueT[T any] struct {

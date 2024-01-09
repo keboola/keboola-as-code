@@ -86,7 +86,7 @@ func (v DefinitionT[T]) WithAllTo(slice *[]T) *ForEachT[T] {
 }
 
 // WithAllKVsTo method converts iterator to for each operation definition, so it can be part of a transaction.
-func (v DefinitionT[T]) WithAllKVsTo(slice *[]*op.KeyValueT[T]) *ForEachT[T] {
+func (v DefinitionT[T]) WithAllKVsTo(slice *op.KeyValuesT[T]) *ForEachT[T] {
 	return v.
 		ForEachKV(func(kv *op.KeyValueT[T], header *Header) error {
 			*slice = append(*slice, kv)
@@ -206,7 +206,7 @@ Loop:
 
 // Value returns the current value.
 // It must be called after Next method.
-func (v *IteratorT[T]) Value() op.KeyValueT[T] {
+func (v *IteratorT[T]) Value() *op.KeyValueT[T] {
 	if v.page == 0 {
 		panic(errors.New("unexpected Value() call: Next() must be called first"))
 	}
@@ -257,7 +257,7 @@ func (v *IteratorT[T]) AllKVsTo(out *op.KeyValuesT[T]) (err error) {
 }
 
 // ForEachKV iterates the KVs using a callback.
-func (v *IteratorT[T]) ForEachKV(fn func(value op.KeyValueT[T], header *Header) error) (err error) {
+func (v *IteratorT[T]) ForEachKV(fn func(value *op.KeyValueT[T], header *Header) error) (err error) {
 	for v.Next() {
 		if err = fn(v.Value(), v.Header()); err != nil {
 			return err
