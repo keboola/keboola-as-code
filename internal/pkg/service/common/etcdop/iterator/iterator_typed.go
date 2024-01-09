@@ -12,11 +12,13 @@ import (
 
 type DefinitionT[T any] struct {
 	config
+	filters []func(*op.KeyValueT[T]) bool // true means accepting the value
 }
 
 type IteratorT[T any] struct {
-	*Iterator                    // raw iterator, without T
-	currentValue op.KeyValueT[T] // currentValue in the page, match currentIndex
+	*Iterator                                  // raw iterator, without T
+	filters      []func(*op.KeyValueT[T]) bool // true means accepting the value
+	currentValue *op.KeyValueT[T]              // currentValue in the page, match indexOnPage
 }
 
 // ForEachT definition, it can be part of a transaction.
@@ -32,7 +34,7 @@ func NewTyped[R any](client etcd.KV, serde *serde.Serde, start string, opts ...O
 
 // Do converts iterator definition to the iterator.
 func (v DefinitionT[T]) Do(ctx context.Context, opts ...op.Option) *IteratorT[T] {
-	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, opts...)}
+	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, opts...), filters: v.filters}
 	out.config.serde = v.serde
 	return out
 }
@@ -44,6 +46,28 @@ func (v DefinitionT[T]) ForEach(fn func(value T, header *Header) error) *ForEach
 
 // WithResultTo method converts iterator to for each operation definition, so it can be part of a transaction.
 func (v DefinitionT[T]) WithResultTo(slice *[]T) *ForEachOpT[T] {
+
+// WithKVFilter adds KV filters. All filters must return true for the value to be accepted.
+func (v DefinitionT[T]) WithKVFilter(fns ...func(kv *op.KeyValueT[T]) bool) DefinitionT[T] {
+	clone := v
+	clone.filters = nil
+	clone.filters = append(clone.filters, v.filters...)
+	clone.filters = append(clone.filters, fns...)
+	return clone
+}
+
+// WithFilter adds value filters. All filters must return true for the value to be accepted.
+func (v DefinitionT[T]) WithFilter(fns ...func(v T) bool) DefinitionT[T] {
+	clone := v
+	clone.filters = nil
+	clone.filters = append(clone.filters, v.filters...)
+	for _, fn := range fns {
+		clone.filters = append(clone.filters, func(kv *op.KeyValueT[T]) bool {
+			return fn(kv.Value)
+		})
+	}
+	return clone
+}
 	return v.
 		ForEachOp(func(value T, header *Header) error {
 			*slice = append(*slice, value)
@@ -136,16 +160,29 @@ func (v *IteratorT[T]) OnPage(fns ...onPageFn) *IteratorT[T] {
 // Next returns true if there is a next value.
 // False is returned if there is no next value or an error occurred.
 func (v *IteratorT[T]) Next() bool {
-	if !v.Iterator.Next() {
-		return false
-	}
+Loop:
+	for {
+		// Is there next item?
+		if !v.Iterator.Next() {
+			return false
+		}
 
-	// Decode item
-	v.currentValue = op.KeyValueT[T]{Kv: v.values[v.currentIndex]}
-	if err := v.config.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
-		v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.currentIndex, err)
+		// Decode item
+		v.currentValue = &op.KeyValueT[T]{Kv: v.values[v.indexOnPage]}
+		if err := v.config.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
+			v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.indexOnPage, err)
+			return false
+		}
+
+		// Apply filters
+		for _, filter := range v.filters {
+			if !filter(v.currentValue) {
+				continue Loop
+			}
+		}
+
+		return true
 	}
-	return v.err == nil
 }
 
 // Value returns the current value.

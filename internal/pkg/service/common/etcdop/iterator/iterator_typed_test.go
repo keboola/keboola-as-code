@@ -226,7 +226,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
 
 		// Test iteration methods
 		logs.Reset()
-		actual := iterateAllT(t, prefix.GetAll(client, ops...), ctx)
+		actual := iterateAllT(t, ctx, prefix.GetAll(client, ops...))
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
@@ -387,7 +387,61 @@ func TestIteratorT_WithResultTo(t *testing.T) {
 	}, target)
 }
 
-func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context) []resultT {
+func TestIteratorT_WithKVFilter(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	assert.Equal(
+		t,
+		[]resultT{
+			{
+				key: "some/prefix/foo003",
+				value: obj{
+					Value: "bar003",
+				},
+			},
+		},
+		iterateAllT(t, ctx, prefix.
+			GetAll(client, iterator.WithPageSize(2)).
+			WithKVFilter(
+				func(kv *op.KeyValueT[obj]) bool {
+					return strings.HasSuffix(kv.Value.Value, "003") // <<<<<<<<<<<<<
+				},
+			),
+		),
+	)
+}
+
+func TestIteratorT_WithFilter(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	assert.Equal(
+		t,
+		[]resultT{
+			{
+				key: "some/prefix/foo003",
+				value: obj{
+					Value: "bar003",
+				},
+			},
+		},
+		iterateAllT(t, ctx, prefix.
+			GetAll(client, iterator.WithPageSize(2)).
+			WithFilter(
+				func(v obj) bool {
+					return strings.HasSuffix(v.Value, "003") // <<<<<<<<<<<<<
+				},
+			),
+		),
+	)
+}
+
+func iterateAllT(t *testing.T, ctx context.Context, def iterator.DefinitionT[obj]) []resultT {
 	t.Helper()
 	it := def.Do(ctx)
 	actual := make([]resultT, 0)
