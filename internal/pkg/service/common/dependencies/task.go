@@ -25,7 +25,7 @@ func newTaskScope(ctx context.Context, d taskScopeDependencies, opts ...taskPkg.
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewTaskScope")
 	defer span.End(&err)
 
-	node, err := taskPkg.NewNode(d, opts...)
+	node, err := taskPkg.NewNode(ctx, d, opts...)
 	if err != nil {
 		return nil, err
 	}

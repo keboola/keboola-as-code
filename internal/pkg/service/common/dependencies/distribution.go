@@ -26,7 +26,7 @@ func newDistributionScope(ctx context.Context, d distributionScopeDeps, distribu
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewDistributionScope")
 	defer span.End(&err)
 
-	node, err := distributionPkg.NewNode(distributionGroup, d, opts...)
+	node, err := distributionPkg.NewNode(ctx, distributionGroup, d, opts...)
 	if err != nil {
 		return nil, err
 	}

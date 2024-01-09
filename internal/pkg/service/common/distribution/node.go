@@ -9,8 +9,10 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -43,7 +45,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(ctx context.Context, group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -62,10 +64,11 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
-	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	watchCtx, watchCancel := context.WithCancel(ctx)
+	sessionCtx, sessionCancel := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
+		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.InfoCtx(ctx, "received shutdown request")
 		watchCancel()
 		n.unregister(ctx, c.shutdownTimeout)
@@ -112,6 +115,8 @@ func (n *Node) CloneAssigner() *Assigner {
 func (n *Node) register(session *concurrency.Session, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(n.client.Ctx(), timeout)
 	defer cancel()
+
+	ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 
 	startTime := time.Now()
 	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)

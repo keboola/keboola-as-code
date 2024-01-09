@@ -71,7 +71,7 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 }
 
-func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(ctx context.Context, d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -100,8 +100,9 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	n.tasksWg = &sync.WaitGroup{}
 	n.tasksCtx, cancelTasks = context.WithCancel(context.Background()) // nolint: contextcheck
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(context.Background()) // nolint: contextcheck
+	sessionCtx, cancelSession := context.WithCancel(ctx)
 	proc.OnShutdown(func(ctx context.Context) {
+		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.InfoCtx(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
 			n.logger.InfofCtx(ctx, `waiting for "%d" tasks to be finished`, c)
@@ -215,7 +216,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	session := n.session
 	n.sessionLock.RUnlock()
 
-	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()))
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
 
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
@@ -248,7 +249,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result, err error) {
 	// Create task context
 	ctx, cancel := cfg.Context()
-	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()))
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
 
 	defer cancel()
 	if _, ok := ctx.Deadline(); !ok {
