@@ -8,8 +8,9 @@ import (
 
 // Config contains default configuration for the staging storage.
 type Config struct {
-	MaxSlicesPerFile int          `configKey:"maxSlicesPerFile" configUsage:"Maximum number of slices in a file, a new file is created after reaching it." validate:"required,min=1,max=50000"`
-	Upload           UploadConfig `configKey:"upload"`
+	MaxSlicesPerFile        int          `configKey:"maxSlicesPerFile" configUsage:"Maximum number of slices in a file, a new file is created after reaching it." validate:"required,min=1,max=50000"`
+	ParallelFileCreateLimit int          `configKey:"parallelFileCreateLimit" configUsage:"Maximum number of the Storage API file resources created in parallel within one operation. " validate:"required,min=1,max=500"`
+	Upload                  UploadConfig `configKey:"upload"`
 }
 
 type UploadConfig struct {
@@ -43,7 +44,8 @@ func (c Config) With(v ConfigPatch) Config {
 
 func NewConfig() Config {
 	return Config{
-		MaxSlicesPerFile: 100,
+		MaxSlicesPerFile:        100,
+		ParallelFileCreateLimit: 50,
 		Upload: UploadConfig{
 			MinInterval: 5 * time.Second,
 			Trigger:     DefaultSliceUploadTrigger(),
