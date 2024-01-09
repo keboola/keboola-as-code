@@ -13,7 +13,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -23,11 +23,9 @@ const (
 	waitForVolumeIDInterval = 500 * time.Millisecond
 )
 
-type volumeInfo = volume.Info
-
 type Volume struct {
-	volumeInfo
-	id storage.VolumeID
+	id   storage.VolumeID
+	spec storage.VolumeSpec
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -47,10 +45,10 @@ type Volume struct {
 //   - The volume.IDFile is loaded.
 //   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volumeInfo, opts ...Option) (*Volume, error) {
-	logger.InfofCtx(ctx, `opening volume "%s"`, info.Path())
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec storage.VolumeSpec, opts ...Option) (*Volume, error) {
+	logger.InfofCtx(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
-		volumeInfo:  info,
+		spec:        spec,
 		config:      newConfig(opts),
 		logger:      logger,
 		clock:       clock,
@@ -71,7 +69,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volume
 	// Note: If it is necessary to use the filesystem mounted in read-only mode,
 	// this lock can be removed from the code, if it is ensured that only one reader is running at a time.
 	{
-		v.fsLock = flock.New(filepath.Join(v.Path(), lockFile))
+		v.fsLock = flock.New(filepath.Join(v.spec.Path, lockFile))
 		if locked, err := v.fsLock.TryLock(); err != nil {
 			return nil, errors.Errorf(`cannot acquire reader lock "%s": %w`, v.fsLock.Path(), err)
 		} else if !locked {
@@ -83,8 +81,27 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volume
 	return v, nil
 }
 
+func (v *Volume) Path() string {
+	return v.spec.Path
+}
+
+func (v *Volume) Type() string {
+	return v.spec.Type
+}
+
+func (v *Volume) Label() string {
+	return v.spec.Label
+}
+
 func (v *Volume) ID() storage.VolumeID {
 	return v.id
+}
+
+func (v *Volume) Metadata() storage.VolumeMetadata {
+	return storage.VolumeMetadata{
+		VolumeID:   v.id,
+		VolumeSpec: v.spec,
+	}
 }
 
 func (v *Volume) Close(ctx context.Context) error {
@@ -130,7 +147,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (storage.VolumeID, error) 
 	ticker := v.clock.Ticker(waitForVolumeIDInterval)
 	defer ticker.Stop()
 
-	path := filepath.Join(v.Path(), volume.IDFile)
+	path := filepath.Join(v.spec.Path, local.VolumeIDFile)
 	for {
 		// Try open the file
 		if content, err := os.ReadFile(path); err == nil {

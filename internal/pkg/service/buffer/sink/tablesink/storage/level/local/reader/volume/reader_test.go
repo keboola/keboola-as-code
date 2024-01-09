@@ -15,8 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/reader"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -328,7 +328,7 @@ func newReaderTestCase(tb testing.TB) *readerTestCase {
 
 func (tc *readerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	// Write file with the VolumeID
-	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
+	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("my-volume"), 0o640))
 
 	vol, err := tc.volumeTestCase.OpenVolume(opts...)
 	tc.Volume = vol
