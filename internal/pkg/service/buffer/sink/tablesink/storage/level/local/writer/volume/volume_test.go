@@ -2,7 +2,6 @@ package volume
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -53,7 +52,7 @@ func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, volume.IDFile)
+	path := filesystem.Join(tc.VolumePath, local.VolumeIDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -73,7 +72,7 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read the volume ID file and check content length
-	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
+	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
 		assert.NoError(t, err)
@@ -113,7 +112,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Write volume ID file
-	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
+	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
 	writeContent := []byte("  123456789  ")
 	require.NoError(t, os.WriteFile(idFilePath, writeContent, 0o0640))
 
@@ -202,15 +201,16 @@ func TestVolume_Close_Errors(t *testing.T) {
 
 type volumeTestCase struct {
 	*test.WriterHelper
-	TB          testing.TB
-	Ctx         context.Context
-	Logger      log.DebugLogger
-	Clock       *clock.Mock
-	Events      *writer.Events
-	Allocator   *testAllocator
-	VolumePath  string
-	VolumeType  string
-	VolumeLabel string
+	TB           testing.TB
+	Ctx          context.Context
+	Logger       log.DebugLogger
+	Clock        *clock.Mock
+	Events       *writer.Events
+	Allocator    *testAllocator
+	VolumeNodeID string
+	VolumePath   string
+	VolumeType   string
+	VolumeLabel  string
 }
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
@@ -231,6 +231,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 		Clock:        clock.NewMock(),
 		Events:       writer.NewEvents(),
 		Allocator:    &testAllocator{},
+		VolumeNodeID: "my-node",
 		VolumePath:   tmpDir,
 		VolumeType:   "hdd",
 		VolumeLabel:  "1",
@@ -246,7 +247,8 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 		WithWatchDrainFile(false),
 	}, opts...)
 
-	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel), opts...)
+	info := storage.VolumeSpec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, info, opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

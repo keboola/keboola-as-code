@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
@@ -34,11 +34,11 @@ func TestEventWriter(t *testing.T) {
 	volumesPath := t.TempDir()
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "2"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", local.VolumeIDFile), []byte("HDD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", local.VolumeIDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.DetectVolumes(ctx, logger, clk, volumesPath, writerVolume.WithWriterFactory(volumeFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volumes" level
@@ -163,10 +163,10 @@ func TestEventWriter_OpenError(t *testing.T) {
 	// There are 2 volumes
 	volumesPath := t.TempDir()
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", local.VolumeIDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.DetectVolumes(ctx, logger, clk, volumesPath, writerVolume.WithWriterFactory(volumeFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterOpen" event on the "volumes" level
@@ -200,10 +200,10 @@ func TestEventWriter_CloseError(t *testing.T) {
 	// There are 2 volumes
 	volumesPath := t.TempDir()
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", local.VolumeIDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.DetectVolumes(ctx, logger, clk, volumesPath, writerVolume.WithWriterFactory(volumeFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterClose" event on the "volumes" level

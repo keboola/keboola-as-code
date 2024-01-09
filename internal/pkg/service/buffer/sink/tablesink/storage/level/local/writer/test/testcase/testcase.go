@@ -59,7 +59,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	opts := []volume.Option{volume.WithWatchDrainFile(false)}
 	clk := clock.New()
 	now := clk.Now()
-	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), volume.NewInfo(t.TempDir(), "hdd", "1"), opts...)
+	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "1"}
+	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
