@@ -46,7 +46,7 @@ func TestIteratorT(t *testing.T) {
 			name:     "empty",
 			kvCount:  0,
 			pageSize: 3,
-			expected: []resultT{},
+			expected: nil, // empty slice
 			expectedLogs: `
 ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 0 | %s
@@ -232,9 +232,20 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
 
 		// Test All method
 		logs.Reset()
-		actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).All()
+		actualValues, err := prefix.GetAll(client, ops...).Do(ctx).All()
 		assert.NoError(t, err)
-		actual = make([]resultT, 0)
+		var expectedValues []obj
+		for _, v := range tc.expected {
+			expectedValues = append(expectedValues, v.value)
+		}
+		assert.Equal(t, expectedValues, actualValues, tc.name)
+		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Test AllKVs method
+		logs.Reset()
+		actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).AllKVs()
+		assert.NoError(t, err)
+		actual = nil
 		for _, kv := range actualKvs {
 			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 		}
@@ -244,8 +255,8 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
 		// Test ForEachKV method
 		logs.Reset()
 		itr := prefix.GetAll(client, ops...).Do(ctx)
-		actual = make([]resultT, 0)
-		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj], header *iterator.Header) error {
+		actual = nil
+		assert.NoError(t, itr.ForEachKV(func(kv *op.KeyValueT[obj], header *iterator.Header) error {
 			assert.NotNil(t, header)
 			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 			return nil
@@ -369,7 +380,7 @@ value: bar005
 `), strings.TrimSpace(out.String()))
 }
 
-func TestIteratorT_WithResultTo(t *testing.T) {
+func TestIteratorT_WithAllTo(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -377,7 +388,7 @@ func TestIteratorT_WithResultTo(t *testing.T) {
 	prefix := generateKVsT(t, 5, ctx, client)
 
 	var target []obj
-	require.NoError(t, prefix.GetAll(client).WithResultTo(&target).Do(ctx).Err())
+	require.NoError(t, prefix.GetAll(client).WithAllTo(&target).Do(ctx).Err())
 	assert.Equal(t, []obj{
 		{Value: "bar001"},
 		{Value: "bar002"},
@@ -385,6 +396,78 @@ func TestIteratorT_WithResultTo(t *testing.T) {
 		{Value: "bar004"},
 		{Value: "bar005"},
 	}, target)
+}
+
+func TestIteratorT_WithAllKVsTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target []*op.KeyValueT[obj]
+	require.NoError(t, prefix.GetAll(client).WithAllKVsTo(&target).Do(ctx).Err())
+	assert.Len(t, target, 5)
+}
+
+func TestIteratorT_AllTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target []obj
+	require.NoError(t, prefix.GetAll(client).Do(ctx).AllTo(&target))
+	assert.Equal(t, []obj{
+		{Value: "bar001"},
+		{Value: "bar002"},
+		{Value: "bar003"},
+		{Value: "bar004"},
+		{Value: "bar005"},
+	}, target)
+}
+
+func TestIteratorT_AllKVsTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target op.KeyValuesT[obj]
+	require.NoError(t, prefix.GetAll(client).Do(ctx).AllKVsTo(&target))
+	assert.Len(t, target, 5)
+}
+
+func TestIteratorT_All(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	target, err := prefix.GetAll(client).Do(ctx).All()
+	require.NoError(t, err)
+	assert.Equal(t, []obj{
+		{Value: "bar001"},
+		{Value: "bar002"},
+		{Value: "bar003"},
+		{Value: "bar004"},
+		{Value: "bar005"},
+	}, target)
+}
+
+func TestIteratorT_AllKVs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	target, err := prefix.GetAll(client).Do(ctx).AllKVs()
+	require.NoError(t, err)
+	assert.Len(t, target, 5)
 }
 
 func TestIteratorT_WithKVFilter(t *testing.T) {
@@ -441,10 +524,9 @@ func TestIteratorT_WithFilter(t *testing.T) {
 	)
 }
 
-func iterateAllT(t *testing.T, ctx context.Context, def iterator.DefinitionT[obj]) []resultT {
+func iterateAllT(t *testing.T, ctx context.Context, def iterator.DefinitionT[obj]) (actual []resultT) {
 	t.Helper()
 	it := def.Do(ctx)
-	actual := make([]resultT, 0)
 	for it.Next() {
 		kv := it.Value()
 		actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})

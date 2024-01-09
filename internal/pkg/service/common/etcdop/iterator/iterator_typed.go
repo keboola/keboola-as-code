@@ -26,6 +26,7 @@ type ForEachT[T any] struct {
 	def     DefinitionT[T]
 	onPage  []onPageFn
 	onValue func(value T, header *Header) error
+	onKV    func(value *op.KeyValueT[T], header *Header) error
 }
 
 func NewTyped[R any](client etcd.KV, serde *serde.Serde, start string, opts ...Option) DefinitionT[R] {
@@ -44,8 +45,10 @@ func (v DefinitionT[T]) ForEach(fn func(value T, header *Header) error) *ForEach
 	return &ForEachT[T]{def: v, onValue: fn}
 }
 
-// WithResultTo method converts iterator to for each operation definition, so it can be part of a transaction.
-func (v DefinitionT[T]) WithResultTo(slice *[]T) *ForEachOpT[T] {
+// ForEachKV method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v DefinitionT[T]) ForEachKV(fn func(value *op.KeyValueT[T], header *Header) error) *ForEachT[T] {
+	return &ForEachT[T]{def: v, onKV: fn}
+}
 
 // WithKVFilter adds KV filters. All filters must return true for the value to be accepted.
 func (v DefinitionT[T]) WithKVFilter(fns ...func(kv *op.KeyValueT[T]) bool) DefinitionT[T] {
@@ -68,9 +71,25 @@ func (v DefinitionT[T]) WithFilter(fns ...func(v T) bool) DefinitionT[T] {
 	}
 	return clone
 }
+
+// WithAllTo method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v DefinitionT[T]) WithAllTo(slice *[]T) *ForEachT[T] {
 	return v.
-		ForEachOp(func(value T, header *Header) error {
+		ForEach(func(value T, header *Header) error {
 			*slice = append(*slice, value)
+			return nil
+		}).
+		AndOnFirstPage(func(response *etcd.GetResponse) error {
+			*slice = nil
+			return nil
+		})
+}
+
+// WithAllKVsTo method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v DefinitionT[T]) WithAllKVsTo(slice *[]*op.KeyValueT[T]) *ForEachT[T] {
+	return v.
+		ForEachKV(func(kv *op.KeyValueT[T], header *Header) error {
+			*slice = append(*slice, kv)
 			return nil
 		}).
 		AndOnFirstPage(func(response *etcd.GetResponse) error {
@@ -198,20 +217,36 @@ func (v *IteratorT[T]) Value() op.KeyValueT[T] {
 }
 
 // All returns all values as a slice.
-//
-// The values are sorted by key in ascending order.
-func (v *IteratorT[T]) All() (out op.KeyValuesT[T], err error) {
+func (v *IteratorT[T]) All() (out []T, err error) {
 	if err = v.AllTo(&out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
+// AllKVs returns all values as a slice.
+func (v *IteratorT[T]) AllKVs() (out op.KeyValuesT[T], err error) {
+	if err = v.AllKVsTo(&out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AllTo resets the slice and add all values to the slice.
-//
-// The values are sorted by key in ascending order.
-func (v *IteratorT[T]) AllTo(out *op.KeyValuesT[T]) (err error) {
-	*out = (*out)[:0]
+func (v *IteratorT[T]) AllTo(out *[]T) (err error) {
+	*out = nil
+	for v.Next() {
+		*out = append(*out, v.Value().Value)
+	}
+	if err = v.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AllKVsTo resets the slice and add all values to the slice.
+func (v *IteratorT[T]) AllKVsTo(out *op.KeyValuesT[T]) (err error) {
+	*out = nil
 	for v.Next() {
 		*out = append(*out, v.Value())
 	}
