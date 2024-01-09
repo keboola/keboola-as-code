@@ -21,24 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func sinkTemplate(k key.SinkKey) definition.Sink {
-	return definition.Sink{
-		SinkKey:     k,
-		Type:        definition.SinkTypeTable,
-		Name:        "My Sink",
-		Description: "My Description",
-		Table: &definition.TableSink{
-			Mapping: definition.TableMapping{
-				TableID: keboola.MustParseTableID("in.bucket.table"),
-				Columns: column.Columns{
-					column.Datetime{Name: "datetime"},
-					column.Body{Name: "body"},
-				},
-			},
-		},
-	}
-}
-
 func TestRepository_Sink(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
