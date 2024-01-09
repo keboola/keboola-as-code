@@ -89,7 +89,7 @@ func (r *SliceRepository) StateTransition(k storage.SliceKey, to storage.SliceSt
 	var file storage.File
 	return r.
 		readAndUpdate(k, func(slice storage.Slice) (storage.Slice, error) {
-			// Validate file and slice state combinationfile
+			// Validate file and slice state combination
 			if err := validateFileAndSliceStates(file.State, to); err != nil {
 				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
 			}
