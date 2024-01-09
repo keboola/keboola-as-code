@@ -66,13 +66,13 @@ func (v Definition) Do(ctx context.Context, opts ...op.Option) *Iterator {
 	return &Iterator{ctx: ctx, opts: opts, config: v.config, start: v.config.prefix, end: v.config.end, page: 0, currentIndex: 0}
 }
 
-// ForEachOp method converts iterator to for each operation definition, so it can be part of a transaction.
-func (v Definition) ForEachOp(fn func(value *op.KeyValue, header *Header) error) *ForEachOp {
-	return &ForEachOp{def: v, fn: fn}
+// ForEach method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v Definition) ForEach(fn func(value *op.KeyValue, header *Header) error) *ForEach {
+	return &ForEach{def: v, fn: fn}
 }
 
-func (v *ForEachOp) Op(ctx context.Context) (op.LowLevelOp, error) {
-	// If ForEachOp is combined with other operations into a transaction,
+func (v *ForEach) Op(ctx context.Context) (op.LowLevelOp, error) {
+	// If ForEach is combined with other operations into a transaction,
 	// then the first page is loaded within the transaction.
 	// Other pages are loaded within MapResponse function, see below.
 	// Iterator always load next pages WithRevision,
@@ -99,7 +99,7 @@ func (v *ForEachOp) Op(ctx context.Context) (op.LowLevelOp, error) {
 	}, nil
 }
 
-func (v *ForEachOp) Do(ctx context.Context, opts ...op.Option) (out Result) {
+func (v *ForEach) Do(ctx context.Context, opts ...op.Option) (out Result) {
 	// See comment in the Op method.
 	itr := v.def.Do(ctx, opts...).OnPage(v.onPage...)
 	if err := itr.ForEach(v.fn); err != nil {

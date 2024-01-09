@@ -349,7 +349,7 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	})
 }
 
-func TestIterator_ForEachOp(t *testing.T) {
+func TestIterator_ForEach(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -360,7 +360,7 @@ func TestIterator_ForEachOp(t *testing.T) {
 	// Define op
 	getAllOp := prefix.
 		GetAll(tracker, iterator.WithPageSize(2)).
-		ForEachOp(func(value *op.KeyValue, header *iterator.Header) error {
+		ForEach(func(value *op.KeyValue, header *iterator.Header) error {
 			_, _ = out.WriteString(fmt.Sprintf("%s\n", string(value.Value)))
 			return nil
 		})

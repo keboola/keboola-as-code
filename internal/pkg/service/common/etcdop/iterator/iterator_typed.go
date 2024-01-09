@@ -19,8 +19,8 @@ type IteratorT[T any] struct {
 	currentValue op.KeyValueT[T] // currentValue in the page, match currentIndex
 }
 
-// ForEachOpT definition, it can be part of a transaction.
-type ForEachOpT[T any] struct {
+// ForEachT definition, it can be part of a transaction.
+type ForEachT[T any] struct {
 	def     DefinitionT[T]
 	onPage  []onPageFn
 	onValue func(value T, header *Header) error
@@ -37,9 +37,9 @@ func (v DefinitionT[T]) Do(ctx context.Context, opts ...op.Option) *IteratorT[T]
 	return out
 }
 
-// ForEachOp method converts iterator to for each operation definition, so it can be part of a transaction.
-func (v DefinitionT[T]) ForEachOp(fn func(value T, header *Header) error) *ForEachOpT[T] {
-	return &ForEachOpT[T]{def: v, onValue: fn}
+// ForEach method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v DefinitionT[T]) ForEach(fn func(value T, header *Header) error) *ForEachT[T] {
+	return &ForEachT[T]{def: v, onValue: fn}
 }
 
 // WithResultTo method converts iterator to for each operation definition, so it can be part of a transaction.
@@ -56,7 +56,7 @@ func (v DefinitionT[T]) WithResultTo(slice *[]T) *ForEachOpT[T] {
 }
 
 // AndOnFirstPage registers a callback that is executed after the first page is successfully loaded.
-func (v *ForEachOpT[T]) AndOnFirstPage(fn func(response *etcd.GetResponse) error) *ForEachOpT[T] {
+func (v *ForEachT[T]) AndOnFirstPage(fn func(response *etcd.GetResponse) error) *ForEachT[T] {
 	return v.AndOnPage(func(pageIndex int, response *etcd.GetResponse) error {
 		if pageIndex == 0 {
 			return fn(response)
@@ -66,14 +66,14 @@ func (v *ForEachOpT[T]) AndOnFirstPage(fn func(response *etcd.GetResponse) error
 }
 
 // AndOnPage registers a callback that is executed after each page is successfully loaded.
-func (v *ForEachOpT[T]) AndOnPage(fn onPageFn) *ForEachOpT[T] {
+func (v *ForEachT[T]) AndOnPage(fn onPageFn) *ForEachT[T] {
 	clone := *v
 	clone.onPage = append(clone.onPage, fn)
 	return &clone
 }
 
-func (v *ForEachOpT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
-	// If ForEachOpT is combined with other operations into a transaction,
+func (v *ForEachT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
+	// If ForEachT is combined with other operations into a transaction,
 	// then the first page is loaded within the transaction.
 	// Other pages are loaded within MapResponse method, see below.
 	// Iterator always load next pages WithRevision,
