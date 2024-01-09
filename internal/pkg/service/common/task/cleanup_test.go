@@ -103,13 +103,13 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
-{"level":"info","message":"deleted \"2\" tasks","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
-{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","prefix":"[node1][_system_/tasks.cleanup/%s]"}
+{"level":"info","message":"started task","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
+{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
+{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
+{"level":"info","message":"deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
+{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","prefix":"[node1]"}
 {"level":"info","message":"exiting (bye bye)","prefix":"[node1]"}
 {"level":"info","message":"received shutdown request","component":"task","prefix":"[node1]"}
 {"level":"info","message":"closing etcd session","component":"task.etcd-session","prefix":"[node1]"}

@@ -194,17 +194,17 @@ task/123/my-receiver/my-export/some.task/%s
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"some message from the task (1)","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"task succeeded (%s): some result (1) outputs: {\"key\":\"value\"}","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"started task","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"some message from the task (2)","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"task succeeded (%s): some result (2)","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"info","message":"some message from the task (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"info","message":"task succeeded (%s): some result (1) outputs: {\"key\":\"value\"}","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"info","message":"some message from the task (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"info","message":"task succeeded (%s): some result (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
 `, logs.String())
 
 	// Check spans
@@ -474,17 +474,17 @@ task/123/my-receiver/my-export/some.task/%s
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"some message from the task (1)","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"warn","message":"task failed (%s): some error (1) - expected [%s] (*task.UserError):\n- some error (1) - expected [%s] outputs: {\"key\":\"value\"}","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"started task","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"some message from the task (2)","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"warn","message":"task failed (%s): some error (2) - unexpected [%s]","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node2][123/my-receiver/my-export/some.task/%s]"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"info","message":"some message from the task (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"warn","message":"task failed (%s): some error (1) - expected [%s] (*task.UserError):\n- some error (1) - expected [%s] outputs: {\"key\":\"value\"}","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"info","message":"some message from the task (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"warn","message":"task failed (%s): some error (2) - unexpected [%s]","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node2]"}
 `, logs.String())
 
 	// Check spans
@@ -700,10 +700,10 @@ task/123/my-receiver/my-export/some.task/%s
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"warn","message":"task failed (%s): context deadline exceeded","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"warn","message":"task failed (%s): context deadline exceeded","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
 `, logger.AllMessages())
 
 	// Check spans
@@ -881,14 +881,14 @@ task/123/my-receiver/my-export/some.task/%s
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
 {"level":"info","message":"exiting (some reason)","prefix":"[node1]"}
 {"level":"info","message":"received shutdown request","component":"task","prefix":"[node1]"}
 {"level":"info","message":"waiting for \"1\" tasks to be finished","component":"task","prefix":"[node1]"}
-{"level":"info","message":"some message from the task","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"info","message":"task succeeded (%s): some result","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","prefix":"[node1][123/my-receiver/my-export/some.task/%s]"}
+{"level":"info","message":"some message from the task","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"info","message":"task succeeded (%s): some result","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","prefix":"[node1]"}
 {"level":"info","message":"closing etcd session","component":"task.etcd-session","prefix":"[node1]"}
 {"level":"info","message":"closed etcd session | %s","component":"task.etcd-session","prefix":"[node1]"}
 {"level":"info","message":"shutdown done","component":"task","prefix":"[node1]"}

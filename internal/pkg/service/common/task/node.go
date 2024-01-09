@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -214,10 +215,11 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	session := n.session
 	n.sessionLock.RUnlock()
 
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()))
+
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
-	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
 		n.taskEtcdPrefix.Key(taskKey.String()).Put(task),
 		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
@@ -227,18 +229,18 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
 		unlock()
-		logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
+		n.logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil, nil
 	}
 
 	// Run operation in the background
-	logger.InfofCtx(ctx, `started task`)
-	logger.DebugfCtx(ctx, `lock acquired "%s"`, task.Lock.Key())
+	n.logger.InfofCtx(ctx, `started task`)
+	n.logger.DebugfCtx(ctx, `lock acquired "%s"`, task.Lock.Key())
 
 	// Return function, task is prepared, lock is locked, it can be run in background/foreground.
 	fn = func() (Result, error) {
 		defer unlock()
-		return n.runTask(logger, task, cfg)
+		return n.runTask(n.logger, task, cfg)
 	}
 	return &task, fn, nil
 }
@@ -246,6 +248,8 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result, err error) {
 	// Create task context
 	ctx, cancel := cfg.Context()
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()))
+
 	defer cancel()
 	if _, ok := ctx.Deadline(); !ok {
 		panic(errors.Errorf(`task "%s" context must have a deadline`, cfg.Type))
@@ -301,20 +305,20 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 
 	// Create context for task finalization, the original context could have timed out.
 	// If release of the lock takes longer than the ttl, lease is expired anyway.
-	ctx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
+	finalizationCtx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
 	defer finalizationCancel()
 
 	// Update telemetry
 	span.SetAttributes(spanEndAttrs(&task, result)...)
-	n.meters.running.Add(ctx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
-	n.meters.duration.Record(ctx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
+	n.meters.running.Add(finalizationCtx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
+	n.meters.duration.Record(finalizationCtx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 
 	// Update task and release lock in etcd
 	finalizeTaskOp := op.MergeToTxn(
 		n.taskEtcdPrefix.Key(task.Key.String()).Put(task),
 		task.Lock.DeleteIfExists(),
 	)
-	if resp, err := finalizeTaskOp.Do(ctx, n.client); err != nil {
+	if resp, err := finalizeTaskOp.Do(finalizationCtx, n.client); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
 		logger.ErrorCtx(ctx, err)
 		return result, err

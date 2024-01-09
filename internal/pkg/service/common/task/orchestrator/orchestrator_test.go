@@ -123,11 +123,11 @@ func TestOrchestrator(t *testing.T) {
 	expected := `
 {"level":"info","message":"ready","component":"orchestrator","prefix":"[some.task]"}
 {"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID\"","component":"orchestrator","prefix":"[some.task]"}
-{"level":"info","message":"started task","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID/%s]"}
-{"level":"info","message":"message from the task","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID/%s]"}
-{"level":"info","message":"task succeeded (%s): ResourceID","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID/%s]"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"info","message":"task succeeded (%s): ResourceID","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
 `
 	log.AssertJSONMessages(t, expected, d2.DebugLogger().AllMessages())
 
@@ -209,11 +209,11 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 {"level":"info","message":"ready","component":"orchestrator","prefix":"[some.task]"}
 {"level":"debug","message":"skipped \"1000/my-receiver/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","prefix":"[some.task]"}
 {"level":"info","message":"assigned \"1000/my-receiver/some.task/GoodID\"","component":"orchestrator","prefix":"[some.task]"}
-{"level":"info","message":"started task","component":"task","prefix":"[1000/my-receiver/some.task/GoodID/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","prefix":"[1000/my-receiver/some.task/GoodID/%s]"}
-{"level":"info","message":"message from the task","component":"task","prefix":"[1000/my-receiver/some.task/GoodID/%s]"}
-{"level":"info","message":"task succeeded (%s): GoodID","component":"task","prefix":"[1000/my-receiver/some.task/GoodID/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","prefix":"[1000/my-receiver/some.task/GoodID/%s]"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"info","message":"task succeeded (%s): GoodID","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
 `
 	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())
 }
@@ -300,11 +300,11 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	expected := `
 {"level":"debug","message":"restart","component":"orchestrator","prefix":"[some.task]"}
 {"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID1\"","component":"orchestrator","prefix":"[some.task]"}
-{"level":"info","message":"started task","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID1/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID1/%s]"}
-{"level":"info","message":"message from the task","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID1/%s]"}
-{"level":"info","message":"task succeeded (0s): ResourceID1","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID1/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","prefix":"[1000/my-receiver/some.task/ResourceID1/%s]"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"info","message":"task succeeded (0s): ResourceID1","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
 `
 	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())
 }
