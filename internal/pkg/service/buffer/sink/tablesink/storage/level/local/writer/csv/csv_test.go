@@ -46,7 +46,8 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 
 	// Open volume
 	clk := clock.New()
-	vol, err := volume.Open(ctx, log.NewNopLogger(), clk, writer.NewEvents(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
+	vol, err := volume.Open(ctx, log.NewNopLogger(), clk, writer.NewEvents(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -75,7 +76,8 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 
 	// Open volume
 	clk := clock.New()
-	vol, err := volume.Open(ctx, log.NewNopLogger(), clock.New(), writer.NewEvents(), volume.NewInfo(t.TempDir(), "hdd", "1"))
+	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
+	vol, err := volume.Open(ctx, log.NewNopLogger(), clock.New(), writer.NewEvents(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -113,7 +115,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 		log.NewNopLogger(),
 		clock.New(),
 		writer.NewEvents(),
-		volume.NewInfo(t.TempDir(), "hdd", "1"),
+		storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"},
 		volume.WithFileOpener(func(filePath string) (volume.File, error) {
 			file, err := volume.DefaultFileOpener(filePath)
 			if err != nil {
@@ -129,6 +131,9 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	slice.Columns = column.Columns{column.ID{Name: "id"}}
 	slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	slice.LocalStorage.DiskSync.Wait = true
+	// prevent sync during the test
+	slice.LocalStorage.DiskSync.CheckInterval = 2 * time.Second
+	slice.LocalStorage.DiskSync.IntervalTrigger = 2 * time.Second
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 
