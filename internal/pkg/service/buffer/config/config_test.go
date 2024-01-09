@@ -26,6 +26,8 @@ debugHTTPClient: false
 cpuProfilePath: ""
 # Unique ID of the node in the cluster. Validation rules: required
 nodeID: ""
+# Storage API host. Validation rules: required,hostname
+storageAPIHost: ""
 datadog:
     # Enable DataDog integration.
     enabled: true
@@ -81,23 +83,25 @@ sink:
                         level: 1
                         # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
                         implementation: parallel
-                        # GZIP parallel block size. Validation rules: required,min=16384,max=104857600
+                        # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
                         blockSize: 256KB
                         # GZIP parallel concurrency, 0 = auto.
                         concurrency: 0
                     zstd:
                         # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
                         level: fastest
-                        # ZSTD window size. Validation rules: required,min=1024,max=536870912
+                        # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
                         windowSize: 1MB
                         # ZSTD concurrency, 0 = auto
                         concurrency: 0
-                volumesAssignment:
-                    # Volumes simultaneously utilized per pod and sink. Validation rules: required,min=1
-                    perPod: 1
+                volumes:
+                    # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
+                    count: 1
                     # List of preferred volume types, start with the most preferred.
                     preferredTypes:
                         - default
+                    # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
+                    registrationTTL: 10
                 diskSync:
                     # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
                     mode: disk
@@ -121,6 +125,8 @@ sink:
             staging:
                 # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
                 maxSlicesPerFile: 100
+                # Maximum number of the Storage API file resources created in parallel within one operation. Validation rules: required,min=1,max=500
+                parallelFileCreateLimit: 50
                 upload:
                     # Minimal interval between uploads. Validation rules: required,minDuration=1s,maxDuration=5m
                     minInterval: 5s
