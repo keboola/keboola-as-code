@@ -57,11 +57,7 @@ func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 		debugCore(l.warnOrError, WarnLevel),                     // warn or error = warn level and higher
 		debugCore(l.error, ErrorLevel),                          // error = error level and higher
 	)
-	if prefix != "" {
-		cores = cores.With([]zapcore.Field{{Key: "prefix", String: prefix, Type: zapcore.StringType}})
-	}
 	l.zapLogger = loggerFromZapCore(cores)
-	l.zapLogger.prefix = prefix
 	return l
 }
 
