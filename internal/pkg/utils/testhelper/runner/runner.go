@@ -62,7 +62,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	ctx, cancelFn := context.WithTimeout(context.Background(), testTimeout)
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.KeboolaProjectAPI(), project.Env())
+	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.ProjectAPI(), project.Env())
 
 	envMap := project.Env()
 	// Disable version check

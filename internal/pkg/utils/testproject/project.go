@@ -145,7 +145,11 @@ func (p *Project) StorageAPIToken() *keboola.Token {
 	return p.storageAPIToken
 }
 
-func (p *Project) KeboolaProjectAPI() *keboola.AuthorizedAPI {
+func (p *Project) PublicAPI() *keboola.PublicAPI {
+	return p.keboolaProjectAPI.PublicAPI
+}
+
+func (p *Project) ProjectAPI() *keboola.AuthorizedAPI {
 	return p.keboolaProjectAPI
 }
 
