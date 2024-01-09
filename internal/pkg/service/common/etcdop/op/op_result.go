@@ -6,29 +6,20 @@ import (
 
 type Result[R any] struct {
 	response *RawResponse
-	result   R
 	errors   errors.MultiError
+	result   *R
 }
 
-// TxnResult is result of the TxnOp.
-type TxnResult struct {
-	succeeded bool
-	*txnResults
-}
-
-type txnResults = Result[[]any]
-
-func newResult[R any](r *RawResponse) *Result[R] {
+func newResult[R any](r *RawResponse, result *R) *Result[R] {
 	return &Result[R]{
 		errors:   errors.NewMultiError(),
 		response: r,
+		result:   result,
 	}
 }
 
-func newTxnResult(r *RawResponse) *TxnResult {
-	out := &TxnResult{}
-	out.txnResults = newResult[[]any](r)
-	return out
+func newErrorResult[R any](err error) *Result[R] {
+	return newResult[R](nil, nil).AddErr(err)
 }
 
 func (v *Result[R]) Response() *RawResponse {
@@ -40,7 +31,12 @@ func (v *Result[R]) Header() *Header {
 }
 
 func (v *Result[R]) Result() R {
-	return v.result
+	if v.result == nil {
+		var empty R
+		return empty
+	} else {
+		return *v.result
+	}
 }
 
 func (v *Result[R]) Err() error {
@@ -52,10 +48,15 @@ func (v *Result[R]) HeaderOrErr() (*Header, error) {
 }
 
 func (v *Result[R]) ResultOrErr() (R, error) {
-	return v.result, v.Err()
+	if err := v.Err(); err == nil {
+		return v.Result(), nil
+	} else {
+		var empty R
+		return empty, err
+	}
 }
 
-func (v *Result[R]) SetResult(result R) *Result[R] {
+func (v *Result[R]) SetResult(result *R) *Result[R] {
 	v.result = result
 	return v
 }
@@ -67,25 +68,6 @@ func (v *Result[R]) ResetErr() *Result[R] {
 
 func (v *Result[R]) AddErr(err error) *Result[R] {
 	v.errors.Append(err)
-	return v
-}
-
-func (v *TxnResult) Succeeded() bool {
-	return v.succeeded
-}
-
-func (v *TxnResult) AddResult(result any) *TxnResult {
-	v.result = append(v.result, result)
-	return v
-}
-
-func (v *TxnResult) AddErr(err error) *TxnResult {
-	v.txnResults.AddErr(err)
-	return v
-}
-
-func (v *TxnResult) ResetErr() *TxnResult {
-	v.txnResults.ResetErr()
 	return v
 }
 

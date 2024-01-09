@@ -24,7 +24,7 @@ type txnTestCase struct {
 	ExpectedTxnResult txnResult
 }
 
-func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client, log *strings.Builder, txn *TxnOp) {
+func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client, log *strings.Builder, txn *TxnOp[NoResult]) {
 	t.Helper()
 	t.Logf(`test case: %s`, tc.Name)
 
@@ -42,7 +42,7 @@ func TestTxnOp_Empty(t *testing.T) {
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
-	txn := NewTxnOp(client)
+	txn := Txn(client)
 
 	assert.True(t, txn.Empty())
 
@@ -70,14 +70,14 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 	// Create operation failing on create
 	op := testOp{Error: errors.New("some error")}
 
-	txn := NewTxnOp(client).
+	txn := Txn(client).
 		Then(op).
 		Then(op).
 		Else(op).
 		Else(op).
 		And(op).
 		And(op).
-		And(NewTxnOp(client).Then(op))
+		And(Txn(client).Then(op))
 
 	assert.False(t, txn.Empty())
 
@@ -110,14 +110,14 @@ func TestTxnOp_OpError_MapResult_IfBranch(t *testing.T) {
 		}}
 	}
 
-	txn := NewTxnOp(client).
+	txn := Txn(client).
 		Then(opFactory(1)).
 		Then(opFactory(2)).
 		Else(opFactory(3)).
 		Else(opFactory(4)).
 		And(opFactory(5)).
 		And(opFactory(6)).
-		And(NewTxnOp(client).Then(opFactory(7)))
+		And(Txn(client).Then(opFactory(7)))
 
 	if err := txn.Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
@@ -145,7 +145,7 @@ func TestTxnOp_OpError_MapResult_ElseBranch(t *testing.T) {
 		}}
 	}
 
-	txn := NewTxnOp(client).
+	txn := Txn(client).
 		If(etcd.Compare(etcd.Value("key/foo"), "=", "bar")).
 		Then(opFactory(1)).
 		Then(opFactory(2)).
@@ -153,7 +153,7 @@ func TestTxnOp_OpError_MapResult_ElseBranch(t *testing.T) {
 		Else(opFactory(4)).
 		And(opFactory(5)).
 		And(opFactory(6)).
-		And(NewTxnOp(client).Then(opFactory(7)))
+		And(Txn(client).Then(opFactory(7)))
 
 	if err := txn.Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
@@ -168,7 +168,7 @@ func TestTxnOp_ServerError(t *testing.T) {
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
-	txn := NewTxnOp(client).
+	txn := Txn(client).
 		Then(etcdop.Key("foo").Put(client, "bar")).
 		Then(etcdop.Key("foo").Put(client, "bar"))
 
@@ -187,7 +187,7 @@ func TestTxnOp_IfThenElse(t *testing.T) {
 	onNoResult, onGetResult := newLogHelpers(&log)
 
 	// Define transaction
-	txn := NewTxnOp(client)
+	txn := Txn(client)
 	txn.If(etcd.Compare(etcd.Value("key/foo"), "=", "foo"))
 	txn.If(etcd.Compare(etcd.Value("key/bar"), "=", "bar"))
 	txn.Then(etcdop.Key("key/1").Put(client, "a").WithOnResult(onNoResult("put 1/1")).WithOnResult(onNoResult("put 1/2")))
@@ -351,12 +351,12 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 	})
 
 	// Compose transaction, "key/put" must not exist, "key/delete" must exist
-	txn := NewTxnOp(client)
+	txn := Txn(client)
 	txn.And(putOp)
 	txn.And(deleteOp)
 	txn.Then(etcdop.Key("key/txn/succeeded").Put(client, "true"))
 	txn.Else(etcdop.Key("key/txn/succeeded").Put(client, "false"))
-	txn.OnResult(func(r *TxnResult) {
+	txn.OnResult(func(r *TxnResult[NoResult]) {
 		_, _ = fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
 	})
 
@@ -561,34 +561,34 @@ func TestTxnOp_And_Complex(t *testing.T) {
 	onNoResult, onGetResult := newLogHelpers(&log)
 
 	// Define transaction
-	txn := NewTxnOp(client).
+	txn := Txn(client).
 		If(etcd.Compare(etcd.Value("txn/if"), "=", "ok")).
 		Then(etcdop.Key("txn/then/put").Put(client, "ok").WithOnResult(onNoResult("txn then put"))).
 		Then(etcdop.Key("txn/then/get").Get(client).WithOnResult(onGetResult("txn then get"))).
 		Else(etcdop.Key("txn/else/put").Put(client, "ok").WithOnResult(onNoResult("txn else put"))).
 		Else(etcdop.Key("txn/else/get").Get(client).WithOnResult(onGetResult("txn else get"))).
-		OnResult(func(r *TxnResult) {
+		OnResult(func(r *TxnResult[NoResult]) {
 			_, _ = fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
 		}).
 		And(
-			NewTxnOp(client).
+			Txn(client).
 				If(etcd.Compare(etcd.Value("txn1/if"), "=", "ok")).
 				Then(etcdop.Key("txn1/then/put").Put(client, "ok").WithOnResult(onNoResult("txn1 then put"))).
 				Then(etcdop.Key("txn1/then/get").Get(client).WithOnResult(onGetResult("txn1 then get"))).
 				Else(etcdop.Key("txn1/else/put").Put(client, "ok").WithOnResult(onNoResult("txn1 else put"))).
 				Else(etcdop.Key("txn1/else/get").Get(client).WithOnResult(onGetResult("txn1 else get"))).
-				OnResult(func(r *TxnResult) {
+				OnResult(func(r *TxnResult[NoResult]) {
 					_, _ = fmt.Fprintf(&log, "txn1 succeeded: %t %v\n", r.Succeeded(), simplifyTxnResult(r).Results)
 				}),
 		).
 		And(
-			NewTxnOp(client).
+			Txn(client).
 				If(etcd.Compare(etcd.Value("txn2/if"), "=", "ok")).
 				Then(etcdop.Key("txn2/then/put").Put(client, "ok").WithOnResult(onNoResult("txn2 then put"))).
 				Then(etcdop.Key("txn2/then/get").Get(client).WithOnResult(onGetResult("txn2 then get"))).
 				Else(etcdop.Key("txn2/else/put").Put(client, "ok").WithOnResult(onNoResult("txn2 else put"))).
 				Else(etcdop.Key("txn2/else/get").Get(client).WithOnResult(onGetResult("txn2 else get"))).
-				OnResult(func(r *TxnResult) {
+				OnResult(func(r *TxnResult[NoResult]) {
 					_, _ = fmt.Fprintf(&log, "txn2 succeeded: %t %v\n", r.Succeeded(), simplifyTxnResult(r).Results)
 				}),
 		)
@@ -928,14 +928,14 @@ func newLogHelpers(log *strings.Builder) (func(msg string) func(r NoResult), fun
 	return onNoResult, onGetResult
 }
 
-func simplifyTxnResult(v *TxnResult) (out txnResult) {
+func simplifyTxnResult(v *TxnResult[NoResult]) (out txnResult) {
 	out.Succeeded = v.Succeeded()
 
 	if v.Err() != nil {
 		out.Error = v.Err().Error()
 	}
 
-	for _, r := range v.Result() {
+	for _, r := range v.SubResults() {
 		switch r := r.(type) {
 		case *KeyValue:
 			if r != nil {
@@ -949,7 +949,7 @@ func simplifyTxnResult(v *TxnResult) (out txnResult) {
 				sub = append(sub, &KeyValue{Key: item.Key, Value: item.Value})
 			}
 			out.Results = append(out.Results, sub)
-		case *TxnResult:
+		case *TxnResult[NoResult]:
 			out.Results = append(out.Results, simplifyTxnResult(r))
 		case error:
 			out.Results = append(out.Results, fmt.Sprintf("ERROR: %s", r.Error()))
