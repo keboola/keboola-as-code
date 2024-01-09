@@ -15,20 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
-
-func sourceTemplate(k key.SourceKey) definition.Source {
-	return definition.Source{
-		SourceKey:   k,
-		Type:        definition.SourceTypeHTTP,
-		Name:        "My Source",
-		Description: "My Description",
-		HTTP:        &definition.HTTPSource{Secret: "012345678901234567890123456789012345678912345678"},
-	}
-}
 
 func TestRepository_Source(t *testing.T) {
 	t.Parallel()

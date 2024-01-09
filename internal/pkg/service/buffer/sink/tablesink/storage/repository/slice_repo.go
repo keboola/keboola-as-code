@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"time"
 
@@ -12,11 +11,9 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -92,7 +89,7 @@ func (r *SliceRepository) StateTransition(k storage.SliceKey, to storage.SliceSt
 	var file storage.File
 	return r.
 		readAndUpdate(k, func(slice storage.Slice) (storage.Slice, error) {
-			// Validate file and slice state combination
+			// Validate file and slice state combinationfile
 			if err := validateFileAndSliceStates(file.State, to); err != nil {
 				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
 			}
