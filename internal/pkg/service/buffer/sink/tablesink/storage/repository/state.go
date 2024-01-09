@@ -14,6 +14,8 @@ func validateFileAndSliceStates(fileState storage.FileState, sliceState storage.
 		switch sliceState {
 		case storage.SliceWriting, storage.SliceClosing, storage.SliceUploading, storage.SliceUploaded:
 			return nil
+		default:
+			// error
 		}
 	case storage.FileImporting:
 		// Slice must be uploaded

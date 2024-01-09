@@ -141,7 +141,7 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 	}
 
 	// Delete file and statistics (in Buffered and Uploaded category, Imported category are deleted above)
-	err = op.NewTxnOp().
+	err = op.Txn().
 		Then(t.schema.Files().InState(file.State).ByKey(file.FileKey).Delete()).
 		Then(t.stats.DeleteOp(file.FileKey)).
 		DoOrErr(ctx, t.client)
