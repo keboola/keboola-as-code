@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/benbjohnson/clock"
@@ -70,6 +71,7 @@ func (r *SourceRepository) GetDeleted(k key.SourceKey) op.WithResult[definition.
 		})
 }
 
+//nolint:dupl // similar code is in the SinkRepository
 func (r *SourceRepository) Create(versionDescription string, input *definition.Source) *op.AtomicOp[definition.Source] {
 	k := input.SourceKey
 	result := *input
@@ -84,15 +86,15 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 		// GetDelete gets deleted version to check if we have to do undelete
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Object must not exists
-		BeforeWriteOrErr(func() error {
+		BeforeWriteOrErr(func(context.Context) error {
 			if actual != nil {
 				return serviceError.NewResourceAlreadyExistsError("source", k.String(), "branch")
 			}
 			return nil
 		}).
 		// Create or Undelete
-		Write(func() op.Op {
-			txn := op.NewTxnOp(r.client)
+		Write(func(context.Context) op.Op {
+			txn := op.Txn(r.client)
 
 			// Was the object previously deleted?
 			if deleted != nil {
@@ -112,7 +114,7 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 			txn.Then(r.schema.Versions().Of(k).Version(result.VersionNumber()).Put(r.client, result))
 
 			// Update the input entity after a successful operation
-			txn.OnResult(func(r *op.TxnResult) {
+			txn.OnResult(func(r *op.TxnResult[op.NoResult]) {
 				if r.Succeeded() {
 					*input = result
 				}
@@ -123,6 +125,7 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 		AddFrom(r.all.sink.undeleteAllFrom(k))
 }
 
+//nolint:dupl // similar code is in SinkRepository
 func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, updateFn func(definition.Source) definition.Source) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	return op.Atomic(r.client, &result).
@@ -130,16 +133,16 @@ func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, up
 		// Read and modify the object
 		ReadOp(r.Get(k).WithResultTo(&result)).
 		// Prepare the new value
-		BeforeWrite(func() {
+		BeforeWrite(func(context.Context) {
 			result = updateFn(result)
 			result.IncrementVersion(result, r.clock.Now(), versionDescription)
 		}).
 		// Save the update object
-		Write(func() op.Op {
+		Write(func(context.Context) op.Op {
 			return r.schema.Active().ByKey(k).Put(r.client, result)
 		}).
 		// Save record to the versions history
-		Write(func() op.Op {
+		Write(func(context.Context) op.Op {
 			return r.schema.Versions().Of(k).Version(result.VersionNumber()).Put(r.client, result)
 		})
 }
@@ -154,7 +157,7 @@ func (r *SourceRepository) softDelete(k key.SourceKey, deletedWithParent bool) *
 	return op.Atomic(r.client, &op.NoResult{}).
 		// Move object from the active prefix to the deleted prefix
 		ReadOp(r.Get(k).WithResultTo(&value)).
-		Write(func() op.Op { return r.softDeleteValue(value, deletedWithParent) }).
+		Write(func(context.Context) op.Op { return r.softDeleteValue(value, deletedWithParent) }).
 		// Delete children
 		AddFrom(r.all.sink.softDeleteAllFrom(k))
 }
@@ -164,19 +167,19 @@ func (r *SourceRepository) softDelete(k key.SourceKey, deletedWithParent bool) *
 func (r *SourceRepository) softDeleteAllFrom(parentKey any) *op.AtomicOp[op.NoResult] {
 	var writeOps []op.Op
 	return op.Atomic(r.client, &op.NoResult{}).
-		Read(func() op.Op {
+		Read(func(context.Context) op.Op {
 			writeOps = nil // reset after retry
-			return r.List(parentKey).ForEachOp(func(v definition.Source, _ *iterator.Header) error {
+			return r.List(parentKey).ForEach(func(v definition.Source, _ *iterator.Header) error {
 				writeOps = append(writeOps, r.softDeleteValue(v, true))
 				return nil
 			})
 		}).
-		Write(func() op.Op { return op.MergeToTxn(r.client, writeOps...) }).
+		Write(func(ctx context.Context) op.Op { return op.MergeToTxn(r.client, writeOps...) }).
 		// Delete children
 		AddFrom(r.all.sink.softDeleteAllFrom(parentKey))
 }
 
-func (r *SourceRepository) softDeleteValue(v definition.Source, deletedWithParent bool) *op.TxnOp {
+func (r *SourceRepository) softDeleteValue(v definition.Source, deletedWithParent bool) *op.TxnOp[op.NoResult] {
 	v.Delete(r.clock.Now(), deletedWithParent)
 	return op.MergeToTxn(
 		r.client,
@@ -196,7 +199,7 @@ func (r *SourceRepository) Undelete(k key.SourceKey) *op.AtomicOp[definition.Sou
 		// Move object from the deleted prefix to the active prefix
 		ReadOp(r.GetDeleted(k).WithResultTo(&result)).
 		// Undelete
-		Write(func() op.Op { return r.undeleteValue(result) }).
+		Write(func(context.Context) op.Op { return r.undeleteValue(result) }).
 		// Undelete children
 		AddFrom(r.all.sink.undeleteAllFrom(k))
 }
@@ -206,21 +209,21 @@ func (r *SourceRepository) Undelete(k key.SourceKey) *op.AtomicOp[definition.Sou
 func (r *SourceRepository) undeleteAllFrom(parentKey any) *op.AtomicOp[op.NoResult] {
 	var writeOps []op.Op
 	return op.Atomic(r.client, &op.NoResult{}).
-		Read(func() op.Op {
+		Read(func(context.Context) op.Op {
 			writeOps = nil // reset after retry
-			return r.ListDeleted(parentKey).ForEachOp(func(v definition.Source, _ *iterator.Header) error {
+			return r.ListDeleted(parentKey).ForEach(func(v definition.Source, _ *iterator.Header) error {
 				if v.DeletedWithParent {
 					writeOps = append(writeOps, r.undeleteValue(v))
 				}
 				return nil
 			})
 		}).
-		Write(func() op.Op { return op.MergeToTxn(r.client, writeOps...) }).
+		Write(func(context.Context) op.Op { return op.MergeToTxn(r.client, writeOps...) }).
 		// Undelete children
 		AddFrom(r.all.sink.undeleteAllFrom(parentKey))
 }
 
-func (r *SourceRepository) undeleteValue(v definition.Source) *op.TxnOp {
+func (r *SourceRepository) undeleteValue(v definition.Source) *op.TxnOp[op.NoResult] {
 	v.Undelete()
 	return op.MergeToTxn(
 		r.client,
@@ -247,6 +250,7 @@ func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNu
 		})
 }
 
+//nolint:dupl // similar code is in the SinkRepository
 func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	var latest, target *op.KeyValueT[definition.Source]
@@ -257,7 +261,7 @@ func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber
 		// Get target version
 		ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&target)).
 		// Return the most significant error
-		BeforeWriteOrErr(func() error {
+		BeforeWriteOrErr(func(context.Context) error {
 			if latest == nil {
 				return serviceError.NewResourceNotFoundError("source", k.String(), "branch")
 			} else if target == nil {
@@ -266,17 +270,17 @@ func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber
 			return nil
 		}).
 		// Prepare the new value
-		BeforeWrite(func() {
+		BeforeWrite(func(context.Context) {
 			result = target.Value
 			result.Version = latest.Value.Version
 			result.IncrementVersion(result, r.clock.Now(), fmt.Sprintf("Rollback to version %d", target.Value.Version.Number))
 		}).
 		// Save the object
-		Write(func() op.Op {
+		Write(func(context.Context) op.Op {
 			return r.schema.Active().ByKey(k).Put(r.client, result)
 		}).
 		// Save record to the versions history
-		Write(func() op.Op {
+		Write(func(context.Context) op.Op {
 			return r.schema.Versions().Of(k).Version(result.VersionNumber()).Put(r.client, result)
 		})
 }
