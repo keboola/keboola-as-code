@@ -25,7 +25,7 @@ type RetryBackoff interface {
 	RetryAt(failedAt time.Time, attempt int) (retryAt time.Time)
 }
 
-// retryBackoff implements RetryBackoff
+// retryBackoff implements RetryBackoff.
 type retryBackoff struct {
 	*backoff.ExponentialBackOff
 }
