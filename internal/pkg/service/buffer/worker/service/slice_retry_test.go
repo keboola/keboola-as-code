@@ -144,11 +144,11 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Orchestrator logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"assigned %s","component":"orchestrator","prefix":"[slice.retry.check]"}
+{"level":"info","message":"assigned %s","component":"orchestrator","task":"slice.retry.check"}
 `, workerMock.DebugLogger().AllMessages())
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"assigned \"123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check\"","component":"orchestrator","prefix":"[slice.retry.check]"}
-{"level":"info","message":"stopped","component":"orchestrator","prefix":"[slice.retry.check]"}
+{"level":"info","message":"assigned \"123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check\"","component":"orchestrator","task":"slice.retry.check"}
+{"level":"info","message":"stopped","component":"orchestrator","task":"slice.retry.check"}
 `, workerMock.DebugLogger().InfoMessages())
 
 	// Retry check task

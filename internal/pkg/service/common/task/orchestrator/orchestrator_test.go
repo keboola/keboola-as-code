@@ -121,8 +121,8 @@ func TestOrchestrator(t *testing.T) {
 	d2.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"ready","component":"orchestrator","prefix":"[some.task]"}
-{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID\"","component":"orchestrator","prefix":"[some.task]"}
+{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
 {"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
@@ -132,8 +132,8 @@ func TestOrchestrator(t *testing.T) {
 	log.AssertJSONMessages(t, expected, d2.DebugLogger().AllMessages())
 
 	expected = `
-{"level":"info","message":"ready","component":"orchestrator","prefix":"[some.task]"}
-{"level":"debug","message":"not assigned \"1000/my-receiver/some.task/ResourceID\", distribution key \"1000/my-receiver\"","component":"orchestrator","prefix":"[some.task]"}
+{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"debug","message":"not assigned \"1000/my-receiver/some.task/ResourceID\", distribution key \"1000/my-receiver\"","component":"orchestrator","task":"some.task"}
 `
 	log.AssertJSONMessages(t, expected, d1.DebugLogger().AllMessages())
 }
@@ -206,9 +206,9 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"ready","component":"orchestrator","prefix":"[some.task]"}
-{"level":"debug","message":"skipped \"1000/my-receiver/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","prefix":"[some.task]"}
-{"level":"info","message":"assigned \"1000/my-receiver/some.task/GoodID\"","component":"orchestrator","prefix":"[some.task]"}
+{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"debug","message":"skipped \"1000/my-receiver/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-receiver/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
 {"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
@@ -298,8 +298,8 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	expected := `
-{"level":"debug","message":"restart","component":"orchestrator","prefix":"[some.task]"}
-{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID1\"","component":"orchestrator","prefix":"[some.task]"}
+{"level":"debug","message":"restart","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID1\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
 {"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}

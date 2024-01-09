@@ -2,7 +2,8 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"go.opentelemetry.io/otel/attribute"
 	"sync"
 
 	"github.com/benbjohnson/clock"
@@ -87,8 +88,8 @@ func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
 	// Delete events are not needed
 	c.Source.WatchEtcdOps = append(c.Source.WatchEtcdOps, etcd.WithFilterDelete())
 
-	// Setup logger
-	logger := node.logger.AddPrefix(fmt.Sprintf("[%s]", c.Name))
+	// Setup context
+	node.ctx = ctxattr.ContextWith(node.ctx, attribute.String("task", c.Name))
 
-	return &orchestrator[T]{config: c, node: node, logger: logger}
+	return &orchestrator[T]{config: c, node: node, logger: node.logger}
 }
