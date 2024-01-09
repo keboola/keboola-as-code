@@ -16,8 +16,8 @@ func SumStats(ctx context.Context, prefix iterator.DefinitionT[statistics.Value]
 }
 
 // SumStatsOp sums all stats from the iterator.
-func SumStatsOp(prefix iterator.DefinitionT[statistics.Value], out *statistics.Value) *iterator.ForEachOpT[statistics.Value] {
-	return prefix.ForEachOp(func(item statistics.Value, _ *iterator.Header) error {
+func SumStatsOp(prefix iterator.DefinitionT[statistics.Value], out *statistics.Value) *iterator.ForEachT[statistics.Value] {
+	return prefix.ForEach(func(item statistics.Value, _ *iterator.Header) error {
 		*out = out.Add(item)
 		return nil
 	})

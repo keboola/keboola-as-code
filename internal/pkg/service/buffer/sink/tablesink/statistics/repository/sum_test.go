@@ -29,6 +29,7 @@ func TestSumStats(t *testing.T) {
 	// Put values
 	assert.NoError(t, pfx.Key("0").Put(client, statistics.Value{}).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("1").Put(client, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 		RecordsCount:     4,
@@ -36,6 +37,7 @@ func TestSumStats(t *testing.T) {
 		CompressedSize:   1,
 	}).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("2").Put(client, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 		RecordsCount:     8,
@@ -43,6 +45,7 @@ func TestSumStats(t *testing.T) {
 		CompressedSize:   2,
 	}).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("3").Put(client, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
 		RecordsCount:     32,
@@ -55,6 +58,7 @@ func TestSumStats(t *testing.T) {
 	sum, err := repository.SumStats(ctx, pfx.GetAll(client))
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Value{
+		SlicesCount:      3,
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
 		RecordsCount:     44,
