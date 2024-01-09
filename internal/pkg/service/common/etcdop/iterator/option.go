@@ -16,6 +16,8 @@ type config struct {
 	end         string // optional range end, it is a suffix to the prefix field
 	client      etcd.KV
 	serde       *serde.Serde // empty for not-typed iterator
+	sort        etcd.SortOrder
+	limit       int
 	pageSize    int
 	revision    int64 // revision of the all values, set by "WithRev" or by the first page
 	fromSameRev bool  // fromSameRev if true, then 2+ page will be loaded from the same revision as the first page
@@ -25,6 +27,7 @@ func newConfig(client etcd.KV, s *serde.Serde, prefix string, opts []Option) con
 	c := config{
 		prefix:      prefix,
 		end:         etcd.GetPrefixRangeEnd(prefix), // default range end, read the entire prefix
+		sort:        etcd.SortAscend,
 		client:      client,
 		serde:       s,
 		pageSize:    DefaultLimit,
@@ -37,6 +40,24 @@ func newConfig(client etcd.KV, s *serde.Serde, prefix string, opts []Option) con
 	}
 
 	return c
+}
+
+func WithSort(v etcd.SortOrder) Option {
+	if v != etcd.SortAscend && v != etcd.SortDescend {
+		panic(errors.New("sort must be SortAscend or SortDescend"))
+	}
+	return func(c *config) {
+		c.sort = v
+	}
+}
+
+func WithLimit(v int) Option {
+	if v < 1 {
+		panic(errors.New("limit must be greater than 0"))
+	}
+	return func(c *config) {
+		c.limit = v
+	}
 }
 
 func WithPageSize(v int) Option {
