@@ -13,7 +13,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 )
 
 func TestVolumes(t *testing.T) {
@@ -36,8 +36,8 @@ func TestVolumes(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "ssd", "2"), 0o750))
 
 	// Only two volumes has volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", volume.IDFile), []byte("HDD_2"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", local.VolumeIDFile), []byte("HDD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", local.VolumeIDFile), []byte("HDD_2"), 0o640))
 
 	// Start volumes opening
 	var err error
@@ -45,7 +45,7 @@ func TestVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = DetectVolumes(ctx, logger, clk, volumesPath)
+		volumes, err = OpenVolumes(ctx, logger, clk, "my-node", volumesPath)
 		assert.NoError(t, err)
 	}()
 
@@ -55,9 +55,9 @@ func TestVolumes(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Create remaining volume ID files
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", volume.IDFile), []byte("HDD_3"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "SSD", "1", volume.IDFile), []byte("SSD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "ssd", "2", volume.IDFile), []byte("SSD_2"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", local.VolumeIDFile), []byte("HDD_3"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "SSD", "1", local.VolumeIDFile), []byte("SSD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "ssd", "2", local.VolumeIDFile), []byte("SSD_2"), 0o640))
 
 	// Wait for opening
 	select {
