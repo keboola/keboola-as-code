@@ -321,7 +321,6 @@ func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials e
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
 	if logs != nil {

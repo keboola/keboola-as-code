@@ -2,7 +2,6 @@ package task_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -927,7 +926,6 @@ func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 	d := dependencies.NewMocked(
 		t,
 		dependencies.WithUniqueID(nodeName),
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 	)

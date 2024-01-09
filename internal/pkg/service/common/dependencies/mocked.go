@@ -58,12 +58,11 @@ type MockedConfig struct {
 	enableDistribution bool
 	enableOrchestrator bool
 
-	ctx          context.Context
-	clock        clock.Clock
-	telemetry    telemetry.ForTest
-	loggerPrefix string
-	debugLogger  log.DebugLogger
-	procOpts     []servicectx.Option
+	ctx         context.Context
+	clock       clock.Clock
+	telemetry   telemetry.ForTest
+	debugLogger log.DebugLogger
+	procOpts    []servicectx.Option
 
 	etcdCredentials etcdclient.Credentials
 
@@ -123,12 +122,6 @@ func WithClock(v clock.Clock) MockedOption {
 func WithDebugLogger(v log.DebugLogger) MockedOption {
 	return func(c *MockedConfig) {
 		c.debugLogger = v
-	}
-}
-
-func WithLoggerPrefix(v string) MockedOption {
-	return func(c *MockedConfig) {
-		c.loggerPrefix = v
 	}
 }
 
@@ -258,9 +251,6 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Logger
 	var logger log.Logger = cfg.debugLogger
-	if cfg.loggerPrefix != "" {
-		logger = logger.AddPrefix(cfg.loggerPrefix)
-	}
 
 	// Cancel context after the test
 	var cancel context.CancelFunc
