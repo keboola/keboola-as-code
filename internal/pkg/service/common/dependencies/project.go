@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -51,16 +52,21 @@ func NewProjectDeps(ctx context.Context, prjScp projectScopeDeps, tokenStr strin
 	ctx, span := prjScp.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewProjectScope")
 	defer span.End(&err)
 
+	_, stack, _ := strings.Cut(prjScp.StorageAPIHost(), ".")
+	tokenID, _, _ := strings.Cut(tokenStr, "-")
+	tokenID = strhelper.Truncate(tokenID, 10, "…")
+
+	attributes := []attribute.KeyValue{
+		attribute.String("keboola.project.stack", stack),
+		attribute.String("keboola.storage.token.id", tokenID),
+	}
+
+	ctx = ctxattr.ContextWith(ctx, attributes...)
+
 	// Set attributes before token verification
 	reqSpan, _ := middleware.RequestSpan(ctx)
 	if reqSpan != nil {
-		_, stack, _ := strings.Cut(prjScp.StorageAPIHost(), ".")
-		tokenID, _, _ := strings.Cut(tokenStr, "-")
-		tokenID = strhelper.Truncate(tokenID, 10, "…")
-		reqSpan.SetAttributes(
-			attribute.String("keboola.project.stack", stack),
-			attribute.String("keboola.storage.token.id", tokenID),
-		)
+		reqSpan.SetAttributes(attributes...)
 	}
 
 	// Verify token
@@ -68,18 +74,23 @@ func NewProjectDeps(ctx context.Context, prjScp projectScopeDeps, tokenStr strin
 	if err != nil {
 		return nil, err
 	}
+
+	attributes = []attribute.KeyValue{
+		attribute.String("keboola.project.id", cast.ToString(token.Owner.ID)),
+		attribute.String("keboola.project.name", token.Owner.Name),
+		attribute.String("keboola.storage.token.id", token.ID),
+		attribute.String("keboola.storage.token.description", token.Description),
+		attribute.Bool("keboola.storage.token.is_master", token.IsMaster),
+	}
+
+	ctx = ctxattr.ContextWith(ctx, attributes...)
+
 	prjScp.Logger().DebugfCtx(ctx, "Storage API token is valid.")
 	prjScp.Logger().DebugfCtx(ctx, `Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
 
 	// Set attributes after token verification
 	if reqSpan != nil {
-		reqSpan.SetAttributes(
-			attribute.String("keboola.project.id", cast.ToString(token.Owner.ID)),
-			attribute.String("keboola.project.name", token.Owner.Name),
-			attribute.String("keboola.storage.token.id", token.ID),
-			attribute.String("keboola.storage.token.description", token.Description),
-			attribute.Bool("keboola.storage.token.is_master", token.IsMaster),
-		)
+		reqSpan.SetAttributes(attributes...)
 	}
 
 	return newProjectScope(ctx, prjScp, *token, opts...)
