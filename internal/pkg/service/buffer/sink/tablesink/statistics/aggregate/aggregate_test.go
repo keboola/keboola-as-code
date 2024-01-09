@@ -17,6 +17,7 @@ func TestAggregate(t *testing.T) {
 
 	// Level Local 1
 	Aggregate(storage.LevelLocal, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 		RecordsCount:     1,
@@ -25,6 +26,7 @@ func TestAggregate(t *testing.T) {
 	}, &result)
 	assert.Equal(t, &statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 			RecordsCount:     1,
@@ -32,6 +34,7 @@ func TestAggregate(t *testing.T) {
 			CompressedSize:   1,
 		},
 		Total: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
 			RecordsCount:     1,
@@ -42,6 +45,7 @@ func TestAggregate(t *testing.T) {
 
 	// Level Local 2
 	Aggregate(storage.LevelLocal, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 		RecordsCount:     1,
@@ -50,6 +54,7 @@ func TestAggregate(t *testing.T) {
 	}, &result)
 	assert.Equal(t, &statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -57,6 +62,7 @@ func TestAggregate(t *testing.T) {
 			CompressedSize:   2,
 		},
 		Total: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"), // <<<<<<<<<<<<<
 			RecordsCount:     2,
@@ -67,6 +73,7 @@ func TestAggregate(t *testing.T) {
 
 	// Level Staging 1
 	Aggregate(storage.LevelStaging, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-16T00:00:00.000Z"),
 		RecordsCount:     1,
@@ -76,6 +83,7 @@ func TestAggregate(t *testing.T) {
 	}, &result)
 	assert.Equal(t, &statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -83,6 +91,7 @@ func TestAggregate(t *testing.T) {
 			CompressedSize:   2,
 		},
 		Staging: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-16T00:00:00.000Z"),
 			RecordsCount:     1,
@@ -91,6 +100,7 @@ func TestAggregate(t *testing.T) {
 			StagingSize:      1,
 		},
 		Total: statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 			RecordsCount:     3,
@@ -102,6 +112,7 @@ func TestAggregate(t *testing.T) {
 
 	// Level Staging 2
 	Aggregate(storage.LevelStaging, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-14T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"),
 		RecordsCount:     1,
@@ -111,6 +122,7 @@ func TestAggregate(t *testing.T) {
 	}, &result)
 	assert.Equal(t, &statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -118,6 +130,7 @@ func TestAggregate(t *testing.T) {
 			CompressedSize:   2,
 		},
 		Staging: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-14T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -126,6 +139,7 @@ func TestAggregate(t *testing.T) {
 			StagingSize:      2,
 		},
 		Total: statistics.Value{
+			SlicesCount:      4,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"), // <<<<<<<<<<<<<
 			RecordsCount:     4,
@@ -137,6 +151,7 @@ func TestAggregate(t *testing.T) {
 
 	// Level Target 1
 	Aggregate(storage.LevelTarget, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-18T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-19T00:00:00.000Z"),
 		RecordsCount:     1,
@@ -146,6 +161,7 @@ func TestAggregate(t *testing.T) {
 	}, &result)
 	assert.Equal(t, &statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -159,8 +175,10 @@ func TestAggregate(t *testing.T) {
 			UncompressedSize: 2,
 			CompressedSize:   2,
 			StagingSize:      2,
+			SlicesCount:      2,
 		},
 		Target: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-18T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-19T00:00:00.000Z"),
 			RecordsCount:     1,
@@ -169,6 +187,7 @@ func TestAggregate(t *testing.T) {
 			StagingSize:      1,
 		},
 		Total: statistics.Value{
+			SlicesCount:      5,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"),
 			RecordsCount:     5,
@@ -180,6 +199,7 @@ func TestAggregate(t *testing.T) {
 
 	// Level Target 2
 	Aggregate(storage.LevelTarget, statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-09T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-23T00:00:00.000Z"),
 		RecordsCount:     1,
@@ -189,6 +209,7 @@ func TestAggregate(t *testing.T) {
 	}, &result)
 	assert.Equal(t, &statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -196,6 +217,7 @@ func TestAggregate(t *testing.T) {
 			CompressedSize:   2,
 		},
 		Staging: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-14T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -204,6 +226,7 @@ func TestAggregate(t *testing.T) {
 			StagingSize:      2,
 		},
 		Target: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-09T00:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-23T00:00:00.000Z"),
 			RecordsCount:     2,
@@ -212,6 +235,7 @@ func TestAggregate(t *testing.T) {
 			StagingSize:      2,
 		},
 		Total: statistics.Value{
+			SlicesCount:      6,
 			FirstRecordAt:    utctime.MustParse("2000-01-09T00:00:00.000Z"), // <<<<<<<<<<<<<
 			LastRecordAt:     utctime.MustParse("2000-01-23T00:00:00.000Z"), // <<<<<<<<<<<<<
 			RecordsCount:     6,

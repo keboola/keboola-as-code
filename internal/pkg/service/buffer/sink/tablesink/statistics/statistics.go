@@ -15,6 +15,7 @@ import (
 
 // Value contains statistics for a slice or summarized statistics for a parent object.
 type Value struct {
+	SlicesCount int `json:"slicesCount,omitempty"`
 	// FirstRecordAt contains the timestamp of the first received record.
 	FirstRecordAt utctime.UTCTime `json:"firstRecordAt"`
 	// LastRecordAt contains the timestamp of the last received record.
@@ -52,6 +53,7 @@ type Aggregated struct {
 }
 
 func (v Value) Add(v2 Value) Value {
+	v.SlicesCount += v2.SlicesCount
 	v.RecordsCount += v2.RecordsCount
 	v.UncompressedSize += v2.UncompressedSize
 	v.CompressedSize += v2.CompressedSize
