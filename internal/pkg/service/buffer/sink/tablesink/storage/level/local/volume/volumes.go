@@ -26,15 +26,6 @@ import (
 
 const IDFile = "volume-id"
 
-// Volume instance common interface.
-type Volume interface {
-	Path() string
-	Type() string
-	Label() string
-	ID() storage.VolumeID
-	Close(context.Context) error
-}
-
 // Volumes manages volumes in the path, each instance has V type.
 type Volumes[V Volume] struct {
 	logger  log.Logger
