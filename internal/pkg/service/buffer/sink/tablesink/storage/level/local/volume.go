@@ -1,5 +1,7 @@
 package local
 
+const VolumeIDFile = "volume-id"
+
 type VolumesConfig struct {
 	// Count defines the quantity of volumes simultaneously utilized per sink in the entire cluster.
 	// This value also corresponds to the number of slices simultaneously opened per the File.
