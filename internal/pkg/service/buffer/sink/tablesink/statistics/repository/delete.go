@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
@@ -35,13 +36,13 @@ func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 			}))
 
 			// Get statistics of the object
-			ops.Read(func() op.Op {
+			ops.Read(func(context.Context) op.Op {
 				objectSum = statistics.Value{}
 				return SumStatsOp(objectPfx.GetAll(r.client), &objectSum)
 			})
 
 			// Save update sum
-			ops.Write(func() op.Op {
+			ops.Write(func(ctx context.Context) op.Op {
 				if objectSum.RecordsCount > 0 {
 					return sumKey.Put(r.client, parentSum.Add(objectSum))
 				} else {

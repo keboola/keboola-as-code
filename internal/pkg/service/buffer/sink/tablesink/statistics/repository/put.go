@@ -17,10 +17,10 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.storage.statistics.Repository.Put")
 	defer span.End(&err)
 
-	var currentTxn *op.TxnOp
-	var allTxn []*op.TxnOp
+	var currentTxn *op.TxnOp[op.NoResult]
+	var allTxn []*op.TxnOp[op.NoResult]
 	addTxn := func() {
-		currentTxn = op.NewTxnOp(r.client)
+		currentTxn = op.Txn(r.client)
 		allTxn = append(allTxn, currentTxn)
 	}
 

@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -27,15 +27,16 @@ func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
-	client := d.EtcdClient()
-	repo := repository.New(d)
+	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New())
+	client := mocked.EtcdClient()
+	repo := d.StatisticsRepository()
 
 	// Create records
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
 	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
 	value := statistics.Value{
+		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 		RecordsCount:     1,
@@ -58,6 +59,7 @@ func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -70,6 +72,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -82,6 +85,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -98,6 +102,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -110,6 +115,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -132,10 +138,9 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
-	client := d.EtcdClient()
-
-	repo := repository.New(d)
+	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New())
+	client := mocked.EtcdClient()
+	repo := d.StatisticsRepository()
 
 	// Create records
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
@@ -145,6 +150,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				RecordsCount:     1,
@@ -155,6 +161,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 		{
 			SliceKey: sliceKey2,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				RecordsCount:     10,
@@ -165,6 +172,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 		{
 			SliceKey: sliceKey3,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 				RecordsCount:     100,
@@ -182,6 +190,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	// Check initial state
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -191,6 +200,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	}
 	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -200,6 +210,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	}
 	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -209,6 +220,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	}
 	if stats, err := repo.FileStats(ctx, sliceKey1.FileKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -218,6 +230,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	}
 	if stats, err := repo.SliceStats(ctx, sliceKey1); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -230,6 +243,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -242,6 +256,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T02:00:00.000Z",
   "lastRecordAt": "2000-01-01T03:00:00.000Z",
   "recordsCount": 10,
@@ -254,6 +269,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T03:00:00.000Z",
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 100,
@@ -267,6 +283,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	assert.NoError(t, repo.Delete(sliceKey1).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -276,6 +293,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -285,6 +303,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -294,6 +313,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.FileStats(ctx, sliceKey1.FileKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -306,6 +326,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/_sum
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T02:00:00.000Z",
   "recordsCount": 1,
@@ -318,6 +339,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/_sum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T02:00:00.000Z",
   "lastRecordAt": "2000-01-01T03:00:00.000Z",
   "recordsCount": 10,
@@ -330,6 +352,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T03:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T03:00:00.000Z",
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 100,
@@ -343,6 +366,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	assert.NoError(t, repo.Delete(sliceKey3).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -352,6 +376,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -361,6 +386,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -370,6 +396,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.FileStats(ctx, sliceKey1.FileKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -382,6 +409,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/_sum
 -----
 {
+  "slicesCount": 2,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 101,
@@ -394,6 +422,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/_sum
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T02:00:00.000Z",
   "lastRecordAt": "2000-01-01T03:00:00.000Z",
   "recordsCount": 10,
@@ -407,6 +436,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	assert.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -416,6 +446,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -425,6 +456,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 	}
 	if stats, err := repo.SinkStats(ctx, sliceKey1.SinkKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -437,6 +469,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 storage/stats/target/123/456/my-source/my-sink/_sum
 -----
 {
+  "slicesCount": 3,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 111,
@@ -450,6 +483,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 	assert.NoError(t, repo.Delete(sliceKey1.SinkKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -459,6 +493,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 	}
 	if stats, err := repo.SourceStats(ctx, sliceKey1.SourceKey); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -471,6 +506,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 storage/stats/target/123/456/my-source/_sum
 -----
 {
+  "slicesCount": 3,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 111,
@@ -484,6 +520,7 @@ storage/stats/target/123/456/my-source/_sum
 	assert.NoError(t, repo.Delete(sliceKey1.SourceKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -496,6 +533,7 @@ storage/stats/target/123/456/my-source/_sum
 storage/stats/target/123/456/_sum
 -----
 {
+  "slicesCount": 3,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 111,
