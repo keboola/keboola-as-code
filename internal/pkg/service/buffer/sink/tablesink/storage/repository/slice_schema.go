@@ -46,7 +46,7 @@ func (v sliceSchemaInLevel) ByKey(k SliceKey) KeyT[Slice] {
 
 func (v sliceSchemaInLevel) InObject(k fmt.Stringer) sliceSchemaInObject {
 	switch k.(type) {
-	case keboola.ProjectID, BranchKey, SourceKey, SinkKey, FileKey:
+	case keboola.ProjectID, BranchKey, SourceKey, SinkKey, FileKey, FileVolumeKey:
 		return v.inObject(k)
 	default:
 		panic(errors.Errorf(`unexpected object key "%T"`, k))
@@ -70,6 +70,10 @@ func (v sliceSchemaInLevel) InSink(k SinkKey) sliceSchemaInObject {
 }
 
 func (v sliceSchemaInLevel) InFile(k FileKey) sliceSchemaInObject {
+	return v.inObject(k)
+}
+
+func (v sliceSchemaInLevel) InFileVolume(k FileVolumeKey) sliceSchemaInObject {
 	return v.inObject(k)
 }
 
