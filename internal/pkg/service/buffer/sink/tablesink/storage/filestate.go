@@ -46,7 +46,7 @@ const FileImported FileState = "imported"
 //	FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
 
-func (f *File) StateTransition(at time.Time, to FileState) error {
+func (f File) WithState(at time.Time, to FileState) (File, error) {
 	from := f.State
 	atUTC := utctime.From(at)
 
@@ -58,10 +58,10 @@ func (f *File) StateTransition(at time.Time, to FileState) error {
 	case from == FileImporting && to == FileImported:
 		f.ImportedAt = &atUTC
 	default:
-		return serviceError.NewBadRequestError(errors.Errorf(`unexpected file "%s" state transition from "%s" to "%s"`, f.FileKey, from, to))
+		return File{}, serviceError.NewBadRequestError(errors.Errorf(`unexpected file "%s" state transition from "%s" to "%s"`, f.FileKey, from, to))
 	}
 
 	f.State = to
 	f.ResetRetry()
-	return nil
+	return f, nil
 }
