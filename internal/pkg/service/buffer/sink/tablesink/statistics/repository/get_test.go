@@ -51,6 +51,7 @@ func TestProvider(t *testing.T) {
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				RecordsCount:     1,
@@ -61,6 +62,7 @@ func TestProvider(t *testing.T) {
 		{
 			SliceKey: sliceKey2,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				RecordsCount:     10,
@@ -71,6 +73,7 @@ func TestProvider(t *testing.T) {
 		{
 			SliceKey: sliceKey3,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 				RecordsCount:     100,
@@ -85,6 +88,7 @@ func TestProvider(t *testing.T) {
 	// Check provider
 	expected := statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -92,6 +96,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   1,
 		},
 		Staging: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -99,6 +104,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   10,
 		},
 		Target: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,
@@ -106,6 +112,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   100,
 		},
 		Total: statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -133,6 +140,7 @@ func TestProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -140,6 +148,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   1,
 		},
 		Total: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -151,6 +160,7 @@ func TestProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Staging: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -158,6 +168,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   10,
 		},
 		Total: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -169,6 +180,7 @@ func TestProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Target: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,
@@ -176,6 +188,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   100,
 		},
 		Total: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,
@@ -191,6 +204,7 @@ func TestProvider(t *testing.T) {
 		{
 			SliceKey: sliceKey4,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T04:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T05:00:00.000Z"),
 				RecordsCount:     1000,
@@ -205,6 +219,7 @@ func TestProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      2,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T05:00:00.000Z"),
 			RecordsCount:     1001,
@@ -212,6 +227,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   1001,
 		},
 		Staging: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -219,6 +235,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   10,
 		},
 		Target: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,
@@ -226,6 +243,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   100,
 		},
 		Total: statistics.Value{
+			SlicesCount:      4,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T05:00:00.000Z"),
 			RecordsCount:     1111,
@@ -239,6 +257,7 @@ func TestProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -246,6 +265,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   1,
 		},
 		Staging: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -253,6 +273,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   10,
 		},
 		Target: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,
@@ -260,6 +281,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   100,
 		},
 		Total: statistics.Value{
+			SlicesCount:      3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     111,
@@ -271,6 +293,7 @@ func TestProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T05:00:00.000Z"),
 			RecordsCount:     1000,
@@ -278,6 +301,7 @@ func TestProvider(t *testing.T) {
 			CompressedSize:   1000,
 		},
 		Total: statistics.Value{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T05:00:00.000Z"),
 			RecordsCount:     1000,

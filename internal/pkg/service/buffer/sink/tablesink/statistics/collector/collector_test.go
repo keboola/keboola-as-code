@@ -73,6 +73,7 @@ func TestCollector(t *testing.T) {
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
   "lastRecordAt": "2000-01-01T01:10:00.000Z",
   "recordsCount": 1,
@@ -89,6 +90,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
   "lastRecordAt": "2000-01-01T01:10:00.000Z",
   "recordsCount": 1,
@@ -114,6 +116,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
   "lastRecordAt": "2000-01-01T01:30:00.000Z",
   "recordsCount": 5,
@@ -126,6 +129,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:25:00.000Z",
   "lastRecordAt": "2000-01-01T01:25:00.000Z",
   "recordsCount": 1,
@@ -146,6 +150,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
   "lastRecordAt": "2000-01-01T01:40:00.000Z",
   "recordsCount": 6,
@@ -158,6 +163,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:25:00.000Z",
   "lastRecordAt": "2000-01-01T01:25:00.000Z",
   "recordsCount": 1,
@@ -181,6 +187,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:10:00.000Z",
   "lastRecordAt": "2000-01-01T01:40:00.000Z",
   "recordsCount": 6,
@@ -193,6 +200,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-01T01:25:00.000Z",
   "lastRecordAt": "2000-01-01T01:35:00.000Z",
   "recordsCount": 3,
