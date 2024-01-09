@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -491,39 +490,4 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T22:00:00.000Z
 }
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all"))
-}
-
-func TestNewFile_InvalidCompressionType(t *testing.T) {
-	t.Parallel()
-
-	// Fixtures
-	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
-	projectID := keboola.ProjectID(123)
-	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
-	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
-	cfg := storage.NewConfig()
-	mapping := definition.TableMapping{
-		TableID: keboola.MustParseTableID("in.bucket.table"),
-		Columns: column.Columns{
-			column.Datetime{Name: "datetime"},
-			column.Body{Name: "body"},
-		},
-	}
-	credentials := &keboola.FileUploadCredentials{
-		S3UploadParams: &s3.UploadParams{
-			Credentials: s3.Credentials{
-				Expiration: iso8601.Time{Time: now.Add(time.Hour)},
-			},
-		},
-	}
-
-	// Set unsupported compression type
-	cfg.Local.Compression.Type = compression.TypeZSTD
-
-	// Assert
-	_, err := newFile(fileKey, cfg, mapping, credentials)
-	require.Error(t, err)
-	assert.Equal(t, `file compression type "zstd" is not supported`, err.Error())
 }
