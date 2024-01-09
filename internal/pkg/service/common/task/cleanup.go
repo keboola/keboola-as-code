@@ -36,7 +36,7 @@ func (n *Node) Cleanup() (err error) {
 			// Go through tasks and delete old ones
 			deletedTasksCount := int64(0)
 			errs := errors.NewMultiError()
-			err = n.taskEtcdPrefix.GetAll(n.client).Do(ctx).ForEachKV(func(kv op.KeyValueT[Task], header *iterator.Header) error {
+			err = n.taskEtcdPrefix.GetAll(n.client).Do(ctx).ForEachKV(func(kv *op.KeyValueT[Task], header *iterator.Header) error {
 				if n.isForCleanup(kv.Value) {
 					if err := etcdop.Key(kv.Key()).Delete(n.client).Do(ctx).Err(); err == nil {
 						logger.DebugfCtx(ctx, `deleted task "%s"`, kv.Value.Key.String())
