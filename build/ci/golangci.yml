@@ -14,7 +14,12 @@ run:
     #TMP
     - api/buffer
     - cmd/buffer-api
-    - internal/pkg/service/buffer
+    - internal/pkg/service/buffer/condition
+    - internal/pkg/service/buffer/event
+    - internal/pkg/service/buffer/cleanup
+    - internal/pkg/service/buffer/watcher
+    - internal/pkg/service/buffer/api
+    - internal/pkg/service/buffer/worker
     - test/buffer
   skip-dirs-use-default: true
   modules-download-mode: mod
