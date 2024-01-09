@@ -18,36 +18,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-// TestOpenVolume_NonExistentPath tests that an error should occur if the volume directory not exists.
-func TestOpenVolume_NonExistentPath(t *testing.T) {
-	t.Parallel()
-	tc := newVolumeTestCase(t)
-	tc.VolumePath = filesystem.Join("non-existent", "path")
-
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.True(t, errors.Is(err, os.ErrNotExist))
-	}
-}
-
-func TestOpenVolume_FileNotDir(t *testing.T) {
-	t.Parallel()
-	tc := newVolumeTestCase(t)
-	tc.VolumePath = filesystem.Join(t.TempDir(), "file")
-
-	// Create file
-	assert.NoError(t, os.WriteFile(tc.VolumePath, []byte("foo"), 0o640))
-
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.Equal(t, fmt.Sprintf(`cannot open volume "%s": the path is not directory`, tc.VolumePath), err.Error())
-	}
-}
 
 // TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume directory.
 func TestOpenVolume_Error_DirPermissions(t *testing.T) {

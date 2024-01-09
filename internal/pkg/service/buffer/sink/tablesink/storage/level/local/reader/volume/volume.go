@@ -60,11 +60,6 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, info volume
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
-	// Check volume directory
-	if err := volume.CheckVolumeDir(v.Path()); err != nil {
-		return nil, err
-	}
-
 	// Wait for volume ID
 	if volumeID, err := v.waitForVolumeID(ctx); err == nil {
 		v.id = volumeID

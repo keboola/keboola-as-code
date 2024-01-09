@@ -35,20 +35,6 @@ func TestOpen_NonExistentPath(t *testing.T) {
 	}
 }
 
-func TestOpen_FileNotDir(t *testing.T) {
-	t.Parallel()
-	tc := newVolumeTestCase(t)
-	tc.VolumePath = filesystem.Join(t.TempDir(), "file")
-
-	// Create file
-	assert.NoError(t, os.WriteFile(tc.VolumePath, []byte("foo"), 0o640))
-
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.Equal(t, fmt.Sprintf(`cannot open volume "%s": the path is not directory`, tc.VolumePath), err.Error())
-	}
-}
-
 func TestOpen_Error_DirPermissions(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
