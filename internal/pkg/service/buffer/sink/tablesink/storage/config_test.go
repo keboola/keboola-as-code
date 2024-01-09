@@ -33,9 +33,10 @@ func TestConfig_With(t *testing.T) {
 			Concurrency:    10,
 		},
 	}
-	volumesAssigmentCfg := local.VolumesAssignment{
-		PerPod:         2,
-		PreferredTypes: []string{"foo", "bar"},
+	volumesAssigmentCfg := local.VolumesConfig{
+		Count:                  2,
+		PreferredTypes:         []string{"foo", "bar"},
+		RegistrationTTLSeconds: 10,
 	}
 	diskSyncCfg := disksync.Config{
 		Mode:            disksync.ModeCache,
@@ -71,13 +72,13 @@ func TestConfig_With(t *testing.T) {
 	// First patch
 	expectedCfg := defaultCfg
 	expectedCfg.Local.Compression = compressionCfg
-	expectedCfg.Local.VolumesAssignment = volumesAssigmentCfg
+	expectedCfg.Local.Volumes = volumesAssigmentCfg
 	expectedCfg.Staging.MaxSlicesPerFile = maxSlicesPerFile
 	expectedCfg.Staging.Upload.Trigger = sliceUploadTrigger
 	patchedConfig1 := defaultCfg.With(&ConfigPatch{
 		Local: &local.ConfigPatch{
-			Compression:       &compressionCfg,
-			VolumesAssignment: &volumesAssigmentCfg,
+			Compression: &compressionCfg,
+			Volumes:     &volumesAssigmentCfg,
 		},
 		Staging: &staging.ConfigPatch{
 			MaxSlicesPerFile: &maxSlicesPerFile,
