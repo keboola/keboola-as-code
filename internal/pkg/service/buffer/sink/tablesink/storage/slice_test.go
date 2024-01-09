@@ -17,6 +17,45 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+func TestVolumeKey_Validation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	val := validator.New()
+
+	// Valid
+	assert.NoError(t, val.Validate(ctx, testFileVolumeKey()))
+
+	// Empty
+	err := val.Validate(ctx, FileVolumeKey{})
+	if assert.Error(t, err) {
+		assert.Equal(t, strings.TrimSpace(`
+- "projectId" is a required field
+- "branchId" is a required field
+- "sourceId" is a required field
+- "sinkId" is a required field
+- "fileOpenedAt" is a required field
+- "volumeId" is a required field
+`), strings.TrimSpace(err.Error()))
+	}
+}
+
+func TestFileVolumeKey_String(t *testing.T) {
+	t.Parallel()
+
+	// Valid
+	assert.Equal(
+		t,
+		"123/456/my-source/my-sink/2006-01-02T15:04:05.000Z/abcdef",
+		testFileVolumeKey().String(),
+	)
+
+	// Empty VolumeID
+	assert.Panics(t, func() {
+		_ = (FileVolumeKey{FileKey: testFileKey(), VolumeID: ""}).String()
+	})
+}
+
 func TestSliceID_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -261,6 +300,10 @@ func TestSlice_Validation(t *testing.T) {
 			}
 		}
 	}
+}
+
+func testFileVolumeKey() FileVolumeKey {
+	return FileVolumeKey{FileKey: testFileKey(), VolumeID: "abcdef"}
 }
 
 func testSliceKey() SliceKey {

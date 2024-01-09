@@ -63,6 +63,10 @@ func TestSliceSchema(t *testing.T) {
 			"storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},
 		{
+			s.InLevel(storage.LevelLocal).InFileVolume(sliceKey.FileVolumeKey).Prefix(),
+			"storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/",
+		},
+		{
 			s.InLevel(storage.LevelLocal).ByKey(sliceKey).Key(),
 			"storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z",
 		},

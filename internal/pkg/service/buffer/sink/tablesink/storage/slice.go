@@ -26,27 +26,39 @@ type Slice struct {
 	StagingStorage staging.Slice    `json:"staging"`
 }
 
-type SliceKey struct {
+// FileVolumeKey groups file slices at the same volume.
+type FileVolumeKey struct {
 	FileKey
+	VolumeID VolumeID `json:"volumeId" validate:"required"`
+}
+
+type SliceKey struct {
+	FileVolumeKey
 	SliceID
 }
 
 type SliceID struct {
 	OpenedAt utctime.UTCTime `json:"sliceOpenedAt" validate:"required"`
-	VolumeID VolumeID        `json:"volumeId" validate:"required"`
+}
+
+func (v FileVolumeKey) String() string {
+	if v.VolumeID == "" {
+		panic(errors.New("storage.FileVolumeKey.VolumeID cannot be empty"))
+	}
+	return v.FileKey.String() + "/" + v.VolumeID.String()
+}
+
+func (v SliceKey) String() string {
+	return v.FileVolumeKey.String() + "/" + v.SliceID.String()
+}
+
+func (v SliceKey) OpenedAt() utctime.UTCTime {
+	return v.SliceID.OpenedAt
 }
 
 func (v SliceID) String() string {
 	if v.OpenedAt.IsZero() {
 		panic(errors.New("storage.SliceID.OpenedAt cannot be empty"))
 	}
-	return v.VolumeID.String() + "/" + v.OpenedAt.String()
-}
-
-func (v SliceKey) String() string {
-	return v.FileKey.String() + "/" + v.SliceID.String()
-}
-
-func (v SliceKey) OpenedAt() utctime.UTCTime {
-	return v.SliceID.OpenedAt
+	return v.OpenedAt.String()
 }
