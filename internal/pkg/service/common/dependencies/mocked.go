@@ -66,7 +66,8 @@ type MockedConfig struct {
 	debugLogger  log.DebugLogger
 	procOpts     []servicectx.Option
 
-	etcdConfig etcdclient.Config
+	etcdConfig   etcdclient.Config
+	etcdDebugLog bool
 
 	services                  keboola.Services
 	features                  keboola.Features
@@ -143,6 +144,12 @@ func WithEtcdConfig(cfg etcdclient.Config) MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
 		c.etcdConfig = cfg
+	}
+}
+
+func WithEtcdDebugLog(v bool) MockedOption {
+	return func(c *MockedConfig) {
+		c.etcdDebugLog = v
 	}
 }
 
@@ -302,8 +309,10 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 		etcdCfg := cfg.etcdConfig
 		if cfg.etcdConfig.Endpoint == "" {
 			cfg.etcdConfig = etcdhelper.TmpNamespace(t)
-			cfg.etcdConfig.DebugLog = true
 			etcdCfg = cfg.etcdConfig
+		}
+		if cfg.etcdDebugLog {
+			cfg.etcdConfig.DebugLog = true
 		}
 		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, etcdCfg)
 		require.NoError(t, err)
@@ -417,17 +426,23 @@ func (c *ObjectsContainer) MappersFor(_ *state.State) (mapper.Mappers, error) {
 }
 
 func defaultMockedResponses(cfg *MockedConfig) (client.Client, *httpmock.MockTransport) {
+	// Normalize host
+	host := cfg.storageAPIHost
+	if !strings.HasPrefix(host, "https://") && !strings.HasPrefix(host, "http://") {
+		host = "https://" + host
+	}
+
 	httpClient, mockedHTTPTransport := client.NewMockedClient()
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("%s/v2/storage/", cfg.storageAPIHost),
+		fmt.Sprintf("%s/v2/storage/", host),
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Index: keboola.Index{Services: cfg.services, Features: cfg.features}, Components: cfg.components,
 		}).Once(),
 	)
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("%s/v2/storage/?exclude=components", cfg.storageAPIHost),
+		fmt.Sprintf("%s/v2/storage/?exclude=components", host),
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Index: keboola.Index{Services: cfg.services, Features: cfg.features}, Components: keboola.Components{},
 		}),
@@ -440,7 +455,7 @@ func defaultMockedResponses(cfg *MockedConfig) (client.Client, *httpmock.MockTra
 	}
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("%s/v2/storage/tokens/verify", cfg.storageAPIHost),
+		fmt.Sprintf("%s/v2/storage/tokens/verify", host),
 		verificationResponder,
 	)
 
