@@ -2,6 +2,8 @@ package op_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,32 +43,35 @@ func TestAtomicUpdate(t *testing.T) {
 	require.NoError(t, key7.Put(client, "value").Do(ctx).Err())
 	require.NoError(t, key8.Put(client, "value").Do(ctx).Err())
 
+	// Create logger for processor callback
+	var logger strings.Builder
+
 	// Create atomic update operation
 	var beforeUpdate func() (clear bool)
 	var valueFromGetPhase string
 	var result string
 	atomicOp := op.Atomic(client, &result)
-	atomicOp.OnRead(func() {
+	atomicOp.OnRead(func(context.Context) {
 		result = "n/a"
 	})
-	atomicOp.OnReadOrErr(func() error {
+	atomicOp.OnReadOrErr(func(context.Context) error {
 		return nil
 	})
 	atomicOp.ReadOp(nil)
 	atomicOp.ReadOp(key1.Get(client).WithOnResult(func(kv *op.KeyValue) {
 		valueFromGetPhase = string(kv.Value)
 	}))
-	atomicOp.Read(func() op.Op {
+	atomicOp.Read(func(context.Context) op.Op {
 		return op.MergeToTxn(
 			client,
 			key1.Get(client),
 			key2.Delete(client),
 			key3.Put(client, "value"),
-			op.NewTxnOp(client).
+			op.Txn(client).
 				If(etcd.Compare(etcd.Value("key4"), "=", "value")).
 				Then(
 					key5.Get(client),
-					op.NewTxnOp(client).
+					op.Txn(client).
 						If(etcd.Compare(etcd.Value("checkMissing"), "=", "value")).
 						Then().
 						Else(key8.Get(client)),
@@ -74,15 +79,15 @@ func TestAtomicUpdate(t *testing.T) {
 				Else(key7.Get(client)),
 		)
 	})
-	atomicOp.BeforeWriteOrErr(func() error {
+	atomicOp.BeforeWriteOrErr(func(context.Context) error {
 		if beforeUpdate != nil {
-			if clear := beforeUpdate(); clear {
+			if clearCallback := beforeUpdate(); clearCallback {
 				beforeUpdate = nil
 			}
 		}
 		return nil
 	})
-	atomicOp.Write(func() op.Op {
+	atomicOp.Write(func(context.Context) op.Op {
 		// Use a value from the GET phase in the UPDATE phase
 		return key1.Put(client, "<"+valueFromGetPhase+">")
 	})
@@ -90,6 +95,13 @@ func TestAtomicUpdate(t *testing.T) {
 	atomicOp.WriteOp(key8.Put(client, "value").WithOnResult(func(_ op.NoResult) {
 		result = "ok"
 	}))
+	atomicOp.AddProcessor(func(ctx context.Context, result *op.Result[string]) {
+		if err := result.Err(); err == nil {
+			_, _ = logger.WriteString(fmt.Sprintf("atomic operation succeeded: %s\n", result.Result()))
+		} else {
+			_, _ = logger.WriteString(fmt.Sprintf("atomic operation failed: %s\n", err))
+		}
+	})
 
 	// 1. No modification during update, DoWithoutRetry, success
 	ok, err := atomicOp.DoWithoutRetry(ctx)
@@ -142,4 +154,91 @@ func TestAtomicUpdate(t *testing.T) {
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Equal(t, "<newValue2>", string(r.Value))
+
+	// Check processor logs, 3x success: 1., 2., 5.
+	assert.Equal(t, strings.TrimSpace(`
+atomic operation succeeded: ok
+atomic operation succeeded: ok
+atomic operation succeeded: ok
+`), strings.TrimSpace(logger.String()))
+}
+
+func TestAtomicOp_AddFrom(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Create logger for processor callback
+	var logger strings.Builder
+
+	opRoot := op.
+		Atomic(client, &op.NoResult{}).
+		WriteOp(etcdop.Key("key0").Put(client, "0")).
+		OnResult(func(op.NoResult) {
+			logger.WriteString("operation root ok\n")
+		})
+	op1 := op.
+		Atomic(client, &op.NoResult{}).
+		WriteOp(etcdop.Key("key1").Put(client, "1")).
+		OnResult(func(op.NoResult) {
+			logger.WriteString("operation 1 ok\n")
+		})
+	op2 := op.
+		Atomic(client, &op.NoResult{}).
+		WriteOp(etcdop.Key("key2").Put(client, "2")).
+		OnResult(func(op.NoResult) {
+			logger.WriteString("operation 2 ok\n")
+		})
+	op3 := op.
+		Atomic(client, &op.NoResult{}).
+		WriteOp(etcdop.Key("key3").Put(client, "3")).
+		OnResult(func(op.NoResult) {
+			logger.WriteString("operation 3 ok\n")
+		})
+	op4 := op.
+		Atomic(client, &op.NoResult{}).
+		WriteOp(etcdop.Key("key4").Put(client, "4"))
+
+	// Merge atomic operations and invoke all
+	require.NoError(t, opRoot.AddFrom(op1).AddFrom(op2).AddFrom(op3).AddFrom(op4).Do(ctx).Err())
+	assert.Equal(t, strings.TrimSpace(`
+operation 1 ok
+operation 2 ok
+operation 3 ok
+operation root ok
+`), strings.TrimSpace(logger.String()))
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+key0
+-----
+0
+>>>>>
+
+<<<<<
+key1
+-----
+1
+>>>>>
+
+<<<<<
+key2
+-----
+2
+>>>>>
+
+<<<<<
+key3
+-----
+3
+>>>>>
+
+<<<<<
+key4
+-----
+4
+>>>>>
+`)
 }
