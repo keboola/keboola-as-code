@@ -23,29 +23,31 @@ type Definition struct {
 }
 
 type Iterator struct {
-	config       config
-	ctx          context.Context
-	opts         []op.Option
-	err          error
-	start        string         // page start prefix
-	end          string         // page start prefix
-	page         int            // page number, start from 1
-	lastIndex    int            // lastIndex in the page, 0 means empty
-	currentIndex int            // currentIndex in the page, start from 0
-	values       []*op.KeyValue // values in the page
-	header       *Header        // page response header
-	currentValue *op.KeyValue   // currentValue in the page, match currentIndex
-	onPage       []onPageFn
+	config          config
+	ctx             context.Context
+	opts            []op.Option
+	err             error
+	start           string         // page start prefix
+	end             string         // page start prefix
+	page            int            // page number, start from 1
+	lastIndexOnPage int            // lastIndexOnPage in the page, 0 means empty
+	indexOnPage     int            // indexOnPage in the page, start from 0
+	indexTotal      int            // indexTotal, start from 0
+	lastIndexTotal  int            // lastIndexTotal, start from 0, -1 means no limit
+	values          []*op.KeyValue // values in the page
+	header          *Header        // page response header
+	currentValue    *op.KeyValue   // currentValue in the page, match indexOnPage
+	onPage          []onPageFn
 }
 
-// ForEachOp definition, it can be part of a transaction.
-type ForEachOp struct {
+// ForEach definition, it can be part of a transaction.
+type ForEach struct {
 	def    Definition
 	onPage []onPageFn
 	fn     func(value *op.KeyValue, header *Header) error
 }
 
-// Result of the ForEachOp and ForEachOpT operations.
+// Result of the ForEach and ForEachT operations.
 type Result struct {
 	header *Header
 	error  error
@@ -63,7 +65,16 @@ func newIterator(config config) Definition {
 
 // Do converts iterator definition to the iterator.
 func (v Definition) Do(ctx context.Context, opts ...op.Option) *Iterator {
-	return &Iterator{ctx: ctx, opts: opts, config: v.config, start: v.config.prefix, end: v.config.end, page: 0, currentIndex: 0}
+	return &Iterator{
+		ctx:            ctx,
+		opts:           opts,
+		config:         v.config,
+		start:          v.config.prefix,
+		end:            v.config.end,
+		lastIndexTotal: v.config.limit - 1, // -1 means no limit
+		indexOnPage:    -1,                 // Next method must be called at first
+		indexTotal:     -1,                 // Next method must be called at first
+	}
 }
 
 // ForEach method converts iterator to for each operation definition, so it can be part of a transaction.
@@ -77,7 +88,7 @@ func (v *ForEach) Op(ctx context.Context) (op.LowLevelOp, error) {
 	// Other pages are loaded within MapResponse function, see below.
 	// Iterator always load next pages WithRevision,
 	// so all results, from all pages, are from the same revision.
-	firstPageOp, err := newFirstPageOp(v.def.client, v.def.prefix, v.def.end, v.def.pageSize, v.def.revision).Op(ctx)
+	firstPageOp, err := newFirstPageOp(v.def.config).Op(ctx)
 	if err != nil {
 		return op.LowLevelOp{}, err
 	}
@@ -91,7 +102,6 @@ func (v *ForEach) Op(ctx context.Context) (op.LowLevelOp, error) {
 
 			// Inject the first page, from the response
 			itr.moveToPage(response.Get())
-			itr.currentIndex--
 
 			// Process all records from the first page and load next pages, if any.
 			return op.NoResult{}, itr.ForEach(v.fn)
@@ -138,12 +148,20 @@ func (v *Iterator) Next() bool {
 		v.err = v.ctx.Err()
 		return false
 	default:
+		// Is limit reached?
+		if v.limitReached() {
+			return false
+		}
+
 		// Is there one more item?
 		if !v.nextItem() && !v.nextPage() {
 			return false
 		}
 
-		v.currentValue = v.values[v.currentIndex]
+		v.indexOnPage++
+		v.indexTotal++
+		v.currentValue = v.values[v.indexOnPage]
+
 		return true
 	}
 }
@@ -151,7 +169,7 @@ func (v *Iterator) Next() bool {
 // Value returns the current value.
 // It must be called after Next method.
 func (v *Iterator) Value() *op.KeyValue {
-	if v.page == 0 {
+	if v.page == 0 || v.indexOnPage < 0 {
 		panic(errors.New("unexpected Value() call: Next() must be called first"))
 	}
 	if v.err != nil {
@@ -207,12 +225,12 @@ func (v *Iterator) ForEach(fn func(value *op.KeyValue, header *Header) error) (e
 	return nil
 }
 
+func (v *Iterator) limitReached() bool {
+	return v.lastIndexTotal >= 0 && v.indexTotal == v.lastIndexTotal
+}
+
 func (v *Iterator) nextItem() bool {
-	if v.lastIndex > v.currentIndex {
-		v.currentIndex++
-		return true
-	}
-	return false
+	return v.page != 0 && v.indexOnPage < v.lastIndexOnPage
 }
 
 func (v *Iterator) nextPage() bool {
@@ -231,7 +249,7 @@ func (v *Iterator) nextPage() bool {
 	}
 
 	// Do with retry
-	r := nextPageOp(v.config.client, v.start, v.end, v.config.pageSize, revision).Do(v.ctx, v.opts...)
+	r := nextPageOp(v.config.client, v.start, v.end, v.config.sort, v.config.pageSize, revision).Do(v.ctx, v.opts...)
 	if err := r.Err(); err != nil {
 		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d, revision=%d: %w`, v.start, v.page, revision, err)
 		return false
@@ -256,21 +274,25 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 	// Handle empty result
 	v.values = kvs
 	v.header = header
-	v.lastIndex = len(v.values) - 1
-	if v.lastIndex == -1 {
+	v.lastIndexOnPage = len(v.values) - 1
+	if v.lastIndexOnPage == -1 {
 		return false
 	}
 
 	// Prepare next page
 	if more {
 		// Start of the next page is one key after the last key
-		lastKey := string(v.values[v.lastIndex].Key)
-		v.start = etcd.GetPrefixRangeEnd(lastKey)
+		lastKey := string(v.values[v.lastIndexOnPage].Key)
+		if v.config.sort == etcd.SortAscend {
+			v.start = etcd.GetPrefixRangeEnd(lastKey)
+		} else {
+			v.end = lastKey
+		}
 	} else {
 		v.start = end
 	}
 
-	v.currentIndex = 0
+	v.indexOnPage = -1
 	v.page++
 	return true
 }
@@ -283,17 +305,17 @@ func (v Result) Err() error {
 	return v.error
 }
 
-func newFirstPageOp(client etcd.KV, prefix, end string, pageSize int, revision int64) op.GetManyOp {
-	return nextPageOp(client, prefix, end, pageSize, revision)
+func newFirstPageOp(cfg config) op.GetManyOp {
+	return nextPageOp(cfg.client, cfg.prefix, cfg.end, cfg.sort, cfg.pageSize, cfg.revision)
 }
 
-func nextPageOp(client etcd.KV, start, end string, pageSize int, revision int64) op.GetManyOp {
+func nextPageOp(client etcd.KV, start, end string, sort etcd.SortOrder, pageSize int, revision int64) op.GetManyOp {
 	// Range options
 	opts := []etcd.OpOption{
 		etcd.WithFromKey(),
 		etcd.WithRange(end), // iterate to the end of the prefix
 		etcd.WithLimit(int64(pageSize)),
-		etcd.WithSort(etcd.SortByKey, etcd.SortAscend),
+		etcd.WithSort(etcd.SortByKey, sort),
 	}
 
 	// Ensure atomicity

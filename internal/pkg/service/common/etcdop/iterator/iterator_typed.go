@@ -78,7 +78,7 @@ func (v *ForEachT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 	// Other pages are loaded within MapResponse method, see below.
 	// Iterator always load next pages WithRevision,
 	// so all results, from all pages, are from the same revision.
-	firstPageOp, err := newFirstPageOp(v.def.client, v.def.prefix, v.def.end, v.def.pageSize, v.def.revision).Op(ctx)
+	firstPageOp, err := newFirstPageOp(v.def.config).Op(ctx)
 	if err != nil {
 		return op.LowLevelOp{}, err
 	}
@@ -92,24 +92,33 @@ func (v *ForEachT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 
 			// Inject the first page, from the response
 			itr.moveToPage(response.Get())
-			itr.currentIndex--
 
 			// Process all records from the first page and load next pages, if any.
-			return op.NoResult{}, itr.ForEachValue(v.onValue)
+			return op.NoResult{}, v.forEach(itr)
 		},
 	}, nil
 }
 
-func (v *ForEachOpT[T]) Do(ctx context.Context, opts ...op.Option) (out Result) {
+func (v *ForEachT[T]) Do(ctx context.Context, opts ...op.Option) (out Result) {
 	// See comment in the Op method.
 	itr := v.def.Do(ctx, opts...).OnPage(v.onPage...)
-	if err := itr.ForEachValue(v.onValue); err != nil {
+
+	if err := v.forEach(itr); err != nil {
 		out.error = err
 		return out
 	}
 
 	out.header = itr.header
 	return out
+}
+
+func (v *ForEachT[T]) forEach(itr *IteratorT[T]) error {
+	if v.onValue != nil {
+		return itr.ForEachValue(v.onValue)
+	} else if v.onKV != nil {
+		return itr.ForEachKV(v.onKV)
+	}
+	return nil
 }
 
 // OnFirstPage registers a callback that is executed after the first page is successfully loaded.
