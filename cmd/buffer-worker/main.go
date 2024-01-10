@@ -51,7 +51,7 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferWorker]")
+	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).AddPrefix("[bufferWorker]")
 	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.

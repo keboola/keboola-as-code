@@ -4,15 +4,13 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestServiceLogger_VerboseFalse(t *testing.T) {
 	t.Parallel()
 
 	var out strings.Builder
-	logger := NewServiceLogger(&out, false).AddPrefix("[prefix1]")
+	logger := NewServiceLogger(&out, false).WithComponent("component1")
 
 	// Log messages
 	logger.DebugCtx(context.Background(), "Debug msg")
@@ -20,8 +18,8 @@ func TestServiceLogger_VerboseFalse(t *testing.T) {
 	logger.WarnCtx(context.Background(), "Warn msg")
 	logger.ErrorCtx(context.Background(), "Error msg")
 
-	// Log messages with a different prefix
-	logger = logger.AddPrefix("[prefix2]")
+	// Log messages with a different component
+	logger = logger.WithComponent("component2")
 	logger.DebugCtx(context.Background(), "Debug msg")
 	logger.InfoCtx(context.Background(), "Info msg")
 	logger.WarnCtx(context.Background(), "Warn msg")
@@ -29,21 +27,21 @@ func TestServiceLogger_VerboseFalse(t *testing.T) {
 
 	// Assert
 	expected := `
-[prefix1]INFO Info msg
-[prefix1]WARN Warn msg
-[prefix1]ERROR Error msg
-[prefix1][prefix2]INFO Info msg
-[prefix1][prefix2]WARN Warn msg
-[prefix1][prefix2]ERROR Error msg
+{"level":"info","message":"Info msg","component":"component1"}
+{"level":"warn","message":"Warn msg","component":"component1"}
+{"level":"error","message":"Error msg","component":"component1"}
+{"level":"info","message":"Info msg","component":"component1.component2"}
+{"level":"warn","message":"Warn msg","component":"component1.component2"}
+{"level":"error","message":"Error msg","component":"component1.component2"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), out.String())
+	AssertJSONMessages(t, expected, out.String())
 }
 
 func TestServiceLogger_VerboseTrue(t *testing.T) {
 	t.Parallel()
 
 	var out strings.Builder
-	logger := NewServiceLogger(&out, true).AddPrefix("[prefix1]")
+	logger := NewServiceLogger(&out, true).WithComponent("component1")
 
 	// Log messages
 	logger.DebugCtx(context.Background(), "Debug msg")
@@ -51,8 +49,8 @@ func TestServiceLogger_VerboseTrue(t *testing.T) {
 	logger.WarnCtx(context.Background(), "Warn msg")
 	logger.ErrorCtx(context.Background(), "Error msg")
 
-	// Log messages with a different prefix
-	logger = logger.AddPrefix("[prefix2]")
+	// Log messages with a different component
+	logger = logger.WithComponent("component2")
 	logger.DebugCtx(context.Background(), "Debug msg")
 	logger.InfoCtx(context.Background(), "Info msg")
 	logger.WarnCtx(context.Background(), "Warn msg")
@@ -60,14 +58,14 @@ func TestServiceLogger_VerboseTrue(t *testing.T) {
 
 	// Assert
 	expected := `
-[prefix1]DEBUG Debug msg
-[prefix1]INFO Info msg
-[prefix1]WARN Warn msg
-[prefix1]ERROR Error msg
-[prefix1][prefix2]DEBUG Debug msg
-[prefix1][prefix2]INFO Info msg
-[prefix1][prefix2]WARN Warn msg
-[prefix1][prefix2]ERROR Error msg
+{"level":"debug","message":"Debug msg","component":"component1"}
+{"level":"info","message":"Info msg","component":"component1"}
+{"level":"warn","message":"Warn msg","component":"component1"}
+{"level":"error","message":"Error msg","component":"component1"}
+{"level":"debug","message":"Debug msg","component":"component1.component2"}
+{"level":"info","message":"Info msg","component":"component1.component2"}
+{"level":"warn","message":"Warn msg","component":"component1.component2"}
+{"level":"error","message":"Error msg","component":"component1.component2"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), out.String())
+	AssertJSONMessages(t, expected, out.String())
 }
