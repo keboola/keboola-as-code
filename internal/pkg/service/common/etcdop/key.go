@@ -2,7 +2,9 @@ package etcdop
 
 import (
 	"context"
+	"regexp"
 
+	"github.com/umisama/go-regexpcache"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -19,6 +21,14 @@ type key = Key
 type KeyT[T any] struct {
 	key
 	serde *serde.Serde
+}
+
+func NewKey(v string) Key {
+	return Key(v)
+}
+
+func NewTypedKey[T any](v string, s *serde.Serde) KeyT[T] {
+	return KeyT[T]{key: NewKey(v), serde: s}
 }
 
 func (v Key) Key() string {
@@ -129,6 +139,11 @@ func (v Key) PutIfNotExists(client etcd.KV, val string, opts ...etcd.OpOption) o
 			return raw.Txn().Succeeded, nil
 		},
 	)
+}
+
+func (v KeyT[T]) ReplacePrefix(old, repl string) KeyT[T] {
+	v.key = Key(regexpcache.MustCompile("^"+regexp.QuoteMeta(old)).ReplaceAllString(string(v.key), repl))
+	return v
 }
 
 func (v KeyT[T]) GetKV(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValueT[T]] {

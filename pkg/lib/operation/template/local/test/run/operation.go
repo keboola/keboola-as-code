@@ -238,7 +238,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 
 	// Run the mainConfig job
-	api := testPrj.KeboolaProjectAPI()
+	api := testPrj.ProjectAPI()
 	job, err := api.NewCreateJobRequest(tmplInst.MainConfig.ComponentID).WithConfig(tmplInst.MainConfig.ConfigID).Send(ctx)
 	if err != nil {
 		return err

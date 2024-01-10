@@ -39,6 +39,10 @@ func (v Prefix) Key(key string) Key {
 	return Key(v.Prefix() + key)
 }
 
+func (v PrefixT[T]) Serde() *serde.Serde {
+	return v.serde
+}
+
 func (v PrefixT[T]) Prefix() string {
 	return v.prefix.Prefix()
 }

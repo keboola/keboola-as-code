@@ -181,6 +181,57 @@ ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo005", "some/prefix0")
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1 | %s
 `,
 		},
+		{
+			name:     "limit=3",
+			kvCount:  5,
+			pageSize: 3,
+			options:  []iterator.Option{iterator.WithLimit(3)},
+			expected: []result{
+				{key: "some/prefix/foo001", value: "bar001"},
+				{key: "some/prefix/foo002", value: "bar002"},
+				{key: "some/prefix/foo003", value: "bar003"},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+`,
+		},
+		{
+			name:     "sort=SortDescend",
+			kvCount:  5,
+			pageSize: 3,
+			options:  []iterator.Option{iterator.WithSort(etcd.SortDescend)},
+			expected: []result{
+				{key: "some/prefix/foo005", value: "bar005"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo002", value: "bar002"},
+				{key: "some/prefix/foo001", value: "bar001"},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | count: 2 | %s
+`,
+		},
+		{
+			name:     "sort=SortDescend + limit=3",
+			kvCount:  5,
+			pageSize: 2,
+			options:  []iterator.Option{iterator.WithSort(etcd.SortDescend), iterator.WithLimit(3)},
+			expected: []result{
+				{key: "some/prefix/foo005", value: "bar005"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo003", value: "bar003"},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | count: 3 | %s
+`,
+		},
 	}
 
 	for _, tc := range cases {
@@ -349,7 +400,7 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	})
 }
 
-func TestIterator_ForEachOp(t *testing.T) {
+func TestIterator_ForEach(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -360,7 +411,7 @@ func TestIterator_ForEachOp(t *testing.T) {
 	// Define op
 	getAllOp := prefix.
 		GetAll(tracker, iterator.WithPageSize(2)).
-		ForEachOp(func(value *op.KeyValue, header *iterator.Header) error {
+		ForEach(func(value *op.KeyValue, header *iterator.Header) error {
 			_, _ = out.WriteString(fmt.Sprintf("%s\n", string(value.Value)))
 			return nil
 		})

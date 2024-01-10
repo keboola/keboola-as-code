@@ -225,6 +225,13 @@ func TestTypedKeyOperations(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestKeyT_ReplacePrefix(t *testing.T) {
+	t.Parallel()
+	k := NewTypedKey[fooType]("original/prefix/foo/bar", serde.NewJSON(serde.NoValidation))
+	assert.Equal(t, "original/prefix/foo/bar", k.Key())
+	assert.Equal(t, "new/prefix/foo/bar", k.ReplacePrefix("original/prefix", "new/prefix").Key())
+}
+
 func BenchmarkKey_Exists(b *testing.B) {
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))

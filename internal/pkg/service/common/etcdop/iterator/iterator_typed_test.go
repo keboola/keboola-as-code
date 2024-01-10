@@ -46,7 +46,7 @@ func TestIteratorT(t *testing.T) {
 			name:     "empty",
 			kvCount:  0,
 			pageSize: 3,
-			expected: []resultT{},
+			expected: nil, // empty slice
 			expectedLogs: `
 ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 0 | %s
@@ -163,6 +163,57 @@ ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo005", "some/prefix0")
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1 | %s
 `,
 		},
+		{
+			name:     "limit=3",
+			kvCount:  5,
+			pageSize: 3,
+			options:  []iterator.Option{iterator.WithLimit(3)},
+			expected: []resultT{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+`,
+		},
+		{
+			name:     "sort=SortDescend",
+			kvCount:  5,
+			pageSize: 3,
+			options:  []iterator.Option{iterator.WithSort(etcd.SortDescend)},
+			expected: []resultT{
+				{key: "some/prefix/foo005", value: obj{"bar005"}},
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | count: 2 | %s
+`,
+		},
+		{
+			name:     "sort=SortDescend + limit=3",
+			kvCount:  5,
+			pageSize: 2,
+			options:  []iterator.Option{iterator.WithSort(etcd.SortDescend), iterator.WithLimit(3)},
+			expected: []resultT{
+				{key: "some/prefix/foo005", value: obj{"bar005"}},
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | count: 3 | %s
+`,
+		},
 	}
 
 	for _, tc := range cases {
@@ -175,15 +226,26 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 
 		// Test iteration methods
 		logs.Reset()
-		actual := iterateAllT(t, prefix.GetAll(client, ops...), ctx)
+		actual := iterateAllT(t, ctx, prefix.GetAll(client, ops...))
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
 		// Test All method
 		logs.Reset()
-		actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).All()
+		actualValues, err := prefix.GetAll(client, ops...).Do(ctx).All()
 		assert.NoError(t, err)
-		actual = make([]resultT, 0)
+		var expectedValues []obj
+		for _, v := range tc.expected {
+			expectedValues = append(expectedValues, v.value)
+		}
+		assert.Equal(t, expectedValues, actualValues, tc.name)
+		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Test AllKVs method
+		logs.Reset()
+		actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).AllKVs()
+		assert.NoError(t, err)
+		actual = nil
 		for _, kv := range actualKvs {
 			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 		}
@@ -193,8 +255,8 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 		// Test ForEachKV method
 		logs.Reset()
 		itr := prefix.GetAll(client, ops...).Do(ctx)
-		actual = make([]resultT, 0)
-		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj], header *iterator.Header) error {
+		actual = nil
+		assert.NoError(t, itr.ForEachKV(func(kv *op.KeyValueT[obj], header *iterator.Header) error {
 			assert.NotNil(t, header)
 			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 			return nil
@@ -244,7 +306,7 @@ func TestIteratorT_Revision(t *testing.T) {
 		t,
 		prefix.
 			GetAll(client, iterator.WithRev(revision)).Do(ctx).
-			ForEachKV(func(kv op.KeyValueT[obj], _ *iterator.Header) error {
+			ForEachKV(func(kv *op.KeyValueT[obj], _ *iterator.Header) error {
 				actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 				return nil
 			}),
@@ -270,7 +332,7 @@ func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 	})
 }
 
-func TestIteratorT_ForEachOp(t *testing.T) {
+func TestIteratorT_ForEach(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -281,7 +343,7 @@ func TestIteratorT_ForEachOp(t *testing.T) {
 	// Define op
 	getAllOp := prefix.
 		GetAll(tracker, iterator.WithPageSize(2)).
-		ForEachOp(func(value obj, header *iterator.Header) error {
+		ForEach(func(value obj, header *iterator.Header) error {
 			_, _ = out.WriteString(fmt.Sprintf("value: %s\n", value.Value))
 			return nil
 		}).
@@ -318,7 +380,7 @@ value: bar005
 `), strings.TrimSpace(out.String()))
 }
 
-func TestIteratorT_WithResultTo(t *testing.T) {
+func TestIteratorT_WithAllTo(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -326,7 +388,7 @@ func TestIteratorT_WithResultTo(t *testing.T) {
 	prefix := generateKVsT(t, 5, ctx, client)
 
 	var target []obj
-	require.NoError(t, prefix.GetAll(client).WithResultTo(&target).Do(ctx).Err())
+	require.NoError(t, prefix.GetAll(client).WithAllTo(&target).Do(ctx).Err())
 	assert.Equal(t, []obj{
 		{Value: "bar001"},
 		{Value: "bar002"},
@@ -336,10 +398,135 @@ func TestIteratorT_WithResultTo(t *testing.T) {
 	}, target)
 }
 
-func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context) []resultT {
+func TestIteratorT_WithAllKVsTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target op.KeyValuesT[obj]
+	require.NoError(t, prefix.GetAll(client).WithAllKVsTo(&target).Do(ctx).Err())
+	assert.Len(t, target, 5)
+}
+
+func TestIteratorT_AllTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target []obj
+	require.NoError(t, prefix.GetAll(client).Do(ctx).AllTo(&target))
+	assert.Equal(t, []obj{
+		{Value: "bar001"},
+		{Value: "bar002"},
+		{Value: "bar003"},
+		{Value: "bar004"},
+		{Value: "bar005"},
+	}, target)
+}
+
+func TestIteratorT_AllKVsTo(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	var target op.KeyValuesT[obj]
+	require.NoError(t, prefix.GetAll(client).Do(ctx).AllKVsTo(&target))
+	assert.Len(t, target, 5)
+}
+
+func TestIteratorT_All(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	target, err := prefix.GetAll(client).Do(ctx).All()
+	require.NoError(t, err)
+	assert.Equal(t, []obj{
+		{Value: "bar001"},
+		{Value: "bar002"},
+		{Value: "bar003"},
+		{Value: "bar004"},
+		{Value: "bar005"},
+	}, target)
+}
+
+func TestIteratorT_AllKVs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	target, err := prefix.GetAll(client).Do(ctx).AllKVs()
+	require.NoError(t, err)
+	assert.Len(t, target, 5)
+}
+
+func TestIteratorT_WithKVFilter(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	assert.Equal(
+		t,
+		[]resultT{
+			{
+				key: "some/prefix/foo003",
+				value: obj{
+					Value: "bar003",
+				},
+			},
+		},
+		iterateAllT(t, ctx, prefix.
+			GetAll(client, iterator.WithPageSize(2)).
+			WithKVFilter(
+				func(kv *op.KeyValueT[obj]) bool {
+					return strings.HasSuffix(kv.Value.Value, "003") // <<<<<<<<<<<<<
+				},
+			),
+		),
+	)
+}
+
+func TestIteratorT_WithFilter(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	prefix := generateKVsT(t, 5, ctx, client)
+
+	assert.Equal(
+		t,
+		[]resultT{
+			{
+				key: "some/prefix/foo003",
+				value: obj{
+					Value: "bar003",
+				},
+			},
+		},
+		iterateAllT(t, ctx, prefix.
+			GetAll(client, iterator.WithPageSize(2)).
+			WithFilter(
+				func(v obj) bool {
+					return strings.HasSuffix(v.Value, "003") // <<<<<<<<<<<<<
+				},
+			),
+		),
+	)
+}
+
+func iterateAllT(t *testing.T, ctx context.Context, def iterator.DefinitionT[obj]) (actual []resultT) {
 	t.Helper()
 	it := def.Do(ctx)
-	actual := make([]resultT, 0)
 	for it.Next() {
 		kv := it.Value()
 		actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})

@@ -22,7 +22,7 @@ type NoResultMapper func(ctx context.Context, raw RawResponse) error
 func NewNoResultOp(client etcd.KV, factory LowLevelFactory, mapper NoResultMapper) NoResultOp {
 	out := NoResultOp{}
 	out.client = client
-	out.lowLevelFactory = factory
+	out.factory = factory
 	out.mapper = func(ctx context.Context, raw RawResponse) (NoResult, error) {
 		err := mapper(ctx, raw)
 		return NoResult{}, err

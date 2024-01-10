@@ -52,7 +52,7 @@ func (c *apiClient) TablePreview(tableID, sortBy string) *keboola.TablePreview {
 	c.t.Helper()
 	c.t.Logf(`loading preview of the table "%s" ...`, tableID)
 
-	preview, err := c.ts.project.KeboolaProjectAPI().
+	preview, err := c.ts.project.ProjectAPI().
 		PreviewTableRequest(
 			keboola.MustParseTableID(tableID),
 			keboola.WithLimitRows(20),

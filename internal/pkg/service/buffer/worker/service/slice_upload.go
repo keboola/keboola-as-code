@@ -125,7 +125,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				var allSlices []model.Slice
 				getSlicesOp := s.schema.Slices().Uploaded().InFile(slice.FileKey).
 					GetAll().
-					ForEachOp(func(s model.Slice, _ *iterator.Header) error {
+					ForEach(func(s model.Slice, _ *iterator.Header) error {
 						allSlices = append(allSlices, s)
 						return nil
 					})

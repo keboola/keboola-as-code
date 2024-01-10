@@ -163,7 +163,7 @@ func WithTestProject(project *testproject.Project) MockedOption {
 		c.storageAPIToken = *project.StorageAPIToken()
 
 		c.useRealAPIs = true
-		c.keboolaProjectAPI = project.KeboolaProjectAPI()
+		c.keboolaProjectAPI = project.ProjectAPI()
 	}
 }
 
