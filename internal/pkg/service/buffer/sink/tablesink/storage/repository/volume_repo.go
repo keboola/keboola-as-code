@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
-// VolumeRepository ....
+// VolumeRepository provides database operations with the storage.VolumeMetadata entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type VolumeRepository struct {
 	client etcd.KV
