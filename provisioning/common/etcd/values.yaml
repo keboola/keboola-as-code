@@ -16,7 +16,7 @@ tolerations:
 
 # Locked/updated etcd image
 image:
-  tag: 3.5.5-debian-11-r16
+  tag: 3.5.11-debian-11-r3
 
 # Additional pod annotations
 podAnnotations:
