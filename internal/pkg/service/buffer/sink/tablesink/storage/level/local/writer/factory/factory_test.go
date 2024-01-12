@@ -16,17 +16,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
 )
 
-// TestDefaultFactory_FileTypeCSV tests that csv.Writer is created for the storage.FileTypeCSV.
-// Test for csv.Writer itself are in the "csv" package.
+// TestDefaultFactory_FileTypeCSV tests that csv.WriterVolume is created for the storage.FileTypeCSV.
+// Test for csv.WriterVolume itself are in the "csv" package.
 func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 	logger := log.NewNopLogger()
 	clk := clock.New()
-	info := volume.NewInfo(t.TempDir(), "hdd", "1")
+	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
-	v, err := volume.Open(ctx, logger, clk, writer.NewEvents(), info, volume.WithWriterFactory(factory.Default))
+	v, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec, volume.WithWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()
@@ -47,9 +47,9 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	ctx := context.Background()
 	logger := log.NewNopLogger()
 	clk := clock.New()
-	info := volume.NewInfo(t.TempDir(), "hdd", "1")
+	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
-	v, err := volume.Open(ctx, logger, clk, writer.NewEvents(), info, volume.WithWriterFactory(factory.Default))
+	v, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec, volume.WithWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()

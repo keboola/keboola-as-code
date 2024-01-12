@@ -91,8 +91,9 @@ func TestFile_Validation(t *testing.T) {
 		Dir:         "my-dir",
 		Compression: compression.DefaultConfig(),
 		DiskSync:    disksync.DefaultConfig(),
-		VolumesAssignment: local.VolumesAssignment{
-			PerPod: 1,
+		Volumes: local.VolumesConfig{
+			Count:                  1,
+			RegistrationTTLSeconds: 10,
 		},
 	}
 	stagingStorage := staging.File{

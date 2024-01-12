@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
@@ -62,9 +64,33 @@ func (v *provider) SliceStats(ctx context.Context, k storage.SliceKey) (statisti
 	return v.fn(ctx, k)
 }
 
-// aggregate statistics from the database.
-func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, err error) {
-	txn := op.NewTxnOp(r.client)
+// MaxUsedDiskSizeBySliceIn scans the statistics in the parentKey, scanned are:
+//   - The last <limit> slices in storage.LevelStaging (uploaded slices).
+//   - The last <limit> slices in storage.LevelTarget (imported slices).
+func (r *Repository) MaxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int) *op.TxnOp[datasize.ByteSize] {
+	var maxSize datasize.ByteSize
+	txn := op.TxnWithResult(r.client, &maxSize)
+	for _, level := range []storage.Level{storage.LevelStaging, storage.LevelTarget} {
+		// Get maximum
+		txn.Then(
+			r.schema.
+				InLevel(level).InObject(parentKey).
+				GetAll(r.client, iterator.WithLimit(limit), iterator.WithSort(etcd.SortDescend)).
+				ForEach(func(v statistics.Value, header *iterator.Header) error {
+					// Ignore sums
+					if v.SlicesCount == 1 && v.CompressedSize > maxSize {
+						maxSize = v.CompressedSize
+					}
+					return nil
+				}))
+	}
+	return txn
+}
+
+// AggregateIn statistics from the database.
+func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Aggregated] {
+	var result statistics.Aggregated
+	txn := op.TxnWithResult(r.client, &result)
 	for _, level := range storage.AllLevels() {
 		level := level
 
@@ -72,16 +98,16 @@ func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out
 		pfx := r.schema.InLevel(level).InObject(objectKey)
 
 		// Sum
-		txn.Then(pfx.GetAll(r.client).ForEachOp(func(v statistics.Value, header *iterator.Header) error {
-			aggregate.Aggregate(level, v, &out)
+		txn.Then(pfx.GetAll(r.client).ForEach(func(v statistics.Value, header *iterator.Header) error {
+			aggregate.Aggregate(level, v, &result)
 			return nil
 		}))
 	}
+	return txn
+}
 
-	// Get all values in a transaction
-	if err := txn.Do(ctx).Err(); err != nil {
-		return out, err
-	}
-
-	return out, nil
+// aggregate statistics from the database.
+func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, err error) {
+	txn := r.AggregateIn(objectKey)
+	return txn.Do(ctx).ResultOrErr()
 }

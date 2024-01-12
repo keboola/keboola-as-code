@@ -2,9 +2,12 @@ package repository
 
 import (
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 )
@@ -13,24 +16,28 @@ type dependencies interface {
 	Clock() clock.Clock
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	Config() config.Config
+	KeboolaPublicAPI() *keboola.PublicAPI
+	DefinitionRepository() *definitionRepo.Repository
+	StatisticsRepository() *statsRepo.Repository
 }
 
+// Repository provides database operations with the storage entities.
+// The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
-	sink  *defRepository.SinkRepository
-	file  *FileRepository
-	slice *SliceRepository
-	token *TokenRepository
+	hook   *hook
+	sink   *definitionRepo.SinkRepository
+	file   *FileRepository
+	slice  *SliceRepository
+	token  *TokenRepository
 	volume *VolumeRepository
 }
 
-func New(d dependencies, definitionRepo *defRepository.Repository, cfg storage.Config) *Repository {
-	return newWithBackoff(d, definitionRepo, cfg, storage.DefaultBackoff())
-}
-
-func newWithBackoff(d dependencies, definitionRepo *defRepository.Repository, cfg storage.Config, backoff storage.RetryBackoff) *Repository {
+func New(d dependencies, backoff storage.RetryBackoff) *Repository {
 	r := &Repository{}
-	r.sink = definitionRepo.Sink()
-	r.file = newFileRepository(d, cfg, backoff, r)
+	r.hook = newHook(d, r)
+	r.sink = d.DefinitionRepository().Sink()
+	r.file = newFileRepository(d, backoff, r)
 	r.slice = newSliceRepository(d, backoff, r)
 	r.token = newTokenRepository(d, r)
 	r.volume = newVolumeRepository(d)

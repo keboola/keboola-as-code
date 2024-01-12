@@ -11,8 +11,8 @@ import (
 type Config struct {
 	// Compression of the local file.
 	Compression compression.Config `configKey:"compression"`
-	// VolumesAssignment configures assignment of pod volumes to the File.
-	VolumesAssignment VolumesAssignment `configKey:"volumesAssignment"`
+	// Volumes configures assignment of pod volumes to the File.
+	Volumes VolumesConfig `configKey:"volumes"`
 	// DiskSync configures the synchronization of the in-memory copy of written data to disk or OS disk cache.
 	DiskSync disksync.Config `configKey:"diskSync"`
 	// DiskAllocation configures allocation of the disk space for file slices.
@@ -24,8 +24,8 @@ type Config struct {
 type ConfigPatch struct {
 	// Compression of the local and staging file.
 	Compression *compression.Config `json:"compression,omitempty"`
-	// VolumesAssignment configures assignment of pod volumes to the File.
-	VolumesAssignment *VolumesAssignment `json:"volumesAssignment,omitempty"`
+	// Volumes configures assignment of pod volumes to the File.
+	Volumes *VolumesConfig `json:"volumes,omitempty"`
 	// DiskSync configures the synchronization of the in-memory copy of written data to disk or OS disk cache.
 	DiskSync *disksync.Config `json:"diskSync,omitempty"`
 	// DiskAllocation configures allocation of the disk space for file slices.
@@ -40,7 +40,7 @@ type DiskAllocation struct {
 	// Size of the first slice in a sink, or the size of each slice if DynamicSize is disabled.
 	Size datasize.ByteSize `json:"size" configKey:"size" configUsage:"Size of allocated disk space for a slice."`
 	// SizePercent enables dynamic size of allocated disk space.
-	// If enabled, the size of the slice will be % from the previous slice size.
+	// If enabled, the size of the slice will be % from the average slice size.
 	// The size of the first slice in a sink will be Size.
 	SizePercent int `json:"sizePercent" configKey:"sizePercent" validate:"min=0,max=200" configUsage:"Allocate disk space as % from the previous slice size."`
 }
@@ -50,8 +50,8 @@ func (c Config) With(v ConfigPatch) Config {
 	if v.Compression != nil {
 		c.Compression = *v.Compression
 	}
-	if v.VolumesAssignment != nil {
-		c.VolumesAssignment = *v.VolumesAssignment
+	if v.Volumes != nil {
+		c.Volumes = *v.Volumes
 	}
 	if v.DiskSync != nil {
 		c.DiskSync = *v.DiskSync
@@ -64,17 +64,18 @@ func (c Config) With(v ConfigPatch) Config {
 
 func NewConfig() Config {
 	return Config{
-		Compression:       compression.DefaultConfig(),
-		VolumesAssignment: defaultVolumesAssigment(),
-		DiskSync:          disksync.DefaultConfig(),
-		DiskAllocation:    defaultDiskAllocation(),
+		Compression:    compression.DefaultConfig(),
+		Volumes:        defaultVolumesAssigment(),
+		DiskSync:       disksync.DefaultConfig(),
+		DiskAllocation: defaultDiskAllocation(),
 	}
 }
 
-func defaultVolumesAssigment() VolumesAssignment {
-	return VolumesAssignment{
-		PerPod:         1,
-		PreferredTypes: []string{"default"},
+func defaultVolumesAssigment() VolumesConfig {
+	return VolumesConfig{
+		Count:                  1,
+		PreferredTypes:         []string{"default"},
+		RegistrationTTLSeconds: 10,
 	}
 }
 

@@ -2,7 +2,6 @@ package volume
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,36 +17,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-// TestOpenVolume_NonExistentPath tests that an error should occur if the volume directory not exists.
-func TestOpenVolume_NonExistentPath(t *testing.T) {
-	t.Parallel()
-	tc := newVolumeTestCase(t)
-	tc.VolumePath = filesystem.Join("non-existent", "path")
-
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.True(t, errors.Is(err, os.ErrNotExist))
-	}
-}
-
-func TestOpenVolume_FileNotDir(t *testing.T) {
-	t.Parallel()
-	tc := newVolumeTestCase(t)
-	tc.VolumePath = filesystem.Join(t.TempDir(), "file")
-
-	// Create file
-	assert.NoError(t, os.WriteFile(tc.VolumePath, []byte("foo"), 0o640))
-
-	_, err := tc.OpenVolume()
-	if assert.Error(t, err) {
-		assert.Equal(t, fmt.Sprintf(`cannot open volume "%s": the path is not directory`, tc.VolumePath), err.Error())
-	}
-}
 
 // TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume directory.
 func TestOpenVolume_Error_DirPermissions(t *testing.T) {
@@ -69,7 +42,7 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, volume.IDFile)
+	path := filesystem.Join(tc.VolumePath, local.VolumeIDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -85,7 +58,7 @@ func TestOpenVolume_Ok(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
 
 	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
@@ -141,7 +114,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Create the volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
 	tc.Clock.Add(waitForVolumeIDInterval)
 
 	// Wait for the goroutine
@@ -228,7 +201,7 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
 
 	// Open volume - first instance - ok
 	_, err := tc.OpenVolume()
@@ -248,7 +221,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
 
 	// Open volume, replace file opener
 	vol, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
@@ -278,13 +251,14 @@ func TestVolume_Close_Errors(t *testing.T) {
 }
 
 type volumeTestCase struct {
-	TB          testing.TB
-	Ctx         context.Context
-	Logger      log.DebugLogger
-	Clock       *clock.Mock
-	VolumePath  string
-	VolumeType  string
-	VolumeLabel string
+	TB           testing.TB
+	Ctx          context.Context
+	Logger       log.DebugLogger
+	Clock        *clock.Mock
+	VolumeNodeID string
+	VolumePath   string
+	VolumeType   string
+	VolumeLabel  string
 }
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
@@ -299,18 +273,19 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		TB:          tb,
-		Ctx:         ctx,
-		Logger:      logger,
-		Clock:       clock.NewMock(),
-		VolumePath:  tmpDir,
-		VolumeType:  "hdd",
-		VolumeLabel: "1",
+		TB:           tb,
+		Ctx:          ctx,
+		Logger:       logger,
+		Clock:        clock.NewMock(),
+		VolumeNodeID: "my-node",
+		VolumePath:   tmpDir,
+		VolumeType:   "hdd",
+		VolumeLabel:  "1",
 	}
 }
 
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
-	info := volume.NewInfo(tc.VolumePath, tc.VolumeType, tc.VolumeLabel)
+	info := storage.VolumeSpec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
 	return Open(tc.Ctx, tc.Logger, tc.Clock, info, opts...)
 }
 

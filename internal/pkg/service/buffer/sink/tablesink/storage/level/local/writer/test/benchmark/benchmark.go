@@ -61,7 +61,8 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Open volume
 	clk := clock.New()
 	now := clk.Now()
-	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), volume.NewInfo(b.TempDir(), "hdd", "1"))
+	spec := storage.VolumeSpec{NodeID: "my-node", Path: b.TempDir(), Type: "hdd", Label: "1"}
+	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec)
 	require.NoError(b, err)
 
 	// Create writer

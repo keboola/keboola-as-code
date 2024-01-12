@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -29,12 +29,10 @@ const (
 	volumeIDFilePerm  = 0o640
 )
 
-type volumeInfo = volume.Info
-
 // Volume represents a local directory intended for slices writing.
 type Volume struct {
-	volumeInfo
-	id storage.VolumeID
+	id   storage.VolumeID
+	spec storage.VolumeSpec
 
 	config config
 	logger log.Logger
@@ -54,41 +52,32 @@ type Volume struct {
 	writers     map[string]*writerRef
 }
 
-func NewInfo(path, typ, label string) volume.Info {
-	return volume.NewInfo(path, typ, label)
-}
-
 // Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, info volumeInfo, opts ...Option) (*Volume, error) {
-	logger.InfofCtx(ctx, `opening volume "%s"`, info.Path())
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec storage.VolumeSpec, opts ...Option) (*Volume, error) {
+	logger.InfofCtx(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
-		volumeInfo:    info,
+		spec:          spec,
 		config:        newConfig(opts),
 		logger:        logger,
 		clock:         clock,
 		events:        events,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
-		drainFilePath: filesystem.Join(info.Path(), drainFile),
+		drainFilePath: filesystem.Join(spec.Path, drainFile),
 		writersLock:   &sync.Mutex{},
 		writers:       make(map[string]*writerRef),
 	}
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
-	// Check volume directory
-	if err := volume.CheckVolumeDir(v.Path()); err != nil {
-		return nil, err
-	}
-
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
 	{
-		idFilePath := filepath.Join(v.Path(), volume.IDFile)
+		idFilePath := filepath.Join(v.spec.Path, local.VolumeIDFile)
 		content, err := os.ReadFile(idFilePath)
 
 		// VolumeID file doesn't exist, create it
@@ -110,7 +99,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 
 	// Create lock file
 	{
-		v.fsLock = flock.New(filepath.Join(v.Path(), lockFile))
+		v.fsLock = flock.New(filepath.Join(v.spec.Path, lockFile))
 		if locked, err := v.fsLock.TryLock(); err != nil {
 			return nil, errors.Errorf(`cannot acquire writer lock "%s": %w`, v.fsLock.Path(), err)
 		} else if !locked {
@@ -127,12 +116,31 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 	return v, nil
 }
 
+func (v *Volume) Path() string {
+	return v.spec.Path
+}
+
+func (v *Volume) Type() string {
+	return v.spec.Type
+}
+
+func (v *Volume) Label() string {
+	return v.spec.Label
+}
+
 func (v *Volume) ID() storage.VolumeID {
 	return v.id
 }
 
 func (v *Volume) Events() *writer.Events {
 	return v.events
+}
+
+func (v *Volume) Metadata() storage.VolumeMetadata {
+	return storage.VolumeMetadata{
+		VolumeID:   v.id,
+		VolumeSpec: v.spec,
+	}
 }
 
 func (v *Volume) Close(ctx context.Context) error {
