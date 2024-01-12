@@ -20,6 +20,7 @@ type Repository struct {
 	file  *FileRepository
 	slice *SliceRepository
 	token *TokenRepository
+	volume *VolumeRepository
 }
 
 func New(d dependencies, definitionRepo *defRepository.Repository, cfg storage.Config) *Repository {
@@ -32,6 +33,7 @@ func newWithBackoff(d dependencies, definitionRepo *defRepository.Repository, cf
 	r.file = newFileRepository(d, cfg, backoff, r)
 	r.slice = newSliceRepository(d, backoff, r)
 	r.token = newTokenRepository(d, r)
+	r.volume = newVolumeRepository(d)
 	return r
 }
 
@@ -45,4 +47,8 @@ func (r *Repository) Slice() *SliceRepository {
 
 func (r *Repository) Token() *TokenRepository {
 	return r.token
+}
+
+func (r *Repository) Volume() *VolumeRepository {
+	return r.volume
 }
