@@ -45,7 +45,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(ctx context.Context, group string, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -64,8 +64,10 @@ func NewNode(ctx context.Context, group string, d dependencies, opts ...NodeOpti
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(ctx)
-	sessionCtx, sessionCancel := context.WithCancel(ctx)
+	backgroundCtx := context.Background()
+	backgroundCtx = ctxattr.ContextWith(backgroundCtx, attribute.String("node", n.nodeID))
+	watchCtx, watchCancel := context.WithCancel(backgroundCtx)
+	sessionCtx, sessionCancel := context.WithCancel(backgroundCtx)
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))

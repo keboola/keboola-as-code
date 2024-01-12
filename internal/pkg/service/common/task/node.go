@@ -71,7 +71,7 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 }
 
-func NewNode(ctx context.Context, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -96,11 +96,13 @@ func NewNode(ctx context.Context, d dependencies, opts ...NodeOption) (*Node, er
 	}
 
 	// Graceful shutdown
+	backgroundCtx := context.Background()
+	backgroundCtx = ctxattr.ContextWith(backgroundCtx, attribute.String("node", n.nodeID))
 	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
-	n.tasksCtx, cancelTasks = context.WithCancel(context.Background()) // nolint: contextcheck
+	n.tasksCtx, cancelTasks = context.WithCancel(backgroundCtx)
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(ctx)
+	sessionCtx, cancelSession := context.WithCancel(backgroundCtx)
 	proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.InfoCtx(ctx, "received shutdown request")

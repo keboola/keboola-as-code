@@ -11,10 +11,8 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
@@ -304,7 +302,6 @@ func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdclient.Creden
 
 	// Create node
 	node, err := distribution.NewNode(
-		ctxattr.ContextWith(context.Background(), attribute.String("node", nodeName)),
 		"my-group",
 		d,
 		distribution.WithStartupTimeout(time.Second),

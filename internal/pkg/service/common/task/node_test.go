@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -911,10 +910,7 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
-	node, err := task.NewNode(
-		ctxattr.ContextWith(context.Background(), attribute.String("node", nodeName)),
-		d,
-	)
+	node, err := task.NewNode(d)
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
