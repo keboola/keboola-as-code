@@ -13,9 +13,7 @@ import (
 func TestVersioned(t *testing.T) {
 	t.Parallel()
 
-	var v VersionedInterface
-
-	v = &Versioned{Version: Version{Number: 1, Hash: "f43e93acd97eceb3"}}
+	var v VersionedInterface = &Versioned{Version: Version{Number: 1, Hash: "f43e93acd97eceb3"}}
 	assert.Equal(t, VersionNumber(1), v.VersionNumber())
 	assert.Equal(t, "0000000001", v.VersionNumber().String())
 	assert.Equal(t, "f43e93acd97eceb3", v.VersionHash())

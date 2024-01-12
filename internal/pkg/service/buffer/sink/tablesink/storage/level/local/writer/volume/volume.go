@@ -187,12 +187,14 @@ func createVolumeIDFile(path string, content []byte) error {
 	syncErr := f.Sync()
 	closeErr := f.Close()
 
-	if writeErr != nil {
+	switch {
+	case writeErr != nil:
 		return writeErr
-	} else if syncErr != nil {
+	case syncErr != nil:
 		return syncErr
-	} else if closeErr != nil {
+	case closeErr != nil:
 		return closeErr
+	default:
+		return nil
 	}
-	return nil
 }
