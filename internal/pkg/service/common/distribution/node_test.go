@@ -172,75 +172,75 @@ node3
 
 	// Logs differs in number of "the node ... gone" messages
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"creating etcd session","prefix":"[node1][distribution][my-group][etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[node1][distribution][my-group][etcd-session]"}
-{"level":"info","message":"registering the node \"node1\"","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"the node \"node1\" registered | %s","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"watching for other nodes","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"exiting (bye bye 1)","prefix":"[node1]"}
-{"level":"info","message":"received shutdown request","prefix":"[node1][distribution][my-group][listeners]"}
-{"level":"info","message":"shutdown done","prefix":"[node1][distribution][my-group][listeners]"}
-{"level":"info","message":"received shutdown request","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"unregistering the node \"node1\"","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"the node \"node1\" unregistered | %s","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"closing etcd session","prefix":"[node1][distribution][my-group][etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[node1][distribution][my-group][etcd-session]"}
-{"level":"info","message":"shutdown done","prefix":"[node1][distribution][my-group]"}
-{"level":"info","message":"closing etcd connection","prefix":"[node1][etcd-client]"}
-{"level":"info","message":"closed etcd connection | %s","prefix":"[node1][etcd-client]"}
-{"level":"info","message":"exited","prefix":"[node1]"}
+{"level":"info","message":"creating etcd session","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node1\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" registered | %s","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 1)"}
+{"level":"info","message":"received shutdown request","node":"node1","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node1","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node1\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" unregistered | %s","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
 `, loggers[0].AllMessages())
 
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"creating etcd session","prefix":"[node2][distribution][my-group][etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[node2][distribution][my-group][etcd-session]"}
-{"level":"info","message":"registering the node \"node2\"","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"the node \"node2\" registered | %s","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"watching for other nodes","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"the node \"node1\" gone","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"exiting (bye bye 2)","prefix":"[node2]"}
-{"level":"info","message":"received shutdown request","prefix":"[node2][distribution][my-group][listeners]"}
-{"level":"info","message":"shutdown done","prefix":"[node2][distribution][my-group][listeners]"}
-{"level":"info","message":"received shutdown request","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"unregistering the node \"node2\"","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"the node \"node2\" unregistered | %s","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"closing etcd session","prefix":"[node2][distribution][my-group][etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[node2][distribution][my-group][etcd-session]"}
-{"level":"info","message":"shutdown done","prefix":"[node2][distribution][my-group]"}
-{"level":"info","message":"closing etcd connection","prefix":"[node2][etcd-client]"}
-{"level":"info","message":"closed etcd connection | %s","prefix":"[node2][etcd-client]"}
-{"level":"info","message":"exited","prefix":"[node2]"}
+{"level":"info","message":"creating etcd session","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node2\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" registered | %s","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" gone","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 2)"}
+{"level":"info","message":"received shutdown request","node":"node2","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node2","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node2\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" unregistered | %s","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
 `, loggers[1].AllMessages())
 
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"creating etcd session","prefix":"[node3][distribution][my-group][etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[node3][distribution][my-group][etcd-session]"}
-{"level":"info","message":"registering the node \"node3\"","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"the node \"node3\" registered | %s","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"watching for other nodes","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node%d\"","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"the node \"node1\" gone","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"the node \"node2\" gone","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"exiting (bye bye 3)","prefix":"[node3]"}
-{"level":"info","message":"received shutdown request","prefix":"[node3][distribution][my-group][listeners]"}
-{"level":"info","message":"shutdown done","prefix":"[node3][distribution][my-group][listeners]"}
-{"level":"info","message":"received shutdown request","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"unregistering the node \"node3\"","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"the node \"node3\" unregistered | %s","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"closing etcd session","prefix":"[node3][distribution][my-group][etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[node3][distribution][my-group][etcd-session]"}
-{"level":"info","message":"shutdown done","prefix":"[node3][distribution][my-group]"}
-{"level":"info","message":"closing etcd connection","prefix":"[node3][etcd-client]"}
-{"level":"info","message":"closed etcd connection | %s","prefix":"[node3][etcd-client]"}
-{"level":"info","message":"exited","prefix":"[node3]"}
+{"level":"info","message":"creating etcd session","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node3\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node3\" registered | %s","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" gone","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" gone","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 3)"}
+{"level":"info","message":"received shutdown request","node":"node3","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node3","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node3\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node3\" unregistered | %s","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
 `, loggers[2].AllMessages())
 
 	// All node are off, start a new node
@@ -265,24 +265,24 @@ node4
 	etcdhelper.AssertKVsString(t, client, "")
 
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"creating etcd session","prefix":"[node4][distribution][my-group][etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[node4][distribution][my-group][etcd-session]"}
-{"level":"info","message":"registering the node \"node4\"","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"the node \"node4\" registered | %s","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"watching for other nodes","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"found a new node \"node4\"","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"exiting (bye bye 4)","prefix":"[node4]"}
-{"level":"info","message":"received shutdown request","prefix":"[node4][distribution][my-group][listeners]"}
-{"level":"info","message":"shutdown done","prefix":"[node4][distribution][my-group][listeners]"}
-{"level":"info","message":"received shutdown request","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"unregistering the node \"node4\"","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"the node \"node4\" unregistered | %s","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"closing etcd session","prefix":"[node4][distribution][my-group][etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[node4][distribution][my-group][etcd-session]"}
-{"level":"info","message":"shutdown done","prefix":"[node4][distribution][my-group]"}
-{"level":"info","message":"closing etcd connection","prefix":"[node4][etcd-client]"}
-{"level":"info","message":"closed etcd connection | %s","prefix":"[node4][etcd-client]"}
-{"level":"info","message":"exited","prefix":"[node4]"}
+{"level":"info","message":"creating etcd session","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node4\"","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node4\" registered | %s","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node4\"","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 4)"}
+{"level":"info","message":"received shutdown request","node":"node4","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node4","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node4\"","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node4\" unregistered | %s","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
 `, d4.DebugLogger().AllMessages())
 }
 
@@ -318,7 +318,6 @@ func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials e
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
 	if logs != nil {

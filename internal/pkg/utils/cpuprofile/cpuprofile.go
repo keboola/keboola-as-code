@@ -9,7 +9,7 @@ import (
 )
 
 func Start(ctx context.Context, filePath string, logger log.Logger) (stop func(), err error) {
-	logger = logger.AddPrefix("[cpu-profile]")
+	logger = logger.WithComponent("cpu-profile")
 
 	f, err := os.Create(filePath) //nolint: forbidigo
 	if err != nil {

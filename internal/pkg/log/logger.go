@@ -21,7 +21,6 @@ type zapLogger struct {
 	sugaredLogger *zap.SugaredLogger
 	core          zapcore.Core
 	component     string
-	prefix        string
 }
 
 func loggerFromZapCore(core zapcore.Core, with ...any) *zapLogger {
@@ -40,16 +39,6 @@ func (l *zapLogger) WithComponent(component string) Logger {
 	}
 	clone := loggerFromZapCore(l.core)
 	clone.component = component
-	clone.prefix = l.prefix
-	return clone
-}
-
-// AddPrefix creates a child logger with added prefix.
-func (l *zapLogger) AddPrefix(prefix string) Logger {
-	prefix = l.prefix + prefix
-	clone := loggerFromZapCore(l.core)
-	clone.component = l.component
-	clone.prefix = prefix
 	return clone
 }
 
@@ -65,9 +54,6 @@ func (l *zapLogger) prepareFields(ctx context.Context) []zap.Field {
 	fields := ctxattr.ZapFields(ctx)
 	if l.component != "" {
 		fields = append(fields, zap.String(ComponentKey, l.component))
-	}
-	if l.prefix != "" {
-		fields = append(fields, zap.String("prefix", l.prefix))
 	}
 	return fields
 }

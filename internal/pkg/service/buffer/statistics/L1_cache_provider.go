@@ -32,7 +32,7 @@ type l1CachedProviderDeps interface {
 
 func NewL1CacheProvider(d l1CachedProviderDeps) (*L1CacheProvider, error) {
 	p := &L1CacheProvider{
-		logger: d.Logger().AddPrefix("[stats-cache-L1]"),
+		logger: d.Logger().WithComponent("stats-cache-L1"),
 		client: d.EtcdClient(),
 		schema: newSchema(d.EtcdSerde()),
 	}

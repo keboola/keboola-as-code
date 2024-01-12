@@ -61,7 +61,7 @@ func NewCollector(d collectorDeps) *Collector {
 	c := &Collector{
 		nodeID:        d.Process().UniqueID(),
 		clock:         d.Clock(),
-		logger:        d.Logger().AddPrefix("[stats-collector]"),
+		logger:        d.Logger().WithComponent("stats-collector"),
 		telemetry:     d.Telemetry(),
 		client:        d.EtcdClient(),
 		schema:        newSchema(d.EtcdSerde()),

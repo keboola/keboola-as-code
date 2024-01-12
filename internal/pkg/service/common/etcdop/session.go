@@ -30,7 +30,7 @@ import (
 func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, client *etcd.Client, ttlSeconds int, onSession func(session *concurrency.Session) error) <-chan error {
 	b := newSessionBackoff()
 	startTime := time.Now()
-	logger = logger.AddPrefix("[etcd-session]")
+	logger = logger.WithComponent("etcd-session")
 	logger.InfofCtx(ctx, `creating etcd session`)
 
 	wg.Add(1)

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -68,6 +69,13 @@ func NewProjectDeps(ctx context.Context, prjScp projectScopeDeps, tokenStr strin
 	if err != nil {
 		return nil, err
 	}
+
+	ctx = ctxattr.ContextWith(
+		ctx,
+		attribute.String("projectId", cast.ToString(token.Owner.ID)),
+		attribute.String("tokenId", token.ID),
+	)
+
 	prjScp.Logger().DebugfCtx(ctx, "Storage API token is valid.")
 	prjScp.Logger().DebugfCtx(ctx, `Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
 

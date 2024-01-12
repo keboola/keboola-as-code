@@ -9,8 +9,10 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -55,17 +57,20 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 		assigner:    newAssigner(d.Process().UniqueID()),
 		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", group)),
 		clock:       d.Clock(),
-		logger:      d.Logger().AddPrefix(fmt.Sprintf("[distribution][%s]", group)),
+		logger:      d.Logger().WithComponent("distribution." + group),
 		proc:        d.Process(),
 		client:      d.EtcdClient(),
 		config:      c,
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
-	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	backgroundCtx := context.Background()
+	backgroundCtx = ctxattr.ContextWith(backgroundCtx, attribute.String("node", n.nodeID))
+	watchCtx, watchCancel := context.WithCancel(backgroundCtx)
+	sessionCtx, sessionCancel := context.WithCancel(backgroundCtx)
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
+		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.InfoCtx(ctx, "received shutdown request")
 		watchCancel()
 		n.unregister(ctx, c.shutdownTimeout)
@@ -112,6 +117,8 @@ func (n *Node) CloneAssigner() *Assigner {
 func (n *Node) register(session *concurrency.Session, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(n.client.Ctx(), timeout)
 	defer cancel()
+
+	ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 
 	startTime := time.Now()
 	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)

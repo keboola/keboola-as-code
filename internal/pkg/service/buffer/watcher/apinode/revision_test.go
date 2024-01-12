@@ -154,8 +154,8 @@ my/revision (lease)
 
 	// Check logs - no unexpected syncs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"creating etcd session","prefix":"[etcd-session]"}
-{"level":"info","message":"created etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"creating etcd session","component":"etcd-session"}
+{"level":"info","message":"created etcd session | %s","component":"etcd-session"}
 {"level":"debug","message":">>> statistics sync"}
 {"level":"info","message":"reported revision \"1\""}
 {"level":"debug","message":">>> statistics sync"}
@@ -168,7 +168,7 @@ my/revision (lease)
 {"level":"debug","message":"unlocked revision \"50\""}
 {"level":"debug","message":">>> statistics sync"}
 {"level":"info","message":"reported revision \"70\""}
-{"level":"info","message":"closing etcd session","prefix":"[etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[etcd-session]"}
+{"level":"info","message":"closing etcd session","component":"etcd-session"}
+{"level":"info","message":"closed etcd session | %s","component":"etcd-session"}
 `, logger.AllMessages())
 }

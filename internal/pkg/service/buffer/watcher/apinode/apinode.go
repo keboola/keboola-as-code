@@ -73,7 +73,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 	// Create
 	n := &Node{
 		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[api][watcher]"),
+		logger: d.Logger().WithComponent("api.watcher"),
 		client: d.EtcdClient(),
 		stats:  d.StatsCollector(),
 	}

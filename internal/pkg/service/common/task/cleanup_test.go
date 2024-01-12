@@ -103,21 +103,21 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	log.AssertJSONMessages(t, `
-{"level":"info","message":"started task","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"info","message":"deleted \"2\" tasks","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","prefix":"[node1][task][_system_/tasks.cleanup/%s]"}
-{"level":"info","message":"exiting (bye bye)","prefix":"[node1]"}
-{"level":"info","message":"received shutdown request","prefix":"[node1][task]"}
-{"level":"info","message":"closing etcd session","prefix":"[node1][task][etcd-session]"}
-{"level":"info","message":"closed etcd session | %s","prefix":"[node1][task][etcd-session]"}
-{"level":"info","message":"shutdown done","prefix":"[node1][task]"}
-{"level":"info","message":"closing etcd connection","prefix":"[node1][etcd-client]"}
-{"level":"info","message":"closed etcd connection | %s","prefix":"[node1][etcd-client]"}
-{"level":"info","message":"exited","prefix":"[node1]"}
+{"level":"info","message":"started task","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"exiting (bye bye)"}
+{"level":"info","message":"received shutdown request","component":"task","node":"node1"}
+{"level":"info","message":"closing etcd session","component":"task.etcd-session","node":"node1"}
+{"level":"info","message":"closed etcd session | %s","component":"task.etcd-session","node":"node1"}
+{"level":"info","message":"shutdown done","component":"task","node":"node1"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
 `, d.DebugLogger().AllMessages())
 
 	// Check keys

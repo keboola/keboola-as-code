@@ -86,10 +86,10 @@ target_info{service_name="my-service"} 1
 
 	// Check logs
 	expected := `
-{"level":"info","message":"HTTP server listening on \"localhost:%d/metrics\"","prefix":"[metrics]"}
+{"level":"info","message":"HTTP server listening on \"localhost:%d/metrics\"","component":"metrics"}
 {"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"shutting down HTTP server at \"localhost:%d\"","prefix":"[metrics]"}
-{"level":"info","message":"HTTP server shutdown finished","prefix":"[metrics]"}
+{"level":"info","message":"shutting down HTTP server at \"localhost:%d\"","component":"metrics"}
+{"level":"info","message":"HTTP server shutdown finished","component":"metrics"}
 {"level":"info","message":"exited"}
 `
 	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())

@@ -72,7 +72,7 @@ func NewChecker(d dependencies) <-chan error {
 	c := &Checker{
 		config:      d.WorkerConfig(),
 		clock:       d.Clock(),
-		logger:      d.Logger().AddPrefix("[conditions]"),
+		logger:      d.Logger().WithComponent("conditions"),
 		client:      d.EtcdClient(),
 		schema:      d.Schema(),
 		fileManager: d.FileManager(),

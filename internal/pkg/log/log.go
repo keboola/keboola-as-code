@@ -18,7 +18,6 @@ type Logger interface {
 	contextLogger
 	toWriter
 	withFields
-	withPrefix
 }
 
 type loggerWithZapCore interface {
@@ -89,8 +88,4 @@ type toWriter interface {
 type withFields interface {
 	With(args ...any) Logger
 	WithComponent(component string) Logger
-}
-
-type withPrefix interface {
-	AddPrefix(prefix string) Logger
 }

@@ -39,7 +39,7 @@ func (l *errLogger) Println(v ...any) {
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.
 // Inspired by: https://github.com/open-telemetry/opentelemetry-go/blob/main/example/prometheus/main.go
 func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger log.Logger, proc *servicectx.Process) (*metric.MeterProvider, error) {
-	logger = logger.AddPrefix("[metrics]")
+	logger = logger.WithComponent("metrics")
 
 	// Create resource
 	res, err := resource.New(

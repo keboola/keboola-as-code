@@ -40,7 +40,7 @@ type Dependencies interface {
 func New(d Dependencies) (*Node, error) {
 	// Create
 	n := &Node{
-		logger:             d.Logger().AddPrefix("[watcher][worker]"),
+		logger:             d.Logger().WithComponent("watcher.worker"),
 		schema:             d.Schema(),
 		client:             d.EtcdClient(),
 		minRevision:        atomic.NewInt64(noAPINode),

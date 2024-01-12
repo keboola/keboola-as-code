@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Service) cleanup(d dependencies) <-chan error {
-	logger := s.logger.AddPrefix("[cleanup]")
+	logger := s.logger.WithComponent("cleanup")
 	node := cleanupPkg.NewNode(d, logger)
 
 	initDone := make(chan error)
@@ -38,7 +38,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 }
 
 func (s *Service) cleanupTasks() <-chan error {
-	logger := s.logger.AddPrefix("[task][cleanup][ticker]")
+	logger := s.logger.WithComponent("task.cleanup.ticker")
 	initDone := make(chan error)
 	s.wg.Add(1)
 	go func() {
