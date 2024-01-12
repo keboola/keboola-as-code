@@ -26,15 +26,27 @@ func WithIgnoredKeyPattern(v string) AssertOption {
 	}
 }
 
+type tHelper interface {
+	Helper()
+}
+
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
 func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
 	AssertKVs(t, client, ParseDump(expected), ops...)
 }
 
 // AssertKVs dumps all KVs from an etcd database and compares them with the expected KVs.
 // In the expected key/value string, a wildcards can be used, see the wildcards package.
 func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...AssertOption) {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
 	// Process options
 	c := assertConfig{}
 	for _, o := range ops {
