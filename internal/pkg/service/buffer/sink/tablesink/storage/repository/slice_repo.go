@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"time"
 
@@ -12,11 +11,9 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -92,7 +89,7 @@ func (r *SliceRepository) StateTransition(k storage.SliceKey, to storage.SliceSt
 	var file storage.File
 	return r.
 		readAndUpdate(k, func(slice storage.Slice) (storage.Slice, error) {
-			// Validate file and slice state combination
+			// Validate file and slice state combinationfile
 			if err := validateFileAndSliceStates(file.State, to); err != nil {
 				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
 			}
@@ -245,35 +242,4 @@ func (r *SliceRepository) updateAllInFile(parentKey storage.FileKey, updateFn fu
 			}
 			return nil, nil
 		})
-}
-
-// newSlice creates slice definition.
-func newSlice(now time.Time, file storage.File, volumeID storage.VolumeID, prevSliceSize datasize.ByteSize) (s storage.Slice, err error) {
-	// Validate compression type.
-	// Other parts of the system are also prepared for other types of compression,
-	// but now only GZIP is supported in the Keboola platform.
-	switch file.LocalStorage.Compression.Type {
-	case compression.TypeNone, compression.TypeGZIP: // ok
-	default:
-		return storage.Slice{}, errors.Errorf(`file compression type "%s" is not supported`, file.LocalStorage.Compression.Type)
-	}
-
-	// Convert path separator, on Windows
-	sliceKey := storage.SliceKey{FileKey: file.FileKey, SliceID: storage.SliceID{VolumeID: volumeID, OpenedAt: utctime.From(now)}}
-	sliceDir := filepath.FromSlash(sliceKey.SliceID.OpenedAt.String()) //nolint: forbidigo
-
-	// Generate unique staging storage path
-	stagingPath := fmt.Sprintf(`%s_%s`, sliceKey.OpenedAt().String(), sliceKey.VolumeID)
-
-	s.SliceKey = sliceKey
-	s.Type = file.Type
-	s.State = storage.SliceWriting
-	s.Columns = file.Columns
-	if s.LocalStorage, err = file.LocalStorage.NewSlice(sliceDir, prevSliceSize); err != nil {
-		return storage.Slice{}, err
-	}
-	if s.StagingStorage, err = file.StagingStorage.NewSlice(stagingPath, s.LocalStorage); err != nil {
-		return storage.Slice{}, err
-	}
-	return s, nil
 }

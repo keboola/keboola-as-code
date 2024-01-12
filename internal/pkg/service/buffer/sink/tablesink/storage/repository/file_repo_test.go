@@ -7,70 +7,20 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
 	"github.com/relvacode/iso8601"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
-
-func branchTemplate(k key.BranchKey) definition.Branch {
-	return definition.Branch{BranchKey: k}
-}
-
-func sourceTemplate(k key.SourceKey) definition.Source {
-	return definition.Source{
-		SourceKey:   k,
-		Type:        definition.SourceTypeHTTP,
-		Name:        "My Source",
-		Description: "My Description",
-		HTTP:        &definition.HTTPSource{Secret: "012345678901234567890123456789012345678912345678"},
-	}
-}
-
-func sinkTemplate(k key.SinkKey) definition.Sink {
-	return definition.Sink{
-		SinkKey:     k,
-		Type:        definition.SinkTypeTable,
-		Name:        "My Sink",
-		Description: "My Description",
-		Table: &definition.TableSink{
-			Storage: &storage.ConfigPatch{
-				Local: &local.ConfigPatch{
-					DiskSync: &disksync.Config{
-						Mode:            disksync.ModeDisk,
-						Wait:            true,
-						CheckInterval:   1 * time.Millisecond,
-						CountTrigger:    100,
-						BytesTrigger:    100 * datasize.KB,
-						IntervalTrigger: 100 * time.Millisecond,
-					},
-				},
-			},
-			Mapping: definition.TableMapping{
-				TableID: keboola.MustParseTableID("in.bucket.table"),
-				Columns: column.Columns{
-					column.Datetime{Name: "datetime"},
-					column.Body{Name: "body"},
-				},
-			},
-		},
-	}
-}
 
 func TestRepository_File(t *testing.T) {
 	t.Parallel()
@@ -491,39 +441,4 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T22:00:00.000Z
 }
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all"))
-}
-
-func TestNewFile_InvalidCompressionType(t *testing.T) {
-	t.Parallel()
-
-	// Fixtures
-	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
-	projectID := keboola.ProjectID(123)
-	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
-	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: utctime.From(now)}}
-	cfg := storage.NewConfig()
-	mapping := definition.TableMapping{
-		TableID: keboola.MustParseTableID("in.bucket.table"),
-		Columns: column.Columns{
-			column.Datetime{Name: "datetime"},
-			column.Body{Name: "body"},
-		},
-	}
-	credentials := &keboola.FileUploadCredentials{
-		S3UploadParams: &s3.UploadParams{
-			Credentials: s3.Credentials{
-				Expiration: iso8601.Time{Time: now.Add(time.Hour)},
-			},
-		},
-	}
-
-	// Set unsupported compression type
-	cfg.Local.Compression.Type = compression.TypeZSTD
-
-	// Assert
-	_, err := newFile(fileKey, cfg, mapping, credentials)
-	require.Error(t, err)
-	assert.Equal(t, `file compression type "zstd" is not supported`, err.Error())
 }

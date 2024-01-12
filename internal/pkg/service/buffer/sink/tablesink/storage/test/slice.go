@@ -21,9 +21,11 @@ func NewSliceKey() storage.SliceKey {
 func NewSliceKeyOpenedAt(openedAtStr string) storage.SliceKey {
 	openedAt := utctime.MustParse(openedAtStr)
 	return storage.SliceKey{
-		FileKey: NewFileKeyOpenedAt("2000-01-01T19:00:00.000Z"),
-		SliceID: storage.SliceID{
+		FileVolumeKey: storage.FileVolumeKey{
+			FileKey:  NewFileKeyOpenedAt("2000-01-01T19:00:00.000Z"),
 			VolumeID: "my-volume",
+		},
+		SliceID: storage.SliceID{
 			OpenedAt: openedAt,
 		},
 	}

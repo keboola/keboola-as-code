@@ -36,7 +36,7 @@ const SliceImported SliceState = "imported"
 // SliceState is an enum type for slice states, see also FileState.
 type SliceState string
 
-func (s *Slice) StateTransition(at time.Time, to SliceState) error {
+func (s Slice) WithState(at time.Time, to SliceState) (Slice, error) {
 	from := s.State
 	atUTC := utctime.From(at)
 
@@ -50,10 +50,10 @@ func (s *Slice) StateTransition(at time.Time, to SliceState) error {
 	case from == SliceUploaded && to == SliceImported:
 		s.ImportedAt = &atUTC
 	default:
-		return serviceError.NewBadRequestError(errors.Errorf(`unexpected slice "%s" state transition from "%s" to "%s"`, s.SliceKey, from, to))
+		return Slice{}, serviceError.NewBadRequestError(errors.Errorf(`unexpected slice "%s" state transition from "%s" to "%s"`, s.SliceKey, from, to))
 	}
 
 	s.State = to
 	s.ResetRetry()
-	return nil
+	return s, nil
 }

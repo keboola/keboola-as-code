@@ -154,35 +154,9 @@ func Bind(cfg BindSpec, targets ...any) error {
 	return errs.ErrorOrNil()
 }
 
-// bind binds flags, ENVs and config files to the configuration structure.
-// Flags have priority over environment variables.
-// The struct is normalized and validated.
-func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFieldFn, configFiles []string) error {
-	values, err := collectValues(flags, flagToFieldFn, cfg.EnvNaming, cfg.Envs, configFiles)
-	if err != nil {
-		return err
-	}
-
-	// Decode
-	validationErrs := errors.NewMultiError()
-	decoderCfg := &mapstructure.DecoderConfig{
-		TagName:          configKeyTag,
-		ZeroFields:       true,
-		WeaklyTypedInput: true,
-		Result:           target,
-	}
-	decoderCfg.DecodeHook = mapstructure.ComposeDecodeHookFunc(
-		unmarshalHook(&decoderCfg.DecodeHook),
-		// additional hooks can be added
-	)
-
-	if decoder, err := mapstructure.NewDecoder(decoderCfg); err != nil {
-		return errors.PrefixError(err, "cannot create configuration decoder")
-	} else if err := decoder.Decode(values); err != nil {
-		return errors.PrefixError(err, "cannot decode configuration")
-	}
-
+func ValidateAndNormalize(target any) error {
 	// Call Normalize and Validate methods on each value
+	validationErrs := errors.NewMultiError()
 	_ = Visit(reflect.ValueOf(target), VisitConfig{
 		OnField: mapAndFilterField(),
 		OnValue: func(vc *VisitContext) error {
@@ -222,6 +196,36 @@ func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFi
 	}
 
 	return nil
+}
+
+// bind binds flags, ENVs and config files to the configuration structure.
+// Flags have priority over environment variables.
+// The struct is normalized and validated.
+func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFieldFn, configFiles []string) error {
+	values, err := collectValues(flags, flagToFieldFn, cfg.EnvNaming, cfg.Envs, configFiles)
+	if err != nil {
+		return err
+	}
+
+	// Decode
+	decoderCfg := &mapstructure.DecoderConfig{
+		TagName:          configKeyTag,
+		ZeroFields:       true,
+		WeaklyTypedInput: true,
+		Result:           target,
+	}
+	decoderCfg.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+		unmarshalHook(&decoderCfg.DecodeHook),
+		// additional hooks can be added
+	)
+
+	if decoder, err := mapstructure.NewDecoder(decoderCfg); err != nil {
+		return errors.PrefixError(err, "cannot create configuration decoder")
+	} else if err := decoder.Decode(values); err != nil {
+		return errors.PrefixError(err, "cannot decode configuration")
+	}
+
+	return ValidateAndNormalize(target)
 }
 
 // collectValues defined in the configuration structure from flags, ENVs and config files.
