@@ -1,4 +1,4 @@
-package volume_test
+package registration_test
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/registration"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -62,15 +62,16 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Register volumes
-	require.NoError(t, volume.RegisterVolumes(d, collection, repo.RegisterWriterVolume))
+	cfg := d.Config().Sink.Table.Storage.VolumeRegistration
+	require.NoError(t, registration.RegisterVolumes(d, cfg, collection, repo.RegisterWriterVolume))
 
 	// List
 	result, err := repo.ListWriterVolumes().Do(ctx).All()
 	require.NoError(t, err)
-	assert.Equal(t, []storage.VolumeMetadata{
+	assert.Equal(t, []volume.Metadata{
 		{
 			VolumeID: "my-volume-1",
-			VolumeSpec: storage.VolumeSpec{
+			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type1/001",
 				Type:   "type1",
@@ -79,7 +80,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 		},
 		{
 			VolumeID: "my-volume-2",
-			VolumeSpec: storage.VolumeSpec{
+			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type1/003",
 				Type:   "type1",
@@ -88,7 +89,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 		},
 		{
 			VolumeID: "my-volume-3",
-			VolumeSpec: storage.VolumeSpec{
+			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type2/001",
 				Type:   "type2",
@@ -97,7 +98,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 		},
 		{
 			VolumeID: "my-volume-4",
-			VolumeSpec: storage.VolumeSpec{
+			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type2/002",
 				Type:   "type2",
