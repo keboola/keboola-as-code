@@ -6,28 +6,27 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Collection manages volumes in the path, each instance has V type.
 // The collection contains all volumes found on a local reader or writer node.
-type Collection[V storage.Volume] struct {
-	byID   map[storage.VolumeID]V
+type Collection[V Volume] struct {
+	byID   map[ID]V
 	byType map[string][]V
 }
 
 // Opener opens volume reader or writer instance of the V type on a local node.
-type Opener[V storage.Volume] func(spec storage.VolumeSpec) (V, error)
+type Opener[V Volume] func(spec Spec) (V, error)
 
-func NewCollection[V storage.Volume](volumes []V) (*Collection[V], error) {
+func NewCollection[V Volume](volumes []V) (*Collection[V], error) {
 	collection := &Collection[V]{
-		byID:   make(map[storage.VolumeID]V),
+		byID:   make(map[ID]V),
 		byType: make(map[string][]V),
 	}
 
 	// Add volumes
-	idCount := make(map[storage.VolumeID]int)
+	idCount := make(map[ID]int)
 	for _, volume := range volumes {
 		id := volume.ID()
 		if id == "" {
@@ -55,7 +54,7 @@ func NewCollection[V storage.Volume](volumes []V) (*Collection[V], error) {
 }
 
 // Volume returns the volume instance by the ID or an error if it is not found.
-func (v *Collection[V]) Volume(id storage.VolumeID) (V, error) {
+func (v *Collection[V]) Volume(id ID) (V, error) {
 	if v, ok := v.byID[id]; ok {
 		return v, nil
 	} else {
@@ -105,7 +104,7 @@ func (v *Collection[V]) Close(ctx context.Context) error {
 	return errs.ErrorOrNil()
 }
 
-func sortVolumes[V storage.Volume](v []V) {
+func sortVolumes[V Volume](v []V) {
 	sort.SliceStable(v, func(i, j int) bool {
 		if v := strings.Compare(v[i].Type(), v[j].Type()); v != 0 {
 			return v < 0

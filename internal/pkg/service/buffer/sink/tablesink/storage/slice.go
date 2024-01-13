@@ -29,7 +29,7 @@ type Slice struct {
 // FileVolumeKey groups file slices at the same volume.
 type FileVolumeKey struct {
 	FileKey
-	VolumeID VolumeID `json:"volumeId" validate:"required"`
+	VolumeID volume.ID `json:"volumeId" validate:"required"`
 }
 
 type SliceKey struct {

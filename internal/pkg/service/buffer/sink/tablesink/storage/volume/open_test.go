@@ -12,8 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -54,7 +55,7 @@ func TestOpenVolumes_DuplicatedVolumeID(t *testing.T) {
 func TestOpenVolumes_OpenError(t *testing.T) {
 	t.Parallel()
 	tc := newVolumesTestCase(t)
-	tc.Opener = func(info storage.VolumeSpec) (*test.Volume, error) {
+	tc.Opener = func(info volume.Spec) (*test.Volume, error) {
 		return nil, errors.New("some open error")
 	}
 
@@ -72,8 +73,8 @@ func TestOpenVolumes_OpenError(t *testing.T) {
 func TestOpenAndCloseVolumes(t *testing.T) {
 	t.Parallel()
 	tc := newVolumesTestCase(t)
-	tc.Opener = func(info storage.VolumeSpec) (*test.Volume, error) {
-		return test.NewTestVolume(storage.VolumeID(fmt.Sprintf(`volume_%s_%s`, info.Type, info.Label)), "my-node", info), nil
+	tc.Opener = func(info volume.Spec) (*test.Volume, error) {
+		return test.NewTestVolume(volume.ID(fmt.Sprintf(`volume_%s_%s`, info.Type, info.Label)), "my-node", info), nil
 	}
 
 	// Create some volume directories
@@ -131,8 +132,8 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 func TestOpenVolumes_CloseError(t *testing.T) {
 	t.Parallel()
 	tc := newVolumesTestCase(t)
-	tc.Opener = func(info storage.VolumeSpec) (*test.Volume, error) {
-		vol := test.NewTestVolume(storage.VolumeID(fmt.Sprintf(`volume_%s_%s`, info.Type, info.Label)), "my-node", info)
+	tc.Opener = func(info volume.Spec) (*test.Volume, error) {
+		vol := test.NewTestVolume(volume.ID(fmt.Sprintf(`volume_%s_%s`, info.Type, info.Label)), "my-node", info)
 		vol.CloseError = errors.New("some close error")
 		return vol, nil
 	}
@@ -151,4 +152,26 @@ func TestOpenVolumes_CloseError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.Repeat("- some close error\n", 5), err.Error()+"\n")
 	}
+}
+
+type openTestCase struct {
+	Logger      log.DebugLogger
+	NodeID      string
+	VolumesPath string
+	Opener      volume.Opener[*test.Volume]
+}
+
+func newVolumesTestCase(t *testing.T) *openTestCase {
+	t.Helper()
+	return &openTestCase{
+		Logger:      log.NewDebugLogger(),
+		VolumesPath: t.TempDir(),
+		Opener: func(info volume.Spec) (*test.Volume, error) {
+			return test.NewTestVolume("my-volume", "my-node", info), nil
+		},
+	}
+}
+
+func (tc *openTestCase) OpenVolumes() (*volume.Collection[*test.Volume], error) {
+	return volume.OpenVolumes[*test.Volume](context.Background(), tc.Logger, tc.NodeID, tc.VolumesPath, tc.Opener)
 }
