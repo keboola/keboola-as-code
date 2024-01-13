@@ -1,4 +1,4 @@
-package assigner
+package assignment
 
 import (
 	"math/rand"
@@ -7,21 +7,20 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 )
+
+type Assignment struct {
+	// Config is snapshot of the used assignment configuration.
+	Config Config `json:"config"`
+	// Volumes field contains assigned volumes to the file.
+	Volumes []volume.ID `json:"volumes"`
+}
 
 // VolumesFor returns volumes list according to the file settings.
 // See assignVolumes function for details.
-func VolumesFor(volumes []storage.VolumeMetadata, file storage.File) ([]storage.VolumeMetadata, error) {
-	return assignVolumes(
-		volumes,
-		file.LocalStorage.Volumes.Count,
-		file.LocalStorage.Volumes.PreferredTypes,
-		file.OpenedAt().Time().UnixNano(),
-	), nil
-}
 
-// assignVolumes returns the requested number of volumes, if so many volumes are available.
+// VolumesFor returns volumes list according to the file settings.
 //
 // The "preferredTypes" slice defines priority of the volumes types.
 // The first value in the "preferredTypes" slice has the highest priority.
@@ -33,19 +32,21 @@ func VolumesFor(volumes []storage.VolumeMetadata, file storage.File) ([]storage.
 // Each selection is made from a different node, if possible.
 //
 // The "randomSeed" argument determines volume selection on the same priority level, and nodes order.
-func assignVolumes(input []storage.VolumeMetadata, limit int, preferredTypes []string, randomSeed int64) (out []storage.VolumeMetadata) {
+func VolumesFor(all []volume.Metadata, cfg Config, randomSeed int64) (out Assignment) {
+	out.Config = cfg
+
 	random := rand.New(rand.NewSource(randomSeed)) //nolint:gosec // weak random number generator is ok here
 
 	// Convert preferred types to a map
-	typePriority := newPriorityMap(preferredTypes)
+	typePriority := newPriorityMap(cfg.PreferredTypes)
 
 	// Shuffle volumes
-	random.Shuffle(len(input), func(i, j int) { input[i], input[j] = input[j], input[i] })
+	random.Shuffle(len(all), func(i, j int) { all[i], all[j] = all[j], all[i] })
 
 	// Group volumes by node
-	byNode := make(map[string][]storage.VolumeMetadata)
-	for _, volume := range input {
-		byNode[volume.NodeID] = append(byNode[volume.NodeID], volume)
+	byNode := make(map[string][]volume.Metadata)
+	for _, vol := range all {
+		byNode[vol.NodeID] = append(byNode[vol.NodeID], vol)
 	}
 
 	// Convert map to slice and sort node volumes by the preferred priority.
@@ -53,7 +54,7 @@ func assignVolumes(input []storage.VolumeMetadata, limit int, preferredTypes []s
 	var perNode []*nodeVolumes
 	for nodeID, volumes := range byNode {
 		typePriority.Sort(volumes, randomSeed)
-		perNode = append(perNode, &nodeVolumes{nodeID: nodeID, volumes: newStack[storage.VolumeMetadata](volumes)})
+		perNode = append(perNode, &nodeVolumes{nodeID: nodeID, volumes: newStack[volume.Metadata](volumes)})
 	}
 
 	// Shuffle nodes, map order above is random, so we must sort the slice at first
@@ -61,21 +62,21 @@ func assignVolumes(input []storage.VolumeMetadata, limit int, preferredTypes []s
 	random.Shuffle(len(perNode), func(i, j int) { perNode[i], perNode[j] = perNode[j], perNode[i] })
 
 	// Get up to limit volumes according preferred types
-	volTypes := newStack[string](preferredTypes)
+	volTypes := newStack[string](cfg.PreferredTypes)
 	volType, _ := volTypes.Pop()
-	matchVolType := func(v storage.VolumeMetadata) bool { return volType == "" || v.Type == volType }
+	matchVolType := func(v volume.Metadata) bool { return volType == "" || v.Type == volType }
 	for {
 		found := false
 		for _, node := range perNode {
 			// Is limit reached?
-			if len(out) == limit {
+			if len(out.Volumes) == cfg.Count {
 				return out
 			}
 
 			// Get top volume from the node, if any
 			if vol, ok := node.volumes.PopIf(matchVolType); ok {
 				found = true
-				out = append(out, vol)
+				out.Volumes = append(out.Volumes, vol.VolumeID)
 			}
 		}
 
@@ -116,7 +117,7 @@ func newPriorityMap(preferred []string) priorityMap {
 }
 
 // Sort volumes by the preferred types.
-func (m priorityMap) Sort(volumes []storage.VolumeMetadata, randomSeed int64) {
+func (m priorityMap) Sort(volumes []volume.Metadata, randomSeed int64) {
 	randomStr := strconv.FormatInt(randomSeed, 10)
 	sort.SliceStable(volumes, func(i, j int) bool {
 		// If the "type" key is not found in the map,
@@ -138,7 +139,7 @@ func (m priorityMap) Sort(volumes []storage.VolumeMetadata, randomSeed int64) {
 
 type nodeVolumes struct {
 	nodeID  string
-	volumes *stack[storage.VolumeMetadata]
+	volumes *stack[volume.Metadata]
 }
 
 type stack[T any] struct {
