@@ -14,7 +14,7 @@ type Assignment struct {
 	// Config is snapshot of the used assignment configuration.
 	Config Config `json:"config"`
 	// Volumes field contains assigned volumes to the file.
-	Volumes []volume.ID `json:"volumes"`
+	Volumes []volume.ID `json:"volumes" validate:"min=1"`
 }
 
 // VolumesFor returns volumes list according to the file settings.
