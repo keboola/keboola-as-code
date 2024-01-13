@@ -1,9 +1,8 @@
 package local
 
 import (
-	"github.com/c2h5oh/datasize"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 )
 
@@ -11,12 +10,10 @@ import (
 type Config struct {
 	// Compression of the local file.
 	Compression compression.Config `configKey:"compression"`
-	// Volumes configures assignment of pod volumes to the File.
-	Volumes VolumesConfig `configKey:"volumes"`
 	// DiskSync configures the synchronization of the in-memory copy of written data to disk or OS disk cache.
 	DiskSync disksync.Config `configKey:"diskSync"`
 	// DiskAllocation configures allocation of the disk space for file slices.
-	DiskAllocation DiskAllocation `configKey:"diskAllocation"`
+	DiskAllocation allocate.Config `configKey:"diskAllocation"`
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.
@@ -24,34 +21,16 @@ type Config struct {
 type ConfigPatch struct {
 	// Compression of the local and staging file.
 	Compression *compression.Config `json:"compression,omitempty"`
-	// Volumes configures assignment of pod volumes to the File.
-	Volumes *VolumesConfig `json:"volumes,omitempty"`
 	// DiskSync configures the synchronization of the in-memory copy of written data to disk or OS disk cache.
 	DiskSync *disksync.Config `json:"diskSync,omitempty"`
 	// DiskAllocation configures allocation of the disk space for file slices.
-	DiskAllocation *DiskAllocation `json:"diskAllocation,omitempty"`
-}
-
-// DiskAllocation configures allocation of the disk space for file slices.
-// Read more in the writer/allocate package.
-type DiskAllocation struct {
-	// Enabled enables disk space allocation.
-	Enabled bool `json:"enabled" configKey:"enabled" configUsage:"Allocate disk space for each slice."`
-	// Size of the first slice in a sink, or the size of each slice if DynamicSize is disabled.
-	Size datasize.ByteSize `json:"size" configKey:"size" configUsage:"Size of allocated disk space for a slice."`
-	// SizePercent enables dynamic size of allocated disk space.
-	// If enabled, the size of the slice will be % from the average slice size.
-	// The size of the first slice in a sink will be Size.
-	SizePercent int `json:"sizePercent" configKey:"sizePercent" validate:"min=0,max=200" configUsage:"Allocate disk space as % from the previous slice size."`
+	DiskAllocation *allocate.Config `json:"diskAllocation,omitempty"`
 }
 
 // With copies values from the ConfigPatch, if any.
 func (c Config) With(v ConfigPatch) Config {
 	if v.Compression != nil {
 		c.Compression = *v.Compression
-	}
-	if v.Volumes != nil {
-		c.Volumes = *v.Volumes
 	}
 	if v.DiskSync != nil {
 		c.DiskSync = *v.DiskSync
@@ -62,27 +41,11 @@ func (c Config) With(v ConfigPatch) Config {
 	return c
 }
 
+// NewConfig provides default configuration.
 func NewConfig() Config {
 	return Config{
-		Compression:    compression.DefaultConfig(),
-		Volumes:        defaultVolumesAssigment(),
-		DiskSync:       disksync.DefaultConfig(),
-		DiskAllocation: defaultDiskAllocation(),
-	}
-}
-
-func defaultVolumesAssigment() VolumesConfig {
-	return VolumesConfig{
-		Count:                  1,
-		PreferredTypes:         []string{"default"},
-		RegistrationTTLSeconds: 10,
-	}
-}
-
-func defaultDiskAllocation() DiskAllocation {
-	return DiskAllocation{
-		Enabled:     true,
-		SizePercent: 110,
-		Size:        100 * datasize.MB,
+		Compression:    compression.NewConfig(),
+		DiskSync:       disksync.NewConfig(),
+		DiskAllocation: allocate.NewConfig(),
 	}
 }
