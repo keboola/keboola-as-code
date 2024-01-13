@@ -32,21 +32,11 @@ func (f File) NewSlice(sliceDir string, prevSliceSize datasize.ByteSize) (Slice,
 		return Slice{}, err
 	}
 
-	// Calculated pre-allocated disk space
-	var allocatedDiskSpace datasize.ByteSize
-	if f.DiskAllocation.Enabled {
-		if f.DiskAllocation.SizePercent > 0 && prevSliceSize > 0 {
-			allocatedDiskSpace = (prevSliceSize * datasize.ByteSize(f.DiskAllocation.SizePercent)) / 100
-		} else {
-			allocatedDiskSpace = f.DiskAllocation.Size
-		}
-	}
-
 	return Slice{
 		Dir:                filepath.Join(f.Dir, sliceDir),
 		Filename:           filename,
 		Compression:        f.Compression,
 		DiskSync:           f.DiskSync,
-		AllocatedDiskSpace: allocatedDiskSpace,
+		AllocatedDiskSpace: f.DiskAllocation.ForNextSlice(prevSliceSize),
 	}, nil
 }
