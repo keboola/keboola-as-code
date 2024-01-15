@@ -60,7 +60,7 @@ func TestFileSchema(t *testing.T) {
 		},
 		{
 			s.InLevel(storage.LevelLocal).ByKey(fileKey).Key(),
-			"storage/file/level/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z",
+			"storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z",
 		},
 	}
 
