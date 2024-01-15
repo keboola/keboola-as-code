@@ -747,7 +747,7 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	ctx := context.Background()
 
 	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T19:00:00.000Z").Time())
+	clk.Set(utctime.MustParse("2000-01-01T02:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -763,10 +763,20 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	storageRepo := d.StorageRepository()
 	fileFacade := storageRepo.File()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
 
 	// Create parent branch, source and sink
 	// -----------------------------------------------------------------------------------------------------------------
@@ -828,17 +838,17 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T20:00:00.000Z
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T20:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T03:00:00.000Z",
   "type": "csv",
   "state": "closing",
-  "closingAt": "2000-01-01T21:00:00.000Z",
+  "closingAt": "2000-01-01T04:00:00.000Z",
   "columns": [
     {
       "type": "body",
@@ -859,17 +869,17 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T20:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T21:00:00.000Z
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T04:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T21:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T04:00:00.000Z",
   "type": "csv",
   "state": "closing",
-  "closingAt": "2000-01-01T22:00:00.000Z",
+  "closingAt": "2000-01-01T05:00:00.000Z",
   "columns": [
     {
       "type": "body",
@@ -890,14 +900,14 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T21:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T22:00:00.000Z
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T05:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T22:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T05:00:00.000Z",
   "type": "csv",
   "state": "writing",
   "columns": [
@@ -918,7 +928,60 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T22:00:00.000Z
   %A
 }
 >>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/secret/token/"))
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T03:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T03:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T04:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T04:00:00.000Z/my-volume-1/2000-01-01T04:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T04:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T04:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T05:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T05:00:00.000Z/my-volume-1/2000-01-01T05:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T05:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T05:00:00.000Z",
+  "type": "csv",
+  "state": "writing",
+  %A
+}
+>>>>>
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all|storage/secret/token/|storage/volume/writer/my-volume-1"))
 }
 
 func TestRepository_File_CloseAllIn(t *testing.T) {
