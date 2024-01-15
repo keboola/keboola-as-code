@@ -22,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -705,14 +704,13 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	ctx := context.Background()
 
 	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T19:00:00.000Z").Time())
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
-	volumeID := volume.ID("my-volume")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
@@ -724,14 +722,25 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	fileRepo := storageRepo.File()
 	sliceRepo := storageRepo.Slice()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
 
-	// Create parent branch, source, sink and file
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create parent branch, source, sink, file and slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var file storage.File
+	var slice storage.Slice
 	{
 		var err error
 		branch := test.NewBranch(branchKey)
@@ -743,18 +752,10 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-	}
-
-	// Create (the first Rotate)
-	// -----------------------------------------------------------------------------------------------------------------
-	var slice storage.Slice
-	fileVolumeKey := storage.FileVolumeKey{FileKey: file.FileKey, VolumeID: volumeID}
-	{
-		var err error
-		clk.Add(time.Hour)
-		slice, err = sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).ResultOrErr()
+		slices, err := sliceRepo.List(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), slice.OpenedAt().Time())
+		require.Len(t, slices, 1)
+		slice = slices[0]
 	}
 
 	// Put slice statistics value - it should be moved with the slice state transitions
@@ -786,7 +787,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.Close(clk.Now(), fileVolumeKey).Do(ctx).Err())
+		require.NoError(t, sliceRepo.Close(clk.Now(), slice.FileVolumeKey).Do(ctx).Err())
 	}
 
 	// Switch slice to the storage.SliceUploading state
@@ -828,57 +829,57 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
+storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "imported",
-  "closingAt": "2000-01-02T01:00:00.000Z",
-  "importingAt": "2000-01-02T02:00:00.000Z",
-  "importedAt": "2000-01-02T03:00:00.000Z",
+  "closingAt": "2000-01-01T06:00:00.000Z",
+  "importingAt": "2000-01-01T07:00:00.000Z",
+  "importedAt": "2000-01-01T08:00:00.000Z",
   %A
 }
 >>>>>
 
 <<<<<
-storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z
+storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-01T20:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "imported",
-  "closingAt": "2000-01-01T21:00:00.000Z",
-  "uploadingAt": "2000-01-01T22:00:00.000Z",
-  "uploadedAt": "2000-01-01T23:00:00.000Z",
-  "importedAt": "2000-01-02T03:00:00.000Z",
+  "closingAt": "2000-01-01T02:00:00.000Z",
+  "uploadingAt": "2000-01-01T03:00:00.000Z",
+  "uploadedAt": "2000-01-01T04:00:00.000Z",
+  "importedAt": "2000-01-01T08:00:00.000Z",
   %A
 }
 >>>>>
 
 <<<<<
-storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value
 -----
 {
   "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T20:00:00.000Z",
-  "lastRecordAt": "2000-01-01T20:01:00.000Z",
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T01:01:00.000Z",
   "recordsCount": 123,
   "uncompressedSize": "100MB",
   "compressedSize": "100MB"
 }
 >>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/"))
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }
 
 func switchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, sliceRepo *repository.SliceRepository, sliceKey storage.SliceKey, states []storage.SliceState) {

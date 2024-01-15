@@ -1904,7 +1904,6 @@ storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-vol
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all|storage/secret/token/|storage/volume/"))
 }
-}
 
 func registerWriterVolumes(t *testing.T, ctx context.Context, volumeRepo *repository.VolumeRepository, session *concurrency.Session, count int) {
 	t.Helper()
