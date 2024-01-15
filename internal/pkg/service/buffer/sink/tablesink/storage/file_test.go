@@ -12,9 +12,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -88,22 +91,26 @@ func TestFile_Validation(t *testing.T) {
 
 	// Following values have own validation
 	localStorage := local.File{
-		Dir:         "my-dir",
-		Compression: compression.DefaultConfig(),
-		DiskSync:    disksync.DefaultConfig(),
-		Volumes: local.VolumesConfig{
-			Count:                  1,
-			RegistrationTTLSeconds: 10,
-		},
+		Dir:            "my-dir",
+		Compression:    compression.NewConfig(),
+		DiskSync:       disksync.NewConfig(),
+		DiskAllocation: allocate.NewConfig(),
 	}
 	stagingStorage := staging.File{
-		Compression:                 compression.DefaultConfig(),
+		Compression:                 compression.NewConfig(),
 		UploadCredentials:           &keboola.FileUploadCredentials{},
 		UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}
 	targetStorage := target.File{
 		TableID:    keboola.MustParseTableID("in.bucket.table"),
 		StorageJob: &keboola.StorageJob{},
+	}
+	volumeAssignment := assignment.Assignment{
+		Config: assignment.Config{
+			Count:          2,
+			PreferredTypes: []string{"foo", "bar"},
+		},
+		Volumes: []volume.ID{"my-volume-1", "my-volume-2"},
 	}
 
 	// Test cases
@@ -123,7 +130,8 @@ func TestFile_Validation(t *testing.T) {
 - "type" is a required field
 - "state" is a required field
 - "columns" is a required field
-
+- "assignment.config.count" is a required field
+- "assignment.config.preferredTypes" must contain at least 1 item
 `,
 			Value: File{
 				LocalStorage:   localStorage,
@@ -139,6 +147,7 @@ func TestFile_Validation(t *testing.T) {
 				Type:           FileTypeCSV,
 				State:          FileWriting,
 				Columns:        column.Columns{},
+				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -155,6 +164,7 @@ func TestFile_Validation(t *testing.T) {
 					column.Headers{},
 					column.Body{},
 				},
+				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -172,6 +182,7 @@ func TestFile_Validation(t *testing.T) {
 					column.Headers{},
 					column.Body{},
 				},
+				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -190,6 +201,7 @@ func TestFile_Validation(t *testing.T) {
 					column.Headers{},
 					column.Body{},
 				},
+				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -209,6 +221,7 @@ func TestFile_Validation(t *testing.T) {
 					column.Headers{},
 					column.Body{},
 				},
+				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,

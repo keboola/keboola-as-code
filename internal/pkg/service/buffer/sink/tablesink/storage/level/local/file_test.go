@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -23,38 +24,20 @@ func TestFile_Validation(t *testing.T) {
 		{
 			Name: "ok",
 			Value: File{
-				Dir:         "my-dir",
-				Compression: compression.DefaultConfig(),
-				DiskSync:    disksync.DefaultConfig(),
-				Volumes: VolumesConfig{
-					Count:                  1,
-					RegistrationTTLSeconds: 10,
-				},
+				Dir:            "my-dir",
+				Compression:    compression.NewConfig(),
+				DiskSync:       disksync.NewConfig(),
+				DiskAllocation: allocate.NewConfig(),
 			},
 		},
 		{
 			Name:          "empty dir",
 			ExpectedError: `"dir" is a required field`,
 			Value: File{
-				Dir:         "",
-				Compression: compression.DefaultConfig(),
-				DiskSync:    disksync.DefaultConfig(),
-				Volumes: VolumesConfig{
-					Count:                  1,
-					RegistrationTTLSeconds: 10,
-				},
-			},
-		},
-		{
-			Name: "empty volumes config",
-			ExpectedError: `
-- "volumes.count" is a required field
-- "volumes.registrationTTL" is a required field
-`,
-			Value: File{
-				Dir:         "my-dir",
-				Compression: compression.DefaultConfig(),
-				DiskSync:    disksync.DefaultConfig(),
+				Dir:            "",
+				Compression:    compression.NewConfig(),
+				DiskSync:       disksync.NewConfig(),
+				DiskAllocation: allocate.NewConfig(),
 			},
 		},
 	}
