@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -40,15 +42,17 @@ func NewFileOpenedAt(openedAtStr string) storage.File {
 		Type:    storage.FileTypeCSV,
 		State:   storage.FileWriting,
 		Columns: column.Columns{column.Body{}},
+		Assignment: assignment.Assignment{
+			Config: assignment.Config{
+				Count:          1,
+				PreferredTypes: []string{},
+			},
+			Volumes: []volume.ID{"my-volume"},
+		},
 		LocalStorage: local.File{
 			Dir:         "my-dir",
 			Compression: compression.DefaultNoneConfig(),
-			DiskSync:    disksync.DefaultConfig(),
-			Volumes: local.VolumesConfig{
-				Count:                  1,
-				PreferredTypes:         []string{},
-				RegistrationTTLSeconds: 10,
-			},
+			DiskSync:    disksync.NewConfig(),
 		},
 		StagingStorage: staging.File{
 			Compression:                 compression.DefaultNoneConfig(),

@@ -16,10 +16,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -76,10 +76,10 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
 		assert.NoError(t, err)
-		assert.Len(t, content, storage.VolumeIDLength)
+		assert.Len(t, content, volume.IDLength)
 
 		// Volume ID reported by the volume instance match the file content
-		assert.Equal(t, storage.VolumeID(content), vol.ID())
+		assert.Equal(t, volume.ID(content), vol.ID())
 	}
 
 	// Lock is locked by the volume
@@ -121,7 +121,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Volume ID reported by the volume instance match the file content
-	assert.Equal(t, storage.VolumeID("123456789"), vol.ID())
+	assert.Equal(t, volume.ID("123456789"), vol.ID())
 
 	// File content remains same
 	if assert.FileExists(t, idFilePath) {
@@ -247,7 +247,7 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 		WithWatchDrainFile(false),
 	}, opts...)
 
-	info := storage.VolumeSpec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	info := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
 	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, info, opts...)
 }
 

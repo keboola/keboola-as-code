@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -255,6 +256,15 @@ storage/file/all/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
       "name": "body"
     }
   ],
+  "assignment": {
+    "config": {
+      "count": 1,
+      "preferredTypes": [
+        "default"
+      ]
+    },
+    "volumes": null
+  },
   "local": {
     "dir": "123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z",
     "compression": {
@@ -265,13 +275,6 @@ storage/file/all/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
         "blockSize": "256KB",
         "concurrency": 0
       }
-    },
-    "volumes": {
-      "count": 1,
-      "preferredTypes": [
-        "default"
-      ],
-      "registrationTimeToLive": 10
     },
     "diskSync": {
       "mode": "disk",
@@ -334,8 +337,8 @@ func TestFileRepository_Rotate(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
-	volumeID1 := storage.VolumeID("my-volume-1")
-	volumeID2 := storage.VolumeID("my-volume-2")
+	volumeID1 := volume.ID("my-volume-1")
+	volumeID2 := volume.ID("my-volume-2")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
@@ -1108,8 +1111,8 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
-	volumeID1 := storage.VolumeID("my-volume-1")
-	volumeID2 := storage.VolumeID("my-volume-2")
+	volumeID1 := volume.ID("my-volume-1")
+	volumeID2 := volume.ID("my-volume-2")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))

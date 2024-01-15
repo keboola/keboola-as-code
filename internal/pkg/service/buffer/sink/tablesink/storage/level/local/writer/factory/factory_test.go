@@ -13,7 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/factory"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 )
 
 // TestDefaultFactory_FileTypeCSV tests that csv.WriterVolume is created for the storage.FileTypeCSV.
@@ -24,9 +25,9 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	ctx := context.Background()
 	logger := log.NewNopLogger()
 	clk := clock.New()
-	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
+	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
-	v, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec, volume.WithWriterFactory(factory.Default))
+	v, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, writerVolume.WithWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()
@@ -47,9 +48,9 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	ctx := context.Background()
 	logger := log.NewNopLogger()
 	clk := clock.New()
-	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
+	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
-	v, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec, volume.WithWriterFactory(factory.Default))
+	v, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, writerVolume.WithWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()

@@ -20,8 +20,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -56,11 +57,11 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	logger.ConnectTo(testhelper.VerboseStdout())
 
 	// Open volume
-	opts := []volume.Option{volume.WithWatchDrainFile(false)}
+	opts := []writerVolume.Option{writerVolume.WithWatchDrainFile(false)}
 	clk := clock.New()
 	now := clk.Now()
-	spec := storage.VolumeSpec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "1"}
-	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec, opts...)
+	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "1"}
+	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
@@ -148,7 +149,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	tc.Validator(t, string(content))
 }
 
-func (tc *WriterTestCase) newSlice(t *testing.T, volume *volume.Volume) *storage.Slice {
+func (tc *WriterTestCase) newSlice(t *testing.T, volume *writerVolume.Volume) *storage.Slice {
 	t.Helper()
 
 	s := NewTestSlice(volume)
@@ -165,7 +166,7 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *volume.Volume) *storage
 	return s
 }
 
-func NewTestSlice(volume *volume.Volume) *storage.Slice {
+func NewTestSlice(volume *writerVolume.Volume) *storage.Slice {
 	s := test.NewSlice()
 	s.VolumeID = volume.ID()
 	return s

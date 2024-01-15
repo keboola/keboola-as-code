@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -33,9 +34,9 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	volumeID1 := storage.VolumeID("my-volume-1")
-	volumeID2 := storage.VolumeID("my-volume-2")
-	volumeID3 := storage.VolumeID("my-volume-3")
+	volumeID1 := volume.ID("my-volume-1")
+	volumeID2 := volume.ID("my-volume-2")
+	volumeID3 := volume.ID("my-volume-3")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), deps.WithClock(clk))

@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 )
 
 func TestOpenVolumes(t *testing.T) {
@@ -66,7 +66,7 @@ func TestOpenVolumes(t *testing.T) {
 	assert.Len(t, volumes.VolumeByType("hdd"), 3)
 	assert.Len(t, volumes.VolumeByType("ssd"), 2)
 	assert.Len(t, volumes.VolumeByType("drained"), 1)
-	for _, id := range []storage.VolumeID{"HDD_1", "HDD_2"} {
+	for _, id := range []volume.ID{"HDD_1", "HDD_2"} {
 		vol, err := volumes.Volume(id)
 		assert.NotNil(t, vol)
 		assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestOpenVolumes(t *testing.T) {
 	} {
 		content, err := os.ReadFile(path)
 		assert.NoError(t, err)
-		vol, err := volumes.Volume(storage.VolumeID(content))
+		vol, err := volumes.Volume(volume.ID(content))
 		assert.NotNil(t, vol)
 		assert.NoError(t, err)
 	}
