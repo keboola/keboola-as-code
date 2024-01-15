@@ -376,14 +376,13 @@ func (root *RootCommand) setupLogger() {
 	}
 
 	// Log info
-	w := root.logger.DebugWriter()
-	w.WriteString(root.Version)
-	w.WriteString(fmt.Sprintf("Running command %v", os.Args))
-	w.WriteString(root.options.Dump())
+	root.logger.Debug(root.Context(), root.Version)
+	root.logger.Debugf(root.Context(), "Running command %v", os.Args)
+	root.logger.Debug(root.Context(), root.options.Dump())
 	if root.logFile == nil {
-		w.WriteString(`Log file: -`)
+		root.logger.Debug(root.Context(), `Log file: -`)
 	} else {
-		w.WriteString(`Log file: ` + root.logFile.Path())
+		root.logger.Debug(root.Context(), `Log file: `+root.logFile.Path())
 	}
 
 	// Copy logs from the temporary logger

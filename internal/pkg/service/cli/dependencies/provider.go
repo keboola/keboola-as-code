@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
@@ -58,10 +59,12 @@ func (v *provider) BaseScope() BaseScope {
 		// Create base HTTP client for all API requests to other APIs
 		httpClient := httpclient.New(
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
-			httpclient.WithDebugOutput(v.logger.DebugWriter()),
 			func(c *httpclient.Config) {
+				if v.options.Verbose {
+					httpclient.WithDebugOutput(os.Stdout)(c)
+				}
 				if v.options.VerboseAPI {
-					httpclient.WithDumpOutput(v.logger.DebugWriter())(c)
+					httpclient.WithDumpOutput(os.Stdout)(c)
 				}
 			},
 		)
