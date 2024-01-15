@@ -40,7 +40,7 @@ func (p *Plan) Log(w io.Writer) {
 		for _, action := range p.actions {
 			fmt.Fprintln(w, "  "+action.Kind().Abbr+" "+action.Path())
 			for _, value := range action.values {
-				fmt.Fprintf(w, "  %v", value.path)
+				fmt.Fprintf(w, "    %v", value.path)
 				fmt.Fprintln(w)
 			}
 		}
