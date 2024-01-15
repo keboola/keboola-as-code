@@ -34,12 +34,12 @@ func (p *Plan) Log(logger log.Logger) {
 	writer := logger.InfoWriter()
 	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	if len(p.actions) == 0 {
-		writer.WriteStringIndent(1, "no values to encrypt")
+		writer.WriteString("  no values to encrypt")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteStringIndent(1, action.Kind().Abbr+" "+action.Path())
+			writer.WriteString("  " + action.Kind().Abbr + " " + action.Path())
 			for _, value := range action.values {
-				writer.WriteStringIndent(2, fmt.Sprintf("%v", value.path))
+				writer.WriteString(fmt.Sprintf("  %v", value.path))
 			}
 		}
 	}

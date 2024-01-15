@@ -34,10 +34,10 @@ func (p *Plan) Log(log log.Logger) {
 	writer := log.InfoWriter()
 	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	if len(p.actions) == 0 {
-		writer.WriteStringIndent(1, "nothing to delete")
+		writer.WriteString("  nothing to delete")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteStringIndent(1, fmt.Sprintf("%s %s %s", diff.DeleteMark, model.ConfigAbbr, action.State.Path()))
+			writer.WriteString(fmt.Sprintf("  %s %s %s", diff.DeleteMark, model.ConfigAbbr, action.State.Path()))
 		}
 	}
 }

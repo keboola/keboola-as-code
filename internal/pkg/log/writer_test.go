@@ -42,18 +42,3 @@ func TestToErrorWriter(t *testing.T) {
 	assert.NoError(t, err)
 	AssertJSONMessages(t, `{"level":"error","message":"test"}`, logger.AllMessages())
 }
-
-func TestWriteStringIndent(t *testing.T) {
-	t.Parallel()
-	logger := NewDebugLogger()
-	writer := logger.InfoWriter()
-	writer.WriteStringIndent(1, "test1")
-	writer.WriteStringIndent(2, "test2")
-	writer.WriteStringIndent(3, "test3")
-	expected := `
-{"level":"info","message":"  test1"}
-{"level":"info","message":"    test2"}
-{"level":"info","message":"      test3"}
-`
-	AssertJSONMessages(t, expected, logger.AllMessages())
-}

@@ -370,6 +370,6 @@ func (v ModifiedObjects) Log(logger log.Logger, tmpl *template.Template) {
 	writer := logger.InfoWriter()
 	writer.WriteString(fmt.Sprintf(`Objects from "%s" template:`, tmpl.FullName()))
 	for _, o := range v {
-		writer.WriteStringIndent(1, fmt.Sprintf("%s %s %s", o.OpMark, o.Kind().Abbr, o.Path()))
+		writer.WriteString(fmt.Sprintf("  %s %s %s", o.OpMark, o.Kind().Abbr, o.Path()))
 	}
 }

@@ -49,7 +49,7 @@ func (p *Plan) Log(logger log.Logger) {
 	})
 
 	if len(actions) == 0 {
-		writer.WriteStringIndent(1, "no difference")
+		writer.WriteString("  no difference")
 	} else {
 		skippedDeleteCount := 0
 		for _, action := range actions {
@@ -59,7 +59,7 @@ func (p *Plan) Log(logger log.Logger) {
 				msg += " - SKIPPED"
 				skippedDeleteCount++
 			}
-			writer.WriteStringIndent(1, msg)
+			writer.WriteString("  " + msg)
 		}
 
 		if skippedDeleteCount > 0 {
