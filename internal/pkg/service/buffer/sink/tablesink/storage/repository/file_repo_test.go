@@ -1344,6 +1344,7 @@ func switchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRe
 		var file storage.File
 		var err error
 		if to == storage.FileClosing {
+			require.Equal(t, storage.FileWriting, from)
 			require.NoError(t, fileRepo.CloseAllIn(clk.Now(), fileKey.SinkKey).Do(ctx).Err())
 			file, err = fileRepo.Get(fileKey).Do(ctx).ResultOrErr()
 			require.NoError(t, err)
