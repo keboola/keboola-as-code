@@ -2,6 +2,8 @@ package list
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -17,26 +19,26 @@ func Run(ctx context.Context, repo *repository.Repository, d dependencies) (err 
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.list")
 	defer span.End(&err)
 
-	w := d.Logger().InfoWriter()
+	w := os.Stdout
 
 	for _, tmpl := range repo.Templates() {
-		w.Writef("Template ID:          %s", tmpl.ID)
-		w.Writef("Name:                 %s", tmpl.Name)
-		w.Writef("Description:          %s", tmpl.Description)
+		fmt.Fprintf(w, "Template ID:          %s\n", tmpl.ID)
+		fmt.Fprintf(w, "Name:                 %s\n", tmpl.Name)
+		fmt.Fprintf(w, "Description:          %s\n", tmpl.Description)
 		v, found := tmpl.DefaultVersion()
 		if found {
-			w.Writef("Default version:      %s", v.Version.String())
+			fmt.Fprintf(w, "Default version:      %s\n", v.Version.String())
 		}
-		w.Writef("")
+		fmt.Fprintln(w)
 
 		for _, v := range tmpl.AllVersions() {
-			w.Writef("  Version:            %s", v.Version.String())
-			w.Writef("  Stable:             %t", v.Stable)
-			w.Writef("  Description:        %s", v.Description)
-			w.Writef("")
+			fmt.Fprintf(w, "  Version:            %s\n", v.Version.String())
+			fmt.Fprintf(w, "  Stable:             %t\n", v.Stable)
+			fmt.Fprintf(w, "  Description:        %s\n", v.Description)
+			fmt.Fprintln(w)
 		}
 
-		w.Writef("")
+		fmt.Fprintln(w)
 	}
 
 	return nil

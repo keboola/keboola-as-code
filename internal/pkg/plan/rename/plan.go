@@ -3,8 +3,8 @@ package rename
 import (
 	"context"
 	"fmt"
+	"io"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 )
@@ -21,14 +21,14 @@ func (p *Plan) Name() string {
 	return "rename"
 }
 
-func (p *Plan) Log(log log.Logger) {
-	writer := log.InfoWriter()
-	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
+func (p *Plan) Log(w io.Writer) {
+	fmt.Fprintf(w, `Plan for "%s" operation:`, p.Name())
+	fmt.Fprintln(w)
 	if len(p.actions) == 0 {
-		writer.WriteString("  no paths to rename")
+		fmt.Fprintln(w, "  no paths to rename")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteString("  - " + action.String())
+			fmt.Fprintln(w, "  - "+action.String())
 		}
 	}
 }

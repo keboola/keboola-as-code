@@ -362,8 +362,6 @@ func (root *RootCommand) setupLogger() {
 
 	// Create logger
 	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.options.Verbose)
-	root.SetOut(root.logger.InfoWriter())
-	root.SetErr(root.logger.WarnWriter())
 
 	// Warn if user specified log file + it cannot be opened
 	if logFileErr != nil && root.options.LogFilePath != "" {

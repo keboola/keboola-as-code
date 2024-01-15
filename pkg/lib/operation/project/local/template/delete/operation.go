@@ -2,6 +2,7 @@ package delete_template
 
 import (
 	"context"
+	"os"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -36,7 +37,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(logger)
+	plan.Log(os.Stdout)
 
 	// Dry run?
 	if o.DryRun {

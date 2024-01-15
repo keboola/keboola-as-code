@@ -3,6 +3,8 @@ package use
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"sort"
 	"time"
 
@@ -255,7 +257,7 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 	}
 
 	// Log new objects
-	p.modified.Log(logger, p.options.Template)
+	p.modified.Log(os.Stdout, p.options.Template)
 
 	// Normalize paths
 	if _, err := rename.Run(ctx, p.options.ProjectState, rename.Options{DryRun: false, LogEmpty: false}, p.deps); err != nil {
@@ -362,14 +364,15 @@ type ModifiedObject struct {
 
 type ModifiedObjects []ModifiedObject
 
-func (v ModifiedObjects) Log(logger log.Logger, tmpl *template.Template) {
+func (v ModifiedObjects) Log(w io.Writer, tmpl *template.Template) {
 	sort.SliceStable(v, func(i, j int) bool {
 		return v[i].Path() < v[j].Path()
 	})
 
-	writer := logger.InfoWriter()
-	writer.WriteString(fmt.Sprintf(`Objects from "%s" template:`, tmpl.FullName()))
+	fmt.Fprintf(w, `Objects from "%s" template:`, tmpl.FullName())
+	fmt.Fprintln(w)
 	for _, o := range v {
-		writer.WriteString(fmt.Sprintf("  %s %s %s", o.OpMark, o.Kind().Abbr, o.Path()))
+		fmt.Fprintf(w, "  %s %s %s", o.OpMark, o.Kind().Abbr, o.Path())
+		fmt.Fprintln(w)
 	}
 }
