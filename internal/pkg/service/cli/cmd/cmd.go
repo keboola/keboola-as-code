@@ -154,7 +154,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		// Setup logger
 		root.setupLogger()
 		root.fs.SetLogger(root.logger)
-		root.logger.Debug(cmd.Context(), `Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
+		root.logger.DebugfCtx(cmd.Context(), `Working dir: %s`, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
 		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))

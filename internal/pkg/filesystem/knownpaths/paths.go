@@ -175,7 +175,7 @@ func (p *Paths) LogUntrackedPaths(ctx context.Context, logger log.Logger) {
 	if len(untracked) > 0 {
 		logger.Warn(ctx, "Unknown paths found:")
 		for _, path := range untracked {
-			logger.Warn(ctx, "  - ", path)
+			logger.WarnfCtx(ctx, "  - %s", path)
 		}
 	}
 }

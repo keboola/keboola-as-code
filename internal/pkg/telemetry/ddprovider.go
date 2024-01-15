@@ -30,7 +30,7 @@ func NewDDTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...dd
 	}
 	proc.OnShutdown(func(ctx context.Context) {
 		if err := tp.Shutdown(); err != nil {
-			logger.Error(ctx, err)
+			logger.Error(ctx, err.Error())
 		}
 	})
 

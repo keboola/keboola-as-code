@@ -323,11 +323,11 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	)
 	if resp, err := finalizeTaskOp.Do(finalizationCtx, n.client); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
-		logger.Error(ctx, err)
+		logger.Error(ctx, err.Error())
 		return result, err
 	} else if !resp.Succeeded {
 		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
-		logger.Error(ctx, err)
+		logger.Error(ctx, err.Error())
 		return result, err
 	}
 	logger.DebugfCtx(ctx, `lock released "%s"`, task.Lock.Key())

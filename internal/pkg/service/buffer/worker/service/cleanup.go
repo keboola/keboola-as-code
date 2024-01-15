@@ -28,7 +28,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 				return
 			case <-ticker.C:
 				if err := node.Check(s.ctx); err != nil && !errors.Is(err, context.Canceled) {
-					logger.Error(s.ctx, err)
+					logger.Error(s.ctx, err.Error())
 				}
 			}
 		}
@@ -58,7 +58,7 @@ func (s *Service) cleanupTasks() <-chan error {
 				// Only one worker should do cleanup
 				if s.dist.MustCheckIsOwner("task.cleanup") {
 					if err := s.tasks.Cleanup(); err != nil && !errors.Is(err, context.Canceled) {
-						logger.Error(s.ctx, err)
+						logger.Error(s.ctx, err.Error())
 					}
 				}
 			}

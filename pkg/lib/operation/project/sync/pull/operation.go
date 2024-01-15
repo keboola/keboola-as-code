@@ -80,7 +80,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		// Validate schemas and encryption
 		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
 			logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-			logger.Warn(ctx)
+			logger.Warn(ctx, "")
 			logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
 			logger.Warn(ctx, `Please correct the problems listed above.`)
 			logger.Warn(ctx, `Push operation is only possible when project is valid.`)

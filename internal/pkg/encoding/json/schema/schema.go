@@ -36,7 +36,7 @@ func ValidateObjects(ctx context.Context, logger log.Logger, objects model.Objec
 
 		var schemaErr *SchemaError
 		if err := ValidateConfig(component, config.Local); errors.As(err, &schemaErr) {
-			logger.Warn(ctx, errors.PrefixErrorf(schemaErr.Unwrap(), `config JSON schema of the component "%s" is invalid, please contact support`, component.ID))
+			logger.Warn(ctx, errors.PrefixErrorf(schemaErr.Unwrap(), `config JSON schema of the component "%s" is invalid, please contact support`, component.ID).Error())
 		} else if err != nil {
 			errs.AppendWithPrefixf(err, "config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile))
 		}
@@ -55,7 +55,7 @@ func ValidateObjects(ctx context.Context, logger log.Logger, objects model.Objec
 
 		var schemaErr *SchemaError
 		if err := ValidateConfigRow(component, row.Local); errors.As(err, &schemaErr) {
-			logger.Warn(ctx, errors.PrefixErrorf(schemaErr.Unwrap(), `config row JSON schema of the component "%s" is invalid, please contact support`, component.ID))
+			logger.Warn(ctx, errors.PrefixErrorf(schemaErr.Unwrap(), `config row JSON schema of the component "%s" is invalid, please contact support`, component.ID).Error())
 		} else if err != nil {
 			errs.AppendWithPrefixf(err, "config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile))
 		}

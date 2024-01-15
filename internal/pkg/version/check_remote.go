@@ -64,7 +64,7 @@ func (c *checker) CheckIfLatest(ctx context.Context, currentVersion string) erro
 		c.logger.Warn(ctx, `Please update to get the latest features and bug fixes.`)
 		c.logger.Warn(ctx, `Read more: https://github.com/keboola/keboola-as-code/releases`)
 		c.logger.Warn(ctx, `*******************************************************`)
-		c.logger.Warn(ctx)
+		c.logger.Warn(ctx, "")
 	}
 
 	return nil

@@ -66,7 +66,7 @@ func (s *Service) closeSlices(d dependencies) <-chan error {
 						// We did not receive confirmation from all API nodes
 						// that they are no longer using the old slice,
 						// there is some bug in the mechanism.
-						logger.Error(ctx, errors.Errorf("a timeout occurred while waiting until all API nodes switch to a revision >= %v: %w", rev, err))
+						logger.Error(ctx, errors.Errorf("a timeout occurred while waiting until all API nodes switch to a revision >= %v: %w", rev, err).Error())
 						// We will not block close and upload operation, because it would completely block the data flow.
 						// Continue...
 					} else {

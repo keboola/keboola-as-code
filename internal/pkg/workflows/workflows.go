@@ -48,7 +48,7 @@ func (g *generator) generateFiles(ctx context.Context) error {
 	}
 
 	// Common files
-	g.logger.Info(ctx)
+	g.logger.Info(ctx, "")
 	g.logger.Info(ctx, `Generating CI workflows ...`)
 	workflowsDir := filesystem.Join(".github", "workflows")
 	actionsDir := filesystem.Join(".github", "actions")

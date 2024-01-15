@@ -77,7 +77,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// First pull
 	if o.Pull {
-		logger.Info(ctx)
+		logger.Info(ctx, "")
 		logger.Info(ctx, `Running pull.`)
 
 		// Load project state

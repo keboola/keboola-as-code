@@ -24,7 +24,7 @@ func Start(ctx context.Context, filePath string, logger log.Logger) (stop func()
 	return func() {
 		pprof.StopCPUProfile()
 		if err := f.Close(); err != nil { //nolint: forbidigo
-			logger.Error(ctx, err)
+			logger.Error(ctx, err.Error())
 			os.Exit(1)
 		}
 		logger.Info(ctx, "stopped")

@@ -100,7 +100,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 					// Delete the empty file resource
 					if err := fileManager.DeleteFile(ctx, fileRes); err != nil {
 						// The error is not critical
-						s.logger.Error(ctx, errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err))
+						s.logger.Error(ctx, errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err).Error())
 					}
 
 					// Mark file imported

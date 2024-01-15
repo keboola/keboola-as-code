@@ -3,6 +3,7 @@ package prometheus
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ type errLogger struct {
 
 func (l *errLogger) Println(v ...any) {
 	// The prometheus library doesn't provide a context of the message, so we have no choice but to use context.Background().
-	l.logger.Error(context.Background(), v...)
+	l.logger.Error(context.Background(), fmt.Sprint(v...))
 }
 
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.

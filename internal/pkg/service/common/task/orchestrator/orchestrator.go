@@ -164,6 +164,6 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 		Operation: taskFn,
 	}
 	if _, err := o.node.tasks.StartTask(ctx, taskCfg); err != nil {
-		o.logger.Error(ctx, err)
+		o.logger.Error(ctx, err.Error())
 	}
 }

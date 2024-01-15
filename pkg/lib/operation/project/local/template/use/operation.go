@@ -265,7 +265,7 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 	// Validate schemas and encryption
 	if err := validate.Run(ctx, p.options.ProjectState, validate.Options{ValidateSecrets: !p.options.SkipSecretsValidation, ValidateJSONSchema: true}, p.deps); err != nil {
 		logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-		logger.Warn(ctx)
+		logger.Warn(ctx, "")
 		logger.Warn(ctx, `Please correct the problems listed above.`)
 		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 	}
