@@ -1116,7 +1116,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	ctx := context.Background()
 
 	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T19:00:00.000Z").Time())
+	clk.Set(utctime.MustParse("2000-01-01T02:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -1137,6 +1137,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	storageRepo := d.StorageRepository()
 	fileFacade := storageRepo.File()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
@@ -1152,20 +1153,34 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 		source2 := test.NewSource(sourceKey2)
 		require.NoError(t, defRepo.Source().Create("Create source", &source2).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
+		sink1.Table.Storage = sinkStorageConfig(3, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
+		sink2.Table.Storage = sinkStorageConfig(3, []string{"hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		sink3 := test.NewSink(sinkKey3)
+		sink3.Table.Storage = sinkStorageConfig(2, []string{"ssd", "hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink3).Do(ctx).Err())
 		sink4 := test.NewSink(sinkKey4)
+		sink4.Table.Storage = sinkStorageConfig(1, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink4).Do(ctx).Err())
 		sink5 := test.NewSink(sinkKey5)
+		sink5.Table.Storage = sinkStorageConfig(1, []string{"hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink5).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink3.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink4.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink5.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
+	}
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 5)
 	}
 
 	// Create (the first file Rotate)
@@ -1205,7 +1220,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T20:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z
 -----
 {
 %A
@@ -1215,7 +1230,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T20:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T21:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T04:00:00.000Z
 -----
 {
 %A
@@ -1225,7 +1240,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T21:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T22:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T05:00:00.000Z
 -----
 {
 %A
@@ -1235,7 +1250,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T22:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T20:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z
 -----
 {
 %A
@@ -1245,7 +1260,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T20:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T21:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T04:00:00.000Z
 -----
 {
 %A
@@ -1255,7 +1270,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T21:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T22:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T05:00:00.000Z
 -----
 {
 %A
@@ -1265,7 +1280,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T22:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T20:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z
 -----
 {
 %A
@@ -1275,7 +1290,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T20:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T21:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T04:00:00.000Z
 -----
 {
 %A
@@ -1285,7 +1300,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T21:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T22:00:00.000Z
+storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T05:00:00.000Z
 -----
 {
 %A
@@ -1295,7 +1310,7 @@ storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T22:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T20:00:00.000Z
+storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z
 -----
 {
 %A
@@ -1305,7 +1320,7 @@ storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T20:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T21:00:00.000Z
+storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T04:00:00.000Z
 -----
 {
 %A
@@ -1315,7 +1330,7 @@ storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T21:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T22:00:00.000Z
+storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T05:00:00.000Z
 -----
 {
 %A
@@ -1325,7 +1340,7 @@ storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T22:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T20:00:00.000Z
+storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z
 -----
 {
 %A
@@ -1335,7 +1350,7 @@ storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T20:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T21:00:00.000Z
+storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T04:00:00.000Z
 -----
 {
 %A
@@ -1345,7 +1360,7 @@ storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T21:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T22:00:00.000Z
+storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T05:00:00.000Z
 -----
 {
 %A
@@ -1353,7 +1368,307 @@ storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T22:00:00.000Z
 %A
 }
 >>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/secret/token/"))
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T04:00:00.000Z/my-volume-2/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T04:00:00.000Z/my-volume-3/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T04:00:00.000Z/my-volume-4/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T05:00:00.000Z/my-volume-2/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T05:00:00.000Z/my-volume-4/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T05:00:00.000Z/my-volume-5/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T04:00:00.000Z/my-volume-1/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T04:00:00.000Z/my-volume-3/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T04:00:00.000Z/my-volume-5/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T05:00:00.000Z/my-volume-1/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T05:00:00.000Z/my-volume-3/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T05:00:00.000Z/my-volume-5/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T04:00:00.000Z/my-volume-2/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T04:00:00.000Z/my-volume-4/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T05:00:00.000Z/my-volume-2/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T05:00:00.000Z/my-volume-4/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-2/my-sink-4/2000-01-01T04:00:00.000Z/my-volume-4/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-2/my-sink-4/2000-01-01T05:00:00.000Z/my-volume-2/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-2/my-sink-5/2000-01-01T04:00:00.000Z/my-volume-3/2000-01-01T04:00:00.000Z
+-----
+{
+%A
+  "state": "closing",
+%A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source-2/my-sink-5/2000-01-01T05:00:00.000Z/my-volume-5/2000-01-01T05:00:00.000Z
+-----
+{
+%A
+  "state": "writing",
+%A
+}
+>>>>>
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all|storage/secret/token/|storage/volume/"))
 }
 
 func TestFileRepository_StateTransition(t *testing.T) {
