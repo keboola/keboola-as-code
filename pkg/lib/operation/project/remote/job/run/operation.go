@@ -48,7 +48,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	}
 
 	if len(o.Jobs) > 1 {
-		queue.logger.InfofCtx(ctx, "Starting %d jobs.", len(o.Jobs))
+		queue.logger.Infof(ctx, "Starting %d jobs.", len(o.Jobs))
 	} else {
 		queue.logger.Info(ctx, "Starting job.")
 	}
@@ -101,7 +101,7 @@ func (q *JobQueue) startLogRemaining() {
 			case <-q.done:
 				break
 			case <-time.After(time.Second * 5):
-				q.logger.InfofCtx(q.ctx, `Waiting for "%s"`, strings.Join(q.getRemainingJobs(), `", "`))
+				q.logger.Infof(q.ctx, `Waiting for "%s"`, strings.Join(q.getRemainingJobs(), `", "`))
 			}
 		}
 	}()
@@ -124,7 +124,7 @@ func (q *JobQueue) getRemainingJobs() []string {
 }
 
 func (q *JobQueue) started(job *Job) {
-	q.logger.InfofCtx(q.ctx, "Started job \"%s\" using config \"%s\"", job.id, job.Key())
+	q.logger.Infof(q.ctx, "Started job \"%s\" using config \"%s\"", job.id, job.Key())
 
 	q.remainingMutex.Lock()
 	q.remaining[string(job.id)] = true
@@ -136,7 +136,7 @@ func (q *JobQueue) finished(job *Job) {
 	q.remaining[string(job.id)] = false
 	q.remainingMutex.Unlock()
 
-	q.logger.InfofCtx(q.ctx, "Finished job \"%s\"", job.id)
+	q.logger.Infof(q.ctx, "Finished job \"%s\"", job.id)
 }
 
 func (q *JobQueue) dispatch(job *Job) {

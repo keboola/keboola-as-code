@@ -687,12 +687,12 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 
 // tryLockProject.
 func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (dependencies.UnlockFn, error) {
-	d.Logger().InfofCtx(ctx, `requested lock for project "%d"`, d.ProjectID())
+	d.Logger().Infof(ctx, `requested lock for project "%d"`, d.ProjectID())
 
 	// Try lock
 	locked, unlockFn := d.ProjectLocker().TryLock(ctx, fmt.Sprintf("project-%d", d.ProjectID()))
 	if !locked {
-		d.Logger().InfofCtx(ctx, `project "%d" is locked by another request`, d.ProjectID())
+		d.Logger().Infof(ctx, `project "%d" is locked by another request`, d.ProjectID())
 		return nil, &ProjectLockedError{
 			StatusCode: http.StatusServiceUnavailable,
 			Name:       "templates.projectLocked",

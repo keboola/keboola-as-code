@@ -43,14 +43,14 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	)
 	// Mount endpoints
 	cfg.Mount(com)
-	logger.InfofCtx(ctx, "mounted HTTP endpoints")
+	logger.Infof(ctx, "mounted HTTP endpoints")
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
-		logger.InfofCtx(ctx, "HTTP server listening on %q", cfg.ListenAddress)
+		logger.Infof(ctx, "HTTP server listening on %q", cfg.ListenAddress)
 		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
 		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
@@ -61,10 +61,10 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 		defer cancel()
 
-		logger.InfofCtx(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
+		logger.Infof(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
 
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)
+			logger.Errorf(ctx, `HTTP server shutdown error: %s`, err)
 		}
 		logger.Info(ctx, "HTTP server shutdown finished")
 	})

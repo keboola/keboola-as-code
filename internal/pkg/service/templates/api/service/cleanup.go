@@ -18,7 +18,7 @@ func (s *service) cleanup(ctx context.Context, wg *sync.WaitGroup) <-chan error 
 		ticker := s.deps.Clock().Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.InfofCtx(ctx, "ready")
+		logger.Infof(ctx, "ready")
 		close(initDone) // no error expected
 
 		for {

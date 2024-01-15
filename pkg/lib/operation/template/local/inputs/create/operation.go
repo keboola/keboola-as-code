@@ -41,6 +41,6 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (inputs *templat
 		return nil, err
 	}
 
-	logger.InfofCtx(ctx, "Created template inputs file \"%s\".", inputs.Path())
+	logger.Infof(ctx, "Created template inputs file \"%s\".", inputs.Path())
 	return inputs, nil
 }

@@ -125,7 +125,7 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				c.logger.InfofCtx(ctx, "restarted, %s", resp.RestartReason)
+				c.logger.Infof(ctx, "restarted, %s", resp.RestartReason)
 				if c.onRestarted != nil {
 					c.onRestarted(resp.RestartReason, resp.RestartDelay)
 				}

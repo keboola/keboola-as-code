@@ -76,8 +76,8 @@ func NewProjectDeps(ctx context.Context, prjScp projectScopeDeps, tokenStr strin
 		attribute.String("tokenId", token.ID),
 	)
 
-	prjScp.Logger().DebugfCtx(ctx, "Storage API token is valid.")
-	prjScp.Logger().DebugfCtx(ctx, `Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
+	prjScp.Logger().Debugf(ctx, "Storage API token is valid.")
+	prjScp.Logger().Debugf(ctx, `Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
 
 	// Set attributes after token verification
 	if reqSpan != nil {

@@ -73,7 +73,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 						slice.RetryAfter = &retryAfter
 						result = result.WithError(errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, result.Error, slice.RetryAfter))
 						if err := s.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
-							s.logger.ErrorfCtx(ctx, `cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
+							s.logger.Errorf(ctx, `cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
 						}
 					}
 				}()
@@ -99,7 +99,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 
 					stats, statsErr := s.realtimeStats.SliceStats(ctx, slice.SliceKey)
 					if statsErr != nil {
-						s.logger.ErrorfCtx(ctx, `cannot send upload event: cannot get slice "%s" stats: %s`, slice.SliceKey, statsErr)
+						s.logger.Errorf(ctx, `cannot send upload event: cannot get slice "%s" stats: %s`, slice.SliceKey, statsErr)
 						return
 					}
 

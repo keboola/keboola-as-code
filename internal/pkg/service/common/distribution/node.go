@@ -121,14 +121,14 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 
 	startTime := time.Now()
-	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)
+	n.logger.Infof(ctx, `registering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Put(n.nodeID, etcd.WithLease(session.Lease())).Do(ctx, session.Client()); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.InfofCtx(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.Infof(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
 	return nil
 }
 
@@ -137,14 +137,14 @@ func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.InfofCtx(ctx, `unregistering the node "%s"`, n.nodeID)
+	n.logger.Infof(ctx, `unregistering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
-		n.logger.WarnfCtx(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
+		n.logger.Warnf(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.InfofCtx(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.Infof(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
 }
 
 // watch for other nodes.
@@ -189,13 +189,13 @@ func (n *Node) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent, 
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
 			n.assigner.addNode(nodeID)
-			n.logger.InfofCtx(ctx, event.Message)
+			n.logger.Infof(ctx, event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
 			n.assigner.removeNode(nodeID)
-			n.logger.InfofCtx(ctx, event.Message)
+			n.logger.Infof(ctx, event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}

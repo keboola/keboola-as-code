@@ -170,10 +170,10 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 	logger.Info(ctx, "Info msg <extra> (<count>)")
 	logger.Warn(ctx, "Warn msg <extra> (<count>)")
 	logger.Error(ctx, "Error msg <extra> (<count>)")
-	logger.DebugfCtx(ctx, "Debug %s <extra> (<count>)", "message")
-	logger.InfofCtx(ctx, "Info %s <extra> (<count>)", "message")
-	logger.WarnfCtx(ctx, "Warn %s <extra> (<count>)", "message")
-	logger.ErrorfCtx(ctx, "Error %s <extra> (<count>)", "message")
+	logger.Debugf(ctx, "Debug %s <extra> (<count>)", "message")
+	logger.Infof(ctx, "Info %s <extra> (<count>)", "message")
+	logger.Warnf(ctx, "Warn %s <extra> (<count>)", "message")
+	logger.Errorf(ctx, "Error %s <extra> (<count>)", "message")
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix

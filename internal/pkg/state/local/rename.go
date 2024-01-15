@@ -19,7 +19,7 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) erro
 	warnings := errors.NewMultiError()
 	var newPaths []string
 	var pathsToRemove []string
-	m.logger.DebugfCtx(ctx, `Starting renaming of the %d paths.`, len(actions))
+	m.logger.Debugf(ctx, `Starting renaming of the %d paths.`, len(actions))
 	for _, action := range actions {
 		// Deep copy
 		err := m.fs.Copy(ctx, action.RenameFrom, action.NewPath)

@@ -68,7 +68,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 						retryAt := calculateFileRetryTime(&fileRes, s.clock.Now())
 						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error, retryAt))
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
-							s.logger.ErrorfCtx(ctx, `cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
+							s.logger.Errorf(ctx, `cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}
 					}
 				}()
@@ -86,7 +86,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 
 					stats, statsErr := s.realtimeStats.FileStats(ctx, fileRes.FileKey)
 					if statsErr != nil {
-						s.logger.ErrorfCtx(ctx, `cannot send import event: cannot get file "%s" stats: %s`, fileRes.FileKey, statsErr)
+						s.logger.Errorf(ctx, `cannot send import event: cannot get file "%s" stats: %s`, fileRes.FileKey, statsErr)
 						return
 					}
 

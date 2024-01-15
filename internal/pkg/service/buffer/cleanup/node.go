@@ -79,14 +79,14 @@ func (n *Node) Check(ctx context.Context) error {
 					if _, err := n.startReceiverCleanupTask(ctx, v.ReceiverKey); err == nil {
 						tasksCount++
 					} else {
-						n.logger.ErrorfCtx(ctx, `cannot start task for receiver "%s": %s`, v.ReceiverKey.String(), err)
+						n.logger.Errorf(ctx, `cannot start task for receiver "%s": %s`, v.ReceiverKey.String(), err)
 					}
 				}
 				return nil
 			}
 		})
 
-	n.logger.InfofCtx(ctx, `started "%d" receiver cleanup tasks`, tasksCount)
+	n.logger.Infof(ctx, `started "%d" receiver cleanup tasks`, tasksCount)
 	if err != nil {
 		return errors.Errorf(`receivers iterator failed: %w`, err)
 	}

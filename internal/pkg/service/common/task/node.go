@@ -107,7 +107,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.Info(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
-			n.logger.InfofCtx(ctx, `waiting for "%d" tasks to be finished`, c)
+			n.logger.Infof(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
 		cancelTasks()
 		n.tasksWg.Wait()
@@ -232,13 +232,13 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
 		unlock()
-		n.logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
+		n.logger.Infof(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil, nil
 	}
 
 	// Run operation in the background
-	n.logger.InfofCtx(ctx, `started task`)
-	n.logger.DebugfCtx(ctx, `lock acquired "%s"`, task.Lock.Key())
+	n.logger.Infof(ctx, `started task`)
+	n.logger.Debugf(ctx, `lock acquired "%s"`, task.Lock.Key())
 
 	// Return function, task is prepared, lock is locked, it can be run in background/foreground.
 	fn = func() (Result, error) {
@@ -271,7 +271,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		defer func() {
 			if panicErr := recover(); panicErr != nil {
 				err := errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
-				logger.ErrorfCtx(ctx, `task panic: %s`, err)
+				logger.Errorf(ctx, `task panic: %s`, err)
 				if result.Error == nil {
 					result = ErrResult(err)
 				}
@@ -293,16 +293,16 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	if result.Error == nil {
 		task.Result = result.Result
 		if len(task.Outputs) > 0 {
-			logger.InfofCtx(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
+			logger.Infof(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.InfofCtx(ctx, `task succeeded (%s): %s`, duration, task.Result)
+			logger.Infof(ctx, `task succeeded (%s): %s`, duration, task.Result)
 		}
 	} else {
 		task.Error = result.Error.Error()
 		if len(task.Outputs) > 0 {
-			logger.WarnfCtx(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
+			logger.Warnf(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.WarnfCtx(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
+			logger.Warnf(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
 		}
 	}
 
@@ -330,7 +330,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		logger.Error(ctx, err.Error())
 		return result, err
 	}
-	logger.DebugfCtx(ctx, `lock released "%s"`, task.Lock.Key())
+	logger.Debugf(ctx, `lock released "%s"`, task.Lock.Key())
 
 	return result, nil
 }

@@ -74,7 +74,7 @@ func newListeners(n *Node) *listeners {
 				// Log info
 				count := len(v.listeners)
 				if count > 0 {
-					logger.InfofCtx(ctx, `waiting for "%d" listeners`, count)
+					logger.Infof(ctx, `waiting for "%d" listeners`, count)
 				}
 
 				// Process remaining events

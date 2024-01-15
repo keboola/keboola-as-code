@@ -19,7 +19,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.InfofCtx(s.ctx, "ready")
+		logger.Infof(s.ctx, "ready")
 		close(initDone) // no error expected
 
 		for {
@@ -47,7 +47,7 @@ func (s *Service) cleanupTasks() <-chan error {
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.InfofCtx(s.ctx, "ready")
+		logger.Infof(s.ctx, "ready")
 		close(initDone) // no error expected
 
 		for {

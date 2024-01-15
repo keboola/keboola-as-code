@@ -56,7 +56,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
-	d.Logger().InfofCtx(ctx, `Created the new workspace "%s".`, o.WorkspaceName)
+	d.Logger().Infof(ctx, `Created the new workspace "%s".`, o.WorkspaceName)
 	workspace := w.Workspace
 
 	// List buckets

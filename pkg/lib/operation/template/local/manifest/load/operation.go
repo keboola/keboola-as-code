@@ -25,6 +25,6 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (m *template.Man
 		return nil, err
 	}
 
-	logger.DebugfCtx(ctx, `Template manifest has been loaded.`)
+	logger.Debugf(ctx, `Template manifest has been loaded.`)
 	return m, nil
 }

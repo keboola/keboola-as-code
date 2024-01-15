@@ -72,7 +72,7 @@ func (o orchestrator[T]) start() <-chan error {
 
 					// An error occurred, wait before reset.
 					delay := b.NextBackOff()
-					o.logger.WarnfCtx(ctx, "re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
+					o.logger.Warnf(ctx, "re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
 					<-time.After(delay)
 				}
 			}
@@ -129,14 +129,14 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	// Error is not expected, there is present always at least one node - self.
 	if !o.node.dist.MustCheckIsOwner(distributionKey) {
 		// Another node handles the resource.
-		o.logger.DebugfCtx(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
+		o.logger.Debugf(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
 	}
 
 	// Should be the task started?
 	if o.config.StartTaskIf != nil {
 		if skipReason, start := o.config.StartTaskIf(event); !start {
-			o.logger.DebugfCtx(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
+			o.logger.Debugf(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
 			return
 		}
 	}
@@ -144,7 +144,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	// Create task handler
 	taskFn := o.config.TaskFactory(event)
 	if taskFn == nil {
-		o.logger.InfofCtx(ctx, `skipped "%s"`, taskKey)
+		o.logger.Infof(ctx, `skipped "%s"`, taskKey)
 		return
 	}
 
@@ -155,7 +155,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	}
 
 	// Run task in the background
-	o.logger.InfofCtx(ctx, `assigned "%s"`, taskKey)
+	o.logger.Infof(ctx, `assigned "%s"`, taskKey)
 	taskCfg := task.Config{
 		Type:      o.config.Name,
 		Key:       taskKey,

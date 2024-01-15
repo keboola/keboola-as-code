@@ -288,9 +288,9 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 
 	// Log success
 	if p.options.Upgrade {
-		logger.InfofCtx(ctx, `Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName())
+		logger.Infof(ctx, `Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName())
 	} else {
-		logger.InfofCtx(ctx, `Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID)
+		logger.Infof(ctx, `Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID)
 	}
 
 	return result, nil

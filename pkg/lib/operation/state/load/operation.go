@@ -154,7 +154,7 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 	// Load objects
 	ok, localErr, remoteErr := projectState.Load(ctx, loadOptions)
 	if ok {
-		logger.DebugfCtx(ctx, "Project state has been successfully loaded.")
+		logger.Debugf(ctx, "Project state has been successfully loaded.")
 	} else {
 		if remoteErr != nil {
 			return nil, InvalidRemoteStateError{error: remoteErr}

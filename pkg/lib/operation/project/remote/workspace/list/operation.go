@@ -38,9 +38,9 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	logger.Info(ctx, "Found workspaces:")
 	for _, workspace := range workspaces {
 		if keboola.WorkspaceSupportsSizes(workspace.Workspace.Type) {
-			logger.InfofCtx(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type, workspace.Workspace.Size)
+			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type, workspace.Workspace.Size)
 		} else {
-			logger.InfofCtx(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type)
+			logger.Infof(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type)
 		}
 	}
 

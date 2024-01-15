@@ -44,7 +44,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Change description - optional arg
-	logger.DebugfCtx(ctx, `Change description: "%s"`, o.ChangeDescription)
+	logger.Debugf(ctx, `Change description: "%s"`, o.ChangeDescription)
 
 	// Log untracked paths
 	if o.LogUntrackedPaths {

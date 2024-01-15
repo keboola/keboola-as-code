@@ -172,7 +172,7 @@ func (f *Fs) Mkdir(ctx context.Context, path string) error {
 	if err := f.fs.MkdirAll(f.fs.FromSlash(path), 0o755); err != nil {
 		return errors.Errorf(`cannot create directory "%s": %w`, path, err)
 	} else {
-		f.logger.DebugfCtx(ctx, `Created directory "%s"`, path)
+		f.logger.Debugf(ctx, `Created directory "%s"`, path)
 		return nil
 	}
 }
@@ -190,7 +190,7 @@ func (f *Fs) Copy(ctx context.Context, src, dst string) error {
 	}
 
 	// Get common prefix of the old and new path
-	f.logger.DebugfCtx(ctx, `Copied %s`, strhelper.FormatPathChange(src, dst, true))
+	f.logger.Debugf(ctx, `Copied %s`, strhelper.FormatPathChange(src, dst, true))
 	return nil
 }
 
@@ -228,7 +228,7 @@ func (f *Fs) Move(ctx context.Context, src, dst string) error {
 		}
 	}
 
-	f.logger.DebugfCtx(ctx, `Moved %s`, strhelper.FormatPathChange(src, dst, true))
+	f.logger.Debugf(ctx, `Moved %s`, strhelper.FormatPathChange(src, dst, true))
 	return err
 }
 
@@ -249,7 +249,7 @@ func (f *Fs) MoveForce(ctx context.Context, src, dst string) error {
 func (f *Fs) Remove(ctx context.Context, path string) error {
 	err := f.fs.RemoveAll(f.fs.FromSlash(path))
 	if err == nil {
-		f.logger.DebugfCtx(ctx, `Removed "%s"`, path)
+		f.logger.Debugf(ctx, `Removed "%s"`, path)
 	}
 	return err
 }
@@ -288,7 +288,7 @@ func (f *Fs) ReadFile(ctx context.Context, def *filesystem.FileDef) (*filesystem
 	}
 
 	// File has been loaded
-	f.logger.DebugfCtx(ctx, `Loaded "%s"`, file.Path())
+	f.logger.Debugf(ctx, `Loaded "%s"`, file.Path())
 	file.Content = content.String()
 	return file, nil
 }
@@ -326,7 +326,7 @@ func (f *Fs) WriteFile(ctx context.Context, file filesystem.File) error {
 		return err
 	}
 
-	f.logger.DebugfCtx(ctx, `Saved "%s"`, fileRaw.Path())
+	f.logger.Debugf(ctx, `Saved "%s"`, fileRaw.Path())
 	return nil
 }
 

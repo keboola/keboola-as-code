@@ -59,8 +59,8 @@ func (c *checker) CheckIfLatest(ctx context.Context, currentVersion string) erro
 
 	if latest.GreaterThan(current) {
 		c.logger.Warn(ctx, `*******************************************************`)
-		c.logger.WarnfCtx(ctx, `WARNING: A new version "%s" is available.`, latestVersion)
-		c.logger.WarnfCtx(ctx, `You are currently using version "%s".`, current.String())
+		c.logger.Warnf(ctx, `WARNING: A new version "%s" is available.`, latestVersion)
+		c.logger.Warnf(ctx, `You are currently using version "%s".`, current.String())
 		c.logger.Warn(ctx, `Please update to get the latest features and bug fixes.`)
 		c.logger.Warn(ctx, `Read more: https://github.com/keboola/keboola-as-code/releases`)
 		c.logger.Warn(ctx, `*******************************************************`)

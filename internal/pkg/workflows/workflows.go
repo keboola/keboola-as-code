@@ -118,7 +118,7 @@ func (g *generator) renderTemplate(ctx context.Context, templatePath, targetPath
 
 	// Write
 	if err := g.fs.WriteFile(ctx, filesystem.NewRawFile(targetPath, buffer.String())); err == nil {
-		g.logger.InfofCtx(ctx, `Created file "%s".`, targetPath)
+		g.logger.Infof(ctx, `Created file "%s".`, targetPath)
 	} else {
 		g.errors.Append(err)
 	}

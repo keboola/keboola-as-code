@@ -66,10 +66,10 @@ type contextLogger interface {
 
 	LogCtx(ctx context.Context, level string, args ...any)
 
-	DebugfCtx(ctx context.Context, template string, args ...any)
-	InfofCtx(ctx context.Context, template string, args ...any)
-	WarnfCtx(ctx context.Context, template string, args ...any)
-	ErrorfCtx(ctx context.Context, template string, args ...any)
+	Debugf(ctx context.Context, template string, args ...any)
+	Infof(ctx context.Context, template string, args ...any)
+	Warnf(ctx context.Context, template string, args ...any)
+	Errorf(ctx context.Context, template string, args ...any)
 
 	Sync() error
 }

@@ -118,28 +118,28 @@ func (l *zapLogger) LogCtx(ctx context.Context, level string, args ...any) {
 	}
 }
 
-func (l *zapLogger) DebugfCtx(ctx context.Context, template string, args ...any) {
+func (l *zapLogger) Debugf(ctx context.Context, template string, args ...any) {
 	l.sugaredLogger.Desugar().Debug(
 		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
 		l.prepareFields(ctx)...,
 	)
 }
 
-func (l *zapLogger) InfofCtx(ctx context.Context, template string, args ...any) {
+func (l *zapLogger) Infof(ctx context.Context, template string, args ...any) {
 	l.sugaredLogger.Desugar().Info(
 		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
 		l.prepareFields(ctx)...,
 	)
 }
 
-func (l *zapLogger) WarnfCtx(ctx context.Context, template string, args ...any) {
+func (l *zapLogger) Warnf(ctx context.Context, template string, args ...any) {
 	l.sugaredLogger.Desugar().Warn(
 		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
 		l.prepareFields(ctx)...,
 	)
 }
 
-func (l *zapLogger) ErrorfCtx(ctx context.Context, template string, args ...any) {
+func (l *zapLogger) Errorf(ctx context.Context, template string, args ...any) {
 	l.sugaredLogger.Desugar().Error(
 		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
 		l.prepareFields(ctx)...,
