@@ -52,11 +52,11 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Validate
 	if len(component.Schema) == 0 || bytes.Equal(component.Schema, []byte("{}")) {
-		logger.WarnfCtx(ctx, `Component "%s" has no configuration JSON schema.`, component.ID)
+		logger.Warnf(ctx, `Component "%s" has no configuration JSON schema.`, component.ID)
 	} else if err := schema.ValidateContent(component.Schema, f.Content); err != nil {
 		return err
 	}
 
-	logger.InfoCtx(ctx, "Validation done.")
+	logger.Info(ctx, "Validation done.")
 	return nil
 }

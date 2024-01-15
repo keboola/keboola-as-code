@@ -264,10 +264,10 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 
 	// Validate schemas and encryption
 	if err := validate.Run(ctx, p.options.ProjectState, validate.Options{ValidateSecrets: !p.options.SkipSecretsValidation, ValidateJSONSchema: true}, p.deps); err != nil {
-		logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-		logger.WarnCtx(ctx)
-		logger.WarnCtx(ctx, `Please correct the problems listed above.`)
-		logger.WarnCtx(ctx, `Push operation is only possible when project is valid.`)
+		logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		logger.Warn(ctx, "")
+		logger.Warn(ctx, `Please correct the problems listed above.`)
+		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 	}
 
 	result := &Result{InstanceID: p.options.InstanceID}
@@ -288,9 +288,9 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 
 	// Log success
 	if p.options.Upgrade {
-		logger.InfofCtx(ctx, `Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName())
+		logger.Infof(ctx, `Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName())
 	} else {
-		logger.InfofCtx(ctx, `Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID)
+		logger.Infof(ctx, `Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID)
 	}
 
 	return result, nil

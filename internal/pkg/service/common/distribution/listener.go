@@ -45,10 +45,10 @@ func newListeners(n *Node) *listeners {
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
-		logger.InfoCtx(ctx, "received shutdown request")
+		logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		logger.InfoCtx(ctx, "shutdown done")
+		logger.Info(ctx, "shutdown done")
 	})
 
 	wg.Add(1)
@@ -74,7 +74,7 @@ func newListeners(n *Node) *listeners {
 				// Log info
 				count := len(v.listeners)
 				if count > 0 {
-					logger.InfofCtx(ctx, `waiting for "%d" listeners`, count)
+					logger.Infof(ctx, `waiting for "%d" listeners`, count)
 				}
 
 				// Process remaining events

@@ -13,17 +13,17 @@ func TestServiceLogger_VerboseFalse(t *testing.T) {
 	logger := NewServiceLogger(&out, false).WithComponent("component1")
 
 	// Log messages
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	logger.Debug(context.Background(), "Debug msg")
+	logger.Info(context.Background(), "Info msg")
+	logger.Warn(context.Background(), "Warn msg")
+	logger.Error(context.Background(), "Error msg")
 
 	// Log messages with a different component
 	logger = logger.WithComponent("component2")
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	logger.Debug(context.Background(), "Debug msg")
+	logger.Info(context.Background(), "Info msg")
+	logger.Warn(context.Background(), "Warn msg")
+	logger.Error(context.Background(), "Error msg")
 
 	// Assert
 	expected := `
@@ -44,17 +44,17 @@ func TestServiceLogger_VerboseTrue(t *testing.T) {
 	logger := NewServiceLogger(&out, true).WithComponent("component1")
 
 	// Log messages
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	logger.Debug(context.Background(), "Debug msg")
+	logger.Info(context.Background(), "Info msg")
+	logger.Warn(context.Background(), "Warn msg")
+	logger.Error(context.Background(), "Error msg")
 
 	// Log messages with a different component
 	logger = logger.WithComponent("component2")
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	logger.Debug(context.Background(), "Debug msg")
+	logger.Info(context.Background(), "Info msg")
+	logger.Warn(context.Background(), "Warn msg")
+	logger.Error(context.Background(), "Error msg")
 
 	// Assert
 	expected := `

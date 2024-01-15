@@ -90,7 +90,7 @@ func TestOrchestrator(t *testing.T) {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
-				logger.InfoCtx(ctx, "message from the task")
+				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -187,7 +187,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
-				logger.InfoCtx(ctx, "message from the task")
+				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -265,7 +265,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
-				logger.InfoCtx(ctx, "message from the task")
+				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},

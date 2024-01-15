@@ -17,7 +17,7 @@ func StartRepositoriesPullCron(ctx context.Context, d dependencies.APIScope) err
 	manager := d.RepositoryManager()
 
 	// Start background work
-	d.Logger().InfofCtx(ctx, "repository pull cron ready")
+	d.Logger().Infof(ctx, "repository pull cron ready")
 	go func() {
 		// Delay start to a rounded time
 		interval := TemplateRepositoriesPullInterval
@@ -26,7 +26,7 @@ func StartRepositoriesPullCron(ctx context.Context, d dependencies.APIScope) err
 		<-timer.C
 
 		// Start ticker
-		d.Logger().InfofCtx(ctx, "repository pull cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
+		d.Logger().Infof(ctx, "repository pull cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
 		manager.Update(ctx)
 		for {
@@ -46,7 +46,7 @@ func StartComponentsCron(ctx context.Context, d dependencies.APIScope) error {
 	provider := d.ComponentsProvider()
 
 	// Start background work
-	d.Logger().InfofCtx(ctx, "components update cron ready")
+	d.Logger().Infof(ctx, "components update cron ready")
 	go func() {
 		// Delay start to a rounded time
 		interval := ComponentsUpdateInterval
@@ -55,7 +55,7 @@ func StartComponentsCron(ctx context.Context, d dependencies.APIScope) error {
 		<-timer.C
 
 		// Start ticker
-		d.Logger().InfofCtx(ctx, "components cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
+		d.Logger().Infof(ctx, "components cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
 		provider.UpdateAsync(ctx)
 		for {

@@ -45,7 +45,7 @@ func (l *zapLogger) WithComponent(component string) Logger {
 func formatMessageUsingAttributes(message string, set *attribute.Set) string {
 	replacements := []string{}
 	for _, keyValue := range set.ToSlice() {
-		replacements = append(replacements, "%"+string(keyValue.Key)+"%", keyValue.Value.Emit())
+		replacements = append(replacements, "<"+string(keyValue.Key)+">", keyValue.Value.Emit())
 	}
 	return strings.NewReplacer(replacements...).Replace(message)
 }
@@ -118,36 +118,32 @@ func (l *zapLogger) LogCtx(ctx context.Context, level string, args ...any) {
 	}
 }
 
-func (l *zapLogger) DebugCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Debug(formatMessage(args...), l.prepareFields(ctx)...)
+func (l *zapLogger) Debugf(ctx context.Context, template string, args ...any) {
+	l.sugaredLogger.Desugar().Debug(
+		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
+		l.prepareFields(ctx)...,
+	)
 }
 
-func (l *zapLogger) InfoCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Info(formatMessage(args...), l.prepareFields(ctx)...)
+func (l *zapLogger) Infof(ctx context.Context, template string, args ...any) {
+	l.sugaredLogger.Desugar().Info(
+		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
+		l.prepareFields(ctx)...,
+	)
 }
 
-func (l *zapLogger) WarnCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Warn(formatMessage(args...), l.prepareFields(ctx)...)
+func (l *zapLogger) Warnf(ctx context.Context, template string, args ...any) {
+	l.sugaredLogger.Desugar().Warn(
+		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
+		l.prepareFields(ctx)...,
+	)
 }
 
-func (l *zapLogger) ErrorCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Error(formatMessage(args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) DebugfCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Debug(fmt.Sprintf(template, args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) InfofCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Info(fmt.Sprintf(template, args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) WarnfCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Warn(fmt.Sprintf(template, args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) ErrorfCtx(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Error(fmt.Sprintf(template, args...), l.prepareFields(ctx)...)
+func (l *zapLogger) Errorf(ctx context.Context, template string, args ...any) {
+	l.sugaredLogger.Desugar().Error(
+		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
+		l.prepareFields(ctx)...,
+	)
 }
 
 func (l *zapLogger) Sync() error {

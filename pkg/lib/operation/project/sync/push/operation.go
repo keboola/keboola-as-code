@@ -44,7 +44,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Change description - optional arg
-	logger.DebugfCtx(ctx, `Change description: "%s"`, o.ChangeDescription)
+	logger.Debugf(ctx, `Change description: "%s"`, o.ChangeDescription)
 
 	// Log untracked paths
 	if o.LogUntrackedPaths {
@@ -85,7 +85,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !plan.Empty() {
 		// Dry run?
 		if o.DryRun {
-			logger.InfoCtx(ctx, "Dry run, nothing changed.")
+			logger.Info(ctx, "Dry run, nothing changed.")
 			return nil
 		}
 
@@ -94,7 +94,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
-		logger.InfoCtx(ctx, "Push done.")
+		logger.Info(ctx, "Push done.")
 	}
 	return nil
 }

@@ -44,10 +44,10 @@ func NewL2CacheProvider(cachedL1 *L1CacheProvider, d l2CachedProviderDeps) (*L2C
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		p.logger.InfoCtx(ctx, "received shutdown request")
+		p.logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		p.logger.InfoCtx(ctx, "shutdown done")
+		p.logger.Info(ctx, "shutdown done")
 	})
 
 	// Periodically invalidates the cache.

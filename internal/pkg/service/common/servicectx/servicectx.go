@@ -129,7 +129,7 @@ func New(opts ...Option) (*Process, error) {
 		v.wg.Wait()
 
 		// Log message after successful termination
-		v.logger.InfoCtx(v.shutdownCtx, "exited")
+		v.logger.Info(v.shutdownCtx, "exited")
 
 		// Unblock WaitForShutdown method calls
 		close(v.done)
@@ -151,7 +151,7 @@ func New(opts ...Option) (*Process, error) {
 	}()
 
 	// The unique id will be removed from the package.
-	v.logger.InfofCtx(context.TODO(), `process unique id "%s"`, v.UniqueID())
+	v.logger.Infof(context.TODO(), `process unique id "%s"`, v.UniqueID())
 	return v, nil
 }
 
@@ -184,7 +184,7 @@ func (v *Process) Shutdown(ctx context.Context, err error) {
 		return
 	default:
 		v.shutdownCtx = ctx
-		v.logger.InfofCtx(ctx, "exiting (%v)", err)
+		v.logger.Infof(ctx, "exiting (%v)", err)
 		close(v.terminating)
 	}
 }
@@ -202,7 +202,7 @@ func (v *Process) Add(operation func(ShutdownFn)) {
 
 	select {
 	case <-v.terminating:
-		v.logger.ErrorfCtx(v.shutdownCtx, `cannot Add operation: the Process is terminating`)
+		v.logger.Errorf(v.shutdownCtx, `cannot Add operation: the Process is terminating`)
 	default:
 		v.wg.Add(1)
 		go func() {
@@ -221,7 +221,7 @@ func (v *Process) OnShutdown(fn OnShutdownFn) {
 
 	select {
 	case <-v.terminating:
-		v.logger.ErrorfCtx(v.shutdownCtx, `cannot register OnShutdown callback: the Process is terminating`)
+		v.logger.Errorf(v.shutdownCtx, `cannot register OnShutdown callback: the Process is terminating`)
 	default:
 		v.onShutdown = append(v.onShutdown, fn)
 	}

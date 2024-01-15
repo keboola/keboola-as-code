@@ -34,9 +34,9 @@ func (m *mapper) onRename(ctx context.Context, renamedObjects []model.RenameActi
 
 	// Log
 	if len(renamedSharedCodes) > 0 {
-		m.logger.DebugCtx(ctx, `Found renamed shared codes:`)
+		m.logger.Debug(ctx, `Found renamed shared codes:`)
 		for _, key := range renamedSharedCodes {
-			m.logger.DebugfCtx(ctx, `  - %s`, key.Desc())
+			m.logger.Debugf(ctx, `  - %s`, key.Desc())
 		}
 	}
 
@@ -49,7 +49,7 @@ func (m *mapper) onRename(ctx context.Context, renamedObjects []model.RenameActi
 		}
 
 		// Re-save config -> new "shared_code_path" will be saved.
-		m.logger.DebugfCtx(ctx, `Need to update shared codes in "%s"`, configState.Path())
+		m.logger.Debugf(ctx, `Need to update shared codes in "%s"`, configState.Path())
 		uow.SaveObject(configState, configState.Local, model.NewChangedFields("configuration"))
 	}
 

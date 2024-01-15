@@ -28,17 +28,17 @@ func TestProcess_Add(t *testing.T) {
 	opWg.Add(3)
 	proc.Add(func(shutdown ShutdownFn) {
 		<-opCtx.Done()
-		logger.InfoCtx(opCtx, "end") // STEP 4, see <-opCtx.Done()
+		logger.Info(opCtx, "end") // STEP 4, see <-opCtx.Done()
 		opWg.Done()
 	})
 	proc.Add(func(shutdown ShutdownFn) {
 		<-opCtx.Done()
-		logger.InfoCtx(opCtx, "end") // STEP 4, see <-opCtx.Done()
+		logger.Info(opCtx, "end") // STEP 4, see <-opCtx.Done()
 		opWg.Done()
 	})
 	proc.Add(func(shutdown ShutdownFn) {
 		<-opCtx.Done()
-		logger.InfoCtx(opCtx, "end") // STEP 4, see <-opCtx.Done()
+		logger.Info(opCtx, "end") // STEP 4, see <-opCtx.Done()
 		opWg.Done()
 	})
 
@@ -51,7 +51,7 @@ func TestProcess_Add(t *testing.T) {
 
 	// Add more shutdown callbacks
 	proc.OnShutdown(func(ctx context.Context) {
-		logger.InfoCtx(ctx, "onShutdown1") // STEP 7, LIFO
+		logger.Info(ctx, "onShutdown1") // STEP 7, LIFO
 
 		// Shutdown reason can be retrieved from the shutdown context
 		if err := ShutdownReason(ctx); assert.Error(t, err) {
@@ -59,11 +59,11 @@ func TestProcess_Add(t *testing.T) {
 		}
 	})
 	proc.OnShutdown(func(ctx context.Context) {
-		logger.InfoCtx(ctx, "onShutdown2") // STEP 6, LIFO
+		logger.Info(ctx, "onShutdown2") // STEP 6, LIFO
 	})
 	proc.OnShutdown(func(ctx context.Context) {
 		opWg.Wait()
-		logger.InfoCtx(ctx, "onShutdown3") // STEP 5, see op.Wait()
+		logger.Info(ctx, "onShutdown3") // STEP 5, see op.Wait()
 	})
 
 	// Cancel operations from the shutdown callback
@@ -116,7 +116,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	opWg1.Add(1)
 	proc.Add(func(shutdown ShutdownFn) {
 		<-opCtx.Done()
-		logger.InfoCtx(opCtx, "end1") // STEP 3, see <-opCtx.Done()
+		logger.Info(opCtx, "end1") // STEP 3, see <-opCtx.Done()
 		opWg1.Done()
 	})
 	opWg2 := &sync.WaitGroup{}
@@ -124,7 +124,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	proc.Add(func(shutdown ShutdownFn) {
 		<-opCtx.Done()
 		opWg1.Wait()
-		logger.InfoCtx(opCtx, "end2") // STEP 4, see op1.Wait()
+		logger.Info(opCtx, "end2") // STEP 4, see op1.Wait()
 		opWg2.Done()
 	})
 	opWg3 := &sync.WaitGroup{}
@@ -132,20 +132,20 @@ func TestProcess_Shutdown(t *testing.T) {
 	proc.Add(func(shutdown ShutdownFn) {
 		<-opCtx.Done()
 		opWg2.Wait()
-		logger.InfoCtx(opCtx, "end3") // STEP 5, see op2.Wait()
+		logger.Info(opCtx, "end3") // STEP 5, see op2.Wait()
 		opWg3.Done()
 	})
 
 	// Add more shutdown callbacks
 	proc.OnShutdown(func(ctx context.Context) {
-		logger.InfoCtx(ctx, "onShutdown1") // STEP 8, LIFO
+		logger.Info(ctx, "onShutdown1") // STEP 8, LIFO
 	})
 	proc.OnShutdown(func(ctx context.Context) {
-		logger.InfoCtx(ctx, "onShutdown2") // STEP 7, LIFO
+		logger.Info(ctx, "onShutdown2") // STEP 7, LIFO
 	})
 	proc.OnShutdown(func(ctx context.Context) {
 		opWg3.Wait()
-		logger.InfoCtx(ctx, "onShutdown3") // STEP 6, op3.Wait()
+		logger.Info(ctx, "onShutdown3") // STEP 6, op3.Wait()
 	})
 
 	// Cancel operations above from the shutdown callback

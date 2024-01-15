@@ -29,6 +29,6 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 		return nil, err
 	}
 
-	logger.DebugfCtx(ctx, `Project manifest loaded.`)
+	logger.Debugf(ctx, `Project manifest loaded.`)
 	return m, nil
 }

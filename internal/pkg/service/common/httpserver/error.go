@@ -101,9 +101,9 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	if !errors.As(err, &logEnabledProvider) || logEnabledProvider.ErrorLogEnabled() {
 		logger := wr.logger.WithComponent("http")
 		if response.StatusCode > 499 {
-			logger.ErrorCtx(ctx, errorLogMessage(err, response))
+			logger.Error(ctx, errorLogMessage(err, response))
 		} else {
-			logger.InfoCtx(ctx, errorLogMessage(err, response))
+			logger.Info(ctx, errorLogMessage(err, response))
 		}
 	}
 

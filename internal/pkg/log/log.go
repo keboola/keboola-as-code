@@ -55,25 +55,21 @@ type baseLogger interface {
 }
 
 type contextLogger interface {
-	// Debug logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Debug logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Debug(ctx context.Context, message string)
-	// Info logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Info logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Info(ctx context.Context, message string)
-	// Warn logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Warn logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Warn(ctx context.Context, message string)
-	// Error logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Error logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Error(ctx context.Context, message string)
 
 	LogCtx(ctx context.Context, level string, args ...any)
-	DebugCtx(ctx context.Context, args ...any)
-	InfoCtx(ctx context.Context, args ...any)
-	WarnCtx(ctx context.Context, args ...any)
-	ErrorCtx(ctx context.Context, args ...any)
 
-	DebugfCtx(ctx context.Context, template string, args ...any)
-	InfofCtx(ctx context.Context, template string, args ...any)
-	WarnfCtx(ctx context.Context, template string, args ...any)
-	ErrorfCtx(ctx context.Context, template string, args ...any)
+	Debugf(ctx context.Context, template string, args ...any)
+	Infof(ctx context.Context, template string, args ...any)
+	Warnf(ctx context.Context, template string, args ...any)
+	Errorf(ctx context.Context, template string, args ...any)
 
 	Sync() error
 }

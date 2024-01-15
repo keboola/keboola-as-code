@@ -26,6 +26,6 @@ func Run(ctx context.Context, m *repositoryManifest.Manifest, fs filesystem.Fs, 
 		return true, nil
 	}
 
-	d.Logger().DebugfCtx(ctx, `Repository manifest has not changed.`)
+	d.Logger().Debugf(ctx, `Repository manifest has not changed.`)
 	return false, nil
 }

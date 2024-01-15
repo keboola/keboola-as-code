@@ -136,7 +136,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		if bytes, err := encoder.EncodeEntry(entry, fields); err == nil {
 			logger.LogCtx(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
 		} else {
-			logger.WarnfCtx(ctx, "cannot log msg from etcd client: %s", err)
+			logger.Warnf(ctx, "cannot log msg from etcd client: %s", err)
 		}
 	}))
 
@@ -146,7 +146,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	// Create client
 	startTime := time.Now()
-	logger.InfofCtx(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.connectTimeout, cfg.keepAliveTimeout, cfg.keepAliveInterval)
+	logger.Infof(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.connectTimeout, cfg.keepAliveTimeout, cfg.keepAliveInterval)
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{cfg.credentials.Endpoint},
@@ -193,14 +193,14 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	// Close client when shutting down the server
 	proc.OnShutdown(func(ctx context.Context) {
 		startTime := time.Now()
-		logger.InfoCtx(ctx, "closing etcd connection")
+		logger.Info(ctx, "closing etcd connection")
 		if err := c.Close(); err != nil {
-			logger.WarnfCtx(ctx, "cannot close etcd connection: %s", err)
+			logger.Warnf(ctx, "cannot close etcd connection: %s", err)
 		} else {
-			logger.InfofCtx(ctx, "closed etcd connection | %s", time.Since(startTime))
+			logger.Infof(ctx, "closed etcd connection | %s", time.Since(startTime))
 		}
 	})
 
-	logger.InfofCtx(ctx, `connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
+	logger.Infof(ctx, `connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
 	return c, nil
 }

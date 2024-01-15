@@ -31,7 +31,7 @@ func Logger(baseLogger log.Logger) Middleware {
 			userAgent := req.Header.Get("User-Agent")
 			ctx := ctxattr.ContextWith(req.Context(), attribute.String("requestId", requestID))
 			logger := baseLogger.WithComponent("http")
-			logger.InfofCtx(
+			logger.Infof(
 				ctx,
 				"req %s status=%d bytes=%d time=%s client_ip=%s agent=%s",
 				log.Sanitize(req.URL.String()), rw.StatusCode, rw.ContentLength, time.Since(started).String(),

@@ -74,7 +74,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	if !plan.Empty() {
-		logger.InfoCtx(ctx, "Pull done.")
+		logger.Info(ctx, "Pull done.")
 	}
 
 	return nil

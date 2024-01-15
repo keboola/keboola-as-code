@@ -86,10 +86,10 @@ func NewChecker(d dependencies) <-chan error {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		c.logger.InfoCtx(ctx, "received shutdown request")
+		c.logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		c.logger.InfoCtx(ctx, "shutdown done")
+		c.logger.Info(ctx, "shutdown done")
 	})
 
 	// Initialize
@@ -105,7 +105,7 @@ func NewChecker(d dependencies) <-chan error {
 			close(errCh)
 			return
 		}
-		c.logger.InfofCtx(ctx, `initialized | %s`, c.clock.Since(startTime))
+		c.logger.Infof(ctx, `initialized | %s`, c.clock.Since(startTime))
 
 		// Start ticker
 		ticker := c.clock.Ticker(c.config.CheckConditionsInterval)
@@ -148,14 +148,14 @@ func (c *Checker) check(ctx context.Context) {
 		importOk, reason, err := c.shouldImport(ctx, now, slice.SliceKey, slice.CredExpiration)
 		switch {
 		case err != nil:
-			c.logger.ErrorCtx(ctx, err)
+			c.logger.Error(ctx, err.Error())
 		case importOk:
-			c.logger.InfofCtx(ctx, `closing file "%s": %s`, slice.FileKey, reason)
+			c.logger.Infof(ctx, `closing file "%s": %s`, slice.FileKey, reason)
 			if err := c.startSwapFileTask(ctx, fileManager, slice.FileKey); err != nil {
-				c.logger.ErrorCtx(ctx, err)
+				c.logger.Error(ctx, err.Error())
 			}
 		case reason != "":
-			c.logger.DebugfCtx(ctx, `skipped import of the file "%s": %s`, slice.FileKey, reason)
+			c.logger.Debugf(ctx, `skipped import of the file "%s": %s`, slice.FileKey, reason)
 		}
 
 		// Try swap the slice, if it didn't already happen during import
@@ -163,14 +163,14 @@ func (c *Checker) check(ctx context.Context) {
 			uploadOk, reason, err := c.shouldUpload(ctx, now, slice.SliceKey)
 			switch {
 			case err != nil:
-				c.logger.ErrorCtx(ctx, err)
+				c.logger.Error(ctx, err.Error())
 			case uploadOk:
-				c.logger.InfofCtx(ctx, `closing slice "%s": %s`, slice.SliceKey, reason)
+				c.logger.Infof(ctx, `closing slice "%s": %s`, slice.SliceKey, reason)
 				if err := c.StartSwapSliceTask(ctx, fileManager, slice.SliceKey); err != nil {
-					c.logger.ErrorCtx(ctx, err)
+					c.logger.Error(ctx, err.Error())
 				}
 			case reason != "":
-				c.logger.DebugfCtx(ctx, `skipped upload of the slice "%s": %s`, slice.SliceKey, reason)
+				c.logger.Debugf(ctx, `skipped upload of the slice "%s": %s`, slice.SliceKey, reason)
 			}
 		}
 
@@ -178,7 +178,7 @@ func (c *Checker) check(ctx context.Context) {
 		return false
 	})
 
-	c.logger.DebugfCtx(ctx, `checked "%d" opened slices | %s`, checked, c.clock.Since(now))
+	c.logger.Debugf(ctx, `checked "%d" opened slices | %s`, checked, c.clock.Since(now))
 }
 
 func (c *Checker) watch(ctx context.Context, wg *sync.WaitGroup) error {
