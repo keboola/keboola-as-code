@@ -170,6 +170,10 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 	logger.Info(ctx, "Info msg <extra> (<count>)")
 	logger.Warn(ctx, "Warn msg <extra> (<count>)")
 	logger.Error(ctx, "Error msg <extra> (<count>)")
+	logger.DebugfCtx(ctx, "Debug %s <extra> (<count>)", "message")
+	logger.InfofCtx(ctx, "Info %s <extra> (<count>)", "message")
+	logger.WarnfCtx(ctx, "Warn %s <extra> (<count>)", "message")
+	logger.ErrorfCtx(ctx, "Error %s <extra> (<count>)", "message")
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
@@ -178,14 +182,18 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 {"level":"info","time":"%s","message":"Info msg value (4)","count":4,"extra":"value"}
 {"level":"warn","time":"%s","message":"Warn msg value (4)","count":4,"extra":"value"}
 {"level":"error","time":"%s","message":"Error msg value (4)","count":4,"extra":"value"}
+{"level":"debug","time":"%s","message":"Debug message value (4)","count":4,"extra":"value"}
+{"level":"info","time":"%s","message":"Info message value (4)","count":4,"extra":"value"}
+{"level":"warn","time":"%s","message":"Warn message value (4)","count":4,"extra":"value"}
+{"level":"error","time":"%s","message":"Error message value (4)","count":4,"extra":"value"}
 `
 
 	content, err := os.ReadFile(filePath)
 	assert.NoError(t, err)
 	wildcards.Assert(t, expected, string(content))
 
-	expectedOut := "DEBUG\tDebug msg value (4)\nINFO\tInfo msg value (4)\n"
-	expectedErr := "WARN\tWarn msg value (4)\nERROR\tError msg value (4)\n"
+	expectedOut := "DEBUG\tDebug msg value (4)\nINFO\tInfo msg value (4)\nDEBUG\tDebug message value (4)\nINFO\tInfo message value (4)\n"
+	expectedErr := "WARN\tWarn msg value (4)\nERROR\tError msg value (4)\nWARN\tWarn message value (4)\nERROR\tError message value (4)\n"
 	assert.Equal(t, expectedOut, stdout.String())
 	assert.Equal(t, expectedErr, stderr.String())
 }
