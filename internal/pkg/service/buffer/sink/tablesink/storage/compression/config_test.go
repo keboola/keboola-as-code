@@ -40,7 +40,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:   "default  ok",
-			Config: DefaultConfig(),
+			Config: NewConfig(),
 		},
 		{
 			Name: "none: ok",

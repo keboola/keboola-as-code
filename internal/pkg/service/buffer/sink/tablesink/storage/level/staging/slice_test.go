@@ -23,14 +23,14 @@ func TestSlice_Validation(t *testing.T) {
 			Name:          "empty",
 			ExpectedError: `"path" is a required field`,
 			Value: Slice{
-				Compression: compression.DefaultConfig(),
+				Compression: compression.NewConfig(),
 			},
 		},
 		{
 			Name: "ok",
 			Value: Slice{
 				Path:        "my-slice.csv.gzip",
-				Compression: compression.DefaultConfig(),
+				Compression: compression.NewConfig(),
 			},
 		},
 	}

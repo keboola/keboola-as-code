@@ -53,7 +53,8 @@ type Config struct {
 	IntervalTrigger time.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync to trigger sync."`
 }
 
-func DefaultConfig() Config {
+// NewConfig provides default configuration.
+func NewConfig() Config {
 	return Config{
 		Mode:            ModeDisk,
 		Wait:            true,
