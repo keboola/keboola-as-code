@@ -475,8 +475,6 @@ func TestFileRepository_Rotate(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
-	volumeID1 := volume.ID("my-volume-1")
-	volumeID2 := volume.ID("my-volume-2")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
@@ -485,12 +483,21 @@ func TestFileRepository_Rotate(t *testing.T) {
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileFacade := storageRepo.File()
-	sliceFacade := storageRepo.Slice()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 2)
+	}
 
 	// Create parent branch, source, sink and token
 	// -----------------------------------------------------------------------------------------------------------------
@@ -500,6 +507,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
+		sink.Table.Storage = sinkStorageConfig(2, []string{"default"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
@@ -513,22 +521,6 @@ func TestFileRepository_Rotate(t *testing.T) {
 		file1, err = fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file1.OpenedAt().Time())
-	}
-
-	// Create slice1 in the file, in the volume1
-	// -----------------------------------------------------------------------------------------------------------------
-	file1Volume1Key := storage.FileVolumeKey{FileKey: file1.FileKey, VolumeID: volumeID1}
-	{
-		clk.Add(time.Hour)
-		require.NoError(t, sliceFacade.Rotate(clk.Now(), file1Volume1Key).Do(ctx).Err())
-	}
-
-	// Create slice2 in the file, in the volume2
-	// -----------------------------------------------------------------------------------------------------------------
-	file1Volume2Key := storage.FileVolumeKey{FileKey: file1.FileKey, VolumeID: volumeID2}
-	{
-		clk.Add(time.Hour)
-		require.NoError(t, sliceFacade.Rotate(clk.Now(), file1Volume2Key).Do(ctx).Err())
 	}
 
 	// Rotate file (2)
@@ -549,22 +541,6 @@ func TestFileRepository_Rotate(t *testing.T) {
 		file3, err = fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file3.OpenedAt().Time())
-	}
-
-	// Create slice3 in the file, in the volume1
-	// -----------------------------------------------------------------------------------------------------------------
-	file3Volume1Key := storage.FileVolumeKey{FileKey: file3.FileKey, VolumeID: volumeID1}
-	{
-		clk.Add(time.Hour)
-		require.NoError(t, sliceFacade.Rotate(clk.Now(), file3Volume1Key).Do(ctx).Err())
-	}
-
-	// Create slice4 in the file, in the volume2
-	// -----------------------------------------------------------------------------------------------------------------
-	file3Volume2Key := storage.FileVolumeKey{FileKey: file3.FileKey, VolumeID: volumeID2}
-	{
-		clk.Add(time.Hour)
-		require.NoError(t, sliceFacade.Rotate(clk.Now(), file3Volume2Key).Do(ctx).Err())
 	}
 
 	// Check Storage API calls
@@ -594,7 +570,7 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z
   "fileOpenedAt": "2000-01-01T02:00:00.000Z",
   "type": "csv",
   "state": "closing",
-  "closingAt": "2000-01-01T05:00:00.000Z",
+  "closingAt": "2000-01-01T03:00:00.000Z",
   %A
   "staging": {
     %A
@@ -609,17 +585,17 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T05:00:00.000Z
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T05:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T03:00:00.000Z",
   "type": "csv",
   "state": "closing",
-  "closingAt": "2000-01-01T06:00:00.000Z",
+  "closingAt": "2000-01-01T04:00:00.000Z",
   %A
   "staging": {
     %A
@@ -634,14 +610,14 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T05:00:00.000Z
 >>>>>
 
 <<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T06:00:00.000Z
+storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T04:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T06:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T04:00:00.000Z",
   "type": "csv",
   "state": "writing",
   %A
@@ -658,7 +634,7 @@ storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T06:00:00.000Z
 >>>>>
 
 <<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z
 -----
 {
   "projectId": 123,
@@ -666,67 +642,103 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/m
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
   "fileOpenedAt": "2000-01-01T02:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T02:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T03:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-2/2000-01-01T02:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T02:00:00.000Z",
+  "volumeId": "my-volume-2",
+  "sliceOpenedAt": "2000-01-01T02:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T03:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T03:00:00.000Z",
   "volumeId": "my-volume-1",
   "sliceOpenedAt": "2000-01-01T03:00:00.000Z",
   "type": "csv",
   "state": "closing",
-  "closingAt": "2000-01-01T05:00:00.000Z",
+  "closingAt": "2000-01-01T04:00:00.000Z",
   %A
 }
 >>>>>
 
 <<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-2/2000-01-01T04:00:00.000Z
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T02:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T03:00:00.000Z",
+  "volumeId": "my-volume-2",
+  "sliceOpenedAt": "2000-01-01T03:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T04:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T04:00:00.000Z/my-volume-1/2000-01-01T04:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T04:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T04:00:00.000Z",
+  "type": "csv",
+  "state": "writing",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T04:00:00.000Z/my-volume-2/2000-01-01T04:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "fileOpenedAt": "2000-01-01T04:00:00.000Z",
   "volumeId": "my-volume-2",
   "sliceOpenedAt": "2000-01-01T04:00:00.000Z",
   "type": "csv",
-  "state": "closing",
-  "closingAt": "2000-01-01T05:00:00.000Z",
-  %A
-}
->>>>>
-
-<<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T06:00:00.000Z/my-volume-1/2000-01-01T07:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 456,
-  "sourceId": "my-source",
-  "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T06:00:00.000Z",
-  "volumeId": "my-volume-1",
-  "sliceOpenedAt": "2000-01-01T07:00:00.000Z",
-  "type": "csv",
   "state": "writing",
   %A
 }
 >>>>>
-
-<<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T06:00:00.000Z/my-volume-2/2000-01-01T08:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 456,
-  "sourceId": "my-source",
-  "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T06:00:00.000Z",
-  "volumeId": "my-volume-2",
-  "sliceOpenedAt": "2000-01-01T08:00:00.000Z",
-  "type": "csv",
-  "state": "writing",
-  %A
-}
->>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/"))
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }
 
 func TestFileRepository_RotateOnSinkMod(t *testing.T) {
