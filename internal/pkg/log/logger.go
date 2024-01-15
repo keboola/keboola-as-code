@@ -45,7 +45,7 @@ func (l *zapLogger) WithComponent(component string) Logger {
 func formatMessageUsingAttributes(message string, set *attribute.Set) string {
 	replacements := []string{}
 	for _, keyValue := range set.ToSlice() {
-		replacements = append(replacements, "%"+string(keyValue.Key)+"%", keyValue.Value.Emit())
+		replacements = append(replacements, "<"+string(keyValue.Key)+">", keyValue.Value.Emit())
 	}
 	return strings.NewReplacer(replacements...).Replace(message)
 }

@@ -166,10 +166,10 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 
 	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"), attribute.Int("count", 4))
 
-	logger.Debug(ctx, "Debug msg %extra% (%count%)")
-	logger.Info(ctx, "Info msg %extra% (%count%)")
-	logger.Warn(ctx, "Warn msg %extra% (%count%)")
-	logger.Error(ctx, "Error msg %extra% (%count%)")
+	logger.Debug(ctx, "Debug msg <extra> (<count>)")
+	logger.Info(ctx, "Info msg <extra> (<count>)")
+	logger.Warn(ctx, "Warn msg <extra> (<count>)")
+	logger.Error(ctx, "Error msg <extra> (<count>)")
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
