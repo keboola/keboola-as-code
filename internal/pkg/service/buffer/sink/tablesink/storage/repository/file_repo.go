@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -269,6 +270,10 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 		}
 	})
 
+	// Get all active volumes
+	var volumes []volume.Metadata
+	atomicOp.ReadOp(r.all.Volume().ListWriterVolumes().WithAllTo(&volumes))
+
 	// Create file resources
 	var resources map[key.SinkKey]FileResource
 	if openNew {
@@ -362,27 +367,38 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 
 			// Open new file, if enabled
 			if openNew {
+				// Apply configuration patch from the sink to the global config
+				cfg := r.config.With(sink.Table.Storage)
+
 				// Create file entity
-				file, err := newFile(r.config, resource, sink)
+				file, err := newFile(cfg, resource, sink)
 				if err != nil {
 					errs.Append(err)
 				}
 
-				// Save
+				// Assign volumes
+				file.Assignment = r.all.hook.AssignVolumes(ctx, volumes, cfg.VolumeAssignment, file.OpenedAt().Time())
+
+				// At least one volume must be assigned
+				if len(file.Assignment.Volumes) == 0 {
+					errs.Append(errors.New(`no volume is available for the file`))
+				}
+
+				// Open slices in the assigned volumes
+				for _, volumeID := range file.Assignment.Volumes {
+					if slice, err := newSlice(now, file, volumeID, maxUsedDiskSpace[file.SinkKey]); err == nil {
+						txn.And(r.all.slice.createTxn(slice))
+					} else {
+						errs.Append(err)
+					}
+				}
+
+				// Open file
 				txn.And(r.createTxn(file).OnResult(func(result *op.TxnResult[op.NoResult]) {
 					if result.Succeeded() {
 						newFiles = append(newFiles, file)
 					}
 				}))
-
-				// Open slices in the assigned volumes
-				for _, volumeID := range r.all.hook.AssignVolumes(ctx, file) {
-					if slice, err := newSlice(now, file, volumeID, maxUsedDiskSpace[file.SinkKey]); err == nil {
-						r.all.slice.createTxn(slice)
-					} else {
-						errs.Append(err)
-					}
-				}
 			}
 		}
 

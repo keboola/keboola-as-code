@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
 )
 
 func NewSinkKey() key.SinkKey {
@@ -35,6 +36,10 @@ func NewSink(k key.SinkKey) definition.Sink {
 		Description: "My Description",
 		Table: &definition.TableSink{
 			Storage: &storage.ConfigPatch{
+				VolumeAssignment: &assignment.Config{
+					Count:          1,
+					PreferredTypes: []string{"default"},
+				},
 				Local: &local.ConfigPatch{
 					DiskSync: &disksync.Config{
 						Mode:            disksync.ModeDisk,
