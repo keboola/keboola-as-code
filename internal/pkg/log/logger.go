@@ -118,22 +118,6 @@ func (l *zapLogger) LogCtx(ctx context.Context, level string, args ...any) {
 	}
 }
 
-func (l *zapLogger) DebugCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Debug(formatMessage(args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) InfoCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Info(formatMessage(args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) WarnCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Warn(formatMessage(args...), l.prepareFields(ctx)...)
-}
-
-func (l *zapLogger) ErrorCtx(ctx context.Context, args ...any) {
-	l.sugaredLogger.Desugar().Error(formatMessage(args...), l.prepareFields(ctx)...)
-}
-
 func (l *zapLogger) DebugfCtx(ctx context.Context, template string, args ...any) {
 	l.sugaredLogger.Desugar().Debug(fmt.Sprintf(template, args...), l.prepareFields(ctx)...)
 }

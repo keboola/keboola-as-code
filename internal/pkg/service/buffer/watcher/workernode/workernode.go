@@ -54,11 +54,11 @@ func New(d Dependencies) (*Node, error) {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		n.listeners.wait(ctx)
 		cancel()
 		wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Watch revisions of all API nodes
@@ -133,7 +133,7 @@ func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEve
 			}
 		} else {
 			if rev == noAPINode {
-				n.logger.InfoCtx(ctx, `all API nodes are gone`)
+				n.logger.Info(ctx, `all API nodes are gone`)
 			} else {
 				n.logger.InfofCtx(ctx, `revision updated to "%v"`, rev)
 			}

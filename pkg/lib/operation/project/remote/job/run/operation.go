@@ -50,7 +50,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	if len(o.Jobs) > 1 {
 		queue.logger.InfofCtx(ctx, "Starting %d jobs.", len(o.Jobs))
 	} else {
-		queue.logger.InfoCtx(ctx, "Starting job.")
+		queue.logger.Info(ctx, "Starting job.")
 	}
 
 	// dispatch jobs in parallel
@@ -63,13 +63,13 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	queue.stopLogRemaining()
 
 	if err != nil {
-		queue.logger.ErrorCtx(ctx, "Some jobs failed, see below.")
+		queue.logger.Error(ctx, "Some jobs failed, see below.")
 		return err
 	} else {
 		if !o.Async {
-			queue.logger.InfoCtx(ctx, "Finished all jobs.")
+			queue.logger.Info(ctx, "Finished all jobs.")
 		} else {
-			queue.logger.InfoCtx(ctx, "Started all jobs.")
+			queue.logger.Info(ctx, "Started all jobs.")
 		}
 		return nil
 	}

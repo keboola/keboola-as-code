@@ -29,7 +29,7 @@ func (o orchestrator[T]) start() <-chan error {
 	o.node.wg.Add(1)
 	go func() {
 		defer o.node.wg.Done()
-		defer o.logger.InfoCtx(o.node.ctx, "stopped")
+		defer o.logger.Info(o.node.ctx, "stopped")
 
 		initDone := initDone
 		b := newRetryBackoff()
@@ -43,14 +43,14 @@ func (o orchestrator[T]) start() <-chan error {
 
 				// The watcher is periodically restarted to rescan existing keys.
 				if initDone == nil {
-					o.logger.DebugCtx(ctx, "restart")
+					o.logger.Debug(ctx, "restart")
 				}
 
 				// Run the watch operation for the RestartInterval.
 				err := o.watch(ctx, span, o.config.Source.RestartInterval, func() {
 					if initDone != nil {
 						// Initialization was successful
-						o.logger.InfoCtx(ctx, "ready")
+						o.logger.Info(ctx, "ready")
 						close(initDone)
 						initDone = nil
 					}
@@ -164,6 +164,6 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 		Operation: taskFn,
 	}
 	if _, err := o.node.tasks.StartTask(ctx, taskCfg); err != nil {
-		o.logger.ErrorCtx(ctx, err)
+		o.logger.Error(ctx, err)
 	}
 }

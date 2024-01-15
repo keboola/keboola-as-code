@@ -83,10 +83,10 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 	n.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	n.wg = &sync.WaitGroup{}
 	proc.OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		cancel()
 		n.wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Sync slices revision to Worker nodes

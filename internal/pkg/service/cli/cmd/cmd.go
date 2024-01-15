@@ -154,7 +154,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		// Setup logger
 		root.setupLogger()
 		root.fs.SetLogger(root.logger)
-		root.logger.DebugCtx(cmd.Context(), `Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
+		root.logger.Debug(cmd.Context(), `Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
 		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
@@ -173,7 +173,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 			// Ignore error, send to logs
 			root.logger.DebugfCtx(cmd.Context(), `Version check: %s.`, err.Error())
 		} else {
-			root.logger.DebugCtx(cmd.Context(), `Version check: successful.`)
+			root.logger.Debug(cmd.Context(), `Version check: successful.`)
 		}
 
 		return nil
@@ -307,7 +307,7 @@ func (root *RootCommand) printError(errRaw error) {
 			switch {
 			case root.CalledAs() == `init` && errDirNotFound.Found() == dependencies.KbcProjectDir:
 				root.logger.InfofCtx(root.Context(), `Please use %s.`, errDirNotFound.Expected())
-				root.logger.InfoCtx(root.Context(), `Or synchronize the current directory with the "pull" command.`)
+				root.logger.Info(root.Context(), `Or synchronize the current directory with the "pull" command.`)
 			case errDirNotFound.Expected() == dependencies.KbcProjectDir:
 				root.logger.InfofCtx(root.Context(), `Please change working directory to %s.`, errDirNotFound.Expected())
 				root.logger.InfofCtx(root.Context(), `Or use the "sync init" command in %s.`, dependencies.EmptyDir)

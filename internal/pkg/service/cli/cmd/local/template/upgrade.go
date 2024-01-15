@@ -63,7 +63,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 
 			if len(opResult.Warnings) > 0 {
 				for _, w := range opResult.Warnings {
-					d.Logger().WarnCtx(cmd.Context(), w)
+					d.Logger().Warn(cmd.Context(), w)
 				}
 			}
 

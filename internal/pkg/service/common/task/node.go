@@ -105,7 +105,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	sessionCtx, cancelSession := context.WithCancel(backgroundCtx)
 	proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
 			n.logger.InfofCtx(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
@@ -113,7 +113,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 		n.tasksWg.Wait()
 		cancelSession()
 		sessionWg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Create etcd session
@@ -323,11 +323,11 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	)
 	if resp, err := finalizeTaskOp.Do(finalizationCtx, n.client); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
-		logger.ErrorCtx(ctx, err)
+		logger.Error(ctx, err)
 		return result, err
 	} else if !resp.Succeeded {
 		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
-		logger.ErrorCtx(ctx, err)
+		logger.Error(ctx, err)
 		return result, err
 	}
 	logger.DebugfCtx(ctx, `lock released "%s"`, task.Lock.Key())

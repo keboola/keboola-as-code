@@ -76,10 +76,10 @@ func NewCollector(d collectorDeps) *Collector {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		c.logger.InfoCtx(ctx, "received shutdown request")
+		c.logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		c.logger.InfoCtx(ctx, "shutdown done")
+		c.logger.Info(ctx, "shutdown done")
 	})
 
 	// Receive notifications and periodically trigger sync
@@ -132,7 +132,7 @@ func (c *Collector) Sync(ctx context.Context) <-chan error {
 			defer close(errCh)
 			c.logger.DebugfCtx(ctx, "syncing %d records", len(stats))
 			if err := c.repository.Insert(ctx, c.nodeID, stats); err == nil {
-				c.logger.DebugCtx(ctx, "sync done")
+				c.logger.Debug(ctx, "sync done")
 			} else {
 				c.logger.ErrorfCtx(ctx, "cannot update stats in etcd: %s", err.Error())
 				errCh <- err

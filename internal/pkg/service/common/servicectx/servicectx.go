@@ -129,7 +129,7 @@ func New(opts ...Option) (*Process, error) {
 		v.wg.Wait()
 
 		// Log message after successful termination
-		v.logger.InfoCtx(v.shutdownCtx, "exited")
+		v.logger.Info(v.shutdownCtx, "exited")
 
 		// Unblock WaitForShutdown method calls
 		close(v.done)

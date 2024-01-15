@@ -71,12 +71,12 @@ func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		watchCancel()
 		n.unregister(ctx, c.shutdownTimeout)
 		sessionCancel()
 		wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
@@ -149,7 +149,7 @@ func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	n.logger.InfoCtx(ctx, "watching for other nodes")
+	n.logger.Info(ctx, "watching for other nodes")
 	init := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).

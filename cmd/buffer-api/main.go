@@ -63,7 +63,7 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("bufferApi")
-	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
+	logger.Info(ctx, "Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {

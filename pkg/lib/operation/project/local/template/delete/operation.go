@@ -40,7 +40,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Dry run?
 	if o.DryRun {
-		logger.InfoCtx(ctx, "Dry run, nothing changed.")
+		logger.Info(ctx, "Dry run, nothing changed.")
 		return nil
 	}
 
@@ -54,7 +54,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.InfoCtx(ctx, `Delete done.`)
+	logger.Info(ctx, `Delete done.`)
 
 	return nil
 }

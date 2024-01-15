@@ -161,7 +161,7 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 		}
 		if localErr != nil {
 			if o.IgnoreInvalidLocalState {
-				logger.InfoCtx(ctx, `Ignoring invalid local state.`)
+				logger.Info(ctx, `Ignoring invalid local state.`)
 			} else {
 				return nil, InvalidLocalStateError{error: localErr}
 			}

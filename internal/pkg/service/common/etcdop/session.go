@@ -102,7 +102,7 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 			case <-ctx.Done():
 				// Context cancelled
 				startTime := time.Now()
-				logger.InfoCtx(ctx, "closing etcd session")
+				logger.Info(ctx, "closing etcd session")
 				if err := session.Close(); err != nil {
 					logger.WarnfCtx(ctx, "cannot close etcd session: %s", err)
 				} else {

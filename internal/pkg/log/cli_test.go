@@ -34,10 +34,10 @@ func TestCliLogger_File(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, false)
 
-	logger.DebugCtx(context.Background(), "Debug msg")
-	logger.InfoCtx(context.Background(), "Info msg")
-	logger.WarnCtx(context.Background(), "Warn msg")
-	logger.ErrorCtx(context.Background(), "Error msg")
+	logger.Debug(context.Background(), "Debug msg")
+	logger.Info(context.Background(), "Info msg")
+	logger.Warn(context.Background(), "Warn msg")
+	logger.Error(context.Background(), "Error msg")
 	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
@@ -61,10 +61,10 @@ func TestCliLogger_VerboseFalse(t *testing.T) {
 	// Check that context attributes don't appear in stdout/stderr.
 	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
 
-	logger.DebugCtx(ctx, "Debug msg")
-	logger.InfoCtx(ctx, "Info msg")
-	logger.WarnCtx(ctx, "Warn msg")
-	logger.ErrorCtx(ctx, "Error msg")
+	logger.Debug(ctx, "Debug msg")
+	logger.Info(ctx, "Info msg")
+	logger.Warn(ctx, "Warn msg")
+	logger.Error(ctx, "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -83,10 +83,10 @@ func TestCliLogger_VerboseTrue(t *testing.T) {
 	// Check that context attributes don't appear in stdout/stderr.
 	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
 
-	logger.DebugCtx(ctx, "Debug msg")
-	logger.InfoCtx(ctx, "Info msg")
-	logger.WarnCtx(ctx, "Warn msg")
-	logger.ErrorCtx(ctx, "Error msg")
+	logger.Debug(ctx, "Debug msg")
+	logger.Info(ctx, "Info msg")
+	logger.Warn(ctx, "Warn msg")
+	logger.Error(ctx, "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout
@@ -104,10 +104,10 @@ func TestCliLogger_JSONVerboseFalse(t *testing.T) {
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, false)
 	ctx := context.Background()
 
-	logger.DebugCtx(ctx, "Debug msg")
-	logger.InfoCtx(ctx, "Info msg")
-	logger.WarnCtx(ctx, "Warn msg")
-	logger.ErrorCtx(ctx, "Error msg")
+	logger.Debug(ctx, "Debug msg")
+	logger.Info(ctx, "Info msg")
+	logger.Warn(ctx, "Warn msg")
+	logger.Error(ctx, "Error msg")
 
 	// Assert
 	// info      -> stdout
@@ -131,10 +131,10 @@ func TestCliLogger_JSONVerboseTrue(t *testing.T) {
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, true)
 	ctx := context.Background()
 
-	logger.DebugCtx(ctx, "Debug msg")
-	logger.InfoCtx(ctx, "Info msg")
-	logger.WarnCtx(ctx, "Warn msg")
-	logger.ErrorCtx(ctx, "Error msg")
+	logger.Debug(ctx, "Debug msg")
+	logger.Info(ctx, "Info msg")
+	logger.Warn(ctx, "Warn msg")
+	logger.Error(ctx, "Error msg")
 
 	// Assert
 	// debug (verbose), info -> stdout

@@ -86,10 +86,10 @@ func NewChecker(d dependencies) <-chan error {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		c.logger.InfoCtx(ctx, "received shutdown request")
+		c.logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		c.logger.InfoCtx(ctx, "shutdown done")
+		c.logger.Info(ctx, "shutdown done")
 	})
 
 	// Initialize
@@ -148,11 +148,11 @@ func (c *Checker) check(ctx context.Context) {
 		importOk, reason, err := c.shouldImport(ctx, now, slice.SliceKey, slice.CredExpiration)
 		switch {
 		case err != nil:
-			c.logger.ErrorCtx(ctx, err)
+			c.logger.Error(ctx, err)
 		case importOk:
 			c.logger.InfofCtx(ctx, `closing file "%s": %s`, slice.FileKey, reason)
 			if err := c.startSwapFileTask(ctx, fileManager, slice.FileKey); err != nil {
-				c.logger.ErrorCtx(ctx, err)
+				c.logger.Error(ctx, err)
 			}
 		case reason != "":
 			c.logger.DebugfCtx(ctx, `skipped import of the file "%s": %s`, slice.FileKey, reason)
@@ -163,11 +163,11 @@ func (c *Checker) check(ctx context.Context) {
 			uploadOk, reason, err := c.shouldUpload(ctx, now, slice.SliceKey)
 			switch {
 			case err != nil:
-				c.logger.ErrorCtx(ctx, err)
+				c.logger.Error(ctx, err)
 			case uploadOk:
 				c.logger.InfofCtx(ctx, `closing slice "%s": %s`, slice.SliceKey, reason)
 				if err := c.StartSwapSliceTask(ctx, fileManager, slice.SliceKey); err != nil {
-					c.logger.ErrorCtx(ctx, err)
+					c.logger.Error(ctx, err)
 				}
 			case reason != "":
 				c.logger.DebugfCtx(ctx, `skipped upload of the slice "%s": %s`, slice.SliceKey, reason)

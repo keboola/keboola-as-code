@@ -65,10 +65,6 @@ type contextLogger interface {
 	Error(ctx context.Context, message string)
 
 	LogCtx(ctx context.Context, level string, args ...any)
-	DebugCtx(ctx context.Context, args ...any)
-	InfoCtx(ctx context.Context, args ...any)
-	WarnCtx(ctx context.Context, args ...any)
-	ErrorCtx(ctx context.Context, args ...any)
 
 	DebugfCtx(ctx context.Context, template string, args ...any)
 	InfofCtx(ctx context.Context, template string, args ...any)

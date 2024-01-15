@@ -54,7 +54,7 @@ func (n *Node) Cleanup() (err error) {
 			// Track number of deleted tasks
 			trace.SpanFromContext(ctx).SetAttributes(attribute.Int64("task.cleanup.deletedTasksCount", deletedTasksCount))
 			infoMsg := fmt.Sprintf(`deleted "%d" tasks`, deletedTasksCount)
-			logger.InfoCtx(ctx, infoMsg)
+			logger.Info(ctx, infoMsg)
 
 			// Handle error
 			if errs.Len() > 0 {

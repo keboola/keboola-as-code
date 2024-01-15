@@ -112,9 +112,9 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// It is suspicious if a short time has passed between two errors,
 				// then the error is logged with error log level.
 				if interval := time.Since(lastErrorAt); interval > watchErrorThreshold {
-					c.logger.WarnCtx(ctx, resp.Err)
+					c.logger.Warn(ctx, resp.Err)
 				} else {
-					c.logger.ErrorCtx(ctx, errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval))
+					c.logger.Error(ctx, errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval))
 				}
 				lastErrorAt = time.Now()
 				lastError = resp.Err
@@ -125,7 +125,7 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				c.logger.InfoCtx(ctx, "restarted, ", resp.RestartReason)
+				c.logger.Info(ctx, "restarted, ", resp.RestartReason)
 				if c.onRestarted != nil {
 					c.onRestarted(resp.RestartReason, resp.RestartDelay)
 				}

@@ -18,7 +18,7 @@ type statsSyncer struct {
 }
 
 func (s *statsSyncer) Sync(ctx context.Context) <-chan error {
-	s.logger.DebugCtx(ctx, ">>> statistics sync")
+	s.logger.Debug(ctx, ">>> statistics sync")
 	errCh := make(chan error)
 	close(errCh)
 	return errCh

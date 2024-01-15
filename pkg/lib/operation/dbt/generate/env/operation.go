@@ -78,10 +78,10 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		for env := range linkedBucketEnvsMap {
 			linkedBucketEnvs = append(linkedBucketEnvs, env)
 		}
-		l.InfoCtx(ctx)
-		l.InfoCtx(ctx, "Note:")
-		l.InfoCtx(ctx, "  The project contains linked buckets that are shared from other projects.")
-		l.InfoCtx(ctx, "  Each project has a different database, so additional environment variables")
+		l.Info(ctx)
+		l.Info(ctx, "Note:")
+		l.Info(ctx, "  The project contains linked buckets that are shared from other projects.")
+		l.Info(ctx, "  Each project has a different database, so additional environment variables")
 		l.InfofCtx(ctx, "  have been generated: \"%s\"", strings.Join(linkedBucketEnvs, `", "`))
 	}
 

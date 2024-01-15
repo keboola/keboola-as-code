@@ -66,7 +66,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)
 		}
-		logger.InfoCtx(ctx, "HTTP server shutdown finished")
+		logger.Info(ctx, "HTTP server shutdown finished")
 	})
 
 	return nil

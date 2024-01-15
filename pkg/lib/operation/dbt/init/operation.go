@@ -46,7 +46,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	defer cancel()
 
 	// Create workspace
-	d.Logger().InfoCtx(ctx, `Creating a new workspace, please wait.`)
+	d.Logger().Info(ctx, `Creating a new workspace, please wait.`)
 	w, err := d.KeboolaProjectAPI().CreateWorkspace(
 		ctx,
 		branch.ID,

@@ -33,7 +33,7 @@ type errLogger struct {
 
 func (l *errLogger) Println(v ...any) {
 	// The prometheus library doesn't provide a context of the message, so we have no choice but to use context.Background().
-	l.logger.ErrorCtx(context.Background(), v...)
+	l.logger.Error(context.Background(), v...)
 }
 
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.
@@ -82,7 +82,7 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)
 		}
-		logger.InfoCtx(ctx, "HTTP server shutdown finished")
+		logger.Info(ctx, "HTTP server shutdown finished")
 	})
 
 	// Wait for server
