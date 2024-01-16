@@ -1,6 +1,6 @@
 //go:build !linux
 
-package allocate
+package diskalloc
 
 import (
 	"os"

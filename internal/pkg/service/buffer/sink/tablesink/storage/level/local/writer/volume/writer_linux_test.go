@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/diskalloc"
 )
 
 func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
@@ -23,13 +23,13 @@ func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 	tc.Slice.LocalStorage.AllocatedDiskSpace = expectedSize
 
 	// Use real allocator
-	w, err := tc.NewWriter(WithAllocator(allocate.DefaultAllocator{}))
+	w, err := tc.NewWriter(WithAllocator(diskalloc.DefaultAllocator{}))
 	assert.NoError(t, err)
 
 	// Check file size after allocation
 	// The size is rounded to whole blocks, so we check:
 	// EXPECTED <= ACTUAL SIZE < 2*EXPECTED
-	allocated, err := allocate.Allocated(w.FilePath())
+	allocated, err := diskalloc.Allocated(w.FilePath())
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, allocated, expectedSize)
 	assert.Less(t, allocated, 2*expectedSize)

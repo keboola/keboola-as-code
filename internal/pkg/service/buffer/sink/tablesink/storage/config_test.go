@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
@@ -47,7 +47,7 @@ func TestConfig_With(t *testing.T) {
 		BytesTrigger:    1 * datasize.MB,
 		IntervalTrigger: 100 * time.Millisecond,
 	}
-	diskAllocationCfg := allocate.Config{
+	diskAllocationCfg := diskalloc.Config{
 		Enabled:     true,
 		Size:        10 * datasize.MB,
 		SizePercent: 150,
