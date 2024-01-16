@@ -2,7 +2,7 @@ package rename
 
 import (
 	"context"
-	"os"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
@@ -20,6 +20,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (changed bool, err error) {
@@ -36,7 +37,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Log plan
 	if o.LogEmpty || !plan.Empty() {
-		plan.Log(os.Stdout)
+		plan.Log(d.Stdout())
 	}
 
 	if !plan.Empty() {

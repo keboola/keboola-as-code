@@ -3,7 +3,7 @@ package describe
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 
 	markdown "github.com/MichaelMure/go-term-markdown"
 
@@ -15,13 +15,14 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, tmpl *template.Template, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.describe")
 	defer span.End(&err)
 
-	w := os.Stdout
+	w := d.Stdout()
 
 	fmt.Fprintf(w, "Template ID:          %s\n", tmpl.TemplateRecord().ID)
 	fmt.Fprintf(w, "Name:                 %s\n", tmpl.TemplateRecord().Name)

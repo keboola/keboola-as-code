@@ -2,7 +2,7 @@ package dependencies
 
 import (
 	"context"
-	"os"
+	"io"
 
 	"github.com/benbjohnson/clock"
 
@@ -74,17 +74,35 @@ func (v *serviceScope) StatisticsL2Cache() *statistics.L2CacheProvider {
 	return v.statsL2Cache
 }
 
-func NewServiceScope(ctx context.Context, cfg config.ServiceConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v ServiceScope, err error) {
+func NewServiceScope(
+	ctx context.Context,
+	cfg config.ServiceConfig,
+	proc *servicectx.Process,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+	userAgent string,
+) (v ServiceScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewServiceScope")
 	defer span.End(&err)
-	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, userAgent)
+	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr, userAgent)
 	if err != nil {
 		return nil, err
 	}
 	return newServiceScope(parentSc, cfg)
 }
 
-func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v parentScopes, err error) {
+func newParentScopes(
+	ctx context.Context,
+	cfg config.ServiceConfig,
+	proc *servicectx.Process,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+	userAgent string,
+) (v parentScopes, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.newParentScopes")
 	defer span.End(&err)
 
@@ -94,17 +112,17 @@ func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servic
 		httpclient.WithUserAgent(userAgent),
 		func(c *httpclient.Config) {
 			if cfg.DebugLog {
-				httpclient.WithDebugOutput(os.Stdout)(c)
+				httpclient.WithDebugOutput(stdout)(c)
 			}
 			if cfg.DebugHTTP {
-				httpclient.WithDumpOutput(os.Stdout)(c)
+				httpclient.WithDumpOutput(stdout)(c)
 			}
 		},
 	)
 
 	d := &parentScopesImpl{}
 
-	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, clock.New(), proc, httpClient)
+	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
 
 	d.PublicScope, err = dependencies.NewPublicScope(ctx, d, cfg.StorageAPIHost, dependencies.WithLogIndexLoading(true))
 	if err != nil {

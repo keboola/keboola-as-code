@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
@@ -27,10 +28,18 @@ type workerScope struct {
 	eventSender *event.Sender
 }
 
-func NewWorkerScope(ctx context.Context, proc *servicectx.Process, cfg config.WorkerConfig, logger log.Logger, tel telemetry.Telemetry) (v WorkerScope, err error) {
+func NewWorkerScope(
+	ctx context.Context,
+	proc *servicectx.Process,
+	cfg config.WorkerConfig,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+) (v WorkerScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewWorkerScope")
 	defer span.End(&err)
-	serviceScp, err := NewServiceScope(ctx, cfg.ServiceConfig, proc, logger, tel, workerUserAgent)
+	serviceScp, err := NewServiceScope(ctx, cfg.ServiceConfig, proc, logger, tel, stdout, stderr, workerUserAgent)
 	return newWorkerScope(ctx, cfg, serviceScp)
 }
 

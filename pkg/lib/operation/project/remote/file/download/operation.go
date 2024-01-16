@@ -29,6 +29,7 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 type downloader struct {

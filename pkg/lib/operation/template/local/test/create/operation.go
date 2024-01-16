@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	"io"
 	"os"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -24,6 +25,8 @@ type dependencies interface {
 	Process() *servicectx.Process
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
@@ -38,7 +41,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}()
 
 	branchID := 1
-	prjState, _, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Logger(), d.Telemetry(), d.Process(), branchID, false)
+	prjState, _, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Logger(), d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
 	if err != nil {
 		return err
 	}

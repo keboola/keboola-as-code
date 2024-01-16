@@ -103,7 +103,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel)
+	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr)
 	if err != nil {
 		return err
 	}

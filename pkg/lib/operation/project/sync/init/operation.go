@@ -2,6 +2,7 @@ package init
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -36,6 +37,7 @@ type dependencies interface {
 	StorageAPIHost() string
 	StorageAPIToken() keboola.Token
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {

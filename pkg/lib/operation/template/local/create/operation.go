@@ -3,6 +3,7 @@ package create
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -39,6 +40,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {

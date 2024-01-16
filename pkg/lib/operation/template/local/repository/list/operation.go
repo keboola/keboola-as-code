@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -13,13 +13,14 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, repo *repository.Repository, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.list")
 	defer span.End(&err)
 
-	w := os.Stdout
+	w := d.Stdout()
 
 	for _, tmpl := range repo.Templates() {
 		fmt.Fprintf(w, "Template ID:          %s\n", tmpl.ID)

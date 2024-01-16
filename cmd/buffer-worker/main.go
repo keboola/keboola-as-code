@@ -92,7 +92,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	workerScp, err := dependencies.NewWorkerScope(ctx, proc, cfg, logger, tel)
+	workerScp, err := dependencies.NewWorkerScope(ctx, proc, cfg, logger, tel, os.Stdout, os.Stderr)
 	if err != nil {
 		return err
 	}

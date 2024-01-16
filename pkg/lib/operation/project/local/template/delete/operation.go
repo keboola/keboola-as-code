@@ -2,7 +2,7 @@ package delete_template
 
 import (
 	"context"
-	"os"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -22,6 +22,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -37,7 +38,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(os.Stdout)
+	plan.Log(d.Stdout())
 
 	// Dry run?
 	if o.DryRun {

@@ -2,6 +2,7 @@ package encrypt
 
 import (
 	"context"
+	"io"
 	"os"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -22,6 +23,7 @@ type dependencies interface {
 	Logger() log.Logger
 	ProjectID() keboola.ProjectID
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
