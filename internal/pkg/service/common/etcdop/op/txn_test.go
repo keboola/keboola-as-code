@@ -326,6 +326,81 @@ get bar bar
 	}
 }
 
+func TestTxnOp_And_Simple(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Collect processors output
+	var log strings.Builder
+
+	// Define transaction
+	txn := Txn(client).
+		And(
+			etcdop.Key("key1").Put(client, "value1"),
+			Txn(client).
+				Then(etcdop.Key("key2").Put(client, "value2")).
+				And(
+					Txn(client).
+						Then(etcdop.Key("key3").Put(client, "value3")).
+						OnSucceeded(func(*TxnResult[NoResult]) {
+							log.WriteString("nested transaction succeeded\n")
+						}),
+				),
+			etcdop.Key("key4").Put(client, "value4"),
+		).
+		OnSucceeded(func(*TxnResult[NoResult]) {
+			log.WriteString("root transaction succeeded\n")
+		})
+
+	// Check low-level representation
+	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
+		assert.Equal(t, etcd.OpTxn(
+			// If
+			[]etcd.Cmp{},
+			// Then
+			[]etcd.Op{
+				etcd.OpPut("key1", "value1"),
+				etcd.OpPut("key2", "value2"),
+				etcd.OpPut("key3", "value3"),
+				etcd.OpPut("key4", "value4"),
+			},
+			// Else
+			// TODO, remove empty else blocks
+			[]etcd.Op{
+				etcd.OpTxn(
+					// If
+					[]etcd.Cmp{},
+					// Then
+					[]etcd.Op{},
+					// Else
+					[]etcd.Op{
+						etcd.OpTxn(
+							// If
+							[]etcd.Cmp{},
+							// Then
+							[]etcd.Op{},
+							// Else
+							[]etcd.Op{},
+						),
+					},
+				),
+			},
+		), lowLevel.Op)
+	}
+
+	// Run transaction
+	result := txn.Do(ctx)
+	require.NoError(t, result.Err())
+	assert.True(t, result.Succeeded())
+
+	// Check processors
+	assert.Equal(t, strings.TrimSpace(`
+root transaction succeeded
+nested transaction succeeded
+`), strings.TrimSpace(log.String()))
+}
+
 func TestTxnOp_And_RealExample(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
