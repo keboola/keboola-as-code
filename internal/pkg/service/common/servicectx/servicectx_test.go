@@ -97,7 +97,7 @@ func TestProcess_Add(t *testing.T) {
 {"level":"info","message":"onShutdown1"}
 {"level":"info","message":"exited"}
 `
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }
 
 func TestProcess_Shutdown(t *testing.T) {
@@ -169,5 +169,5 @@ func TestProcess_Shutdown(t *testing.T) {
 {"level":"info","message":"onShutdown1"}
 {"level":"info","message":"exited"}
 `
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }

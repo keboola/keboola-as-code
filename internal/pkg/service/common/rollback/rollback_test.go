@@ -77,5 +77,5 @@ func TestRollback(t *testing.T) {
 {"level":"debug","message":"main 1"}
 {"level":"warn","message":"rollback failed:\n- lifo 3 failed\n- parallel operation failed\n- main 3 failed"}
 `
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }

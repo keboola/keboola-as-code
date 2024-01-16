@@ -55,5 +55,5 @@ func TestContextAttributes(t *testing.T) {
 	logger.Info(ctx, "test")
 
 	expected := `{"level":"info","message":"test","dd.trace_id":"%s","dd.span_id":"%s"}`
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }

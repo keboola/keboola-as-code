@@ -57,5 +57,5 @@ func TestLocker_WithEtcd_TimeToLiveExpired(t *testing.T) {
 {"level":"info","message":"acquired etcd lock \"projectId=456/%s\""}
 {"level":"info","message":"released etcd lock \"projectId=456\""}
 `
-	log.AssertJSONMessages(t, expected, d.logger.AllMessages())
+	d.logger.AssertJSONMessages(t, expected)
 }

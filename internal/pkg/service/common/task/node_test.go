@@ -675,7 +675,7 @@ func TestTaskTimeout(t *testing.T) {
 
 	// Wait for the task
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`, logger.AllMessages()) == nil
+		return logger.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 100*time.Millisecond, logger.AllMessages())
 
 	// Check etcd state after task
@@ -698,12 +698,12 @@ task/123/my-receiver/my-export/some.task/%s
 `)
 
 	// Check logs
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"warn","message":"task failed (%s): context deadline exceeded","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
-`, logger.AllMessages())
+`)
 
 	// Check spans
 	tel.AssertSpans(t,

@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -54,7 +53,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	changes.AddLoaded(targetVars)
 	changes.AddLoaded(unattachedVars)
 	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
-	log.AssertJSONMessages(t, `{"level":"debug","message":"Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\""}`, logger.AllMessages())
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\""}`)
 
 	// Unattached variables are removed
 	assert.Equal(t, []model.ObjectState{
@@ -115,7 +114,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	changes.AddLoaded(ignoredScheduler)
 	changes.AddLoaded(validScheduler)
 	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
-	log.AssertJSONMessages(t, `{"level":"debug","message":"Ignored scheduler config \"branch:1/component:keboola.scheduler/config:3\", target config \"branch:1/component:keboola.foo-bar/config:789\" not found"}`, logger.AllMessages())
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored scheduler config \"branch:1/component:keboola.scheduler/config:3\", target config \"branch:1/component:keboola.foo-bar/config:789\" not found"}`)
 
 	// Unattached variables are removed
 	assert.Equal(t, []model.ObjectState{

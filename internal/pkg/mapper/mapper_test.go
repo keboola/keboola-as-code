@@ -150,5 +150,5 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	output, err := mapper.NewFileLoader(fs).ReadRawFile(ctx, input)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, output)
-	log.AssertJSONMessages(t, expectedLogs, logger.AllMessages())
+	logger.AssertJSONMessages(t, expectedLogs)
 }

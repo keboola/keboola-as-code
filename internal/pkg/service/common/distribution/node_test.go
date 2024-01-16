@@ -171,7 +171,7 @@ node3
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// Logs differs in number of "the node ... gone" messages
-	log.AssertJSONMessages(t, `
+	loggers[0].AssertJSONMessages(t, `
 {"level":"info","message":"creating etcd session","node":"node1","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"created etcd session | %s","node":"node1","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"registering the node \"node1\"","node":"node1","component":"distribution.my-group"}
@@ -192,9 +192,9 @@ node3
 {"level":"info","message":"closing etcd connection","component":"etcd-client"}
 {"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
 {"level":"info","message":"exited"}
-`, loggers[0].AllMessages())
+`)
 
-	log.AssertJSONMessages(t, `
+	loggers[1].AssertJSONMessages(t, `
 {"level":"info","message":"creating etcd session","node":"node2","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"created etcd session | %s","node":"node2","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"registering the node \"node2\"","node":"node2","component":"distribution.my-group"}
@@ -216,9 +216,9 @@ node3
 {"level":"info","message":"closing etcd connection","component":"etcd-client"}
 {"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
 {"level":"info","message":"exited"}
-`, loggers[1].AllMessages())
+`)
 
-	log.AssertJSONMessages(t, `
+	loggers[2].AssertJSONMessages(t, `
 {"level":"info","message":"creating etcd session","node":"node3","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"created etcd session | %s","node":"node3","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"registering the node \"node3\"","node":"node3","component":"distribution.my-group"}
@@ -241,7 +241,7 @@ node3
 {"level":"info","message":"closing etcd connection","component":"etcd-client"}
 {"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
 {"level":"info","message":"exited"}
-`, loggers[2].AllMessages())
+`)
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
@@ -264,7 +264,7 @@ node4
 	process4.WaitForShutdown()
 	etcdhelper.AssertKVsString(t, client, "")
 
-	log.AssertJSONMessages(t, `
+	d4.DebugLogger().AssertJSONMessages(t, `
 {"level":"info","message":"creating etcd session","node":"node4","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"created etcd session | %s","node":"node4","component":"distribution.my-group.etcd-session"}
 {"level":"info","message":"registering the node \"node4\"","node":"node4","component":"distribution.my-group"}
@@ -283,7 +283,7 @@ node4
 {"level":"info","message":"closing etcd connection","component":"etcd-client"}
 {"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
 {"level":"info","message":"exited"}
-`, d4.DebugLogger().AllMessages())
+`)
 }
 
 func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdclient.Credentials, nodeName string) (*distribution.Node, dependencies.Mocked) {

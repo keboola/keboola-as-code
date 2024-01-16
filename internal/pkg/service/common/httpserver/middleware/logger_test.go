@@ -69,5 +69,5 @@ func TestLoggerMiddleware(t *testing.T) {
 
 	// Assert
 	expected := `{"level":"info","message":"req /api/action status=200 bytes=2 time=%s client_ip=192.0.2.1 agent=my-user-agent","component":"http","requestId":"%s"}`
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }

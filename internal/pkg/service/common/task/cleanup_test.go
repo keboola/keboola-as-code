@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -102,7 +101,7 @@ func TestCleanup(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// Check logs
-	log.AssertJSONMessages(t, `
+	d.DebugLogger().AssertJSONMessages(t, `
 {"level":"info","message":"started task","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
 {"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
@@ -118,7 +117,7 @@ func TestCleanup(t *testing.T) {
 {"level":"info","message":"closing etcd connection","component":"etcd-client"}
 {"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
 {"level":"info","message":"exited"}
-`, d.DebugLogger().AllMessages())
+`)
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `

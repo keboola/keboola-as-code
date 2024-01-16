@@ -153,7 +153,7 @@ my/revision (lease)
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// Check logs - no unexpected syncs
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"info","message":"creating etcd session","component":"etcd-session"}
 {"level":"info","message":"created etcd session | %s","component":"etcd-session"}
 {"level":"debug","message":">>> statistics sync"}
@@ -170,5 +170,5 @@ my/revision (lease)
 {"level":"info","message":"reported revision \"70\""}
 {"level":"info","message":"closing etcd session","component":"etcd-session"}
 {"level":"info","message":"closed etcd session | %s","component":"etcd-session"}
-`, logger.AllMessages())
+`)
 }
