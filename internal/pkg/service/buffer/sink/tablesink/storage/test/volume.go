@@ -3,11 +3,11 @@ package test
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 )
 
 type Volume struct {
-	IDValue     storage.VolumeID
+	IDValue     volume.ID
 	NodeIDValue string
 	PathValue   string
 	TypeValue   string
@@ -15,7 +15,7 @@ type Volume struct {
 	CloseError  error
 }
 
-func NewTestVolume(id storage.VolumeID, nodeID string, info storage.VolumeSpec) *Volume {
+func NewTestVolume(id volume.ID, nodeID string, info volume.Spec) *Volume {
 	return &Volume{
 		IDValue:     id,
 		NodeIDValue: nodeID,
@@ -23,6 +23,10 @@ func NewTestVolume(id storage.VolumeID, nodeID string, info storage.VolumeSpec) 
 		TypeValue:   info.Type,
 		LabelValue:  info.Label,
 	}
+}
+
+func (v *Volume) ID() volume.ID {
+	return v.IDValue
 }
 
 func (v *Volume) Path() string {
@@ -37,14 +41,10 @@ func (v *Volume) Label() string {
 	return v.LabelValue
 }
 
-func (v *Volume) ID() storage.VolumeID {
-	return v.IDValue
-}
-
-func (v *Volume) Metadata() storage.VolumeMetadata {
-	return storage.VolumeMetadata{
+func (v *Volume) Metadata() volume.Metadata {
+	return volume.Metadata{
 		VolumeID: v.IDValue,
-		VolumeSpec: storage.VolumeSpec{
+		Spec: volume.Spec{
 			Path:   v.PathValue,
 			Type:   v.TypeValue,
 			Label:  v.LabelValue,

@@ -6,7 +6,7 @@
 // The type is later used when assigning volumes.
 // Different use-cases may prefer a different type of volume.
 //
-// The label has no special meaning, volumes are identified by the unique storage.VolumeID,
+// The label has no special meaning, volumes are identified by the unique storage.ID,
 // which is read from the local.VolumeIDFile on the volume, if the file does not exist,
 // it is generated and saved by the writer.Volume.
 package volume
@@ -19,13 +19,12 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // OpenVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
-func OpenVolumes[V storage.Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*Collection[V], error) {
+func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*Collection[V], error) {
 	logger.InfofCtx(ctx, `searching for volumes in "%s"`, volumesPath)
 
 	lock := &sync.Mutex{}
@@ -65,7 +64,7 @@ func OpenVolumes[V storage.Volume](ctx context.Context, logger log.Logger, nodeI
 				}
 
 				// Open the volume
-				info := storage.VolumeSpec{NodeID: nodeID, Path: path, Type: typ, Label: label}
+				info := Spec{NodeID: nodeID, Path: path, Type: typ, Label: label}
 				vol, err := opener(info)
 				if err != nil {
 					logger.ErrorfCtx(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)

@@ -35,7 +35,8 @@ type ZSTDConfig struct {
 	Concurrency int               `json:"concurrency" configKey:"concurrency" configUsage:"ZSTD concurrency, 0 = auto"`
 }
 
-func DefaultConfig() Config {
+// NewConfig provides default configuration.
+func NewConfig() Config {
 	return Config{
 		Type: TypeGZIP,
 		GZIP: DefaultGZIPConfig().GZIP,

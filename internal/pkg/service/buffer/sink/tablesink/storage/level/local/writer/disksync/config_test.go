@@ -22,7 +22,7 @@ func TestConfig(t *testing.T) {
 	}{
 		{
 			Name:   "default: ok",
-			Config: DefaultConfig(),
+			Config: NewConfig(),
 		},
 		{
 			Name:          "invalid mode",

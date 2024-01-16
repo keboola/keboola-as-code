@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 )
 
@@ -14,7 +14,7 @@ func TestVolumeSchema(t *testing.T) {
 	t.Parallel()
 	s := newVolumeSchema(serde.NewJSON(serde.NoValidation))
 
-	volumeID := storage.VolumeID("my-volume")
+	volumeID := volume.ID("my-volume")
 
 	cases := []struct{ actual, expected string }{
 		{

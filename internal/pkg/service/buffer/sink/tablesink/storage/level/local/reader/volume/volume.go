@@ -12,8 +12,8 @@ import (
 	"github.com/gofrs/flock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -24,8 +24,8 @@ const (
 )
 
 type Volume struct {
-	id   storage.VolumeID
-	spec storage.VolumeSpec
+	id   volume.ID
+	spec volume.Spec
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -45,7 +45,7 @@ type Volume struct {
 //   - The volume.IDFile is loaded.
 //   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec storage.VolumeSpec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume.Spec, opts ...Option) (*Volume, error) {
 	logger.InfofCtx(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
 		spec:        spec,
@@ -93,14 +93,14 @@ func (v *Volume) Label() string {
 	return v.spec.Label
 }
 
-func (v *Volume) ID() storage.VolumeID {
+func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
-func (v *Volume) Metadata() storage.VolumeMetadata {
-	return storage.VolumeMetadata{
-		VolumeID:   v.id,
-		VolumeSpec: v.spec,
+func (v *Volume) Metadata() volume.Metadata {
+	return volume.Metadata{
+		VolumeID: v.id,
+		Spec:     v.spec,
 	}
 }
 
@@ -140,7 +140,7 @@ func (v *Volume) Close(ctx context.Context) error {
 // waitForVolumeID waits for the file with volume ID.
 // The file is created by the writer.Open
 // and this reader.Open is waiting for it.
-func (v *Volume) waitForVolumeID(ctx context.Context) (storage.VolumeID, error) {
+func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 	ctx, cancel := v.clock.WithTimeout(ctx, v.config.waitForVolumeIDTimeout)
 	defer cancel()
 
@@ -151,7 +151,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (storage.VolumeID, error) 
 	for {
 		// Try open the file
 		if content, err := os.ReadFile(path); err == nil {
-			return storage.VolumeID(strings.TrimSpace(string(content))), nil
+			return volume.ID(strings.TrimSpace(string(content))), nil
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return "", errors.Errorf(`cannot open volume ID file "%s": %w`, path, err)
 		} else {

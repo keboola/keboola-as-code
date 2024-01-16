@@ -1,4 +1,4 @@
-package assigner_test
+package assignment_test
 
 import (
 	"context"
@@ -9,9 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assigner"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -37,7 +36,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "empty",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{},
 			ExpectedVolumes: []string{},
@@ -45,7 +44,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=1,pref=-,simple",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node/hdd/1"},
 			ExpectedVolumes: []string{"node/hdd/1"},
@@ -53,7 +52,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=1,pref=-,rand=1",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node/hdd/1", "node/hdd/2", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/top/1"},
 			ExpectedVolumes: []string{"node/top/1"},
@@ -61,7 +60,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=1,pref=-,rand=2",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed2,
 			AllVolumes:      []string{"node/hdd/1", "node/hdd/2", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/top/1"},
 			ExpectedVolumes: []string{"node/ssd/1"},
@@ -101,7 +100,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=3,pref=-,simple",
 			Count:           3,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node/hdd/1", "node/ssd/1", "node/ssd/2"},
 			ExpectedVolumes: []string{"node/hdd/1", "node/ssd/1", "node/ssd/2"},
@@ -109,7 +108,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=3,pref=-,rand=1",
 			Count:           3,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node/hdd/1", "node/hdd/2", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/top/1"},
 			ExpectedVolumes: []string{"node/top/1", "node/hdd/1", "node/hdd/3"},
@@ -117,7 +116,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=3,pref=-,rand=2",
 			Count:           3,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed2,
 			AllVolumes:      []string{"node/hdd/1", "node/hdd/2", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/top/1"},
 			ExpectedVolumes: []string{"node/ssd/1", "node/ssd/2", "node/hdd/2"},
@@ -181,7 +180,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=10,pref=-,rand=1",
 			Count:           10,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node/hdd/1", "node/hdd/2", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/top/1"},
 			ExpectedVolumes: []string{"node/top/1", "node/hdd/1", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/hdd/2"},
@@ -189,7 +188,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=1,count=10,pref=-,rand=2",
 			Count:           10,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed2,
 			AllVolumes:      []string{"node/hdd/1", "node/hdd/2", "node/hdd/3", "node/ssd/1", "node/ssd/2", "node/top/1"},
 			ExpectedVolumes: []string{"node/ssd/1", "node/ssd/2", "node/hdd/2", "node/hdd/3", "node/hdd/1", "node/top/1"},
@@ -221,7 +220,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=1,pref=-,rand=1",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node3/ssd/2"},
@@ -229,7 +228,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=1,pref=-,rand=2",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed2,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node2/ssd/1"},
@@ -237,7 +236,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=1,pref=-,rand=3",
 			Count:           1,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed3,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node3/ssd/2"},
@@ -245,7 +244,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=3,pref=-,rand=1",
 			Count:           3,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node3/ssd/2", "node1/hdd/1", "node2/top/1"},
@@ -253,7 +252,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=3,pref=-,rand=2",
 			Count:           3,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed2,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node2/ssd/1", "node1/hdd/2", "node3/ssd/2"},
@@ -261,7 +260,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=3,pref=-,rand=3",
 			Count:           3,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed3,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node3/ssd/2", "node1/hdd/1", "node2/top/1"},
@@ -269,7 +268,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=10,pref=-,rand=1",
 			Count:           10,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed1,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node3/ssd/2", "node1/hdd/1", "node2/top/1", "node1/hdd/3", "node2/ssd/1", "node1/hdd/2"},
@@ -277,7 +276,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=10,pref=-,rand=2",
 			Count:           10,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed2,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node2/ssd/1", "node1/hdd/2", "node3/ssd/2", "node2/top/1", "node1/hdd/3", "node1/hdd/1"},
@@ -285,7 +284,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 		{
 			Name:            "nodes=3,count=10,pref=-,rand=3",
 			Count:           10,
-			PreferredTypes:  []string{},
+			PreferredTypes:  []string{"missing"},
 			FileOpenedAt:    randomSeed3,
 			AllVolumes:      []string{"node1/hdd/1", "node1/hdd/2", "node1/hdd/3", "node2/ssd/1", "node3/ssd/2", "node2/top/1"},
 			ExpectedVolumes: []string{"node3/ssd/2", "node1/hdd/1", "node2/top/1", "node1/hdd/3", "node2/ssd/1", "node1/hdd/2"},
@@ -323,23 +322,25 @@ func TestVolumes_VolumesFor(t *testing.T) {
 			t.Parallel()
 
 			// Create volumes
-			volumes := createVolumesMetadata(t, tc.AllVolumes)
+			volumes, byID := createVolumesMetadata(t, tc.AllVolumes)
 
-			// Create a test file according to the test case specification
-			file := test.NewFileOpenedAt(tc.FileOpenedAt.String())
-			file.LocalStorage.Volumes.Count = tc.Count
-			file.LocalStorage.Volumes.PreferredTypes = tc.PreferredTypes
+			// Create assigner config
+			cfg := assignment.Config{
+				Count:          tc.Count,
+				PreferredTypes: tc.PreferredTypes,
+			}
 
-			// File must be valid
-			require.NoError(t, validator.New().Validate(context.Background(), file))
+			// Config must be valid
+			require.NoError(t, validator.New().Validate(context.Background(), cfg))
 
 			// Assign volumes
-			fileVolumes, err := assigner.VolumesFor(volumes, file)
-			require.NoError(t, err)
+			result := assignment.VolumesFor(volumes, cfg, tc.FileOpenedAt.Time().UnixNano())
 
 			// Get IDs of the assigned volumes
-			actualVolumes := make([]string, len(fileVolumes))
-			for i, vol := range fileVolumes {
+			actualVolumes := make([]string, len(result.Volumes))
+			for i, volumeID := range result.Volumes {
+				vol := byID[volumeID]
+				assert.NotEmpty(t, vol)
 				actualVolumes[i] = fmt.Sprintf(`%s/%s/%s`, vol.NodeID, vol.Type, vol.Label)
 			}
 
@@ -349,21 +350,26 @@ func TestVolumes_VolumesFor(t *testing.T) {
 	}
 }
 
-func createVolumesMetadata(t *testing.T, volumes []string) (out []storage.VolumeMetadata) {
+func createVolumesMetadata(t *testing.T, volumes []string) (all []volume.Metadata, byID map[volume.ID]volume.Metadata) {
 	t.Helper()
+
+	byID = make(map[volume.ID]volume.Metadata)
 	for _, definition := range volumes {
 		parts := strings.Split(definition, "/")
 		require.Len(t, parts, 3, "volume definition must have 3 parts: <node>/<type>/<label>")
 
-		out = append(out, storage.VolumeMetadata{
-			VolumeID: storage.GenerateVolumeID(),
-			VolumeSpec: storage.VolumeSpec{
+		id := volume.GenerateID()
+		metadata := volume.Metadata{
+			VolumeID: id,
+			Spec: volume.Spec{
 				NodeID: parts[0],
 				Type:   parts[1],
 				Label:  parts[2],
 			},
-		})
+		}
+		byID[id] = metadata
+		all = append(all, metadata)
 	}
 
-	return out
+	return all, byID
 }

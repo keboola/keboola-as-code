@@ -19,8 +19,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -61,8 +62,8 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Open volume
 	clk := clock.New()
 	now := clk.Now()
-	spec := storage.VolumeSpec{NodeID: "my-node", Path: b.TempDir(), Type: "hdd", Label: "1"}
-	vol, err := volume.Open(ctx, logger, clk, writer.NewEvents(), spec)
+	spec := volume.Spec{NodeID: "my-node", Path: b.TempDir(), Type: "hdd", Label: "1"}
+	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec)
 	require.NoError(b, err)
 
 	// Create writer
@@ -130,7 +131,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
 }
 
-func (wb *WriterBenchmark) newSlice(b *testing.B, volume *volume.Volume) *storage.Slice {
+func (wb *WriterBenchmark) newSlice(b *testing.B, volume *writerVolume.Volume) *storage.Slice {
 	b.Helper()
 
 	s := test.NewSlice()

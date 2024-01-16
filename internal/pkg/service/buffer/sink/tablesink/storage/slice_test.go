@@ -147,12 +147,12 @@ func TestSlice_Validation(t *testing.T) {
 	localStorage := local.Slice{
 		Dir:         "my-dir",
 		Filename:    "slice.csv",
-		Compression: compression.DefaultConfig(),
-		DiskSync:    disksync.DefaultConfig(),
+		Compression: compression.NewConfig(),
+		DiskSync:    disksync.NewConfig(),
 	}
 	stagingStorage := staging.Slice{
 		Path:        "slice.csv.gzip",
-		Compression: compression.DefaultConfig(),
+		Compression: compression.NewConfig(),
 	}
 
 	// Test cases

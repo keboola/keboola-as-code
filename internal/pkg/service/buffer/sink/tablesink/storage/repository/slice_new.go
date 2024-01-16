@@ -9,12 +9,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // newSlice creates slice definition.
-func newSlice(now time.Time, file storage.File, volumeID storage.VolumeID, prevSliceSize datasize.ByteSize) (s storage.Slice, err error) {
+func newSlice(now time.Time, file storage.File, volumeID volume.ID, prevSliceSize datasize.ByteSize) (s storage.Slice, err error) {
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.

@@ -16,9 +16,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -62,7 +62,7 @@ func TestOpenVolume_Ok(t *testing.T) {
 
 	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
-	assert.Equal(t, storage.VolumeID("abcdef"), vol.ID())
+	assert.Equal(t, volume.ID("abcdef"), vol.ID())
 
 	// Lock is locked by the volume
 	lock := flock.New(filepath.Join(tc.VolumePath, lockFile))
@@ -101,7 +101,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 		timeout := 5 * waitForVolumeIDInterval
 		vol, err = tc.OpenVolume(WithWaitForVolumeIDTimeout(timeout))
 		assert.NoError(t, err)
-		assert.Equal(t, storage.VolumeID("abcdef"), vol.ID())
+		assert.Equal(t, volume.ID("abcdef"), vol.ID())
 	}()
 
 	// Wait for 2 checks
@@ -285,7 +285,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 }
 
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
-	info := storage.VolumeSpec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	info := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
 	return Open(tc.Ctx, tc.Logger, tc.Clock, info, opts...)
 }
 

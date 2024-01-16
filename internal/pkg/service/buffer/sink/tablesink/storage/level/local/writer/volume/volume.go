@@ -14,9 +14,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -31,8 +31,8 @@ const (
 
 // Volume represents a local directory intended for slices writing.
 type Volume struct {
-	id   storage.VolumeID
-	spec storage.VolumeSpec
+	id   volume.ID
+	spec volume.Spec
 
 	config config
 	logger log.Logger
@@ -55,9 +55,9 @@ type Volume struct {
 // Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
-//   - The local.VolumeIDFile is loaded or generated, it contains storage.VolumeID, unique identifier of the volume.
+//   - The local.VolumeIDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec storage.VolumeSpec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec volume.Spec, opts ...Option) (*Volume, error) {
 	logger.InfofCtx(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
 		spec:          spec,
@@ -80,21 +80,21 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		idFilePath := filepath.Join(v.spec.Path, local.VolumeIDFile)
 		content, err := os.ReadFile(idFilePath)
 
-		// VolumeID file doesn't exist, create it
+		// ID file doesn't exist, create it
 		if errors.Is(err, os.ErrNotExist) {
-			id := storage.GenerateVolumeID()
+			id := volume.GenerateID()
 			logger.InfofCtx(ctx, `generated volume ID "%s"`, id)
 			content = []byte(id)
 			err = createVolumeIDFile(idFilePath, content)
 		}
 
-		// Check VolumeID file error
+		// Check ID file error
 		if err != nil {
 			return nil, errors.Errorf(`cannot open volume ID file "%s": %w`, idFilePath, err)
 		}
 
 		// Store volume ID
-		v.id = storage.VolumeID(bytes.TrimSpace(content))
+		v.id = volume.ID(bytes.TrimSpace(content))
 	}
 
 	// Create lock file
@@ -128,7 +128,7 @@ func (v *Volume) Label() string {
 	return v.spec.Label
 }
 
-func (v *Volume) ID() storage.VolumeID {
+func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
@@ -136,10 +136,10 @@ func (v *Volume) Events() *writer.Events {
 	return v.events
 }
 
-func (v *Volume) Metadata() storage.VolumeMetadata {
-	return storage.VolumeMetadata{
-		VolumeID:   v.id,
-		VolumeSpec: v.spec,
+func (v *Volume) Metadata() volume.Metadata {
+	return volume.Metadata{
+		VolumeID: v.id,
+		Spec:     v.spec,
 	}
 }
 

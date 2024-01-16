@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -35,36 +35,36 @@ func TestRepository_Volume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Fixtures
-	volume1 := storage.VolumeMetadata{
-		VolumeID: storage.VolumeID("my-volume-1"),
-		VolumeSpec: storage.VolumeSpec{
+	volume1 := volume.Metadata{
+		VolumeID: volume.ID("my-volume-1"),
+		Spec: volume.Spec{
 			NodeID: "writer-node",
 			Path:   "hdd/001",
 			Type:   "hdd",
 			Label:  "001",
 		},
 	}
-	volume2 := storage.VolumeMetadata{
-		VolumeID: storage.VolumeID("my-volume-2"),
-		VolumeSpec: storage.VolumeSpec{
+	volume2 := volume.Metadata{
+		VolumeID: volume.ID("my-volume-2"),
+		Spec: volume.Spec{
 			NodeID: "writer-node",
 			Path:   "hdd/002",
 			Type:   "hdd",
 			Label:  "002",
 		},
 	}
-	volume3 := storage.VolumeMetadata{
-		VolumeID: storage.VolumeID("my-volume-3"),
-		VolumeSpec: storage.VolumeSpec{
+	volume3 := volume.Metadata{
+		VolumeID: volume.ID("my-volume-3"),
+		Spec: volume.Spec{
 			NodeID: "reader-node",
 			Path:   "hdd/003",
 			Type:   "hdd",
 			Label:  "003",
 		},
 	}
-	volume4 := storage.VolumeMetadata{
-		VolumeID: storage.VolumeID("my-volume-4"),
-		VolumeSpec: storage.VolumeSpec{
+	volume4 := volume.Metadata{
+		VolumeID: volume.ID("my-volume-4"),
+		Spec: volume.Spec{
 			NodeID: "reader-node",
 			Path:   "hdd/004",
 			Type:   "hdd",
@@ -99,11 +99,11 @@ func TestRepository_Volume(t *testing.T) {
 		// List
 		result, err := r.ListWriterVolumes().Do(ctx).All()
 		require.NoError(t, err)
-		assert.Equal(t, []storage.VolumeMetadata{volume1, volume2}, result)
+		assert.Equal(t, []volume.Metadata{volume1, volume2}, result)
 
 		result, err = r.ListReaderVolumes().Do(ctx).All()
 		require.NoError(t, err)
-		assert.Equal(t, []storage.VolumeMetadata{volume3, volume4}, result)
+		assert.Equal(t, []volume.Metadata{volume3, volume4}, result)
 	}
 	{
 		// Check etcd state

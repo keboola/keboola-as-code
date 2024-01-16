@@ -25,13 +25,13 @@ func TestFile_Validation(t *testing.T) {
 			Name:          "empty",
 			ExpectedError: "- \"credentials\" is a required field\n- \"credentialsExpiration\" is a required field",
 			Value: File{
-				Compression: compression.DefaultConfig(),
+				Compression: compression.NewConfig(),
 			},
 		},
 		{
 			Name: "ok",
 			Value: File{
-				Compression:                 compression.DefaultConfig(),
+				Compression:                 compression.NewConfig(),
 				UploadCredentials:           &keboola.FileUploadCredentials{},
 				UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
 			},

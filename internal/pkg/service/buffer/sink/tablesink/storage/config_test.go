@@ -9,9 +9,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
 )
 
 func TestConfig_With(t *testing.T) {
@@ -33,10 +35,9 @@ func TestConfig_With(t *testing.T) {
 			Concurrency:    10,
 		},
 	}
-	volumesAssigmentCfg := local.VolumesConfig{
-		Count:                  2,
-		PreferredTypes:         []string{"foo", "bar"},
-		RegistrationTTLSeconds: 10,
+	volumesAssignerCfg := assignment.Config{
+		Count:          2,
+		PreferredTypes: []string{"foo", "bar"},
 	}
 	diskSyncCfg := disksync.Config{
 		Mode:            disksync.ModeCache,
@@ -46,7 +47,7 @@ func TestConfig_With(t *testing.T) {
 		BytesTrigger:    1 * datasize.MB,
 		IntervalTrigger: 100 * time.Millisecond,
 	}
-	diskAllocationCfg := local.DiskAllocation{
+	diskAllocationCfg := allocate.Config{
 		Enabled:     true,
 		Size:        10 * datasize.MB,
 		SizePercent: 150,
@@ -72,13 +73,12 @@ func TestConfig_With(t *testing.T) {
 	// First patch
 	expectedCfg := defaultCfg
 	expectedCfg.Local.Compression = compressionCfg
-	expectedCfg.Local.Volumes = volumesAssigmentCfg
+	expectedCfg.VolumeAssignment = volumesAssignerCfg
 	expectedCfg.Staging.MaxSlicesPerFile = maxSlicesPerFile
 	expectedCfg.Staging.Upload.Trigger = sliceUploadTrigger
 	patchedConfig1 := defaultCfg.With(&ConfigPatch{
 		Local: &local.ConfigPatch{
 			Compression: &compressionCfg,
-			Volumes:     &volumesAssigmentCfg,
 		},
 		Staging: &staging.ConfigPatch{
 			MaxSlicesPerFile: &maxSlicesPerFile,
@@ -86,6 +86,7 @@ func TestConfig_With(t *testing.T) {
 				Trigger: &sliceUploadTrigger,
 			},
 		},
+		VolumeAssignment: &volumesAssignerCfg,
 	})
 	assert.Equal(t, expectedCfg, patchedConfig1)
 

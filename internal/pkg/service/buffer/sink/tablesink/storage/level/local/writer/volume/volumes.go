@@ -6,7 +6,6 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 )
@@ -22,7 +21,7 @@ type Volumes struct {
 func OpenVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, nodeID, volumesPath string, opts ...Option) (out *Volumes, err error) {
 	events := writer.NewEvents()
 	out = &Volumes{events: events}
-	out.collection, err = volume.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec storage.VolumeSpec) (*Volume, error) {
+	out.collection, err = volume.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec volume.Spec) (*Volume, error) {
 		return Open(ctx, logger, clock, events.Clone(), spec, opts...)
 	})
 	if err != nil {

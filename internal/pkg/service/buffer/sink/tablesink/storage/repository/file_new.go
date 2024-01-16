@@ -41,6 +41,7 @@ func newFile(globalCfg storage.Config, resource FileResource, sink definition.Si
 	f.LocalStorage = local.NewFile(cfg.Local, fileDir)
 	f.StagingStorage = staging.NewFile(cfg.Staging, f.LocalStorage, resource.Credentials)
 	f.TargetStorage = target.NewFile(cfg.Target, sink.Table.Mapping.TableID, f.StagingStorage)
+	f.Assignment.Config = cfg.VolumeAssignment
 
 	return f, nil
 }

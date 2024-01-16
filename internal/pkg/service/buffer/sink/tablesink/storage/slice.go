@@ -4,6 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -29,7 +30,7 @@ type Slice struct {
 // FileVolumeKey groups file slices at the same volume.
 type FileVolumeKey struct {
 	FileKey
-	VolumeID VolumeID `json:"volumeId" validate:"required"`
+	VolumeID volume.ID `json:"volumeId" validate:"required"`
 }
 
 type SliceKey struct {
