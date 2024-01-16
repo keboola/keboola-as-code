@@ -29,8 +29,9 @@ type TxnOp[R any] struct {
 	processors []func(ctx context.Context, r *TxnResult[R])
 	ifs        []etcd.Cmp
 	thenOps    []Op
+	thenTxnOps []Op // thenTxnOps are separated from thenOps to avoid confusing between Then and Merge
+	mergeOps   []Op
 	elseOps    []Op
-	andOps     []Op
 }
 
 type lowLevelTxn[R any] struct {
@@ -56,42 +57,50 @@ func TxnWithResult[R any](client etcd.KV, result *R) *TxnOp[R] {
 
 // MergeToTxn merges listed operations into a transaction using And method.
 func MergeToTxn(client etcd.KV, ops ...Op) *TxnOp[NoResult] {
-	return Txn(client).And(ops...)
-}
-
-// Then takes a list of operations.
-// The operations will be executed, if the comparisons passed in If() succeed.
-func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
-	v.thenOps = append(v.thenOps, ops...)
-	return v
+	return Txn(client).Merge(ops...)
 }
 
 func (v *TxnOp[R]) Empty() bool {
-	return len(v.ifs) == 0 && len(v.thenOps) == 0 && len(v.elseOps) == 0 && len(v.andOps) == 0
+	return len(v.ifs) == 0 && len(v.thenOps) == 0 && len(v.thenTxnOps) == 0 && len(v.mergeOps) == 0 && len(v.elseOps) == 0
 }
 
 // If takes a list of comparison.
-// If all comparisons passed in succeed, the operations passed into Then() will be executed,
-// otherwise the operations passed into Else() will be executed.
+// If all comparisons succeed, the Then branch will be executed; otherwise, the Else branch will be executed.
 func (v *TxnOp[R]) If(cs ...etcd.Cmp) *TxnOp[R] {
 	v.ifs = append(v.ifs, cs...)
 	return v
 }
 
+// Then takes a list of operations.
+// The Then operations will be executed if all If comparisons succeed.
+// To add a transaction to the Then branch, use ThenTxn, or use Merge to merge transactions.
+func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
+	v.thenOps = append(v.thenOps, ops...)
+	return v
+}
+
+// ThenTxn adds the transaction to the Then branch.
+// To merge a transaction, use Merge.
+func (v *TxnOp[R]) ThenTxn(ops ...Op) *TxnOp[R] {
+	v.thenTxnOps = append(v.thenTxnOps, ops...)
+	return v
+}
+
 // Else takes a list of operations.
-// The operations list will be executed, if any from comparisons passed in If() fail.
+// The operations in the Else branch will be executed if any of the If comparisons fail.
 func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 	v.elseOps = append(v.elseOps, ops...)
 	return v
 }
 
-// And merges the transaction with one or more other transactions.
-// IF conditions from all transactions are merged and must be fulfilled, to invoke the Then branch,
-// otherwise the Else branch is executed.
-// The processor from all transactions are preserved and executed.
-// For non-transactions operations, the method behaves same as the Then.
-func (v *TxnOp[R]) And(ops ...Op) *TxnOp[R] {
-	v.andOps = append(v.andOps, ops...)
+// Merge merges the transaction with one or more other transactions.
+// If comparisons from all transactions are merged.
+// The processors from all transactions are preserved and executed.
+//
+// For non-transaction operations, the method behaves the same as Then.
+// To add a transaction to the Then branch without merging, use ThenTxn.
+func (v *TxnOp[R]) Merge(ops ...Op) *TxnOp[R] {
+	v.mergeOps = append(v.mergeOps, ops...)
 	return v
 }
 
@@ -155,17 +164,29 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	out.ifs = make([]etcd.Cmp, len(v.ifs))
 	copy(out.ifs, v.ifs)
 
-	// Map THEN operations
+	// Map Then and ThenTxn operations
 	for i, op := range v.thenOps {
 		// Create low-level operation
-		if lowLevel, err := op.Op(ctx); err == nil {
-			out.addThen(lowLevel.Op, lowLevel.MapResponse)
-		} else {
+		if lowLevel, err := op.Op(ctx); err != nil {
 			errs.Append(errors.PrefixErrorf(err, "cannot create operation [then][%d]", i))
+		} else if lowLevel.Op.IsTxn() {
+			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation "%T" is a transaction, use ThenTxn, not Then`, i, lowLevel.Op))
+		} else {
+			out.addThen(lowLevel.Op, lowLevel.MapResponse)
+		}
+	}
+	for i, op := range v.thenTxnOps {
+		// Create low-level operation
+		if lowLevel, err := op.Op(ctx); err != nil {
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [thenTxn][%d]", i))
+		} else if !lowLevel.Op.IsTxn() {
+			errs.Append(errors.Errorf(`cannot create operation [thenTxn][%d]: operation "%T" is not a transaction, use Then, not ThenTxn`, i, lowLevel.Op))
+		} else {
+			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		}
 	}
 
-	// Map ELSE operations
+	// Map Else operations
 	for i, op := range v.elseOps {
 		// Create low-level operation
 		if lowLevel, err := op.Op(ctx); err == nil {
@@ -175,12 +196,12 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		}
 	}
 
-	// Map AND operations, merge transactions
-	for i, op := range v.andOps {
+	// Map Merge operations, merge transaction, otherwise add the operation to the Then branch
+	for i, op := range v.mergeOps {
 		// Create low-level operation
 		lowLevel, err := op.Op(ctx)
 		if err != nil {
-			errs.Append(errors.PrefixErrorf(err, "cannot create operation [and][%d]", i))
+			errs.Append(errors.PrefixErrorf(err, "cannot create operation [merge][%d]", i))
 			continue
 		}
 
