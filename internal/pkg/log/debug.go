@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -140,6 +141,19 @@ func (l *debugLogger) AllMessagesTxt() string {
 	}
 
 	return output
+}
+
+// CompareJSONMessages checks that expected json messages appear in actual in the same order.
+// Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
+// Returns nil if the expectations are met or an error with the first unmatched expected line and all remaining actual lines.
+func (l *debugLogger) CompareJSONMessages(expected string) error {
+	return CompareJSONMessages(expected, l.AllMessages())
+}
+
+// AssertJSONMessages checks that expected json messages appear in actual in the same order.
+// Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
+func (l *debugLogger) AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool {
+	return AssertJSONMessages(t, expected, l.AllMessages(), msgAndArgs)
 }
 
 func (l *debugLogger) allWriters() []*ioutil.AtomicWriter {

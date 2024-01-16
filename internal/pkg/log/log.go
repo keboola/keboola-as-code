@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -37,6 +38,9 @@ type DebugLogger interface {
 	ErrorMessages() string
 
 	AllMessagesTxt() string
+
+	CompareJSONMessages(expected string) error
+	AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool
 }
 
 type contextLogger interface {
