@@ -141,10 +141,6 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	out := &lowLevelTxn[R]{result: v.result, client: v.client, thenOps: make([]etcd.Op, 0), elseOps: make([]etcd.Op, 0)}
 	errs := errors.NewMultiError()
 
-	// Copy processors
-	out.processors = make([]func(ctx context.Context, r *TxnResult[R]), len(v.processors))
-	copy(out.processors, v.processors)
-
 	// Copy IFs
 	out.ifs = make([]etcd.Cmp, len(v.ifs))
 	copy(out.ifs, v.ifs)
@@ -209,6 +205,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		// If the transaction fails, but the reason is not in this sub-transaction.
 
 		// On result, compose and map response that corresponds to the original sub-transaction
+		// Processor from nested transactions must be invoked first.
 		out.processors = append(out.processors, func(ctx context.Context, r *TxnResult[R]) {
 			// Get sub-transaction response
 			var subTxnResponse *etcd.TxnResponse
@@ -241,6 +238,9 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 			}
 		})
 	}
+
+	// Add top-level processors
+	out.processors = append(out.processors, v.processors...)
 
 	if err := errs.ErrorOrNil(); err != nil {
 		return nil, err

@@ -29,12 +29,12 @@ func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client
 	t.Logf(`test case: %s`, tc.Name)
 
 	log.Reset()
-	require.NoError(t, etcdop.Prefix("").DeleteAll(client).Do(ctx).Err())
-	require.NoError(t, etcdhelper.PutAllFromSnapshot(ctx, client, tc.InitialEtcdState))
+	require.NoError(t, etcdop.Prefix("").DeleteAll(client).Do(ctx).Err(), tc.Name)
+	require.NoError(t, etcdhelper.PutAllFromSnapshot(ctx, client, tc.InitialEtcdState), tc.Name)
 
-	assert.Equal(t, tc.ExpectedTxnResult, simplifyTxnResult(txn.Do(ctx)))
+	assert.Equal(t, tc.ExpectedTxnResult, simplifyTxnResult(txn.Do(ctx)), tc.Name)
 	etcdhelper.AssertKVsString(t, client, tc.ExpectedEtcdState)
-	assert.Equal(t, strings.TrimSpace(tc.ExpectedLogs), strings.TrimSpace(log.String()))
+	assert.Equal(t, strings.TrimSpace(tc.ExpectedLogs), strings.TrimSpace(log.String()), tc.Name)
 }
 
 func TestTxnOp_Empty(t *testing.T) {
@@ -377,8 +377,8 @@ func TestTxnOp_And_Simple(t *testing.T) {
 
 	// Check processors
 	assert.Equal(t, strings.TrimSpace(`
-root transaction succeeded
 nested transaction succeeded
+root transaction succeeded
 `), strings.TrimSpace(log.String()))
 }
 
@@ -412,8 +412,12 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 	txn.And(deleteOp)
 	txn.Then(etcdop.Key("key/txn/succeeded").Put(client, "true"))
 	txn.Else(etcdop.Key("key/txn/succeeded").Put(client, "false"))
-	txn.OnResult(func(r *TxnResult[NoResult]) {
-		_, _ = fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
+	txn.AddProcessor(func(ctx context.Context, r *TxnResult[NoResult]) {
+		if err := r.Err(); err != nil {
+			_, _ = fmt.Fprintf(&log, "txn succeeded: error: %s", strings.ReplaceAll(err.Error(), "\n", ";"))
+		} else {
+			_, _ = fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
+		}
 	})
 
 	// Validate low-level representation of the transaction
@@ -473,9 +477,9 @@ false
 >>>>>
 `,
 			ExpectedLogs: `
-txn succeeded: false
 put succeeded: false
 delete succeeded: false
+txn succeeded: error: - key/put already exists;- key/delete not found
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: false,
@@ -499,8 +503,8 @@ false
 >>>>>
 `,
 			ExpectedLogs: `
-txn succeeded: false
 delete succeeded: false
+txn succeeded: error: key/delete not found
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: false,
@@ -548,8 +552,8 @@ false
 >>>>>
 `,
 			ExpectedLogs: `
-txn succeeded: false
 put succeeded: false
+txn succeeded: error: key/put already exists
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: false,
@@ -585,9 +589,9 @@ true
 >>>>>
 `,
 			ExpectedLogs: `
-txn succeeded: true
 put succeeded: true
 delete succeeded: true
+txn succeeded: true
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: true,
@@ -741,13 +745,13 @@ ok
 			ExpectedLogs: `
 txn else put
 txn else get <nil>
-txn succeeded: false
 txn1 else put
 txn1 else get value
 txn1 succeeded: false [{} key:"txn1/else/get" value:"value" ]
 txn2 else put
 txn2 else get <nil>
 txn2 succeeded: false [{} <nil>]
+txn succeeded: false
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: false,
@@ -815,10 +819,10 @@ ok
 			ExpectedLogs: `
 txn else put
 txn else get <nil>
-txn succeeded: false
 txn2 else put
 txn2 else get <nil>
 txn2 succeeded: false [{} <nil>]
+txn succeeded: false
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: false,
@@ -915,13 +919,13 @@ ok
 			ExpectedLogs: `
 txn then put
 txn then get <nil>
-txn succeeded: true
 txn1 then put
 txn1 then get <nil>
 txn1 succeeded: true [{} <nil>]
 txn2 then put
 txn2 then get value
 txn2 succeeded: true [{} key:"txn2/then/get" value:"value" ]
+txn succeeded: true
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: true,
