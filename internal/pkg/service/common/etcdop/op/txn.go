@@ -200,7 +200,10 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 
 		// Merge ELSE operations
 		// The ELSE branch will be applied only if the conditions of the sub-transaction are not met
-		elsePos := out.addElse(etcd.OpTxn(ifs, []etcd.Op{}, elseOps), nil)
+		elsePos := -1
+		if len(elseOps) > 0 || len(ifs) > 0 {
+			elsePos = out.addElse(etcd.OpTxn(ifs, []etcd.Op{}, elseOps), nil)
+		}
 
 		// There may be a situation where neither THEN nor ELSE branch is executed:
 		// If the transaction fails, but the reason is not in this sub-transaction.
@@ -209,20 +212,25 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		out.processors = append(out.processors, func(ctx context.Context, r *TxnResult[R]) {
 			// Get sub-transaction response
 			var subTxnResponse *etcd.TxnResponse
-			if r.succeeded {
+			switch {
+			case r.succeeded:
 				subTxnResponse = &etcd.TxnResponse{
 					// The entire transaction succeeded, which means that a partial transaction succeeded as well
 					Succeeded: true,
 					// Compose responses that corresponds to the original sub-transaction
 					Responses: r.Response().Txn().Responses[thenStart:thenEnd],
 				}
-			} else {
+			case elsePos >= 0:
 				subTxnResponse = (*etcd.TxnResponse)(r.Response().Txn().Responses[elsePos].GetResponseTxn())
 				if subTxnResponse.Succeeded {
-					// Skip mapper bellow, the transaction failed, but not due to a condition in the sub-transaction.
+					// Skip mapper bellow, the transaction failed, but not due to a condition in the sub-transaction
 					r.AddSubResult(NoResult{})
 					return
 				}
+			default:
+				// Skip mapper bellow, the transaction failed, but there is no condition in the sub-transaction
+				r.AddSubResult(NoResult{})
+				return
 			}
 
 			// Call original mapper of the sub transaction
