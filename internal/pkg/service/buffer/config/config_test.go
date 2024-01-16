@@ -74,6 +74,15 @@ sink:
                 # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
                 invalidationInterval: 1s
         storage:
+            volumeAssignment:
+                # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
+                count: 1
+                # List of preferred volume types, start with the most preferred. Validation rules: min=1
+                preferredTypes:
+                    - default
+            volumeRegistration:
+                # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
+                registrationTTL: 10
             local:
                 compression:
                     # Compression type. Validation rules: required,oneof=none gzip zstd
@@ -94,14 +103,6 @@ sink:
                         windowSize: 1MB
                         # ZSTD concurrency, 0 = auto
                         concurrency: 0
-                volumes:
-                    # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
-                    count: 1
-                    # List of preferred volume types, start with the most preferred.
-                    preferredTypes:
-                        - default
-                    # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
-                    registrationTTL: 10
                 diskSync:
                     # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
                     mode: disk
@@ -118,9 +119,9 @@ sink:
                 diskAllocation:
                     # Allocate disk space for each slice.
                     enabled: true
-                    # Size of allocated disk space for a slice.
+                    # Size of allocated disk space for a slice. Validation rules: required
                     size: 100MB
-                    # Allocate disk space as % from the previous slice size. Validation rules: min=0,max=200
+                    # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
                     sizePercent: 110
             staging:
                 # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
