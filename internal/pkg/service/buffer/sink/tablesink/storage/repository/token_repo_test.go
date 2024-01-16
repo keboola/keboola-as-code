@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -10,9 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
-	defRepository "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -23,9 +24,8 @@ func TestRepository_Token(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	now := utctime.MustParse("2000-01-03T01:00:00.000Z").Time()
 	clk := clock.NewMock()
-	clk.Set(now)
+	clk.Set(utctime.MustParse("2000-01-03T01:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -37,19 +37,18 @@ func TestRepository_Token(t *testing.T) {
 	storageToken1 := keboola.Token{Token: "1234"}
 	storageToken2 := keboola.Token{Token: "5678"}
 
-	d := deps.NewMocked(t, deps.WithEnabledEtcdClient(), deps.WithClock(clk))
-	client := d.TestEtcdClient()
-	defRepo := defRepository.New(d)
-	cfg := storage.NewConfig()
-	backoff := storage.NoRandomizationBackoff()
-	r := newWithBackoff(d, defRepo, cfg, backoff).Token()
+	// Get services
+	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), deps.WithClock(clk))
+	client := mocked.TestEtcdClient()
+	defRepo := d.DefinitionRepository()
+	r := d.StorageRepository().Token()
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Get - not found
 		if err := r.Get(sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `token "123/456/my-source/my-sink-1" not found in the sink`, err.Error())
+			assert.Equal(t, `sink token "123/456/my-source/my-sink-1" not found in the database`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -66,13 +65,13 @@ func TestRepository_Token(t *testing.T) {
 	// Create parent branch, source, sinks
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch := branchTemplate(branchKey)
+		branch := test.NewBranch(branchKey)
 		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
-		source := sourceTemplate(sourceKey)
+		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
-		sink1 := sinkTemplate(sinkKey1)
+		sink1 := test.NewSink(sinkKey1)
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
-		sink2 := sinkTemplate(sinkKey2)
+		sink2 := test.NewSink(sinkKey2)
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 	}
 
@@ -130,7 +129,7 @@ func TestRepository_Token(t *testing.T) {
 	{
 		// Get - not found
 		if err := r.Get(sinkKey2).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `token "123/456/my-source/my-sink-2" not found in the sink`, err.Error())
+			assert.Equal(t, `sink token "123/456/my-source/my-sink-2" not found in the database`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -138,7 +137,7 @@ func TestRepository_Token(t *testing.T) {
 	// Delete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := r.Delete(nonExistentSinkKey).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `token "123/456/my-source/non-existent-sink" not found in the sink`, err.Error())
+		assert.Equal(t, `sink token "123/456/my-source/non-existent-sink" not found in the database`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
@@ -154,7 +153,7 @@ func TestRepository_Token(t *testing.T) {
 	{
 		// Get - not found
 		if err := r.Get(sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `token "123/456/my-source/my-sink-1" not found in the sink`, err.Error())
+			assert.Equal(t, `sink token "123/456/my-source/my-sink-1" not found in the database`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}

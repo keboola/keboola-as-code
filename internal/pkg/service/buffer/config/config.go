@@ -24,6 +24,7 @@ type Config struct {
 	DebugHTTPClient bool              `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
 	CPUProfFilePath string            `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
 	NodeID          string            `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
+	StorageAPIHost  string            `configKey:"storageAPIHost" configUsage:"Storage API host." validate:"required,hostname"`
 	Datadog         datadog.Config    `configKey:"datadog"`
 	Etcd            etcdclient.Config `configKey:"etcd"`
 	Metrics         prometheus.Config `configKey:"metrics"`
@@ -43,6 +44,7 @@ func New() Config {
 		DebugHTTPClient: false,
 		CPUProfFilePath: "",
 		NodeID:          "",
+		StorageAPIHost:  "",
 		Datadog:         datadog.NewConfig(),
 		Etcd:            etcdclient.NewConfig(),
 		Metrics:         prometheus.NewConfig(),

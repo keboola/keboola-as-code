@@ -17,6 +17,45 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+func TestVolumeKey_Validation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	val := validator.New()
+
+	// Valid
+	assert.NoError(t, val.Validate(ctx, testFileVolumeKey()))
+
+	// Empty
+	err := val.Validate(ctx, FileVolumeKey{})
+	if assert.Error(t, err) {
+		assert.Equal(t, strings.TrimSpace(`
+- "projectId" is a required field
+- "branchId" is a required field
+- "sourceId" is a required field
+- "sinkId" is a required field
+- "fileOpenedAt" is a required field
+- "volumeId" is a required field
+`), strings.TrimSpace(err.Error()))
+	}
+}
+
+func TestFileVolumeKey_String(t *testing.T) {
+	t.Parallel()
+
+	// Valid
+	assert.Equal(
+		t,
+		"123/456/my-source/my-sink/2006-01-02T15:04:05.000Z/abcdef",
+		testFileVolumeKey().String(),
+	)
+
+	// Empty VolumeID
+	assert.Panics(t, func() {
+		_ = (FileVolumeKey{FileKey: testFileKey(), VolumeID: ""}).String()
+	})
+}
+
 func TestSliceID_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -25,17 +64,13 @@ func TestSliceID_Validation(t *testing.T) {
 
 	// Valid
 	assert.NoError(t, val.Validate(ctx, SliceID{
-		VolumeID: "abcdef",
 		OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}))
 
 	// Empty
 	err := val.Validate(ctx, SliceID{})
 	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`
-- "sliceOpenedAt" is a required field
-- "volumeId" is a required field
-`), strings.TrimSpace(err.Error()))
+		assert.Equal(t, `"sliceOpenedAt" is a required field`, err.Error())
 	}
 }
 
@@ -43,19 +78,13 @@ func TestSliceID_String(t *testing.T) {
 	t.Parallel()
 
 	// Valid
-	assert.Equal(t, "abcdef/2006-01-02T15:04:05.000Z", (SliceID{
-		VolumeID: "abcdef",
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", (SliceID{
 		OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}).String())
 
-	// Empty VolumeID
-	assert.Panics(t, func() {
-		_ = (SliceID{OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z")}).String()
-	})
-
 	// Empty OpenedAt
 	assert.Panics(t, func() {
-		_ = (SliceID{VolumeID: "abcdef"}).String()
+		_ = (SliceID{}).String()
 	})
 }
 
@@ -77,8 +106,8 @@ func TestSliceKey_Validation(t *testing.T) {
 - "sourceId" is a required field
 - "sinkId" is a required field
 - "fileOpenedAt" is a required field
-- "sliceOpenedAt" is a required field
 - "volumeId" is a required field
+- "sliceOpenedAt" is a required field
 `), strings.TrimSpace(err.Error()))
 	}
 }
@@ -95,13 +124,15 @@ func TestSliceKey_OpenedAt(t *testing.T) {
 	fileOpenedAt := utctime.MustParse("2006-01-02T15:04:05.000Z")
 	sliceOpenedAt := utctime.MustParse("2006-01-02T16:04:05.000Z")
 	k := SliceKey{
-		FileKey: FileKey{
-			FileID: FileID{
-				OpenedAt: fileOpenedAt,
+		FileVolumeKey: FileVolumeKey{
+			FileKey: FileKey{
+				FileID: FileID{
+					OpenedAt: fileOpenedAt,
+				},
 			},
+			VolumeID: "abcdef",
 		},
 		SliceID: SliceID{
-			VolumeID: "abcdef",
 			OpenedAt: sliceOpenedAt,
 		},
 	}
@@ -138,8 +169,8 @@ func TestSlice_Validation(t *testing.T) {
 - "sourceId" is a required field
 - "sinkId" is a required field
 - "fileOpenedAt" is a required field
-- "sliceOpenedAt" is a required field
 - "volumeId" is a required field
+- "sliceOpenedAt" is a required field
 - "type" is a required field
 - "state" is a required field
 - "columns" is a required field
@@ -255,33 +286,37 @@ func TestSlice_Validation(t *testing.T) {
 		err := val.Validate(ctx, tc.Value)
 		if tc.ExpectedError == "" {
 			assert.NoError(t, err, tc.Name)
-		} else {
-			if assert.Error(t, err, tc.Name) {
-				assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
-			}
+		} else if assert.Error(t, err, tc.Name) {
+			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
 		}
 	}
 }
 
+func testFileVolumeKey() FileVolumeKey {
+	return FileVolumeKey{FileKey: testFileKey(), VolumeID: "abcdef"}
+}
+
 func testSliceKey() SliceKey {
 	return SliceKey{
-		FileKey: FileKey{
-			SinkKey: key.SinkKey{
-				SourceKey: key.SourceKey{
-					BranchKey: key.BranchKey{
-						ProjectID: 123,
-						BranchID:  456,
+		FileVolumeKey: FileVolumeKey{
+			FileKey: FileKey{
+				SinkKey: key.SinkKey{
+					SourceKey: key.SourceKey{
+						BranchKey: key.BranchKey{
+							ProjectID: 123,
+							BranchID:  456,
+						},
+						SourceID: "my-source",
 					},
-					SourceID: "my-source",
+					SinkID: "my-sink",
 				},
-				SinkID: "my-sink",
+				FileID: FileID{
+					OpenedAt: utctime.MustParse("2006-01-02T10:04:05.000Z"),
+				},
 			},
-			FileID: FileID{
-				OpenedAt: utctime.MustParse("2006-01-02T10:04:05.000Z"),
-			},
+			VolumeID: "abcdef",
 		},
 		SliceID: SliceID{
-			VolumeID: "abcdef",
 			OpenedAt: utctime.MustParse("2006-01-02T20:04:05.000Z"),
 		},
 	}

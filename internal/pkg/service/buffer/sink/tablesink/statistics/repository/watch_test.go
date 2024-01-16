@@ -7,10 +7,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
@@ -21,8 +21,8 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
-	repo := repository.New(d)
+	d, _ := dependencies.NewMockedTableSinkScope(t, config.New())
+	repo := d.StatisticsRepository()
 
 	// Add 2 records
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
@@ -31,6 +31,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				RecordsCount:     1,
@@ -41,6 +42,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 		{
 			SliceKey: sliceKey2,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				RecordsCount:     10,
@@ -56,6 +58,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []statistics.Value{
 		{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -63,6 +66,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 			CompressedSize:   1,
 		},
 		{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -77,6 +81,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 		{
 			SliceKey: sliceKey3,
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 				RecordsCount:     100,
@@ -97,6 +102,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []statistics.Value{
 		{
+			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,

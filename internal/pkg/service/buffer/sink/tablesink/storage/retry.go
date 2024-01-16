@@ -25,7 +25,7 @@ type RetryBackoff interface {
 	RetryAt(failedAt time.Time, attempt int) (retryAt time.Time)
 }
 
-// retryBackoff implements RetryBackoff
+// retryBackoff implements RetryBackoff.
 type retryBackoff struct {
 	*backoff.ExponentialBackOff
 }
@@ -69,7 +69,7 @@ func (b *retryBackoff) RetryAt(failedAt time.Time, attempt int) (retryAt time.Ti
 		),
 	)
 
-	random := rand.New(rand.NewSource(failedAt.UnixNano()))
+	random := rand.New(rand.NewSource(failedAt.UnixNano()))                              //nolint:gosec // week random generator is ok here
 	randomFactor := 1 - b.RandomizationFactor + random.Float64()*2*b.RandomizationFactor // 1 ± RandomizationFactor
 
 	return failedAt.Add(time.Duration(float64(interval) * randomFactor))

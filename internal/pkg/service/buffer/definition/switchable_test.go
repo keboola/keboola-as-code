@@ -11,9 +11,7 @@ import (
 func TestSwitchable(t *testing.T) {
 	t.Parallel()
 
-	var v SwitchableInterface
-
-	v = &Switchable{}
+	var v SwitchableInterface = &Switchable{}
 	assert.True(t, v.IsEnabled())
 
 	now := utctime.MustParse("2006-01-02T15:04:05.000Z")

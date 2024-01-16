@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func CheckVolumeDir(path string) error {
+func checkVolumeDir(path string) error {
 	info, err := os.Stat(path)
 	// Path must exist
 	if err != nil {

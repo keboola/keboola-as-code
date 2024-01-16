@@ -12,9 +12,7 @@ import (
 type projectRequestScope struct {
 	PublicRequestScope
 	dependencies.ProjectScope
-	logger       log.Logger
-	tokenManager *token.Manager
-	tableManager *table.Manager
+	logger log.Logger
 }
 
 func NewProjectRequestScope(ctx context.Context, pubReqScp PublicRequestScope, tokenStr string) (v ProjectRequestScope, err error) {
@@ -39,21 +37,9 @@ func newProjectRequestScope(pubReqScp PublicRequestScope, prjScp dependencies.Pr
 	loggerPrefix := fmt.Sprintf("[project=%d][token=%s]", d.ProjectID(), d.StorageAPITokenID())
 	d.logger = pubReqScp.Logger().AddPrefix(loggerPrefix)
 
-	d.tokenManager = token.NewManager(d)
-
-	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
-
 	return d
 }
 
 func (v *projectRequestScope) Logger() log.Logger {
 	return v.logger
-}
-
-func (v *projectRequestScope) TokenManager() *token.Manager {
-	return v.tokenManager
-}
-
-func (v *projectRequestScope) TableManager() *table.Manager {
-	return v.tableManager
 }

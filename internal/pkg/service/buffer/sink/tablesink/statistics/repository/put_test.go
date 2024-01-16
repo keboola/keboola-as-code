@@ -7,10 +7,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -21,8 +21,8 @@ func TestRepository_Put(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
-	repo := repository.New(d)
+	d, _ := dependencies.NewMockedTableSinkScope(t, config.New())
+	repo := d.StatisticsRepository()
 
 	// Empty
 	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{}))
@@ -33,6 +33,7 @@ func TestRepository_Put(t *testing.T) {
 		{
 			SliceKey: test.NewSliceKeyOpenedAt("2000-01-20T00:00:00.000Z"),
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    utctime.MustParse("2000-01-20T00:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
 				RecordsCount:     1,
@@ -46,6 +47,7 @@ func TestRepository_Put(t *testing.T) {
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-20T00:00:00.000Z/value
 -----
 {
+  "slicesCount": 1,
   "firstRecordAt": "2000-01-20T00:00:00.000Z",
   "lastRecordAt": "2000-01-21T00:00:00.000Z",
   "recordsCount": 1,
@@ -63,6 +65,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 		records = append(records, statistics.PerSlice{
 			SliceKey: test.NewSliceKeyOpenedAt(openedAt.String()),
 			Value: statistics.Value{
+				SlicesCount:      1,
 				FirstRecordAt:    openedAt,
 				LastRecordAt:     openedAt.Add(time.Hour),
 				RecordsCount:     1,

@@ -26,8 +26,9 @@ func TestFile_Validation(t *testing.T) {
 				Dir:         "my-dir",
 				Compression: compression.DefaultConfig(),
 				DiskSync:    disksync.DefaultConfig(),
-				VolumesAssignment: VolumesAssignment{
-					PerPod: 1,
+				Volumes: VolumesConfig{
+					Count:                  1,
+					RegistrationTTLSeconds: 10,
 				},
 			},
 		},
@@ -38,14 +39,18 @@ func TestFile_Validation(t *testing.T) {
 				Dir:         "",
 				Compression: compression.DefaultConfig(),
 				DiskSync:    disksync.DefaultConfig(),
-				VolumesAssignment: VolumesAssignment{
-					PerPod: 1,
+				Volumes: VolumesConfig{
+					Count:                  1,
+					RegistrationTTLSeconds: 10,
 				},
 			},
 		},
 		{
-			Name:          "zero volumes per pod",
-			ExpectedError: `"volumesAssignment.perPod" is a required field`,
+			Name: "empty volumes config",
+			ExpectedError: `
+- "volumes.count" is a required field
+- "volumes.registrationTTL" is a required field
+`,
 			Value: File{
 				Dir:         "my-dir",
 				Compression: compression.DefaultConfig(),
@@ -61,10 +66,8 @@ func TestFile_Validation(t *testing.T) {
 		err := val.Validate(ctx, tc.Value)
 		if tc.ExpectedError == "" {
 			assert.NoError(t, err, tc.Name)
-		} else {
-			if assert.Error(t, err, tc.Name) {
-				assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
-			}
+		} else if assert.Error(t, err, tc.Name) {
+			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
 		}
 	}
 }

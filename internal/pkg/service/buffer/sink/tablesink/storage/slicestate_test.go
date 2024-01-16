@@ -20,44 +20,50 @@ func TestSlice_StateTransition(t *testing.T) {
 
 	// Create file entity
 	sliceKey := testSliceKey()
-	f := Slice{
+
+	var err error
+	slice := Slice{
 		SliceKey: sliceKey,
 		State:    SliceWriting,
 	}
 
 	// SliceClosing
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), SliceClosing))
+	slice, err = slice.WithState(clk.Now(), SliceClosing)
+	require.NoError(t, err)
 	assert.Equal(t, Slice{
 		SliceKey:  sliceKey,
 		State:     SliceClosing,
 		ClosingAt: ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
-	}, f)
+	}, slice)
 
 	// SliceUploading
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), SliceUploading))
+	slice, err = slice.WithState(clk.Now(), SliceUploading)
+	require.NoError(t, err)
 	assert.Equal(t, Slice{
 		SliceKey:    sliceKey,
 		State:       SliceUploading,
 		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
 		UploadingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
-	}, f)
+	}, slice)
 
 	// SliceUploaded
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), SliceUploaded))
+	slice, err = slice.WithState(clk.Now(), SliceUploaded)
+	require.NoError(t, err)
 	assert.Equal(t, Slice{
 		SliceKey:    sliceKey,
 		State:       SliceUploaded,
 		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
 		UploadingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
 		UploadedAt:  ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
-	}, f)
+	}, slice)
 
 	// SliceImported
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), SliceImported))
+	slice, err = slice.WithState(clk.Now(), SliceImported)
+	require.NoError(t, err)
 	assert.Equal(t, Slice{
 		SliceKey:    sliceKey,
 		State:       SliceImported,
@@ -65,10 +71,10 @@ func TestSlice_StateTransition(t *testing.T) {
 		UploadingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
 		UploadedAt:  ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
 		ImportedAt:  ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")),
-	}, f)
+	}, slice)
 
 	// Invalid
-	if err := f.StateTransition(clk.Now(), SliceUploaded); assert.Error(t, err) {
+	if _, err = slice.WithState(clk.Now(), SliceUploaded); assert.Error(t, err) {
 		wildcards.Assert(t, `unexpected slice "%s" state transition from "imported" to "uploaded"`, err.Error())
 	}
 }

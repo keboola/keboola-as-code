@@ -20,43 +20,48 @@ func TestFile_StateTransition(t *testing.T) {
 
 	// Create file entity
 	fileKey := testFileKey()
-	f := File{
+
+	var err error
+	file := File{
 		FileKey: fileKey,
 		State:   FileWriting,
 	}
 
 	// FileClosing
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), FileClosing))
+	file, err = file.WithState(clk.Now(), FileClosing)
+	require.NoError(t, err)
 	assert.Equal(t, File{
 		FileKey:   fileKey,
 		State:     FileClosing,
 		ClosingAt: ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
-	}, f)
+	}, file)
 
 	// FileImporting
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), FileImporting))
+	file, err = file.WithState(clk.Now(), FileImporting)
+	require.NoError(t, err)
 	assert.Equal(t, File{
 		FileKey:     fileKey,
 		State:       FileImporting,
 		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
 		ImportingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
-	}, f)
+	}, file)
 
 	// FileImported
 	clk.Add(time.Hour)
-	require.NoError(t, f.StateTransition(clk.Now(), FileImported))
+	file, err = file.WithState(clk.Now(), FileImported)
+	require.NoError(t, err)
 	assert.Equal(t, File{
 		FileKey:     fileKey,
 		State:       FileImported,
 		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
 		ImportingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
 		ImportedAt:  ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
-	}, f)
+	}, file)
 
 	// Invalid
-	if err := f.StateTransition(clk.Now(), FileImporting); assert.Error(t, err) {
+	if _, err = file.WithState(clk.Now(), FileImporting); assert.Error(t, err) {
 		wildcards.Assert(t, `unexpected file "%s" state transition from "imported" to "importing"`, err.Error())
 	}
 }
