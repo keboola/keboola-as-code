@@ -124,7 +124,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Wait for failed upload
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"warn","message":"task failed %A"}`, workerMock.DebugLogger().WarnMessages()) == nil
+		return log.CompareJSONMessages(`{"level":"warn","message":"task failed %A"}`, workerMock.DebugLogger().AllMessages()) == nil
 	}, 30*time.Second, 100*time.Millisecond)
 	workerMock.DebugLogger().Truncate()
 
@@ -135,7 +135,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Wait for retry
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"warn","message":"task failed %A"}`, workerMock.DebugLogger().WarnMessages()) == nil
+		return log.CompareJSONMessages(`{"level":"warn","message":"task failed %A"}`, workerMock.DebugLogger().AllMessages()) == nil
 	}, 30*time.Second, 100*time.Millisecond)
 
 	// Shutdown
@@ -151,7 +151,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	log.AssertJSONMessages(t, `
 {"level":"info","message":"assigned \"123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check\"","component":"orchestrator","task":"slice.retry.check"}
 {"level":"info","message":"stopped","component":"orchestrator","task":"slice.retry.check"}
-`, workerMock.DebugLogger().InfoMessages())
+`, workerMock.DebugLogger().AllMessages())
 
 	// Retry check task
 	log.AssertJSONMessages(t, `
@@ -164,7 +164,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Retried upload
 	log.AssertJSONMessages(t, `
 {"level":"warn","message":"task failed (%s): slice upload failed: %A some network error, upload will be retried after \"0001-01-01T00:%s\" %A","component":"task","task":"%s/slice.upload/%s"}
-`, workerMock.DebugLogger().WarnMessages())
+`, workerMock.DebugLogger().AllMessages())
 
 	// Check etcd state
 	assertStateAfterRetry(t, client)
