@@ -1,14 +1,14 @@
 package volume
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/factory"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type config struct {
 	// allocator allocates a free disk space for a file.
-	allocator allocate.Allocator
+	allocator diskalloc.Allocator
 	// writerFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
 	writerFactory factory.Factory
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
@@ -24,7 +24,7 @@ type Option func(config *config)
 
 func newConfig(opts []Option) config {
 	cfg := config{
-		allocator:      allocate.DefaultAllocator{},
+		allocator:      diskalloc.DefaultAllocator{},
 		writerFactory:  factory.Default,
 		fileOpener:     DefaultFileOpener,
 		watchDrainFile: true,
@@ -37,7 +37,7 @@ func newConfig(opts []Option) config {
 	return cfg
 }
 
-func WithAllocator(v allocate.Allocator) Option {
+func WithAllocator(v diskalloc.Allocator) Option {
 	return func(c *config) {
 		if v == nil {
 			panic(errors.New(`value must not be nil`))

@@ -1,4 +1,4 @@
-package allocate
+package diskalloc
 
 import "github.com/c2h5oh/datasize"
 

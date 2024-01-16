@@ -1,4 +1,4 @@
-// Package allocate provides allocation of a free disk space for a file.
+// Package diskalloc provides allocation of a free disk space for a file.
 // Allocation is realized using the UNIX syscall "fallocate" (POSIX syscall "fallocate" doesn't support FALLOC_FL_KEEP_SIZE).
 //
 // On systems other than Unix, this is implemented as no operation.
@@ -9,7 +9,7 @@
 // Even with SSD disks, this approach can bring some speed improvements, depending on the disk driver.
 // Reading a continuous block during upload should be faster.
 // Zero copy "sendfile" syscall is used for upload, so the data flows directly from the disk to the network.
-package allocate
+package diskalloc
 
 import (
 	"github.com/c2h5oh/datasize"

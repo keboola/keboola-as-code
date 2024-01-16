@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/allocate"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -27,7 +27,7 @@ func TestFile_Validation(t *testing.T) {
 				Dir:            "my-dir",
 				Compression:    compression.NewConfig(),
 				DiskSync:       disksync.NewConfig(),
-				DiskAllocation: allocate.NewConfig(),
+				DiskAllocation: diskalloc.NewConfig(),
 			},
 		},
 		{
@@ -37,7 +37,7 @@ func TestFile_Validation(t *testing.T) {
 				Dir:            "",
 				Compression:    compression.NewConfig(),
 				DiskSync:       disksync.NewConfig(),
-				DiskAllocation: allocate.NewConfig(),
+				DiskAllocation: diskalloc.NewConfig(),
 			},
 		},
 	}

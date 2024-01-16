@@ -1,4 +1,4 @@
-package allocate
+package diskalloc
 
 import (
 	"testing"
