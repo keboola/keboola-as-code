@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
@@ -21,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -35,7 +35,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 	ctx := context.Background()
 
 	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-03T01:00:00.000Z").Time())
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -44,19 +44,12 @@ func TestSliceRepository_Operations(t *testing.T) {
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
 	sinkKey3 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-3"}
-	volumeID := volume.ID("my-volume")
-	clk.Add(time.Hour)
-	fileKey1 := storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
-	clk.Add(time.Hour)
-	fileKey2 := storage.FileKey{SinkKey: sinkKey2, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
-	clk.Add(time.Hour)
-	fileKey3 := storage.FileKey{SinkKey: sinkKey3, FileID: storage.FileID{OpenedAt: utctime.From(clk.Now())}}
 	nonExistentSliceKey := storage.SliceKey{
 		FileVolumeKey: storage.FileVolumeKey{
-			FileKey:  storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.MustParse("2000-01-02T01:00:00.000Z")}},
-			VolumeID: volumeID,
+			FileKey:  storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.MustParse("2000-01-01T01:02:03.000Z")}},
+			VolumeID: "my-volume",
 		},
-		SliceID: storage.SliceID{OpenedAt: utctime.MustParse("2000-01-02T02:00:00.000Z")},
+		SliceID: storage.SliceID{OpenedAt: utctime.MustParse("2000-01-01T01:02:03.000Z")},
 	}
 
 	// Get services
@@ -68,10 +61,20 @@ func TestSliceRepository_Operations(t *testing.T) {
 	fileRepo := storageRepo.File()
 	sliceRepo := storageRepo.Slice()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -87,7 +90,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 	{
 		// Get - not found
 		if err := sliceRepo.Get(nonExistentSliceKey).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-01T01:02:03.000Z/my-volume/2000-01-01T01:02:03.000Z" not found in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -96,11 +99,11 @@ func TestSliceRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		fileKey := test.NewFileKey()
-		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey, VolumeID: volumeID}
+		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey, VolumeID: "my-volume"}
 		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, strings.TrimSpace(`
 - sink "123/456/my-source/my-sink" not found in the source
-- file "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z" not found in the sink
+- file "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" not found in the sink
 `), err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -108,6 +111,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 
 	// Create parent branch, source, sink, tokens and files
 	// -----------------------------------------------------------------------------------------------------------------
+	var fileKey1, fileKey2, fileKey3 storage.FileKey
 	{
 		branch := test.NewBranch(branchKey)
 		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
@@ -123,71 +127,48 @@ func TestSliceRepository_Operations(t *testing.T) {
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink3.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 
-		file1, err := fileRepo.Rotate(rb, fileKey1.OpenedAt().Time(), sink1.SinkKey).Do(ctx).ResultOrErr()
+		file1, err := fileRepo.Rotate(rb, clk.Now(), sink1.SinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey1 = file1.FileKey
 
-		file2, err := fileRepo.Rotate(rb, fileKey2.OpenedAt().Time(), sink2.SinkKey).Do(ctx).ResultOrErr()
+		file2, err := fileRepo.Rotate(rb, clk.Now(), sink2.SinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey2 = file2.FileKey
 
-		file3, err := fileRepo.Rotate(rb, fileKey3.OpenedAt().Time(), sink3.SinkKey).Do(ctx).ResultOrErr()
+		file3, err := fileRepo.Rotate(rb, clk.Now(), sink3.SinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey3 = file3.FileKey
 	}
 
-	// Create - parent file doesn't exists
+	// Check slices created by the FileRepository.Rotate
 	// -----------------------------------------------------------------------------------------------------------------
+	var sliceKey1, sliceKey2, sliceKey3 storage.SliceKey
 	{
-		fileKey := test.NewFileKey()
-		fileKey.SinkKey = sinkKey1
-		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey, VolumeID: volumeID}
-		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z" not found in the sink`, err.Error())
-			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
-		}
-	}
-
-	// Create - parent file is not in storage.FileWriting state
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey3).Do(ctx).Err())
-
-		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey3, VolumeID: volumeID}
-		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice cannot be created: unexpected file "123/456/my-source/my-sink-3/2000-01-03T04:00:00.000Z" state "closing", expected "writing"`, err.Error())
-			serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
-		}
-	}
-
-	// Create (the first Rotate)
-	// See TestRepository_Slice_Rotate for more rotation tests.
-	// -----------------------------------------------------------------------------------------------------------------
-	var sliceKey1, sliceKey2 storage.SliceKey
-	{
-		// Create 2 slices in different files
-		fileVolumeKey1 := storage.FileVolumeKey{FileKey: fileKey1, VolumeID: volumeID}
-		slice1, err := sliceRepo.Rotate(clk.Now(), fileVolumeKey1).Do(ctx).ResultOrErr()
+		slices, err := sliceRepo.List(sourceKey).Do(ctx).All()
 		require.NoError(t, err)
-		sliceKey1 = slice1.SliceKey
-
-		fileVolumeKey2 := storage.FileVolumeKey{FileKey: fileKey2, VolumeID: volumeID}
-		slice2, err := sliceRepo.Rotate(clk.Now(), fileVolumeKey2).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		sliceKey2 = slice2.SliceKey
+		require.Len(t, slices, 3)
+		sliceKey1 = slices[0].SliceKey
+		sliceKey2 = slices[1].SliceKey
+		sliceKey3 = slices[2].SliceKey
 	}
 	{
 		// List
 		slices, err := sliceRepo.List(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
-		assert.Len(t, slices, 2)
+		assert.Len(t, slices, 3)
 		slices, err = sliceRepo.List(branchKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
-		assert.Len(t, slices, 2)
+		assert.Len(t, slices, 3)
 		slices, err = sliceRepo.List(sourceKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
-		assert.Len(t, slices, 2)
+		assert.Len(t, slices, 3)
 		slices, err = sliceRepo.List(sinkKey1).Do(ctx).AllKVs()
+		assert.NoError(t, err)
+		assert.Len(t, slices, 1)
+		slices, err = sliceRepo.List(sinkKey2).Do(ctx).AllKVs()
+		assert.NoError(t, err)
+		assert.Len(t, slices, 1)
+		slices, err = sliceRepo.List(sinkKey3).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
 		slices, err = sliceRepo.List(fileKey1).Do(ctx).AllKVs()
@@ -196,23 +177,52 @@ func TestSliceRepository_Operations(t *testing.T) {
 		slices, err = sliceRepo.List(fileKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
+		slices, err = sliceRepo.List(fileKey3).Do(ctx).AllKVs()
+		assert.NoError(t, err)
+		assert.Len(t, slices, 1)
 	}
 	{
 		// Get
 		result1, err := sliceRepo.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), result1.OpenedAt().Time())
+		assert.Equal(t, "2000-01-01T01:00:00.000Z", result1.OpenedAt().String())
 		result2, err := sliceRepo.Get(sliceKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), result2.OpenedAt().Time())
+		assert.Equal(t, "2000-01-01T01:00:00.000Z", result2.OpenedAt().String())
+		result3, err := sliceRepo.Get(sliceKey3).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, "2000-01-01T01:00:00.000Z", result3.OpenedAt().String())
 	}
 
-	// Create - already exists
+	// Rotate - parent file doesn't exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey2, VolumeID: volumeID}
+		fileKey := storage.FileKey{SinkKey: sinkKey1, FileID: storage.FileID{OpenedAt: utctime.MustParse("2000-01-01T04:05:06.000Z")}}
+		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey, VolumeID: "my-volume"}
 		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink-2/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" already exists in the file`, err.Error())
+			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T04:05:06.000Z" not found in the sink`, err.Error())
+			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
+		}
+	}
+
+	// Rotate - parent file is not in storage.FileWriting state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey3).Do(ctx).Err())
+
+		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey3, VolumeID: sliceKey3.VolumeID}
+		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `slice cannot be created: unexpected file "123/456/my-source/my-sink-3/2000-01-01T01:00:00.000Z" state "closing", expected "writing"`, err.Error())
+			serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
+		}
+	}
+
+	// Rotate - already exists
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		fileVolumeKey := storage.FileVolumeKey{FileKey: fileKey2, VolumeID: sliceKey2.VolumeID}
+		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `slice "123/456/my-source/my-sink-2/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" already exists in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
@@ -223,7 +233,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 		clk.Add(time.Hour)
 		err := sliceRepo.IncrementRetry(clk.Now(), nonExistentSliceKey, "some error").Do(ctx).Err()
 		if assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-01T01:02:03.000Z/my-volume/2000-01-01T01:02:03.000Z" not found in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -235,8 +245,8 @@ func TestSliceRepository_Operations(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, result.RetryAttempt)
 		assert.Equal(t, "some error", result.RetryReason)
-		assert.Equal(t, "2000-01-03T05:00:00.000Z", result.LastFailedAt.String())
-		assert.Equal(t, "2000-01-03T05:02:00.000Z", result.RetryAfter.String())
+		assert.Equal(t, "2000-01-01T02:00:00.000Z", result.LastFailedAt.String())
+		assert.Equal(t, "2000-01-01T02:02:00.000Z", result.RetryAfter.String())
 
 		slice1, err := sliceRepo.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
@@ -252,14 +262,14 @@ func TestSliceRepository_Operations(t *testing.T) {
 	// Switch slice state - already in the state
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sliceRepo.StateTransition(clk.Now(), sliceKey1, storage.SliceUploaded, storage.SliceUploaded).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state transition from "uploaded" to "uploaded"`, err.Error())
+		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state transition from "uploaded" to "uploaded"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
 	// Switch slice state - unexpected transition (1)
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sliceRepo.StateTransition(clk.Now(), sliceKey1, storage.SliceUploaded, storage.SliceUploading).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state transition from "uploaded" to "uploading"`, err.Error())
+		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state transition from "uploaded" to "uploading"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
@@ -267,7 +277,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sliceRepo.StateTransition(clk.Now(), sliceKey1, storage.SliceUploaded, storage.SliceImported).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
-unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" state:
+unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state:
 - unexpected combination: file state "writing" and slice state "imported"
 `), err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
@@ -287,7 +297,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume
 	{
 		// Get - not found
 		if err := sliceRepo.Get(sliceKey2).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `slice "123/456/my-source/my-sink-2/2000-01-03T03:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z" not found in the file`, err.Error())
+			assert.Equal(t, `slice "123/456/my-source/my-sink-2/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" not found in the file`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -301,7 +311,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume
 	// Delete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sliceRepo.Delete(nonExistentSliceKey).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-02T01:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z" not found in the file`, err.Error())
+		assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-01T01:02:03.000Z/my-volume/2000-01-01T01:02:03.000Z" not found in the file`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
@@ -309,22 +319,22 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/slice/all/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z
+storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-03T02:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-03T04:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "imported",
-  "closingAt": "2000-01-03T06:00:00.000Z",
-  "uploadingAt": "2000-01-03T07:00:00.000Z",
-  "uploadedAt": "2000-01-03T08:00:00.000Z",
-  "importedAt": "2000-01-03T11:00:00.000Z",
+  "closingAt": "2000-01-01T03:00:00.000Z",
+  "uploadingAt": "2000-01-01T04:00:00.000Z",
+  "uploadedAt": "2000-01-01T05:00:00.000Z",
+  "importedAt": "2000-01-01T08:00:00.000Z",
   "columns": [
     {
       "type": "datetime",
@@ -336,7 +346,7 @@ storage/slice/all/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume
     }
   ],
   "local": {
-    "dir": "123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/2000-01-03T04:00:00.000Z",
+    "dir": "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z",
     "filename": "slice.csv.gz",
     "compression": {
       "type": "gzip",
@@ -358,7 +368,7 @@ storage/slice/all/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume
     "allocatedDiskSpace": "100MB"
   },
   "staging": {
-    "path": "2000-01-03T04:00:00.000Z_my-volume.gz",
+    "path": "2000-01-01T01:00:00.000Z_my-volume-1.gz",
     "compression": {
       "type": "gzip",
       "gzip": {
@@ -373,22 +383,62 @@ storage/slice/all/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-03T02:00:00.000Z/my-volume/2000-01-03T04:00:00.000Z
+storage/slice/all/123/456/my-source/my-sink-3/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-3",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T01:00:00.000Z",
+  %A
+}
+>>>>>
+
+<<<<<
+storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-03T02:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-03T04:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "imported",
+  "closingAt": "2000-01-01T03:00:00.000Z",
+  "uploadingAt": "2000-01-01T04:00:00.000Z",
+  "uploadedAt": "2000-01-01T05:00:00.000Z",
+  "importedAt": "2000-01-01T08:00:00.000Z",
 %A
 }
 >>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/secret/token/"))
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink-3/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-3",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "closingAt": "2000-01-01T01:00:00.000Z",
+%A
+}
+>>>>>
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/secret/token/|storage/volume/"))
 }
 
 func TestSliceRepository_Rotate(t *testing.T) {
@@ -397,14 +447,13 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	ctx := context.Background()
 
 	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T19:00:00.000Z").Time())
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
-	volumeID := volume.ID("my-volume")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
@@ -416,14 +465,25 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	fileFacade := storageRepo.File()
 	sliceFacade := storageRepo.Slice()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
 
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
 	// Create parent branch, source, sink, token and file
 	// -----------------------------------------------------------------------------------------------------------------
 	var file storage.File
+	var fileVolumeKey storage.FileVolumeKey
 	{
 		var err error
 		branch := test.NewBranch(branchKey)
@@ -435,17 +495,13 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		file, err = fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-	}
-
-	// Create (the first Rotate)
-	// -----------------------------------------------------------------------------------------------------------------
-	fileVolumeKey := storage.FileVolumeKey{FileKey: file.FileKey, VolumeID: volumeID}
-	{
-		clk.Add(time.Hour)
-		slice1, err := sliceFacade.Rotate(clk.Now(), fileVolumeKey).Do(ctx).ResultOrErr()
+		slices, err := sliceFacade.List(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), slice1.OpenedAt().Time())
-		assert.Equal(t, 100*datasize.MB, slice1.LocalStorage.AllocatedDiskSpace)
+		require.Len(t, slices, 1)
+		slice := slices[0]
+		assert.Equal(t, clk.Now(), slice.OpenedAt().Time())
+		assert.Equal(t, 100*datasize.MB, slice.LocalStorage.AllocatedDiskSpace)
+		fileVolumeKey = slice.FileVolumeKey
 	}
 
 	// Rotate (2)
@@ -525,18 +581,19 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-01T20:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "closing",
+  "closingAt": "2000-01-01T02:00:00.000Z",
   %A
   "local": {
     %A
@@ -547,18 +604,19 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/m
 >>>>>
 
 <<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T21:00:00.000Z
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-01T21:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T02:00:00.000Z",
   "type": "csv",
   "state": "closing",
+  "closingAt": "2000-01-01T03:00:00.000Z",
   %A
   "local": {
     %A
@@ -569,21 +627,21 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/m
 >>>>>
 
 <<<<<
-storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T22:00:00.000Z
+storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-01T22:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T03:00:00.000Z",
   "type": "csv",
   "state": "uploaded",
-  "closingAt": "2000-01-01T23:00:00.000Z",
-  "uploadingAt": "2000-01-02T00:00:00.000Z",
-  "uploadedAt": "2000-01-02T01:00:00.000Z",
+  "closingAt": "2000-01-01T04:00:00.000Z",
+  "uploadingAt": "2000-01-01T05:00:00.000Z",
+  "uploadedAt": "2000-01-01T06:00:00.000Z",
   %A
   "local": {
     %A
@@ -594,19 +652,19 @@ storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
 >>>>>
 
 <<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T23:00:00.000Z
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T04:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-01T23:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T04:00:00.000Z",
   "type": "csv",
   "state": "closing",
-  "closingAt": "2000-01-02T02:00:00.000Z",
+  "closingAt": "2000-01-01T07:00:00.000Z",
   %A
   "local": {
     %A
@@ -617,16 +675,16 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/m
 >>>>>
 
 <<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-02T02:00:00.000Z
+storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T07:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-02T02:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T07:00:00.000Z",
   "type": "csv",
   "state": "writing",
   %A
@@ -637,7 +695,7 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/m
   %A
 }
 >>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/"))
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
 }
 
 func TestSliceRepository_StateTransition(t *testing.T) {
@@ -646,14 +704,13 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	ctx := context.Background()
 
 	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T19:00:00.000Z").Time())
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
-	volumeID := volume.ID("my-volume")
 
 	// Get services
 	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
@@ -665,14 +722,25 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	fileRepo := storageRepo.File()
 	sliceRepo := storageRepo.Slice()
 	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
 
-	// Create parent branch, source, sink and file
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create parent branch, source, sink, file and slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var file storage.File
+	var slice storage.Slice
 	{
 		var err error
 		branch := test.NewBranch(branchKey)
@@ -684,18 +752,10 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-	}
-
-	// Create (the first Rotate)
-	// -----------------------------------------------------------------------------------------------------------------
-	var slice storage.Slice
-	fileVolumeKey := storage.FileVolumeKey{FileKey: file.FileKey, VolumeID: volumeID}
-	{
-		var err error
-		clk.Add(time.Hour)
-		slice, err = sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).ResultOrErr()
+		slices, err := sliceRepo.List(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), slice.OpenedAt().Time())
+		require.Len(t, slices, 1)
+		slice = slices[0]
 	}
 
 	// Put slice statistics value - it should be moved with the slice state transitions
@@ -727,7 +787,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.Close(clk.Now(), fileVolumeKey).Do(ctx).Err())
+		require.NoError(t, sliceRepo.Close(clk.Now(), slice.FileVolumeKey).Do(ctx).Err())
 	}
 
 	// Switch slice to the storage.SliceUploading state
@@ -769,57 +829,57 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z
+storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "imported",
-  "closingAt": "2000-01-02T01:00:00.000Z",
-  "importingAt": "2000-01-02T02:00:00.000Z",
-  "importedAt": "2000-01-02T03:00:00.000Z",
+  "closingAt": "2000-01-01T06:00:00.000Z",
+  "importingAt": "2000-01-01T07:00:00.000Z",
+  "importedAt": "2000-01-01T08:00:00.000Z",
   %A
 }
 >>>>>
 
 <<<<<
-storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z
+storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
 -----
 {
   "projectId": 123,
   "branchId": 456,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T19:00:00.000Z",
-  "volumeId": "my-volume",
-  "sliceOpenedAt": "2000-01-01T20:00:00.000Z",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
   "type": "csv",
   "state": "imported",
-  "closingAt": "2000-01-01T21:00:00.000Z",
-  "uploadingAt": "2000-01-01T22:00:00.000Z",
-  "uploadedAt": "2000-01-01T23:00:00.000Z",
-  "importedAt": "2000-01-02T03:00:00.000Z",
+  "closingAt": "2000-01-01T02:00:00.000Z",
+  "uploadingAt": "2000-01-01T03:00:00.000Z",
+  "uploadedAt": "2000-01-01T04:00:00.000Z",
+  "importedAt": "2000-01-01T08:00:00.000Z",
   %A
 }
 >>>>>
 
 <<<<<
-storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/value
+storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value
 -----
 {
   "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T20:00:00.000Z",
-  "lastRecordAt": "2000-01-01T20:01:00.000Z",
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T01:01:00.000Z",
   "recordsCount": 123,
   "uncompressedSize": "100MB",
   "compressedSize": "100MB"
 }
 >>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/"))
+`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }
 
 func switchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, sliceRepo *repository.SliceRepository, sliceKey storage.SliceKey, states []storage.SliceState) {

@@ -306,14 +306,15 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableEtcdClient {
-		etcdCfg := cfg.etcdConfig
 		if cfg.etcdConfig.Endpoint == "" {
 			cfg.etcdConfig = etcdhelper.TmpNamespace(t)
-			etcdCfg = cfg.etcdConfig
 		}
+
+		etcdCfg := cfg.etcdConfig
 		if cfg.etcdDebugLog {
-			cfg.etcdConfig.DebugLog = true
+			etcdCfg.DebugLog = true
 		}
+
 		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, etcdCfg)
 		require.NoError(t, err)
 	}

@@ -16,6 +16,7 @@ import (
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -60,9 +61,8 @@ func newHook(d dependencies, repo *Repository) *hook {
 }
 
 // AssignVolumes assigns volumes to a new file.
-func (h *hook) AssignVolumes(_ context.Context, _ storage.File) []volume.ID {
-	// Implemented in the next PR
-	return nil
+func (h *hook) AssignVolumes(_ context.Context, allVolumes []volume.Metadata, cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
+	return assignment.VolumesFor(allVolumes, cfg, fileOpenedAt.UnixNano())
 }
 
 func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {

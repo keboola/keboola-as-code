@@ -13,15 +13,7 @@ import (
 )
 
 // newFile creates file entity.
-func newFile(globalCfg storage.Config, resource FileResource, sink definition.Sink) (f storage.File, err error) {
-	// File should be opened only for a table sink
-	if sink.Type != definition.SinkTypeTable {
-		panic(errors.New("file can be opened only for a table sink"))
-	}
-
-	// Apply configuration patch from the sink to the global config
-	cfg := globalCfg.With(sink.Table.Storage)
-
+func newFile(cfg storage.Config, resource FileResource, sink definition.Sink) (f storage.File, err error) {
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.

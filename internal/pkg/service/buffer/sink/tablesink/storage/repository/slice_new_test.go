@@ -22,7 +22,7 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 	t.Parallel()
 
 	// Fixtures
-	now := utctime.MustParse("2000-01-01T19:00:00.000Z").Time()
+	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}

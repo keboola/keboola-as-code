@@ -18,7 +18,7 @@ import (
 )
 
 func NewFileKey() storage.FileKey {
-	return NewFileKeyOpenedAt("2000-01-01T19:00:00.000Z")
+	return NewFileKeyOpenedAt("2000-01-01T01:00:00.000Z")
 }
 
 func NewFileKeyOpenedAt(openedAtStr string) storage.FileKey {
@@ -32,7 +32,7 @@ func NewFileKeyOpenedAt(openedAtStr string) storage.FileKey {
 }
 
 func NewFile() storage.File {
-	return NewFileOpenedAt("2000-01-01T19:00:00.000Z")
+	return NewFileOpenedAt("2000-01-01T01:00:00.000Z")
 }
 
 func NewFileOpenedAt(openedAtStr string) storage.File {
