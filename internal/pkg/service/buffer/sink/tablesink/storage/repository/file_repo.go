@@ -352,6 +352,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 					txn.Merge(r.updateTxn(oldFile, modified))
 				} else {
 					errs.Append(err)
+					continue
 				}
 			}
 
@@ -362,6 +363,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 					txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
 				} else {
 					errs.Append(err)
+					continue
 				}
 			}
 
@@ -374,6 +376,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 				file, err := newFile(cfg, resource, sink)
 				if err != nil {
 					errs.Append(err)
+					continue
 				}
 
 				// Assign volumes
@@ -382,6 +385,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 				// At least one volume must be assigned
 				if len(file.Assignment.Volumes) == 0 {
 					errs.Append(errors.New(`no volume is available for the file`))
+					continue
 				}
 
 				// Open slices in the assigned volumes
