@@ -366,26 +366,7 @@ func TestTxnOp_And_Simple(t *testing.T) {
 				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			// TODO, remove empty else blocks
-			[]etcd.Op{
-				etcd.OpTxn(
-					// If
-					[]etcd.Cmp{},
-					// Then
-					[]etcd.Op{},
-					// Else
-					[]etcd.Op{
-						etcd.OpTxn(
-							// If
-							[]etcd.Cmp{},
-							// Then
-							[]etcd.Op{},
-							// Else
-							[]etcd.Op{},
-						),
-					},
-				),
-			},
+			[]etcd.Op{},
 		), lowLevel.Op)
 	}
 
