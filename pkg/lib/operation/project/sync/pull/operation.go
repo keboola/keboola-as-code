@@ -2,6 +2,7 @@ package pull
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
@@ -23,6 +24,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -53,12 +55,12 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(logger)
+	plan.Log(d.Stdout())
 
 	if !plan.Empty() {
 		// Dry run?
 		if o.DryRun {
-			logger.InfoCtx(ctx, "Dry run, nothing changed.")
+			logger.Info(ctx, "Dry run, nothing changed.")
 			return nil
 		}
 
@@ -79,11 +81,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Validate schemas and encryption
 		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
-			logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-			logger.WarnCtx(ctx)
-			logger.WarnCtx(ctx, `The project has been pulled, but it is not in a valid state.`)
-			logger.WarnCtx(ctx, `Please correct the problems listed above.`)
-			logger.WarnCtx(ctx, `Push operation is only possible when project is valid.`)
+			logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+			logger.Warn(ctx, "")
+			logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
+			logger.Warn(ctx, `Please correct the problems listed above.`)
+			logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 		}
 	}
 
@@ -93,7 +95,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	if !plan.Empty() {
-		logger.InfoCtx(ctx, "Pull done.")
+		logger.Info(ctx, "Pull done.")
 	}
 
 	return nil

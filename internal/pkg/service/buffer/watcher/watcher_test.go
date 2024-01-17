@@ -2,7 +2,6 @@ package watcher_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -39,7 +38,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	str := store.New(serviceSp)
 
 	createAPINode := func(nodeName string) *watcher.APINode {
-		opts := append(opts, dependencies.WithUniqueID(nodeName), dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)))
+		opts := append(opts, dependencies.WithUniqueID(nodeName))
 		apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig(), opts...)
 		apiNode, err := watcher.NewAPINode(apiScp)
 		assert.NoError(t, err)
@@ -47,7 +46,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	}
 
 	createWorkerNode := func(nodeName string) *watcher.WorkerNode {
-		opts := append(opts, dependencies.WithUniqueID(nodeName), dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)))
+		opts := append(opts, dependencies.WithUniqueID(nodeName))
 		workerScp, _ := bufferDependencies.NewMockedWorkerScope(t, config.NewWorkerConfig(), opts...)
 		workerNode, err := watcher.NewWorkerNode(workerScp)
 		assert.NoError(t, err)

@@ -40,7 +40,7 @@ type Dependencies interface {
 func New(d Dependencies) (*Node, error) {
 	// Create
 	n := &Node{
-		logger:             d.Logger().AddPrefix("[watcher][worker]"),
+		logger:             d.Logger().WithComponent("watcher.worker"),
 		schema:             d.Schema(),
 		client:             d.EtcdClient(),
 		minRevision:        atomic.NewInt64(noAPINode),
@@ -54,11 +54,11 @@ func New(d Dependencies) (*Node, error) {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		n.listeners.wait(ctx)
 		cancel()
 		wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Watch revisions of all API nodes
@@ -127,15 +127,15 @@ func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEve
 		// Trigger listeners if the minimal version has changed
 		if count := n.listeners.onChange(ctx, n.minRevision); count > 0 {
 			if rev == noAPINode {
-				n.logger.InfofCtx(ctx, `all API nodes are gone, unblocked "%d" listeners`, count)
+				n.logger.Infof(ctx, `all API nodes are gone, unblocked "%d" listeners`, count)
 			} else {
-				n.logger.InfofCtx(ctx, `revision updated to "%v", unblocked "%d" listeners`, rev, count)
+				n.logger.Infof(ctx, `revision updated to "%v", unblocked "%d" listeners`, rev, count)
 			}
 		} else {
 			if rev == noAPINode {
-				n.logger.InfoCtx(ctx, `all API nodes are gone`)
+				n.logger.Info(ctx, `all API nodes are gone`)
 			} else {
-				n.logger.InfofCtx(ctx, `revision updated to "%v"`, rev)
+				n.logger.Infof(ctx, `revision updated to "%v"`, rev)
 			}
 		}
 	}

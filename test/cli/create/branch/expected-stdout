@@ -3,9 +3,9 @@ INFO	Created new branch "new branch".
 %A
 INFO	Pulling objects to the local directory.
 %A
-INFO	Plan for "pull" operation:
-INFO	  + B new-branch
-INFO	  + C new-branch/extractor/ex-generic-v2/empty
+Plan for "pull" operation:
+  + B new-branch
+  + C new-branch/extractor/ex-generic-v2/empty
 %A
 INFO	Pull done.
 %A

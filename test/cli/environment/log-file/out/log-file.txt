@@ -1,23 +1,6 @@
-{"level":"debug","time":"%s","message":"Version:    %s"}
-{"level":"debug","time":"%s","message":"Git commit: %s"}
-{"level":"debug","time":"%s","message":"Build date: %s"}
-{"level":"debug","time":"%s","message":"Go version: %s"}
-{"level":"debug","time":"%s","message":"Os/Arch:    %s"}
+{"level":"debug","time":"%s","message":"Version:    %s\nGit commit: %s\nBuild date: %s\nGo version: %s\nOs/Arch:    %s\n"}
 {"level":"debug","time":"%s","message":"Running command [%s --log-file ./log-file.txt]"}
-{"level":"debug","time":"%s","message":"Parsed options:"}
-{"level":"debug","time":"%s","message":"  log-file = \"./log-file.txt\""}
-{"level":"debug","time":"%s","message":"  version-check = \"false\""}
-{"level":"debug","time":"%s","message":"Default options:"}
-{"level":"debug","time":"%s","message":"  help = false"}
-{"level":"debug","time":"%s","message":"  log-format = \"console\""}
-{"level":"debug","time":"%s","message":"  non-interactive = false"}
-{"level":"debug","time":"%s","message":"  storage-api-token = \"\""}
-{"level":"debug","time":"%s","message":"  verbose = false"}
-{"level":"debug","time":"%s","message":"  verbose-api = false"}
-{"level":"debug","time":"%s","message":"  version = false"}
-{"level":"debug","time":"%s","message":"  working-dir = \"\""}
+{"level":"debug","time":"%s","message":"Parsed options:\n  log-file = \"./log-file.txt\"\n  version-check = \"false\"\nDefault options:\n  help = false\n  log-format = \"console\"\n  non-interactive = false\n  storage-api-token = \"\"\n  verbose = false\n  verbose-api = false\n  version = false\n  working-dir = \"\"\n"}
 {"level":"debug","time":"%s","message":"Log file: %s"}
 {"level":"debug","time":"%s","message":"Working dir: %s"}
 {"level":"debug","time":"%s","message":"Version check: %s"}
-%A
-{"level":"info","time":"%s","message":"Use \"%s [command] --help\" for more information about a command."}

@@ -3,66 +3,84 @@ package log
 import (
 	"context"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDebugLogger_All(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.DebugCtx(context.Background(), "debug")
-	logger.InfoCtx(context.Background(), "info")
-	logger.WarnCtx(context.Background(), "warn")
-	logger.ErrorCtx(context.Background(), "error")
-	assert.Equal(t, "DEBUG  debug\nINFO  info\nWARN  warn\nERROR  error\n", logger.AllMessages())
+	logger.Debug(context.Background(), "debug")
+	logger.Info(context.Background(), "info")
+	logger.Warn(context.Background(), "warn")
+	logger.Error(context.Background(), "error")
+
+	expected := `
+{"level":"debug","message":"debug"}
+{"level":"info","message":"info"}
+{"level":"warn","message":"warn"}
+{"level":"error","message":"error"}
+`
+	AssertJSONMessages(t, expected, logger.AllMessages())
 }
 
 func TestNewDebugLogger_Debug(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.DebugCtx(context.Background(), "debug")
-	logger.InfoCtx(context.Background(), "info")
-	logger.WarnCtx(context.Background(), "warn")
-	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "DEBUG  debug\n", logger.DebugMessages())
+	logger.Debug(context.Background(), "debug")
+	logger.Info(context.Background(), "info")
+	logger.Warn(context.Background(), "warn")
+	logger.Errorf(context.Background(), "error")
+
+	expected := `{"level":"debug","message":"debug"}`
+	AssertJSONMessages(t, expected, logger.DebugMessages())
 }
 
 func TestNewDebugLogger_Info(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.DebugCtx(context.Background(), "debug")
-	logger.InfoCtx(context.Background(), "info")
-	logger.WarnCtx(context.Background(), "warn")
-	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "INFO  info\n", logger.InfoMessages())
+	logger.Debug(context.Background(), "debug")
+	logger.Info(context.Background(), "info")
+	logger.Warn(context.Background(), "warn")
+	logger.Errorf(context.Background(), "error")
+
+	expected := `{"level":"info","message":"info"}`
+	AssertJSONMessages(t, expected, logger.InfoMessages())
 }
 
 func TestNewDebugLogger_Warn(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.DebugCtx(context.Background(), "debug")
-	logger.InfoCtx(context.Background(), "info")
-	logger.WarnCtx(context.Background(), "warn")
-	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "WARN  warn\n", logger.WarnMessages())
+	logger.Debug(context.Background(), "debug")
+	logger.Info(context.Background(), "info")
+	logger.Warn(context.Background(), "warn")
+	logger.Errorf(context.Background(), "error")
+
+	expected := `{"level":"warn","message":"warn"}`
+	AssertJSONMessages(t, expected, logger.WarnMessages())
 }
 
 func TestNewDebugLogger_WarnOrError(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.DebugCtx(context.Background(), "debug")
-	logger.InfoCtx(context.Background(), "info")
-	logger.WarnCtx(context.Background(), "warn")
-	logger.ErrorCtx(context.Background(), "error")
-	assert.Equal(t, "WARN  warn\nERROR  error\n", logger.WarnAndErrorMessages())
+	logger.Debug(context.Background(), "debug")
+	logger.Info(context.Background(), "info")
+	logger.Warn(context.Background(), "warn")
+	logger.Error(context.Background(), "error")
+
+	expected := `
+{"level":"warn","message":"warn"}
+{"level":"error","message":"error"}
+`
+	AssertJSONMessages(t, expected, logger.WarnAndErrorMessages())
 }
 
 func TestNewDebugLogger_Error(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.DebugCtx(context.Background(), "debug")
-	logger.InfoCtx(context.Background(), "info")
-	logger.WarnCtx(context.Background(), "warn")
-	logger.ErrorfCtx(context.Background(), "error")
-	assert.Equal(t, "ERROR  error\n", logger.ErrorMessages())
+	logger.Debug(context.Background(), "debug")
+	logger.Info(context.Background(), "info")
+	logger.Warn(context.Background(), "warn")
+	logger.Errorf(context.Background(), "error")
+
+	expected := `{"level":"error","message":"error"}`
+	AssertJSONMessages(t, expected, logger.ErrorMessages())
 }

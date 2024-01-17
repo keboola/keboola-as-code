@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"go.opentelemetry.io/otel/attribute"
 	goaHTTP "goa.design/goa/v3/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -46,6 +48,7 @@ func (wr *ErrorWriter) Write(ctx context.Context, w http.ResponseWriter, err err
 
 func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, err error) error {
 	requestID, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
+	ctx = ctxattr.ContextWith(ctx, attribute.String("requestId", requestID))
 
 	// Default values
 	response := &UnexpectedError{
@@ -96,11 +99,11 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	// Log error
 	var logEnabledProvider WithErrorLogEnabled
 	if !errors.As(err, &logEnabledProvider) || logEnabledProvider.ErrorLogEnabled() {
-		logger := wr.logger.AddPrefix(fmt.Sprintf("[http][requestId=%s]", requestID))
+		logger := wr.logger.WithComponent("http")
 		if response.StatusCode > 499 {
-			logger.ErrorCtx(ctx, errorLogMessage(err, response))
+			logger.Error(ctx, errorLogMessage(err, response))
 		} else {
-			logger.InfoCtx(ctx, errorLogMessage(err, response))
+			logger.Info(ctx, errorLogMessage(err, response))
 		}
 	}
 

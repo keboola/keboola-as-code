@@ -37,25 +37,25 @@ func (l *Locker) TryLock(requestCtx context.Context, lockName string) (bool, Unl
 	// Try lock
 	session, mtx, err := l.tryLock(requestCtx, lockName)
 	if errors.Is(err, concurrency.ErrLocked) {
-		l.d.Logger().InfofCtx(requestCtx, `etcd lock "%s" is used`, lockName)
+		l.d.Logger().Infof(requestCtx, `etcd lock "%s" is used`, lockName)
 		return false, func() {}
 	} else if err != nil {
-		l.d.Logger().WarnfCtx(requestCtx, `cannot acquire etcd lock "%s" (continues without lock): %s`, lockName, err)
+		l.d.Logger().Warnf(requestCtx, `cannot acquire etcd lock "%s" (continues without lock): %s`, lockName, err)
 		return true, func() {}
 	}
 
 	// Locked, must be unlocked by returned unlock function
-	l.d.Logger().InfofCtx(requestCtx, `acquired etcd lock "%s"`, mtx.Key())
+	l.d.Logger().Infof(requestCtx, `acquired etcd lock "%s"`, mtx.Key())
 	return true, func() {
 		releaseCtx, cancelFn := context.WithTimeout(context.Background(), LockReleaseTimeout)
 		defer cancelFn()
 		if err := mtx.Unlock(releaseCtx); err != nil { // nolint: contextcheck
-			l.d.Logger().WarnfCtx(requestCtx, `cannot unlock etcd lock "%s": %s`, lockName, err.Error())
+			l.d.Logger().Warnf(requestCtx, `cannot unlock etcd lock "%s": %s`, lockName, err.Error())
 		}
 		if err := session.Close(); err != nil {
-			l.d.Logger().WarnfCtx(requestCtx, `cannot close etcd session for lock "%s": %s`, lockName, err.Error())
+			l.d.Logger().Warnf(requestCtx, `cannot close etcd session for lock "%s": %s`, lockName, err.Error())
 		}
-		l.d.Logger().InfofCtx(requestCtx, `released etcd lock "%s"`, lockName)
+		l.d.Logger().Infof(requestCtx, `released etcd lock "%s"`, lockName)
 	}
 }
 

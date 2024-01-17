@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -74,15 +73,15 @@ func TestMapAfterLocalLoad(t *testing.T) {
 
 	// Logs
 	expectedLogs := `
-DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/003-task-3/task.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-4/task.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/task.json"
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/001-phase/phase.json\""}
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/001-phase/001-task-1/task.json\""}
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/001-phase/002-task-2/task.json\""}
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/001-phase/003-task-3/task.json\""}
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/002-phase-with-deps/phase.json\""}
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/002-phase-with-deps/001-task-4/task.json\""}
+{"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/task.json\""}
 `
-	wildcards.Assert(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
+	logger.AssertJSONMessages(t, expectedLogs)
 
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)

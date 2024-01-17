@@ -51,8 +51,8 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferWorker]")
-	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
+	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("bufferWorker") // nolint:forbidigo
+	logger.Infof(ctx, "Configuration: %s", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
@@ -92,13 +92,13 @@ func run() error {
 	}
 
 	// Create dependencies.
-	workerScp, err := dependencies.NewWorkerScope(ctx, proc, cfg, logger, tel)
+	workerScp, err := dependencies.NewWorkerScope(ctx, proc, cfg, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
 
 	// Create service.
-	logger.InfofCtx(ctx, "starting Buffer Worker")
+	logger.Infof(ctx, "starting Buffer Worker")
 	_, err = service.New(workerScp)
 	if err != nil {
 		return err

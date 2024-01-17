@@ -29,16 +29,16 @@ func LoadDotEnv(ctx context.Context, logger log.Logger, osEnvs *Map, fs filesyst
 				// File doesn't exist
 				continue
 			case err != nil && !os.IsNotExist(err):
-				logger.WarnfCtx(ctx, `Cannot check if path "%s" exists: %s`, path, err)
+				logger.Warnf(ctx, `Cannot check if path "%s" exists: %s`, path, err)
 				continue
 			}
 
 			fileEnvs, err := LoadEnvFile(ctx, fs, path)
 			if err != nil {
-				logger.WarnfCtx(ctx, `%s`, err.Error())
+				logger.Warnf(ctx, `%s`, err.Error())
 				continue
 			}
-			logger.InfofCtx(ctx, "Loaded env file \"%s\".", path)
+			logger.Infof(ctx, "Loaded env file \"%s\".", path)
 
 			// Merge ENVs, existing keys take precedence.
 			envs.Merge(fileEnvs, false)

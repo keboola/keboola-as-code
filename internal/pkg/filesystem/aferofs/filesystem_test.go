@@ -539,7 +539,7 @@ func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, logger log.DebugL
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, "foo\n", file.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`)
 }
 
 func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -558,7 +558,7 @@ func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger log.Debug
 
 	// Write
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filePath, "foo\n")))
-	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Saved \"file.txt\""}`)
 
 	// Read
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(filePath))
@@ -574,10 +574,10 @@ func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, logge
 	// Write
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filePath, "foo\n")))
 	expectedLogs := `
-DEBUG  Created directory "my/dir"
-DEBUG  Saved "my/dir/file.txt"
+{"level":"debug","message":"Created directory \"my/dir\""}
+{"level":"debug","message":"Saved \"my/dir/file.txt\""}
 `
-	assert.Equal(t, strings.TrimSpace(expectedLogs), strings.TrimSpace(logger.AllMessages()))
+	logger.AssertJSONMessages(t, expectedLogs)
 
 	// Read - dir is auto created
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(filePath))
@@ -594,7 +594,7 @@ func (*testCases) TestWriteFile_JsonFile(t *testing.T, fs filesystem.Fs, logger 
 	data := orderedmap.New()
 	data.Set(`foo`, `bar`)
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewJSONFile(filePath, data)))
-	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(logger.AllMessages()))
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Saved \"file.json\""}`)
 
 	// Read
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(filePath))

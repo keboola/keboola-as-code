@@ -54,7 +54,7 @@ func New(t *testing.T, opts ...expect.ConsoleOpt) (Console, error) {
 		expect.WithStdout(debugStdout),
 		expect.WithCloser(debugStdout),
 		expect.WithSendObserver(sendObserver(t, debugStdout)),
-		expect.WithExpectObserver(expectObserver(t, os.Stderr)),
+		expect.WithExpectObserver(expectObserver(t, os.Stderr)), // nolint:forbidigo
 		expect.WithDefaultTimeout(expectTimeout),
 	)
 

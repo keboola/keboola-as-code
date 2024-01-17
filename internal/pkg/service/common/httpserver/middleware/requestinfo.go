@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"go.opentelemetry.io/otel/attribute"
 	goaMiddleware "goa.design/goa/v3/middleware"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
 
 const (
@@ -27,6 +29,7 @@ func RequestInfo() Middleware {
 			ctx = context.WithValue(ctx, goaMiddleware.RequestIDKey, requestID) // nolint:staticcheck // intentionally used the ctx key from external package
 			ctx = context.WithValue(ctx, RequestIDCtxKey, requestID)
 			ctx = context.WithValue(ctx, RequestURLCtxKey, req.URL)
+			ctx = ctxattr.ContextWith(ctx, attribute.String("requestId", requestID))
 			req = req.WithContext(ctx)
 
 			// Add request ID to headers

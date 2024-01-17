@@ -56,6 +56,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 
@@ -88,6 +89,8 @@ type BaseScope interface {
 	HTTPClient() client.Client
 	Validator() validator.Validator
 	Process() *servicectx.Process
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 // PublicScope dependencies are available from the Storage API and other sources without authentication / Storage API token.

@@ -9,7 +9,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
@@ -57,7 +56,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 		defer wg.Done()
 		close(start)
 		assert.NoError(t, w.WaitUntilAllSlicesUploaded(ctx, logger, fileKey))
-		logger.InfoCtx(ctx, "-----> all slices have been uploaded")
+		logger.Info(ctx, "-----> all slices have been uploaded")
 	}()
 	<-start
 
@@ -66,7 +65,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	assert.NoError(t, str.SetSliceState(ctx, &slice2, slicestate.Failed))
 	assert.NoError(t, str.SetSliceState(ctx, &slice2, slicestate.Uploading))
 	time.Sleep(100 * time.Millisecond)
-	logger.InfoCtx(ctx, "-----> slice 2 uploaded")
+	logger.Info(ctx, "-----> slice 2 uploaded")
 	assert.NoError(t, str.SetSliceState(ctx, &slice2, slicestate.Uploaded))
 
 	// Simulate upload of slice1
@@ -75,7 +74,7 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	assert.NoError(t, str.SetSliceState(ctx, &slice1, slicestate.Failed))
 	assert.NoError(t, str.SetSliceState(ctx, &slice1, slicestate.Uploading))
 	time.Sleep(100 * time.Millisecond)
-	logger.InfoCtx(ctx, "-----> slice 1 uploaded")
+	logger.Info(ctx, "-----> slice 1 uploaded")
 	assert.NoError(t, str.SetSliceState(ctx, &slice1, slicestate.Uploaded))
 
 	// Wait
@@ -84,12 +83,12 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 
 	// Check operations order
-	wildcards.Assert(t, `
-INFO  waiting for "2" slices to be uploaded
-INFO  -----> slice 2 uploaded
-INFO  -----> slice 1 uploaded
-INFO  -----> all slices have been uploaded
-`, logger.AllMessages())
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"waiting for \"2\" slices to be uploaded"}
+{"level":"info","message":"-----> slice 2 uploaded"}
+{"level":"info","message":"-----> slice 1 uploaded"}
+{"level":"info","message":"-----> all slices have been uploaded"}
+`)
 
 	// Stop
 	cancel()

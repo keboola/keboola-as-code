@@ -3,6 +3,7 @@ package diffop
 import (
 	"context"
 	"fmt"
+	"io"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
@@ -40,16 +41,16 @@ func (p *Plan) Invoke(logger log.Logger, ctx context.Context, localManager *loca
 	return executor.invoke(ctx)
 }
 
-func (p *Plan) Log(logger log.Logger) {
-	writer := logger.InfoWriter()
-	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
+func (p *Plan) Log(w io.Writer) {
+	fmt.Fprintf(w, `Plan for "%s" operation:`, p.Name())
+	fmt.Fprintln(w)
 	actions := p.actions
 	sort.SliceStable(actions, func(i, j int) bool {
 		return actions[i].Path() < actions[j].Path()
 	})
 
 	if len(actions) == 0 {
-		writer.WriteStringIndent(1, "no difference")
+		fmt.Fprintln(w, "  no difference")
 	} else {
 		skippedDeleteCount := 0
 		for _, action := range actions {
@@ -59,11 +60,11 @@ func (p *Plan) Log(logger log.Logger) {
 				msg += " - SKIPPED"
 				skippedDeleteCount++
 			}
-			writer.WriteStringIndent(1, msg)
+			fmt.Fprintln(w, "  "+msg)
 		}
 
 		if skippedDeleteCount > 0 {
-			writer.WriteString("Skipped remote objects deletion, use \"--force\" to delete them.")
+			fmt.Fprintln(w, "Skipped remote objects deletion, use \"--force\" to delete them.")
 		}
 	}
 }

@@ -2,6 +2,7 @@ package init
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -36,6 +37,7 @@ type dependencies interface {
 	StorageAPIHost() string
 	StorageAPIToken() keboola.Token
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
@@ -73,12 +75,12 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		errs.AppendWithPrefix(err, "workflows generation failed")
 	}
 
-	logger.InfoCtx(ctx, "Init done.")
+	logger.Info(ctx, "Init done.")
 
 	// First pull
 	if o.Pull {
-		logger.InfoCtx(ctx)
-		logger.InfoCtx(ctx, `Running pull.`)
+		logger.Info(ctx, "")
+		logger.Info(ctx, `Running pull.`)
 
 		// Load project state
 		prj := project.NewWithManifest(ctx, fs, manifest)

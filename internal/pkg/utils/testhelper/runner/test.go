@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -406,11 +407,11 @@ func (t *Test) runAPIServer(
 	if requestsOk {
 		if t.testDirFS.IsFile(t.ctx, expectedStdoutPath) {
 			expected := t.ReadFileFromTestDir(expectedStdoutPath)
-			wildcards.Assert(t.t, expected, stdout.String(), "Unexpected STDOUT.")
+			log.AssertJSONMessages(t.t, expected, stdout.String(), "Unexpected STDOUT.")
 		}
 		if t.testDirFS.IsFile(t.ctx, expectedStderrPath) {
 			expected := t.ReadFileFromTestDir(expectedStderrPath)
-			wildcards.Assert(t.t, expected, stderr.String(), "Unexpected STDERR.")
+			log.AssertJSONMessages(t.t, expected, stderr.String(), "Unexpected STDERR.")
 		}
 	}
 }

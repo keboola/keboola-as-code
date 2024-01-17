@@ -1,12 +1,12 @@
 package upgrade
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -14,8 +14,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 )
 
+type loggerFn func(ctx context.Context, template string, args ...any)
+
 type inputsValuesExporter struct {
-	logger      *log.LevelWriter
+	loggerFn    loggerFn
 	inputsByID  map[string]*input.Input
 	foundInputs map[string]bool
 	groups      input.StepsGroupsExt
@@ -26,9 +28,9 @@ type inputsValuesExporter struct {
 // If the value is found:
 //   - the value is set as the default input value
 //   - step.Show = true, so it is marked configured in th API and pre-selected in CLI
-func ExportInputsValues(logger *log.LevelWriter, projectState *state.State, branch model.BranchKey, instanceID string, groups template.StepsGroups) input.StepsGroupsExt {
+func ExportInputsValues(ctx context.Context, loggerFn loggerFn, projectState *state.State, branch model.BranchKey, instanceID string, groups template.StepsGroups) input.StepsGroupsExt {
 	e := inputsValuesExporter{
-		logger:      logger,
+		loggerFn:    loggerFn,
 		inputsByID:  make(map[string]*input.Input),
 		foundInputs: make(map[string]bool),
 		groups:      groups.ToExtended(),
@@ -38,23 +40,23 @@ func ExportInputsValues(logger *log.LevelWriter, projectState *state.State, bran
 		e.inputsByID[input.ID] = input
 		return nil
 	})
-	return e.export()
+	return e.export(ctx)
 }
 
-func (e inputsValuesExporter) export() input.StepsGroupsExt {
-	e.logger.WriteString(`Exporting values of the template inputs from configs/rows ...`)
+func (e inputsValuesExporter) export(ctx context.Context) input.StepsGroupsExt {
+	e.loggerFn(ctx, `Exporting values of the template inputs from configs/rows ...`)
 
 	// Export inputs values
 	iterateTmplMetadata(
 		e.configs,
 		func(config *model.Config, idInTemplate keboola.ConfigID, inputs []model.ConfigInputUsage) {
 			for _, inputUsage := range inputs {
-				e.addValue(config.Key(), config.Content, inputUsage.Input, inputUsage.JSONKey, inputUsage.ObjectKeys)
+				e.addValue(ctx, config.Key(), config.Content, inputUsage.Input, inputUsage.JSONKey, inputUsage.ObjectKeys)
 			}
 		},
 		func(row *model.ConfigRow, idInTemplate keboola.RowID, inputs []model.RowInputUsage) {
 			for _, inputUsage := range inputs {
-				e.addValue(row.Key(), row.Content, inputUsage.Input, inputUsage.JSONKey, inputUsage.ObjectKeys)
+				e.addValue(ctx, row.Key(), row.Content, inputUsage.Input, inputUsage.JSONKey, inputUsage.ObjectKeys)
 			}
 		},
 	)
@@ -67,21 +69,21 @@ func (e inputsValuesExporter) export() input.StepsGroupsExt {
 		return nil
 	})
 
-	e.logger.Writef(`Exported %d inputs values.`, len(e.foundInputs))
+	e.loggerFn(ctx, `Exported %d inputs values.`, len(e.foundInputs))
 	return e.groups
 }
 
-func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.OrderedMap, inputID string, jsonKey string, objectKeys []string) {
+func (e inputsValuesExporter) addValue(ctx context.Context, key model.Key, content *orderedmap.OrderedMap, inputID string, jsonKey string, objectKeys []string) {
 	value, keyFound, _ := content.GetNested(jsonKey)
 	if !keyFound {
 		// Key not found in the row content
-		e.logger.Writef(`Value for input "%s" NOT found in JSON key "%s", in %s`, inputID, jsonKey, key.Desc())
+		e.loggerFn(ctx, `Value for input "%s" NOT found in JSON key "%s", in %s`, inputID, jsonKey, key.Desc())
 		return
 	}
 	inputDef, inputFound := e.inputsByID[inputID]
 	if !inputFound {
 		// Input is not found in the template
-		e.logger.Writef(`Value for input "%s" found, but type doesn't match, JSON key "%s", in %s`, inputID, jsonKey, key.Desc())
+		e.loggerFn(ctx, `Value for input "%s" found, but type doesn't match, JSON key "%s", in %s`, inputID, jsonKey, key.Desc())
 		return
 	}
 
@@ -114,7 +116,7 @@ func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.Ordere
 	}
 
 	// Value has been found
-	e.logger.Writef(`Value for input "%s" found in JSON key "%s", in %s`, inputID, jsonKey, key.Desc())
+	e.loggerFn(ctx, `Value for input "%s" found in JSON key "%s", in %s`, inputID, jsonKey, key.Desc())
 	inputDef.Default = value
 	e.foundInputs[inputID] = true
 }

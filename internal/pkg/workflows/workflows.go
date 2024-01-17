@@ -42,14 +42,14 @@ func GenerateFiles(ctx context.Context, logger log.Logger, fs filesystem.Fs, opt
 
 func (g *generator) generateFiles(ctx context.Context) error {
 	if !g.options.Enabled() {
-		g.logger.InfoCtx(ctx, "")
-		g.logger.InfoCtx(ctx, "No continuous integration action selected.")
+		g.logger.Info(ctx, "")
+		g.logger.Info(ctx, "No continuous integration action selected.")
 		return nil
 	}
 
 	// Common files
-	g.logger.InfoCtx(ctx)
-	g.logger.InfoCtx(ctx, `Generating CI workflows ...`)
+	g.logger.Info(ctx, "")
+	g.logger.Info(ctx, `Generating CI workflows ...`)
 	workflowsDir := filesystem.Join(".github", "workflows")
 	actionsDir := filesystem.Join(".github", "actions")
 	installActDir := filesystem.Join(actionsDir, "install")
@@ -76,12 +76,12 @@ func (g *generator) generateFiles(ctx context.Context) error {
 		return g.errors
 	}
 
-	g.logger.InfoCtx(ctx, "")
-	g.logger.InfoCtx(ctx, "CI workflows have been generated.")
-	g.logger.InfoCtx(ctx, "Feel free to modify them.")
-	g.logger.InfoCtx(ctx, "")
-	g.logger.InfoCtx(ctx, "Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.")
-	g.logger.InfoCtx(ctx, "See: https://docs.github.com/en/actions/reference/encrypted-secrets")
+	g.logger.Info(ctx, "")
+	g.logger.Info(ctx, "CI workflows have been generated.")
+	g.logger.Info(ctx, "Feel free to modify them.")
+	g.logger.Info(ctx, "")
+	g.logger.Info(ctx, "Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.")
+	g.logger.Info(ctx, "See: https://docs.github.com/en/actions/reference/encrypted-secrets")
 	return nil
 }
 
@@ -118,7 +118,7 @@ func (g *generator) renderTemplate(ctx context.Context, templatePath, targetPath
 
 	// Write
 	if err := g.fs.WriteFile(ctx, filesystem.NewRawFile(targetPath, buffer.String())); err == nil {
-		g.logger.InfofCtx(ctx, `Created file "%s".`, targetPath)
+		g.logger.Infof(ctx, `Created file "%s".`, targetPath)
 	} else {
 		g.errors.Append(err)
 	}

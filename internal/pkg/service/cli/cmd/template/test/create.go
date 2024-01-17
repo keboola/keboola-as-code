@@ -56,7 +56,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 
 			if len(warnings) > 0 {
 				for _, w := range warnings {
-					d.Logger().WarnfCtx(cmd.Context(), w)
+					d.Logger().Warnf(cmd.Context(), w)
 				}
 			}
 			return nil

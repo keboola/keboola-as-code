@@ -1,4 +1,0 @@
-%A
-[templatesApi][http][requestId=%a]INFO no endpoint found for path "/foo/bar" | errorName=templates.endpointNotFound errorType=errors.EndpointNotFoundError response={"statusCode":404,"error":"templates.endpointNotFound","message":"No endpoint found for path \"/foo/bar\"."}
-[templatesApi][http][requestId=%a]INFO req /foo/bar status=404 bytes=%d time=%s client_ip=127.0.0.1 agent=%s
-%A

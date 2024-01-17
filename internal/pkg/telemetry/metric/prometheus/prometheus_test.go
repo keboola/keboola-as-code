@@ -84,13 +84,14 @@ target_info{service_name="my-service"} 1
 	d.Process().WaitForShutdown()
 
 	// Check logs
-	wildcards.Assert(t, `
-[metrics]INFO  HTTP server listening on "localhost:%d/metrics"
-INFO  exiting (bye bye)
-[metrics]INFO  shutting down HTTP server at "localhost:%d"
-[metrics]INFO  HTTP server shutdown finished
-INFO  exited
-`, d.DebugLogger().AllMessages())
+	expected := `
+{"level":"info","message":"HTTP server listening on \"localhost:%d/metrics\"","component":"metrics"}
+{"level":"info","message":"exiting (bye bye)"}
+{"level":"info","message":"shutting down HTTP server at \"localhost:%d\"","component":"metrics"}
+{"level":"info","message":"HTTP server shutdown finished","component":"metrics"}
+{"level":"info","message":"exited"}
+`
+	d.DebugLogger().AssertJSONMessages(t, expected)
 }
 
 func getBody(t *testing.T, ctx context.Context, url string) string {

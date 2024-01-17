@@ -21,8 +21,8 @@ func TestCallbackLogger(t *testing.T) {
 	logger := NewCallbackLogger(func(entry zapcore.Entry, fields []zapcore.Field) {
 		records = append(records, record{entry: entry, fields: fields})
 	})
-	logger.DebugCtx(context.Background(), `Debug message.`)
-	logger.InfoCtx(context.Background(), `Info message.`)
+	logger.Debug(context.Background(), `Debug message.`)
+	logger.Info(context.Background(), `Info message.`)
 
 	// Clear time
 	for i, r := range records {

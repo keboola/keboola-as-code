@@ -32,7 +32,7 @@ type l1CachedProviderDeps interface {
 
 func NewL1CacheProvider(d l1CachedProviderDeps) (*L1CacheProvider, error) {
 	p := &L1CacheProvider{
-		logger: d.Logger().AddPrefix("[stats-cache-L1]"),
+		logger: d.Logger().WithComponent("stats-cache-L1"),
 		client: d.EtcdClient(),
 		schema: newSchema(d.EtcdSerde()),
 	}
@@ -41,10 +41,10 @@ func NewL1CacheProvider(d l1CachedProviderDeps) (*L1CacheProvider, error) {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		p.logger.InfoCtx(ctx, "received shutdown request")
+		p.logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		p.logger.InfoCtx(ctx, "shutdown done")
+		p.logger.Info(ctx, "shutdown done")
 	})
 
 	// Start watcher to sync cache

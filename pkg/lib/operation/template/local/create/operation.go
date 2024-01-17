@@ -3,6 +3,7 @@ package create
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -39,6 +40,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
@@ -101,7 +103,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Done
 	templatePath := filesystem.Join(templateRecord.Path, versionRecord.Path)
-	d.Logger().InfofCtx(ctx, `Template "%s" has been created.`, templatePath)
+	d.Logger().Infof(ctx, `Template "%s" has been created.`, templatePath)
 
 	return nil
 }
@@ -151,7 +153,7 @@ func createLongDesc(ctx context.Context, o Options, d dependencies, fs filesyste
 	if err := fs.WriteFile(ctx, file); err != nil {
 		return err
 	}
-	d.Logger().InfofCtx(ctx, "Created extended description file \"%s\".", file.Path())
+	d.Logger().Infof(ctx, "Created extended description file \"%s\".", file.Path())
 	return nil
 }
 
@@ -162,6 +164,6 @@ func createReadme(ctx context.Context, o Options, d dependencies, fs filesystem.
 	if err := fs.WriteFile(ctx, file); err != nil {
 		return err
 	}
-	d.Logger().InfofCtx(ctx, "Created readme file \"%s\".", file.Path())
+	d.Logger().Infof(ctx, "Created readme file \"%s\".", file.Path())
 	return nil
 }

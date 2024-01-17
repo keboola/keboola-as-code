@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"io"
 	"os"
 	"strconv"
 	"time"
@@ -36,6 +37,8 @@ type dependencies interface {
 	Process() *servicectx.Process
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
@@ -48,7 +51,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil { // nolint: forbidigo
-			d.Logger().WarnfCtx(ctx, `cannot remove temp dir "%s": %w`, tempDir, err)
+			d.Logger().Warnf(ctx, `cannot remove temp dir "%s": %w`, tempDir, err)
 		}
 	}()
 
@@ -67,25 +70,25 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 
 		if !o.RemoteOnly {
 			if o.Verbose {
-				d.Logger().InfofCtx(ctx, `%s %s local running`, tmpl.FullName(), test.Name())
+				d.Logger().Infof(ctx, `%s %s local running`, tmpl.FullName(), test.Name())
 			}
 			if err := runLocalTest(ctx, test, tmpl, o.Verbose, d); err != nil {
-				d.Logger().ErrorfCtx(ctx, `FAIL %s %s local`, tmpl.FullName(), test.Name())
+				d.Logger().Errorf(ctx, `FAIL %s %s local`, tmpl.FullName(), test.Name())
 				errs.AppendWithPrefixf(err, `running local test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateID())
 			} else {
-				d.Logger().InfofCtx(ctx, `PASS %s %s local`, tmpl.FullName(), test.Name())
+				d.Logger().Infof(ctx, `PASS %s %s local`, tmpl.FullName(), test.Name())
 			}
 		}
 
 		if !o.LocalOnly {
 			if o.Verbose {
-				d.Logger().InfofCtx(ctx, `%s %s remote running`, tmpl.FullName(), test.Name())
+				d.Logger().Infof(ctx, `%s %s remote running`, tmpl.FullName(), test.Name())
 			}
 			if err := runRemoteTest(ctx, test, tmpl, o.Verbose, d); err != nil {
-				d.Logger().ErrorfCtx(ctx, `FAIL %s %s remote`, tmpl.FullName(), test.Name())
+				d.Logger().Errorf(ctx, `FAIL %s %s remote`, tmpl.FullName(), test.Name())
 				errs.AppendWithPrefixf(err, `running remote test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateID())
 			} else {
-				d.Logger().InfofCtx(ctx, `PASS %s %s remote`, tmpl.FullName(), test.Name())
+				d.Logger().Infof(ctx, `PASS %s %s remote`, tmpl.FullName(), test.Name())
 			}
 		}
 	}
@@ -103,19 +106,19 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Process(), branchID, false)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
 	if err != nil {
 		return err
 	}
 	defer unlockFn()
-	d.Logger().DebugfCtx(ctx, `Working directory set up.`)
+	d.Logger().Debugf(ctx, `Working directory set up.`)
 
 	// Read inputs and replace env vars
 	inputValues, err := tmplTest.ReadInputValues(ctx, tmpl, test)
 	if err != nil {
 		return err
 	}
-	d.Logger().DebugfCtx(ctx, `Inputs prepared.`)
+	d.Logger().Debugf(ctx, `Inputs prepared.`)
 
 	// Use template
 	tmplOpts := useTemplate.Options{
@@ -161,12 +164,12 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Process(), 0, true)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), 0, true)
 	if err != nil {
 		return err
 	}
 	defer unlockFn()
-	d.Logger().DebugfCtx(ctx, `Working directory set up.`)
+	d.Logger().Debugf(ctx, `Working directory set up.`)
 
 	branchKey := prjState.MainBranch().BranchKey
 
@@ -175,7 +178,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	if err != nil {
 		return err
 	}
-	d.Logger().DebugfCtx(ctx, `Inputs prepared.`)
+	d.Logger().Debugf(ctx, `Inputs prepared.`)
 
 	// Copy remote state to the local
 	for _, objectState := range prjState.All() {

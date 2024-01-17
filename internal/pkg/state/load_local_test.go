@@ -126,7 +126,7 @@ WARN  Found manifest record for branch "123":
 - Please, remove record from the manifest and the related directory.
 - Or modify "allowedBranches" key in the manifest.
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(d.DebugLogger().AllMessages()))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(d.DebugLogger().AllMessagesTxt()))
 }
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {

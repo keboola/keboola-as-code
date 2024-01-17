@@ -2,6 +2,7 @@ package delete_template
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -21,6 +22,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -36,11 +38,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(logger)
+	plan.Log(d.Stdout())
 
 	// Dry run?
 	if o.DryRun {
-		logger.InfoCtx(ctx, "Dry run, nothing changed.")
+		logger.Info(ctx, "Dry run, nothing changed.")
 		return nil
 	}
 
@@ -54,7 +56,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.InfoCtx(ctx, `Delete done.`)
+	logger.Info(ctx, `Delete done.`)
 
 	return nil
 }

@@ -2,13 +2,14 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -49,7 +50,7 @@ type orchestratorInterface interface {
 func NewNode(d dependencies) *Node {
 	n := &Node{
 		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[orchestrator]"),
+		logger: d.Logger().WithComponent("orchestrator"),
 		tracer: d.Telemetry().Tracer(),
 		client: d.EtcdClient(),
 		tasks:  d.TaskNode(),
@@ -61,11 +62,11 @@ func NewNode(d dependencies) *Node {
 	n.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	n.wg = &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		cancel()
-		n.logger.InfoCtx(ctx, `waiting for orchestrators to finish`)
+		n.logger.Info(ctx, `waiting for orchestrators to finish`)
 		n.wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	return n
@@ -87,8 +88,8 @@ func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
 	// Delete events are not needed
 	c.Source.WatchEtcdOps = append(c.Source.WatchEtcdOps, etcd.WithFilterDelete())
 
-	// Setup logger
-	logger := node.logger.AddPrefix(fmt.Sprintf("[%s]", c.Name))
+	// Setup context
+	node.ctx = ctxattr.ContextWith(node.ctx, attribute.String("task", c.Name))
 
-	return &orchestrator[T]{config: c, node: node, logger: logger}
+	return &orchestrator[T]{config: c, node: node, logger: node.logger}
 }

@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
@@ -25,6 +26,8 @@ type provider struct {
 	fs         filesystem.Fs
 	dialogs    *dialog.Dialogs
 	options    *options.Options
+	stdout     io.Writer
+	stderr     io.Writer
 
 	baseScp      dependencies.Lazy[*baseScope]
 	localCmdScp  dependencies.Lazy[*localCommandScope]
@@ -42,7 +45,16 @@ func (r *ProviderRef) Set(provider Provider) {
 	r._provider = provider
 }
 
-func NewProvider(commandCtx context.Context, logger log.Logger, proc *servicectx.Process, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) Provider {
+func NewProvider(
+	commandCtx context.Context,
+	logger log.Logger,
+	proc *servicectx.Process,
+	fs filesystem.Fs,
+	dialogs *dialog.Dialogs,
+	opts *options.Options,
+	stdout io.Writer,
+	stderr io.Writer,
+) Provider {
 	return &provider{
 		commandCtx: commandCtx,
 		logger:     logger,
@@ -50,6 +62,8 @@ func NewProvider(commandCtx context.Context, logger log.Logger, proc *servicectx
 		fs:         fs,
 		dialogs:    dialogs,
 		options:    opts,
+		stdout:     stdout,
+		stderr:     stderr,
 	}
 }
 
@@ -58,14 +72,16 @@ func (v *provider) BaseScope() BaseScope {
 		// Create base HTTP client for all API requests to other APIs
 		httpClient := httpclient.New(
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
-			httpclient.WithDebugOutput(v.logger.DebugWriter()),
 			func(c *httpclient.Config) {
+				if v.options.Verbose {
+					httpclient.WithDebugOutput(v.stdout)(c)
+				}
 				if v.options.VerboseAPI {
-					httpclient.WithDumpOutput(v.logger.DebugWriter())(c)
+					httpclient.WithDumpOutput(v.stdout)(c)
 				}
 			},
 		)
-		return newBaseScope(v.commandCtx, v.logger, v.proc, httpClient, v.fs, v.dialogs, v.options)
+		return newBaseScope(v.commandCtx, v.logger, v.stdout, v.stderr, v.proc, httpClient, v.fs, v.dialogs, v.options)
 	})
 }
 

@@ -24,7 +24,7 @@ type upgradeTmplDeps interface {
 
 // AskUpgradeTemplateOptions - dialog for updating a template to a new version.
 func (p *Dialogs) AskUpgradeTemplateOptions(ctx context.Context, d upgradeTmplDeps, projectState *state.State, branchKey model.BranchKey, instance model.TemplateInstance, groups template.StepsGroups) (upgradeTemplate.Options, error) {
-	groupsExt := upgrade.ExportInputsValues(d.Logger().DebugWriter(), projectState, branchKey, instance.InstanceID, groups)
+	groupsExt := upgrade.ExportInputsValues(ctx, d.Logger().Debugf, projectState, branchKey, instance.InstanceID, groups)
 	dialog := &upgradeTmplDialog{Dialogs: p, groups: groupsExt}
 	dialog.out.Branch = branchKey
 	dialog.out.Instance = instance

@@ -69,7 +69,7 @@ type dependencies interface {
 func New(d dependencies) (*Service, error) {
 	s := &Service{
 		clock:         d.Clock(),
-		logger:        d.Logger().AddPrefix("[service]"),
+		logger:        d.Logger().WithComponent("service"),
 		store:         d.Store(),
 		fileManager:   d.FileManager(),
 		etcdClient:    d.EtcdClient(),
@@ -87,11 +87,11 @@ func New(d dependencies) (*Service, error) {
 	s.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	s.wg = &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		s.logger.InfoCtx(ctx, "received shutdown request")
+		s.logger.Info(ctx, "received shutdown request")
 		cancel()
-		s.logger.InfoCtx(ctx, "waiting for background operations")
+		s.logger.Info(ctx, "waiting for background operations")
 		s.wg.Wait()
-		s.logger.InfoCtx(ctx, "shutdown done")
+		s.logger.Info(ctx, "shutdown done")
 	})
 
 	// Create orchestrators

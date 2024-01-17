@@ -62,8 +62,8 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[bufferApi]")
-	logger.InfoCtx(ctx, "Configuration: ", cfg.Dump())
+	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("bufferApi") // nolint:forbidigo
+	logger.Infof(ctx, "Configuration: %s", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CPUProfFilePath != "" {
@@ -103,7 +103,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel)
+	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.InfofCtx(ctx, "starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
+	logger.Infof(ctx, "starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
@@ -154,7 +154,7 @@ func run() error {
 			// Mount endpoints
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
-				logger.DebugfCtx(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+				logger.Debugf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
 	})

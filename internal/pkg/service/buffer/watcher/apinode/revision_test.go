@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -19,7 +18,7 @@ type statsSyncer struct {
 }
 
 func (s *statsSyncer) Sync(ctx context.Context) <-chan error {
-	s.logger.DebugCtx(ctx, ">>> statistics sync")
+	s.logger.Debug(ctx, ">>> statistics sync")
 	errCh := make(chan error)
 	close(errCh)
 	return errCh
@@ -154,22 +153,22 @@ my/revision (lease)
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// Check logs - no unexpected syncs
-	wildcards.Assert(t, `
-[etcd-session]INFO  creating etcd session
-[etcd-session]INFO  created etcd session | %s
-DEBUG  >>> statistics sync
-INFO  reported revision "1"
-DEBUG  >>> statistics sync
-INFO  reported revision "30"
-DEBUG  locked revision "30"
-DEBUG  locked revision "50"
-DEBUG  unlocked revision "30"
-DEBUG  >>> statistics sync
-INFO  reported revision "50"
-DEBUG  unlocked revision "50"
-DEBUG  >>> statistics sync
-INFO  reported revision "70"
-[etcd-session]INFO  closing etcd session
-[etcd-session]INFO  closed etcd session | %s
-`, logger.AllMessages())
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"creating etcd session","component":"etcd-session"}
+{"level":"info","message":"created etcd session | %s","component":"etcd-session"}
+{"level":"debug","message":">>> statistics sync"}
+{"level":"info","message":"reported revision \"1\""}
+{"level":"debug","message":">>> statistics sync"}
+{"level":"info","message":"reported revision \"30\""}
+{"level":"debug","message":"locked revision \"30\""}
+{"level":"debug","message":"locked revision \"50\""}
+{"level":"debug","message":"unlocked revision \"30\""}
+{"level":"debug","message":">>> statistics sync"}
+{"level":"info","message":"reported revision \"50\""}
+{"level":"debug","message":"unlocked revision \"50\""}
+{"level":"debug","message":">>> statistics sync"}
+{"level":"info","message":"reported revision \"70\""}
+{"level":"info","message":"closing etcd session","component":"etcd-session"}
+{"level":"info","message":"closed etcd session | %s","component":"etcd-session"}
+`)
 }

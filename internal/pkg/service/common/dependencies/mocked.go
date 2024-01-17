@@ -3,7 +3,9 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -58,12 +60,14 @@ type MockedConfig struct {
 	enableDistribution bool
 	enableOrchestrator bool
 
-	ctx          context.Context
-	clock        clock.Clock
-	telemetry    telemetry.ForTest
-	loggerPrefix string
-	debugLogger  log.DebugLogger
-	procOpts     []servicectx.Option
+	ctx         context.Context
+	clock       clock.Clock
+	telemetry   telemetry.ForTest
+	debugLogger log.DebugLogger
+	procOpts    []servicectx.Option
+
+	stdout io.Writer
+	stderr io.Writer
 
 	etcdCredentials etcdclient.Credentials
 
@@ -126,9 +130,15 @@ func WithDebugLogger(v log.DebugLogger) MockedOption {
 	}
 }
 
-func WithLoggerPrefix(v string) MockedOption {
+func WithStdout(v io.Writer) MockedOption {
 	return func(c *MockedConfig) {
-		c.loggerPrefix = v
+		c.stdout = v
+	}
+}
+
+func WithStderr(v io.Writer) MockedOption {
+	return func(c *MockedConfig) {
+		c.stderr = v
 	}
 }
 
@@ -247,6 +257,14 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 		cfg.debugLogger.ConnectTo(testhelper.VerboseStdout())
 	}
 
+	if cfg.stdout == nil {
+		cfg.stdout = os.Stdout // nolint:forbidigo
+	}
+
+	if cfg.stderr == nil {
+		cfg.stderr = os.Stderr // nolint:forbidigo
+	}
+
 	return cfg
 }
 
@@ -258,9 +276,6 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Logger
 	var logger log.Logger = cfg.debugLogger
-	if cfg.loggerPrefix != "" {
-		logger = logger.AddPrefix(cfg.loggerPrefix)
-	}
 
 	// Cancel context after the test
 	var cancel context.CancelFunc
@@ -279,7 +294,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	// Create dependencies container
 	var err error
 	d := &mocked{config: cfg, t: t, mockedHTTPTransport: mockedHTTPTransport}
-	d.baseScope = newBaseScope(cfg.ctx, logger, cfg.telemetry, cfg.clock, proc, httpClient)
+	d.baseScope = newBaseScope(cfg.ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient)
 	d.publicScope, err = newPublicScope(cfg.ctx, d, cfg.storageAPIHost, WithPreloadComponents(true))
 	require.NoError(t, err)
 	d.projectScope, err = newProjectScope(cfg.ctx, d, cfg.storageAPIToken)

@@ -66,6 +66,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		}
 	}
 
-	d.Logger().InfofCtx(ctx, `Sources stored in "%s" directory.`, dbt.SourcesPath)
+	d.Logger().Infof(ctx, `Sources stored in "%s" directory.`, dbt.SourcesPath)
 	return nil
 }

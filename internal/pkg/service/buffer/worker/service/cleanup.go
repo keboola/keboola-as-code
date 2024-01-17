@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Service) cleanup(d dependencies) <-chan error {
-	logger := s.logger.AddPrefix("[cleanup]")
+	logger := s.logger.WithComponent("cleanup")
 	node := cleanupPkg.NewNode(d, logger)
 
 	initDone := make(chan error)
@@ -19,7 +19,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.InfofCtx(s.ctx, "ready")
+		logger.Infof(s.ctx, "ready")
 		close(initDone) // no error expected
 
 		for {
@@ -28,7 +28,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 				return
 			case <-ticker.C:
 				if err := node.Check(s.ctx); err != nil && !errors.Is(err, context.Canceled) {
-					logger.ErrorCtx(s.ctx, err)
+					logger.Error(s.ctx, err.Error())
 				}
 			}
 		}
@@ -38,7 +38,7 @@ func (s *Service) cleanup(d dependencies) <-chan error {
 }
 
 func (s *Service) cleanupTasks() <-chan error {
-	logger := s.logger.AddPrefix("[task][cleanup][ticker]")
+	logger := s.logger.WithComponent("task.cleanup.ticker")
 	initDone := make(chan error)
 	s.wg.Add(1)
 	go func() {
@@ -47,7 +47,7 @@ func (s *Service) cleanupTasks() <-chan error {
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
-		logger.InfofCtx(s.ctx, "ready")
+		logger.Infof(s.ctx, "ready")
 		close(initDone) // no error expected
 
 		for {
@@ -58,7 +58,7 @@ func (s *Service) cleanupTasks() <-chan error {
 				// Only one worker should do cleanup
 				if s.dist.MustCheckIsOwner("task.cleanup") {
 					if err := s.tasks.Cleanup(); err != nil && !errors.Is(err, context.Canceled) {
-						logger.ErrorCtx(s.ctx, err)
+						logger.Error(s.ctx, err.Error())
 					}
 				}
 			}

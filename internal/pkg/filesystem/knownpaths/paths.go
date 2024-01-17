@@ -173,9 +173,9 @@ func (p *Paths) UntrackedDirsFrom(ctx context.Context, base string) (dirs []stri
 func (p *Paths) LogUntrackedPaths(ctx context.Context, logger log.Logger) {
 	untracked := p.UntrackedPaths()
 	if len(untracked) > 0 {
-		logger.WarnCtx(ctx, "Unknown paths found:")
+		logger.Warn(ctx, "Unknown paths found:")
 		for _, path := range untracked {
-			logger.WarnCtx(ctx, "  - ", path)
+			logger.Warnf(ctx, "  - %s", path)
 		}
 	}
 }
