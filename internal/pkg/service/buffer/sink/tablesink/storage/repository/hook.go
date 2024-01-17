@@ -129,7 +129,7 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 
 		// Wait for goroutines
 		if err := grp.Wait(); err != nil {
-			return nil, err
+			return nil, errors.PrefixError(err, "cannot create file resource")
 		}
 
 		return result, nil
