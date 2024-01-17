@@ -74,7 +74,7 @@ func (w *AtomicWriter) Close() error {
 
 // Fd fake terminal file descriptor.
 func (*AtomicWriter) Fd() uintptr {
-	return os.Stdout.Fd()
+	return os.Stdout.Fd() // nolint:forbidigo
 }
 
 func (w *AtomicWriter) Truncate() {

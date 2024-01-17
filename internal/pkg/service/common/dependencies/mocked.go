@@ -258,11 +258,11 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 	}
 
 	if cfg.stdout == nil {
-		cfg.stdout = os.Stdout
+		cfg.stdout = os.Stdout // nolint:forbidigo
 	}
 
 	if cfg.stderr == nil {
-		cfg.stderr = os.Stderr
+		cfg.stderr = os.Stderr // nolint:forbidigo
 	}
 
 	return cfg

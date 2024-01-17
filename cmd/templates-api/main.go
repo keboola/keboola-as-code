@@ -62,7 +62,7 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("templatesApi")
+	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("templatesApi") // nolint:forbidigo
 	logger.Infof(ctx, "Configuration: %s", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
@@ -103,7 +103,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr)
+	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
