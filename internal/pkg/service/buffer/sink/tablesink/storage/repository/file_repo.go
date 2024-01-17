@@ -30,6 +30,26 @@ type FileRepository struct {
 	all     *Repository
 }
 
+// rotateSinkContext is an auxiliary struct to group arguments needed to rotate a Sink.
+type rotateSinkContext struct {
+	// Now timestamp, common for all parts of the atomic operation
+	Now time.Time
+	// OpenNew files or just close old ones?
+	OpenNew bool
+	// Sink, parent of files and slices
+	Sink definition.Sink
+	// Volumes provides all active volumes
+	Volumes []volume.Metadata
+	// OpenedFiles in the storage.FileWriting state to be closed, maximum one file
+	OpenedFiles []storage.File
+	// OpenedSlices in the storage.SliceWriting state to be closed
+	OpenedSlices []storage.Slice
+	// 0 means disabled or no data
+	MaxUsedDiskSize datasize.ByteSize
+	// new file resource created via Storage API, is empty if OpenNew == false
+	NewFileResource *FileResource
+}
+
 func newFileRepository(d dependencies, backoff storage.RetryBackoff, all *Repository) *FileRepository {
 	return &FileRepository{
 		client:  d.EtcdClient(),
@@ -99,7 +119,10 @@ func (r *FileRepository) RotateAllIn(rb rollback.Builder, now time.Time, parentK
 // - Files closing is done atomically.
 // - This method is used on Sink/Source soft-delete or disable operation.
 func (r *FileRepository) CloseAllIn(now time.Time, parentKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
-	return op.Atomic(r.client, &op.NoResult{}).AddFrom(r.rotateAllIn(nil, now, parentKey, nil, false))
+	// There is no result of the operation, no new file is opened.
+	return op.
+		Atomic(r.client, &op.NoResult{}).
+		AddFrom(r.rotateAllIn(nil, now, parentKey, nil, false))
 }
 
 // IncrementRetry increments retry attempt and backoff delay on an error.
@@ -231,7 +254,20 @@ func (r *FileRepository) rotate(rb rollback.Builder, now time.Time, sinkKey key.
 		)
 }
 
-// rotateAllIn is a common code used by rotate and close operations.
+// rotateAllIn is a common function used by both rotate and close operations.
+//
+// The now represents a common timestamp for all operations within the AtomicOp.
+//
+// The rb rollback.Builder is used to undo the creation of file resources in the Storage API if the operation fails.
+//
+// The parentKey identifies the group in which files and slices will be rotated.
+// Expected values include: keboola.ProjectID, key.BranchKey, key.SourceKey, and key.SinkKey.
+//
+// The sinks pointer refers to a slice of sinks that should be provided before the write phase of the AtomicOp.
+// This allows to provide already loaded sinks, or to implement their loading in the parent code, in the read phase.
+// If the pointer is nil, the loading of sinks is handled automatically.
+//
+// If openNew is set to true, the operation will open new files and slices; if false, it will only close the existing ones.
 func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sinksPtr *[]definition.Sink, openNew bool) *op.AtomicOp[[]storage.File] {
 	// Validate arguments
 	if openNew && rb == nil {
@@ -275,11 +311,11 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 	atomicOp.ReadOp(r.all.Volume().ListWriterVolumes().WithAllTo(&volumes))
 
 	// Create file resources
-	var resources map[key.SinkKey]FileResource
+	var fileResources map[key.SinkKey]*FileResource
 	if openNew {
 		provider := r.all.hook.NewFileResourcesProvider(rb)
 		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
-			resources, err = provider(ctx, now, sinkKeys)
+			fileResources, err = provider(ctx, now, sinkKeys)
 			return err
 		})
 	}
@@ -294,113 +330,59 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 		})
 	}
 
-	// Read opened files and slices.
-	// There can be a maximum of one old file in the storage.FileWriting state per each table sink,
-	// if present, it is atomically switched to the storage.FileClosing state.
-	// Similarly, slices in the SliceWriting state are switched to the SliceClosing state.
+	// Read opened files in the storage.FileWriting state.
+	// There can be a maximum of one old file in the storage.FileWriting state per each table sink.
+	// On rotation, opened files are switched to the storage.FileClosing state.
 	var openedFiles []storage.File
+	atomicOp.ReadOp(r.ListInState(parentKey, storage.FileWriting).WithAllTo(&openedFiles))
+
+	// Read opened slices in the storage.SliceWriting state.
+	// On rotation, opened slices are switched to the storage.SliceClosing state.
 	var openedSlices []storage.Slice
-	atomicOp.
-		ReadOp(r.ListInState(parentKey, storage.FileWriting).WithAllTo(&openedFiles)).
-		ReadOp(r.all.slice.ListInState(parentKey, storage.SliceWriting).WithAllTo(&openedSlices))
+	atomicOp.ReadOp(r.all.slice.ListInState(parentKey, storage.SliceWriting).WithAllTo(&openedSlices))
+
+	// Group opened files by the sink
+	var openedFilesPerSink map[key.SinkKey][]storage.File
+	atomicOp.BeforeWrite(func(ctx context.Context) {
+		openedFilesPerSink = make(map[key.SinkKey][]storage.File)
+		for _, file := range openedFiles {
+			openedFilesPerSink[file.SinkKey] = append(openedFilesPerSink[file.SinkKey], file)
+		}
+	})
+
+	// Group opened slices by the file
+	var openedSlicesPerSink map[key.SinkKey][]storage.Slice
+	atomicOp.BeforeWrite(func(ctx context.Context) {
+		openedSlicesPerSink = make(map[key.SinkKey][]storage.Slice)
+		for _, slice := range openedSlices {
+			openedSlicesPerSink[slice.SinkKey] = append(openedSlicesPerSink[slice.SinkKey], slice)
+		}
+	})
 
 	// Close old files, open new files
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
 		txn := op.Txn(r.client)
-
-		// Group opened files by the sink
-		openedFilesPerSink := make(map[key.SinkKey][]storage.File)
-		for _, file := range openedFiles {
-			openedFilesPerSink[file.SinkKey] = append(openedFilesPerSink[file.SinkKey], file)
-		}
-
-		// Group opened slices by the file
-		openedSlicesPerSink := make(map[key.SinkKey][]storage.Slice)
-		for _, slice := range openedSlices {
-			openedSlicesPerSink[slice.SinkKey] = append(openedSlicesPerSink[slice.SinkKey], slice)
-		}
+		errs := errors.NewMultiError()
 
 		// Open a new file in each sink
-		errs := errors.NewMultiError()
 		for _, sink := range sinks {
-			// File should be opened only for the table sinks
-			if sink.Type != definition.SinkTypeTable {
-				continue
-			}
+			sinkTxn, err := r.rotateSink(ctx, rotateSinkContext{
+				Now:             now,
+				OpenNew:         openNew,
+				Sink:            sink,
+				Volumes:         volumes,
+				OpenedFiles:     openedFilesPerSink[sink.SinkKey],
+				OpenedSlices:    openedSlicesPerSink[sink.SinkKey],
+				MaxUsedDiskSize: maxUsedDiskSpace[sink.SinkKey],
+				NewFileResource: fileResources[sink.SinkKey],
+			})
 
-			// Get file resource
-			var resource FileResource
-			if openNew {
-				var ok bool
-				if resource, ok = resources[sink.SinkKey]; !ok {
-					errs.Append(errors.Errorf(`credentials for the sink "%s" was not provided`, sink.SinkKey))
-					continue
-				}
-			}
-
-			// Close the old file, if present
-			sinkOpenedFiles := openedFilesPerSink[sink.SinkKey]
-			if count := len(sinkOpenedFiles); count > 1 {
-				errs.Append(errors.Errorf(`unexpected state, found %d opened files in the sink "%s"`, count, sink.SinkKey))
-				continue
-			} else if count == 1 {
-				if oldFile := sinkOpenedFiles[0]; openNew && oldFile.FileKey == resource.FileKey {
-					// File already exists
-					return nil, serviceError.NewResourceAlreadyExistsError("file", oldFile.FileKey.String(), "sink")
-				} else if modified, err := oldFile.WithState(now, storage.FileClosing); err == nil {
-					// Switch the old file from the state storage.FileWriting to the state storage.FileClosing
-					txn.Merge(r.updateTxn(oldFile, modified))
-				} else {
-					errs.Append(err)
-					continue
-				}
-			}
-
-			// Close old slices, if present
-			for _, oldSlice := range openedSlicesPerSink[sink.SinkKey] {
-				if modified, err := oldSlice.WithState(now, storage.SliceClosing); err == nil {
-					// Switch the old slice from the state storage.SliceWriting to the state storage.SliceClosing
-					txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
-				} else {
-					errs.Append(err)
-					continue
-				}
-			}
-
-			// Open new file, if enabled
-			if openNew {
-				// Apply configuration patch from the sink to the global config
-				cfg := r.config.With(sink.Table.Storage)
-
-				// Create file entity
-				file, err := newFile(cfg, resource, sink)
-				if err != nil {
-					errs.Append(err)
-					continue
-				}
-
-				// Assign volumes
-				file.Assignment = r.all.hook.AssignVolumes(ctx, volumes, cfg.VolumeAssignment, file.OpenedAt().Time())
-
-				// At least one volume must be assigned
-				if len(file.Assignment.Volumes) == 0 {
-					errs.Append(errors.New(`no volume is available for the file`))
-					continue
-				}
-
-				// Open slices in the assigned volumes
-				for _, volumeID := range file.Assignment.Volumes {
-					if slice, err := newSlice(now, file, volumeID, maxUsedDiskSpace[file.SinkKey]); err == nil {
-						txn.Merge(r.all.slice.createTxn(slice))
-					} else {
-						errs.Append(err)
-					}
-				}
-
-				// Open file
-				txn.Merge(r.createTxn(file).OnResult(func(result *op.TxnResult[op.NoResult]) {
-					if result.Succeeded() {
-						newFiles = append(newFiles, file)
+			if err != nil {
+				errs.Append(err)
+			} else if sinkTxn != nil {
+				txn.Merge(sinkTxn.OnSucceeded(func(r *op.TxnResult[*storage.File]) {
+					if f := r.Result(); f != nil {
+						newFiles = append(newFiles, *f)
 					}
 				}))
 			}
@@ -418,6 +400,84 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 	})
 
 	return atomicOp
+}
+
+func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.TxnOp[*storage.File], error) {
+	// File should be opened only for the table sinks
+	if c.Sink.Type != definition.SinkTypeTable {
+		return nil, nil
+	}
+
+	// Create txn
+	var result *storage.File
+	txn := op.TxnWithResult(r.client, &result)
+
+	// Check file resource
+	if c.OpenNew && c.NewFileResource == nil {
+		return nil, errors.Errorf(`credentials for the sink "%s" was not provided`, c.Sink.SinkKey)
+	}
+
+	// Close the old file, if present
+	if count := len(c.OpenedFiles); count > 1 {
+		return nil, errors.Errorf(`unexpected state, found %d opened files in the sink "%s"`, count, c.Sink.SinkKey)
+	} else if count == 1 {
+		if oldFile := c.OpenedFiles[0]; c.NewFileResource != nil && oldFile.FileKey == c.NewFileResource.FileKey {
+			// File already exists
+			return nil, serviceError.NewResourceAlreadyExistsError("file", oldFile.FileKey.String(), "sink")
+		} else if modified, err := oldFile.WithState(c.Now, storage.FileClosing); err == nil {
+			// Switch the old file from the state storage.FileWriting to the state storage.FileClosing
+			txn.Merge(r.updateTxn(oldFile, modified))
+		} else {
+			return nil, err
+		}
+	}
+
+	// Close old slices, if present
+	for _, oldSlice := range c.OpenedSlices {
+		if modified, err := oldSlice.WithState(c.Now, storage.SliceClosing); err == nil {
+			// Switch the old slice from the state storage.SliceWriting to the state storage.SliceClosing
+			txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
+		} else {
+			return nil, err
+		}
+	}
+
+	// Open new file, if enabled
+	if c.NewFileResource != nil {
+		// Apply configuration patch from the sink to the global config
+		cfg := r.config.With(c.Sink.Table.Storage)
+
+		// Create file entity
+		file, err := newFile(cfg, *c.NewFileResource, c.Sink)
+		if err != nil {
+			return nil, err
+		}
+
+		// Assign volumes
+		file.Assignment = r.all.hook.AssignVolumes(ctx, c.Volumes, cfg.VolumeAssignment, file.OpenedAt().Time())
+
+		// At least one volume must be assigned
+		if len(file.Assignment.Volumes) == 0 {
+			return nil, errors.New(`no volume is available for the file`)
+		}
+
+		// Open slices in the assigned volumes
+		for _, volumeID := range file.Assignment.Volumes {
+			if slice, err := newSlice(c.Now, file, volumeID, c.MaxUsedDiskSize); err == nil {
+				txn.Merge(r.all.slice.createTxn(slice))
+			} else {
+				return nil, err
+			}
+		}
+
+		// Open file
+		txn.Merge(r.createTxn(file).OnSucceeded(func(r *op.TxnResult[storage.File]) {
+			file = r.Result()
+			result = &file
+		}))
+	}
+
+	return txn, nil
 }
 
 // createTxn saves a new entity, see also update method.
