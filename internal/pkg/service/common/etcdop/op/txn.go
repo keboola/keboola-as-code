@@ -170,7 +170,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		if lowLevel, err := op.Op(ctx); err != nil {
 			errs.Append(errors.PrefixErrorf(err, "cannot create operation [then][%d]", i))
 		} else if lowLevel.Op.IsTxn() {
-			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation "%T" is a transaction, use ThenTxn, not Then`, i, lowLevel.Op))
+			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation is a transaction, use ThenTxn, not Then`, i))
 		} else {
 			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		}
@@ -180,7 +180,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		if lowLevel, err := op.Op(ctx); err != nil {
 			errs.Append(errors.PrefixErrorf(err, "cannot create operation [thenTxn][%d]", i))
 		} else if !lowLevel.Op.IsTxn() {
-			errs.Append(errors.Errorf(`cannot create operation [thenTxn][%d]: operation "%T" is not a transaction, use Then, not ThenTxn`, i, lowLevel.Op))
+			errs.Append(errors.Errorf(`cannot create operation [thenTxn][%d]: operation is not a transaction, use Then, not ThenTxn`, i))
 		} else {
 			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		}
