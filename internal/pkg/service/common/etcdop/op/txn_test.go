@@ -75,9 +75,9 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 		Then(op).
 		Else(op).
 		Else(op).
-		And(op).
-		And(op).
-		And(Txn(client).Then(op))
+		Merge(op).
+		Merge(op).
+		Merge(Txn(client).Then(op))
 
 	assert.False(t, txn.Empty())
 
@@ -87,9 +87,9 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 - cannot create operation [then][1]: some error
 - cannot create operation [else][0]: some error
 - cannot create operation [else][1]: some error
-- cannot create operation [and][0]: some error
-- cannot create operation [and][1]: some error
-- cannot create operation [and][2]:
+- cannot create operation [merge][0]: some error
+- cannot create operation [merge][1]: some error
+- cannot create operation [merge][2]:
   - cannot create operation [then][0]: some error
 `), err.Error())
 	}
@@ -115,9 +115,9 @@ func TestTxnOp_OpError_MapResult_IfBranch(t *testing.T) {
 		Then(opFactory(2)).
 		Else(opFactory(3)).
 		Else(opFactory(4)).
-		And(opFactory(5)).
-		And(opFactory(6)).
-		And(Txn(client).Then(opFactory(7)))
+		Merge(opFactory(5)).
+		Merge(opFactory(6)).
+		Merge(Txn(client).Then(opFactory(7)))
 
 	if err := txn.Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
@@ -151,9 +151,9 @@ func TestTxnOp_OpError_MapResult_ElseBranch(t *testing.T) {
 		Then(opFactory(2)).
 		Else(opFactory(3)).
 		Else(opFactory(4)).
-		And(opFactory(5)).
-		And(opFactory(6)).
-		And(Txn(client).Then(opFactory(7)))
+		Merge(opFactory(5)).
+		Merge(opFactory(6)).
+		Merge(Txn(client).Then(opFactory(7)))
 
 	if err := txn.Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
@@ -343,7 +343,7 @@ txn OnResult: succeeded
 	}
 }
 
-func TestTxnOp_And_Simple(t *testing.T) {
+func TestTxnOp_Merge_Simple(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -353,11 +353,11 @@ func TestTxnOp_And_Simple(t *testing.T) {
 
 	// Define transaction
 	txn := Txn(client).
-		And(
+		Merge(
 			etcdop.Key("key1").Put(client, "value1"),
 			Txn(client).
 				Then(etcdop.Key("key2").Put(client, "value2")).
-				And(
+				Merge(
 					Txn(client).
 						Then(etcdop.Key("key3").Put(client, "value3")).
 						OnSucceeded(func(*TxnResult[NoResult]) {
@@ -399,7 +399,7 @@ root transaction succeeded
 `), strings.TrimSpace(log.String()))
 }
 
-func TestTxnOp_And_RealExample(t *testing.T) {
+func TestTxnOp_Merge_RealExample(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -425,8 +425,8 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 
 	// Compose transaction, "key/put" must not exist, "key/delete" must exist
 	txn := Txn(client)
-	txn.And(putOp)
-	txn.And(deleteOp)
+	txn.Merge(putOp)
+	txn.Merge(deleteOp)
 	txn.Then(etcdop.Key("key/txn/succeeded").Put(client, "true"))
 	txn.Else(etcdop.Key("key/txn/succeeded").Put(client, "false"))
 	txn.AddProcessor(func(ctx context.Context, r *TxnResult[NoResult]) {
@@ -628,7 +628,7 @@ txn succeeded: true
 	}
 }
 
-func TestTxnOp_And_Complex(t *testing.T) {
+func TestTxnOp_Merge_Complex(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -647,7 +647,7 @@ func TestTxnOp_And_Complex(t *testing.T) {
 		OnResult(func(r *TxnResult[NoResult]) {
 			_, _ = fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
 		}).
-		And(
+		Merge(
 			Txn(client).
 				If(etcd.Compare(etcd.Value("txn1/if"), "=", "ok")).
 				Then(etcdop.Key("txn1/then/put").Put(client, "ok").WithOnResult(onNoResult("txn1 then put"))).
@@ -658,7 +658,7 @@ func TestTxnOp_And_Complex(t *testing.T) {
 					_, _ = fmt.Fprintf(&log, "txn1 succeeded: %t %v\n", r.Succeeded(), simplifyTxnResult(r).Results)
 				}),
 		).
-		And(
+		Merge(
 			Txn(client).
 				If(etcd.Compare(etcd.Value("txn2/if"), "=", "ok")).
 				Then(etcdop.Key("txn2/then/put").Put(client, "ok").WithOnResult(onNoResult("txn2 then put"))).
