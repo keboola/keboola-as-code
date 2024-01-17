@@ -34,6 +34,11 @@ type TxnOp[R any] struct {
 	elseOps    []Op
 }
 
+// txnInterface is a marker interface for generic type TxnOp.
+type txnInterface interface {
+	txn()
+}
+
 type lowLevelTxn[R any] struct {
 	result      *R
 	client      etcd.KV
@@ -60,6 +65,9 @@ func MergeToTxn(client etcd.KV, ops ...Op) *TxnOp[NoResult] {
 	return Txn(client).Merge(ops...)
 }
 
+// txn is a marker method defined by the txnInterface.
+func (v *TxnOp[R]) txn() {}
+
 func (v *TxnOp[R]) Empty() bool {
 	return len(v.ifs) == 0 && len(v.thenOps) == 0 && len(v.thenTxnOps) == 0 && len(v.mergeOps) == 0 && len(v.elseOps) == 0
 }
@@ -75,6 +83,14 @@ func (v *TxnOp[R]) If(cs ...etcd.Cmp) *TxnOp[R] {
 // The Then operations will be executed if all If comparisons succeed.
 // To add a transaction to the Then branch, use ThenTxn, or use Merge to merge transactions.
 func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
+	// Check common high-level transaction types.
+	// Bulletproof check of the low-level transaction is in the "lowLevelTxn" method.
+	for i, op := range ops {
+		if _, ok := op.(txnInterface); ok {
+			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use ThenTxn, not Then`, i))
+		}
+	}
+
 	v.thenOps = append(v.thenOps, ops...)
 	return v
 }
