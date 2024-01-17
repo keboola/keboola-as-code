@@ -38,5 +38,5 @@ func TestMetaMiddleware(t *testing.T) {
 	assert.NotEmpty(t, reqCtx.Value(middleware.RequestIDCtxKey))
 	assert.NotEmpty(t, reqCtx.Value(goaMiddleware.RequestIDKey))
 	assert.Equal(t, req.URL, reqCtx.Value(middleware.RequestURLCtxKey))
-	assert.True(t, ctxattr.Attributes(reqCtx).HasValue("requestId"))
+	assert.True(t, ctxattr.Attributes(reqCtx).HasValue("http.request_id"))
 }
