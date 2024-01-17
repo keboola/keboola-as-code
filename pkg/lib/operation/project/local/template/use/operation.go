@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"time"
 
@@ -47,6 +46,7 @@ type dependencies interface {
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -257,7 +257,7 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 	}
 
 	// Log new objects
-	p.modified.Log(os.Stdout, p.options.Template)
+	p.modified.Log(p.deps.Stdout(), p.options.Template)
 
 	// Normalize paths
 	if _, err := rename.Run(ctx, p.options.ProjectState, rename.Options{DryRun: false, LogEmpty: false}, p.deps); err != nil {

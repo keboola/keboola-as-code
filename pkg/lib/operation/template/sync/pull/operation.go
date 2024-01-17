@@ -2,7 +2,7 @@ package pull
 
 import (
 	"context"
-	"os"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -25,6 +25,7 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func LoadStateOptions() loadState.Options {
@@ -60,7 +61,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	// Log plan
-	plan.Log(os.Stdout)
+	plan.Log(d.Stdout())
 
 	if !plan.Empty() {
 		// Invoke

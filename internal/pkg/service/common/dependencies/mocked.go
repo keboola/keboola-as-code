@@ -3,7 +3,9 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -64,6 +66,9 @@ type MockedConfig struct {
 	debugLogger log.DebugLogger
 	procOpts    []servicectx.Option
 
+	stdout io.Writer
+	stderr io.Writer
+
 	etcdCredentials etcdclient.Credentials
 
 	services                  keboola.Services
@@ -122,6 +127,18 @@ func WithClock(v clock.Clock) MockedOption {
 func WithDebugLogger(v log.DebugLogger) MockedOption {
 	return func(c *MockedConfig) {
 		c.debugLogger = v
+	}
+}
+
+func WithStdout(v io.Writer) MockedOption {
+	return func(c *MockedConfig) {
+		c.stdout = v
+	}
+}
+
+func WithStderr(v io.Writer) MockedOption {
+	return func(c *MockedConfig) {
+		c.stderr = v
 	}
 }
 
@@ -240,6 +257,14 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 		cfg.debugLogger.ConnectTo(testhelper.VerboseStdout())
 	}
 
+	if cfg.stdout == nil {
+		cfg.stdout = os.Stdout // nolint:forbidigo
+	}
+
+	if cfg.stderr == nil {
+		cfg.stderr = os.Stderr // nolint:forbidigo
+	}
+
 	return cfg
 }
 
@@ -269,7 +294,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	// Create dependencies container
 	var err error
 	d := &mocked{config: cfg, t: t, mockedHTTPTransport: mockedHTTPTransport}
-	d.baseScope = newBaseScope(cfg.ctx, logger, cfg.telemetry, cfg.clock, proc, httpClient)
+	d.baseScope = newBaseScope(cfg.ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient)
 	d.publicScope, err = newPublicScope(cfg.ctx, d, cfg.storageAPIHost, WithPreloadComponents(true))
 	require.NoError(t, err)
 	d.projectScope, err = newProjectScope(cfg.ctx, d, cfg.storageAPIToken)

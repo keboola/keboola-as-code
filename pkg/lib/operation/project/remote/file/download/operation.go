@@ -3,6 +3,7 @@ package download
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -29,6 +30,8 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 type downloader struct {
@@ -76,6 +79,10 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 		}
 	}()
 
+	stderr := d.Stderr()
+	progressbar.OptionSetWriter(stderr)(d.bar)
+	progressbar.OptionOnCompletion(func() { fmt.Fprint(stderr, "\n") })
+
 	// Download
 	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
 		// Download all slices into single file
@@ -107,10 +114,18 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 	return nil
 }
 
+type nopCloser struct {
+	io.Writer
+}
+
+func (n *nopCloser) Close() error {
+	return nil
+}
+
 func (d *downloader) openOutput(slice string) (io.WriteCloser, error) {
 	switch {
 	case d.options.ToStdout():
-		return os.Stdout, nil // stdout should not be closed
+		return &nopCloser{d.Stdout()}, nil // stdout should not be closed
 	case d.options.AllowSliced && d.options.File.IsSliced:
 		return os.OpenFile(filepath.Join(d.options.Output, slice), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // nolint:forbidigo
 	default:

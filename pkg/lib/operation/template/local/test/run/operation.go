@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"io"
 	"os"
 	"strconv"
 	"time"
@@ -36,6 +37,8 @@ type dependencies interface {
 	Process() *servicectx.Process
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
@@ -103,7 +106,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Process(), branchID, false)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Process(), 0, true)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), 0, true)
 	if err != nil {
 		return err
 	}

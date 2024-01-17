@@ -157,7 +157,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		root.logger.Debugf(cmd.Context(), `Working dir: %s`, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
-		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
+		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.options.GetBool(options.NonInteractiveOpt))
 
 		// Create process abstraction
 		proc, err := servicectx.New()
@@ -166,7 +166,16 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		}
 
 		// Create dependencies provider
-		p.Set(dependencies.NewProvider(cmd.Context(), root.logger, proc, root.fs, dialog.New(prompt, root.options), root.options))
+		p.Set(dependencies.NewProvider(
+			cmd.Context(),
+			root.logger,
+			proc,
+			root.fs,
+			dialog.New(prompt, root.options),
+			root.options,
+			stdout,
+			stderr,
+		))
 
 		// Check version
 		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseScope()); err != nil {

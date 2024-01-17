@@ -2,7 +2,7 @@ package pull
 
 import (
 	"context"
-	"os"
+	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
@@ -24,6 +24,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -54,7 +55,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(os.Stdout)
+	plan.Log(d.Stdout())
 
 	if !plan.Empty() {
 		// Dry run?

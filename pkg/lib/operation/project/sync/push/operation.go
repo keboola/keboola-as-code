@@ -2,7 +2,7 @@ package push
 
 import (
 	"context"
-	"os"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -29,6 +29,7 @@ type dependencies interface {
 	Logger() log.Logger
 	ProjectID() keboola.ProjectID
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -81,7 +82,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(os.Stdout)
+	plan.Log(d.Stdout())
 
 	if !plan.Empty() {
 		// Dry run?

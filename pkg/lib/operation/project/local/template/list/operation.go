@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -14,6 +14,7 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err error) {
@@ -26,7 +27,7 @@ func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err er
 		return err
 	}
 
-	w := os.Stdout
+	w := d.Stdout()
 
 	for _, instance := range instances {
 		fmt.Fprintf(w, "Template ID:          %s\n", instance.TemplateID)

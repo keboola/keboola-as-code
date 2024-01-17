@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"io"
 	"strconv"
 
 	"github.com/benbjohnson/clock"
@@ -34,7 +35,16 @@ func PrepareProjectFS(ctx context.Context, testPrj *testproject.Project, branchI
 	return fixtures.LoadFS(ctx, "empty-branch", envs)
 }
 
-func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
+func PrepareProject(
+	ctx context.Context,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+	proc *servicectx.Process,
+	branchID int,
+	remote bool,
+) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
 	// Get OS envs
 	envs, err := env.FromOs()
 	if err != nil {
@@ -47,7 +57,7 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 		return nil, nil, nil, nil, err
 	}
 
-	testDeps, err := newTestDependencies(ctx, logger, tel, proc, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+	testDeps, err := newTestDependencies(ctx, logger, tel, stdout, stderr, proc, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -105,8 +115,17 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 	return prjState, testPrj, testDeps, unlockFn, nil
 }
 
-func newTestDependencies(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, apiHost, apiToken string) (*Dependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseScope(ctx, logger, tel, clock.New(), proc, client.NewTestClient())
+func newTestDependencies(
+	ctx context.Context,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+	proc *servicectx.Process,
+	apiHost,
+	apiToken string,
+) (*Dependencies, error) {
+	baseDeps := dependenciesPkg.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, client.NewTestClient())
 	publicDeps, err := dependenciesPkg.NewPublicScope(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err

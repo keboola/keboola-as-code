@@ -93,7 +93,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclien
 		logger = zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
 			if entry.Level > log.DebugLevel {
 				bytes, _ := encoder.EncodeEntry(entry, fields)
-				_, _ = os.Stdout.Write(bytes.Bytes())
+				_, _ = os.Stdout.Write(bytes.Bytes()) // nolint:forbidigo
 			}
 		}))
 	}
@@ -134,7 +134,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclien
 
 	// Add operations logger
 	if verbose {
-		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout)
+		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout) // nolint:forbidigo
 	}
 
 	return etcdClient
