@@ -2,6 +2,7 @@ package etcdclient
 
 import (
 	"context"
+	"os"
 	"strings"
 	"time"
 
@@ -181,7 +182,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	// Log each KV operation as a debug message, if enabled
 	if cfg.debugOpLogs {
-		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
+		c.KV = etcdlogger.KVLogWrapper(c.KV, os.Stderr)
 	}
 
 	// Connection check: get cluster members

@@ -150,22 +150,6 @@ func (l *zapLogger) Sync() error {
 	return l.sugaredLogger.Sync()
 }
 
-func (l *zapLogger) DebugWriter() *LevelWriter {
-	return &LevelWriter{logger: l.sugaredLogger, level: DebugLevel}
-}
-
-func (l *zapLogger) InfoWriter() *LevelWriter {
-	return &LevelWriter{logger: l.sugaredLogger, level: InfoLevel}
-}
-
-func (l *zapLogger) WarnWriter() *LevelWriter {
-	return &LevelWriter{logger: l.sugaredLogger, level: WarnLevel}
-}
-
-func (l *zapLogger) ErrorWriter() *LevelWriter {
-	return &LevelWriter{logger: l.sugaredLogger, level: ErrorLevel}
-}
-
 func (l *zapLogger) zapCore() zapcore.Core {
 	return l.core
 }

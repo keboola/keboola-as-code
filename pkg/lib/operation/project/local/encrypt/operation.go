@@ -2,6 +2,7 @@ package encrypt
 
 import (
 	"context"
+	"os"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -37,7 +38,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Log plan
 	if !plan.Empty() || o.LogEmpty {
-		plan.Log(logger)
+		plan.Log(os.Stdout)
 	}
 
 	if !plan.Empty() {

@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"os"
 
 	"github.com/benbjohnson/clock"
 
@@ -93,10 +94,10 @@ func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servic
 		httpclient.WithUserAgent(userAgent),
 		func(c *httpclient.Config) {
 			if cfg.DebugLog {
-				httpclient.WithDebugOutput(logger.DebugWriter())(c)
+				httpclient.WithDebugOutput(os.Stdout)(c)
 			}
 			if cfg.DebugHTTP {
-				httpclient.WithDumpOutput(logger.DebugWriter())(c)
+				httpclient.WithDumpOutput(os.Stdout)(c)
 			}
 		},
 	)

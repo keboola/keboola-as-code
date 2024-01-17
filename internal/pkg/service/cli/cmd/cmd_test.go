@@ -230,5 +230,10 @@ func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.AtomicWriter) {
 
 	envs := env.Empty()
 
-	return NewRootCommand(in, out, out, envs, fsFactory), out
+	root := NewRootCommand(in, out, out, envs, fsFactory)
+	if root.Context() == nil {
+		root.SetContext(context.Background())
+	}
+
+	return root, out
 }

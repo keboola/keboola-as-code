@@ -2,6 +2,7 @@ package pull
 
 import (
 	"context"
+	"os"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -59,7 +60,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	// Log plan
-	plan.Log(logger)
+	plan.Log(os.Stdout)
 
 	if !plan.Empty() {
 		// Invoke

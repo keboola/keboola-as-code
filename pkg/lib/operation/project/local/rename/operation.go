@@ -2,6 +2,7 @@ package rename
 
 import (
 	"context"
+	"os"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
@@ -35,7 +36,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Log plan
 	if o.LogEmpty || !plan.Empty() {
-		plan.Log(logger)
+		plan.Log(os.Stdout)
 	}
 
 	if !plan.Empty() {

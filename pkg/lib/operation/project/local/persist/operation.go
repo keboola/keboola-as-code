@@ -2,6 +2,7 @@ package persist
 
 import (
 	"context"
+	"os"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -41,7 +42,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Log plan
-	plan.Log(logger)
+	plan.Log(os.Stdout)
 
 	if !plan.Empty() {
 		// Dry run?

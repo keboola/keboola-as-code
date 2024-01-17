@@ -16,7 +16,6 @@ const (
 
 type Logger interface {
 	contextLogger
-	toWriter
 	withFields
 }
 
@@ -40,20 +39,6 @@ type DebugLogger interface {
 	AllMessagesTxt() string
 }
 
-type baseLogger interface {
-	Debug(args ...any)
-	Info(args ...any)
-	Warn(args ...any)
-	Error(args ...any)
-
-	Debugf(template string, args ...any)
-	Infof(template string, args ...any)
-	Warnf(template string, args ...any)
-	Errorf(template string, args ...any)
-
-	Sync() error
-}
-
 type contextLogger interface {
 	// Debug logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Debug(ctx context.Context, message string)
@@ -72,13 +57,6 @@ type contextLogger interface {
 	Errorf(ctx context.Context, template string, args ...any)
 
 	Sync() error
-}
-
-type toWriter interface {
-	DebugWriter() *LevelWriter
-	InfoWriter() *LevelWriter
-	WarnWriter() *LevelWriter
-	ErrorWriter() *LevelWriter
 }
 
 type withFields interface {
