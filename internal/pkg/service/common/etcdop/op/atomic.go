@@ -202,9 +202,10 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	var err error
 
 	for {
-		if ok, err = v.DoWithoutRetry(ctx, opts...); err != nil {
-			break
-		} else if !ok {
+		txnResult := v.DoWithoutRetry(ctx, opts...)
+		ok = txnResult.Succeeded()
+		err = txnResult.Err()
+		if err == nil && !ok {
 			attempt++
 			if delay := b.NextBackOff(); delay == backoff.Stop {
 				break
@@ -227,24 +228,23 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	return AtomicResult[R]{result: v.result, error: err, attempt: attempt, elapsedTime: elapsedTime}
 }
 
-func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool, error) {
-	// Create GET operations
-	var getOps []Op
+func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnResult[R] {
+	tracker := NewTracker(v.client)
+
+	// Create READ operations
+	readTxn := Txn(tracker)
 	for _, opFactory := range v.readPhase {
-		op, err := opFactory(ctx)
-		if err != nil {
-			return false, err
-		}
-		if op != nil {
-			getOps = append(getOps, op)
+		if op, err := opFactory(ctx); err != nil {
+			return newErrorTxnResult[R](err)
+		} else if op != nil {
+			readTxn.Merge(op)
 		}
 	}
 
-	// Run GET operation, track used keys/prefixes
-	tracker := NewTracker(v.client)
-	header, err := Txn(tracker).Then(getOps...).Do(ctx, opts...).HeaderOrErr()
-	if err != nil {
-		return false, err
+	// Run READ phase, track used keys/prefixes
+	readResult := readTxn.Do(ctx, opts...)
+	if err := readResult.Err(); err != nil {
+		return newErrorTxnResult[R](err)
 	}
 
 	// Create IF part of the transaction
@@ -282,7 +282,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool,
 				etcd.Cmp{
 					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
 					Target:      etcdserverpb.Compare_MOD,
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: header.Revision + 1},
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readResult.Header().Revision + 1},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
 				})
@@ -291,39 +291,37 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool,
 		}
 	}
 
-	// Create transaction
-	txn, err := v.createWriteTxn(ctx)
+	// Create WRITE transaction
+	writeTxn, err := v.createWriteTxn(ctx)
 	if err != nil {
-		return false, err
+		return newErrorTxnResult[R](err)
 	}
 
 	// Add IF conditions
-	txn.If(cmps...)
+	writeTxn.If(cmps...)
 
 	// Do
-	txnResp := txn.Do(ctx)
-	return txnResp.Succeeded(), txnResp.Err()
+	return writeTxn.Do(ctx)
 }
 
 func (v *AtomicOp[R]) createWriteTxn(ctx context.Context) (*TxnOp[R], error) {
 	// Create WRITE operation
-	var writeOps []Op
+	writeTxn := TxnWithResult[R](v.client, v.result)
 	for _, opFactory := range v.writePhase {
-		op, err := opFactory(ctx)
-		if err != nil {
+		if op, err := opFactory(ctx); err != nil {
 			return nil, err
-		}
-		if op != nil {
-			writeOps = append(writeOps, op)
+		} else if op != nil {
+			writeTxn.Merge(op)
 		}
 	}
 
-	// Create transaction
-	return TxnWithResult[R](v.client, v.result).Then(writeOps...).AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
-		// Processors are invoked if the transaction succeeded or there is an error.
-		// If the transaction failed, the atomic operation is retried, see Do method.
+	// Processors are invoked if the transaction succeeded or there is an error.
+	// If the transaction failed, the atomic operation is retried, see Do method.
+	writeTxn.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
 		if r.Succeeded() || r.Err() != nil {
 			v.processors.invoke(ctx, r.result)
 		}
-	}), nil
+	})
+
+	return writeTxn, nil
 }

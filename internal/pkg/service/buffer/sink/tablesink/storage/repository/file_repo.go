@@ -163,7 +163,7 @@ func (r *FileRepository) StateTransition(now time.Time, fileKey storage.FileKey,
 
 				// Save modified value, if there is a difference
 				if !reflect.DeepEqual(oldSliceState, slice) {
-					txn.Then(r.all.slice.updateTxn(oldSliceState, slice))
+					txn.Merge(r.all.slice.updateTxn(oldSliceState, slice))
 				}
 			}
 
@@ -187,7 +187,7 @@ func (r *FileRepository) Delete(k storage.FileKey) *op.TxnOp[op.NoResult] {
 	txn := op.Txn(r.client)
 
 	// Delete entity from All prefix
-	txn.And(
+	txn.Merge(
 		r.schema.
 			AllLevels().ByKey(k).DeleteIfExists(r.client).
 			WithEmptyResultAsError(func() error {
@@ -201,7 +201,7 @@ func (r *FileRepository) Delete(k storage.FileKey) *op.TxnOp[op.NoResult] {
 	}
 
 	// Delete all slices
-	txn.And(r.all.slice.deleteAll(k))
+	txn.Merge(r.all.slice.deleteAll(k))
 
 	return txn
 }
@@ -349,7 +349,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 					return nil, serviceError.NewResourceAlreadyExistsError("file", oldFile.FileKey.String(), "sink")
 				} else if modified, err := oldFile.WithState(now, storage.FileClosing); err == nil {
 					// Switch the old file from the state storage.FileWriting to the state storage.FileClosing
-					txn.And(r.updateTxn(oldFile, modified))
+					txn.Merge(r.updateTxn(oldFile, modified))
 				} else {
 					errs.Append(err)
 				}
@@ -359,7 +359,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 			for _, oldSlice := range openedSlicesPerSink[sink.SinkKey] {
 				if modified, err := oldSlice.WithState(now, storage.SliceClosing); err == nil {
 					// Switch the old slice from the state storage.SliceWriting to the state storage.SliceClosing
-					txn.And(r.all.slice.updateTxn(oldSlice, modified))
+					txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
 				} else {
 					errs.Append(err)
 				}
@@ -387,14 +387,14 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 				// Open slices in the assigned volumes
 				for _, volumeID := range file.Assignment.Volumes {
 					if slice, err := newSlice(now, file, volumeID, maxUsedDiskSpace[file.SinkKey]); err == nil {
-						txn.And(r.all.slice.createTxn(slice))
+						txn.Merge(r.all.slice.createTxn(slice))
 					} else {
 						errs.Append(err)
 					}
 				}
 
 				// Open file
-				txn.And(r.createTxn(file).OnResult(func(result *op.TxnResult[op.NoResult]) {
+				txn.Merge(r.createTxn(file).OnResult(func(result *op.TxnResult[op.NoResult]) {
 					if result.Succeeded() {
 						newFiles = append(newFiles, file)
 					}

@@ -69,10 +69,10 @@ func TestAtomicUpdate(t *testing.T) {
 			key3.Put(client, "value"),
 			op.Txn(client).
 				If(etcd.Compare(etcd.Value("key4"), "=", "value")).
-				Then(
+				Merge(
 					key5.Get(client),
 					op.Txn(client).
-						If(etcd.Compare(etcd.Value("checkMissing"), "=", "value")).
+						If(etcd.Compare(etcd.Version("missing"), "=", 0)).
 						Then().
 						Else(key8.Get(client)),
 				).
@@ -104,9 +104,9 @@ func TestAtomicUpdate(t *testing.T) {
 	})
 
 	// 1. No modification during update, DoWithoutRetry, success
-	ok, err := atomicOp.DoWithoutRetry(ctx)
-	assert.True(t, ok)
-	require.NoError(t, err)
+	opResult := atomicOp.DoWithoutRetry(ctx)
+	assert.True(t, opResult.Succeeded())
+	require.NoError(t, opResult.Err())
 	r, err := key1.Get(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Equal(t, "<value>", string(r.Value))
@@ -123,8 +123,8 @@ func TestAtomicUpdate(t *testing.T) {
 		require.NoError(t, key1.Put(client, "newValue1").Do(ctx).Err())
 		return true
 	}
-	ok, err = atomicOp.DoWithoutRetry(ctx)
-	assert.False(t, ok)
+	opResult = atomicOp.DoWithoutRetry(ctx)
+	assert.False(t, opResult.Succeeded())
 	require.NoError(t, err)
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)

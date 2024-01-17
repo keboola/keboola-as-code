@@ -126,7 +126,7 @@ func (r *SliceRepository) Delete(k storage.SliceKey) *op.TxnOp[op.NoResult] {
 	txn := op.Txn(r.client)
 
 	// Delete entity from All prefix
-	txn.And(
+	txn.Merge(
 		r.schema.
 			AllLevels().ByKey(k).DeleteIfExists(r.client).
 			WithEmptyResultAsError(func() error {
@@ -187,7 +187,7 @@ func (r *SliceRepository) rotate(now time.Time, fileVolumeKey storage.FileVolume
 		if openNew {
 			// Create the new slice
 			if newSliceEntity, err = newSlice(now, file, fileVolumeKey.VolumeID, maxUsedDiskSpace[fileVolumeKey.SinkKey]); err == nil {
-				txn.Then(r.createTxn(newSliceEntity))
+				txn.Merge(r.createTxn(newSliceEntity))
 			} else {
 				return nil, err
 			}
@@ -202,7 +202,7 @@ func (r *SliceRepository) rotate(now time.Time, fileVolumeKey storage.FileVolume
 				return nil, serviceError.NewResourceAlreadyExistsError("slice", oldSlice.SliceKey.String(), "file")
 			} else if modified, err := oldSlice.WithState(now, storage.SliceClosing); err == nil {
 				// Switch the old slice from the state storage.SliceWriting to the state storage.SliceCLosing
-				txn.And(r.updateTxn(oldSlice, modified))
+				txn.Merge(r.updateTxn(oldSlice, modified))
 			} else {
 				return nil, err
 			}
