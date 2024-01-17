@@ -425,12 +425,12 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 // - "All" prefix is used for classic CRUD operations.
 // - "InLevel" prefix is used for effective watching of the storage level.
 // nolint: dupl // similar code is in the SliceRepository
-func (r *FileRepository) createTxn(value storage.File) *op.TxnOp[op.NoResult] {
+func (r *FileRepository) createTxn(value storage.File) *op.TxnOp[storage.File] {
 	etcdKey := r.schema.AllLevels().ByKey(value.FileKey)
-	return op.Txn(r.client).
+	return op.TxnWithResult(r.client, &value).
 		// Entity must not exist on create
 		If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
-		AddProcessor(func(ctx context.Context, r *op.TxnResult[op.NoResult]) {
+		AddProcessor(func(ctx context.Context, r *op.TxnResult[storage.File]) {
 			if r.Err() == nil && !r.Succeeded() {
 				r.AddErr(serviceError.NewResourceAlreadyExistsError("file", value.FileKey.String(), "sink"))
 			}
@@ -441,8 +441,8 @@ func (r *FileRepository) createTxn(value storage.File) *op.TxnOp[op.NoResult] {
 }
 
 // updateTxn saves an existing entity, see also createTxn method.
-func (r *FileRepository) updateTxn(oldValue, newValue storage.File) *op.TxnOp[op.NoResult] {
-	txn := op.Txn(r.client)
+func (r *FileRepository) updateTxn(oldValue, newValue storage.File) *op.TxnOp[storage.File] {
+	txn := op.TxnWithResult(r.client, &newValue)
 
 	// Put entity to All and InLevel prefixes
 	txn.

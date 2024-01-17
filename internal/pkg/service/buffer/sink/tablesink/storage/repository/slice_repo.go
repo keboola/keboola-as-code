@@ -238,12 +238,12 @@ func (r *SliceRepository) deleteAll(parentKey fmt.Stringer) *op.TxnOp[op.NoResul
 // - "InLevel" prefix is used for effective watching of the storage level.
 //
 //nolint:dupl // similar code is in the FileRepository
-func (r *SliceRepository) createTxn(value storage.Slice) *op.TxnOp[op.NoResult] {
+func (r *SliceRepository) createTxn(value storage.Slice) *op.TxnOp[storage.Slice] {
 	etcdKey := r.schema.AllLevels().ByKey(value.SliceKey)
-	return op.Txn(r.client).
+	return op.TxnWithResult(r.client, &value).
 		// Entity must not exist on create
 		If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
-		AddProcessor(func(ctx context.Context, r *op.TxnResult[op.NoResult]) {
+		AddProcessor(func(ctx context.Context, r *op.TxnResult[storage.Slice]) {
 			if r.Err() == nil && !r.Succeeded() {
 				r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", value.SliceKey.String(), "file"))
 			}
@@ -254,8 +254,8 @@ func (r *SliceRepository) createTxn(value storage.Slice) *op.TxnOp[op.NoResult] 
 }
 
 // updateTxn saves an existing entity, see also createTxn method.
-func (r *SliceRepository) updateTxn(oldValue, newValue storage.Slice) *op.TxnOp[op.NoResult] {
-	txn := op.Txn(r.client)
+func (r *SliceRepository) updateTxn(oldValue, newValue storage.Slice) *op.TxnOp[storage.Slice] {
+	txn := op.TxnWithResult(r.client, &newValue)
 
 	// Put entity to All and InLevel prefixes
 	txn.
