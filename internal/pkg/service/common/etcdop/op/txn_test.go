@@ -363,6 +363,83 @@ func TestTxnOp_ThenTxn_CalledWithoutTxn(t *testing.T) {
 	}
 }
 
+func TestTxnOp_Then_Simple(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Collect processors output
+	var log strings.Builder
+
+	// Define transaction
+	txn := Txn(client).
+		Then(etcdop.Key("key1").Put(client, "value1")).
+		ThenTxn(
+			Txn(client).
+				Then(etcdop.Key("key2").Put(client, "value2")).
+				ThenTxn(
+					Txn(client).
+						Then(etcdop.Key("key3").Put(client, "value3")).
+						OnSucceeded(func(*TxnResult[NoResult]) {
+							log.WriteString("nested transaction succeeded\n")
+						}),
+				),
+		).
+		Then(etcdop.Key("key4").Put(client, "value4")).
+		OnSucceeded(func(*TxnResult[NoResult]) {
+			log.WriteString("root transaction succeeded\n")
+		})
+
+	// Check low-level representation
+	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
+		// ----- Txn - Level 1 ------
+		assert.Equal(t, etcd.OpTxn(
+			// If
+			[]etcd.Cmp{},
+			// Then
+			[]etcd.Op{
+				etcd.OpPut("key1", "value1"),
+				etcd.OpPut("key4", "value4"),
+				// ----- Txn - Level 2 ------
+				etcd.OpTxn(
+					// If
+					[]etcd.Cmp{},
+					// Then
+					[]etcd.Op{
+						etcd.OpPut("key2", "value2"),
+						// ----- Txn - Level 3 ------
+						etcd.OpTxn(
+							// If
+							[]etcd.Cmp{},
+							// Then
+							[]etcd.Op{
+								etcd.OpPut("key3", "value3"),
+							},
+							// Else
+							[]etcd.Op{},
+						),
+					},
+					// Else
+					[]etcd.Op{},
+				),
+			},
+			// Else
+			[]etcd.Op{},
+		), lowLevel.Op)
+	}
+
+	// Run transaction
+	result := txn.Do(ctx)
+	require.NoError(t, result.Err())
+	assert.True(t, result.Succeeded())
+
+	// Check processors
+	assert.Equal(t, strings.TrimSpace(`
+nested transaction succeeded
+root transaction succeeded
+`), strings.TrimSpace(log.String()))
+}
+
 func TestTxnOp_Merge_Simple(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -416,6 +493,224 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(`
 nested transaction succeeded
 root transaction succeeded
+`), strings.TrimSpace(log.String()))
+}
+
+func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Collect processors output
+	var log strings.Builder
+
+	// Define transaction
+	txn := Txn(client).
+		If(etcd.Compare(etcd.Version("key1"), "=", 0)).
+		Then(etcdop.Key("key1").Put(client, "value1")).
+		ThenTxn(
+			Txn(client).
+				If(etcd.Compare(etcd.Version("key2"), "=", 0)).
+				Then(etcdop.Key("key2").Put(client, "value2")).
+				OnSucceeded(func(*TxnResult[NoResult]) {
+					log.WriteString("nested transaction succeeded - 1\n")
+				}).
+				OnFailed(func(result *TxnResult[NoResult]) {
+					log.WriteString("nested transaction failed - 1\n")
+				}).
+				ThenTxn(
+					Txn(client).
+						If(etcd.Compare(etcd.Version("key3"), "=", 0)).
+						Then(etcdop.Key("key3").Put(client, "value3")).
+						OnSucceeded(func(*TxnResult[NoResult]) {
+							log.WriteString("nested transaction succeeded - 2\n")
+						}).
+						OnFailed(func(result *TxnResult[NoResult]) {
+							log.WriteString("nested transaction failed - 2\n")
+						}),
+				),
+		).
+		If(etcd.Compare(etcd.Version("key4"), "=", 0)).
+		Then(etcdop.Key("key4").Put(client, "value4")).
+		OnSucceeded(func(*TxnResult[NoResult]) {
+			log.WriteString("root transaction succeeded\n")
+		}).
+		OnFailed(func(*TxnResult[NoResult]) {
+			log.WriteString("root transaction failed\n")
+		})
+
+	// Check low-level representation
+	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
+		// ----- Txn - Level 1 ------
+		assert.Equal(t, etcd.OpTxn(
+			// If
+			[]etcd.Cmp{
+				etcd.Compare(etcd.Version("key1"), "=", 0),
+				etcd.Compare(etcd.Version("key4"), "=", 0),
+			},
+			// Then
+			[]etcd.Op{
+				etcd.OpPut("key1", "value1"),
+				etcd.OpPut("key4", "value4"),
+				// ----- Txn - Level 2 ------
+				etcd.OpTxn(
+					// If
+					[]etcd.Cmp{
+						etcd.Compare(etcd.Version("key2"), "=", 0),
+					},
+					// Then
+					[]etcd.Op{
+						etcd.OpPut("key2", "value2"),
+						// ----- Txn - Level 3 ------
+						etcd.OpTxn(
+							// If
+							[]etcd.Cmp{
+								etcd.Compare(etcd.Version("key3"), "=", 0),
+							},
+							// Then
+							[]etcd.Op{
+								etcd.OpPut("key3", "value3"),
+							},
+							// Else
+							[]etcd.Op{},
+						),
+					},
+					// Else
+					[]etcd.Op{},
+				),
+			},
+			// Else
+			[]etcd.Op{},
+		), lowLevel.Op)
+	}
+
+	// Run transaction - success
+	result := txn.Do(ctx)
+	require.NoError(t, result.Err())
+	assert.True(t, result.Succeeded())
+	assert.Equal(t, strings.TrimSpace(`
+nested transaction succeeded - 2
+nested transaction succeeded - 1
+root transaction succeeded
+`), strings.TrimSpace(log.String()))
+
+	// Run transaction - partial fail - keys [key2,key3] already exists
+	log.Reset()
+	require.NoError(t, etcdop.Key("key1").Delete(client).Do(ctx).Err())
+	require.NoError(t, etcdop.Key("key4").Delete(client).Do(ctx).Err())
+	result = txn.Do(ctx)
+	require.NoError(t, result.Err())
+	assert.True(t, result.Succeeded())
+	assert.Equal(t, strings.TrimSpace(`
+nested transaction failed - 1
+root transaction succeeded
+`), strings.TrimSpace(log.String()))
+}
+
+func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Collect processors output
+	var log strings.Builder
+
+	// Define transaction
+	txn := Txn(client).
+		If(etcd.Compare(etcd.Version("key1"), "=", 0)).
+		Then(etcdop.Key("key1").Put(client, "value1")).
+		Merge(
+			Txn(client).
+				If(etcd.Compare(etcd.Version("key2"), "=", 0)).
+				Then(etcdop.Key("key2").Put(client, "value2")).
+				OnSucceeded(func(*TxnResult[NoResult]) {
+					log.WriteString("nested transaction succeeded - 1\n")
+				}).
+				OnFailed(func(result *TxnResult[NoResult]) {
+					log.WriteString("nested transaction failed - 1\n")
+				}).
+				Merge(
+					Txn(client).
+						If(etcd.Compare(etcd.Version("key3"), "=", 0)).
+						Then(etcdop.Key("key3").Put(client, "value3")).
+						OnSucceeded(func(*TxnResult[NoResult]) {
+							log.WriteString("nested transaction succeeded - 2\n")
+						}).
+						OnFailed(func(result *TxnResult[NoResult]) {
+							log.WriteString("nested transaction failed - 2\n")
+						}),
+				),
+		).
+		If(etcd.Compare(etcd.Version("key4"), "=", 0)).
+		Then(etcdop.Key("key4").Put(client, "value4")).
+		OnSucceeded(func(*TxnResult[NoResult]) {
+			log.WriteString("root transaction succeeded\n")
+		}).
+		OnFailed(func(*TxnResult[NoResult]) {
+			log.WriteString("root transaction failed\n")
+		})
+
+	// Check low-level representation
+	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
+		assert.Equal(t, etcd.OpTxn(
+			// If
+			[]etcd.Cmp{
+				// All conditions, from all merged transactions, have to be fulfilled
+				etcd.Compare(etcd.Version("key1"), "=", 0),
+				etcd.Compare(etcd.Version("key4"), "=", 0),
+				etcd.Compare(etcd.Version("key2"), "=", 0),
+				etcd.Compare(etcd.Version("key3"), "=", 0),
+			},
+			// Then
+			[]etcd.Op{
+				// Then all operations are applied
+				etcd.OpPut("key1", "value1"),
+				etcd.OpPut("key4", "value4"),
+				etcd.OpPut("key2", "value2"),
+				etcd.OpPut("key3", "value3"),
+			},
+			// Else
+			[]etcd.Op{
+				etcd.OpTxn(
+					// If
+					[]etcd.Cmp{
+						// Check conditions of the nested transaction - 1, for processors
+						etcd.Compare(etcd.Version("key2"), "=", 0),
+						etcd.Compare(etcd.Version("key3"), "=", 0),
+					},
+					// Then
+					[]etcd.Op{},
+					// Else
+					[]etcd.Op{
+						// Check conditions of the nested transaction - 2, for processors
+						etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key3"), "=", 0)}, []etcd.Op{}, []etcd.Op{}),
+					},
+				),
+			},
+		), lowLevel.Op)
+	}
+
+	// Run transaction - success
+	result := txn.Do(ctx)
+	require.NoError(t, result.Err())
+	assert.True(t, result.Succeeded())
+	assert.Equal(t, strings.TrimSpace(`
+nested transaction succeeded - 2
+nested transaction succeeded - 1
+root transaction succeeded
+`), strings.TrimSpace(log.String()))
+
+	// Run transaction - failed - keys [key2,key3] already exists
+	log.Reset()
+	require.NoError(t, etcdop.Key("key1").Delete(client).Do(ctx).Err())
+	require.NoError(t, etcdop.Key("key4").Delete(client).Do(ctx).Err())
+	result = txn.Do(ctx)
+	require.NoError(t, result.Err())
+	assert.False(t, result.Succeeded())
+	assert.Equal(t, strings.TrimSpace(`
+nested transaction failed - 2
+nested transaction failed - 1
+root transaction failed
 `), strings.TrimSpace(log.String()))
 }
 
