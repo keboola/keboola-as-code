@@ -2,7 +2,7 @@ package etcdclient
 
 import (
 	"context"
-	"os"
+	"io"
 	"strings"
 	"time"
 
@@ -94,7 +94,7 @@ func WithLogger(v log.Logger) Option {
 
 // New creates new etcd client.
 // The client terminates the connection when the context is done.
-func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, credentials Credentials, opts ...Option) (c *etcd.Client, err error) {
+func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, stderr io.Writer, credentials Credentials, opts ...Option) (c *etcd.Client, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.EtcdClient")
 	defer span.End(&err)
 
@@ -182,7 +182,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	// Log each KV operation as a debug message, if enabled
 	if cfg.debugOpLogs {
-		c.KV = etcdlogger.KVLogWrapper(c.KV, os.Stderr)
+		c.KV = etcdlogger.KVLogWrapper(c.KV, stderr)
 	}
 
 	// Connection check: get cluster members

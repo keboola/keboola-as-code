@@ -25,7 +25,7 @@ func newEtcdClientScope(ctx context.Context, baseScp BaseScope, credentials etcd
 	defer span.End(&err)
 
 	opts = append(opts, etcdclient.WithLogger(baseScp.Logger()))
-	client, err := etcdclient.New(ctx, baseScp.Process(), baseScp.Telemetry(), credentials, opts...)
+	client, err := etcdclient.New(ctx, baseScp.Process(), baseScp.Telemetry(), baseScp.Stderr(), credentials, opts...)
 	if err != nil {
 		return nil, err
 	}
