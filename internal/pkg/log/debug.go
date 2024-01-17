@@ -153,6 +153,10 @@ func (l *debugLogger) CompareJSONMessages(expected string) error {
 // AssertJSONMessages checks that expected json messages appear in actual in the same order.
 // Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
 func (l *debugLogger) AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
 	return AssertJSONMessages(t, expected, l.AllMessages(), msgAndArgs)
 }
 

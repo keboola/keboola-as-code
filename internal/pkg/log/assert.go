@@ -77,9 +77,17 @@ func valueMatches(value any, actualValue any) bool {
 	return reflect.DeepEqual(actualValue, value)
 }
 
+type tHelper interface {
+	Helper()
+}
+
 // AssertJSONMessages checks that expected json messages appear in actual in the same order.
 // Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
 func AssertJSONMessages(t assert.TestingT, expected string, actual string, msgAndArgs ...any) bool {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
 	err := CompareJSONMessages(expected, actual)
 	if err != nil {
 		assert.Fail(t, err.Error(), msgAndArgs...)
