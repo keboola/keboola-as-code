@@ -43,7 +43,7 @@ func TestLoadDotEnv(t *testing.T) {
 {"level":"debug","message":"Loaded \".env\""}
 {"level":"info","message":"Loaded env file \".env\"."}
 `
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }
 
 func TestLoadDotEnv_Invalid(t *testing.T) {
@@ -65,5 +65,5 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 {"level":"debug","message":"Loaded \".env.local\""}
 {"level":"warn","message":"cannot parse env file \".env.local\": unexpected character \"\\n\" in variable name near \"invalid\\n\""}
 `
-	log.AssertJSONMessages(t, expected, logger.AllMessages())
+	logger.AssertJSONMessages(t, expected)
 }

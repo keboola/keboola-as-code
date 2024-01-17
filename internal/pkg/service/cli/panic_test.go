@@ -17,9 +17,9 @@ func TestProcessPanic(t *testing.T) {
 	exitCode := ProcessPanic(context.Background(), errors.New("test"), logger, logFilePath)
 	assert.Equal(t, 1, exitCode)
 
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"debug","message":"Unexpected panic: test"}
 {"level":"debug","message":"Trace:%A"}
 {"level":"info","message":"%ATo help us diagnose the problem you can send us a crash report.%A"}
-`, logger.AllMessages())
+`)
 }

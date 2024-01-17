@@ -51,7 +51,7 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 {"level":"warn","message":"*******************************************************"}
 {"level":"warn","message":""}
 `
-	log.AssertJSONMessages(t, expected, logs.WarnMessages())
+	logs.AssertJSONMessages(t, expected)
 }
 
 func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {

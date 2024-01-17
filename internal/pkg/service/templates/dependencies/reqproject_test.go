@@ -16,7 +16,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
@@ -60,7 +59,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Update repository -> no change
 	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
-	log.AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" update finished, no change found%A"}`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" update finished, no change found%A"}`)
 	mock.DebugLogger().Truncate()
 
 	// Get repository for request 2 -> no changes
@@ -81,7 +80,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
-	log.AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`)
 	mock.DebugLogger().Truncate()
 
 	// Get repository for request 3 -> change occurred
@@ -131,7 +130,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
-	log.AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`)
 	mock.DebugLogger().Truncate()
 
 	// Old FS is deleted (nobody uses it)
@@ -190,7 +189,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
-	log.AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`)
 	mock.DebugLogger().Truncate()
 
 	// Get template for request 3

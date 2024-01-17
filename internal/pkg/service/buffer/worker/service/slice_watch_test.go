@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -84,12 +83,12 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 
 	// Check operations order
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"info","message":"waiting for \"2\" slices to be uploaded"}
 {"level":"info","message":"-----> slice 2 uploaded"}
 {"level":"info","message":"-----> slice 1 uploaded"}
 {"level":"info","message":"-----> all slices have been uploaded"}
-`, logger.AllMessages())
+`)
 
 	// Stop
 	cancel()

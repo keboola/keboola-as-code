@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -82,7 +81,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 {"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/002-phase-with-deps/001-task-4/task.json\""}
 {"level":"debug","message":"Loaded \"branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/task.json\""}
 `
-	log.AssertJSONMessages(t, expectedLogs, logger.AllMessages())
+	logger.AssertJSONMessages(t, expectedLogs)
 
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)

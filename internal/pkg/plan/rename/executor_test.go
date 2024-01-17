@@ -74,7 +74,7 @@ func TestRename(t *testing.T) {
 {"level":"debug","message":"Removed \"foo1\""}
 {"level":"debug","message":"Removed \"foo2\""}
 `
-	log.AssertJSONMessages(t, expectedLog, logsStr)
+	logger.AssertJSONMessages(t, expectedLog)
 }
 
 func TestRenameFailedKeepOldState(t *testing.T) {
@@ -151,5 +151,5 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 {"level":"debug","message":"Removed \"bar5\""}
 {"level":"info","message":"Error occurred, the rename operation was reverted."}
 `
-	log.AssertJSONMessages(t, expectedLog, logsStr)
+	logger.AssertJSONMessages(t, expectedLog)
 }

@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -92,7 +91,7 @@ target_info{service_name="my-service"} 1
 {"level":"info","message":"HTTP server shutdown finished","component":"metrics"}
 {"level":"info","message":"exited"}
 `
-	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())
+	d.DebugLogger().AssertJSONMessages(t, expected)
 }
 
 func getBody(t *testing.T, ctx context.Context, url string) string {

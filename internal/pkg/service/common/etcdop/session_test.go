@@ -50,7 +50,7 @@ func TestResistantSession(t *testing.T) {
 	// Stop and check logs
 	cancel()
 	wg.Wait()
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"info","message":"creating etcd session","component":"etcd-session"}
 {"level":"info","message":"created etcd session | %s","component":"etcd-session"}
 {"level":"info","message":"----> new session"}
@@ -59,7 +59,7 @@ func TestResistantSession(t *testing.T) {
 {"level":"info","message":"----> new session"}
 {"level":"info","message":"closing etcd session","component":"etcd-session"}
 {"level":"info","message":"closed etcd session | %s","component":"etcd-session"}
-`, logger.AllMessages())
+`)
 }
 
 func TestSessionBackoff(t *testing.T) {

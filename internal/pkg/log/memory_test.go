@@ -25,5 +25,5 @@ func TestMemoryLogger(t *testing.T) {
 {"level":"debug","message":"Debug message.","key1": "value1", "key2": "value2"}
 {"level":"info","message":"Info message.","key1": "value1", "key2": "value2"}
 `
-	AssertJSONMessages(t, expected, target.AllMessages())
+	target.AssertJSONMessages(t, expected, target)
 }

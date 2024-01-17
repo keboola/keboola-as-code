@@ -105,12 +105,12 @@ func TestOrchestrator(t *testing.T) {
 
 	// Wait for task on the node 2
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`, d2.DebugLogger().AllMessages()) == nil
+		return d2.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	// Wait for  "not assigned" message form the node 1
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`, d1.DebugLogger().AllMessages()) == nil
+		return d1.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -129,13 +129,13 @@ func TestOrchestrator(t *testing.T) {
 {"level":"info","message":"task succeeded (%s): ResourceID","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
 `
-	log.AssertJSONMessages(t, expected, d2.DebugLogger().AllMessages())
+	d2.DebugLogger().AssertJSONMessages(t, expected)
 
 	expected = `
 {"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
 {"level":"debug","message":"not assigned \"1000/my-receiver/some.task/ResourceID\", distribution key \"1000/my-receiver\"","component":"orchestrator","task":"some.task"}
 `
-	log.AssertJSONMessages(t, expected, d1.DebugLogger().AllMessages())
+	d1.DebugLogger().AssertJSONMessages(t, expected)
 }
 
 func TestOrchestrator_StartTaskIf(t *testing.T) {
@@ -197,7 +197,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "BadID"}).Do(ctx, client))
 	assert.NoError(t, pfx.Key("key2").Put(testResource{ReceiverKey: receiverKey, ID: "GoodID"}).Do(ctx, client))
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`, d.DebugLogger().AllMessages()) == nil
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -215,7 +215,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 {"level":"info","message":"task succeeded (%s): GoodID","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
 {"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
 `
-	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())
+	d.DebugLogger().AssertJSONMessages(t, expected)
 }
 
 func TestOrchestrator_RestartInterval(t *testing.T) {
@@ -277,19 +277,19 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	// Put some key to trigger the task
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID1"}).Do(ctx, client))
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`, d.DebugLogger().AllMessages()) == nil
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 	d.DebugLogger().Truncate()
 
 	// 3x restart interval
 	clk.Add(restartInterval)
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"restart"}`, d.DebugLogger().AllMessages()) == nil
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"restart"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	// Put some key to trigger the task
 	assert.Eventually(t, func() bool {
-		return log.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`, d.DebugLogger().AllMessages()) == nil
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -306,5 +306,5 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 {"level":"info","message":"task succeeded (0s): ResourceID1","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
 {"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
 `
-	log.AssertJSONMessages(t, expected, d.DebugLogger().AllMessages())
+	d.DebugLogger().AssertJSONMessages(t, expected)
 }

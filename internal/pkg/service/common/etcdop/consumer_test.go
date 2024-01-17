@@ -72,7 +72,7 @@ func TestWatchConsumer(t *testing.T) {
 	assert.NoError(t, <-init)
 
 	// Expect created event
-	log.AssertJSONMessages(t, `{"level":"info","message":"OnCreated: created (rev 1)"}`, logger.AllMessages())
+	logger.AssertJSONMessages(t, `{"level":"info","message":"OnCreated: created (rev 1)"}`)
 	logger.Truncate()
 
 	// Put some key
@@ -82,9 +82,9 @@ func TestWatchConsumer(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
 	}, 5*time.Second, 10*time.Millisecond)
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"info","message":"ForEach: restart=false, events(1): create \"my/prefix/key1\""}
-`, logger.AllMessages())
+`)
 	logger.Truncate()
 
 	// Close watcher connection and block a new one
@@ -112,12 +112,12 @@ func TestWatchConsumer(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "my/prefix/key") == 3
 	}, 5*time.Second, 10*time.Millisecond)
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"warn","message":"watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"OnRestarted: backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"ForEach: restart=true, events(3): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\""}
-`, logger.AllMessages())
+`)
 	logger.Truncate()
 
 	// The restart flag is false in further events.
@@ -125,9 +125,9 @@ func TestWatchConsumer(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
 	}, 5*time.Second, 10*time.Millisecond)
-	log.AssertJSONMessages(t, `
+	logger.AssertJSONMessages(t, `
 {"level":"info","message":"ForEach: restart=false, events(1): create \"my/prefix/key4\""}
-`, logger.AllMessages())
+`)
 	logger.Truncate()
 
 	// Stop
