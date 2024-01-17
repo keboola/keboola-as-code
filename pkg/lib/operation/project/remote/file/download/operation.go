@@ -3,6 +3,7 @@ package download
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,6 +31,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 type downloader struct {
@@ -76,6 +78,10 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 			returnErr = closeErr
 		}
 	}()
+
+	stderr := d.Stderr()
+	progressbar.OptionSetWriter(stderr)(d.bar)
+	progressbar.OptionOnCompletion(func() { fmt.Fprint(stderr, "\n") })
 
 	// Download
 	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
