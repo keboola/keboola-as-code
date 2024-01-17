@@ -11,6 +11,7 @@ import (
 )
 
 func Logger(baseLogger log.Logger) Middleware {
+	logger := baseLogger.WithComponent("http")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			// Skip access log if it is disabled
@@ -26,7 +27,6 @@ func Logger(baseLogger log.Logger) Middleware {
 
 			// Log
 			userAgent := req.Header.Get("User-Agent")
-			logger := baseLogger.WithComponent("http")
 			logger.Infof(
 				req.Context(),
 				"req %s status=%d bytes=%d time=%s client_ip=%s agent=%s",
