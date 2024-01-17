@@ -202,9 +202,10 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	var err error
 
 	for {
-		if ok, err = v.DoWithoutRetry(ctx, opts...); err != nil {
-			break
-		} else if !ok {
+		txnResult := v.DoWithoutRetry(ctx, opts...)
+		ok = txnResult.Succeeded()
+		err = txnResult.Err()
+		if err == nil && !ok {
 			attempt++
 			if delay := b.NextBackOff(); delay == backoff.Stop {
 				break
@@ -227,17 +228,15 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	return AtomicResult[R]{result: v.result, error: err, attempt: attempt, elapsedTime: elapsedTime}
 }
 
-func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool, error) {
+func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnResult[R] {
 	tracker := NewTracker(v.client)
 
 	// Create READ operations
 	readTxn := Txn(tracker)
 	for _, opFactory := range v.readPhase {
-		op, err := opFactory(ctx)
-		if err != nil {
-			return false, err
-		}
-		if op != nil {
+		if op, err := opFactory(ctx); err != nil {
+			return newErrorTxnResult[R](err)
+		} else if op != nil {
 			readTxn.Merge(op)
 		}
 	}
@@ -245,7 +244,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool,
 	// Run READ phase, track used keys/prefixes
 	readResult := readTxn.Do(ctx, opts...)
 	if err := readResult.Err(); err != nil {
-		return false, err
+		return newErrorTxnResult[R](err)
 	}
 
 	// Create IF part of the transaction
@@ -295,36 +294,34 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) (bool,
 	// Create WRITE transaction
 	writeTxn, err := v.createWriteTxn(ctx)
 	if err != nil {
-		return false, err
+		return newErrorTxnResult[R](err)
 	}
 
 	// Add IF conditions
 	writeTxn.If(cmps...)
 
 	// Do
-	writeResult := writeTxn.Do(ctx)
-	return writeResult.Succeeded(), writeResult.Err()
+	return writeTxn.Do(ctx)
 }
 
 func (v *AtomicOp[R]) createWriteTxn(ctx context.Context) (*TxnOp[R], error) {
 	// Create WRITE operation
 	writeTxn := TxnWithResult[R](v.client, v.result)
 	for _, opFactory := range v.writePhase {
-		op, err := opFactory(ctx)
-		if err != nil {
+		if op, err := opFactory(ctx); err != nil {
 			return nil, err
-		}
-		if op != nil {
+		} else if op != nil {
 			writeTxn.Merge(op)
 		}
 	}
 
-	// Create transaction
-	return writeTxn.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
-		// Processors are invoked if the transaction succeeded or there is an error.
-		// If the transaction failed, the atomic operation is retried, see Do method.
+	// Processors are invoked if the transaction succeeded or there is an error.
+	// If the transaction failed, the atomic operation is retried, see Do method.
+	writeTxn.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
 		if r.Succeeded() || r.Err() != nil {
 			v.processors.invoke(ctx, r.result)
 		}
-	}), nil
+	})
+
+	return writeTxn, nil
 }
