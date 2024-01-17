@@ -196,6 +196,19 @@ func TestTxnOp_IfThenElse(t *testing.T) {
 	txn.Then(etcdop.Key("key/bar").Get(client).WithOnResult(onGetResult("get bar")))
 	txn.Else(etcdop.Key("key/3").Put(client, "c").WithOnResult(onNoResult("put 3")))
 	txn.Else(etcdop.Key("key/4").Put(client, "d").WithOnResult(onNoResult("put 4")))
+	txn.OnSucceeded(func(r *TxnResult[NoResult]) {
+		fmt.Fprintf(&log, "txn OnSucceeded\n")
+	})
+	txn.OnFailed(func(r *TxnResult[NoResult]) {
+		fmt.Fprintf(&log, "txn OnFailed\n")
+	})
+	txn.OnResult(func(r *TxnResult[NoResult]) {
+		if r.Succeeded() {
+			fmt.Fprintln(&log, "txn OnResult: succeeded")
+		} else {
+			fmt.Fprintln(&log, "txn OnResult: failed")
+		}
+	})
 
 	// Validate low-level representation of the transaction
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
@@ -242,6 +255,8 @@ d
 			ExpectedLogs: `
 put 3
 put 4
+txn OnFailed
+txn OnResult: failed
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: false,
@@ -299,6 +314,8 @@ put 1/2
 put 2
 get foo foo
 get bar bar
+txn OnSucceeded
+txn OnResult: succeeded
 `,
 			ExpectedTxnResult: txnResult{
 				Succeeded: true,
@@ -414,9 +431,9 @@ func TestTxnOp_And_RealExample(t *testing.T) {
 	txn.Else(etcdop.Key("key/txn/succeeded").Put(client, "false"))
 	txn.AddProcessor(func(ctx context.Context, r *TxnResult[NoResult]) {
 		if err := r.Err(); err != nil {
-			_, _ = fmt.Fprintf(&log, "txn succeeded: error: %s", strings.ReplaceAll(err.Error(), "\n", ";"))
+			fmt.Fprintf(&log, "txn succeeded: error: %s", strings.ReplaceAll(err.Error(), "\n", ";"))
 		} else {
-			_, _ = fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
+			fmt.Fprintf(&log, "txn succeeded: %t\n", r.Succeeded())
 		}
 	})
 

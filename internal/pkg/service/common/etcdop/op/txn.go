@@ -111,6 +111,16 @@ func (v *TxnOp[R]) OnResult(fn func(result *TxnResult[R])) *TxnOp[R] {
 	})
 }
 
+// OnFailed is a shortcut for the AddProcessor.
+// If no error occurred yet and the transaction is failed, then the callback is executed.
+func (v *TxnOp[R]) OnFailed(fn func(result *TxnResult[R])) *TxnOp[R] {
+	return v.AddProcessor(func(_ context.Context, r *TxnResult[R]) {
+		if r.Err() == nil && !r.Succeeded() {
+			fn(r)
+		}
+	})
+}
+
 // OnSucceeded is a shortcut for the AddProcessor.
 // If no error occurred yet and the transaction is succeeded, then the callback is executed.
 func (v *TxnOp[R]) OnSucceeded(fn func(result *TxnResult[R])) *TxnOp[R] {
