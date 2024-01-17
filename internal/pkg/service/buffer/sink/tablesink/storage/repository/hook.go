@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // recordsForSliceDiskSizeCalc defines the number of last slice statistics that are taken into account
@@ -35,7 +36,7 @@ type FileResource struct {
 // FileResourcesProvider is a function that in parallel creates file resources for the provided sinks.
 // The function can be called multiple times within op.AtomicOp retries,
 // so the result map should be cached.
-type FileResourcesProvider func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]FileResource, error)
+type FileResourcesProvider func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]*FileResource, error)
 
 // UsedDiskSpaceProvider provides maximum size of previous uploaded/imported slices.
 // The result is used to pre-allocate disk space for a new slice.
@@ -66,10 +67,10 @@ func (h *hook) AssignVolumes(_ context.Context, allVolumes []volume.Metadata, cf
 }
 
 func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {
-	result := make(map[key.SinkKey]FileResource)
+	result := make(map[key.SinkKey]*FileResource)
 	rb = rb.AddParallel()
 	lock := &sync.Mutex{}
-	return func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]FileResource, error) {
+	return func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]*FileResource, error) {
 		grp, ctx := errgroup.WithContext(ctx)
 		grp.SetLimit(h.config.Sink.Table.Storage.Staging.ParallelFileCreateLimit)
 		for _, sinkKey := range sinkKeys {
@@ -120,7 +121,7 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 				})
 
 				lock.Lock()
-				result[sinkKey] = FileResource{FileKey: fileKey, Credentials: credentials}
+				result[sinkKey] = &FileResource{FileKey: fileKey, Credentials: credentials}
 				lock.Unlock()
 				return nil
 			})
