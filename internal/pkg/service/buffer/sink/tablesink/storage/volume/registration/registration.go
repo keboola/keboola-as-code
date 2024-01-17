@@ -43,7 +43,7 @@ func RegisterVolumes[V volume.Volume](d dependencies, cfg Config, volumes *volum
 	errCh := etcdop.ResistantSession(ctx, wg, logger, client, cfg.TTLSeconds, func(session *concurrency.Session) error {
 		txn := op.Txn(client)
 		for _, vol := range volumes.All() {
-			txn.Then(putOpFactory(vol.Metadata(), session.Lease()))
+			txn.Merge(putOpFactory(vol.Metadata(), session.Lease()))
 		}
 		return txn.Do(ctx).Err()
 	})

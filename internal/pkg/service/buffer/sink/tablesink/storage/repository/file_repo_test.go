@@ -1936,7 +1936,7 @@ func registerWriterVolumes(t *testing.T, ctx context.Context, volumeRepo *reposi
 
 	txn := op.Txn(session.Client())
 	for _, vol := range volumes[:count] {
-		txn.And(volumeRepo.RegisterWriterVolume(vol, session.Lease()))
+		txn.Merge(volumeRepo.RegisterWriterVolume(vol, session.Lease()))
 	}
 	require.NoError(t, txn.Do(ctx).Err())
 }

@@ -142,7 +142,7 @@ func (h *hook) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
 		for _, sinkKey := range sinkKeys {
 			// Load statistics only once, the provider can be reused within op.AtomicOp retries.
 			if _, ok := result[sinkKey]; !ok {
-				txn.Then(h.stats.MaxUsedDiskSizeBySliceIn(sinkKey, recordsForSliceDiskSizeCalc).OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
+				txn.Merge(h.stats.MaxUsedDiskSizeBySliceIn(sinkKey, recordsForSliceDiskSizeCalc).OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
 					result[sinkKey] = r.Result()
 				}))
 			}
