@@ -108,10 +108,18 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 	return nil
 }
 
+type nopCloser struct {
+	io.Writer
+}
+
+func (n *nopCloser) Close() error {
+	return nil
+}
+
 func (d *downloader) openOutput(slice string) (io.WriteCloser, error) {
 	switch {
 	case d.options.ToStdout():
-		return os.Stdout, nil // stdout should not be closed
+		return &nopCloser{d.Stdout()}, nil // stdout should not be closed
 	case d.options.AllowSliced && d.options.File.IsSliced:
 		return os.OpenFile(filepath.Join(d.options.Output, slice), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // nolint:forbidigo
 	default:
