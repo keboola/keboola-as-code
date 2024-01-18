@@ -1,7 +1,6 @@
 package create
 
 import (
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -10,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
 func TableCommand(p dependencies.Provider) *cobra.Command {
@@ -46,7 +46,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			//fmt.Println(opts.CreateTableRequest)
+			// fmt.Println(opts.CreateTableRequest)
 			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-table")
 
 			return table.Run(cmd.Context(), opts, d)

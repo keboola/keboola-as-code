@@ -2,6 +2,7 @@ package table
 
 import (
 	"context"
+
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -42,7 +43,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.Name}
 	tableKey := keboola.TableKey{BranchID: o.BucketKey.BranchID, TableID: tableID}
 
-	//fmt.Println(o.CreateTableRequest)
+	// fmt.Println(o.CreateTableRequest)
 	res, err := d.KeboolaProjectAPI().CreateTableDefinitionRequest(tableKey, &o.CreateTableRequest).Send(ctx)
 	if err != nil {
 		rb.Invoke(ctx)

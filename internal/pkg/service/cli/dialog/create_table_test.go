@@ -1,9 +1,10 @@
 package dialog
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
 	"reflect"
 	"testing"
+
+	"github.com/keboola/go-client/pkg/keboola"
 )
 
 func Test_parseJsonInput(t *testing.T) {
@@ -16,29 +17,31 @@ func Test_parseJsonInput(t *testing.T) {
 		want    *keboola.CreateTableRequest
 		wantErr bool
 	}{
-		{name: "Parse Test", args: args{fileName: "/Users/petr/keboola/keboola-as-code/test/cli/remote-create/table/in/definition.json"}, want: &keboola.CreateTableRequest{
-			TableDefinition: keboola.TableDefinition{
-				PrimaryKeyNames: []string{"id"},
-				Columns: []keboola.Column{
-					{
-						Name: "id",
-						Definition: keboola.ColumnDefinition{
-							Type: "INT",
+		{
+			name: "Parse Test", args: args{fileName: "/Users/petr/keboola/keboola-as-code/test/cli/remote-create/table/in/definition.json"}, want: &keboola.CreateTableRequest{
+				TableDefinition: keboola.TableDefinition{
+					PrimaryKeyNames: []string{"id"},
+					Columns: []keboola.Column{
+						{
+							Name: "id",
+							Definition: keboola.ColumnDefinition{
+								Type: "INT",
+							},
+							BaseType: keboola.TypeNumeric,
 						},
-						BaseType: keboola.TypeNumeric,
-					},
-					{
-						Name: "name",
-						Definition: keboola.ColumnDefinition{
-							Type: "TEXT",
+						{
+							Name: "name",
+							Definition: keboola.ColumnDefinition{
+								Type: "TEXT",
+							},
+							BaseType: "STRING",
 						},
-						BaseType: "STRING",
 					},
 				},
+				Name: "my-new-table",
 			},
-			Name: "my-new-table",
+			wantErr: false,
 		},
-			wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

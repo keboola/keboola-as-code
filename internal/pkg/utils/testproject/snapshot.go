@@ -175,14 +175,14 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	var tables []*keboola.Table
 	grp.Go(func() error {
 		req := p.keboolaProjectAPI.
-			ListTablesRequest(p.defaultBranch.ID, keboola.WithBuckets()).
+			ListTablesRequest(p.defaultBranch.ID).
 			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
 				for _, table := range *apiTables {
 					grp.Go(func() error {
 						return p.keboolaProjectAPI.
 							GetTableRequest(table.TableKey).
-							WithOnSuccess(func(ctx context.Context, result *keboola.Table) error {
-								tables = append(tables, *apiTables...)
+							WithOnSuccess(func(ctx context.Context, table *keboola.Table) error {
+								tables = append(tables, table)
 								return nil
 							}).
 							SendOrErr(ctx)
