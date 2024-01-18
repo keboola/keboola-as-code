@@ -4,15 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
 	goaHttpMiddleware "goa.design/goa/v3/http/middleware"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
 func Logger(baseLogger log.Logger) Middleware {
+	logger := baseLogger.WithComponent("http")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			// Skip access log if it is disabled
@@ -27,12 +26,9 @@ func Logger(baseLogger log.Logger) Middleware {
 			next.ServeHTTP(rw, req)
 
 			// Log
-			requestID, _ := req.Context().Value(RequestIDCtxKey).(string)
 			userAgent := req.Header.Get("User-Agent")
-			ctx := ctxattr.ContextWith(req.Context(), attribute.String("requestId", requestID))
-			logger := baseLogger.WithComponent("http")
 			logger.Infof(
-				ctx,
+				req.Context(),
 				"req %s status=%d bytes=%d time=%s client_ip=%s agent=%s",
 				log.Sanitize(req.URL.String()), rw.StatusCode, rw.ContentLength, time.Since(started).String(),
 				log.Sanitize(ip.From(req).String()), userAgent,

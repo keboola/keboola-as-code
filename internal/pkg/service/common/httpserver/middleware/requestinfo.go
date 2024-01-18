@@ -29,7 +29,7 @@ func RequestInfo() Middleware {
 			ctx = context.WithValue(ctx, goaMiddleware.RequestIDKey, requestID) // nolint:staticcheck // intentionally used the ctx key from external package
 			ctx = context.WithValue(ctx, RequestIDCtxKey, requestID)
 			ctx = context.WithValue(ctx, RequestURLCtxKey, req.URL)
-			ctx = ctxattr.ContextWith(ctx, attribute.String("requestId", requestID))
+			ctx = ctxattr.ContextWith(ctx, attribute.String(attrRequestID, requestID))
 			req = req.WithContext(ctx)
 
 			// Add request ID to headers
