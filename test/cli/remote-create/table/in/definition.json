@@ -1,0 +1,22 @@
+{
+  "name": "table1",
+  "primaryKeysNames": [
+    "id"
+  ],
+  "columns": [
+    {
+      "name": "id",
+      "definition": {
+        "type": "INT"
+      },
+      "basetype": "NUMERIC"
+    },
+    {
+      "name": "name",
+      "definition": {
+        "type": "TEXT"
+      },
+      "basetype": "STRING"
+    }
+  ]
+}

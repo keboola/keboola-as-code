@@ -1,6 +1,8 @@
 package dialog
 
 import (
+	"encoding/json"
+	"os"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -56,5 +58,31 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 		opts.PrimaryKey = primaryKey
 	}
 
+	fileName := p.options.GetString("columns-from")
+	if p.options.IsSet("columns-from") {
+		as, err := parseJsonInput(fileName)
+		if err != nil {
+			return table.Options{}, err
+		}
+		opts.CreateTableRequest = *as
+	}
+
 	return opts, nil
+}
+
+func parseJsonInput(filePath string) (*keboola.CreateTableRequest, error) {
+	//
+	dataFile, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var result *keboola.CreateTableRequest
+
+	err = json.Unmarshal(dataFile, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
 }

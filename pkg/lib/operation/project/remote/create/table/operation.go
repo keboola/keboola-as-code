@@ -2,7 +2,6 @@ package table
 
 import (
 	"context"
-
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -12,10 +11,11 @@ import (
 )
 
 type Options struct {
-	BucketKey  keboola.BucketKey
-	Columns    []string
-	Name       string
-	PrimaryKey []string
+	CreateTableRequest keboola.CreateTableRequest
+	BucketKey          keboola.BucketKey
+	Columns            []string
+	Name               string
+	PrimaryKey         []string
 }
 
 type dependencies interface {
@@ -41,12 +41,14 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.Name}
 	tableKey := keboola.TableKey{BranchID: o.BucketKey.BranchID, TableID: tableID}
-	_, err = d.KeboolaProjectAPI().CreateTableRequest(tableKey, o.Columns, opts...).Send(ctx)
+
+	//fmt.Println(o.CreateTableRequest)
+	res, err := d.KeboolaProjectAPI().CreateTableDefinitionRequest(tableKey, &o.CreateTableRequest).Send(ctx)
 	if err != nil {
 		rb.Invoke(ctx)
 		return err
 	}
 
-	d.Logger().InfofCtx(ctx, `Created table "%s".`, tableKey.TableID.String())
+	d.Logger().InfofCtx(ctx, `Created table "%s".`, res.TableID.String())
 	return nil
 }
