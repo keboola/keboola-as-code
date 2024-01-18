@@ -105,9 +105,7 @@ func (v *kvWrapper) log(requestID uint64, msg string) {
 	var out bytes.Buffer
 
 	if v.config.RequestNumber {
-		out.WriteString("ETCD_REQUEST[")
-		_, _ = fmt.Fprintf(&out, "%04d", requestID)
-		out.WriteString("] ")
+		_, _ = fmt.Fprintf(&out, "ETCD_REQUEST[%04d] ", requestID)
 	}
 
 	out.WriteString(msg)
