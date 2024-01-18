@@ -2,6 +2,7 @@ package etcdlogger
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,53 +12,134 @@ import (
 	"time"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
-	. "go.etcd.io/etcd/client/v3"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type kvWrapper struct {
-	KV
-	out io.Writer
-	id  uint64 // ID generator
+	etcd.KV
+	out    io.Writer
+	config config
+	id     uint64 // ID generator
 }
 
 type txnWrapper struct {
-	Txn
-	ifOps   []Cmp
-	thenOps []Op
-	elseOps []Op
+	etcd.Txn
+	ifOps   []etcd.Cmp
+	thenOps []etcd.Op
+	elseOps []etcd.Op
 	*kvWrapper
 }
 
-func KVLogWrapper(kv KV, out io.Writer) KV {
-	return &kvWrapper{KV: kv, out: out, id: 1}
+type config struct {
+	RequestNumber bool
+	PutValue      bool
+	Revision      bool
+	Duration      bool
+	NewLineSep    bool
+}
+
+type Option func(*config)
+
+func KVLogWrapper(kv etcd.KV, out io.Writer, opts ...Option) etcd.KV {
+	return &kvWrapper{KV: kv, out: out, config: newConfig(opts), id: 1}
+}
+
+func newConfig(opts []Option) config {
+	cfg := config{
+		RequestNumber: true,
+		PutValue:      true,
+		Revision:      true,
+		Duration:      true,
+		NewLineSep:    true,
+	}
+
+	for _, o := range opts {
+		o(&cfg)
+	}
+
+	return cfg
+}
+
+func WithMinimal() Option {
+	return func(c *config) {
+		WithoutRequestNumber()(c)
+		WithoutPutValue()(c)
+		WithoutRevision()(c)
+		WithoutDuration()(c)
+	}
+}
+
+func WithoutRequestNumber() Option {
+	return func(c *config) {
+		c.RequestNumber = false
+	}
+}
+
+func WithoutPutValue() Option {
+	return func(c *config) {
+		c.PutValue = false
+	}
+}
+
+func WithoutRevision() Option {
+	return func(c *config) {
+		c.Revision = false
+	}
+}
+
+func WithoutDuration() Option {
+	return func(c *config) {
+		c.Duration = false
+	}
+}
+
+func WithNewLineSeparator(v bool) Option {
+	return func(c *config) {
+		c.NewLineSep = v
+	}
 }
 
 func (v *kvWrapper) log(requestID uint64, msg string) {
-	_, _ = fmt.Fprintf(v.out, "ETCD_REQUEST[%04d] %s\n", requestID, msg)
+	var out bytes.Buffer
+
+	if v.config.RequestNumber {
+		out.WriteString("ETCD_REQUEST[")
+		_, _ = fmt.Fprintf(&out, "%04d", requestID)
+		out.WriteString("] ")
+	}
+
+	out.WriteString(msg)
+	out.WriteString("\n")
+
+	if v.config.NewLineSep {
+		out.WriteString("\n")
+	}
+
+	_, _ = v.out.Write(out.Bytes())
 }
 
 func (v *kvWrapper) nextRequestID() uint64 {
 	return atomic.AddUint64(&v.id, 1)
 }
 
-func (v *kvWrapper) Put(ctx context.Context, key, val string, opts ...OpOption) (*PutResponse, error) {
-	r, err := v.Do(ctx, OpPut(key, val, opts...))
+func (v *kvWrapper) Put(ctx context.Context, key, val string, opts ...etcd.OpOption) (*etcd.PutResponse, error) {
+	r, err := v.Do(ctx, etcd.OpPut(key, val, opts...))
 	return r.Put(), err
 }
 
-func (v *kvWrapper) Get(ctx context.Context, key string, opts ...OpOption) (*GetResponse, error) {
-	r, err := v.Do(ctx, OpGet(key, opts...))
+func (v *kvWrapper) Get(ctx context.Context, key string, opts ...etcd.OpOption) (*etcd.GetResponse, error) {
+	r, err := v.Do(ctx, etcd.OpGet(key, opts...))
 	return r.Get(), err
 }
 
-func (v *kvWrapper) Delete(ctx context.Context, key string, opts ...OpOption) (*DeleteResponse, error) {
-	r, err := v.Do(ctx, OpDelete(key, opts...))
+func (v *kvWrapper) Delete(ctx context.Context, key string, opts ...etcd.OpOption) (*etcd.DeleteResponse, error) {
+	r, err := v.Do(ctx, etcd.OpDelete(key, opts...))
 	return r.Del(), err
 }
 
-func (v *kvWrapper) Do(ctx context.Context, op Op) (OpResponse, error) {
+func (v *kvWrapper) Do(ctx context.Context, op etcd.Op) (etcd.OpResponse, error) {
 	requestID := v.nextRequestID()
 	startTime := time.Now()
 	v.log(requestID, v.startOp(op))
@@ -66,7 +148,7 @@ func (v *kvWrapper) Do(ctx context.Context, op Op) (OpResponse, error) {
 	return r, err
 }
 
-func (v *kvWrapper) startOp(op Op) string {
+func (v *kvWrapper) startOp(op etcd.Op) string {
 	var value string
 	if op.IsPut() {
 		value = string(op.ValueBytes())
@@ -74,32 +156,38 @@ func (v *kvWrapper) startOp(op Op) string {
 	return v.start(&op, opToStr(op), keyToStr(op.KeyBytes(), op.RangeBytes()), value)
 }
 
-func (v *kvWrapper) start(op *Op, opName, key, value string) string {
+func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
+	var out strings.Builder
+
+	out.WriteString(fmt.Sprintf("➡️  %s", opName))
+
 	if key != "" {
-		var out strings.Builder
-		out.WriteString(fmt.Sprintf(`➡️  %s %s`, opName, key))
+		out.WriteString(" ")
+		out.WriteString(key)
 		if op.Rev() > 0 {
-			out.WriteString(" | rev: ")
-			out.WriteString(strconv.FormatInt(op.Rev(), 10))
+			out.WriteString(" | rev")
+			if v.config.Revision {
+				out.WriteString(": ")
+				out.WriteString(strconv.FormatInt(op.Rev(), 10))
+			}
 		}
-		if value != "" {
+		if value != "" && v.config.PutValue {
 			out.WriteString(" | value:")
 			out.WriteString("\n")
 			out.WriteString(">>> ")
 			out.WriteString(value)
 		}
-		return out.String()
 	}
 
 	// Dump transaction
-	var dumpStr string
 	if op != nil && op.IsTxn() {
-		var dump strings.Builder
 		cmpOps, thenOps, elseOps := op.Txn()
 
 		if len(cmpOps) > 0 {
-			dump.WriteString("  ➡️  IF:\n")
+			out.WriteString("\n")
+			out.WriteString("  ➡️  IF:")
 			for i, item := range cmpOps {
+				out.WriteString("\n")
 				var expectedResult string
 				switch v := item.TargetUnion.(type) {
 				case *etcdserverpb.Compare_Version:
@@ -115,93 +203,141 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 				default:
 					panic(errors.Errorf(`unexpected type "%T"`, item.TargetUnion))
 				}
-				dump.WriteString(fmt.Sprintf("  %03d %s %s %v %s\n", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
+				out.WriteString(fmt.Sprintf("  %03d %s %s %v %s", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
 			}
 		}
 
 		if len(thenOps) > 0 {
-			dump.WriteString("  ➡️  THEN:\n")
+			out.WriteString("\n")
+			out.WriteString("  ➡️  THEN:")
 			for i, item := range thenOps {
+				out.WriteString("\n")
 				linePrefix := fmt.Sprintf("  %03d ", i+1)
-				prefixLines(linePrefix, v.startOp(item), &dump)
+				prefixLines(linePrefix, v.startOp(item), &out)
 			}
 		}
 
 		if len(elseOps) > 0 {
-			dump.WriteString("  ➡️  ELSE:\n")
+			out.WriteString("\n")
+			out.WriteString("  ➡️  ELSE:")
 			for i, item := range elseOps {
+				out.WriteString("\n")
 				linePrefix := fmt.Sprintf("  %03d ", i+1)
-				prefixLines(linePrefix, v.startOp(item), &dump)
+				prefixLines(linePrefix, v.startOp(item), &out)
 			}
 		}
-
-		dumpStr = dump.String()
 	}
 
-	if dumpStr == "" {
-		return fmt.Sprintf("➡️  %s", opName)
-	} else {
-		return fmt.Sprintf("➡️  %s\n%s", opName, dumpStr)
-	}
+	return out.String()
 }
 
-func (v *kvWrapper) endOp(op Op, startTime time.Time, r OpResponse, err error) string {
-	return v.end(opToStr(op), keyToStr(op.KeyBytes(), op.RangeBytes()), startTime, r, err)
-}
-
-func (v *kvWrapper) end(op, key string, startTime time.Time, r OpResponse, err error) string {
+func (v *kvWrapper) endOp(op etcd.Op, startTime time.Time, r etcd.OpResponse, err error) string {
+	opStr := opToStr(op)
+	keyStr := keyToStr(op.KeyBytes(), op.RangeBytes())
+	duration := time.Since(startTime)
 	if err != nil {
-		if key == "" {
-			return fmt.Sprintf(`✖  %s | error | %s | %s`, op, err, time.Since(startTime))
-		} else {
-			return fmt.Sprintf(`✖  %s %s | error | %s | %s`, op, key, err, time.Since(startTime))
-		}
+		return v.logEnd(err, opStr, keyStr, "", 0, -1, -1, duration)
 	} else if get := r.Get(); get != nil {
-		return fmt.Sprintf(`✔️️  %s %s | rev: %v | count: %d | %s`, op, key, get.Header.Revision, get.Count, time.Since(startTime))
+		return v.logEnd(nil, opStr, keyStr, "", get.Header.Revision, get.Count, len(get.Kvs), duration)
 	} else if put := r.Put(); put != nil {
-		return fmt.Sprintf("✔️️  %s %s | rev: %v | %s", op, key, put.Header.Revision, time.Since(startTime))
+		return v.logEnd(nil, opStr, keyStr, "", put.Header.Revision, -1, -1, duration)
 	} else if del := r.Del(); del != nil {
-		return fmt.Sprintf(`✔️️  %s %s | rev: %v | deleted: %d| %s`, op, key, del.Header.Revision, del.Deleted, time.Since(startTime))
+		return v.logEnd(nil, opStr, keyStr, "", del.Header.Revision, del.Deleted, -1, duration)
 	} else if txn := r.Txn(); txn != nil {
-		return fmt.Sprintf(`✔️️  %s | succeeded: %t | rev: %v | %s`, op, txn.Succeeded, txn.Header.Revision, time.Since(startTime))
+		return v.logEnd(nil, opStr, keyStr, fmt.Sprintf("| succeeded: %t", txn.Succeeded), txn.Header.Revision, -1, -1, duration)
 	} else {
-		if key == "" {
-			return fmt.Sprintf(`✔️️  %s | %s`, op, time.Since(startTime))
-		} else {
-			return fmt.Sprintf(`✔️️  %s %s | %s`, op, key, time.Since(startTime))
-		}
+		return v.logEnd(nil, opStr, keyStr, "", 0, -1, -1, duration)
 	}
 }
 
-func (v *kvWrapper) Txn(ctx context.Context) Txn {
+func (v *kvWrapper) logEnd(err error, op, key, extra string, rev, count int64, loaded int, duration time.Duration) string {
+	var out strings.Builder
+
+	// Status
+	if err == nil {
+		out.WriteString("✔️")
+	} else {
+		out.WriteString("✖")
+	}
+	out.WriteString("  ")
+
+	// Operation
+	out.WriteString(op)
+
+	// Key
+	if key != "" {
+		out.WriteString(" ")
+		out.WriteString(key)
+	}
+
+	// Extra
+	if extra != "" {
+		out.WriteString(" ")
+		out.WriteString(extra)
+	}
+
+	if err != nil {
+		// Error
+		out.WriteString(" | error: ")
+		out.WriteString(err.Error())
+	} else {
+		// Revision
+		if rev != 0 && v.config.Revision {
+			out.WriteString(" | rev: ")
+			out.WriteString(strconv.FormatInt(rev, 10))
+		}
+
+		// Count
+		if count != -1 {
+			out.WriteString(" | count: ")
+			out.WriteString(strconv.FormatInt(count, 10))
+		}
+
+		// Loaded - for get operation with limit
+		if loaded != -1 && count != int64(loaded) {
+			out.WriteString(" | loaded: ")
+			out.WriteString(strconv.FormatInt(int64(loaded), 10))
+		}
+	}
+
+	// Duration
+	if duration != 0 && v.config.Duration {
+		out.WriteString(" | duration: ")
+		out.WriteString(duration.String())
+	}
+
+	return out.String()
+}
+
+func (v *kvWrapper) Txn(ctx context.Context) etcd.Txn {
 	return &txnWrapper{Txn: v.KV.Txn(ctx), kvWrapper: v}
 }
 
-func (v *txnWrapper) If(ops ...Cmp) Txn {
+func (v *txnWrapper) If(ops ...etcd.Cmp) etcd.Txn {
 	v.Txn.If(ops...)
 	v.ifOps = append(v.ifOps, ops...)
 	return v
 }
 
-func (v *txnWrapper) Then(ops ...Op) Txn {
+func (v *txnWrapper) Then(ops ...etcd.Op) etcd.Txn {
 	v.Txn.Then(ops...)
 	v.thenOps = append(v.thenOps, ops...)
 	return v
 }
 
-func (v *txnWrapper) Else(ops ...Op) Txn {
+func (v *txnWrapper) Else(ops ...etcd.Op) etcd.Txn {
 	v.Txn.Else(ops...)
 	v.elseOps = append(v.elseOps, ops...)
 	return v
 }
 
-func (v *txnWrapper) Commit() (*TxnResponse, error) {
+func (v *txnWrapper) Commit() (*etcd.TxnResponse, error) {
 	requestID := v.nextRequestID()
 	startTime := time.Now()
-	op := OpTxn(v.ifOps, v.thenOps, v.elseOps)
+	op := etcd.OpTxn(v.ifOps, v.thenOps, v.elseOps)
 	v.log(requestID, v.start(&op, "TXN", "", ""))
 	r, err := v.Txn.Commit()
-	v.log(requestID, v.end("TXN", "", startTime, r.OpResponse(), err))
+	v.log(requestID, v.endOp(op, startTime, r.OpResponse(), err))
 	return r, err
 }
 
@@ -225,7 +361,7 @@ func keyToStr(key, end []byte) string {
 	}
 }
 
-func opToStr(op Op) string {
+func opToStr(op etcd.Op) string {
 	switch {
 	case op.IsGet():
 		return "GET"
@@ -241,9 +377,13 @@ func opToStr(op Op) string {
 
 func prefixLines(prefix, lines string, out *strings.Builder) {
 	s := bufio.NewScanner(strings.NewReader(lines))
+	i := 0
 	for s.Scan() {
+		if i != 0 {
+			out.WriteString("\n")
+		}
 		out.WriteString(prefix)
 		out.WriteString(s.Text())
-		out.WriteString("\n")
+		i++
 	}
 }
