@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -739,6 +741,87 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T04:00:00.000Z/m
 }
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
+}
+
+func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+
+	// Get services
+	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
+	client := mocked.TestEtcdClient()
+	rb := rollback.New(d.Logger())
+	defRepo := d.DefinitionRepository()
+	storageRepo := d.StorageRepository()
+	fileFacade := storageRepo.File()
+	tokenRepo := storageRepo.Token()
+	volumeRepo := storageRepo.Volume()
+
+	// Mock file API calls
+	transport := mocked.MockedHTTPTransport()
+	transport.RegisterResponder(
+		http.MethodPost,
+		fmt.Sprintf("/v2/storage/branch/%d/files/prepare", branchKey.BranchID),
+		func(request *http.Request) (*http.Response, error) {
+			response, err := httpmock.NewJsonResponse(http.StatusUnauthorized, keboola.StorageError{
+				Message: "some error",
+			})
+			response.Request = request // required by the StorageError
+			return response, err
+		},
+	)
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create parent branch, source, sink and token
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
+		sink := test.NewSink(sinkKey)
+		sink.Table.Storage = sinkStorageConfig(1, []string{"default"})
+		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
+		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
+	}
+
+	// Create (the first file Rotate operation)
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		_, err := fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		if assert.Error(t, err) {
+			assert.Equal(t, strings.TrimSpace(`
+cannot create file resource:
+- some error, method: "POST", url: "https://connection.keboola.local/v2/storage/branch/456/files/prepare", httpCode: "401"
+`), err.Error())
+		}
+	}
+
+	// Check Storage API calls
+	// -----------------------------------------------------------------------------------------------------------------
+	assert.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/branch/456/files/prepare"])
+
+	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdhelper.AssertKVsString(t, client, "", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }
 
 func TestFileRepository_RotateOnSinkMod(t *testing.T) {
