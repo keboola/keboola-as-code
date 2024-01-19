@@ -73,7 +73,7 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 }
 
 func parseJSONInputForCreateTable(filePath string) (*keboola.CreateTableRequest, error) {
-	dataFile, err := os.ReadFile(filePath)
+	dataFile, err := os.ReadFile(filePath) // nolint: forbidigo
 	if err != nil {
 		return nil, err
 	}

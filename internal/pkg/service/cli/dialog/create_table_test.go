@@ -49,8 +49,10 @@ func TestParseJsonInput(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseJsonInputForCreateTable(tt.args.fileName)
+			t.Parallel()
+			got, err := parseJSONInputForCreateTable(tt.args.fileName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseJsonInputForCreateTable() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -111,7 +113,9 @@ func TestGetCreateRequest(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			assert.Equalf(t, tt.want, getOptionCreateRequest(tt.args.opts), "getOptionCreateRequest(%v)", tt.args.opts)
 		})
 	}

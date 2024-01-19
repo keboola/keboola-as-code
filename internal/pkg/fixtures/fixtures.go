@@ -61,15 +61,15 @@ type Bucket struct {
 }
 
 type Table struct {
-	ID          keboola.TableID         `json:"id"`
-	URI         string                  `json:"uri"`
-	Name        string                  `json:"name"`
-	DisplayName string                  `json:"displayName"`
-	PrimaryKey  []string                `json:"primaryKey"`
-	Definition  keboola.TableDefinition `json:"definition"`
-	Columns     []string                `json:"columns"`
-	Rows        [][]string              `json:"rows,omitempty"`
-	RowsCount   uint64                  `json:"rowsCount,omitempty"`
+	ID          keboola.TableID          `json:"id"`
+	URI         string                   `json:"uri"`
+	Name        string                   `json:"name"`
+	DisplayName string                   `json:"displayName"`
+	PrimaryKey  []string                 `json:"primaryKey"`
+	Definition  *keboola.TableDefinition `json:"definition,omitempty"`
+	Columns     []string                 `json:"columns"`
+	Rows        [][]string               `json:"rows,omitempty"`
+	RowsCount   uint64                   `json:"rowsCount,omitempty"`
 }
 
 type File struct {

@@ -178,6 +178,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			ListTablesRequest(p.defaultBranch.ID).
 			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
 				for _, table := range *apiTables {
+					table := table
 					grp.Go(func() error {
 						return p.keboolaProjectAPI.
 							GetTableRequest(table.TableKey).
