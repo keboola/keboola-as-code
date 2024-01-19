@@ -21,11 +21,13 @@ import (
 )
 
 type atomicOpTestCase struct {
-	Name               string
-	Prepare            func(t *testing.T, client etcd.KV) []op.Op
-	ReadPhase          func(t *testing.T, client etcd.KV) []op.Op
-	BreakingChange     func(t *testing.T, client etcd.KV) []op.Op
-	ExpectedWritePhase string
+	Name                string
+	SkipPrefixKeysCheck bool
+	Prepare             func(t *testing.T, client etcd.KV) []op.Op
+	ReadPhase           func(t *testing.T, client etcd.KV) []op.Op
+	BreakingChange      func(t *testing.T, client etcd.KV) []op.Op
+	ExpectedWritePhase  string
+	ExpectedlyDontWork  bool
 }
 
 func TestAtomicOp(t *testing.T) {
@@ -133,6 +135,8 @@ func TestAtomicOp(t *testing.T) {
   ➡️  IF:
   001 ["key/", "key0") MOD GREATER 0
   002 ["key/", "key0") MOD LESS %d
+  003 "key/1" MOD GREATER 0
+  004 "key/2" MOD GREATER 0
   ➡️  THEN:
   001 ➡️  PUT "foo"
 
@@ -141,13 +145,31 @@ func TestAtomicOp(t *testing.T) {
 		},
 		{
 			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is deleted in the prefix.
-			Name: "GetPrefix_DeleteKey",
-			Prepare: func(t *testing.T, client etcd.KV) []op.Op {
-				t.Skip("not implemented/impossible: we cannot check that a key was deleted from the prefix")
-				return putTwoKeys(t, client)
-			},
+			Name:           "GetPrefix_DeleteKey",
+			Prepare:        putTwoKeys,
 			ReadPhase:      getPrefix,
 			BreakingChange: deleteKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 ["key/", "key0") MOD GREATER 0
+  002 ["key/", "key0") MOD LESS %d
+  003 "key/1" MOD GREATER 0
+  004 "key/2" MOD GREATER 0
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is deleted in the prefix.
+			Name:                "GetPrefix_DeleteKey_SkipPrefixKeysCheck",
+			SkipPrefixKeysCheck: true,
+			Prepare:             putTwoKeys,
+			ReadPhase:           getPrefix,
+			BreakingChange:      deleteKey,
+			ExpectedlyDontWork:  true,
 			ExpectedWritePhase: `
 ➡️  TXN
   ➡️  IF:
@@ -156,7 +178,7 @@ func TestAtomicOp(t *testing.T) {
   ➡️  THEN:
   001 ➡️  PUT "foo"
 
-✔️  TXN | succeeded: false
+✔️  TXN | succeeded: true
 `,
 		},
 		{
@@ -247,11 +269,16 @@ func (tc *atomicOpTestCase) Run(t *testing.T) {
 		}
 
 		// Run AtomicOp
-		result := op.
+		atomicOp := op.
 			Atomic(client, &op.NoResult{}).
 			ReadOp(tc.ReadPhase(t, client)...).
-			WriteOp(etcdop.Key("foo").Put(client, "bar")).
-			DoWithoutRetry(ctx)
+			WriteOp(etcdop.Key("foo").Put(client, "bar"))
+
+		if tc.SkipPrefixKeysCheck {
+			atomicOp.SkipPrefixKeysCheck()
+		}
+
+		result := atomicOp.DoWithoutRetry(ctx)
 		require.NoError(t, result.Err())
 		assert.True(t, result.Succeeded())
 	})
@@ -268,7 +295,7 @@ func (tc *atomicOpTestCase) Run(t *testing.T) {
 		}
 
 		// Run AtomicOp
-		result := op.
+		atomicOp := op.
 			Atomic(client, &op.NoResult{}).
 			ReadOp(tc.ReadPhase(t, client)...).
 			BeforeWrite(func(ctx context.Context) {
@@ -276,10 +303,20 @@ func (tc *atomicOpTestCase) Run(t *testing.T) {
 				require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
 				logs.Reset()
 			}).
-			WriteOp(etcdop.Key("foo").Put(client, "bar")).
-			DoWithoutRetry(ctx)
+			WriteOp(etcdop.Key("foo").Put(client, "bar"))
+
+		if tc.SkipPrefixKeysCheck {
+			atomicOp.SkipPrefixKeysCheck()
+		}
+
+		result := atomicOp.DoWithoutRetry(ctx)
 		require.NoError(t, result.Err())
-		assert.False(t, result.Succeeded())
+
+		if tc.ExpectedlyDontWork {
+			assert.True(t, result.Succeeded())
+		} else {
+			assert.False(t, result.Succeeded())
+		}
 
 		// Check logs
 		wildcards.Assert(t, tc.ExpectedWritePhase, logs.String())

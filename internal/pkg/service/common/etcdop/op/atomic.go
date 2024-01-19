@@ -32,11 +32,12 @@ import (
 //
 // Retries on network errors are always performed.
 type AtomicOp[R any] struct {
-	client     etcd.KV
-	result     *R
-	readPhase  []HighLevelFactory
-	writePhase []HighLevelFactory
-	processors processors[R]
+	client         etcd.KV
+	result         *R
+	readPhase      []HighLevelFactory
+	writePhase     []HighLevelFactory
+	processors     processors[R]
+	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
 }
 
 type AtomicOpInterface interface {
@@ -45,7 +46,22 @@ type AtomicOpInterface interface {
 }
 
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
-	return &AtomicOp[R]{client: client, result: result}
+	return &AtomicOp[R]{client: client, result: result, checkPrefixKey: true}
+}
+
+// SkipPrefixKeysCheck disables the feature.
+//
+// By default, the feature is enabled and checks that each loaded key within the Read Phase, from a prefix, exists in Write Phase.
+// This can be potentially SLOW and generate a lot of IF conditions, if there are a large number of keys in the prefix.
+// Therefore, this feature can be turned off by the method.
+//
+// Modification of a key in the prefix is always detected,
+// this feature is used to detect the deletion of a key from the prefix.
+//
+// See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
+func (v *AtomicOp[R]) SkipPrefixKeysCheck() *AtomicOp[R] {
+	v.checkPrefixKey = false
+	return v
 }
 
 func (v *AtomicOp[R]) AddFrom(ops ...AtomicOpInterface) *AtomicOp[R] {
@@ -279,6 +295,20 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 					RangeEnd:    op.RangeEnd, // may be empty
 				},
 			)
+
+			// See SkipPrefixKeysCheck method documentation, by default, the feature is enabled.
+			if v.checkPrefixKey {
+				if op.RangeEnd != nil {
+					for _, kv := range op.KVs {
+						cmps = append(cmps, etcd.Cmp{
+							Target:      etcdserverpb.Compare_MOD,
+							Result:      etcdserverpb.Compare_GREATER,
+							TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
+							Key:         kv.Key,
+						})
+					}
+				}
+			}
 		case mustNotExist:
 			cmps = append(cmps,
 				// IF: modification version == 0
