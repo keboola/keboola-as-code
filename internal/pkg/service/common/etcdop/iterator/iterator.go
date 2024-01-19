@@ -271,13 +271,11 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 		}
 	}
 
-	// Handle empty result
 	v.values = kvs
 	v.header = header
 	v.lastIndexOnPage = len(v.values) - 1
-	if v.lastIndexOnPage == -1 {
-		return false
-	}
+	v.indexOnPage = -1
+	v.page++
 
 	// Prepare next page
 	if more {
@@ -292,9 +290,8 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 		v.start = end
 	}
 
-	v.indexOnPage = -1
-	v.page++
-	return true
+	// Stop on empty result
+	return v.lastIndexOnPage != -1
 }
 
 func (v Result) Header() *Header {
