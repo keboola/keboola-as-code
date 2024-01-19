@@ -9,6 +9,7 @@ Usage:
 Flags:
       --bucket string             bucket ID (required if the tableId argument is empty)
       --columns string            comma-separated list of column names
+      --columns-from string       the path to the table definition file in json
       --name string               name of the table (required if the tableId argument is empty)
       --primary-key string        columns used as primary key, comma-separated
   -H, --storage-api-host string   if command is run outside the project directory
