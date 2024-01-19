@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -32,6 +33,8 @@ type TrackedOp struct {
 	Key []byte
 	// RangeEnd, optional, used if the WithPrefix or WithRange option is used
 	RangeEnd []byte
+	// KVs, optional, contains loaded KVs, only for Get operation
+	KVs []*mvccpb.KeyValue
 }
 
 type TrackedOpType int
@@ -117,8 +120,8 @@ func (v *trackedTxn) Commit() (*etcd.TxnResponse, error) {
 	return r, err
 }
 
-func (v *TrackerKV) track(t TrackedOpType, key, rangeEnd []byte, count int64) {
-	record := TrackedOp{Type: t, Key: key, RangeEnd: rangeEnd, Count: count}
+func (v *TrackerKV) track(t TrackedOpType, key, rangeEnd []byte, count int64, kvs []*mvccpb.KeyValue) {
+	record := TrackedOp{Type: t, Key: key, RangeEnd: rangeEnd, Count: count, KVs: kvs}
 	for _, r := range v.ops {
 		if reflect.DeepEqual(r, record) {
 			// duplicate
@@ -131,11 +134,11 @@ func (v *TrackerKV) track(t TrackedOpType, key, rangeEnd []byte, count int64) {
 func (v *TrackerKV) trackOp(op etcd.Op, resp etcd.OpResponse) {
 	switch {
 	case op.IsGet():
-		v.track(GetOp, op.KeyBytes(), op.RangeBytes(), resp.Get().Count)
+		v.track(GetOp, op.KeyBytes(), op.RangeBytes(), resp.Get().Count, resp.Get().Kvs)
 	case op.IsDelete():
-		v.track(DeleteOp, op.KeyBytes(), op.RangeBytes(), resp.Del().Deleted)
+		v.track(DeleteOp, op.KeyBytes(), op.RangeBytes(), resp.Del().Deleted, nil)
 	case op.IsPut():
-		v.track(PutOp, op.KeyBytes(), op.RangeBytes(), 1)
+		v.track(PutOp, op.KeyBytes(), op.RangeBytes(), 1, nil)
 	default:
 		panic(errors.Errorf("unexpected op: %v", op))
 	}
@@ -149,11 +152,11 @@ func (v *TrackerKV) trackTxn(resp []*etcdserverpb.ResponseOp, ops []etcd.Op) {
 		if !op.IsTxn() {
 			switch {
 			case op.IsGet():
-				v.track(GetOp, op.KeyBytes(), op.RangeBytes(), resp[i].GetResponseRange().Count)
+				v.track(GetOp, op.KeyBytes(), op.RangeBytes(), resp[i].GetResponseRange().Count, resp[i].GetResponseRange().Kvs)
 			case op.IsDelete():
-				v.track(DeleteOp, op.KeyBytes(), op.RangeBytes(), resp[i].GetResponseDeleteRange().Deleted)
+				v.track(DeleteOp, op.KeyBytes(), op.RangeBytes(), resp[i].GetResponseDeleteRange().Deleted, nil)
 			case op.IsPut():
-				v.track(PutOp, op.KeyBytes(), op.RangeBytes(), 1)
+				v.track(PutOp, op.KeyBytes(), op.RangeBytes(), 1, nil)
 			default:
 				panic(errors.Errorf("unexpected op: %v", op))
 			}
