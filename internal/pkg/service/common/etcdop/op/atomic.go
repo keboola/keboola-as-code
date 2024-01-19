@@ -250,44 +250,49 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 	// Create IF part of the transaction
 	var cmps []etcd.Cmp
 	for _, op := range removeOpsOverlaps(tracker.Operations()) {
-		switch op.Type {
-		case DeleteOp:
+		mustExist := (op.Type == GetOp || op.Type == PutOp) && op.Count > 0
+		mustNotExist := op.Type == DeleteOp || op.Count == 0
+		switch {
+		case mustExist:
+			// IF: 0 < modification version <= Read Phase revision
+			// Key/range exists and has not been modified since the Read Phase.
+			//
+			// Note: we cannot check that nothing was deleted from the prefix.
+			// The condition IF count == n is needed, and it is not implemented in etcd.
+			// We can verify that an individual key was deleted, its MOD == 0.
 			cmps = append(cmps,
-				// The key/prefix must be missing, version must be equal to 0.
+				// The key/prefix must exist, version must be NOT equal to 0.
 				etcd.Cmp{
-					Result:      etcdserverpb.Compare_EQUAL,
-					Target:      etcdserverpb.Compare_VERSION,
-					TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_GREATER,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
+					Key:         op.Key,
+					RangeEnd:    op.RangeEnd, // may be empty
+				},
+				// The key/prefix cannot be modified between GET and UPDATE phase.
+				// Mod revision of the item must be less or equal to header.Revision.
+				etcd.Cmp{
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readResult.Header().Revision + 1},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
 				},
 			)
-		case GetOp:
-			if op.Count > 0 {
-				cmps = append(cmps,
-					// The key/prefix must exist, version must be NOT equal to 0.
-					etcd.Cmp{
-						Result:      etcdserverpb.Compare_GREATER,
-						Target:      etcdserverpb.Compare_VERSION,
-						TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
-						Key:         op.Key,
-						RangeEnd:    op.RangeEnd, // may be empty
-					})
-			}
-			fallthrough
-		case PutOp:
+		case mustNotExist:
 			cmps = append(cmps,
-				// The key/prefix cannot be modified between GET and UPDATE phase.
-				// Mod revision of the item must be less or equal to header.Revision.
+				// IF: modification version == 0
+				// The key/range doesn't exist.
 				etcd.Cmp{
-					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
 					Target:      etcdserverpb.Compare_MOD,
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readResult.Header().Revision + 1},
+					Result:      etcdserverpb.Compare_EQUAL,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
-				})
+				},
+			)
 		default:
-			panic(errors.Errorf(`unexpected operation type "%v"`, op.Type))
+			panic(errors.Errorf(`unexpected state, operation type "%v"`, op.Type))
 		}
 	}
 
