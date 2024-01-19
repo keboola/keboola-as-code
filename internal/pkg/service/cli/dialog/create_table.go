@@ -58,20 +58,21 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 		opts.PrimaryKey = primaryKey
 	}
 
-	fileName := p.options.GetString("columns-from")
-	if p.options.IsSet("columns-from") {
-		as, err := parseJsonInput(fileName)
+	filePath := p.options.GetString("columns-from")
+	if p.options.IsSet("columns-from") && len(opts.PrimaryKey) == 0 && opts.Name == "" {
+		createTableRequest, err := parseJSONInputForCreateTable(filePath)
 		if err != nil {
 			return table.Options{}, err
 		}
-		opts.CreateTableRequest = *as
+		opts.CreateTableRequest = *createTableRequest
+	} else {
+		opts = getOptionCreateRequest(opts)
 	}
 
 	return opts, nil
 }
 
-func parseJsonInput(filePath string) (*keboola.CreateTableRequest, error) {
-	//
+func parseJSONInputForCreateTable(filePath string) (*keboola.CreateTableRequest, error) {
 	dataFile, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -83,6 +84,29 @@ func parseJsonInput(filePath string) (*keboola.CreateTableRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return result, err
+}
+
+// this function returns the created CreateTableRequest from the flag from the statement (columns, primary keys, table name), if command don't include flag 'columns-from'.
+func getOptionCreateRequest(opts table.Options) table.Options {
+	var columns []keboola.Column
+	for _, column := range opts.Columns {
+		var c keboola.Column
+		c.Name = column
+		c.BaseType = keboola.TypeString
+		c.Definition.Type = keboola.TypeString.String()
+		columns = append(columns, c)
+	}
+
+	createTableRequest := keboola.CreateTableRequest{
+		TableDefinition: keboola.TableDefinition{
+			PrimaryKeyNames: opts.PrimaryKey,
+			Columns:         columns,
+		},
+		Name: opts.Name,
+	}
+
+	opts.CreateTableRequest = createTableRequest
+
+	return opts
 }

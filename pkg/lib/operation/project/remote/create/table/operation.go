@@ -29,11 +29,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.create.table")
 	defer span.End(&err)
 
-	opts := make([]keboola.CreateTableOption, 0)
-	if len(o.PrimaryKey) > 0 {
-		opts = append(opts, keboola.WithPrimaryKey(o.PrimaryKey))
-	}
-
 	rb := rollback.New(d.Logger())
 	err = tableImport.EnsureBucketExists(ctx, d, rb, o.BucketKey)
 	if err != nil {

@@ -7,14 +7,14 @@
     {
       "name": "id",
       "definition": {
-        "type": "INT"
+        "type": "VARCHAR"
       },
-      "basetype": "NUMERIC"
+      "basetype": "STRING"
     },
     {
       "name": "name",
       "definition": {
-        "type": "TEXT"
+        "type": "VARCHAR"
       },
       "basetype": "STRING"
     }
