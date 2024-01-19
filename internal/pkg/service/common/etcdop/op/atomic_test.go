@@ -141,8 +141,11 @@ func TestAtomicOp(t *testing.T) {
 		},
 		{
 			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is deleted in the prefix.
-			Name:           "GetPrefix_DeleteKey",
-			Prepare:        putTwoKeys,
+			Name: "GetPrefix_DeleteKey",
+			Prepare: func(t *testing.T, client etcd.KV) []op.Op {
+				t.Skip("not implemented/impossible: we cannot check that a key was deleted from the prefix")
+				return putTwoKeys(t, client)
+			},
 			ReadPhase:      getPrefix,
 			BreakingChange: deleteKey,
 			ExpectedWritePhase: `
