@@ -1,6 +1,7 @@
 package op_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -13,10 +14,290 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
+type atomicOpTestCase struct {
+	Name               string
+	Prepare            func(t *testing.T, client etcd.KV) []op.Op
+	ReadPhase          func(t *testing.T, client etcd.KV) []op.Op
+	BreakingChange     func(t *testing.T, client etcd.KV) []op.Op
+	ExpectedWritePhase string
+}
+
+func TestAtomicOp(t *testing.T) {
+	t.Parallel()
+
+	nop := func(_ *testing.T, client etcd.KV) []op.Op {
+		return nil
+	}
+	getKey := func(_ *testing.T, client etcd.KV) []op.Op {
+		return []op.Op{etcdop.Key("key/1").Get(client)}
+	}
+	getPrefix := func(_ *testing.T, client etcd.KV) []op.Op {
+		return []op.Op{etcdop.Prefix("key").GetAll(client).ForEach(func(value *op.KeyValue, header *iterator.Header) error {
+			return nil
+		})}
+	}
+	putKey := func(_ *testing.T, client etcd.KV) []op.Op {
+		return []op.Op{etcdop.Key("key/1").Put(client, "value")}
+	}
+	putTwoKeys := func(_ *testing.T, client etcd.KV) []op.Op {
+		return []op.Op{
+			etcdop.Key("key/1").Put(client, "value"),
+			etcdop.Key("key/2").Put(client, "value"),
+		}
+	}
+	deleteKey := func(_ *testing.T, client etcd.KV) []op.Op {
+		return []op.Op{etcdop.Key("key/1").Delete(client)}
+	}
+
+	cases := []atomicOpTestCase{
+		{
+			// Read Phase gets a key, it doesn't exist, but before the Write Phase, it is created.
+			Name:           "GetKey_CreateKey",
+			Prepare:        nop,
+			ReadPhase:      getKey,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase gets a key, it exists, but before the Write Phase, it is modified.
+			Name:           "GetKey_ModifyKey",
+			Prepare:        putKey,
+			ReadPhase:      getKey,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD GREATER 0
+  002 "key/1" MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase gets a key, it exists, but before the Write Phase, it is deleted.
+			Name:           "GetKey_DeleteKey",
+			Prepare:        putKey,
+			ReadPhase:      getKey,
+			BreakingChange: deleteKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD GREATER 0
+  002 "key/1" MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase gets a keys prefix, but before the Write Phase, a new key is created in the prefix.
+			Name:           "GetPrefix_CreateKey",
+			Prepare:        nop,
+			ReadPhase:      getPrefix,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 ["key/", "key0") MOD EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is modified in the prefix.
+			Name:           "GetPrefix_ModifyKey",
+			Prepare:        putTwoKeys,
+			ReadPhase:      getPrefix,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 ["key/", "key0") MOD GREATER 0
+  002 ["key/", "key0") MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is deleted in the prefix.
+			Name:           "GetPrefix_DeleteKey",
+			Prepare:        putTwoKeys,
+			ReadPhase:      getPrefix,
+			BreakingChange: deleteKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 ["key/", "key0") MOD GREATER 0
+  002 ["key/", "key0") MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase modifies a key, but before the Write Phase, it is modified.
+			Name:           "PutKey_ModifyKey",
+			Prepare:        nop,
+			ReadPhase:      putKey,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD GREATER 0
+  002 "key/1" MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase modifies a key, but before the Write Phase, it is deleted.
+			Name:           "PutKey_DeleteKey",
+			Prepare:        nop,
+			ReadPhase:      putKey,
+			BreakingChange: deleteKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD GREATER 0
+  002 "key/1" MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase deletes a key, it exists, but before the Write Phase, it is created.
+			Name:           "DeleteKey_CreateKey",
+			Prepare:        nop,
+			ReadPhase:      deleteKey,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+		{
+			// Read Phase deletes a key, it exists, but before the Write Phase, it is re-created.
+			Name:           "DeleteKey_RecreateKey",
+			Prepare:        putKey,
+			ReadPhase:      deleteKey,
+			BreakingChange: putKey,
+			ExpectedWritePhase: `
+➡️  TXN
+  ➡️  IF:
+  001 "key/1" MOD EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "foo"
+
+✔️  TXN | succeeded: false
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		tc.Run(t)
+	}
+}
+
+func (tc *atomicOpTestCase) Run(t *testing.T) {
+	t.Helper()
+
+	// Check successful atomic operation - without breaking change
+	t.Run(tc.Name+"-succeeded-true", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		client, _ := tc.createClient(t)
+
+		// Prepare
+		if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
+			require.NoError(t, txn.Do(ctx).Err())
+		}
+
+		// Run AtomicOp
+		result := op.
+			Atomic(client, &op.NoResult{}).
+			ReadOp(tc.ReadPhase(t, client)...).
+			WriteOp(etcdop.Key("foo").Put(client, "bar")).
+			DoWithoutRetry(ctx)
+		require.NoError(t, result.Err())
+		assert.True(t, result.Succeeded())
+	})
+
+	// Check successful atomic operation - with breaking change
+	t.Run(tc.Name+"-succeeded-false", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		client, logs := tc.createClient(t)
+
+		// Prepare
+		if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
+			require.NoError(t, txn.Do(ctx).Err())
+		}
+
+		// Run AtomicOp
+		result := op.
+			Atomic(client, &op.NoResult{}).
+			ReadOp(tc.ReadPhase(t, client)...).
+			BeforeWrite(func(ctx context.Context) {
+				// Modify a key loaded by the Read Phase
+				require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
+				logs.Reset()
+			}).
+			WriteOp(etcdop.Key("foo").Put(client, "bar")).
+			DoWithoutRetry(ctx)
+		require.NoError(t, result.Err())
+		assert.False(t, result.Succeeded())
+
+		// Check logs
+		wildcards.Assert(t, tc.ExpectedWritePhase, logs.String())
+	})
+}
+
+func (tc *atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
+	t.Helper()
+	var logs bytes.Buffer
+	client := etcdlogger.KVLogWrapper(
+		etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t)),
+		&logs,
+		etcdlogger.WithMinimal(),
+		etcdlogger.WithoutPutValue(),
+	)
+	return client, &logs
+}
+
+// TestAtomicUpdate has been partially replaced with the TestAtomicOp.
+// In the future we should remove the test,
+// it is necessary to make a separate test for nested transactions and for shortcuts such as the BeforeWriteOrErr method.
 func TestAtomicUpdate(t *testing.T) {
 	t.Parallel()
 
