@@ -31,6 +31,7 @@ type resultT struct {
 
 type testCaseT struct {
 	name         string
+	inTxn        bool
 	kvCount      int
 	pageSize     int
 	options      []iterator.Option
@@ -42,6 +43,55 @@ func TestIteratorT(t *testing.T) {
 	t.Parallel()
 
 	cases := []testCaseT{
+		{
+			name:     "txn: empty",
+			inTxn:    true,
+			kvCount:  0,
+			pageSize: 3,
+			expected: []resultT{},
+			expectedLogs: `
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["some/prefix/", "some/prefix0")
+✔️  TXN | succeeded: true | rev: %d
+`,
+		},
+		{
+			name:     "txn: count 1, under page size",
+			inTxn:    true,
+			kvCount:  1,
+			pageSize: 3,
+			expected: []resultT{
+				{key: "some/prefix/foo001", value: obj{Value: "bar001"}},
+			},
+			expectedLogs: `
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["some/prefix/", "some/prefix0")
+✔️  TXN | succeeded: true | rev: %d
+`,
+		},
+		{
+			name:     "txn: two on the second page",
+			inTxn:    true,
+			kvCount:  5,
+			pageSize: 3,
+			expected: []resultT{
+				{key: "some/prefix/foo001", value: obj{Value: "bar001"}},
+				{key: "some/prefix/foo002", value: obj{Value: "bar002"}},
+				{key: "some/prefix/foo003", value: obj{Value: "bar003"}},
+				{key: "some/prefix/foo004", value: obj{Value: "bar004"}},
+				{key: "some/prefix/foo005", value: obj{Value: "bar005"}},
+			},
+			expectedLogs: `
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["some/prefix/", "some/prefix0")
+✔️  TXN | succeeded: true | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2
+`,
+		},
 		{
 			name:     "empty",
 			kvCount:  0,
@@ -225,6 +275,23 @@ func TestIteratorT(t *testing.T) {
 		prefix := generateKVsT(t, tc.kvCount, ctx, client)
 		ops := append([]iterator.Option{iterator.WithPageSize(tc.pageSize)}, tc.options...)
 
+		// Test transaction
+		if tc.inTxn {
+			// Loading of the first page is part of the transaction.
+			// Next pages are loaded with the same revision.
+			logs.Reset()
+			actual := make([]resultT, 0)
+			txn := op.Txn(client).Then(prefix.GetAll(client, ops...).ForEachKV(func(kv *op.KeyValueT[obj], header *iterator.Header) error {
+				assert.NotNil(t, header)
+				actual = append(actual, resultT{key: kv.Key(), value: kv.Value})
+				return nil
+			}))
+			require.NoError(t, txn.Do(ctx).Err())
+			assert.Equal(t, tc.expected, actual, tc.name)
+			wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+			continue
+		}
+
 		// Test iteration methods
 		logs.Reset()
 		actual := iterateAllT(t, ctx, prefix.GetAll(client, ops...))
@@ -276,6 +343,10 @@ func TestIteratorT(t *testing.T) {
 		}))
 		assert.Len(t, values, len(tc.expected))
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Next method is stable
+		assert.False(t, itr.Next())
+		assert.False(t, itr.Next())
 	}
 }
 
