@@ -265,7 +265,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 
 	// Create IF part of the transaction
 	var cmps []etcd.Cmp
-	for _, op := range removeOpsOverlaps(tracker.Operations()) {
+	for _, op := range tracker.Operations() {
 		mustExist := (op.Type == GetOp || op.Type == PutOp) && op.Count > 0
 		mustNotExist := op.Type == DeleteOp || op.Count == 0
 		switch {
