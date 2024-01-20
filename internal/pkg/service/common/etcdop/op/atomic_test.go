@@ -109,7 +109,7 @@ func TestAtomicOp(t *testing.T) {
 `,
 		},
 		{
-			// Read Phase gets a keys prefix, but before the Write Phase, a new key is created in the prefix.
+			// Read Phase gets a range, but before the Write Phase, a new key is created in the range.
 			Name:           "GetPrefix_CreateKey",
 			Prepare:        nop,
 			ReadPhase:      getPrefix,
@@ -125,7 +125,7 @@ func TestAtomicOp(t *testing.T) {
 `,
 		},
 		{
-			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is modified in the prefix.
+			// Read Phase gets a range, but before the Write Phase, an existing key is modified in the range.
 			Name:           "GetPrefix_ModifyKey",
 			Prepare:        putTwoKeys,
 			ReadPhase:      getPrefix,
@@ -144,7 +144,7 @@ func TestAtomicOp(t *testing.T) {
 `,
 		},
 		{
-			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is deleted in the prefix.
+			// Read Phase gets a range, but before the Write Phase, an existing key is deleted in the range.
 			Name:           "GetPrefix_DeleteKey",
 			Prepare:        putTwoKeys,
 			ReadPhase:      getPrefix,
@@ -163,7 +163,8 @@ func TestAtomicOp(t *testing.T) {
 `,
 		},
 		{
-			// Read Phase gets a keys prefix, but before the Write Phase, an existing key is deleted in the prefix.
+			// Read Phase gets a range, but before the Write Phase, an existing key is deleted in the range.
+			// SkipPrefixKeysCheck
 			Name:                "GetPrefix_DeleteKey_SkipPrefixKeysCheck",
 			SkipPrefixKeysCheck: true,
 			Prepare:             putTwoKeys,
@@ -216,7 +217,7 @@ func TestAtomicOp(t *testing.T) {
 `,
 		},
 		{
-			// Read Phase deletes a key, it exists, but before the Write Phase, it is created.
+			// Read Phase deletes a key, it doesn't exist, but before the Write Phase, it is created.
 			Name:           "DeleteKey_CreateKey",
 			Prepare:        nop,
 			ReadPhase:      deleteKey,
