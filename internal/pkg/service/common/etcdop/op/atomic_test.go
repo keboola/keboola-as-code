@@ -251,80 +251,82 @@ func TestAtomicOp(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc.Run(t)
+		tc := tc
+		t.Run(tc.Name+"_ok", func(t *testing.T) {
+			t.Parallel()
+			tc.RunOk(t)
+		})
+		t.Run(tc.Name+"_bc", func(t *testing.T) {
+			t.Parallel()
+			tc.RunBreakingChange(t)
+		})
 	}
 }
 
-func (tc *atomicOpTestCase) Run(t *testing.T) {
+func (tc atomicOpTestCase) RunOk(t *testing.T) {
 	t.Helper()
+	ctx := context.Background()
+	client, _ := tc.createClient(t)
 
-	// Check successful atomic operation - without breaking change
-	t.Run(tc.Name+"-succeeded-true", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		client, _ := tc.createClient(t)
+	// Prepare
+	if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
+		require.NoError(t, txn.Do(ctx).Err())
+	}
 
-		// Prepare
-		if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
-			require.NoError(t, txn.Do(ctx).Err())
-		}
+	// Run AtomicOp
+	atomicOp := op.
+		Atomic(client, &op.NoResult{}).
+		ReadOp(tc.ReadPhase(t, client)...).
+		WriteOp(etcdop.Key("foo").Put(client, "bar"))
 
-		// Run AtomicOp
-		atomicOp := op.
-			Atomic(client, &op.NoResult{}).
-			ReadOp(tc.ReadPhase(t, client)...).
-			WriteOp(etcdop.Key("foo").Put(client, "bar"))
+	if tc.SkipPrefixKeysCheck {
+		atomicOp.SkipPrefixKeysCheck()
+	}
 
-		if tc.SkipPrefixKeysCheck {
-			atomicOp.SkipPrefixKeysCheck()
-		}
-
-		result := atomicOp.DoWithoutRetry(ctx)
-		require.NoError(t, result.Err())
-		assert.True(t, result.Succeeded())
-	})
-
-	// Check successful atomic operation - with breaking change
-	t.Run(tc.Name+"-succeeded-false", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		client, logs := tc.createClient(t)
-
-		// Prepare
-		if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
-			require.NoError(t, txn.Do(ctx).Err())
-		}
-
-		// Run AtomicOp
-		atomicOp := op.
-			Atomic(client, &op.NoResult{}).
-			ReadOp(tc.ReadPhase(t, client)...).
-			BeforeWrite(func(ctx context.Context) {
-				// Modify a key loaded by the Read Phase
-				require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
-				logs.Reset()
-			}).
-			WriteOp(etcdop.Key("foo").Put(client, "bar"))
-
-		if tc.SkipPrefixKeysCheck {
-			atomicOp.SkipPrefixKeysCheck()
-		}
-
-		result := atomicOp.DoWithoutRetry(ctx)
-		require.NoError(t, result.Err())
-
-		if tc.ExpectedlyDontWork {
-			assert.True(t, result.Succeeded())
-		} else {
-			assert.False(t, result.Succeeded())
-		}
-
-		// Check logs
-		wildcards.Assert(t, tc.ExpectedWritePhase, logs.String())
-	})
+	result := atomicOp.DoWithoutRetry(ctx)
+	require.NoError(t, result.Err())
+	assert.True(t, result.Succeeded())
 }
 
-func (tc *atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
+func (tc atomicOpTestCase) RunBreakingChange(t *testing.T) {
+	t.Helper()
+	ctx := context.Background()
+	client, logs := tc.createClient(t)
+
+	// Prepare
+	if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
+		require.NoError(t, txn.Do(ctx).Err())
+	}
+
+	// Run AtomicOp
+	atomicOp := op.
+		Atomic(client, &op.NoResult{}).
+		ReadOp(tc.ReadPhase(t, client)...).
+		BeforeWrite(func(ctx context.Context) {
+			// Modify a key loaded by the Read Phase
+			require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
+			logs.Reset()
+		}).
+		WriteOp(etcdop.Key("foo").Put(client, "bar"))
+
+	if tc.SkipPrefixKeysCheck {
+		atomicOp.SkipPrefixKeysCheck()
+	}
+
+	result := atomicOp.DoWithoutRetry(ctx)
+	require.NoError(t, result.Err())
+
+	if tc.ExpectedlyDontWork {
+		assert.True(t, result.Succeeded())
+	} else {
+		assert.False(t, result.Succeeded())
+	}
+
+	// Check logs
+	wildcards.Assert(t, tc.ExpectedWritePhase, logs.String())
+}
+
+func (tc atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
 	t.Helper()
 	var logs bytes.Buffer
 	client := etcdlogger.KVLogWrapper(
