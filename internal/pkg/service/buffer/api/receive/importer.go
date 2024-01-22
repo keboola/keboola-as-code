@@ -14,9 +14,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/quota"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/quota"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
