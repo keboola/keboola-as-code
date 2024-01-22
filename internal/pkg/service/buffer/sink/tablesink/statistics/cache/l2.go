@@ -61,7 +61,7 @@ func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statisti
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				c.clearCache()
+				c.Clear()
 			}
 		}
 	}()
@@ -89,7 +89,7 @@ func (c *L2) Revision() int64 {
 	return c.revision
 }
 
-func (c *L2) clearCache() {
+func (c *L2) Clear() {
 	c.cacheLock.Lock()
 	c.cache = make(l2CachePerObjectKey, len(c.cache))
 	c.revision = 0
