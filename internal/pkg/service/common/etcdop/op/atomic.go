@@ -32,11 +32,12 @@ import (
 //
 // Retries on network errors are always performed.
 type AtomicOp[R any] struct {
-	client     etcd.KV
-	result     *R
-	readPhase  []HighLevelFactory
-	writePhase []HighLevelFactory
-	processors processors[R]
+	client         etcd.KV
+	result         *R
+	readPhase      []HighLevelFactory
+	writePhase     []HighLevelFactory
+	processors     processors[R]
+	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
 }
 
 type AtomicOpInterface interface {
@@ -45,7 +46,22 @@ type AtomicOpInterface interface {
 }
 
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
-	return &AtomicOp[R]{client: client, result: result}
+	return &AtomicOp[R]{client: client, result: result, checkPrefixKey: true}
+}
+
+// SkipPrefixKeysCheck disables the feature.
+//
+// By default, the feature is enabled and checks that each loaded key within the Read Phase, from a prefix, exists in Write Phase.
+// This can be potentially SLOW and generate a lot of IF conditions, if there are a large number of keys in the prefix.
+// Therefore, this feature can be turned off by the method.
+//
+// Modification of a key in the prefix is always detected,
+// this feature is used to detect the deletion of a key from the prefix.
+//
+// See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
+func (v *AtomicOp[R]) SkipPrefixKeysCheck() *AtomicOp[R] {
+	v.checkPrefixKey = false
+	return v
 }
 
 func (v *AtomicOp[R]) AddFrom(ops ...AtomicOpInterface) *AtomicOp[R] {
@@ -250,44 +266,63 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 	// Create IF part of the transaction
 	var cmps []etcd.Cmp
 	for _, op := range removeOpsOverlaps(tracker.Operations()) {
-		switch op.Type {
-		case DeleteOp:
+		mustExist := (op.Type == GetOp || op.Type == PutOp) && op.Count > 0
+		mustNotExist := op.Type == DeleteOp || op.Count == 0
+		switch {
+		case mustExist:
+			// IF: 0 < modification version <= Read Phase revision
+			// Key/range exists and has not been modified since the Read Phase.
+			//
+			// Note: we cannot check that nothing was deleted from the prefix.
+			// The condition IF count == n is needed, and it is not implemented in etcd.
+			// We can verify that an individual key was deleted, its MOD == 0.
 			cmps = append(cmps,
-				// The key/prefix must be missing, version must be equal to 0.
+				// The key/prefix must exist, version must be NOT equal to 0.
 				etcd.Cmp{
-					Result:      etcdserverpb.Compare_EQUAL,
-					Target:      etcdserverpb.Compare_VERSION,
-					TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_GREATER,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
+					Key:         op.Key,
+					RangeEnd:    op.RangeEnd, // may be empty
+				},
+				// The key/prefix cannot be modified between GET and UPDATE phase.
+				// Mod revision of the item must be less or equal to header.Revision.
+				etcd.Cmp{
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readResult.Header().Revision + 1},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
 				},
 			)
-		case GetOp:
-			if op.Count > 0 {
-				cmps = append(cmps,
-					// The key/prefix must exist, version must be NOT equal to 0.
-					etcd.Cmp{
-						Result:      etcdserverpb.Compare_GREATER,
-						Target:      etcdserverpb.Compare_VERSION,
-						TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
-						Key:         op.Key,
-						RangeEnd:    op.RangeEnd, // may be empty
-					})
+
+			// See SkipPrefixKeysCheck method documentation, by default, the feature is enabled.
+			if v.checkPrefixKey {
+				if op.RangeEnd != nil {
+					for _, kv := range op.KVs {
+						cmps = append(cmps, etcd.Cmp{
+							Target:      etcdserverpb.Compare_MOD,
+							Result:      etcdserverpb.Compare_GREATER,
+							TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
+							Key:         kv.Key,
+						})
+					}
+				}
 			}
-			fallthrough
-		case PutOp:
+		case mustNotExist:
 			cmps = append(cmps,
-				// The key/prefix cannot be modified between GET and UPDATE phase.
-				// Mod revision of the item must be less or equal to header.Revision.
+				// IF: modification version == 0
+				// The key/range doesn't exist.
 				etcd.Cmp{
-					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
 					Target:      etcdserverpb.Compare_MOD,
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readResult.Header().Revision + 1},
+					Result:      etcdserverpb.Compare_EQUAL,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
-				})
+				},
+			)
 		default:
-			panic(errors.Errorf(`unexpected operation type "%v"`, op.Type))
+			panic(errors.Errorf(`unexpected state, operation type "%v"`, op.Type))
 		}
 	}
 
