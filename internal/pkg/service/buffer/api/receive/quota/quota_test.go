@@ -2,83 +2,102 @@ package quota_test
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/quota"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestQuota_Check(t *testing.T) {
 	t.Parallel()
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Prepare some keys
+	// Fixtures
 	now := time.Now()
-	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
-	exportKey1 := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export-1"}
-	file1Key := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(now.Add(10 * time.Second))}
-	slice1Key := key.SliceKey{FileKey: file1Key, SliceID: key.SliceID(now.Add(20 * time.Second))}
-	exportKey2 := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export-2"}
-	file2Key := key.FileKey{ExportKey: exportKey2, FileID: key.FileID(now.Add(30 * time.Second))}
-	slice2Key := key.SliceKey{FileKey: file2Key, SliceID: key.SliceID(now.Add(40 * time.Second))}
+	openedAt := utctime.From(now)
+	branchKey := key.BranchKey{ProjectID: 123, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-receiver"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-export-1"}
+	fileKey := storage.FileKey{SinkKey: sinkKey, FileID: storage.FileID{OpenedAt: openedAt}}
+	slice1Key := storage.SliceKey{
+		FileVolumeKey: storage.FileVolumeKey{VolumeID: "my-volume-1", FileKey: fileKey},
+		SliceID:       storage.SliceID{OpenedAt: openedAt},
+	}
+	slice2Key := storage.SliceKey{
+		FileVolumeKey: storage.FileVolumeKey{VolumeID: "my-volume-2", FileKey: fileKey},
+		SliceID:       storage.SliceID{OpenedAt: openedAt},
+	}
 
-	limit := 1000 * datasize.KB
-	cfg := config.NewAPIConfig()
-	cfg.StatisticsSyncInterval = 50 * time.Millisecond
-	cfg.ReceiverBufferSize = limit
-
-	apiScope, mock := dependencies.NewMockedAPIScope(t, cfg)
-	client := mock.TestEtcdClient()
-	statsCollector := apiScope.StatsCollector()
-	quoteChecker := quota.New(apiScope)
-	notifyReceivedData := func(sliceKey key.SliceKey, recordSize datasize.ByteSize) {
-		// Notify statistics collector
-		header := etcdhelper.ExpectModificationInPrefix(t, client, "stats/", func() {
-			statsCollector.Notify(now, sliceKey, recordSize, 123)
+	// Dependencies
+	cfg := config.New()
+	d, mocked := dependencies.NewMockedTableSinkScope(t, cfg)
+	client := mocked.TestEtcdClient()
+	repo := d.StatisticsRepository()
+	quoteChecker := quota.New(d)
+	updateStats := func(sliceKey storage.SliceKey, size datasize.ByteSize) {
+		header := etcdhelper.ExpectModificationInPrefix(t, client, "storage/stats/", func() {
+			require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				{
+					SliceKey: sliceKey,
+					Value: statistics.Value{
+						SlicesCount:    1,
+						RecordsCount:   123,
+						CompressedSize: size,
+					},
+				},
+			}))
 		})
 
 		// Wait for L1 cache update
 		assert.Eventually(t, func() bool {
-			return apiScope.StatisticsL1Cache().Revision() == header.Revision
+			return d.StatisticsL1Cache().Revision() == header.Revision
 		}, 1*time.Second, 100*time.Millisecond)
 
 		// Clear L2 cache
-		apiScope.StatisticsL2Cache().ClearCache()
+		d.StatisticsL2Cache().Clear()
 	}
 
+	// Define a quota
+	quotaValue := 1000 * datasize.KB
+
 	// No data, no error
-	assert.NoError(t, quoteChecker.Check(ctx, receiverKey))
+	assert.NoError(t, quoteChecker.Check(ctx, sinkKey, quotaValue))
 
-	// Received some data under limit: 600kB < 1000kB limit, no error
-	notifyReceivedData(slice1Key, 600*datasize.KB)
-	assert.NoError(t, quoteChecker.Check(ctx, receiverKey))
+	// Received some data under quota: 600kB < 1000kB, no error
+	updateStats(slice1Key, 600*datasize.KB)
+	assert.NoError(t, quoteChecker.Check(ctx, sinkKey, quotaValue))
 
-	// Received some data over limit: 1200kB > 1000kB limit, error
-	notifyReceivedData(slice2Key, 600*datasize.KB)
-	err := quoteChecker.Check(ctx, receiverKey)
+	// Received some data over quota: 1200kB > 1000kB, error
+	expectedErr := `full storage buffer for the sink "123/456/my-receiver/my-export-1", buffered "1.2 MB", quota "1000.0 KB"`
+	updateStats(slice2Key, 600*datasize.KB)
+	err := quoteChecker.Check(ctx, sinkKey, quotaValue)
 	if assert.Error(t, err) {
-		assert.Equal(t, `no free space in the buffer: receiver "my-receiver" has "1.2 MB" buffered for upload, limit is "1000.0 KB"`, err.Error())
+		assert.Equal(t, expectedErr, err.Error())
 		errValue, ok := err.(errors.WithErrorLogEnabled)
 		assert.True(t, ok)
+
 		// Error is logged only once per quote.MinErrorLogInterval
 		assert.True(t, errValue.ErrorLogEnabled())
 	}
 
 	// Error is not logged on second error
-	err = quoteChecker.Check(ctx, receiverKey)
+	err = quoteChecker.Check(ctx, sinkKey, quotaValue)
 	if assert.Error(t, err) {
-		assert.Equal(t, `no free space in the buffer: receiver "my-receiver" has "1.2 MB" buffered for upload, limit is "1000.0 KB"`, err.Error())
+		assert.Equal(t, expectedErr, err.Error())
 		errValue, ok := err.(errors.WithErrorLogEnabled)
 		assert.True(t, ok)
 		assert.False(t, errValue.ErrorLogEnabled())
