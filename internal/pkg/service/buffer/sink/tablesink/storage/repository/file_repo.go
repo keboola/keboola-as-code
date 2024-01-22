@@ -308,7 +308,9 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 
 	// Get all active volumes
 	var volumes []volume.Metadata
-	atomicOp.ReadOp(r.all.Volume().ListWriterVolumes().WithAllTo(&volumes))
+	if openNew {
+		atomicOp.ReadOp(r.all.Volume().ListWriterVolumes().WithAllTo(&volumes))
+	}
 
 	// Create file resources
 	var fileResources map[key.SinkKey]*FileResource

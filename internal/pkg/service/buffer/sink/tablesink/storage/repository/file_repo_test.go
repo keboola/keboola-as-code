@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -35,6 +36,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
 func TestFileRepository_Operations(t *testing.T) {
@@ -1090,6 +1092,11 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
+	// Log etcd operations
+	var etcdLogs bytes.Buffer
+	rawClient := d.EtcdClient()
+	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
+
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
@@ -1104,6 +1111,7 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	}
 
 	// Create sink
+	// -----------------------------------------------------------------------------------------------------------------
 	branch := test.NewBranch(branchKey)
 	require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
@@ -1113,15 +1121,60 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 
 	// Create 2 files, with 2 slices
+	// -----------------------------------------------------------------------------------------------------------------
 	require.NoError(t, fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).Err())
 	clk.Add(time.Hour)
 	require.NoError(t, fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).Err())
 
 	// Close the last file
+	// -----------------------------------------------------------------------------------------------------------------
 	clk.Add(time.Hour)
+	etcdLogs.Reset()
 	require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey).Do(ctx).Err())
+	closeAllInEtcdLogs := etcdLogs.String()
 
 	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdlogger.Assert(t, `
+// CloseAllIn - AtomicOp - Read Phase
+➡️  TXN
+  ➡️  THEN:
+  // Sink
+  001 ➡️  GET "definition/sink/active/123/456/my-source/my-sink-1"
+  // Local files
+  002 ➡️  GET ["storage/file/level/local/123/456/my-source/my-sink-1/", "storage/file/level/local/123/456/my-source/my-sink-10")
+  // Local slices
+  003 ➡️  GET ["storage/slice/level/local/123/456/my-source/my-sink-1/", "storage/slice/level/local/123/456/my-source/my-sink-10")
+✔️  TXN | succeeded: true
+
+// CloseAllIn - AtomicOp - Write Phase
+➡️  TXN
+  ➡️  IF:
+  // Sink
+  001 "definition/sink/active/123/456/my-source/my-sink-1" MOD GREATER 0
+  002 "definition/sink/active/123/456/my-source/my-sink-1" MOD LESS %d
+  // Local files
+  003 ["storage/file/level/local/123/456/my-source/my-sink-1/", "storage/file/level/local/123/456/my-source/my-sink-10") MOD GREATER 0
+  004 ["storage/file/level/local/123/456/my-source/my-sink-1/", "storage/file/level/local/123/456/my-source/my-sink-10") MOD LESS %d
+  005 "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  006 "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z" MOD GREATER 0
+  // Local slices
+  007 ["storage/slice/level/local/123/456/my-source/my-sink-1/", "storage/slice/level/local/123/456/my-source/my-sink-10") MOD GREATER 0
+  008 ["storage/slice/level/local/123/456/my-source/my-sink-1/", "storage/slice/level/local/123/456/my-source/my-sink-10") MOD LESS %d
+  009 "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  010 "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z" MOD GREATER 0
+  ➡️  THEN:
+  // Save closed file - in two copies, in "all" and <level> prefix
+  001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z"
+  002 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z"
+  // Save closed slice - in two copies, in "all" and <level> prefix
+  003 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
+  004 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
+✔️  TXN | succeeded: true
+`, closeAllInEtcdLogs)
+
+	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
 	expectedEtcdState := `
 <<<<<
 storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z
@@ -1222,6 +1275,11 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
+	// Log etcd operations
+	var etcdLogs bytes.Buffer
+	rawClient := d.EtcdClient()
+	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
+
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
@@ -1268,9 +1326,12 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 
 	// Create (the first file Rotate)
 	// -----------------------------------------------------------------------------------------------------------------
+	var rotateAllInEtcdLogs string
 	{
 		clk.Add(time.Hour)
+		etcdLogs.Reset()
 		require.NoError(t, fileFacade.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
+		rotateAllInEtcdLogs = etcdLogs.String()
 	}
 
 	// Rotate file (2)
@@ -1296,6 +1357,217 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	// Test rollback, delete file endpoint should be called N times
 	rb.Invoke(ctx)
 	assert.Equal(t, 15, transport.GetCallCountInfo()[`DELETE =~/v2/storage/branch/456/files/\d+$`])
+
+	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdlogger.Assert(t, `
+// RotateAllIn - AtomicOp - Read Phase
+➡️  TXN
+  ➡️  THEN:
+  // Sinks
+  001 ➡️  GET ["definition/sink/active/123/456/", "definition/sink/active/123/4560")
+  // Volumes
+  002 ➡️  GET ["storage/volume/writer/", "storage/volume/writer0")
+  // Local files
+  003 ➡️  GET ["storage/file/level/local/123/456/", "storage/file/level/local/123/4560")
+  // Local slices
+  004 ➡️  GET ["storage/slice/level/local/123/456/", "storage/slice/level/local/123/4560")
+✔️  TXN | succeeded: true
+
+// RotateAllIn - FileResourcesProvider - Get tokens
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "storage/secret/token/123/456/my-source-1/my-sink-1"
+  002 ➡️  GET "storage/secret/token/123/456/my-source-1/my-sink-2"
+  003 ➡️  GET "storage/secret/token/123/456/my-source-1/my-sink-3"
+  004 ➡️  GET "storage/secret/token/123/456/my-source-2/my-sink-4"
+  005 ➡️  GET "storage/secret/token/123/456/my-source-2/my-sink-5"
+✔️  TXN | succeeded: true
+
+// RotateAllIn - MaxUsedDiskSizeBySliceIn
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/stats/staging/123/456/my-source-1/my-sink-1/", "storage/stats/staging/123/456/my-source-1/my-sink-10")
+  002 ➡️  GET ["storage/stats/target/123/456/my-source-1/my-sink-1/", "storage/stats/target/123/456/my-source-1/my-sink-10")
+  003 ➡️  GET ["storage/stats/staging/123/456/my-source-1/my-sink-2/", "storage/stats/staging/123/456/my-source-1/my-sink-20")
+  004 ➡️  GET ["storage/stats/target/123/456/my-source-1/my-sink-2/", "storage/stats/target/123/456/my-source-1/my-sink-20")
+  005 ➡️  GET ["storage/stats/staging/123/456/my-source-1/my-sink-3/", "storage/stats/staging/123/456/my-source-1/my-sink-30")
+  006 ➡️  GET ["storage/stats/target/123/456/my-source-1/my-sink-3/", "storage/stats/target/123/456/my-source-1/my-sink-30")
+  007 ➡️  GET ["storage/stats/staging/123/456/my-source-2/my-sink-4/", "storage/stats/staging/123/456/my-source-2/my-sink-40")
+  008 ➡️  GET ["storage/stats/target/123/456/my-source-2/my-sink-4/", "storage/stats/target/123/456/my-source-2/my-sink-40")
+  009 ➡️  GET ["storage/stats/staging/123/456/my-source-2/my-sink-5/", "storage/stats/staging/123/456/my-source-2/my-sink-50")
+  010 ➡️  GET ["storage/stats/target/123/456/my-source-2/my-sink-5/", "storage/stats/target/123/456/my-source-2/my-sink-50")
+✔️  TXN | succeeded: true
+
+// RotateAllIn - AtomicOp - Write Phase
+➡️  TXN
+  ➡️  IF:
+  // Sinks
+  001 ["definition/sink/active/123/456/", "definition/sink/active/123/4560") MOD GREATER 0
+  002 ["definition/sink/active/123/456/", "definition/sink/active/123/4560") MOD LESS %d
+  003 "definition/sink/active/123/456/my-source-1/my-sink-1" MOD GREATER 0
+  004 "definition/sink/active/123/456/my-source-1/my-sink-2" MOD GREATER 0
+  005 "definition/sink/active/123/456/my-source-1/my-sink-3" MOD GREATER 0
+  006 "definition/sink/active/123/456/my-source-2/my-sink-4" MOD GREATER 0
+  007 "definition/sink/active/123/456/my-source-2/my-sink-5" MOD GREATER 0
+  // Volumes
+  008 ["storage/volume/writer/", "storage/volume/writer0") MOD GREATER 0
+  009 ["storage/volume/writer/", "storage/volume/writer0") MOD LESS %d
+  010 "storage/volume/writer/my-volume-1" MOD GREATER 0
+  011 "storage/volume/writer/my-volume-2" MOD GREATER 0
+  012 "storage/volume/writer/my-volume-3" MOD GREATER 0
+  013 "storage/volume/writer/my-volume-4" MOD GREATER 0
+  014 "storage/volume/writer/my-volume-5" MOD GREATER 0
+  // Local files
+  015 ["storage/file/level/local/123/456/", "storage/file/level/local/123/4560") MOD EQUAL 0
+  // Local slices
+  016 ["storage/slice/level/local/123/456/", "storage/slice/level/local/123/4560") MOD EQUAL 0
+  // New objects must not exists
+  017 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  018 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  019 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  020 "storage/file/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  021 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  022 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  023 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  024 "storage/file/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  025 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  026 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  027 "storage/file/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  028 "storage/slice/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  029 "storage/file/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  030 "storage/slice/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  031 "storage/file/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  ➡️  THEN:
+  // Save closed and opened files and slices - in two copies, in "all" and <level> prefix
+  001 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z"
+  002 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z"
+  003 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z"
+  004 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z"
+  005 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z"
+  006 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z"
+  007 ➡️  PUT "storage/file/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z"
+  008 ➡️  PUT "storage/file/level/local/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z"
+  009 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z"
+  010 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z"
+  011 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z"
+  012 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z"
+  013 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  014 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  015 ➡️  PUT "storage/file/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z"
+  016 ➡️  PUT "storage/file/level/local/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z"
+  017 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z"
+  018 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z"
+  019 ➡️  PUT "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z"
+  020 ➡️  PUT "storage/slice/level/local/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z"
+  021 ➡️  PUT "storage/file/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z"
+  022 ➡️  PUT "storage/file/level/local/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z"
+  023 ➡️  PUT "storage/slice/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z"
+  024 ➡️  PUT "storage/slice/level/local/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z"
+  025 ➡️  PUT "storage/file/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z"
+  026 ➡️  PUT "storage/file/level/local/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z"
+  027 ➡️  PUT "storage/slice/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z"
+  028 ➡️  PUT "storage/slice/level/local/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z"
+  029 ➡️  PUT "storage/file/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z"
+  030 ➡️  PUT "storage/file/level/local/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z"
+  // IF conditions in the ELSE branch are used to detect a specific cause of failure, for example, "file already exists"
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   004 "storage/file/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   005 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   006 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   007 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   008 "storage/file/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   009 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   010 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   011 "storage/file/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   012 "storage/slice/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   013 "storage/file/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   014 "storage/slice/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   015 "storage/file/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   ➡️  ELSE:
+  001   001 ➡️  TXN
+  001   001   ➡️  IF:
+  001   001   001 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   002 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   003 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   004 "storage/file/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   ➡️  ELSE:
+  001   001   001 ➡️  TXN
+  001   001   001   ➡️  IF:
+  001   001   001   001 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   002 ➡️  TXN
+  001   001   002   ➡️  IF:
+  001   001   002   001 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   003 ➡️  TXN
+  001   001   003   ➡️  IF:
+  001   001   003   001 "storage/slice/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   001   004 ➡️  TXN
+  001   001   004   ➡️  IF:
+  001   001   004   001 "storage/file/all/123/456/my-source-1/my-sink-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002 ➡️  TXN
+  001   002   ➡️  IF:
+  001   002   001 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   002 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   003 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   004 "storage/file/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   ➡️  ELSE:
+  001   002   001 ➡️  TXN
+  001   002   001   ➡️  IF:
+  001   002   001   001 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   002 ➡️  TXN
+  001   002   002   ➡️  IF:
+  001   002   002   001 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   003 ➡️  TXN
+  001   002   003   ➡️  IF:
+  001   002   003   001 "storage/slice/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   002   004 ➡️  TXN
+  001   002   004   ➡️  IF:
+  001   002   004   001 "storage/file/all/123/456/my-source-1/my-sink-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003 ➡️  TXN
+  001   003   ➡️  IF:
+  001   003   001 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003   002 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003   003 "storage/file/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003   ➡️  ELSE:
+  001   003   001 ➡️  TXN
+  001   003   001   ➡️  IF:
+  001   003   001   001 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003   002 ➡️  TXN
+  001   003   002   ➡️  IF:
+  001   003   002   001 "storage/slice/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z/my-volume-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   003   003 ➡️  TXN
+  001   003   003   ➡️  IF:
+  001   003   003   001 "storage/file/all/123/456/my-source-1/my-sink-3/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   004 ➡️  TXN
+  001   004   ➡️  IF:
+  001   004   001 "storage/slice/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   004   002 "storage/file/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   004   ➡️  ELSE:
+  001   004   001 ➡️  TXN
+  001   004   001   ➡️  IF:
+  001   004   001   001 "storage/slice/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z/my-volume-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   004   002 ➡️  TXN
+  001   004   002   ➡️  IF:
+  001   004   002   001 "storage/file/all/123/456/my-source-2/my-sink-4/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   005 ➡️  TXN
+  001   005   ➡️  IF:
+  001   005   001 "storage/slice/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   005   002 "storage/file/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   005   ➡️  ELSE:
+  001   005   001 ➡️  TXN
+  001   005   001   ➡️  IF:
+  001   005   001   001 "storage/slice/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z/my-volume-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  001   005   002 ➡️  TXN
+  001   005   002   ➡️  IF:
+  001   005   002   001 "storage/file/all/123/456/my-source-2/my-sink-5/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+
+✔️  TXN | succeeded: true
+`, rotateAllInEtcdLogs)
 
 	// Check etcd state
 	//   - Only the last file per the Sink is in the storage.FileWriting state.
@@ -1780,6 +2052,11 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
+	// Log etcd operations
+	var etcdLogs bytes.Buffer
+	rawClient := d.EtcdClient()
+	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
+
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
@@ -1885,17 +2162,104 @@ func TestFileRepository_StateTransition(t *testing.T) {
 
 	// Switch file to the storage.FileImporting state
 	// -----------------------------------------------------------------------------------------------------------------
+	var toImportingEtcdLogs string
 	{
+		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, storage.FileClosing, storage.FileImporting).Do(ctx).Err())
+		toImportingEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch file to the storage.FileImported state
 	// -----------------------------------------------------------------------------------------------------------------
+	var toImportedEtcdLogs string
 	{
+		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, storage.FileImporting, storage.FileImported).Do(ctx).Err())
+		toImportedEtcdLogs = etcdLogs.String()
 	}
+
+	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdlogger.Assert(t, `
+// File StateTransition - AtomicOp - Read Phase
+➡️  TXN
+  ➡️  THEN:
+  // File
+  001 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  // All slices in file
+  002 ➡️  GET ["storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0")
+  // Local statistics
+  003 ➡️  GET ["storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0")
+✔️  TXN | succeeded: true
+
+// File StateTransition - AtomicOp - Write Phase
+➡️  TXN
+  ➡️  IF:
+  // File
+  001 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  002 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  // All slices in file
+  003 ["storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD GREATER 0
+  004 ["storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD LESS %d
+  005 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  006 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  // Local statistics
+  007 ["storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD EQUAL 0
+  ➡️  THEN:
+  // Save modified file
+  001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/file/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  003 ➡️  DEL "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+✔️  TXN | succeeded: true
+`, toImportingEtcdLogs)
+	etcdlogger.Assert(t, `
+// File StateTransition - AtomicOp - Read Phase
+➡️  TXN
+  ➡️  THEN:
+  // File
+  001 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  // All slices in file
+  002 ➡️  GET ["storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0")
+  // Staging statistics
+  003 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0")
+✔️  TXN | succeeded: true
+
+// File StateTransition - AtomicOp - Write Phase
+➡️  TXN
+  ➡️  IF:
+  // File
+  001 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  002 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  // All slices in file
+  003 ["storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD GREATER 0
+  004 ["storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD LESS %d
+  005 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  006 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  // Staging statistics
+  007 ["storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD GREATER 0
+  008 ["storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z0") MOD LESS %d
+  009 "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD GREATER 0
+  010 "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z/value" MOD GREATER 0
+  ➡️  THEN:
+  // Save modified file and slices - in two copies, in "all" and <level> prefix
+  001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  003 ➡️  DEL "storage/file/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  004 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  005 ➡️  PUT "storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  006 ➡️  DEL "storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  007 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z"
+  008 ➡️  PUT "storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z"
+  009 ➡️  DEL "storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z"
+  // Move file statistics
+  010 ➡️  PUT "storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+  011 ➡️  DEL "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+  012 ➡️  PUT "storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z/value"
+  013 ➡️  DEL "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-2/2000-01-01T01:00:00.000Z/value"
+✔️  TXN | succeeded: true
+`, toImportedEtcdLogs)
 
 	// Check final etcd state
 	// -----------------------------------------------------------------------------------------------------------------

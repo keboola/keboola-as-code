@@ -71,6 +71,22 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 	rb = rb.AddParallel()
 	lock := &sync.Mutex{}
 	return func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]*FileResource, error) {
+		// Get sinks tokens
+		tokens := make(map[key.SinkKey]string)
+		txn := op.Txn(h.client)
+		for _, sinkKey := range sinkKeys {
+			// Get token only once, the provider can be reused within op.AtomicOp retries.
+			if _, ok := tokens[sinkKey]; !ok {
+				txn.Then(h.storage.Token().Get(sinkKey).WithOnResult(func(result storage.Token) {
+					tokens[sinkKey] = result.Token.Token
+				}))
+			}
+		}
+		if err := txn.Do(ctx).Err(); err != nil {
+			return nil, err
+		}
+
+		// Create file resources
 		grp, ctx := errgroup.WithContext(ctx)
 		grp.SetLimit(h.config.Sink.Table.Storage.Staging.ParallelFileCreateLimit)
 		for _, sinkKey := range sinkKeys {
@@ -84,14 +100,8 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 				continue
 			}
 
-			// Get token
-			token, err := h.storage.Token().Get(sinkKey).Do(ctx).ResultOrErr()
-			if err != nil {
-				return nil, err
-			}
-
 			// Authorize API
-			api := h.publicAPI.WithToken(token.TokenString())
+			api := h.publicAPI.WithToken(tokens[sinkKey])
 
 			// Create file resource in parallel
 			grp.Go(func() error {
@@ -143,9 +153,12 @@ func (h *hook) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
 		for _, sinkKey := range sinkKeys {
 			// Load statistics only once, the provider can be reused within op.AtomicOp retries.
 			if _, ok := result[sinkKey]; !ok {
-				txn.Merge(h.stats.MaxUsedDiskSizeBySliceIn(sinkKey, recordsForSliceDiskSizeCalc).OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
-					result[sinkKey] = r.Result()
-				}))
+				txn.Merge(h.stats.
+					MaxUsedDiskSizeBySliceIn(sinkKey, recordsForSliceDiskSizeCalc).
+					OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
+						result[sinkKey] = r.Result()
+					}),
+				)
 			}
 		}
 

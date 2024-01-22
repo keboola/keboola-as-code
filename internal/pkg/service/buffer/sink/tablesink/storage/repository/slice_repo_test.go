@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
 func TestSliceRepository_Operations(t *testing.T) {
@@ -467,6 +469,11 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
+	// Log etcd operations
+	var etcdLogs bytes.Buffer
+	rawClient := d.EtcdClient()
+	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
+
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
@@ -480,7 +487,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, token and file
+	// Create parent branch, source, sink, token, file and slice1
 	// -----------------------------------------------------------------------------------------------------------------
 	var file storage.File
 	var fileVolumeKey storage.FileVolumeKey
@@ -506,12 +513,15 @@ func TestSliceRepository_Rotate(t *testing.T) {
 
 	// Rotate (2)
 	// -----------------------------------------------------------------------------------------------------------------
+	var rotateEtcdLogs string
 	{
+		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		slice2, err := sliceFacade.Rotate(clk.Now(), fileVolumeKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), slice2.OpenedAt().Time())
 		assert.Equal(t, 100*datasize.MB, slice2.LocalStorage.AllocatedDiskSpace)
+		rotateEtcdLogs = etcdLogs.String()
 	}
 
 	// Rotate (3)
@@ -573,6 +583,59 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		assert.Equal(t, clk.Now(), slice5.OpenedAt().Time())
 		assert.Equal(t, datasize.ByteSize(expectedSlice5Size), slice5.LocalStorage.AllocatedDiskSpace)
 	}
+
+	// Check etcd logs
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdlogger.Assert(t, `
+// Slice Rotate - AtomicOp - Read Phase
+➡️  TXN
+  ➡️  THEN:
+  // Sink
+  001 ➡️  GET "definition/sink/active/123/456/my-source/my-sink-1"
+  // File
+  002 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  // All local slices on the volume
+  003 ➡️  GET ["storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/", "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-10")
+✔️  TXN | succeeded: true
+
+// Slice Rotate - MaxUsedDiskSizeBySliceIn
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-1/", "storage/stats/staging/123/456/my-source/my-sink-10")
+  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink-1/", "storage/stats/target/123/456/my-source/my-sink-10")
+✔️  TXN | succeeded: true
+
+// Slice Rotate - AtomicOp - Write Phase
+➡️  TXN
+  ➡️  IF:
+  // Sink
+  001 "definition/sink/active/123/456/my-source/my-sink-1" MOD GREATER 0
+  002 "definition/sink/active/123/456/my-source/my-sink-1" MOD LESS %d
+  // File
+  003 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  004 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  // All local slices on the volume
+  005 ["storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/", "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-10") MOD GREATER 0
+  006 ["storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/", "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-10") MOD LESS %d
+  007 "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  // New slice must not exist
+  008 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z" MOD EQUAL 0
+  ➡️  THEN:
+  // Save opened and closed slice - in two copies, in "all" and <level> prefix
+  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
+  002 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
+  003 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  004 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z" MOD EQUAL 0
+  001   ➡️  ELSE:
+  001   001 ➡️  TXN
+  001   001   ➡️  IF:
+  001   001   001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z" MOD EQUAL 0
+✔️  TXN | succeeded: true
+`, rotateEtcdLogs)
 
 	// Check etcd state
 	//   - Only the last slice per file and volume is in the storage.SliceWriting state.
@@ -724,6 +787,11 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
+	// Log etcd operations
+	var etcdLogs bytes.Buffer
+	rawClient := d.EtcdClient()
+	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
+
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
 	mockStorageAPICalls(t, clk, branchKey, transport)
@@ -792,21 +860,28 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 
 	// Switch slice to the storage.SliceUploading state
 	// -----------------------------------------------------------------------------------------------------------------
+	var toUploadingEtcdLogs string
 	{
+		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.StateTransition(clk.Now(), slice.SliceKey, storage.SliceClosing, storage.SliceUploading).Do(ctx).Err())
+		toUploadingEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch slice to the storage.SliceUploaded state
 	// -----------------------------------------------------------------------------------------------------------------
+	var toUploadedEtcdLogs string
 	{
+		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.StateTransition(clk.Now(), slice.SliceKey, storage.SliceUploading, storage.SliceUploaded).Do(ctx).Err())
+		toUploadedEtcdLogs = etcdLogs.String()
 	}
 
 	// Try switch slice to the storage.SliceImported state - it is not possible, file is in the storage.FileWriting
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		err := sliceRepo.StateTransition(clk.Now(), slice.SliceKey, storage.SliceUploaded, storage.SliceImported).Do(ctx).Err()
 		if assert.Error(t, err) {
@@ -825,7 +900,67 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, storage.FileImporting, storage.FileImported).Do(ctx).Err())
 	}
 
-	// Check final etcd state
+	// Check etcd logs
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdlogger.Assert(t, `
+// Slice StateTransition - AtomicOp - Read Phase
+➡️  TXN
+  ➡️  THEN:
+  // Slice
+  001 ➡️  GET "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  // File
+  002 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+✔️  TXN | succeeded: true
+
+// Slice StateTransition - AtomicOp - Write Phase
+➡️  TXN
+  ➡️  IF:
+  // Slice
+  001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  002 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  // File
+  003 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  004 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  ➡️  THEN:
+  // Save modified slice - in two copies, in "all" and <level> prefix
+  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+✔️  TXN | succeeded: true
+`, toUploadingEtcdLogs)
+	etcdlogger.Assert(t, `
+➡️  TXN
+  ➡️  THEN:
+  // Slice
+  001 ➡️  GET "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  // File
+  002 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  // Local statistics
+  003 ➡️  GET "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+✔️  TXN | succeeded: true
+
+➡️  TXN
+  ➡️  IF:
+  // Slice
+  001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  002 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  // File
+  003 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  004 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  // Local statistics
+  005 "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD GREATER 0
+  006 "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD LESS %d
+  ➡️  THEN:
+  // Save modified slice - in two copies, in "all" and <level> prefix
+  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  003 ➡️  DEL "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  // Move statistics
+  004 ➡️  PUT "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+  005 ➡️  DEL "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+✔️  TXN | succeeded: true
+`, toUploadedEtcdLogs)
+
+	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
