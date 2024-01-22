@@ -87,7 +87,9 @@ func parseJSONInputForCreateTable(filePath string) (*keboola.CreateTableRequest,
 	return result, err
 }
 
-// this function returns the created CreateTableRequest from the flag from the statement (columns, primary keys, table name), if command don't include flag 'columns-from'.
+//	if command don't include flag 'columns-from'
+//
+// this function returns Options.CreateTableRequest from the flags (columns, primary keys, table name).
 func getOptionCreateRequest(opts table.Options) table.Options {
 	var columns []keboola.Column
 	for _, column := range opts.Columns {

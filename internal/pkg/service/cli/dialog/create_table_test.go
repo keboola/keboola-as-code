@@ -1,67 +1,62 @@
 package dialog
 
 import (
-	"reflect"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
+var testInput = `{"name": "table1","primaryKeysNames": ["id"],"columns": [{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]}`
+
 func TestParseJsonInput(t *testing.T) {
 	t.Parallel()
-	type args struct {
-		fileName string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *keboola.CreateTableRequest
-		wantErr bool
-	}{
-		{
-			name: "Parse Test", args: args{fileName: "/definition.json"}, want: &keboola.CreateTableRequest{
-				TableDefinition: keboola.TableDefinition{
-					PrimaryKeyNames: []string{"id"},
-					Columns: []keboola.Column{
-						{
-							Name: "id",
-							Definition: keboola.ColumnDefinition{
-								Type: "INT",
-							},
-							BaseType: keboola.TypeNumeric,
-						},
-						{
-							Name: "name",
-							Definition: keboola.ColumnDefinition{
-								Type: "TEXT",
-							},
-							BaseType: "STRING",
-						},
-					},
-				},
-				Name: "my-new-table",
-			},
-			wantErr: false,
-		},
-	}
+	// Create a temporary directory
+	tempDir := t.TempDir()
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := parseJSONInputForCreateTable(tt.args.fileName)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseJsonInputForCreateTable() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseJsonInputForCreateTable() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	// Create a temporary file within the temporary directory
+	tempFile, err := os.Create(filepath.Join(tempDir, "foo.json")) // nolint:forbidigo
+	require.NoError(t, err)
+
+	defer tempFile.Close()
+
+	// Write content to the temporary file
+	_, err = tempFile.Write([]byte(testInput))
+	require.NoError(t, err)
+
+	// Get the file path of the temporary file
+	filePath := tempFile.Name()
+
+	// Read and parse the content of the temporary file
+	res, err := parseJSONInputForCreateTable(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, &keboola.CreateTableRequest{
+		TableDefinition: keboola.TableDefinition{
+			PrimaryKeyNames: []string{"id"},
+			Columns: []keboola.Column{
+				{
+					Name: "id",
+					Definition: keboola.ColumnDefinition{
+						Type: "INT",
+					},
+					BaseType: "NUMERIC",
+				},
+				{
+					Name: "name",
+					Definition: keboola.ColumnDefinition{
+						Type: "STRING",
+					},
+					BaseType: "STRING",
+				},
+			},
+		},
+		Name: "table1",
+	}, res)
 }
 
 func TestGetCreateRequest(t *testing.T) {
