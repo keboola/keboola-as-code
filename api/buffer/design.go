@@ -377,9 +377,6 @@ var CreateReceiverRequest = Type("CreateReceiverRequest", func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
 	receiverFields()
-	Attribute("exports", ArrayOf(CreateExportData), func() {
-		Description("List of exports, max 20 exports per a receiver.")
-	})
 	Required("name")
 })
 
