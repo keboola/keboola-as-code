@@ -135,92 +135,92 @@ var _ = Service("stream", func() {
 
 	// Main endpoints ---------------------------------------------------------------------------------------------
 
-	Method("CreateReceiver", func() {
-		Meta("openapi:summary", "Create receiver")
-		Description("Create a new receiver for a given project")
+	Method("CreateSource", func() {
+		Meta("openapi:summary", "Create source")
+		Description("Create a new source for a given project")
 		Result(Task)
-		Payload(CreateReceiverRequest)
+		Payload(CreateSourceRequest)
 		HTTP(func() {
-			POST("/receivers")
+			POST("/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
-			ReceiverAlreadyExistsError()
+			SourceAlreadyExistsError()
 			ResourceCountLimitReachedError()
 		})
 	})
 
-	Method("UpdateReceiver", func() {
-		Meta("openapi:summary", "Update receiver")
-		Description("Update a receiver export.")
-		Result(Receiver)
-		Payload(UpdateReceiverRequest)
+	Method("UpdateSource", func() {
+		Meta("openapi:summary", "Update source")
+		Description("Update a source export.")
+		Result(Source)
+		Payload(UpdateSourceRequest)
 		HTTP(func() {
-			PATCH("/receivers/{receiverId}")
+			PATCH("/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("ListReceivers", func() {
-		Meta("openapi:summary", "List all receivers")
-		Description("List all receivers for a given project.")
-		Result(ReceiversList)
+	Method("ListSources", func() {
+		Meta("openapi:summary", "List all sources")
+		Description("List all sources for a given project.")
+		Result(SourcesList)
 		HTTP(func() {
-			GET("/receivers")
+			GET("/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 		})
 	})
 
-	Method("GetReceiver", func() {
-		Meta("openapi:summary", "Get receiver")
-		Description("Get the configuration of a receiver.")
-		Result(Receiver)
-		Payload(GetReceiverRequest)
+	Method("GetSource", func() {
+		Meta("openapi:summary", "Get source")
+		Description("Get the configuration of a source.")
+		Result(Source)
+		Payload(GetSourceRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}")
+			GET("/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("DeleteReceiver", func() {
-		Meta("openapi:summary", "Delete receiver")
-		Description("Delete a receiver.")
-		Payload(GetReceiverRequest)
+	Method("DeleteSource", func() {
+		Meta("openapi:summary", "Delete source")
+		Description("Delete a source.")
+		Payload(GetSourceRequest)
 		HTTP(func() {
-			DELETE("/receivers/{receiverId}")
+			DELETE("/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("RefreshReceiverTokens", func() {
-		Meta("openapi:summary", "Refresh receiver tokens")
+	Method("RefreshSourceTokens", func() {
+		Meta("openapi:summary", "Refresh source tokens")
 		Description("Each export uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
-		Result(Receiver)
-		Payload(GetReceiverRequest)
+		Result(Source)
+		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/receivers/{receiverId}/tokens/refresh")
+			POST("/sources/{sourceId}/tokens/refresh")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
 	Method("CreateExport", func() {
 		Meta("openapi:summary", "Create export")
-		Description("Create a new export for an existing receiver.")
+		Description("Create a new export for an existing source.")
 		Result(Task)
 		Payload(CreateExportRequest)
 		HTTP(func() {
-			POST("/receivers/{receiverId}/exports")
+			POST("/sources/{sourceId}/exports")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 			ExportAlreadyExistsError()
 			ResourceCountLimitReachedError()
 		})
@@ -232,61 +232,61 @@ var _ = Service("stream", func() {
 		Result(Export)
 		Payload(GetExportRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}/exports/{exportId}")
+			GET("/sources/{sourceId}/exports/{exportId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 			ExportNotFoundError()
 		})
 	})
 
 	Method("ListExports", func() {
 		Meta("openapi:summary", "List exports")
-		Description("List all exports for a given receiver.")
+		Description("List all exports for a given source.")
 		Result(ExportsList)
 		Payload(ListExportsRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}/exports")
+			GET("/sources/{sourceId}/exports")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
 	Method("UpdateExport", func() {
 		Meta("openapi:summary", "Update export")
-		Description("Update a receiver export.")
+		Description("Update a source export.")
 		Result(Task)
 		Payload(UpdateExportRequest)
 		HTTP(func() {
-			PATCH("/receivers/{receiverId}/exports/{exportId}")
+			PATCH("/sources/{sourceId}/exports/{exportId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 			ExportNotFoundError()
 		})
 	})
 
 	Method("DeleteExport", func() {
 		Meta("openapi:summary", "Delete export")
-		Description("Delete a receiver export.")
+		Description("Delete a source export.")
 		Payload(GetExportRequest)
 		HTTP(func() {
-			DELETE("/receivers/{receiverId}/exports/{exportId}")
+			DELETE("/sources/{sourceId}/exports/{exportId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 			ExportNotFoundError()
 		})
 	})
 
 	Method("Import", func() {
 		Meta("openapi:summary", "Import data")
-		Description("Upload data into the receiver.")
+		Description("Upload data into the source.")
 		NoSecurity()
 		Payload(func() {
 			Attribute("projectId", ProjectID)
-			Attribute("receiverId", ReceiverID)
+			Attribute("sourceId", SourceID)
 			Attribute("secret", String, func() {
 				Description("Secret used for authentication.")
 				MinLength(48)
@@ -296,15 +296,15 @@ var _ = Service("stream", func() {
 			Attribute("contentType", String, func() {
 				Example("application/json")
 			})
-			Required("projectId", "receiverId", "secret", "contentType")
+			Required("projectId", "sourceId", "secret", "contentType")
 		})
 		HTTP(func() {
-			POST("/import/{projectId}/{receiverId}/{secret}")
+			POST("/import/{projectId}/{sourceId}/{secret}")
 			Meta("openapi:tag:import")
 			Header("contentType:Content-Type")
 			SkipRequestBodyEncodeDecode()
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 			PayloadTooLargeError()
 		})
 	})
@@ -347,67 +347,67 @@ var ProjectID = Type("ProjectID", Int, func() {
 	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
 })
 
-// Receiver -----------------------------------------------------------------------------------------------------------
+// Source -------------------------------------------------------------------------------------------------------------
 
-var ReceiverID = Type("ReceiverID", String, func() {
-	Meta("struct:field:type", "= key.ReceiverID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
-	Description("Unique ID of the receiver.")
+var SourceID = Type("SourceID", String, func() {
+	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Description("Unique ID of the source.")
 	MinLength(1)
 	MaxLength(48)
-	Example("github-webhook-receiver")
+	Example("github-webhook-source")
 })
 
-var Receiver = Type("Receiver", func() {
-	Description("An endpoint for importing data, max 100 receivers per a project.")
-	Attribute("id", ReceiverID)
+var Source = Type("Source", func() {
+	Description("An endpoint for importing data, max 100 sources per a project.")
+	Attribute("id", SourceID)
 	Attribute("url", String, func() {
-		Description("URL of the receiver. Contains secret used for authentication.")
+		Description("URL of the source. Contains secret used for authentication.")
 	})
-	receiverFields()
+	sourceFields()
 	Attribute("exports", ArrayOf(Export), func() {
-		Description("List of exports, max 20 exports per a receiver.")
+		Description("List of exports, max 20 exports per a source.")
 		Example([]any{ExampleExport()})
 	})
 	Required("id", "url", "name", "description", "exports")
-	Example(ExampleReceiver())
+	Example(ExampleSource())
 })
 
-var CreateReceiverRequest = Type("CreateReceiverRequest", func() {
-	Attribute("id", ReceiverID, func() {
+var CreateSourceRequest = Type("CreateSourceRequest", func() {
+	Attribute("id", SourceID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
-	receiverFields()
+	sourceFields()
 	Required("name")
 })
 
-var GetReceiverRequest = Type("GetReceiverRequest", func() {
-	Attribute("receiverId", ReceiverID)
-	Required("receiverId")
+var GetSourceRequest = Type("GetSourceRequest", func() {
+	Attribute("sourceId", SourceID)
+	Required("sourceId")
 })
 
-var UpdateReceiverRequest = Type("UpdateReceiverRequest", func() {
-	Extend(GetReceiverRequest)
-	receiverFields()
+var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
+	Extend(GetSourceRequest)
+	sourceFields()
 })
 
-var ReceiversList = Type("ReceiversList", func() {
-	Attribute("receivers", ArrayOf(Receiver), func() {
-		Example([]any{ExampleReceiver()})
+var SourcesList = Type("SourcesList", func() {
+	Attribute("sources", ArrayOf(Source), func() {
+		Example([]any{ExampleSource()})
 	})
-	Required("receivers")
+	Required("sources")
 })
 
-var receiverFields = func() {
+var sourceFields = func() {
 	Attribute("name", String, func() {
-		Description("Human readable name of the receiver.")
+		Description("Human readable name of the source.")
 		MinLength(1)
 		MaxLength(40)
-		Example("Github Webhook Receiver")
+		Example("Github Webhook Source")
 	})
 	Attribute("description", String, func() {
-		Description("Description of the receiver.")
+		Description("Description of the source.")
 		MaxLength(4096)
-		Example("This receiver receives events from Github.")
+		Example("This source receives events from Github.")
 	})
 }
 
@@ -424,9 +424,9 @@ var ExportID = Type("ExportID", String, func() {
 var Export = Type("Export", func() {
 	Description("A mapping from imported data to a destination table.")
 	Attribute("id", ExportID)
-	Attribute("receiverId", ReceiverID)
+	Attribute("sourceId", SourceID)
 	ExportFields()
-	Required("id", "receiverId", "name", "mapping", "conditions")
+	Required("id", "sourceId", "name", "mapping", "conditions")
 	Example(ExampleExport())
 })
 
@@ -447,19 +447,19 @@ var CreateExportData = Type("CreateExportData", func() {
 })
 
 var CreateExportRequest = Type("CreateExportRequest", func() {
-	Extend(GetReceiverRequest)
+	Extend(GetSourceRequest)
 	Extend(CreateExportData)
 })
 
 var GetExportRequest = Type("GetExportRequest", func() {
-	Attribute("receiverId", ReceiverID)
+	Attribute("sourceId", SourceID)
 	Attribute("exportId", ExportID)
-	Required("receiverId", "exportId")
+	Required("sourceId", "exportId")
 })
 
 var ListExportsRequest = Type("ListExportsRequest", func() {
-	Attribute("receiverId", ReceiverID)
-	Required("receiverId")
+	Attribute("sourceId", SourceID)
+	Required("sourceId")
 })
 
 var UpdateExportRequest = Type("UpdateExportRequest", func() {
@@ -600,7 +600,7 @@ var Task = Type("Task", func() {
 var TaskOutputs = Type("TaskOutputs", func() {
 	Description("Outputs generated by the task.")
 	Attribute("exportId", ExportID, "ID of the created/updated export.")
-	Attribute("receiverId", ReceiverID, "ID of the created/updated receiver.")
+	Attribute("sourceId", SourceID, "ID of the created/updated source.")
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
@@ -644,20 +644,20 @@ func GenericError(statusCode int, name, description, example string) {
 	Response(name, statusCode)
 }
 
-func ReceiverNotFoundError() {
-	GenericError(StatusNotFound, "stream.receiverNotFound", "Receiver not found error.", `Receiver "github-pull-requests" not found.`)
+func SourceNotFoundError() {
+	GenericError(StatusNotFound, "stream.sourceNotFound", "Source not found error.", `Source "github-pull-requests" not found.`)
 }
 
 func ExportNotFoundError() {
 	GenericError(StatusNotFound, "stream.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
 }
 
-func ReceiverAlreadyExistsError() {
-	GenericError(StatusConflict, "stream.receiverAlreadyExists", "Receiver already exists in the project.", `Receiver already exists in the project.`)
+func SourceAlreadyExistsError() {
+	GenericError(StatusConflict, "stream.sourceAlreadyExists", "Source already exists in the project.", `Source already exists in the project.`)
 }
 
 func ExportAlreadyExistsError() {
-	GenericError(StatusConflict, "stream.exportAlreadyExists", "Export already exists in the receiver.", `Export already exists in the receiver.`)
+	GenericError(StatusConflict, "stream.exportAlreadyExists", "Export already exists in the source.", `Export already exists in the source.`)
 }
 
 func PayloadTooLargeError() {
@@ -665,7 +665,7 @@ func PayloadTooLargeError() {
 }
 
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
+	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", `Maximum number of sources per project is 100.`)
 }
 
 func TaskNotFoundError() {
@@ -688,7 +688,7 @@ func ExampleError(statusCode int, name, message string) ExampleErrorDef {
 	}
 }
 
-type ExampleReceiverDef struct {
+type ExampleSourceDef struct {
 	ID          string             `json:"id" yaml:"id"`
 	URL         string             `json:"url" yaml:"url"`
 	Name        string             `json:"name" yaml:"name"`
@@ -698,7 +698,7 @@ type ExampleReceiverDef struct {
 
 type ExampleExportDef struct {
 	ID         string               `json:"id" yaml:"id"`
-	ReceiverID string               `json:"receiverId" yaml:"receiverId"`
+	SourceID   string               `json:"sourceId" yaml:"sourceId"`
 	Name       string               `json:"name" yaml:"name"`
 	Mapping    ExampleMappingDef    `json:"mapping" yaml:"mapping"`
 	Conditions ExampleConditionsDef `json:"conditions" yaml:"conditions"`
@@ -729,7 +729,7 @@ type ExampleConditionsDef struct {
 
 type ExampleTaskDef struct {
 	ID         string         `json:"id" yaml:"id"`
-	ReceiverID string         `json:"receiverId" yaml:"receiverId"`
+	SourceID   string         `json:"sourceId" yaml:"sourceId"`
 	URL        string         `json:"url" yaml:"url"`
 	Type       string         `json:"type" yaml:"type"`
 	CreatedAt  string         `json:"createdAt" yaml:"createdAt"`
@@ -740,12 +740,12 @@ type ExampleTaskDef struct {
 	Outputs    map[string]any `json:"outputs" yaml:"outputs"`
 }
 
-func ExampleReceiver() ExampleReceiverDef {
+func ExampleSource() ExampleSourceDef {
 	id := "github-pull-requests"
-	return ExampleReceiverDef{
+	return ExampleSourceDef{
 		ID:          id,
 		URL:         "https://stream.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
-		Name:        "receiver 1",
+		Name:        "source 1",
 		Description: "Some description ...",
 		Exports:     []ExampleExportDef{ExampleExport()},
 	}
@@ -835,16 +835,16 @@ func ExampleColumnTypeTemplate() ExampleColumnDef {
 
 func ExampleTask() ExampleTaskDef {
 	return ExampleTaskDef{
-		ID:         "receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
-		Type:       "receiver.create",
-		URL:        "https://stream.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
+		ID:         "source.create/2018-01-01T00:00:00.000Z_jdkLp",
+		Type:       "source.create",
+		URL:        "https://stream.keboola.com/v1/sources/source-1/tasks/source.create/2018-01-01T00:00:00.000Z_jdkLp",
 		CreatedAt:  "2018-01-01T00:00:00.000Z",
 		FinishedAt: "2018-01-01T00:00:00.000Z",
 		IsFinished: true,
 		Duration:   123,
 		Result:     "task succeeded",
 		Outputs: map[string]any{
-			"receiverId": "receiver-1",
+			"sourceId": "source-1",
 		},
 	}
 }
