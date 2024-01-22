@@ -79,5 +79,7 @@ func NewMockedTableSinkScope(t *testing.T, cfg config.Config, opts ...dependenci
 	t.Helper()
 	svcScope, mocked := NewMockedDefinitionScope(t, cfg, opts...)
 	backoff := storage.NoRandomizationBackoff()
-	return newTableSinkScope(svcScope, backoff), mocked
+	d, err := newTableSinkScope(svcScope, backoff)
+	require.NoError(t, err)
+	return d, mocked
 }
