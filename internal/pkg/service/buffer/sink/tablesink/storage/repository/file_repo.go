@@ -94,10 +94,7 @@ func (r *FileRepository) Get(fileKey storage.FileKey) op.WithResult[storage.File
 //   - Files rotation is done atomically.
 //   - This method is used to rotate files when the import conditions are met.
 func (r *FileRepository) Rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey) *op.AtomicOp[storage.File] {
-	var sink definition.Sink
-	return r.
-		rotate(rb, now, sinkKey, &sink, true).
-		ReadOp(r.all.sink.Get(sinkKey).WithResultTo(&sink))
+	return r.rotate(rb, now, sinkKey, nil, true)
 }
 
 // RotateOnSinkMod it similar to Rotate method, but the Sink value is provided directly, not read from the database.
@@ -231,15 +228,17 @@ func (r *FileRepository) Delete(k storage.FileKey) *op.TxnOp[op.NoResult] {
 
 // rotate one file, it is a special case of the rotateAllIn.
 func (r *FileRepository) rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey, sink *definition.Sink, openNewFile bool) *op.AtomicOp[storage.File] {
+	// Create sinks slice, if the sink is not provided,
+	// then it will be loaded in the AtomicOp Read Phase, see rotateAllIn method
+	var sinksPtr *[]definition.Sink
+	if sink != nil {
+		sinksPtr = &[]definition.Sink{*sink}
+	}
+
 	var file storage.File
-	var sinks []definition.Sink
 	return op.Atomic(r.client, &file).
-		BeforeWrite(func(context.Context) {
-			// Create sinks slice before write, after the read phase, because the sink value may not be available sooner
-			sinks = []definition.Sink{*sink}
-		}).
 		AddFrom(r.
-			rotateAllIn(rb, now, sinkKey, &sinks, openNewFile).
+			rotateAllIn(rb, now, sinkKey, sinksPtr, openNewFile).
 			AddProcessor(func(_ context.Context, result *op.Result[[]storage.File]) {
 				// Unwrap results, there in only one file
 				if result.Err() == nil {
