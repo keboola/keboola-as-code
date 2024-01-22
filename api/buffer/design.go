@@ -34,7 +34,7 @@ func init() {
 	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies")
 }
 
-var _ = API("buffer", func() {
+var _ = API("stream", func() {
 	Title("Buffer Service")
 	Description("A service for continuously importing data to Keboola storage.")
 	Version("1.0")
@@ -43,9 +43,9 @@ var _ = API("buffer", func() {
 		Consumes("application/json")
 		Produces("application/json")
 	})
-	Server("buffer", func() {
+	Server("stream", func() {
 		Host("production", func() {
-			URI("https://buffer.{stack}")
+			URI("https://stream.{stack}")
 			Variable("stack", String, "Base URL of the stack", func() {
 				Default("keboola.com")
 				Enum("keboola.com", "eu-central-1.keboola.com", "north-europe.azure.keboola.com", "eu-west-1.aws.keboola.dev", "east-us-2.azure.keboola-testing.com")
@@ -59,7 +59,7 @@ var _ = API("buffer", func() {
 
 // Service definition
 
-var _ = Service("buffer", func() {
+var _ = Service("stream", func() {
 	Description("A service for continuously importing data to Keboola storage.")
 	// CORS
 	cors.Origin("*", func() {
@@ -334,10 +334,10 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 var ServiceDetail = Type("ServiceDetail", func() {
 	Description("Information about the service")
 	Attribute("api", String, "Name of the API", func() {
-		Example("buffer")
+		Example("stream")
 	})
 	Attribute("documentation", String, "URL of the API documentation.", func() {
-		Example("https://buffer.keboola.com/v1/documentation")
+		Example("https://stream.keboola.com/v1/documentation")
 	})
 	Required("api", "documentation")
 })
@@ -617,7 +617,7 @@ var GenericErrorType = Type("GenericError", func() {
 	})
 	ErrorName("error", String, "Name of error.", func() {
 		Meta("struct:field:name", "name")
-		Example("buffer.internalError")
+		Example("stream.internalError")
 	})
 	Attribute("message", String, "Error message.", func() {
 		Example("Internal Error")
@@ -645,31 +645,31 @@ func GenericError(statusCode int, name, description, example string) {
 }
 
 func ReceiverNotFoundError() {
-	GenericError(StatusNotFound, "buffer.receiverNotFound", "Receiver not found error.", `Receiver "github-pull-requests" not found.`)
+	GenericError(StatusNotFound, "stream.receiverNotFound", "Receiver not found error.", `Receiver "github-pull-requests" not found.`)
 }
 
 func ExportNotFoundError() {
-	GenericError(StatusNotFound, "buffer.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
+	GenericError(StatusNotFound, "stream.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
 }
 
 func ReceiverAlreadyExistsError() {
-	GenericError(StatusConflict, "buffer.receiverAlreadyExists", "Receiver already exists in the project.", `Receiver already exists in the project.`)
+	GenericError(StatusConflict, "stream.receiverAlreadyExists", "Receiver already exists in the project.", `Receiver already exists in the project.`)
 }
 
 func ExportAlreadyExistsError() {
-	GenericError(StatusConflict, "buffer.exportAlreadyExists", "Export already exists in the receiver.", `Export already exists in the receiver.`)
+	GenericError(StatusConflict, "stream.exportAlreadyExists", "Export already exists in the receiver.", `Export already exists in the receiver.`)
 }
 
 func PayloadTooLargeError() {
-	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large.", `Payload too large, the maximum size is 1MB.`)
+	GenericError(StatusRequestEntityTooLarge, "stream.payloadTooLarge", "Payload too large.", `Payload too large, the maximum size is 1MB.`)
 }
 
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
+	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
 }
 
 func TaskNotFoundError() {
-	GenericError(StatusNotFound, "buffer.taskNotFound", "Task not found error.", `Task "001" not found.`)
+	GenericError(StatusNotFound, "stream.taskNotFound", "Task not found error.", `Task "001" not found.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------
@@ -744,7 +744,7 @@ func ExampleReceiver() ExampleReceiverDef {
 	id := "github-pull-requests"
 	return ExampleReceiverDef{
 		ID:          id,
-		URL:         "https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
+		URL:         "https://stream.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
 		Name:        "receiver 1",
 		Description: "Some description ...",
 		Exports:     []ExampleExportDef{ExampleExport()},
@@ -837,7 +837,7 @@ func ExampleTask() ExampleTaskDef {
 	return ExampleTaskDef{
 		ID:         "receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
 		Type:       "receiver.create",
-		URL:        "https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
+		URL:        "https://stream.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
 		CreatedAt:  "2018-01-01T00:00:00.000Z",
 		FinishedAt: "2018-01-01T00:00:00.000Z",
 		IsFinished: true,
