@@ -151,7 +151,7 @@ var _ = Service("stream", func() {
 
 	Method("UpdateSource", func() {
 		Meta("openapi:summary", "Update source")
-		Description("Update a source export.")
+		Description("Update a source sink.")
 		Result(Source)
 		Payload(UpdateSourceRequest)
 		HTTP(func() {
@@ -200,7 +200,7 @@ var _ = Service("stream", func() {
 
 	Method("RefreshSourceTokens", func() {
 		Meta("openapi:summary", "Refresh source tokens")
-		Description("Each export uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
+		Description("Each sink uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
 		Result(Source)
 		Payload(GetSourceRequest)
 		HTTP(func() {
@@ -211,72 +211,72 @@ var _ = Service("stream", func() {
 		})
 	})
 
-	Method("CreateExport", func() {
-		Meta("openapi:summary", "Create export")
-		Description("Create a new export for an existing source.")
+	Method("CreateSink", func() {
+		Meta("openapi:summary", "Create sink")
+		Description("Create a new sink for an existing source.")
 		Result(Task)
-		Payload(CreateExportRequest)
+		Payload(CreateSinkRequest)
 		HTTP(func() {
-			POST("/sources/{sourceId}/exports")
+			POST("/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()
-			ExportAlreadyExistsError()
+			SinkAlreadyExistsError()
 			ResourceCountLimitReachedError()
 		})
 	})
 
-	Method("GetExport", func() {
-		Meta("openapi:summary", "Get export")
-		Description("Get the configuration of an export.")
-		Result(Export)
-		Payload(GetExportRequest)
+	Method("GetSink", func() {
+		Meta("openapi:summary", "Get sink")
+		Description("Get the configuration of an sink.")
+		Result(Sink)
+		Payload(GetSinkRequest)
 		HTTP(func() {
-			GET("/sources/{sourceId}/exports/{exportId}")
+			GET("/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
-			ExportNotFoundError()
+			SinkNotFoundError()
 		})
 	})
 
-	Method("ListExports", func() {
-		Meta("openapi:summary", "List exports")
-		Description("List all exports for a given source.")
-		Result(ExportsList)
-		Payload(ListExportsRequest)
+	Method("ListSinks", func() {
+		Meta("openapi:summary", "List sinks")
+		Description("List all sinks for a given source.")
+		Result(SinksList)
+		Payload(ListSinksRequest)
 		HTTP(func() {
-			GET("/sources/{sourceId}/exports")
+			GET("/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
 		})
 	})
 
-	Method("UpdateExport", func() {
-		Meta("openapi:summary", "Update export")
-		Description("Update a source export.")
+	Method("UpdateSink", func() {
+		Meta("openapi:summary", "Update sink")
+		Description("Update a source sink.")
 		Result(Task)
-		Payload(UpdateExportRequest)
+		Payload(UpdateSinkRequest)
 		HTTP(func() {
-			PATCH("/sources/{sourceId}/exports/{exportId}")
+			PATCH("/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
-			ExportNotFoundError()
+			SinkNotFoundError()
 		})
 	})
 
-	Method("DeleteExport", func() {
-		Meta("openapi:summary", "Delete export")
-		Description("Delete a source export.")
-		Payload(GetExportRequest)
+	Method("DeleteSink", func() {
+		Meta("openapi:summary", "Delete sink")
+		Description("Delete a source sink.")
+		Payload(GetSinkRequest)
 		HTTP(func() {
-			DELETE("/sources/{sourceId}/exports/{exportId}")
+			DELETE("/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
-			ExportNotFoundError()
+			SinkNotFoundError()
 		})
 	})
 
@@ -364,11 +364,11 @@ var Source = Type("Source", func() {
 		Description("URL of the source. Contains secret used for authentication.")
 	})
 	sourceFields()
-	Attribute("exports", ArrayOf(Export), func() {
-		Description("List of exports, max 20 exports per a source.")
-		Example([]any{ExampleExport()})
+	Attribute("sinks", ArrayOf(Sink), func() {
+		Description("List of sinks, max 20 sinks per a source.")
+		Example([]any{ExampleSink()})
 	})
-	Required("id", "url", "name", "description", "exports")
+	Required("id", "url", "name", "description", "sinks")
 	Example(ExampleSource())
 })
 
@@ -411,71 +411,71 @@ var sourceFields = func() {
 	})
 }
 
-// Export -------------------------------------------------------------------------------------------------------------
+// Sink -------------------------------------------------------------------------------------------------------------
 
-var ExportID = Type("ExportID", String, func() {
-	Meta("struct:field:type", "= key.ExportID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
-	Description("Unique ID of the export.")
+var SinkID = Type("SinkID", String, func() {
+	Meta("struct:field:type", "= key.SinkID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Description("Unique ID of the sink.")
 	MinLength(1)
 	MaxLength(48)
-	Example("github-pr-table-export")
+	Example("github-pr-table-sink")
 })
 
-var Export = Type("Export", func() {
+var Sink = Type("Sink", func() {
 	Description("A mapping from imported data to a destination table.")
-	Attribute("id", ExportID)
+	Attribute("id", SinkID)
 	Attribute("sourceId", SourceID)
-	ExportFields()
+	SinkFields()
 	Required("id", "sourceId", "name", "mapping", "conditions")
-	Example(ExampleExport())
+	Example(ExampleSink())
 })
 
-var ExportsList = Type("ExportsList", func() {
-	Attribute("exports", ArrayOf(Export), func() {
-		Example([]any{ExampleExport()})
+var SinksList = Type("SinksList", func() {
+	Attribute("sinks", ArrayOf(Sink), func() {
+		Example([]any{ExampleSink()})
 	})
-	Required("exports")
+	Required("sinks")
 })
 
-var CreateExportData = Type("CreateExportData", func() {
-	Attribute("id", ExportID, func() {
+var CreateSinkData = Type("CreateSinkData", func() {
+	Attribute("id", SinkID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
-	ExportFields()
+	SinkFields()
 	// Field "conditions" is optional
 	Required("name", "mapping")
 })
 
-var CreateExportRequest = Type("CreateExportRequest", func() {
+var CreateSinkRequest = Type("CreateSinkRequest", func() {
 	Extend(GetSourceRequest)
-	Extend(CreateExportData)
+	Extend(CreateSinkData)
 })
 
-var GetExportRequest = Type("GetExportRequest", func() {
+var GetSinkRequest = Type("GetSinkRequest", func() {
 	Attribute("sourceId", SourceID)
-	Attribute("exportId", ExportID)
-	Required("sourceId", "exportId")
+	Attribute("sinkId", SinkID)
+	Required("sourceId", "sinkId")
 })
 
-var ListExportsRequest = Type("ListExportsRequest", func() {
+var ListSinksRequest = Type("ListSinksRequest", func() {
 	Attribute("sourceId", SourceID)
 	Required("sourceId")
 })
 
-var UpdateExportRequest = Type("UpdateExportRequest", func() {
-	Extend(GetExportRequest)
-	ExportFields()
+var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
+	Extend(GetSinkRequest)
+	SinkFields()
 })
 
-var ExportFields = func() {
+var SinkFields = func() {
 	Attribute("name", String, func() {
-		Description("Human readable name of the export.")
+		Description("Human readable name of the sink.")
 		MinLength(1)
 		MaxLength(40)
-		Example("Raw Data Export")
+		Example("Raw Data Sink")
 	})
 	Attribute("mapping", Mapping, func() {
-		Description("Export column mapping.")
+		Description("Sink column mapping.")
 	})
 	Attribute("conditions", ImportConditions, func() {
 		Description("Table import conditions.")
@@ -485,7 +485,7 @@ var ExportFields = func() {
 // Mapping ------------------------------------------------------------------------------------------------------------
 
 var Mapping = Type("Mapping", func() {
-	Description("Export column mapping.")
+	Description("Sink column mapping.")
 	Attribute("tableId", String, func() {
 		Description("Destination table ID.")
 	})
@@ -493,7 +493,7 @@ var Mapping = Type("Mapping", func() {
 		Description("Enables incremental loading to the table.")
 	})
 	Attribute("columns", ArrayOf(Column), func() {
-		Description("List of export column mappings. An export may have a maximum of 100 columns.")
+		Description("List of sink column mappings. An sink may have a maximum of 100 columns.")
 		MinLength(1)
 		MaxLength(100)
 		Example([]any{ExampleColumnTypeBody()})
@@ -599,7 +599,7 @@ var Task = Type("Task", func() {
 
 var TaskOutputs = Type("TaskOutputs", func() {
 	Description("Outputs generated by the task.")
-	Attribute("exportId", ExportID, "ID of the created/updated export.")
+	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
 	Attribute("sourceId", SourceID, "ID of the created/updated source.")
 })
 
@@ -648,16 +648,16 @@ func SourceNotFoundError() {
 	GenericError(StatusNotFound, "stream.sourceNotFound", "Source not found error.", `Source "github-pull-requests" not found.`)
 }
 
-func ExportNotFoundError() {
-	GenericError(StatusNotFound, "stream.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
+func SinkNotFoundError() {
+	GenericError(StatusNotFound, "stream.sinkNotFound", "Sink not found error.", `Sink "github-changed-files" not found.`)
 }
 
 func SourceAlreadyExistsError() {
 	GenericError(StatusConflict, "stream.sourceAlreadyExists", "Source already exists in the project.", `Source already exists in the project.`)
 }
 
-func ExportAlreadyExistsError() {
-	GenericError(StatusConflict, "stream.exportAlreadyExists", "Export already exists in the source.", `Export already exists in the source.`)
+func SinkAlreadyExistsError() {
+	GenericError(StatusConflict, "stream.sinkAlreadyExists", "Sink already exists in the source.", `Sink already exists in the source.`)
 }
 
 func PayloadTooLargeError() {
@@ -689,14 +689,14 @@ func ExampleError(statusCode int, name, message string) ExampleErrorDef {
 }
 
 type ExampleSourceDef struct {
-	ID          string             `json:"id" yaml:"id"`
-	URL         string             `json:"url" yaml:"url"`
-	Name        string             `json:"name" yaml:"name"`
-	Description string             `json:"description" yaml:"description"`
-	Exports     []ExampleExportDef `json:"exports" yaml:"exports"`
+	ID          string           `json:"id" yaml:"id"`
+	URL         string           `json:"url" yaml:"url"`
+	Name        string           `json:"name" yaml:"name"`
+	Description string           `json:"description" yaml:"description"`
+	Sinks       []ExampleSinkDef `json:"sinks" yaml:"sinks"`
 }
 
-type ExampleExportDef struct {
+type ExampleSinkDef struct {
 	ID         string               `json:"id" yaml:"id"`
 	SourceID   string               `json:"sourceId" yaml:"sourceId"`
 	Name       string               `json:"name" yaml:"name"`
@@ -747,13 +747,13 @@ func ExampleSource() ExampleSourceDef {
 		URL:         "https://stream.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
 		Name:        "source 1",
 		Description: "Some description ...",
-		Exports:     []ExampleExportDef{ExampleExport()},
+		Sinks:       []ExampleSinkDef{ExampleSink()},
 	}
 }
 
-func ExampleExport() ExampleExportDef {
+func ExampleSink() ExampleSinkDef {
 	id := "github-changed-files"
-	return ExampleExportDef{
+	return ExampleSinkDef{
 		ID:         id,
 		Name:       "GitHub Changed Files",
 		Mapping:    ExampleMapping(),
