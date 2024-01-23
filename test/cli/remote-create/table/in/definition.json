@@ -1,9 +1,4 @@
-{
-  "name": "table1",
-  "primaryKeysNames": [
-    "id"
-  ],
-  "columns": [
+[
     {
       "name": "id",
       "definition": {
@@ -18,5 +13,5 @@
       },
       "basetype": "STRING"
     }
-  ]
-}
+]
+
