@@ -3,6 +3,8 @@ package buffer
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -137,11 +139,11 @@ var _ = Service("stream", func() {
 
 	Method("CreateSource", func() {
 		Meta("openapi:summary", "Create source")
-		Description("Create a new source for a given project")
+		Description("Create a new source in the project")
 		Result(Task)
 		Payload(CreateSourceRequest)
 		HTTP(func() {
-			POST("/sources")
+			POST("/{branchId}/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceAlreadyExistsError()
@@ -151,11 +153,11 @@ var _ = Service("stream", func() {
 
 	Method("UpdateSource", func() {
 		Meta("openapi:summary", "Update source")
-		Description("Update a source sink.")
+		Description("Update the source.")
 		Result(Source)
 		Payload(UpdateSourceRequest)
 		HTTP(func() {
-			PATCH("/sources/{sourceId}")
+			PATCH("/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -164,10 +166,11 @@ var _ = Service("stream", func() {
 
 	Method("ListSources", func() {
 		Meta("openapi:summary", "List all sources")
-		Description("List all sources for a given project.")
+		Description("List all sources in the project.")
+		Payload(ListSourcesRequest)
 		Result(SourcesList)
 		HTTP(func() {
-			GET("/sources")
+			GET("/{branchId}/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 		})
@@ -175,11 +178,11 @@ var _ = Service("stream", func() {
 
 	Method("GetSource", func() {
 		Meta("openapi:summary", "Get source")
-		Description("Get the configuration of a source.")
+		Description("Get the source definition.")
 		Result(Source)
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			GET("/sources/{sourceId}")
+			GET("/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -188,10 +191,10 @@ var _ = Service("stream", func() {
 
 	Method("DeleteSource", func() {
 		Meta("openapi:summary", "Delete source")
-		Description("Delete a source.")
+		Description("Delete the source.")
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			DELETE("/sources/{sourceId}")
+			DELETE("/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -204,7 +207,7 @@ var _ = Service("stream", func() {
 		Result(Source)
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/sources/{sourceId}/tokens/refresh")
+			POST("/{branchId}/sources/{sourceId}/tokens/refresh")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -342,15 +345,68 @@ var ServiceDetail = Type("ServiceDetail", func() {
 	Required("api", "documentation")
 })
 
+// ProjectID ----------------------------------------------------------------------------------------------------------
+
 var ProjectID = Type("ProjectID", Int, func() {
 	Description("ID of the project")
 	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
 })
 
+// Branch -------------------------------------------------------------------------------------------------------------
+
+var BranchID = Type("BranchID", Int, func() {
+	Description("ID of the branch")
+	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/go-client/pkg/keboola")
+})
+
+// Versioned trait ----------------------------------------------------------------------------------------------------
+
+var EntityVersion = Type("Version", func() {
+	Meta("struct:field:type", "= definition.Version", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition")
+	Description("Version of the entity.")
+	Attribute("number", Int, "Version number counted from 1.")
+	Attribute("hash", String, "Hash of the entity state.")
+	Attribute("modifiedAt", String, func() {
+		Description("Date and time of the modification.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("description", String, "Description of the change.")
+	Required("number", "hash", "modifiedAt", "description")
+})
+
+// SoftDeletable trait ------------------------------------------------------------------------------------------------
+
+var SoftDeletable = Type("SoftDeletable", func() {
+	Description("Entity deletion status.")
+	Attribute("deleted", Boolean, "True, if the entity is soft deleted.")
+	Attribute("deletedAt", String, func() {
+		Description("Date and time of deletion.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("deleted")
+})
+
+// Switchable trait ------------------------------------------------------------------------------------------------
+
+var Switchable = Type("Switchable", func() {
+	Description("Switchable")
+	Attribute("disabled", Boolean, "True, if the entity is disabled.")
+	Attribute("disabledBy", String, `Who turned off the entity, for example "system", "user", ...`)
+	Attribute("disabledAt", String, func() {
+		Description("Date and time of disabling.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("disabledReason", String, "Why was the entity disabled?")
+	Required("disabled")
+})
+
 // Source -------------------------------------------------------------------------------------------------------------
 
 var SourceID = Type("SourceID", String, func() {
-	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key")
 	Description("Unique ID of the source.")
 	MinLength(1)
 	MaxLength(48)
@@ -358,31 +414,55 @@ var SourceID = Type("SourceID", String, func() {
 })
 
 var Source = Type("Source", func() {
-	Description("An endpoint for importing data, max 100 sources per a project.")
-	Attribute("id", SourceID)
-	Attribute("url", String, func() {
-		Description("URL of the source. Contains secret used for authentication.")
-	})
+	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Attribute("projectId", ProjectID)
+	Attribute("branchId", BranchID)
+	Attribute("sourceId", SourceID)
+	Attribute("version", EntityVersion)
+	Extend(SoftDeletable)
+	Extend(Switchable)
 	sourceFields()
 	Attribute("sinks", ArrayOf(Sink), func() {
-		Description("List of sinks, max 20 sinks per a source.")
+		Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", repository.MaxSinksPerSource))
 		Example([]any{ExampleSink()})
 	})
-	Required("id", "url", "name", "description", "sinks")
+	Required("projectId", "branchId", "sourceId", "version", "type", "name", "description", "type", "sinks")
 	Example(ExampleSource())
 })
 
+var SourceType = Type("SourceType", String, func() {
+	Meta("struct:field:type", "= definition.SourceType", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition")
+	Enum(definition.SourceTypeHTTP.String())
+	Example(definition.SourceTypeHTTP.String())
+})
+
+var HTTPSource = Type("HTTPSource", func() {
+	Description("HTTP endpoint data source definition.")
+	Attribute("url", String, func() {
+		Description("URL of the HTTP source. Contains secret used for authentication.")
+	})
+	Required("url")
+	//Example(ExampleHTTPSource())
+})
+
 var CreateSourceRequest = Type("CreateSourceRequest", func() {
+	Attribute("branchId", BranchID)
 	Attribute("id", SourceID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
 	sourceFields()
-	Required("name")
+	Required("branchId", "type", "name")
 })
 
 var GetSourceRequest = Type("GetSourceRequest", func() {
+	Attribute("branchId", BranchID)
 	Attribute("sourceId", SourceID)
-	Required("sourceId")
+	Required("branchId", "sourceId")
+})
+
+var ListSourcesRequest = Type("ListSourcesRequest", func() {
+	Attribute("branchId", BranchID)
+	Required("branchId", "branchId")
 })
 
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
@@ -398,6 +478,7 @@ var SourcesList = Type("SourcesList", func() {
 })
 
 var sourceFields = func() {
+	Attribute("type", SourceType)
 	Attribute("name", String, func() {
 		Description("Human readable name of the source.")
 		MinLength(1)
@@ -408,6 +489,9 @@ var sourceFields = func() {
 		Description("Description of the source.")
 		MaxLength(4096)
 		Example("This source receives events from Github.")
+	})
+	Attribute("htto", HTTPSource, func() {
+		Description("Description of the source.")
 	})
 }
 
