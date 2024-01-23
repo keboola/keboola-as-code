@@ -179,6 +179,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
 				for _, table := range *apiTables {
 					table := table
+					// The table list does not contain the "definition" field, so we have to load the tables separately.
 					grp.Go(func() error {
 						return p.keboolaProjectAPI.
 							GetTableRequest(table.TableKey).
