@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
-var testInput = `{"name": "table1","primaryKeysNames": ["id"],"columns": [{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]}`
+var testInput = `[{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]`
 
 func TestParseJsonInput(t *testing.T) {
 	t.Parallel()
@@ -35,27 +35,21 @@ func TestParseJsonInput(t *testing.T) {
 	// Read and parse the content of the temporary file
 	res, err := parseJSONInputForCreateTable(filePath)
 	require.NoError(t, err)
-	assert.Equal(t, &keboola.CreateTableRequest{
-		TableDefinition: keboola.TableDefinition{
-			PrimaryKeyNames: []string{"id"},
-			Columns: []keboola.Column{
-				{
-					Name: "id",
-					Definition: keboola.ColumnDefinition{
-						Type: "INT",
-					},
-					BaseType: "NUMERIC",
-				},
-				{
-					Name: "name",
-					Definition: keboola.ColumnDefinition{
-						Type: "STRING",
-					},
-					BaseType: "STRING",
-				},
+	assert.Equal(t, []keboola.Column{
+		{
+			Name: "id",
+			Definition: keboola.ColumnDefinition{
+				Type: "INT",
 			},
+			BaseType: "NUMERIC",
 		},
-		Name: "table1",
+		{
+			Name: "name",
+			Definition: keboola.ColumnDefinition{
+				Type: "STRING",
+			},
+			BaseType: "STRING",
+		},
 	}, res)
 }
 
@@ -67,7 +61,7 @@ func TestGetCreateRequest(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want table.Options
+		want []keboola.Column
 	}{
 		{
 			name: "getCreateTableRequest",
@@ -77,33 +71,22 @@ func TestGetCreateRequest(t *testing.T) {
 				Columns:            []string{"id", "name"},
 				Name:               "test_table",
 				PrimaryKey:         []string{"id"},
-			}}, want: table.Options{
-				CreateTableRequest: keboola.CreateTableRequest{
-					TableDefinition: keboola.TableDefinition{
-						PrimaryKeyNames: []string{"id"},
-						Columns: []keboola.Column{
-							{
-								Name: "id",
-								Definition: keboola.ColumnDefinition{
-									Type: "STRING",
-								},
-								BaseType: keboola.TypeString,
-							},
-							{
-								Name: "name",
-								Definition: keboola.ColumnDefinition{
-									Type: "STRING",
-								},
-								BaseType: keboola.TypeString,
-							},
-						},
+			}},
+			want: []keboola.Column{
+				{
+					Name: "id",
+					Definition: keboola.ColumnDefinition{
+						Type: "STRING",
 					},
-					Name: "test_table",
+					BaseType: keboola.TypeString,
 				},
-				BucketKey:  keboola.BucketKey{},
-				Columns:    []string{"id", "name"},
-				Name:       "test_table",
-				PrimaryKey: []string{"id"},
+				{
+					Name: "name",
+					Definition: keboola.ColumnDefinition{
+						Type: "STRING",
+					},
+					BaseType: keboola.TypeString,
+				},
 			},
 		},
 	}
