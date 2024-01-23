@@ -20,7 +20,6 @@ For type and base type information see: https://help.keboola.com/storage/tables/
     ...
 ]
 
-
 Usage:
   kbc remote create table [table] [flags]
 
