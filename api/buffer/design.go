@@ -35,8 +35,8 @@ func init() {
 }
 
 var _ = API("stream", func() {
-	Title("Buffer Service")
-	Description("A service for continuously importing data to Keboola storage.")
+	Title("Stream Service")
+	Description("A service for continuously importing data to the Keboola platform.")
 	Version("1.0")
 	HTTP(func() {
 		Path("v1")
@@ -60,7 +60,7 @@ var _ = API("stream", func() {
 // Service definition
 
 var _ = Service("stream", func() {
-	Description("A service for continuously importing data to Keboola storage.")
+	Description("A service for continuously importing data to the Keboola platform.")
 	// CORS
 	cors.Origin("*", func() {
 		cors.Headers("Content-Type", "X-StorageApi-Token")
