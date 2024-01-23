@@ -81,8 +81,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		Logger:               etcdLogger,
 		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
 			grpc.WithBlock(), // wait for the connection
 			grpc.WithReturnConnectionError(),
 			grpc.WithConnectParams(grpc.ConnectParams{
