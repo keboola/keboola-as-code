@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
@@ -99,7 +100,11 @@ func run() error {
 		return err
 	}
 
-	scope.Logger().Infof(ctx, "starting App Proxy server, listen-address=%s", cfg.ListenAddress)
+	logger.Infof(ctx, "starting App Proxy server, listen-address=%s", cfg.ListenAddress)
+	err = http.StartServer(ctx, scope)
+	if err != nil {
+		return err
+	}
 
 	// Wait for the service shutdown.
 	proc.WaitForShutdown()
