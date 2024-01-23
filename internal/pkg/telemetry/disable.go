@@ -4,21 +4,25 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 const disabledTracingCtxKey = ctxKey("disabled-tracing")
 
 //nolint:gochecknoglobals
-var nopTracer = trace.NewNoopTracerProvider().Tracer("")
+var nopTracer = noop.NewTracerProvider().Tracer("")
 
 // contextTracer wraps trace.Tracer and adds the option to turn off tracing based on the context, see IsTracingDisabled function.
 // In the OpenTelemetry it is not implemented for Go yet: https://github.com/open-telemetry/opentelemetry-specification/issues/530
 type contextTracer struct {
+	embedded.Tracer
 	wrapped trace.Tracer
 }
 
 // contextTracerProvider - see contextTracer.
 type contextTracerProvider struct {
+	embedded.TracerProvider
 	wrapped trace.TracerProvider
 }
 
