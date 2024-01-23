@@ -59,26 +59,33 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 	}
 
 	filePath := p.options.GetString("columns-from")
-	if p.options.IsSet("columns-from") && len(opts.PrimaryKey) == 0 && opts.Name == "" {
-		createTableRequest, err := parseJSONInputForCreateTable(filePath)
+	if p.options.IsSet("columns-from") {
+		columnsDefinition, err := parseJSONInputForCreateTable(filePath)
 		if err != nil {
 			return table.Options{}, err
 		}
-		opts.CreateTableRequest = *createTableRequest
+
+		opts.CreateTableRequest = keboola.CreateTableRequest{
+			TableDefinition: keboola.TableDefinition{
+				PrimaryKeyNames: opts.PrimaryKey,
+				Columns:         columnsDefinition,
+			},
+			Name: opts.Name,
+		}
 	} else {
-		opts = getOptionCreateRequest(opts)
+		opts.CreateTableRequest = getOptionCreateRequest(opts)
 	}
 
 	return opts, nil
 }
 
-func parseJSONInputForCreateTable(filePath string) (*keboola.CreateTableRequest, error) {
+func parseJSONInputForCreateTable(filePath string) ([]keboola.Column, error) {
 	dataFile, err := os.ReadFile(filePath) // nolint: forbidigo
 	if err != nil {
 		return nil, err
 	}
 
-	var result *keboola.CreateTableRequest
+	var result []keboola.Column
 
 	err = json.Unmarshal(dataFile, &result)
 	if err != nil {
@@ -87,10 +94,8 @@ func parseJSONInputForCreateTable(filePath string) (*keboola.CreateTableRequest,
 	return result, err
 }
 
-//	if command don't include flag 'columns-from'
-//
-// this function returns Options.CreateTableRequest from the flags (columns, primary keys, table name).
-func getOptionCreateRequest(opts table.Options) table.Options {
+// getOptionCreateRequest returns Options.CreateTableRequest from the flags (columns, primary keys, table name). It is used if the `columns-from` flag is not specified.
+func getOptionCreateRequest(opts table.Options) keboola.CreateTableRequest {
 	var columns []keboola.Column
 	for _, column := range opts.Columns {
 		var c keboola.Column
@@ -100,15 +105,11 @@ func getOptionCreateRequest(opts table.Options) table.Options {
 		columns = append(columns, c)
 	}
 
-	createTableRequest := keboola.CreateTableRequest{
+	return keboola.CreateTableRequest{
 		TableDefinition: keboola.TableDefinition{
 			PrimaryKeyNames: opts.PrimaryKey,
 			Columns:         columns,
 		},
 		Name: opts.Name,
 	}
-
-	opts.CreateTableRequest = createTableRequest
-
-	return opts
 }
