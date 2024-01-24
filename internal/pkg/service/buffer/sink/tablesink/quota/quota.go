@@ -1,6 +1,5 @@
-// Package quota provides limitation of a receiver buffered records size in etcd.
-// This will prevent etcd from filling up if data cannot be sent to file storage fast enough
-// or if it is not possible to upload data at all.
+// Package quota provides limitation of a sink buffered data in local disks.
+// This prevents one client from wasting all of our disk space in the Stream API cluster.
 package quota
 
 import (
@@ -9,8 +8,10 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/cache"
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -24,16 +25,16 @@ const (
 
 type Checker struct {
 	clock         clock.Clock
-	config        config.APIConfig
+	config        config.Config
 	cachedL2Stats *statsCache.L2
 
 	// nextLogAt prevents errors from flooding the log
 	nextLogAtLock *sync.RWMutex
-	nextLogAt     map[key.ReceiverKey]time.Time
+	nextLogAt     map[key.SinkKey]time.Time
 }
 
 type dependencies interface {
-	APIConfig() config.APIConfig
+	Config() config.Config
 	Clock() clock.Clock
 	StatisticsL2Cache() *statsCache.L2
 }
@@ -41,25 +42,25 @@ type dependencies interface {
 func New(d dependencies) *Checker {
 	return &Checker{
 		clock:         d.Clock(),
-		config:        d.APIConfig(),
+		config:        d.Config(),
 		cachedL2Stats: d.StatisticsL2Cache(),
 		nextLogAtLock: &sync.RWMutex{},
-		nextLogAt:     make(map[key.ReceiverKey]time.Time),
+		nextLogAt:     make(map[key.SinkKey]time.Time),
 	}
 }
 
-// Check checks whether the size of records that one receiver can buffer in etcd has not been exceeded.
-func (c *Checker) Check(ctx context.Context, k key.ReceiverKey) error {
-	stats, err := c.cachedL2Stats.ReceiverStats(ctx, k)
+// Check checks whether the size of records that one sink can buffer has not been exceeded.
+// The method compares used disk space, on all disks, with the provided quota value.
+func (c *Checker) Check(ctx context.Context, k key.SinkKey, quota datasize.ByteSize) error {
+	stats, err := c.cachedL2Stats.SinkStats(ctx, k)
 	if err != nil {
 		return err
 	}
 
-	buffered := stats.Local.CompressedSize
-	if limit := c.config.ReceiverBufferSize; buffered > limit {
+	if diskUsage := stats.Local.CompressedSize; diskUsage > quota {
 		return commonErrors.NewInsufficientStorageError(c.shouldLogError(k), errors.Errorf(
-			`no free space in the buffer: receiver "%s" has "%s" of compressed data buffered for upload, limit is "%s"`,
-			k.ReceiverID, buffered.HumanReadable(), limit.HumanReadable(),
+			`full storage buffer for the sink "%s", buffered "%s", quota "%s"`,
+			k.String(), diskUsage.HumanReadable(), quota.HumanReadable(),
 		))
 	}
 
@@ -67,7 +68,7 @@ func (c *Checker) Check(ctx context.Context, k key.ReceiverKey) error {
 }
 
 // shouldLogError method determines if the quota error should be logged.
-func (c *Checker) shouldLogError(k key.ReceiverKey) bool {
+func (c *Checker) shouldLogError(k key.SinkKey) bool {
 	now := c.clock.Now()
 
 	c.nextLogAtLock.RLock()

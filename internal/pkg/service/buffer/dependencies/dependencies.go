@@ -35,6 +35,7 @@ package dependencies
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/cache"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/statistics/repository"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -70,5 +71,7 @@ type DefinitionScope interface {
 type TableSinkScope interface {
 	DefinitionScope
 	StatisticsRepository() *statsRepo.Repository
+	StatisticsL1Cache() *cache.L1
+	StatisticsL2Cache() *cache.L2
 	StorageRepository() *storageRepo.Repository
 }
