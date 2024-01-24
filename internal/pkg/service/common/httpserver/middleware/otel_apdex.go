@@ -53,14 +53,13 @@ func OpenTelemetryApdex(mp metric.MeterProvider) Middleware {
 				return
 			}
 
-			ctx := req.Context()
-
 			// Process request
 			startTime := time.Now()
 			rw := negroni.NewResponseWriter(w)
-			next.ServeHTTP(rw, req.WithContext(ctx))
+			next.ServeHTTP(rw, req)
 
 			// Record apdex metric
+			ctx := req.Context()
 			labeler, _ := otelhttp.LabelerFromContext(ctx)
 			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
 			apdex.Add(ctx, req.Method, rw.Status(), elapsedTime, metric.WithAttributes(labeler.Get()...))
