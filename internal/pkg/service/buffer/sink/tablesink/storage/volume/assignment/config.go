@@ -13,10 +13,28 @@ type Config struct {
 	PreferredTypes []string `json:"preferredTypes" configKey:"preferredTypes" validate:"min=1" configUsage:"List of preferred volume types, start with the most preferred."`
 }
 
+// ConfigPatch is same as the Config, but with optional/nullable fields.
+// It is part of the definition.TableSink structure to allow modification of the default configuration.
+type ConfigPatch struct {
+	Count          *int      `json:"count,omitempty"`
+	PreferredTypes *[]string `json:"preferredTypes,omitempty"`
+}
+
 // NewConfig provides default configuration.
 func NewConfig() Config {
 	return Config{
 		Count:          1,
 		PreferredTypes: []string{"default"},
 	}
+}
+
+// With copies values from the ConfigPatch, if any.
+func (c Config) With(v ConfigPatch) Config {
+	if v.Count != nil {
+		c.Count = *v.Count
+	}
+	if v.PreferredTypes != nil {
+		c.PreferredTypes = *v.PreferredTypes
+	}
+	return c
 }

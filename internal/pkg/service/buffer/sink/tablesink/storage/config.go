@@ -21,31 +21,26 @@ type Config struct {
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It is part of the definition.TableSink structure to allow modification of the default configuration.
 type ConfigPatch struct {
-	VolumeAssignment   *assignment.Config   `json:"volumeAssignment,omitempty"`
-	Local              *local.ConfigPatch   `json:"local,omitempty"`
-	Staging            *staging.ConfigPatch `json:"staging,omitempty"`
-	Target             *target.ConfigPatch  `json:"target,omitempty"`
+	VolumeAssignment *assignment.ConfigPatch `json:"volumeAssignment,omitempty"`
+	Local            *local.ConfigPatch      `json:"local,omitempty"`
+	Staging          *staging.ConfigPatch    `json:"staging,omitempty"`
+	Target           *target.ConfigPatch     `json:"target,omitempty"`
 }
 
 // With copies values from the ConfigPatch, if any.
-func (c Config) With(v *ConfigPatch) Config {
+func (c Config) With(v ConfigPatch) Config {
 	// Copy values from the ConfigPatch, if any.
-	if v != nil {
-		if v.VolumeAssignment != nil {
-			c.VolumeAssignment = *v.VolumeAssignment
-		}
-		if v.VolumeRegistration != nil {
-			c.VolumeRegistration = *v.VolumeRegistration
-		}
-		if v.Local != nil {
-			c.Local = c.Local.With(*v.Local)
-		}
-		if v.Staging != nil {
-			c.Staging = c.Staging.With(*v.Staging)
-		}
-		if v.Target != nil {
-			c.Target = c.Target.With(*v.Target)
-		}
+	if v.VolumeAssignment != nil {
+		c.VolumeAssignment = c.VolumeAssignment.With(*v.VolumeAssignment)
+	}
+	if v.Local != nil {
+		c.Local = c.Local.With(*v.Local)
+	}
+	if v.Staging != nil {
+		c.Staging = c.Staging.With(*v.Staging)
+	}
+	if v.Target != nil {
+		c.Target = c.Target.With(*v.Target)
 	}
 	return c
 }
