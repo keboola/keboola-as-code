@@ -20,7 +20,7 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 			return opts, err
 		}
 		opts.BucketKey = keboola.BucketKey{BranchID: branchKey.ID, BucketID: tableID.BucketID}
-		opts.Name = tableID.TableName
+		opts.CreateTableRequest.Name = tableID.TableName
 	} else {
 		bucketID, err := p.AskBucketID(allBuckets)
 		if err != nil {
@@ -36,7 +36,7 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 				Description: "Enter the table name.",
 			})
 		}
-		opts.Name = name
+		opts.CreateTableRequest.Name = name
 	}
 
 	columnsStr := p.options.GetString(`columns`)
@@ -46,16 +46,16 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 			Description: "Enter a comma-separated list of column names.",
 		})
 	}
-	opts.Columns = strings.Split(strings.TrimSpace(columnsStr), ",")
+	arrayColumns := strings.Split(strings.TrimSpace(columnsStr), ",")
 
 	if p.options.IsSet(`primary-key`) {
-		opts.PrimaryKey = strings.Split(strings.TrimSpace(p.options.GetString(`primary-key`)), ",")
+		opts.CreateTableRequest.PrimaryKeyNames = strings.Split(strings.TrimSpace(p.options.GetString(`primary-key`)), ",")
 	} else {
 		primaryKey, _ := p.MultiSelect(&prompt.MultiSelect{
 			Label:   "Select columns for primary key",
-			Options: opts.Columns,
+			Options: arrayColumns,
 		})
-		opts.PrimaryKey = primaryKey
+		opts.CreateTableRequest.PrimaryKeyNames = primaryKey
 	}
 
 	filePath := p.options.GetString("columns-from")
@@ -65,15 +65,9 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 			return table.Options{}, err
 		}
 
-		opts.CreateTableRequest = keboola.CreateTableRequest{
-			TableDefinition: keboola.TableDefinition{
-				PrimaryKeyNames: opts.PrimaryKey,
-				Columns:         columnsDefinition,
-			},
-			Name: opts.Name,
-		}
+		opts.CreateTableRequest.Columns = columnsDefinition
 	} else {
-		opts.CreateTableRequest = getOptionCreateRequest(opts)
+		opts.CreateTableRequest.Columns = getOptionCreateRequest(strings.Split(strings.TrimSpace(columnsStr), ","))
 	}
 
 	return opts, nil
@@ -95,21 +89,15 @@ func parseJSONInputForCreateTable(filePath string) ([]keboola.Column, error) {
 }
 
 // getOptionCreateRequest returns Options.CreateTableRequest from the flags (columns, primary keys, table name). It is used if the `columns-from` flag is not specified.
-func getOptionCreateRequest(opts table.Options) keboola.CreateTableRequest {
-	var columns []keboola.Column
-	for _, column := range opts.Columns {
-		var c keboola.Column
-		c.Name = column
-		c.BaseType = keboola.TypeString
-		c.Definition.Type = keboola.TypeString.String()
-		columns = append(columns, c)
+func getOptionCreateRequest(columns []string) []keboola.Column {
+	var c []keboola.Column
+	for _, column := range columns {
+		var col keboola.Column
+		col.Name = column
+		col.BaseType = keboola.TypeString
+		col.Definition.Type = keboola.TypeString.String()
+		c = append(c, col)
 	}
 
-	return keboola.CreateTableRequest{
-		TableDefinition: keboola.TableDefinition{
-			PrimaryKeyNames: opts.PrimaryKey,
-			Columns:         columns,
-		},
-		Name: opts.Name,
-	}
+	return c
 }

@@ -14,9 +14,6 @@ import (
 type Options struct {
 	CreateTableRequest keboola.CreateTableRequest
 	BucketKey          keboola.BucketKey
-	Columns            []string
-	Name               string
-	PrimaryKey         []string
 }
 
 type dependencies interface {
@@ -35,7 +32,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.Name}
+	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.CreateTableRequest.Name}
 	tableKey := keboola.TableKey{BranchID: o.BucketKey.BranchID, TableID: tableID}
 
 	res, err := d.KeboolaProjectAPI().CreateTableDefinitionRequest(tableKey, &o.CreateTableRequest).Send(ctx)
