@@ -22,25 +22,38 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [
-            "col1",
-            "col2"
+            "id"
           ],
+          "definition": {
+            "primaryKeysNames": [
+              "id"
+            ],
+            "columns": [
+              {
+                "name": "id",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216"
+                },
+                "basetype": "STRING"
+              },
+              {
+                "name": "name",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216",
+                  "nullable": true
+                },
+                "basetype": "STRING"
+              }
+            ]
+          },
           "columns": [
-            "col1",
-            "col2",
-            "col3"
+            "id",
+            "name"
           ]
         }
       ]
-    }
-  ],
-  "files": [
-    {
-      "name": "create_table_in.c_bucket.table1",
-      "tags": [],
-      "isSliced": false,
-      "isEncrypted": true,
-      "isPermanent": false
     }
   ]
 }

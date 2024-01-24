@@ -25,6 +25,39 @@
             "col1",
             "col2"
           ],
+          "definition": {
+            "primaryKeysNames": [
+              "col1",
+              "col2"
+            ],
+            "columns": [
+              {
+                "name": "col1",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216"
+                },
+                "basetype": "STRING"
+              },
+              {
+                "name": "col2",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216"
+                },
+                "basetype": "STRING"
+              },
+              {
+                "name": "col3",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216",
+                  "nullable": true
+                },
+                "basetype": "STRING"
+              }
+            ]
+          },
           "columns": [
             "col1",
             "col2",
@@ -32,15 +65,6 @@
           ]
         }
       ]
-    }
-  ],
-  "files": [
-    {
-      "name": "create_table_in.c_bucket.table1",
-      "tags": [],
-      "isSliced": false,
-      "isEncrypted": true,
-      "isPermanent": false
     }
   ]
 }

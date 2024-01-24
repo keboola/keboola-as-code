@@ -175,9 +175,21 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	var tables []*keboola.Table
 	grp.Go(func() error {
 		req := p.keboolaProjectAPI.
-			ListTablesRequest(p.defaultBranch.ID, keboola.WithBuckets(), keboola.WithColumns()).
-			WithOnSuccess(func(_ context.Context, apiTables *[]*keboola.Table) error {
-				tables = append(tables, *apiTables...)
+			ListTablesRequest(p.defaultBranch.ID).
+			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
+				for _, table := range *apiTables {
+					table := table
+					// The table list does not contain the "definition" field, so we have to load the tables separately.
+					grp.Go(func() error {
+						return p.keboolaProjectAPI.
+							GetTableRequest(table.TableKey).
+							WithOnSuccess(func(ctx context.Context, table *keboola.Table) error {
+								tables = append(tables, table)
+								return nil
+							}).
+							SendOrErr(ctx)
+					})
+				}
 				return nil
 			})
 		return req.SendOrErr(ctx)
@@ -223,6 +235,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			URI:         t.URI,
 			Name:        t.Name,
 			DisplayName: t.DisplayName,
+			Definition:  t.Definition,
 			PrimaryKey:  t.PrimaryKey,
 			Columns:     t.Columns,
 			RowsCount:   t.RowsCount,
