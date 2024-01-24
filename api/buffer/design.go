@@ -3,6 +3,8 @@ package buffer
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -34,18 +36,18 @@ func init() {
 	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies")
 }
 
-var _ = API("buffer", func() {
-	Title("Buffer Service")
-	Description("A service for continuously importing data to Keboola storage.")
+var _ = API("stream", func() {
+	Title("Stream Service")
+	Description("A service for continuously importing data to the Keboola platform.")
 	Version("1.0")
 	HTTP(func() {
 		Path("v1")
 		Consumes("application/json")
 		Produces("application/json")
 	})
-	Server("buffer", func() {
+	Server("stream", func() {
 		Host("production", func() {
-			URI("https://buffer.{stack}")
+			URI("https://stream.{stack}")
 			Variable("stack", String, "Base URL of the stack", func() {
 				Default("keboola.com")
 				Enum("keboola.com", "eu-central-1.keboola.com", "north-europe.azure.keboola.com", "eu-west-1.aws.keboola.dev", "east-us-2.azure.keboola-testing.com")
@@ -59,8 +61,8 @@ var _ = API("buffer", func() {
 
 // Service definition
 
-var _ = Service("buffer", func() {
-	Description("A service for continuously importing data to Keboola storage.")
+var _ = Service("stream", func() {
+	Description("A service for continuously importing data to the Keboola platform.")
 	// CORS
 	cors.Origin("*", func() {
 		cors.Headers("Content-Type", "X-StorageApi-Token")
@@ -135,158 +137,159 @@ var _ = Service("buffer", func() {
 
 	// Main endpoints ---------------------------------------------------------------------------------------------
 
-	Method("CreateReceiver", func() {
-		Meta("openapi:summary", "Create receiver")
-		Description("Create a new receiver for a given project")
+	Method("CreateSource", func() {
+		Meta("openapi:summary", "Create source")
+		Description("Create a new source in the project")
 		Result(Task)
-		Payload(CreateReceiverRequest)
+		Payload(CreateSourceRequest)
 		HTTP(func() {
-			POST("/receivers")
+			POST("/{branchId}/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
-			ReceiverAlreadyExistsError()
+			SourceAlreadyExistsError()
 			ResourceCountLimitReachedError()
 		})
 	})
 
-	Method("UpdateReceiver", func() {
-		Meta("openapi:summary", "Update receiver")
-		Description("Update a receiver export.")
-		Result(Receiver)
-		Payload(UpdateReceiverRequest)
+	Method("UpdateSource", func() {
+		Meta("openapi:summary", "Update source")
+		Description("Update the source.")
+		Result(Source)
+		Payload(UpdateSourceRequest)
 		HTTP(func() {
-			PATCH("/receivers/{receiverId}")
+			PATCH("/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("ListReceivers", func() {
-		Meta("openapi:summary", "List all receivers")
-		Description("List all receivers for a given project.")
-		Result(ReceiversList)
+	Method("ListSources", func() {
+		Meta("openapi:summary", "List all sources")
+		Description("List all sources in the project.")
+		Payload(ListSourcesRequest)
+		Result(SourcesList)
 		HTTP(func() {
-			GET("/receivers")
+			GET("/{branchId}/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 		})
 	})
 
-	Method("GetReceiver", func() {
-		Meta("openapi:summary", "Get receiver")
-		Description("Get the configuration of a receiver.")
-		Result(Receiver)
-		Payload(GetReceiverRequest)
+	Method("GetSource", func() {
+		Meta("openapi:summary", "Get source")
+		Description("Get the source definition.")
+		Result(Source)
+		Payload(GetSourceRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}")
+			GET("/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("DeleteReceiver", func() {
-		Meta("openapi:summary", "Delete receiver")
-		Description("Delete a receiver.")
-		Payload(GetReceiverRequest)
+	Method("DeleteSource", func() {
+		Meta("openapi:summary", "Delete source")
+		Description("Delete the source.")
+		Payload(GetSourceRequest)
 		HTTP(func() {
-			DELETE("/receivers/{receiverId}")
+			DELETE("/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("RefreshReceiverTokens", func() {
-		Meta("openapi:summary", "Refresh receiver tokens")
-		Description("Each export uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
-		Result(Receiver)
-		Payload(GetReceiverRequest)
+	Method("RefreshSourceTokens", func() {
+		Meta("openapi:summary", "Refresh source tokens")
+		Description("Each sink uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
+		Result(Source)
+		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/receivers/{receiverId}/tokens/refresh")
+			POST("/{branchId}/sources/{sourceId}/tokens/refresh")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("CreateExport", func() {
-		Meta("openapi:summary", "Create export")
-		Description("Create a new export for an existing receiver.")
+	Method("CreateSink", func() {
+		Meta("openapi:summary", "Create sink")
+		Description("Create a new sink for an existing source.")
 		Result(Task)
-		Payload(CreateExportRequest)
+		Payload(CreateSinkRequest)
 		HTTP(func() {
-			POST("/receivers/{receiverId}/exports")
+			POST("/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
-			ReceiverNotFoundError()
-			ExportAlreadyExistsError()
+			SourceNotFoundError()
+			SinkAlreadyExistsError()
 			ResourceCountLimitReachedError()
 		})
 	})
 
-	Method("GetExport", func() {
-		Meta("openapi:summary", "Get export")
-		Description("Get the configuration of an export.")
-		Result(Export)
-		Payload(GetExportRequest)
+	Method("GetSink", func() {
+		Meta("openapi:summary", "Get sink")
+		Description("Get the configuration of an sink.")
+		Result(Sink)
+		Payload(GetSinkRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}/exports/{exportId}")
+			GET("/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
-			ExportNotFoundError()
+			SourceNotFoundError()
+			SinkNotFoundError()
 		})
 	})
 
-	Method("ListExports", func() {
-		Meta("openapi:summary", "List exports")
-		Description("List all exports for a given receiver.")
-		Result(ExportsList)
-		Payload(ListExportsRequest)
+	Method("ListSinks", func() {
+		Meta("openapi:summary", "List sinks")
+		Description("List all sinks for a given source.")
+		Result(SinksList)
+		Payload(ListSinksRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}/exports")
+			GET("/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 		})
 	})
 
-	Method("UpdateExport", func() {
-		Meta("openapi:summary", "Update export")
-		Description("Update a receiver export.")
+	Method("UpdateSink", func() {
+		Meta("openapi:summary", "Update sink")
+		Description("Update a source sink.")
 		Result(Task)
-		Payload(UpdateExportRequest)
+		Payload(UpdateSinkRequest)
 		HTTP(func() {
-			PATCH("/receivers/{receiverId}/exports/{exportId}")
+			PATCH("/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
-			ExportNotFoundError()
+			SourceNotFoundError()
+			SinkNotFoundError()
 		})
 	})
 
-	Method("DeleteExport", func() {
-		Meta("openapi:summary", "Delete export")
-		Description("Delete a receiver export.")
-		Payload(GetExportRequest)
+	Method("DeleteSink", func() {
+		Meta("openapi:summary", "Delete sink")
+		Description("Delete a source sink.")
+		Payload(GetSinkRequest)
 		HTTP(func() {
-			DELETE("/receivers/{receiverId}/exports/{exportId}")
+			DELETE("/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ReceiverNotFoundError()
-			ExportNotFoundError()
+			SourceNotFoundError()
+			SinkNotFoundError()
 		})
 	})
 
 	Method("Import", func() {
 		Meta("openapi:summary", "Import data")
-		Description("Upload data into the receiver.")
+		Description("Upload data into the source.")
 		NoSecurity()
 		Payload(func() {
 			Attribute("projectId", ProjectID)
-			Attribute("receiverId", ReceiverID)
+			Attribute("sourceId", SourceID)
 			Attribute("secret", String, func() {
 				Description("Secret used for authentication.")
 				MinLength(48)
@@ -296,15 +299,15 @@ var _ = Service("buffer", func() {
 			Attribute("contentType", String, func() {
 				Example("application/json")
 			})
-			Required("projectId", "receiverId", "secret", "contentType")
+			Required("projectId", "sourceId", "secret", "contentType")
 		})
 		HTTP(func() {
-			POST("/import/{projectId}/{receiverId}/{secret}")
+			POST("/import/{projectId}/{sourceId}/{secret}")
 			Meta("openapi:tag:import")
 			Header("contentType:Content-Type")
 			SkipRequestBodyEncodeDecode()
 			Response(StatusOK)
-			ReceiverNotFoundError()
+			SourceNotFoundError()
 			PayloadTooLargeError()
 		})
 	})
@@ -334,151 +337,228 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 var ServiceDetail = Type("ServiceDetail", func() {
 	Description("Information about the service")
 	Attribute("api", String, "Name of the API", func() {
-		Example("buffer")
+		Example("stream")
 	})
 	Attribute("documentation", String, "URL of the API documentation.", func() {
-		Example("https://buffer.keboola.com/v1/documentation")
+		Example("https://stream.keboola.com/v1/documentation")
 	})
 	Required("api", "documentation")
 })
+
+// ProjectID ----------------------------------------------------------------------------------------------------------
 
 var ProjectID = Type("ProjectID", Int, func() {
 	Description("ID of the project")
 	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
 })
 
-// Receiver -----------------------------------------------------------------------------------------------------------
+// Branch -------------------------------------------------------------------------------------------------------------
 
-var ReceiverID = Type("ReceiverID", String, func() {
-	Meta("struct:field:type", "= key.ReceiverID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
-	Description("Unique ID of the receiver.")
+var BranchID = Type("BranchID", Int, func() {
+	Description("ID of the branch")
+	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/go-client/pkg/keboola")
+})
+
+// Versioned trait ----------------------------------------------------------------------------------------------------
+
+var EntityVersion = Type("Version", func() {
+	Meta("struct:field:type", "= definition.Version", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition")
+	Description("Version of the entity.")
+	Attribute("number", Int, "Version number counted from 1.")
+	Attribute("hash", String, "Hash of the entity state.")
+	Attribute("modifiedAt", String, func() {
+		Description("Date and time of the modification.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("description", String, "Description of the change.")
+	Required("number", "hash", "modifiedAt", "description")
+})
+
+// SoftDeletable trait ------------------------------------------------------------------------------------------------
+
+var SoftDeletable = Type("SoftDeletable", func() {
+	Description("Entity deletion status.")
+	Attribute("deleted", Boolean, "True, if the entity is soft deleted.")
+	Attribute("deletedAt", String, func() {
+		Description("Date and time of deletion.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("deleted")
+})
+
+// Switchable trait ------------------------------------------------------------------------------------------------
+
+var Switchable = Type("Switchable", func() {
+	Description("Switchable")
+	Attribute("disabled", Boolean, "True, if the entity is disabled.")
+	Attribute("disabledBy", String, `Who turned off the entity, for example "system", "user", ...`)
+	Attribute("disabledAt", String, func() {
+		Description("Date and time of disabling.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("disabledReason", String, "Why was the entity disabled?")
+	Required("disabled")
+})
+
+// Source -------------------------------------------------------------------------------------------------------------
+
+var SourceID = Type("SourceID", String, func() {
+	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key")
+	Description("Unique ID of the source.")
 	MinLength(1)
 	MaxLength(48)
-	Example("github-webhook-receiver")
+	Example("github-webhook-source")
 })
 
-var Receiver = Type("Receiver", func() {
-	Description("An endpoint for importing data, max 100 receivers per a project.")
-	Attribute("id", ReceiverID)
+var Source = Type("Source", func() {
+	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Attribute("projectId", ProjectID)
+	Attribute("branchId", BranchID)
+	Attribute("sourceId", SourceID)
+	Attribute("version", EntityVersion)
+	Extend(SoftDeletable)
+	Extend(Switchable)
+	sourceFields()
+	Attribute("sinks", ArrayOf(Sink), func() {
+		Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", repository.MaxSinksPerSource))
+		Example([]any{ExampleSink()})
+	})
+	Required("projectId", "branchId", "sourceId", "version", "type", "name", "description", "type", "sinks")
+	Example(ExampleSource())
+})
+
+var SourceType = Type("SourceType", String, func() {
+	Meta("struct:field:type", "= definition.SourceType", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition")
+	Enum(definition.SourceTypeHTTP.String())
+	Example(definition.SourceTypeHTTP.String())
+})
+
+var HTTPSource = Type("HTTPSource", func() {
+	Description("HTTP endpoint data source definition.")
 	Attribute("url", String, func() {
-		Description("URL of the receiver. Contains secret used for authentication.")
+		Description("URL of the HTTP source. Contains secret used for authentication.")
 	})
-	receiverFields()
-	Attribute("exports", ArrayOf(Export), func() {
-		Description("List of exports, max 20 exports per a receiver.")
-		Example([]any{ExampleExport()})
-	})
-	Required("id", "url", "name", "description", "exports")
-	Example(ExampleReceiver())
+	Required("url")
 })
 
-var CreateReceiverRequest = Type("CreateReceiverRequest", func() {
-	Attribute("id", ReceiverID, func() {
+var CreateSourceRequest = Type("CreateSourceRequest", func() {
+	Attribute("branchId", BranchID)
+	Attribute("id", SourceID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
-	receiverFields()
-	Attribute("exports", ArrayOf(CreateExportData), func() {
-		Description("List of exports, max 20 exports per a receiver.")
+	sourceFields()
+	Required("branchId", "type", "name")
+})
+
+var GetSourceRequest = Type("GetSourceRequest", func() {
+	Attribute("branchId", BranchID)
+	Attribute("sourceId", SourceID)
+	Required("branchId", "sourceId")
+})
+
+var ListSourcesRequest = Type("ListSourcesRequest", func() {
+	Attribute("branchId", BranchID)
+	Required("branchId", "branchId")
+})
+
+var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
+	Extend(GetSourceRequest)
+	sourceFields()
+})
+
+var SourcesList = Type("SourcesList", func() {
+	Attribute("sources", ArrayOf(Source), func() {
+		Example([]any{ExampleSource()})
 	})
-	Required("name")
+	Required("sources")
 })
 
-var GetReceiverRequest = Type("GetReceiverRequest", func() {
-	Attribute("receiverId", ReceiverID)
-	Required("receiverId")
-})
-
-var UpdateReceiverRequest = Type("UpdateReceiverRequest", func() {
-	Extend(GetReceiverRequest)
-	receiverFields()
-})
-
-var ReceiversList = Type("ReceiversList", func() {
-	Attribute("receivers", ArrayOf(Receiver), func() {
-		Example([]any{ExampleReceiver()})
-	})
-	Required("receivers")
-})
-
-var receiverFields = func() {
+var sourceFields = func() {
+	Attribute("type", SourceType)
 	Attribute("name", String, func() {
-		Description("Human readable name of the receiver.")
+		Description("Human readable name of the source.")
 		MinLength(1)
 		MaxLength(40)
-		Example("Github Webhook Receiver")
+		Example("Github Webhook Source")
 	})
 	Attribute("description", String, func() {
-		Description("Description of the receiver.")
+		Description("Description of the source.")
 		MaxLength(4096)
-		Example("This receiver receives events from Github.")
+		Example("This source receives events from Github.")
+	})
+	Attribute("htto", HTTPSource, func() {
+		Description("Description of the source.")
 	})
 }
 
-// Export -------------------------------------------------------------------------------------------------------------
+// Sink -------------------------------------------------------------------------------------------------------------
 
-var ExportID = Type("ExportID", String, func() {
-	Meta("struct:field:type", "= key.ExportID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
-	Description("Unique ID of the export.")
+var SinkID = Type("SinkID", String, func() {
+	Meta("struct:field:type", "= key.SinkID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Description("Unique ID of the sink.")
 	MinLength(1)
 	MaxLength(48)
-	Example("github-pr-table-export")
+	Example("github-pr-table-sink")
 })
 
-var Export = Type("Export", func() {
+var Sink = Type("Sink", func() {
 	Description("A mapping from imported data to a destination table.")
-	Attribute("id", ExportID)
-	Attribute("receiverId", ReceiverID)
-	ExportFields()
-	Required("id", "receiverId", "name", "mapping", "conditions")
-	Example(ExampleExport())
+	Attribute("id", SinkID)
+	Attribute("sourceId", SourceID)
+	SinkFields()
+	Required("id", "sourceId", "name", "mapping", "conditions")
+	Example(ExampleSink())
 })
 
-var ExportsList = Type("ExportsList", func() {
-	Attribute("exports", ArrayOf(Export), func() {
-		Example([]any{ExampleExport()})
+var SinksList = Type("SinksList", func() {
+	Attribute("sinks", ArrayOf(Sink), func() {
+		Example([]any{ExampleSink()})
 	})
-	Required("exports")
+	Required("sinks")
 })
 
-var CreateExportData = Type("CreateExportData", func() {
-	Attribute("id", ExportID, func() {
+var CreateSinkData = Type("CreateSinkData", func() {
+	Attribute("id", SinkID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
-	ExportFields()
+	SinkFields()
 	// Field "conditions" is optional
 	Required("name", "mapping")
 })
 
-var CreateExportRequest = Type("CreateExportRequest", func() {
-	Extend(GetReceiverRequest)
-	Extend(CreateExportData)
+var CreateSinkRequest = Type("CreateSinkRequest", func() {
+	Extend(GetSourceRequest)
+	Extend(CreateSinkData)
 })
 
-var GetExportRequest = Type("GetExportRequest", func() {
-	Attribute("receiverId", ReceiverID)
-	Attribute("exportId", ExportID)
-	Required("receiverId", "exportId")
+var GetSinkRequest = Type("GetSinkRequest", func() {
+	Attribute("sourceId", SourceID)
+	Attribute("sinkId", SinkID)
+	Required("sourceId", "sinkId")
 })
 
-var ListExportsRequest = Type("ListExportsRequest", func() {
-	Attribute("receiverId", ReceiverID)
-	Required("receiverId")
+var ListSinksRequest = Type("ListSinksRequest", func() {
+	Attribute("sourceId", SourceID)
+	Required("sourceId")
 })
 
-var UpdateExportRequest = Type("UpdateExportRequest", func() {
-	Extend(GetExportRequest)
-	ExportFields()
+var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
+	Extend(GetSinkRequest)
+	SinkFields()
 })
 
-var ExportFields = func() {
+var SinkFields = func() {
 	Attribute("name", String, func() {
-		Description("Human readable name of the export.")
+		Description("Human readable name of the sink.")
 		MinLength(1)
 		MaxLength(40)
-		Example("Raw Data Export")
+		Example("Raw Data Sink")
 	})
 	Attribute("mapping", Mapping, func() {
-		Description("Export column mapping.")
+		Description("Sink column mapping.")
 	})
 	Attribute("conditions", ImportConditions, func() {
 		Description("Table import conditions.")
@@ -488,7 +568,7 @@ var ExportFields = func() {
 // Mapping ------------------------------------------------------------------------------------------------------------
 
 var Mapping = Type("Mapping", func() {
-	Description("Export column mapping.")
+	Description("Sink column mapping.")
 	Attribute("tableId", String, func() {
 		Description("Destination table ID.")
 	})
@@ -496,7 +576,7 @@ var Mapping = Type("Mapping", func() {
 		Description("Enables incremental loading to the table.")
 	})
 	Attribute("columns", ArrayOf(Column), func() {
-		Description("List of export column mappings. An export may have a maximum of 100 columns.")
+		Description("List of sink column mappings. An sink may have a maximum of 100 columns.")
 		MinLength(1)
 		MaxLength(100)
 		Example([]any{ExampleColumnTypeBody()})
@@ -602,8 +682,8 @@ var Task = Type("Task", func() {
 
 var TaskOutputs = Type("TaskOutputs", func() {
 	Description("Outputs generated by the task.")
-	Attribute("exportId", ExportID, "ID of the created/updated export.")
-	Attribute("receiverId", ReceiverID, "ID of the created/updated receiver.")
+	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
+	Attribute("sourceId", SourceID, "ID of the created/updated source.")
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
@@ -620,7 +700,7 @@ var GenericErrorType = Type("GenericError", func() {
 	})
 	ErrorName("error", String, "Name of error.", func() {
 		Meta("struct:field:name", "name")
-		Example("buffer.internalError")
+		Example("stream.internalError")
 	})
 	Attribute("message", String, "Error message.", func() {
 		Example("Internal Error")
@@ -647,32 +727,32 @@ func GenericError(statusCode int, name, description, example string) {
 	Response(name, statusCode)
 }
 
-func ReceiverNotFoundError() {
-	GenericError(StatusNotFound, "buffer.receiverNotFound", "Receiver not found error.", `Receiver "github-pull-requests" not found.`)
+func SourceNotFoundError() {
+	GenericError(StatusNotFound, "stream.sourceNotFound", "Source not found error.", `Source "github-pull-requests" not found.`)
 }
 
-func ExportNotFoundError() {
-	GenericError(StatusNotFound, "buffer.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
+func SinkNotFoundError() {
+	GenericError(StatusNotFound, "stream.sinkNotFound", "Sink not found error.", `Sink "github-changed-files" not found.`)
 }
 
-func ReceiverAlreadyExistsError() {
-	GenericError(StatusConflict, "buffer.receiverAlreadyExists", "Receiver already exists in the project.", `Receiver already exists in the project.`)
+func SourceAlreadyExistsError() {
+	GenericError(StatusConflict, "stream.sourceAlreadyExists", "Source already exists in the project.", `Source already exists in the project.`)
 }
 
-func ExportAlreadyExistsError() {
-	GenericError(StatusConflict, "buffer.exportAlreadyExists", "Export already exists in the receiver.", `Export already exists in the receiver.`)
+func SinkAlreadyExistsError() {
+	GenericError(StatusConflict, "stream.sinkAlreadyExists", "Sink already exists in the source.", `Sink already exists in the source.`)
 }
 
 func PayloadTooLargeError() {
-	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large.", `Payload too large, the maximum size is 1MB.`)
+	GenericError(StatusRequestEntityTooLarge, "stream.payloadTooLarge", "Payload too large.", `Payload too large, the maximum size is 1MB.`)
 }
 
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
+	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", `Maximum number of sources per project is 100.`)
 }
 
 func TaskNotFoundError() {
-	GenericError(StatusNotFound, "buffer.taskNotFound", "Task not found error.", `Task "001" not found.`)
+	GenericError(StatusNotFound, "stream.taskNotFound", "Task not found error.", `Task "001" not found.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------
@@ -691,17 +771,17 @@ func ExampleError(statusCode int, name, message string) ExampleErrorDef {
 	}
 }
 
-type ExampleReceiverDef struct {
-	ID          string             `json:"id" yaml:"id"`
-	URL         string             `json:"url" yaml:"url"`
-	Name        string             `json:"name" yaml:"name"`
-	Description string             `json:"description" yaml:"description"`
-	Exports     []ExampleExportDef `json:"exports" yaml:"exports"`
+type ExampleSourceDef struct {
+	ID          string           `json:"id" yaml:"id"`
+	URL         string           `json:"url" yaml:"url"`
+	Name        string           `json:"name" yaml:"name"`
+	Description string           `json:"description" yaml:"description"`
+	Sinks       []ExampleSinkDef `json:"sinks" yaml:"sinks"`
 }
 
-type ExampleExportDef struct {
+type ExampleSinkDef struct {
 	ID         string               `json:"id" yaml:"id"`
-	ReceiverID string               `json:"receiverId" yaml:"receiverId"`
+	SourceID   string               `json:"sourceId" yaml:"sourceId"`
 	Name       string               `json:"name" yaml:"name"`
 	Mapping    ExampleMappingDef    `json:"mapping" yaml:"mapping"`
 	Conditions ExampleConditionsDef `json:"conditions" yaml:"conditions"`
@@ -732,7 +812,7 @@ type ExampleConditionsDef struct {
 
 type ExampleTaskDef struct {
 	ID         string         `json:"id" yaml:"id"`
-	ReceiverID string         `json:"receiverId" yaml:"receiverId"`
+	SourceID   string         `json:"sourceId" yaml:"sourceId"`
 	URL        string         `json:"url" yaml:"url"`
 	Type       string         `json:"type" yaml:"type"`
 	CreatedAt  string         `json:"createdAt" yaml:"createdAt"`
@@ -743,20 +823,20 @@ type ExampleTaskDef struct {
 	Outputs    map[string]any `json:"outputs" yaml:"outputs"`
 }
 
-func ExampleReceiver() ExampleReceiverDef {
+func ExampleSource() ExampleSourceDef {
 	id := "github-pull-requests"
-	return ExampleReceiverDef{
+	return ExampleSourceDef{
 		ID:          id,
-		URL:         "https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
-		Name:        "receiver 1",
+		URL:         "https://stream.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
+		Name:        "source 1",
 		Description: "Some description ...",
-		Exports:     []ExampleExportDef{ExampleExport()},
+		Sinks:       []ExampleSinkDef{ExampleSink()},
 	}
 }
 
-func ExampleExport() ExampleExportDef {
+func ExampleSink() ExampleSinkDef {
 	id := "github-changed-files"
-	return ExampleExportDef{
+	return ExampleSinkDef{
 		ID:         id,
 		Name:       "GitHub Changed Files",
 		Mapping:    ExampleMapping(),
@@ -838,16 +918,16 @@ func ExampleColumnTypeTemplate() ExampleColumnDef {
 
 func ExampleTask() ExampleTaskDef {
 	return ExampleTaskDef{
-		ID:         "receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
-		Type:       "receiver.create",
-		URL:        "https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp",
+		ID:         "source.create/2018-01-01T00:00:00.000Z_jdkLp",
+		Type:       "source.create",
+		URL:        "https://stream.keboola.com/v1/sources/source-1/tasks/source.create/2018-01-01T00:00:00.000Z_jdkLp",
 		CreatedAt:  "2018-01-01T00:00:00.000Z",
 		FinishedAt: "2018-01-01T00:00:00.000Z",
 		IsFinished: true,
 		Duration:   123,
 		Result:     "task succeeded",
 		Outputs: map[string]any{
-			"receiverId": "receiver-1",
+			"sourceId": "source-1",
 		},
 	}
 }
