@@ -22,7 +22,6 @@ type Config struct {
 // It is part of the definition.TableSink structure to allow modification of the default configuration.
 type ConfigPatch struct {
 	VolumeAssignment   *assignment.Config   `json:"volumeAssignment,omitempty"`
-	VolumeRegistration *registration.Config `configKey:"volumeRegistration,omitempty"`
 	Local              *local.ConfigPatch   `json:"local,omitempty"`
 	Staging            *staging.ConfigPatch `json:"staging,omitempty"`
 	Target             *target.ConfigPatch  `json:"target,omitempty"`
