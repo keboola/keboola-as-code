@@ -22,7 +22,7 @@ func Logger(baseLogger log.Logger) Middleware {
 
 			// Capture response
 			started := time.Now()
-			rw := goaHttpMiddleware.CaptureResponse(w)
+			rw := goaHttpMiddleware.CaptureResponse(w) //nolint:staticcheck // deprecated, information should be loaded from OTEL span
 			next.ServeHTTP(rw, req)
 
 			// Log

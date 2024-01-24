@@ -4,6 +4,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	metricNoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 const (
@@ -60,7 +61,7 @@ func New(tpFactory func() (trace.TracerProvider, error), mpFactory func() (metri
 	}
 
 	if tracerProvider == nil {
-		tracerProvider = trace.NewNoopTracerProvider()
+		tracerProvider = noop.NewTracerProvider()
 	}
 	if meterProvider == nil {
 		meterProvider = metricNoop.NewMeterProvider()

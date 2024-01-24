@@ -18,6 +18,7 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 )
@@ -224,11 +225,13 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 }
 
 type filterTraceProvider struct {
+	embedded.TracerProvider
 	filter   TestSpanFilter
 	provider trace.TracerProvider
 }
 
 type filterTracer struct {
+	embedded.Tracer
 	tp     *filterTraceProvider
 	tracer trace.Tracer
 }

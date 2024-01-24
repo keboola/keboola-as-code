@@ -140,6 +140,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.branchNotFound
+                                message: Branch "123" not found.
             security:
                 - storage-api-token: []
     /v1/project/{branch}/instances/{instanceId}:
@@ -163,6 +167,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template instance.
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
             responses:
@@ -174,12 +179,15 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.instanceNotFound
+                                message: Instance "V1StGXR8IZ5jdHi6BAmyT" not found.
                 "503":
                     description: 'templates.projectLocked: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.'
                     headers:
                         Retry-After:
                             description: Indicates how long the user agent should wait before making a follow-up request.
-                            required: true
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
@@ -189,6 +197,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 503
+                                error: templates.projectLocked
+                                message: The project is locked, another operation is in progress, please try again later.
             security:
                 - storage-api-token: []
         get:
@@ -211,6 +223,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template instance.
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
             responses:
@@ -271,6 +284,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.instanceNotFound
+                                message: Instance "V1StGXR8IZ5jdHi6BAmyT" not found.
             security:
                 - storage-api-token: []
         put:
@@ -293,6 +310,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template instance.
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
             requestBody:
@@ -361,12 +379,15 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.instanceNotFound
+                                message: Instance "V1StGXR8IZ5jdHi6BAmyT" not found.
                 "503":
                     description: 'templates.projectLocked: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.'
                     headers:
                         Retry-After:
                             description: Indicates how long the user agent should wait before making a follow-up request.
-                            required: true
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
@@ -376,6 +397,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 503
+                                error: templates.projectLocked
+                                message: The project is locked, another operation is in progress, please try again later.
             security:
                 - storage-api-token: []
     /v1/project/{branch}/instances/{instanceId}/upgrade/{version}:
@@ -399,6 +424,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template instance.
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
                 - name: version
@@ -448,18 +474,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ValidationError'
+                            example:
+                                ValidationResult:
+                                    valid: false
+                                    stepGroups:
+                                        - id: g01
+                                          valid: false
+                                          error: All steps must be configured.
+                                          steps:
+                                            - id: g01-s01
+                                              configured: true
+                                              valid: false
+                                              inputs:
+                                                - id: api-token
+                                                  visible: true
+                                                  error: Value cannot be empty.
+                                                - id: password
+                                                  visible: false
+                                                  error: null
+                                        - id: g02
+                                          valid: true
+                                          error: null
+                                          steps:
+                                            - id: g02-s01
+                                              configured: false
+                                              valid: true
+                                              inputs: []
+                                            - id: g02-s02
+                                              configured: true
+                                              valid: true
+                                              inputs:
+                                                - id: username
+                                                  visible: true
+                                                  error: null
+                                error: InvalidPayload
+                                message: Inputs are not valid.
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
                 "503":
                     description: 'templates.projectLocked: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.'
                     headers:
                         Retry-After:
                             description: Indicates how long the user agent should wait before making a follow-up request.
-                            required: true
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
@@ -469,6 +533,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 503
+                                error: templates.projectLocked
+                                message: The project is locked, another operation is in progress, please try again later.
             security:
                 - storage-api-token: []
     /v1/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs:
@@ -492,6 +560,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template instance.
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
                 - name: version
@@ -730,6 +799,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
             security:
                 - storage-api-token: []
         post:
@@ -752,6 +825,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template instance.
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
                 - name: version
@@ -822,6 +896,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
             security:
                 - storage-api-token: []
     /v1/repositories:
@@ -885,6 +963,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.repositoryNotFound
+                                message: Repository "name" not found.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates:
@@ -973,6 +1055,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.repositoryNotFound
+                                message: Repository "name" not found.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates/{template}:
@@ -997,6 +1083,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template.
                     example: my-template
                     minLength: 1
                     maxLength: 40
@@ -1051,6 +1138,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.templateNotFound
+                                message: Template "id" not found.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates/{template}/{version}:
@@ -1075,6 +1166,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template.
                     example: my-template
                     minLength: 1
                     maxLength: 40
@@ -1128,6 +1220,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates/{template}/{version}/inputs:
@@ -1152,6 +1248,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template.
                     example: my-template
                     minLength: 1
                     maxLength: 40
@@ -1392,6 +1489,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates/{template}/{version}/use:
@@ -1418,6 +1519,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template.
                     example: my-template
                     minLength: 1
                     maxLength: 40
@@ -1471,18 +1573,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ValidationError'
+                            example:
+                                ValidationResult:
+                                    valid: false
+                                    stepGroups:
+                                        - id: g01
+                                          valid: false
+                                          error: All steps must be configured.
+                                          steps:
+                                            - id: g01-s01
+                                              configured: true
+                                              valid: false
+                                              inputs:
+                                                - id: api-token
+                                                  visible: true
+                                                  error: Value cannot be empty.
+                                                - id: password
+                                                  visible: false
+                                                  error: null
+                                        - id: g02
+                                          valid: true
+                                          error: null
+                                          steps:
+                                            - id: g02-s01
+                                              configured: false
+                                              valid: true
+                                              inputs: []
+                                            - id: g02-s02
+                                              configured: true
+                                              valid: true
+                                              inputs:
+                                                - id: username
+                                                  visible: true
+                                                  error: null
+                                error: InvalidPayload
+                                message: Inputs are not valid.
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
                 "503":
                     description: 'templates.projectLocked: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.'
                     headers:
                         Retry-After:
                             description: Indicates how long the user agent should wait before making a follow-up request.
-                            required: true
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
@@ -1492,6 +1632,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 503
+                                error: templates.projectLocked
+                                message: The project is locked, another operation is in progress, please try again later.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates/{template}/{version}/validate:
@@ -1518,6 +1662,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: ID of the template.
                     example: my-template
                     minLength: 1
                     maxLength: 40
@@ -1590,6 +1735,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
             security:
                 - storage-api-token: []
     /v1/tasks/{taskId}:
@@ -1605,6 +1754,7 @@ paths:
                   required: true
                   schema:
                     type: string
+                    description: Unique ID of the task.
                     example: task_1234
                   example: task_1234
             responses:
@@ -1631,6 +1781,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.taskNotFound
+                                message: Task "001" not found.
             security:
                 - storage-api-token: []
 components:
