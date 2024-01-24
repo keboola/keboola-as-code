@@ -46,14 +46,14 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 			Description: "Enter a comma-separated list of column names.",
 		})
 	}
-	arrayColumns := strings.Split(strings.TrimSpace(columnsStr), ",")
+	colNames := strings.Split(strings.TrimSpace(columnsStr), ",")
 
 	if p.options.IsSet(`primary-key`) {
 		opts.CreateTableRequest.PrimaryKeyNames = strings.Split(strings.TrimSpace(p.options.GetString(`primary-key`)), ",")
 	} else {
 		primaryKey, _ := p.MultiSelect(&prompt.MultiSelect{
 			Label:   "Select columns for primary key",
-			Options: arrayColumns,
+			Options: colNames,
 		})
 		opts.CreateTableRequest.PrimaryKeyNames = primaryKey
 	}
