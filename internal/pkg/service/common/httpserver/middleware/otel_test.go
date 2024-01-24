@@ -52,6 +52,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		middleware.RequestInfo(),
 		middleware.Filter(cfg),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), cfg),
+		middleware.OpenTelemetryApdex(tel.MeterProvider()),
 	)
 
 	// Create group

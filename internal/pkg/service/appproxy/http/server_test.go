@@ -39,22 +39,8 @@ func TestAppProxyHandler(t *testing.T) {
 	mocked.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"req /path %A","http.request_id":"%s","component":"http"}`)
 
 	metrics := mocked.TestTelemetry().Metrics(t)
-	names := []string{}
-	for _, metric := range metrics {
-		names = append(names, metric.Name)
-	}
-
-	assert.Equal(
-		t,
-		[]string{
-			"keboola.go.http.server.request_content_length",
-			"keboola.go.http.server.response_content_length",
-			"keboola.go.http.server.duration",
-			"keboola_go_http_server_apdex_count",
-			"keboola_go_http_server_apdex_500_sum",
-			"keboola_go_http_server_apdex_1000_sum",
-			"keboola_go_http_server_apdex_2000_sum",
-		},
-		names,
-	)
+	assert.Len(t, metrics, 3)
+	assert.Equal(t, "keboola.go.http.server.request_content_length", metrics[0].Name)
+	assert.Equal(t, "keboola.go.http.server.response_content_length", metrics[1].Name)
+	assert.Equal(t, "keboola.go.http.server.duration", metrics[2].Name)
 }
