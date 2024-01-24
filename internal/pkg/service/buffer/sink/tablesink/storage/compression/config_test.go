@@ -50,7 +50,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:   "none: default ok",
-			Config: DefaultNoneConfig(),
+			Config: NewNoneConfig(),
 		},
 		{
 			Name: "gzip: ok",
@@ -66,7 +66,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:   "gzip: default ok",
-			Config: DefaultGZIPConfig(),
+			Config: NewGZIPConfig(),
 		},
 		{
 			Name:          "gzip: level under min",
@@ -141,7 +141,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:   "zstd: default ok",
-			Config: DefaultZSTDConfig(),
+			Config: NewZSTDConfig(),
 		},
 		{
 			Name:          "zstd: level under min",
@@ -209,8 +209,8 @@ func TestConfig_Validation(t *testing.T) {
 func TestConfig_Simplify(t *testing.T) {
 	t.Parallel()
 
-	gzipCfg := DefaultGZIPConfig().GZIP
-	zstdCfg := DefaultZSTDConfig().ZSTD
+	gzipCfg := NewGZIPConfig().GZIP
+	zstdCfg := NewZSTDConfig().ZSTD
 
 	// None
 	cfg := Config{Type: TypeNone, GZIP: gzipCfg, ZSTD: zstdCfg}
