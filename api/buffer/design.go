@@ -442,7 +442,6 @@ var HTTPSource = Type("HTTPSource", func() {
 		Description("URL of the HTTP source. Contains secret used for authentication.")
 	})
 	Required("url")
-	//Example(ExampleHTTPSource())
 })
 
 var CreateSourceRequest = Type("CreateSourceRequest", func() {
