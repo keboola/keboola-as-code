@@ -6,7 +6,7 @@
 // - Create a struct for it: `type Foo struct{name string; ...}`.
 // - Create a type constant for it: `columnFooType Type = "foo"`.
 // - Add it to `MakeColumn` function.
-// - Implement the `Columnss` interface for the `ColumnFoo` struct.
+// - Implement the `Column` interface for the `ColumnFoo` struct.
 package column
 
 import (

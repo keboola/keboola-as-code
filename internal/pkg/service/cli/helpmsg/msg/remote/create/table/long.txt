@@ -3,19 +3,24 @@ Command "remote create table"
 The CLI command creates a new storage table, and the table can be defined either by specifying the full table ID in the argument or by using the --bucket and --name flags.
 In addition, you can specify column names and specify the primary key using the appropriate flags.
 
-Using the --columns flag and comma-separated column names will create columns and default to string type.
+Using the --columns-from flag to specify a JSON definition file with columns types.
 
-Another way to define columns is to use the --columns-from flag and then specify the path to your json file. You can set the data type of the given column yourself.
-Example:
+Another way to define columns is to use the --columns-from flag and then specify the path to your json file.
+Example "definition.json" file for --columns-from flag:
+
+
 For type and base type information see: https://help.keboola.com/storage/tables/data-types/
 
 [
     {
-      "name": "col1",
+      "name": "col1",       // required
       "definition": {
-        "type": "STRING"
+        "type": "STRING",   // required
+        "nullable": ...,    // available true/false
+        "length": "...",    // available (length of a data type)
+        "default": "..."    // available
       },
-      "basetype": "STRING|NUMERIC|DATE|TIMESTAMP|FLOAT|INTEGER|BOOLEAN"
+      "basetype": "..."     // one of: STRING|NUMERIC|DATE|TIMESTAMP|FLOAT|INTEGER|BOOLEAN
     },
     ...
 ]
