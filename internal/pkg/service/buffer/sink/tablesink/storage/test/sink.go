@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
@@ -35,19 +36,21 @@ func NewSink(k key.SinkKey) definition.Sink {
 		Name:        "My Sink",
 		Description: "My Description",
 		Table: &definition.TableSink{
-			Storage: &storage.ConfigPatch{
-				VolumeAssignment: &assignment.Config{
-					Count:          1,
-					PreferredTypes: []string{"default"},
-				},
-				Local: &local.ConfigPatch{
-					DiskSync: &disksync.Config{
-						Mode:            disksync.ModeDisk,
-						Wait:            false,
-						CheckInterval:   1 * time.Millisecond,
-						CountTrigger:    100,
-						BytesTrigger:    100 * datasize.KB,
-						IntervalTrigger: 100 * time.Millisecond,
+			Config: &tablesink.ConfigPatch{
+				Storage: &storage.ConfigPatch{
+					VolumeAssignment: &assignment.ConfigPatch{
+						Count:          Ptr(1),
+						PreferredTypes: Ptr([]string{"default"}),
+					},
+					Local: &local.ConfigPatch{
+						DiskSync: &disksync.ConfigPatch{
+							Mode:            Ptr(disksync.ModeDisk),
+							Wait:            Ptr(false),
+							CheckInterval:   Ptr(1 * time.Millisecond),
+							CountTrigger:    Ptr(uint(100)),
+							BytesTrigger:    Ptr(100 * datasize.KB),
+							IntervalTrigger: Ptr(100 * time.Millisecond),
+						},
 					},
 				},
 			},

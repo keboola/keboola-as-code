@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -25,7 +26,7 @@ import (
 type FileRepository struct {
 	client  etcd.KV
 	schema  fileSchema
-	config  storage.Config
+	config  tablesink.Config
 	backoff storage.RetryBackoff
 	all     *Repository
 }
@@ -54,7 +55,7 @@ func newFileRepository(d dependencies, backoff storage.RetryBackoff, all *Reposi
 	return &FileRepository{
 		client:  d.EtcdClient(),
 		schema:  newFileSchema(d.EtcdSerde()),
-		config:  d.Config().Sink.Table.Storage,
+		config:  d.Config().Sink.Table,
 		backoff: backoff,
 		all:     all,
 	}
@@ -446,7 +447,10 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 	// Open new file, if enabled
 	if c.NewFileResource != nil {
 		// Apply configuration patch from the sink to the global config
-		cfg := r.config.With(c.Sink.Table.Storage)
+		cfg := r.config
+		if c.Sink.Table.Config != nil {
+			cfg = cfg.With(*c.Sink.Table.Config)
+		}
 
 		// Create file entity
 		file, err := newFile(cfg, *c.NewFileResource, c.Sink)
@@ -455,7 +459,7 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 		}
 
 		// Assign volumes
-		file.Assignment = r.all.hook.AssignVolumes(ctx, c.Volumes, cfg.VolumeAssignment, file.OpenedAt().Time())
+		file.Assignment = r.all.hook.AssignVolumes(ctx, c.Volumes, cfg.Storage.VolumeAssignment, file.OpenedAt().Time())
 
 		// At least one volume must be assigned
 		if len(file.Assignment.Volumes) == 0 {

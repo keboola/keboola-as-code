@@ -51,11 +51,11 @@ func NewFileOpenedAt(openedAtStr string) storage.File {
 		},
 		LocalStorage: local.File{
 			Dir:         "my-dir",
-			Compression: compression.DefaultNoneConfig(),
+			Compression: compression.NewNoneConfig(),
 			DiskSync:    disksync.NewConfig(),
 		},
 		StagingStorage: staging.File{
-			Compression:                 compression.DefaultNoneConfig(),
+			Compression:                 compression.NewNoneConfig(),
 			UploadCredentials:           &keboola.FileUploadCredentials{},
 			UploadCredentialsExpiration: utctime.From(openedAt.Time().Add(time.Hour)),
 		},

@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink"
 )
 
 const (
@@ -12,8 +12,8 @@ const (
 )
 
 type TableSink struct {
-	Storage *storage.ConfigPatch `json:"storage,omitempty"`
-	Mapping TableMapping         `json:"mapping"`
+	Config  *tablesink.ConfigPatch `json:"config,omitempty"`
+	Mapping TableMapping           `json:"mapping"`
 }
 
 type TableMapping struct {
