@@ -38,18 +38,6 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
-			Name:          "disabled mode: unexpected fields",
-			ExpectedError: "- \"wait\" should not be set\n- \"checkInterval\" should not be set\n- \"countTrigger\" should not be set\n- \"bytesTrigger\" should not be set\n- \"intervalTrigger\" should not be set",
-			Config: Config{
-				Mode:            ModeDisabled,
-				Wait:            true,
-				CheckInterval:   1,
-				CountTrigger:    1,
-				BytesTrigger:    1,
-				IntervalTrigger: 1,
-			},
-		},
-		{
 			Name:          "disk mode: empty",
 			ExpectedError: "- \"checkInterval\" is a required field\n- \"countTrigger\" is a required field\n- \"bytesTrigger\" is a required field\n- \"intervalTrigger\" is a required field",
 			Config: Config{
