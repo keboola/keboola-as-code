@@ -8,11 +8,11 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
-var testInput = `[{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]`
+func ColumnsInput() string {
+	return `[{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]`
+}
 
 func TestParseJsonInput(t *testing.T) {
 	t.Parallel()
@@ -26,7 +26,7 @@ func TestParseJsonInput(t *testing.T) {
 	defer tempFile.Close()
 
 	// Write content to the temporary file
-	_, err = tempFile.Write([]byte(testInput))
+	_, err = tempFile.Write([]byte(ColumnsInput()))
 	require.NoError(t, err)
 
 	// Get the file path of the temporary file
@@ -56,7 +56,7 @@ func TestParseJsonInput(t *testing.T) {
 func TestGetCreateRequest(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		opts table.Options
+		columns []string
 	}
 	tests := []struct {
 		name string
@@ -65,13 +65,7 @@ func TestGetCreateRequest(t *testing.T) {
 	}{
 		{
 			name: "getCreateTableRequest",
-			args: args{opts: table.Options{
-				CreateTableRequest: keboola.CreateTableRequest{},
-				BucketKey:          keboola.BucketKey{},
-				Columns:            []string{"id", "name"},
-				Name:               "test_table",
-				PrimaryKey:         []string{"id"},
-			}},
+			args: args{columns: []string{"id", "name"}},
 			want: []keboola.Column{
 				{
 					Name: "id",
@@ -94,7 +88,7 @@ func TestGetCreateRequest(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, getOptionCreateRequest(tt.args.opts), "getOptionCreateRequest(%v)", tt.args.opts)
+			assert.Equalf(t, tt.want, getOptionCreateRequest(tt.args.columns), "getOptionCreateRequest(%v)", tt.args.columns)
 		})
 	}
 }
