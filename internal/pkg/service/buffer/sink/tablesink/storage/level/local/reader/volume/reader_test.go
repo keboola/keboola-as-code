@@ -87,33 +87,33 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 	cases := []*compressionTestCase{
 		{
 			Name:               "None_To_None",
-			LocalCompression:   compression.DefaultNoneConfig(),
-			StagingCompression: compression.DefaultNoneConfig(),
+			LocalCompression:   compression.NewNoneConfig(),
+			StagingCompression: compression.NewNoneConfig(),
 		},
 		{
 			Name:               "None_To_GZIP",
-			LocalCompression:   compression.DefaultNoneConfig(),
-			StagingCompression: compression.DefaultGZIPConfig(),
+			LocalCompression:   compression.NewNoneConfig(),
+			StagingCompression: compression.NewGZIPConfig(),
 		},
 		{
 			Name:               "None_To_ZSTD",
-			LocalCompression:   compression.DefaultNoneConfig(),
-			StagingCompression: compression.DefaultZSTDConfig(),
+			LocalCompression:   compression.NewNoneConfig(),
+			StagingCompression: compression.NewZSTDConfig(),
 		},
 		{
 			Name:               "GZIP_To_None",
-			LocalCompression:   compression.DefaultGZIPConfig(),
-			StagingCompression: compression.DefaultNoneConfig(),
+			LocalCompression:   compression.NewGZIPConfig(),
+			StagingCompression: compression.NewNoneConfig(),
 		},
 		{
 			Name:               "ZSTD_To_None",
-			LocalCompression:   compression.DefaultZSTDConfig(),
-			StagingCompression: compression.DefaultNoneConfig(),
+			LocalCompression:   compression.NewZSTDConfig(),
+			StagingCompression: compression.NewNoneConfig(),
 		},
 		{
 			Name:               "ZSTD_To_GZIP",
-			LocalCompression:   compression.DefaultZSTDConfig(),
-			StagingCompression: compression.DefaultGZIPConfig(),
+			LocalCompression:   compression.NewZSTDConfig(),
+			StagingCompression: compression.NewGZIPConfig(),
 		},
 	}
 

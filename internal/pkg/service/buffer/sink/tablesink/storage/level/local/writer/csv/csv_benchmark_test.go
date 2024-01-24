@@ -73,7 +73,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Standard_BestSpeed,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplStandard
 				wb.Compression.GZIP.Level = gzip.BestSpeed
 				wb.Sync.Mode = disksync.ModeDisk
@@ -83,7 +83,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Standard_BestSpeed,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplStandard
 				wb.Compression.GZIP.Level = gzip.BestSpeed
 				wb.Sync.Mode = disksync.ModeDisk
@@ -93,7 +93,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Fast_BestSpeed,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplFast
 				wb.Compression.GZIP.Level = gzip.BestSpeed
 				wb.Sync.Mode = disksync.ModeDisk
@@ -103,7 +103,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Fast_BestSpeed,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplFast
 				wb.Compression.GZIP.Level = gzip.BestSpeed
 				wb.Sync.Mode = disksync.ModeDisk
@@ -113,7 +113,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Parallel_BestSpeed,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = gzip.BestSpeed
 				wb.Sync.Mode = disksync.ModeDisk
@@ -123,7 +123,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Parallel_BestSpeed,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = gzip.BestSpeed
 				wb.Sync.Mode = disksync.ModeDisk
@@ -133,7 +133,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Parallel_DefaultCompression,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = 6
 				wb.Sync.Mode = disksync.ModeDisk
@@ -143,7 +143,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=GZIP_Parallel_DefaultCompression,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultGZIPConfig()
+				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = 6
 				wb.Sync.Mode = disksync.ModeDisk
@@ -154,7 +154,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultZSTDConfig()
+				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = 1
 				wb.Sync.Mode = disksync.ModeDisk
 				wb.Sync.Wait = true
@@ -163,7 +163,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultZSTDConfig()
+				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedFastest
 				wb.Sync.Mode = disksync.ModeDisk
 				wb.Sync.Wait = false
@@ -172,7 +172,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=ZSTD_SpeedDefault,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultZSTDConfig()
+				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedDefault
 				wb.Sync.Mode = disksync.ModeDisk
 				wb.Sync.Wait = true
@@ -181,7 +181,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=ZSTD_SpeedDefault,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.DefaultZSTDConfig()
+				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedDefault
 				wb.Sync.Mode = disksync.ModeDisk
 				wb.Sync.Wait = false
@@ -222,7 +222,7 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 			BytesTrigger:    1 * datasize.MB,
 			IntervalTrigger: 50 * time.Millisecond,
 		},
-		Compression: compression.DefaultNoneConfig(),
+		Compression: compression.NewNoneConfig(),
 		DataChFactory: func(ctx context.Context, n int, g *benchmark.RandomStringGenerator) <-chan []any {
 			ch := make(chan []any, 1000)
 			columnsCount := len(columns)

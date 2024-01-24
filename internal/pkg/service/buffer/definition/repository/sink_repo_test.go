@@ -450,7 +450,7 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "sinkId": "my-sink-1",
   "version": {
     "number": 5,
-    "hash": "6abf9556e4c91df8",
+    "hash": "901661a01d08dfce",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
     "description": "Rollback to version 2"
   },
@@ -458,15 +458,23 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "name": "Modified Name",
   "description": "My Description",
   "table": {
-    "storage": {
-      "local": {
-        "diskSync": {
-          "mode": "disk",
-          "wait": false,
-          "checkInterval": 1000000,
-          "countTrigger": 100,
-          "bytesTrigger": "100KB",
-          "intervalTrigger": 100000000
+    "config": {
+      "storage": {
+        "volumeAssignment": {
+          "count": 1,
+          "preferredTypes": [
+            "default"
+          ]
+        },
+        "local": {
+          "diskSync": {
+            "mode": "disk",
+            "wait": false,
+            "checkInterval": 1000000,
+            "countTrigger": 100,
+            "bytesTrigger": "100KB",
+            "intervalTrigger": 100000000
+          }
         }
       }
     },

@@ -112,11 +112,11 @@ func TestFileRepository_Operations(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Storage = sinkStorageConfig(3, []string{"hdd"})
+		sink1.Table.Config.Storage = sinkStorageConfig(3, []string{"hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Storage = sinkStorageConfig(3, []string{"ssd"})
+		sink2.Table.Config.Storage = sinkStorageConfig(3, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
@@ -496,9 +496,9 @@ func registerWriterVolumes(t *testing.T, ctx context.Context, volumeRepo *reposi
 
 func sinkStorageConfig(count int, preferred []string) *storage.ConfigPatch {
 	return &storage.ConfigPatch{
-		VolumeAssignment: &assignment.Config{
-			Count:          count,
-			PreferredTypes: preferred,
+		VolumeAssignment: &assignment.ConfigPatch{
+			Count:          test.Ptr(count),
+			PreferredTypes: test.Ptr(preferred),
 		},
 	}
 }
