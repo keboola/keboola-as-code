@@ -9,25 +9,25 @@ env:
   TEST_PARALLELISM_PKG: 6
   TEST_PROJECTS_LINUX: |
     [
-      {"host":"connection.keboola.com","project":8763,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}"},  
-      {"host":"connection.north-europe.azure.keboola.com","project":10889,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10889_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10911,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10911_TOKEN }}"}
+      {"host":"connection.keboola.com","project":8763,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}"},  
+      {"host":"connection.north-europe.azure.keboola.com","project":10889,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10889_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10911,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10911_TOKEN }}"}
     ]
   TEST_PROJECTS_MACOS: |
     [
-      {"host":"connection.keboola.com","project":8770,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }}"},
-      {"host":"connection.keboola.com","project":9432,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_9432_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10895,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10895_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10912,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10912_TOKEN }}"}
+      {"host":"connection.keboola.com","project":8770,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }}"},
+      {"host":"connection.keboola.com","project":9432,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9432_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10895,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10895_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10912,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10912_TOKEN }}"}
     ]
   TEST_PROJECTS_WINDOWS: |
     [
-      {"host":"connection.keboola.com","project":8777,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }}"},
-      {"host":"connection.keboola.com","project":9433,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_9433_TOKEN }}"},
-      {"host":"connection.keboola.com","project":9431,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_9431_TOKEN }}"},
-      {"host":"connection.keboola.com","project":8781,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10901,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10901_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10913,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10913_TOKEN }}"}
+      {"host":"connection.keboola.com","project":8777,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }}"},
+      {"host":"connection.keboola.com","project":9433,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9433_TOKEN }}"},
+      {"host":"connection.keboola.com","project":9431,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9431_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8781,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10901,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10901_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10913,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10913_TOKEN }}"}
     ]
 
 jobs:
