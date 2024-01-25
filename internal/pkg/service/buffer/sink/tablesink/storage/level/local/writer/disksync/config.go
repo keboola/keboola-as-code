@@ -47,7 +47,7 @@ type Config struct {
 	CheckInterval duration.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs."`
 	// CountTrigger defines the writes count after the sync will be triggered.
 	// The number is count of the high-level writers, e.g., one table row = one write operation.
-	CountTrigger uint `json:"countTrigger,omitempty" configKey:"countTrigger" validate:"max=1000000,required_if=Mode disk,required_if=Mode cache" configUsage:"Written records count to trigger sync."`
+	CountTrigger uint `json:"countTrigger,omitempty" configKey:"countTrigger" validate:"min=0,max=1000000,required_if=Mode disk,required_if=Mode cache" configUsage:"Written records count to trigger sync."`
 	// BytesTrigger defines the size after the sync will be triggered.
 	// Bytes are measured at the beginning of the writers chain.
 	BytesTrigger datasize.ByteSize `json:"bytesTrigger,omitempty" configKey:"bytesTrigger" validate:"maxBytes=100MB,required_if=Mode disk,required_if=Mode cache" configUsage:"Written size to trigger sync."`

@@ -77,7 +77,7 @@ sink:
             volumeAssignment:
                 # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
                 count: 1
-                # List of preferred volume types, start with the most preferred. Validation rules: min=1
+                # List of preferred volume types, start with the most preferred. Validation rules: required,min=1
                 preferredTypes:
                     - default
             volumeRegistration:
@@ -110,7 +110,7 @@ sink:
                     wait: true
                     # Minimal interval between syncs. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     checkInterval: 5ms
-                    # Written records count to trigger sync. Validation rules: max=1000000,required_if=Mode disk,required_if=Mode cache
+                    # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
                     countTrigger: 500
                     # Written size to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
                     bytesTrigger: 1MB

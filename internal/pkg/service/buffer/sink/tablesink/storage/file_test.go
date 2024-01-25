@@ -131,7 +131,7 @@ func TestFile_Validation(t *testing.T) {
 - "state" is a required field
 - "columns" is a required field
 - "assignment.config.count" is a required field
-- "assignment.config.preferredTypes" must contain at least 1 item
+- "assignment.config.preferredTypes" is a required field
 - "assignment.volumes" must contain at least 1 item
 `,
 			Value: File{

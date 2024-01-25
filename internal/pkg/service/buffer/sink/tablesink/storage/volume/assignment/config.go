@@ -10,7 +10,7 @@ type Config struct {
 	// PreferredTypes contains a list of preferred volume types,
 	// the value is used when assigning volumes to the file slices, see writer.Volumes.VolumesFor.
 	// The first value is the most preferred volume type.
-	PreferredTypes []string `json:"preferredTypes" configKey:"preferredTypes" validate:"min=1" configUsage:"List of preferred volume types, start with the most preferred."`
+	PreferredTypes []string `json:"preferredTypes" configKey:"preferredTypes" validate:"required,min=1" configUsage:"List of preferred volume types, start with the most preferred."`
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.
