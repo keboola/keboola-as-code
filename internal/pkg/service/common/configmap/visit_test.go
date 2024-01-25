@@ -1,11 +1,12 @@
 package configmap
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"reflect"
-	"testing"
 )
 
 type VisitStruct struct {
