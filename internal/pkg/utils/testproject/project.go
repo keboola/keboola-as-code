@@ -115,6 +115,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	p.setEnv(`TEST_KBC_PROJECT_STAGING_STORAGE`, p.Project.StagingStorage())
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
+	p.setEnv(`TEST_KBC_PROJECT_BACKEND`, p.Project.Backend())
 	p.logf(`■ ️Initialization done.`)
 
 	// Remove all objects
