@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 // Config configures for the staging storage.
@@ -25,11 +27,11 @@ func NewConfig() Config {
 		MaxSlicesPerFile:        100,
 		ParallelFileCreateLimit: 50,
 		Upload: UploadConfig{
-			MinInterval: 5 * time.Second,
+			MinInterval: duration.From(5 * time.Second),
 			Trigger: UploadTrigger{
 				Count:    10000,
 				Size:     1 * datasize.MB,
-				Interval: 1 * time.Minute,
+				Interval: duration.From(1 * time.Minute),
 			},
 		},
 	}
@@ -50,8 +52,8 @@ func (c Config) With(v ConfigPatch) Config {
 
 // UploadConfig configures the slice upload.
 type UploadConfig struct {
-	MinInterval time.Duration `configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
-	Trigger     UploadTrigger `configKey:"trigger"`
+	MinInterval duration.Duration `configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
+	Trigger     UploadTrigger     `configKey:"trigger"`
 }
 
 // UploadConfigPatch is same as the UploadConfig, but with optional/nullable fields.
@@ -74,7 +76,7 @@ func (c UploadConfig) With(v UploadConfigPatch) UploadConfig {
 type UploadTrigger struct {
 	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count." validate:"required,min=1,max=10000000"`
 	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size." validate:"required,minBytes=100B,maxBytes=50MB"`
-	Interval time.Duration     `json:"interval" configKey:"interval" configUsage:"Duration from the last upload." validate:"required,minDuration=1s,maxDuration=30m"`
+	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last upload." validate:"required,minDuration=1s,maxDuration=30m"`
 }
 
 // UploadTriggerPatch is same as the UploadTrigger, but with optional/nullable fields.
@@ -82,7 +84,7 @@ type UploadTrigger struct {
 type UploadTriggerPatch struct {
 	Count    *uint64            `json:"count,omitempty" configKey:"count"`
 	Size     *datasize.ByteSize `json:"size,omitempty" configKey:"size"`
-	Interval *time.Duration     `json:"interval,omitempty" configKey:"interval"`
+	Interval *duration.Duration `json:"interval,omitempty" configKey:"interval"`
 }
 
 // With copies values from the UploadTriggerPatch, if any.

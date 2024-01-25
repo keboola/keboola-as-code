@@ -52,7 +52,7 @@ func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statisti
 
 	// Periodically invalidates the cache.
 	c.wg.Add(1)
-	ticker := clk.Ticker(config.InvalidationInterval)
+	ticker := clk.Ticker(config.InvalidationInterval.Duration())
 	go func() {
 		defer c.wg.Done()
 		defer ticker.Stop()

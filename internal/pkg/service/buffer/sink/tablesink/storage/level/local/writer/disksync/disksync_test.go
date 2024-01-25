@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -1000,7 +1001,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 
 	// Wait for sync
 	syncer.AddWriteOp(tc.Config.CountTrigger)
-	tc.Clock.Add(tc.Config.CheckInterval)
+	tc.Clock.Add(tc.Config.CheckInterval.Duration())
 	wg.Wait()
 
 	// Check output
@@ -1057,7 +1058,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	}
 
 	// Wait for sync
-	tc.Clock.Add(tc.Config.IntervalTrigger)
+	tc.Clock.Add(tc.Config.IntervalTrigger.Duration())
 	wg.Wait()
 
 	// Check output
@@ -1128,7 +1129,7 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	}()
 
 	// Wait for sync
-	tc.Clock.Add(tc.Config.CheckInterval)
+	tc.Clock.Add(tc.Config.CheckInterval.Duration())
 	wg.Wait()
 
 	// Check output
@@ -1221,10 +1222,10 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 	config := Config{
 		Mode:            ModeDisk,
 		Wait:            true,
-		CheckInterval:   1 * time.Millisecond,
+		CheckInterval:   duration.From(1 * time.Millisecond),
 		CountTrigger:    100,
 		BytesTrigger:    128 * datasize.KB,
-		IntervalTrigger: 10 * time.Millisecond,
+		IntervalTrigger: duration.From(10 * time.Millisecond),
 	}
 	val := validator.New()
 	require.NoError(tb, val.Validate(ctx, config))

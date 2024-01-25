@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test/benchmark"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 const (
@@ -217,10 +218,10 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 		Sync: disksync.Config{
 			Mode:            disksync.ModeDisk,
 			Wait:            true,
-			CheckInterval:   5 * time.Millisecond,
+			CheckInterval:   duration.From(5 * time.Millisecond),
 			CountTrigger:    500,
 			BytesTrigger:    1 * datasize.MB,
-			IntervalTrigger: 50 * time.Millisecond,
+			IntervalTrigger: duration.From(50 * time.Millisecond),
 		},
 		Compression: compression.NewNoneConfig(),
 		DataChFactory: func(ctx context.Context, n int, g *benchmark.RandomStringGenerator) <-chan []any {

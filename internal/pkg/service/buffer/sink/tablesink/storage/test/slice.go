@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -53,10 +54,10 @@ func NewSliceOpenedAt(openedAt string) *storage.Slice {
 			DiskSync: disksync.Config{
 				Mode:            disksync.ModeDisk,
 				Wait:            true,
-				CheckInterval:   1 * time.Millisecond,
+				CheckInterval:   duration.From(1 * time.Millisecond),
 				CountTrigger:    500,
 				BytesTrigger:    1 * datasize.MB,
-				IntervalTrigger: 50 * time.Millisecond,
+				IntervalTrigger: duration.From(50 * time.Millisecond),
 			},
 		},
 		StagingStorage: staging.Slice{

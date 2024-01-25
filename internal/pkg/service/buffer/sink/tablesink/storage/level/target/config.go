@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 // Config configures the target storage.
@@ -20,11 +22,11 @@ type ConfigPatch struct {
 func NewConfig() Config {
 	return Config{
 		Import: ImportConfig{
-			MinInterval: 1 * time.Minute,
+			MinInterval: duration.From(1 * time.Minute),
 			Trigger: ImportTrigger{
 				Count:    50000,
 				Size:     5 * datasize.MB,
-				Interval: 5 * time.Minute,
+				Interval: duration.From(5 * time.Minute),
 			},
 		},
 	}
@@ -42,8 +44,8 @@ func (c Config) With(v ConfigPatch) Config {
 
 // ImportConfig configures the file import.
 type ImportConfig struct {
-	MinInterval time.Duration `configKey:"minInterval" configUsage:"Minimal interval between imports." validate:"required,minDuration=30s,maxDuration=30m"`
-	Trigger     ImportTrigger `configKey:"trigger"`
+	MinInterval duration.Duration `configKey:"minInterval" configUsage:"Minimal interval between imports." validate:"required,minDuration=30s,maxDuration=30m"`
+	Trigger     ImportTrigger     `configKey:"trigger"`
 }
 
 // ImportConfigPatch is same as the ImportConfig, but with optional/nullable fields.
@@ -66,7 +68,7 @@ func (c ImportConfig) With(v ImportConfigPatch) ImportConfig {
 type ImportTrigger struct {
 	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count." validate:"required,min=1,max=10000000"`
 	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size." validate:"required,minBytes=100B,maxBytes=500MB"`
-	Interval time.Duration     `json:"interval" configKey:"interval" configUsage:"Duration from the last import." validate:"required,minDuration=60s,maxDuration=24h"`
+	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import." validate:"required,minDuration=60s,maxDuration=24h"`
 }
 
 // ImportTriggerPatch is same as the ImportTrigger, but with optional/nullable fields.
@@ -74,7 +76,7 @@ type ImportTrigger struct {
 type ImportTriggerPatch struct {
 	Count    *uint64            `json:"count,omitempty" configKey:"count"`
 	Size     *datasize.ByteSize `json:"size,omitempty" configKey:"size"`
-	Interval *time.Duration     `json:"interval,omitempty" configKey:"interval"`
+	Interval *duration.Duration `json:"interval,omitempty" configKey:"interval"`
 }
 
 // With copies values from the ImportTriggerPatch, if any.

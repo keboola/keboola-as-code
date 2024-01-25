@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 const (
@@ -42,7 +44,7 @@ type Config struct {
 	Wait bool `json:"wait" configKey:"wait" configUsage:"Wait for sync to disk OS cache or to disk hardware, depending on the mode."`
 	// CheckInterval defines how often BytesTrigger and IntervalTrigger will be checked.
 	// It is minimal interval between two syncs.
-	CheckInterval time.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs."`
+	CheckInterval duration.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs."`
 	// CountTrigger defines the writes count after the sync will be triggered.
 	// The number is count of the high-level writers, e.g., one table row = one write operation.
 	CountTrigger uint `json:"countTrigger,omitempty" configKey:"countTrigger" validate:"max=1000000,required_if=Mode disk,required_if=Mode cache" configUsage:"Written records count to trigger sync."`
@@ -50,7 +52,7 @@ type Config struct {
 	// Bytes are measured at the beginning of the writers chain.
 	BytesTrigger datasize.ByteSize `json:"bytesTrigger,omitempty" configKey:"bytesTrigger" validate:"maxBytes=100MB,required_if=Mode disk,required_if=Mode cache" configUsage:"Written size to trigger sync."`
 	// IntervalTrigger defines the interval from the last sync after the sync will be triggered.
-	IntervalTrigger time.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync to trigger sync."`
+	IntervalTrigger duration.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync to trigger sync."`
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.
@@ -58,10 +60,10 @@ type Config struct {
 type ConfigPatch struct {
 	Mode            *Mode              `json:"mode,omitempty"`
 	Wait            *bool              `json:"wait,omitempty"`
-	CheckInterval   *time.Duration     `json:"checkInterval,omitempty"`
+	CheckInterval   *duration.Duration `json:"checkInterval,omitempty"`
 	CountTrigger    *uint              `json:"countTrigger,omitempty"`
 	BytesTrigger    *datasize.ByteSize `json:"bytesTrigger,omitempty"`
-	IntervalTrigger *time.Duration     `json:"intervalTrigger,omitempty"`
+	IntervalTrigger *duration.Duration `json:"intervalTrigger,omitempty"`
 }
 
 // NewConfig provides default configuration.
@@ -69,10 +71,10 @@ func NewConfig() Config {
 	return Config{
 		Mode:            ModeDisk,
 		Wait:            true,
-		CheckInterval:   5 * time.Millisecond,
+		CheckInterval:   duration.From(5 * time.Millisecond),
 		CountTrigger:    500,
 		BytesTrigger:    1 * datasize.MB,
-		IntervalTrigger: 50 * time.Millisecond,
+		IntervalTrigger: duration.From(50 * time.Millisecond),
 	}
 }
 

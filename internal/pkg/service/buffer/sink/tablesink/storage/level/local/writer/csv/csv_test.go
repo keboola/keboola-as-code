@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/test/testcase"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -133,8 +134,8 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	slice.LocalStorage.DiskSync.Wait = true
 	// prevent sync during the test
-	slice.LocalStorage.DiskSync.CheckInterval = 2 * time.Second
-	slice.LocalStorage.DiskSync.IntervalTrigger = 2 * time.Second
+	slice.LocalStorage.DiskSync.CheckInterval = duration.From(2 * time.Second)
+	slice.LocalStorage.DiskSync.IntervalTrigger = duration.From(2 * time.Second)
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 
@@ -288,19 +289,19 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 		syncConfig = disksync.Config{
 			Mode:            disksync.ModeDisk,
 			Wait:            syncWait,
-			CheckInterval:   5 * time.Millisecond,
+			CheckInterval:   duration.From(5 * time.Millisecond),
 			CountTrigger:    5000,
 			BytesTrigger:    1 * datasize.MB,
-			IntervalTrigger: intervalTrigger,
+			IntervalTrigger: duration.From(intervalTrigger),
 		}
 	case disksync.ModeCache:
 		syncConfig = disksync.Config{
 			Mode:            disksync.ModeCache,
 			Wait:            syncWait,
-			CheckInterval:   5 * time.Millisecond,
+			CheckInterval:   duration.From(5 * time.Millisecond),
 			CountTrigger:    5000,
 			BytesTrigger:    1 * datasize.MB,
-			IntervalTrigger: intervalTrigger,
+			IntervalTrigger: duration.From(intervalTrigger),
 		}
 	default:
 		panic(errors.Errorf(`unexpected mode "%v"`, syncMode))

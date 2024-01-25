@@ -89,7 +89,7 @@ func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, 
 
 	// Periodically collect statistics and sync them to the database
 	c.wg.Add(1)
-	ticker := clk.Ticker(c.config.SyncInterval)
+	ticker := clk.Ticker(c.config.SyncInterval.Duration())
 	go func() {
 		defer c.wg.Done()
 		defer ticker.Stop()
@@ -130,7 +130,7 @@ func (c *Collector) sync(filter *storage.SliceKey) error {
 	c.syncLock.Lock()
 	defer c.syncLock.Unlock()
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.config.SyncTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.config.SyncTimeout.Duration())
 	defer cancel()
 
 	// Collect statistics
