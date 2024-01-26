@@ -16,7 +16,7 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	mocked := dependencies.NewMocked(t, opts...)
 
 	var err error
-	cfg.PublicAddress, err = url.Parse("https://appproxy.keboola.local")
+	cfg.PublicAddress, err = url.Parse("https://data-apps.keboola.local")
 	require.NoError(t, err)
 
 	// Validate config
