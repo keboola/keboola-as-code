@@ -8,12 +8,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type OnField func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool)
+
+type OnValue func(vc *VisitContext) error
+
 type VisitConfig struct {
 	// OnField maps field to a custom field name, for example from a tag.
 	// If ok == false, then the field is ignored.
-	OnField func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool)
+	OnField OnField
 	// OnValue is called on each field
-	OnValue func(vc *VisitContext) error
+	OnValue OnValue
 }
 
 type VisitContext struct {
