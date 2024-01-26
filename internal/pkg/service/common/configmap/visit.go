@@ -57,6 +57,13 @@ func Visit(value reflect.Value, cfg VisitConfig) error {
 	return doVisit(vc, cfg)
 }
 
+// MustVisit is similar to the Visit method, but no error is expected.
+func MustVisit(value reflect.Value, cfg VisitConfig) {
+	if err := Visit(value, cfg); err != nil {
+		panic(errors.New("no error expected"))
+	}
+}
+
 func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	onLeaf := func(primitiveValue reflect.Value) error {
 		vc.PrimitiveValue = primitiveValue
