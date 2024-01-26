@@ -1,11 +1,15 @@
-package httpserver
+package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/propagation"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -17,34 +21,10 @@ const (
 	gracefulShutdownTimeout = 30 * time.Second
 )
 
-type dependencies interface {
-	Logger() log.Logger
-	Process() *servicectx.Process
-	Telemetry() telemetry.Telemetry
-}
+func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
+	logger, tel, cfg := d.Logger(), d.Telemetry(), d.Config()
 
-// Start HTTP server.
-func Start(ctx context.Context, d dependencies, cfg Config) error {
-	logger, tel := d.Logger(), d.Telemetry()
-
-	// Create server components
-	com := newComponents(cfg, logger)
-
-	// Register middlewares
-	middlewareCfg := middleware.NewConfig(cfg.MiddlewareOptions...)
-	com.Muxer.Use(middleware.OpenTelemetryExtractRoute())
-	handler := middleware.Wrap(
-		com.Muxer,
-		middleware.ContextTimout(requestTimeout),
-		middleware.RequestInfo(),
-		middleware.Filter(middlewareCfg),
-		middleware.Logger(logger),
-		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
-		middleware.OpenTelemetryApdex(tel.MeterProvider()),
-	)
-	// Mount endpoints
-	cfg.Mount(com)
-	logger.Infof(ctx, "mounted HTTP endpoints")
+	handler := newHandler(logger, tel)
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
@@ -71,4 +51,29 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	})
 
 	return nil
+}
+
+func newHandler(logger log.Logger, tel telemetry.Telemetry) http.Handler {
+	router := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "OK")
+	})
+
+	middlewareCfg := middleware.NewConfig(
+		middleware.WithPropagators(propagation.TraceContext{}),
+		// Ignore health checks
+		middleware.WithFilter(func(req *http.Request) bool {
+			return req.URL.Path != "/health-check"
+		}),
+	)
+
+	handler := middleware.Wrap(
+		router,
+		middleware.ContextTimout(requestTimeout),
+		middleware.RequestInfo(),
+		middleware.Filter(middlewareCfg),
+		middleware.Logger(logger),
+		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
+	)
+
+	return handler
 }

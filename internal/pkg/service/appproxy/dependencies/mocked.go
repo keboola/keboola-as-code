@@ -22,9 +22,9 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	// Validate config
 	require.NoError(t, cfg.Validate())
 
-	apiScp, err := newServiceScope(mocked.TestContext(), mocked, cfg)
+	scope, err := newServiceScope(mocked.TestContext(), mocked, cfg)
 	require.NoError(t, err)
 
 	mocked.DebugLogger().Truncate()
-	return apiScp, mocked
+	return scope, mocked
 }

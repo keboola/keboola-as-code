@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/urfave/negroni"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -34,6 +36,35 @@ type apdexThreshold struct {
 	sum         metric.Float64Counter
 	satisfiedMs float64
 	toleratedMs float64
+}
+
+func OpenTelemetryApdex(mp metric.MeterProvider) Middleware {
+	meter := mp.Meter("otel-middleware")
+	apdex := newApdexCounter(meter, []time.Duration{
+		500 * time.Millisecond,
+		1000 * time.Millisecond,
+		2000 * time.Millisecond,
+	})
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if isTelemetryDisabled(req) {
+				next.ServeHTTP(w, req)
+				return
+			}
+
+			// Process request
+			startTime := time.Now()
+			rw := negroni.NewResponseWriter(w)
+			next.ServeHTTP(rw, req)
+
+			// Record apdex metric
+			ctx := req.Context()
+			labeler, _ := otelhttp.LabelerFromContext(ctx)
+			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
+			apdex.Add(ctx, req.Method, rw.Status(), elapsedTime, metric.WithAttributes(labeler.Get()...))
+		})
+	}
 }
 
 func newApdexCounter(meter metric.Meter, thresholds []time.Duration) *apdexCounter {

@@ -32,6 +32,7 @@ import (
 // The container exists during the entire run of the App Proxy server.
 type ServiceScope interface {
 	dependencies.BaseScope
+	Config() config.Config
 }
 
 const (
