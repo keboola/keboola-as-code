@@ -1,0 +1,134 @@
+package configpatch
+
+import (
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+)
+
+// BindKV is input of the bind operation for a one configuration key.
+type BindKV struct {
+	// KeyPath is a configuration key, parts are joined with a dot "." separator.
+	KeyPath string `json:"key"`
+	// Value is a patched value of the configuration key.
+	Value any `json:"value"`
+}
+
+// BindKVs binds flattened key-value pairs from a client request to a patch structure.
+// Patch structure is modified in place.
+func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
+	cfg := newConfig(opts)
+
+	rootPtr := reflect.ValueOf(patchStruct)
+	if rootPtr.Kind() != reflect.Pointer || rootPtr.IsNil() || rootPtr.Elem().Kind() != reflect.Struct {
+		panic(errors.Errorf(`patch struct must be a pointer to a struct, found "%T"`, patchStruct))
+	}
+
+	// Convert KVs slice to a map
+	patchedValues := make(map[string]reflect.Value)
+	for _, kv := range kvs {
+		if _, found := patchedValues[kv.KeyPath]; found {
+			return errors.Errorf(`key "%s" is defined multiple times`, kv.KeyPath)
+		}
+		patchedValues[kv.KeyPath] = reflect.ValueOf(kv.Value)
+	}
+
+	// Visit patch, set patched values
+	errs := errors.NewMultiError()
+	configmap.MustVisit(
+		rootPtr,
+		configmap.VisitConfig{
+			InitNilPtr: true, // pointer to empty structs are later cleared in the AfterValue
+			OnField:    matchTaggedFields(cfg.nameTags),
+			OnValue: func(vc *configmap.VisitContext) error {
+				// Process only leaf values with a field name
+				if !vc.Leaf || vc.MappedPath.Last().String() == "" {
+					return nil
+				}
+
+				// Patch field must be a pointer
+				keyPath := vc.MappedPath.String()
+				if vc.Type.Kind() != reflect.Pointer {
+					errs.Append(errors.Errorf(`patch field "%s" is not a pointer, but "%s"`, keyPath, vc.Type))
+					return nil
+				}
+				if !vc.Value.IsValid() || vc.Value.IsNil() {
+					errs.Append(errors.Errorf(`patch field "%s" is not initialized`, keyPath))
+					return nil
+				}
+
+				// Get patched value, if any
+				value, ok := patchedValues[keyPath]
+				if ok {
+					// Deleted the map key, so "not found" keys can be processed bellow
+					delete(patchedValues, keyPath)
+				} else {
+					// The key is not patched, set nil
+					vc.Value.Set(reflect.Zero(vc.Type))
+					return nil
+				}
+
+				// Handle string
+				if str, ok := value.Interface().(string); ok {
+					err := configmap.UnmarshalText([]byte(str), vc.Value)
+					switch {
+					case errors.As(err, &configmap.NoTextTypeError{}):
+						// continue, no unmarshaler found
+					case err != nil:
+						// unmarshaler found, but an error occurred
+						var convErr *strconv.NumError
+						if errors.As(err, &convErr) {
+							strShort := strhelper.Truncate(str, 20, "…")
+							err = errors.Errorf(`invalid "%s" value "%s": %w`, vc.MappedPath.String(), strShort, convErr.Err)
+						} else {
+							err = errors.Errorf(`invalid "%s": %w`, vc.MappedPath.String(), err)
+						}
+						errs.Append(err)
+						return nil
+					default:
+						// ok, unmarshalling has been successful
+						return nil
+					}
+				}
+
+				// Try type conversion
+				actualType := value.Type()
+				expectedType := vc.Type.Elem()
+				if actualType.ConvertibleTo(expectedType) {
+					vc.Value.Elem().Set(value.Convert(expectedType))
+				} else {
+					errs.Append(errors.Errorf(`invalid "%s" value: found type "%s", expected "%s"`, keyPath, actualType, expectedType))
+				}
+				return nil
+			},
+			AfterValue: func(vc *configmap.VisitContext) error {
+				// Set nil, if the value is a pointer to an empty struct
+				if vc.Value.CanAddr() && vc.Value.Kind() == reflect.Pointer && vc.Value.Elem().Kind() == reflect.Struct && vc.Value.Elem().IsZero() {
+					// Set nil
+					vc.Value.Set(reflect.Zero(vc.Value.Type()))
+				}
+				return nil
+			},
+		},
+	)
+
+	// Check "not found" keys
+	if len(patchedValues) > 0 {
+		var notFound []string
+		for keyPath := range patchedValues {
+			notFound = append(notFound, keyPath)
+		}
+		sort.Strings(notFound)
+		errs.Append(errors.Errorf(
+			`key not found: "%s"`,
+			strhelper.Truncate(strings.Join(notFound, `", "`), 50, "…"),
+		))
+	}
+
+	return errs.ErrorOrNil()
+}
