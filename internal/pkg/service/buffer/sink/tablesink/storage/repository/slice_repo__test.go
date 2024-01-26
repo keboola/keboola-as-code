@@ -357,10 +357,10 @@ storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
     "diskSync": {
       "mode": "disk",
       "wait": false,
-      "checkInterval": 1000000,
+      "checkInterval": "1ms",
       "countTrigger": 100,
       "bytesTrigger": "100KB",
-      "intervalTrigger": 100000000
+      "intervalTrigger": "100ms"
     },
     "allocatedDiskSpace": "100MB"
   },

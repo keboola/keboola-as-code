@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 func TestConfig_With(t *testing.T) {
@@ -25,13 +26,13 @@ func TestConfig_With(t *testing.T) {
 		MaxSlicesPerFile: test.Ptr(123),
 		Upload: &staging.UploadConfigPatch{
 			Trigger: &staging.UploadTriggerPatch{
-				Interval: test.Ptr(456 * time.Millisecond),
+				Interval: test.Ptr(duration.From(456 * time.Millisecond)),
 			},
 		},
 	})
 	expectedCfg := defaultCfg
 	expectedCfg.MaxSlicesPerFile = 123
-	expectedCfg.Upload.Trigger.Interval = 456 * time.Millisecond
+	expectedCfg.Upload.Trigger.Interval = duration.From(456 * time.Millisecond)
 	assert.Equal(t, expectedCfg, patchedCfg)
 }
 
@@ -42,7 +43,7 @@ func TestConfig_Validation(t *testing.T) {
 	overMaximumCfg.Upload.Trigger = staging.UploadTrigger{
 		Count:    10000000 + 1,
 		Size:     datasize.MustParseString("50MB") + 1,
-		Interval: 30*time.Minute + 1,
+		Interval: duration.From(30*time.Minute + 1),
 	}
 
 	// Test cases

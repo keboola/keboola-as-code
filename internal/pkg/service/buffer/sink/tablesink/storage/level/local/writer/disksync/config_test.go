@@ -9,6 +9,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -49,10 +50,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
-				CheckInterval:   10 * time.Millisecond,
+				CheckInterval:   duration.From(10 * time.Millisecond),
 				CountTrigger:    100,
 				BytesTrigger:    100,
-				IntervalTrigger: 10 * time.Millisecond,
+				IntervalTrigger: duration.From(10 * time.Millisecond),
 			},
 		},
 		{
@@ -67,10 +68,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeCache,
 				Wait:            true,
-				CheckInterval:   10 * time.Millisecond,
+				CheckInterval:   duration.From(10 * time.Millisecond),
 				CountTrigger:    100,
 				BytesTrigger:    100,
-				IntervalTrigger: 10 * time.Millisecond,
+				IntervalTrigger: duration.From(10 * time.Millisecond),
 			},
 		},
 		{
@@ -79,10 +80,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
-				CheckInterval:   10 * time.Second,
+				CheckInterval:   duration.From(10 * time.Second),
 				CountTrigger:    100,
 				BytesTrigger:    100,
-				IntervalTrigger: 10 * time.Millisecond,
+				IntervalTrigger: duration.From(10 * time.Millisecond),
 			},
 		},
 		{
@@ -91,10 +92,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
-				CheckInterval:   10 * time.Millisecond,
+				CheckInterval:   duration.From(10 * time.Millisecond),
 				CountTrigger:    2000000,
 				BytesTrigger:    100,
-				IntervalTrigger: 10 * time.Millisecond,
+				IntervalTrigger: duration.From(10 * time.Millisecond),
 			},
 		},
 		{
@@ -103,10 +104,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
-				CheckInterval:   10 * time.Millisecond,
+				CheckInterval:   duration.From(10 * time.Millisecond),
 				CountTrigger:    100,
 				BytesTrigger:    1 * datasize.GB,
-				IntervalTrigger: 10 * time.Millisecond,
+				IntervalTrigger: duration.From(10 * time.Millisecond),
 			},
 		},
 		{
@@ -115,10 +116,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
-				CheckInterval:   10 * time.Millisecond,
+				CheckInterval:   duration.From(10 * time.Millisecond),
 				CountTrigger:    100,
 				BytesTrigger:    100,
-				IntervalTrigger: -10 * time.Millisecond,
+				IntervalTrigger: duration.From(-10 * time.Millisecond),
 			},
 		},
 		{
@@ -127,10 +128,10 @@ func TestConfig(t *testing.T) {
 			Config: Config{
 				Mode:            ModeDisk,
 				Wait:            true,
-				CheckInterval:   10 * time.Millisecond,
+				CheckInterval:   duration.From(10 * time.Millisecond),
 				CountTrigger:    100,
 				BytesTrigger:    100,
-				IntervalTrigger: 10 * time.Second,
+				IntervalTrigger: duration.From(10 * time.Second),
 			},
 		},
 	}

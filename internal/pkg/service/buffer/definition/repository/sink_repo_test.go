@@ -470,10 +470,10 @@ definition/sink/active/123/456/my-source-1/my-sink-1
           "diskSync": {
             "mode": "disk",
             "wait": false,
-            "checkInterval": 1000000,
+            "checkInterval": "1ms",
             "countTrigger": 100,
             "bytesTrigger": "100KB",
-            "intervalTrigger": 100000000
+            "intervalTrigger": "100ms"
           }
         }
       }

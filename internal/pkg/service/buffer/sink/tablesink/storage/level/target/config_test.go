@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 func TestConfig_With(t *testing.T) {
@@ -24,12 +25,12 @@ func TestConfig_With(t *testing.T) {
 	patchedCfg := defaultCfg.With(target.ConfigPatch{
 		Import: &target.ImportConfigPatch{
 			Trigger: &target.ImportTriggerPatch{
-				Interval: test.Ptr(456 * time.Millisecond),
+				Interval: test.Ptr(duration.From(456 * time.Millisecond)),
 			},
 		},
 	})
 	expectedCfg := defaultCfg
-	expectedCfg.Import.Trigger.Interval = 456 * time.Millisecond
+	expectedCfg.Import.Trigger.Interval = duration.From(456 * time.Millisecond)
 	assert.Equal(t, expectedCfg, patchedCfg)
 }
 
@@ -40,7 +41,7 @@ func TestConfig_Validation(t *testing.T) {
 	overMaximumCfg.Import.Trigger = target.ImportTrigger{
 		Count:    10000000 + 1,
 		Size:     datasize.MustParseString("500MB") + 1,
-		Interval: 24*time.Hour + 1,
+		Interval: duration.From(24*time.Hour + 1),
 	}
 
 	// Test cases

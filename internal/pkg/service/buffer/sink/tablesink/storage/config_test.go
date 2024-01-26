@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 func TestConfig_With(t *testing.T) {
@@ -60,7 +61,7 @@ func TestConfig_With(t *testing.T) {
 			Trigger: &staging.UploadTriggerPatch{
 				Count:    ptr(uint64(30000)),
 				Size:     ptr(4 * datasize.MB),
-				Interval: ptr(5 * time.Minute),
+				Interval: ptr(duration.From(5 * time.Minute)),
 			},
 		},
 	}
@@ -68,7 +69,7 @@ func TestConfig_With(t *testing.T) {
 	expectedCfg.Staging.Upload.Trigger = staging.UploadTrigger{
 		Count:    30000,
 		Size:     4 * datasize.MB,
-		Interval: 5 * time.Minute,
+		Interval: duration.From(5 * time.Minute),
 	}
 	// Compare
 	patchedConfig1 := defaultCfg.With(ConfigPatch{
@@ -83,10 +84,10 @@ func TestConfig_With(t *testing.T) {
 		DiskSync: &disksync.ConfigPatch{
 			Mode:            ptr(disksync.ModeCache),
 			Wait:            ptr(true),
-			CheckInterval:   ptr(10 * time.Millisecond),
+			CheckInterval:   ptr(duration.From(10 * time.Millisecond)),
 			CountTrigger:    ptr(uint(123)),
 			BytesTrigger:    ptr(1 * datasize.MB),
-			IntervalTrigger: ptr(100 * time.Millisecond),
+			IntervalTrigger: ptr(duration.From(100 * time.Millisecond)),
 		},
 		DiskAllocation: &diskalloc.ConfigPatch{
 			Enabled:     ptr(true),
@@ -97,10 +98,10 @@ func TestConfig_With(t *testing.T) {
 	expectedCfg.Local.DiskSync = disksync.Config{
 		Mode:            disksync.ModeCache,
 		Wait:            true,
-		CheckInterval:   10 * time.Millisecond,
+		CheckInterval:   duration.From(10 * time.Millisecond),
 		CountTrigger:    123,
 		BytesTrigger:    1 * datasize.MB,
-		IntervalTrigger: 100 * time.Millisecond,
+		IntervalTrigger: duration.From(100 * time.Millisecond),
 	}
 
 	expectedCfg.Local.DiskAllocation = diskalloc.Config{
@@ -113,14 +114,14 @@ func TestConfig_With(t *testing.T) {
 			Trigger: &target.ImportTriggerPatch{
 				Count:    ptr(uint64(60000)),
 				Size:     ptr(7 * datasize.MB),
-				Interval: ptr(8 * time.Minute),
+				Interval: ptr(duration.From(8 * time.Minute)),
 			},
 		},
 	}
 	expectedCfg.Target.Import.Trigger = target.ImportTrigger{
 		Count:    60000,
 		Size:     7 * datasize.MB,
-		Interval: 8 * time.Minute,
+		Interval: duration.From(8 * time.Minute),
 	}
 	// Compare
 	patchedConfig2 := patchedConfig1.With(ConfigPatch{

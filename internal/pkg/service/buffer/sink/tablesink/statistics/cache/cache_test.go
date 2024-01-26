@@ -383,7 +383,7 @@ func TestCaches(t *testing.T) {
 		tc.Assert(l1Cache)
 
 		// Invalidate L2
-		clk.Add(l2Config.InvalidationInterval)
+		clk.Add(l2Config.InvalidationInterval.Duration())
 		if expectedRevision > 0 {
 			assert.Eventually(t, func() bool {
 				return l2Cache.Revision() >= expectedRevision

@@ -362,10 +362,10 @@ storage/file/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z
     "diskSync": {
       "mode": "disk",
       "wait": true,
-      "checkInterval": 5000000,
+      "checkInterval": "5ms",
       "countTrigger": 500,
       "bytesTrigger": "1MB",
-      "intervalTrigger": 50000000
+      "intervalTrigger": "50ms"
     },
     "diskAllocation": {
       "enabled": true,

@@ -106,15 +106,15 @@ sink:
                 diskSync:
                     # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
                     mode: disk
-                    # Wait for sync to disk OS cache or to disk hardware, depending on the mode. Validation rules: excluded_if= Mode disabled
+                    # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
                     wait: true
-                    # Minimal interval between syncs. Validation rules: min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache
+                    # Minimal interval between syncs. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     checkInterval: 5ms
-                    # Written records count to trigger sync. Validation rules: max=1000000,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache
+                    # Written records count to trigger sync. Validation rules: max=1000000,required_if=Mode disk,required_if=Mode cache
                     countTrigger: 500
-                    # Written size to trigger sync. Validation rules: maxBytes=100MB,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache
+                    # Written size to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
                     bytesTrigger: 1MB
-                    # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,excluded_if=Mode disabled,required_if=Mode disk,required_if=Mode cache
+                    # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     intervalTrigger: 50ms
                 diskAllocation:
                     # Allocate disk space for each slice.

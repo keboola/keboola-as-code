@@ -74,10 +74,10 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 
 	// Check conditions
 	if config.Mode != ModeDisabled {
-		if config.CheckInterval <= 0 {
+		if config.CheckInterval.Duration() <= 0 {
 			panic(errors.New("checkInterval is not set"))
 		}
-		if config.IntervalTrigger <= 0 {
+		if config.IntervalTrigger.Duration() <= 0 {
 			panic(errors.New("intervalTrigger is not set"))
 		}
 		if config.BytesTrigger <= 0 {
@@ -274,7 +274,7 @@ func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
 }
 
 func (s *Syncer) syncLoop(ctx context.Context) {
-	ticker := s.clock.Ticker(s.config.CheckInterval)
+	ticker := s.clock.Ticker(s.config.CheckInterval.Duration())
 
 	s.wg.Add(1)
 	go func() {
@@ -291,7 +291,7 @@ func (s *Syncer) syncLoop(ctx context.Context) {
 				if count := s.writeOpsCount.Load(); count > 0 {
 					countTrigger := count >= uint64(s.config.CountTrigger)
 					bytesTrigger := datasize.ByteSize(s.bytesToSync.Load()) >= s.config.BytesTrigger
-					intervalTrigger := s.clock.Now().Sub(s.lastSyncAt.Load()) >= s.config.IntervalTrigger
+					intervalTrigger := s.clock.Now().Sub(s.lastSyncAt.Load()) >= s.config.IntervalTrigger.Duration()
 					if countTrigger || bytesTrigger || intervalTrigger {
 						s.TriggerSync(ctx, false)
 					}
