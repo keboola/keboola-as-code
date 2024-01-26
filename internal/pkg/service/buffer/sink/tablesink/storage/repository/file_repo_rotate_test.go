@@ -73,7 +73,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
-		sink.Table.Storage = sinkStorageConfig(2, []string{"default"})
+		sink.Table.Config.Storage = sinkStorageConfig(2, []string{"default"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
@@ -362,7 +362,7 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
-		sink.Table.Storage = sinkStorageConfig(1, []string{"default"})
+		sink.Table.Config.Storage = sinkStorageConfig(1, []string{"default"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}

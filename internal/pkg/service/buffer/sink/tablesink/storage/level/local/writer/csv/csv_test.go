@@ -187,11 +187,11 @@ func TestCSVWriter(t *testing.T) {
 	compressions := []fileCompression{
 		{
 			Name:   "none",
-			Config: compression.DefaultNoneConfig(),
+			Config: compression.NewNoneConfig(),
 		},
 		{
 			Name:   "gzip",
-			Config: compression.DefaultGZIPConfig(),
+			Config: compression.NewGZIPConfig(),
 			FileDecoder: func(t *testing.T, r io.Reader) io.Reader {
 				t.Helper()
 				r, err := gzip.NewReader(r)
@@ -201,7 +201,7 @@ func TestCSVWriter(t *testing.T) {
 		},
 		{
 			Name:   "zstd",
-			Config: compression.DefaultZSTDConfig(),
+			Config: compression.NewZSTDConfig(),
 			FileDecoder: func(t *testing.T, r io.Reader) io.Reader {
 				t.Helper()
 				r, err := zstd.NewReader(r)

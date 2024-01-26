@@ -14,6 +14,14 @@ type Config struct {
 	SizePercent int `json:"sizePercent" configKey:"sizePercent" validate:"min=100,max=500" configUsage:"Allocate disk space as % from the previous slice size."`
 }
 
+// ConfigPatch is same as the Config, but with optional/nullable fields.
+// It is part of the definition.TableSink structure to allow modification of the default configuration.
+type ConfigPatch struct {
+	Enabled     *bool              `json:"enabled,omitempty"`
+	Size        *datasize.ByteSize `json:"size,omitempty"`
+	SizePercent *int               `json:"sizePercent,omitempty"`
+}
+
 // NewConfig provides default configuration.
 func NewConfig() Config {
 	return Config{
@@ -21,6 +29,20 @@ func NewConfig() Config {
 		SizePercent: 110,
 		Size:        100 * datasize.MB,
 	}
+}
+
+// With copies values from the ConfigPatch, if any.
+func (c Config) With(v ConfigPatch) Config {
+	if v.Enabled != nil {
+		c.Enabled = *v.Enabled
+	}
+	if v.Size != nil {
+		c.Size = *v.Size
+	}
+	if v.SizePercent != nil {
+		c.SizePercent = *v.SizePercent
+	}
+	return c
 }
 
 func (c Config) ForNextSlice(prevSliceSize datasize.ByteSize) datasize.ByteSize {

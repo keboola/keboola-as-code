@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -48,10 +49,10 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 			},
 		},
 	}
-	cfg := storage.NewConfig()
+	cfg := tablesink.NewConfig()
 
 	// Set unsupported compression type
-	cfg.Local.Compression.Type = compression.TypeZSTD
+	cfg.Storage.Local.Compression.Type = compression.TypeZSTD
 
 	// Assert
 	_, err := newFile(cfg, FileResource{FileKey: fileKey, Credentials: credentials}, sink)

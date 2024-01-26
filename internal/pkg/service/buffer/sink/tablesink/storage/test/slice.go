@@ -49,7 +49,7 @@ func NewSliceOpenedAt(openedAt string) *storage.Slice {
 			Dir:                openedAt,
 			Filename:           "slice.csv",
 			AllocatedDiskSpace: 10 * datasize.KB,
-			Compression:        compression.DefaultNoneConfig(),
+			Compression:        compression.NewNoneConfig(),
 			DiskSync: disksync.Config{
 				Mode:            disksync.ModeDisk,
 				Wait:            true,
@@ -61,7 +61,7 @@ func NewSliceOpenedAt(openedAt string) *storage.Slice {
 		},
 		StagingStorage: staging.Slice{
 			Path:        "slice.csv",
-			Compression: compression.DefaultNoneConfig(),
+			Compression: compression.NewNoneConfig(),
 		},
 	}
 }
