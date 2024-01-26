@@ -10,6 +10,8 @@ env:
   TEST_PROJECTS_LINUX: |
     [
       {"host":"connection.keboola.com","project":8763,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}"},  
+      {"host":"connection.europe-west3.gcp.keboola.com","project":35,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_35_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":36,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_36_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10889,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10889_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10911,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10911_TOKEN }}"}
     ]
@@ -17,6 +19,8 @@ env:
     [
       {"host":"connection.keboola.com","project":8770,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }}"},
       {"host":"connection.keboola.com","project":9432,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9432_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":37,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_37_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":38,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_38_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10895,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10895_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10912,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10912_TOKEN }}"}
     ]
@@ -26,6 +30,8 @@ env:
       {"host":"connection.keboola.com","project":9433,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9433_TOKEN }}"},
       {"host":"connection.keboola.com","project":9431,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9431_TOKEN }}"},
       {"host":"connection.keboola.com","project":8781,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":39,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_39_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":40,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_40_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10901,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10901_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10913,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10913_TOKEN }}"}
     ]
