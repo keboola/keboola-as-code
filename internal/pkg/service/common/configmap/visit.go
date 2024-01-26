@@ -12,12 +12,16 @@ type OnField func(field reflect.StructField, path orderedmap.Path) (fieldName st
 
 type OnValue func(vc *VisitContext) error
 
+type AfterValue func(vc *VisitContext) error
+
 type VisitConfig struct {
 	// OnField maps field to a custom field name, for example from a tag.
 	// If ok == false, then the field is ignored.
 	OnField OnField
 	// OnValue is called on each field
 	OnValue OnValue
+	// AfterValue is called after all nested fields are processed, if any. Can be nil.
+	AfterValue AfterValue
 }
 
 type VisitContext struct {
@@ -130,6 +134,13 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 
 			// Step down
 			if err := doVisit(field, cfg); err != nil {
+				return err
+			}
+		}
+
+		// Call AfterValue callback
+		if cfg.AfterValue != nil {
+			if err := cfg.AfterValue(vc); err != nil {
 				return err
 			}
 		}
