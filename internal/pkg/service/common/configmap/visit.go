@@ -15,6 +15,8 @@ type OnValue func(vc *VisitContext) error
 type AfterValue func(vc *VisitContext) error
 
 type VisitConfig struct {
+	// InitNilPtr initializes each found nil pointer with an empty struct.
+	InitNilPtr bool
 	// OnField maps field to a custom field name, for example from a tag.
 	// If ok == false, then the field is ignored.
 	OnField OnField
@@ -112,10 +114,18 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 			field.MappedPath = vc.MappedPath
 			field.Type = field.StructField.Type
 			field.Leaf = false
+
+			// Get field value, if the parent struct is valid/defined.
 			if value.IsValid() {
+				// Get field value
 				fv := value.Field(i)
 				field.Value = fv
 				field.PrimitiveValue = fv
+
+				// Initialize nil pointer with an empty struct. It is used by the configpatch.BindKVs.
+				if cfg.InitNilPtr && fv.Kind() == reflect.Pointer && fv.IsNil() {
+					fv.Set(reflect.New(field.Type.Elem()))
+				}
 			}
 
 			// Mark field and all its children as sensitive according to the tag
