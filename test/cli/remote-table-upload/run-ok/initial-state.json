@@ -1,4 +1,7 @@
 {
+  "backend": {
+    "type": "snowflake"
+  },
   "branches": [
     {
       "branch": {
