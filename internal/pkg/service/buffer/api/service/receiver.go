@@ -84,7 +84,6 @@ func (s *service) UpdateReceiver(ctx context.Context, d dependencies.ProjectRequ
 	err = d.Store().UpdateReceiver(ctx, receiverKey, func(receiver model.ReceiverBase) (model.ReceiverBase, error) {
 		return s.mapper.UpdateReceiverModel(receiver, *payload)
 	})
-
 	if err != nil {
 		return nil, err
 	}
