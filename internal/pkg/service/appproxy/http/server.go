@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -21,10 +20,10 @@ const (
 	gracefulShutdownTimeout = 30 * time.Second
 )
 
-func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
+func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.Handler) error {
 	logger, tel, cfg := d.Logger(), d.Telemetry(), d.Config()
 
-	handler := newHandler(logger, tel)
+	handler := newHandler(logger, tel, router)
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
@@ -53,11 +52,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
 	return nil
 }
 
-func newHandler(logger log.Logger, tel telemetry.Telemetry) http.Handler {
-	router := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "OK")
-	})
-
+func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler) http.Handler {
 	middlewareCfg := middleware.NewConfig(
 		middleware.WithPropagators(propagation.TraceContext{}),
 		// Ignore health checks

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +21,13 @@ func TestAppProxyHandler(t *testing.T) {
 	d, mocked := proxyDependencies.NewMockedServiceScope(t, config.NewConfig())
 
 	// Create dummy handler
-	handler := newHandler(d.Logger(), d.Telemetry())
+	handler := newHandler(
+		d.Logger(),
+		d.Telemetry(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, "OK")
+		}),
+	)
 
 	// Send logged request
 	rec := httptest.NewRecorder()
