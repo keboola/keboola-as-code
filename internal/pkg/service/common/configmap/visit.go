@@ -1,12 +1,11 @@
 package configmap
 
 import (
-	"encoding"
-	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type VisitConfig struct {
@@ -57,59 +56,32 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 		return cfg.OnValue(vc)
 	}
 
-	// Try if the value implements a marshaler
-	typ := vc.Type
-	value := vc.Value
-	if !value.IsValid() {
-		// Invalid means that some parent pointer is nil, use an empty value instead
-		value = reflect.New(vc.Type).Elem()
-	}
-	if value.Kind() != reflect.Pointer {
-		// Convert type to a pointer, marshal methods may use pointers in method receivers
-		ptr := reflect.New(vc.Type)
-		ptr.Elem().Set(value)
-		typ = ptr.Type()
-		value = ptr
-	}
-	if !vc.Value.IsValid() || value.IsNil() {
-		// The type implements a marshal methods, but the value is nil, use empty string as the value.
-		switch value.Interface().(type) {
-		case fmt.Stringer, json.Marshaler, encoding.TextMarshaler, encoding.BinaryMarshaler:
-			return onLeaf(reflect.ValueOf(""))
-		}
-	} else {
-		// Marshal value to a string
-		switch v := value.Interface().(type) {
-		case fmt.Stringer:
-			return onLeaf(reflect.ValueOf(v.String()))
-		case json.Marshaler:
-			bytes, err := v.MarshalJSON()
-			if err != nil {
-				return err
-			}
-			return onLeaf(reflect.ValueOf(string(bytes)))
-		case encoding.TextMarshaler:
-			bytes, err := v.MarshalText()
-			if err != nil {
-				return err
-			}
-			return onLeaf(reflect.ValueOf(string(bytes)))
-		case encoding.BinaryMarshaler:
-			bytes, err := v.MarshalBinary()
-			if err != nil {
-				return err
-			}
-			return onLeaf(reflect.ValueOf(string(bytes)))
-		}
+	// Handle text
+	text, err := MarshaText(vc.Type, vc.Value)
+	switch {
+	case errors.As(err, &NoTextTypeError{}):
+		// continue, no marshaller found
+	case err != nil:
+		// marshaller found, but an error occurred
+		return err
+	default:
+		// ok
+		return onLeaf(reflect.ValueOf(string(text)))
 	}
 
 	// Dereference pointer, if any
+	typ := vc.Type
+	value := vc.Value
 	if typ.Kind() == reflect.Pointer {
-		value = value.Elem()
+		if value.IsValid() {
+			value = value.Elem()
+		} else {
+			value = reflect.Zero(typ.Elem())
+		}
 		typ = typ.Elem()
 	}
 
-	// Try structure type
+	// Handle structure
 	if typ.Kind() == reflect.Struct {
 		// Call callback
 		if err := cfg.OnValue(vc); err != nil {
@@ -161,7 +133,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 		return nil
 	}
 
-	// Try base types
+	// Handle base types
 	switch value.Kind() {
 	case reflect.Int:
 		return onLeaf(reflect.ValueOf(int(value.Int())))
