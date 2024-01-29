@@ -11,6 +11,8 @@ env:
     [
       {"host":"connection.keboola.com","project":8768,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8768_TOKEN }}"},
       {"host":"connection.keboola.com","project":8776,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8776_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":41,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_41_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":42,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_42_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10899,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10899_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10905,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10905_TOKEN }}"}
     ]
