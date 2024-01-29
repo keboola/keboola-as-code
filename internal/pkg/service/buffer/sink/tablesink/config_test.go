@@ -247,3 +247,55 @@ func TestConfig_ToKVs(t *testing.T) {
 ]
 `), strings.TrimSpace(json.MustEncodeString(kvs, true)))
 }
+
+func TestConfig_BindKVs_Ok(t *testing.T) {
+	t.Parallel()
+
+	patch := tablesink.ConfigPatch{}
+	require.NoError(t, configpatch.BindKVs(&patch, []configpatch.BindKV{
+		{
+			KeyPath: "storage.local.diskAllocation.size",
+			Value:   "456MB",
+		},
+	}))
+
+	assert.Equal(t, tablesink.ConfigPatch{
+		Storage: &storage.ConfigPatch{
+			Local: &local.ConfigPatch{
+				DiskAllocation: &diskalloc.ConfigPatch{
+					Size: test.Ptr(456 * datasize.MB),
+				},
+			},
+		},
+	}, patch)
+}
+
+func TestConfig_BindKVs_InvalidType(t *testing.T) {
+	t.Parallel()
+
+	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.BindKV{
+		{
+			KeyPath: "storage.local.compression.gzip.level",
+			Value:   "foo",
+		},
+	})
+
+	if assert.Error(t, err) {
+		assert.Equal(t, `invalid "storage.local.compression.gzip.level" value: found type "string", expected "int"`, err.Error())
+	}
+}
+
+func TestConfig_BindKVs_InvalidValue(t *testing.T) {
+	t.Parallel()
+
+	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.BindKV{
+		{
+			KeyPath: "storage.local.diskAllocation.size",
+			Value:   "foo",
+		},
+	})
+
+	if assert.Error(t, err) {
+		assert.Equal(t, `invalid "storage.local.diskAllocation.size" value "foo": invalid syntax`, err.Error())
+	}
+}
