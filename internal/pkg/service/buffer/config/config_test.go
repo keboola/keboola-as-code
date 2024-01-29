@@ -98,7 +98,7 @@ sink:
                         concurrency: 0
                     zstd:
                         # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
-                        level: fastest
+                        level: 1
                         # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
                         windowSize: 1MB
                         # ZSTD concurrency, 0 = auto

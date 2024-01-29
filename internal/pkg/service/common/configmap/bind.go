@@ -2,14 +2,12 @@ package configmap
 
 import (
 	"context"
-	"encoding"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/mitchellh/mapstructure"
@@ -344,51 +342,26 @@ func unmarshalHook(hooks *mapstructure.DecodeHookFunc) mapstructure.DecodeHookFu
 			}
 		}
 
-		// Map string to a type
+		// Handle text
 		if from.Kind() == reflect.String {
 			str, ok := from.Interface().(string)
 			if !ok {
+				// value is not string
 				return nil, errors.Errorf(`expected string, got "%s"`, from.String())
 			}
 
-			// Handle empty string as nil pointer
-			if str == "" && to.Kind() == reflect.Pointer {
+			err := UnmarshalText([]byte(str), to)
+			switch {
+			case errors.As(err, &NoTextTypeError{}):
+				// continue, no unmarshaler found
+			case err != nil:
+				// unmarshaler found, but an error occurred
+				return nil, err
+			case to.Kind() == reflect.Pointer && to.IsNil():
+				// left the field nil, mapstructure library requires any(nil) in this case
 				return nil, nil
-			}
-
-			// Get pointer to the value, unmarshal method may be defined on the pointer
-			var toPtr reflect.Value
-			if to.Kind() == reflect.Pointer {
-				to = reflect.New(to.Type().Elem())
-				toPtr = to
-			} else {
-				toPtr = to.Addr()
-			}
-
-			// Unmarshal string by an unmarshaler
-			switch v := toPtr.Interface().(type) {
-			case *time.Duration:
-				if str != "" {
-					var err error
-					if *v, err = time.ParseDuration(str); err != nil {
-						return nil, err
-					}
-				}
-				return to.Interface(), nil
-			case encoding.TextUnmarshaler:
-				if err := v.UnmarshalText([]byte(str)); err != nil {
-					return nil, err
-				}
-				return to.Interface(), nil
-			case encoding.BinaryUnmarshaler:
-				if err := v.UnmarshalBinary([]byte(str)); err != nil {
-					return nil, err
-				}
-				return to.Interface(), nil
-			case json.Unmarshaler:
-				if err := v.UnmarshalJSON([]byte(str)); err != nil {
-					return nil, err
-				}
+			default:
+				// ok
 				return to.Interface(), nil
 			}
 		}
