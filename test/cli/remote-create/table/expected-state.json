@@ -33,7 +33,9 @@
                 "name": "id",
                 "definition": {
                   "type": "VARCHAR",
-                  "length": "16777216"
+                  "length": "16777216",
+                  "nullable": false,
+                  "default": ""
                 },
                 "basetype": "STRING"
               },
@@ -42,7 +44,8 @@
                 "definition": {
                   "type": "VARCHAR",
                   "length": "16777216",
-                  "nullable": true
+                  "nullable": false,
+                  "default": ""
                 },
                 "basetype": "STRING"
               }
