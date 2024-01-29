@@ -74,7 +74,7 @@ func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedma
 			case bool:
 				fs.Bool(flagName, v, usage)
 			case string:
-				if vc.Value.IsZero() {
+				if !vc.Value.IsValid() || vc.Value.IsZero() {
 					// Don't set the default Value, if the original Value is empty.
 					// For example empty time.Duration(0) is represented as not empty string "0s",
 					// but we don't want to show the empty string, as we do not do in other empty cases either.
@@ -103,8 +103,8 @@ func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedma
 	})
 }
 
-func mapAndFilterField() func(field reflect.StructField) (fieldName string, ok bool) {
-	return func(field reflect.StructField) (fieldName string, ok bool) {
+func mapAndFilterField() func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool) {
+	return func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool) {
 		// Field must have tag
 		if tag, found := field.Tag.Lookup(configKeyTag); found {
 			parts := strings.Split(tag, tagValuesSeparator)

@@ -10,7 +10,10 @@ import (
 )
 
 type VisitConfig struct {
-	OnField func(field reflect.StructField) (fieldName string, ok bool)
+	// OnField maps field to a custom field name, for example from a tag.
+	// If ok == false, then the field is ignored.
+	OnField func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool)
+	// OnValue is called on each field
 	OnValue func(vc *VisitContext) error
 }
 
@@ -38,6 +41,7 @@ type VisitContext struct {
 	Validate string
 }
 
+// Visit each nested structure field.
 func Visit(value reflect.Value, cfg VisitConfig) error {
 	vc := &VisitContext{}
 	vc.Value = value
@@ -47,141 +51,148 @@ func Visit(value reflect.Value, cfg VisitConfig) error {
 }
 
 func doVisit(vc *VisitContext, cfg VisitConfig) error {
-	isNil := vc.Value.Kind() == reflect.Pointer && vc.Value.IsNil()
-
 	onLeaf := func(primitiveValue reflect.Value) error {
 		vc.PrimitiveValue = primitiveValue
 		vc.Leaf = true
 		return cfg.OnValue(vc)
 	}
 
-	// Dereference pointer
-	originalValue := vc.Value
-	for vc.Value.Kind() == reflect.Pointer && !vc.Value.IsNil() {
-		vc.Value = vc.Value.Elem()
-		vc.Type = vc.Type.Elem()
+	// Try if the value implements a marshaler
+	typ := vc.Type
+	value := vc.Value
+	if !value.IsValid() {
+		// Invalid means that some parent pointer is nil, use an empty value instead
+		value = reflect.New(vc.Type).Elem()
 	}
-
-	// Convert type to a pointer, unmarshal methods may use pointers in method receivers
-	methodReceiver := originalValue
-	if originalValue.Kind() != reflect.Pointer {
-		ptr := reflect.New(originalValue.Type())
-		ptr.Elem().Set(originalValue)
-		methodReceiver = ptr
+	if value.Kind() != reflect.Pointer {
+		// Convert type to a pointer, marshal methods may use pointers in method receivers
+		ptr := reflect.New(vc.Type)
+		ptr.Elem().Set(value)
+		typ = ptr.Type()
+		value = ptr
 	}
-
-	// Check if the struct implements an unmarshaler
-	switch v := methodReceiver.Interface().(type) {
-	case fmt.Stringer:
-		if isNil {
+	if !vc.Value.IsValid() || value.IsNil() {
+		// The type implements a marshal methods, but the value is nil, use empty string as the value.
+		switch value.Interface().(type) {
+		case fmt.Stringer, json.Marshaler, encoding.TextMarshaler, encoding.BinaryMarshaler:
 			return onLeaf(reflect.ValueOf(""))
 		}
-		return onLeaf(reflect.ValueOf(v.String()))
-	case json.Marshaler:
-		if isNil {
-			return onLeaf(reflect.ValueOf(""))
-		}
-		if v, err := v.MarshalJSON(); err == nil {
-			return onLeaf(reflect.ValueOf(string(v)))
-		} else {
-			return err
-		}
-	case encoding.TextMarshaler:
-		if isNil {
-			return onLeaf(reflect.ValueOf(""))
-		}
-		if v, err := v.MarshalText(); err == nil {
-			return onLeaf(reflect.ValueOf(string(v)))
-		} else {
-			return err
-		}
-	case encoding.BinaryMarshaler:
-		if isNil {
-			return onLeaf(reflect.ValueOf(""))
-		}
-		if bytes, err := v.MarshalBinary(); err == nil {
-			return onLeaf(reflect.ValueOf(string(bytes)))
-		} else {
-			return err
-		}
-	default:
-		switch vc.Value.Kind() {
-		case reflect.Int:
-			return onLeaf(reflect.ValueOf(int(vc.Value.Int())))
-		case reflect.Int8:
-			return onLeaf(reflect.ValueOf(int8(vc.Value.Int())))
-		case reflect.Int16:
-			return onLeaf(reflect.ValueOf(int16(vc.Value.Int())))
-		case reflect.Int32:
-			return onLeaf(reflect.ValueOf(int32(vc.Value.Int())))
-		case reflect.Int64:
-			return onLeaf(reflect.ValueOf(vc.Value.Int()))
-		case reflect.Uint:
-			return onLeaf(reflect.ValueOf(uint(vc.Value.Uint())))
-		case reflect.Uint8:
-			return onLeaf(reflect.ValueOf(uint8(vc.Value.Uint())))
-		case reflect.Uint16:
-			return onLeaf(reflect.ValueOf(uint16(vc.Value.Uint())))
-		case reflect.Uint32:
-			return onLeaf(reflect.ValueOf(uint32(vc.Value.Uint())))
-		case reflect.Uint64:
-			return onLeaf(reflect.ValueOf(vc.Value.Uint()))
-		case reflect.Float32:
-			return onLeaf(reflect.ValueOf(float32(vc.Value.Float())))
-		case reflect.Float64:
-			return onLeaf(reflect.ValueOf(vc.Value.Float()))
-		case reflect.Bool:
-			return onLeaf(reflect.ValueOf(vc.Value.Bool()))
-		case reflect.String:
-			return onLeaf(reflect.ValueOf(vc.Value.String()))
-		case reflect.Struct:
-			// Call callback
-			if err := cfg.OnValue(vc); err != nil {
+	} else {
+		// Marshal value to a string
+		switch v := value.Interface().(type) {
+		case fmt.Stringer:
+			return onLeaf(reflect.ValueOf(v.String()))
+		case json.Marshaler:
+			bytes, err := v.MarshalJSON()
+			if err != nil {
 				return err
 			}
-
-			for i := 0; i < vc.Value.NumField(); i++ {
-				// Fill context with field information
-				field := &VisitContext{}
-				field.StructField = vc.Type.Field(i)
-				field.OriginalPath = append(field.OriginalPath, vc.OriginalPath...)
-				field.OriginalPath = append(field.OriginalPath, orderedmap.MapStep(field.StructField.Name))
-				field.MappedPath = vc.MappedPath
-				field.Value = vc.Value.Field(i)
-				field.PrimitiveValue = field.Value
-				field.Type = field.Value.Type()
-				field.Leaf = false
-
-				// Mark field and all its children as sensitive according to the tag
-				field.Sensitive = vc.Sensitive || field.StructField.Tag.Get(sensitiveTag) == "true"
-
-				// Set usage from the tag, or use parent usage text
-				field.Usage = vc.Usage
-				if usage := field.StructField.Tag.Get(configUsageTag); usage != "" {
-					field.Usage = usage
-				}
-
-				// Set validate from the tag
-				if validate := field.StructField.Tag.Get(validateTag); validate != "" {
-					field.Validate = validate
-				}
-
-				// Map field name, ignore skipped fields
-				if fieldName, ok := cfg.OnField(field.StructField); !ok {
-					continue
-				} else if fieldName != "" {
-					field.MappedPath = append(field.MappedPath, orderedmap.MapStep(fieldName))
-				}
-
-				// Step down
-				if err := doVisit(field, cfg); err != nil {
-					return err
-				}
+			return onLeaf(reflect.ValueOf(string(bytes)))
+		case encoding.TextMarshaler:
+			bytes, err := v.MarshalText()
+			if err != nil {
+				return err
 			}
-		default:
-			return onLeaf(vc.Value)
+			return onLeaf(reflect.ValueOf(string(bytes)))
+		case encoding.BinaryMarshaler:
+			bytes, err := v.MarshalBinary()
+			if err != nil {
+				return err
+			}
+			return onLeaf(reflect.ValueOf(string(bytes)))
 		}
 	}
 
-	return nil
+	// Dereference pointer, if any
+	if typ.Kind() == reflect.Pointer {
+		value = value.Elem()
+		typ = typ.Elem()
+	}
+
+	// Try structure type
+	if typ.Kind() == reflect.Struct {
+		// Call callback
+		if err := cfg.OnValue(vc); err != nil {
+			return err
+		}
+
+		for i := 0; i < typ.NumField(); i++ {
+			// Fill context with field information
+			field := &VisitContext{}
+			field.StructField = typ.Field(i)
+			field.OriginalPath = append(field.OriginalPath, vc.OriginalPath...)
+			field.OriginalPath = append(field.OriginalPath, orderedmap.MapStep(field.StructField.Name))
+			field.MappedPath = vc.MappedPath
+			field.Type = field.StructField.Type
+			field.Leaf = false
+			if value.IsValid() {
+				fv := value.Field(i)
+				field.Value = fv
+				field.PrimitiveValue = fv
+			}
+
+			// Mark field and all its children as sensitive according to the tag
+			field.Sensitive = vc.Sensitive || field.StructField.Tag.Get(sensitiveTag) == "true"
+
+			// Set usage from the tag, or use parent usage text
+			field.Usage = vc.Usage
+			if usage := field.StructField.Tag.Get(configUsageTag); usage != "" {
+				field.Usage = usage
+			}
+
+			// Set validate from the tag
+			if validate := field.StructField.Tag.Get(validateTag); validate != "" {
+				field.Validate = validate
+			}
+
+			// Map field name, ignore skipped fields
+			if fieldName, ok := cfg.OnField(field.StructField, field.OriginalPath); !ok {
+				continue
+			} else if fieldName != "" {
+				field.MappedPath = append(field.MappedPath, orderedmap.MapStep(fieldName))
+			}
+
+			// Step down
+			if err := doVisit(field, cfg); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	// Try base types
+	switch value.Kind() {
+	case reflect.Int:
+		return onLeaf(reflect.ValueOf(int(value.Int())))
+	case reflect.Int8:
+		return onLeaf(reflect.ValueOf(int8(value.Int())))
+	case reflect.Int16:
+		return onLeaf(reflect.ValueOf(int16(value.Int())))
+	case reflect.Int32:
+		return onLeaf(reflect.ValueOf(int32(value.Int())))
+	case reflect.Int64:
+		return onLeaf(reflect.ValueOf(value.Int()))
+	case reflect.Uint:
+		return onLeaf(reflect.ValueOf(uint(value.Uint())))
+	case reflect.Uint8:
+		return onLeaf(reflect.ValueOf(uint8(value.Uint())))
+	case reflect.Uint16:
+		return onLeaf(reflect.ValueOf(uint16(value.Uint())))
+	case reflect.Uint32:
+		return onLeaf(reflect.ValueOf(uint32(value.Uint())))
+	case reflect.Uint64:
+		return onLeaf(reflect.ValueOf(value.Uint()))
+	case reflect.Float32:
+		return onLeaf(reflect.ValueOf(float32(value.Float())))
+	case reflect.Float64:
+		return onLeaf(reflect.ValueOf(value.Float()))
+	case reflect.Bool:
+		return onLeaf(reflect.ValueOf(value.Bool()))
+	case reflect.String:
+		return onLeaf(reflect.ValueOf(value.String()))
+	default:
+		// Fallback
+		return onLeaf(value)
+	}
 }
