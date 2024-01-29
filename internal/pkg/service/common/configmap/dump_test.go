@@ -17,7 +17,7 @@ func TestDumpFlat_Empty(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(`
 {
-  "address": "invalid IP",
+  "address": "",
   "addressNullable": null,
   "customInt": 0,
   "customString": "",
@@ -152,7 +152,7 @@ stringWithUsage: ""
 duration: 0s
 durationNullable: null
 url: null
-address: invalid IP
+address: ""
 addressNullable: null
 nested:
     foo: ""
