@@ -13,8 +13,8 @@ func (v NoTextTypeError) Error() string {
 	return "value is not convertible from/to a text"
 }
 
-// MarshaText provides conversion of a value to a text via common marshal interfaces.
-func MarshaText(typ reflect.Type, value reflect.Value) (text []byte, err error) {
+// MarshalText provides conversion of a value to a text via common marshal interfaces.
+func MarshalText(typ reflect.Type, value reflect.Value) (text []byte, err error) {
 	// Ensure, that the value is a pointer, marshal method may be defined on the pointer
 	original := value
 	if typ.Kind() != reflect.Pointer {

@@ -57,7 +57,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	}
 
 	// Handle text
-	text, err := MarshaText(vc.Type, vc.Value)
+	text, err := MarshalText(vc.Type, vc.Value)
 	switch {
 	case errors.As(err, &NoTextTypeError{}):
 		// continue, no marshaller found
