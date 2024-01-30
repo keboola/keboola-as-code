@@ -6,7 +6,9 @@ import (
 	"net/url"
 
 	"github.com/justinas/alice"
+	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -30,7 +32,7 @@ func handlerFor(app DataApp, cfg config.Config) (http.Handler, error) {
 	if app.Provider == nil {
 		return publicAppHandler(app, cfg, chain)
 	} else {
-		return nil, errors.New(`not implemented`)
+		return protectedAppHandler(app, cfg, chain)
 	}
 }
 
@@ -40,4 +42,63 @@ func publicAppHandler(app DataApp, _ config.Config, chain alice.Chain) (http.Han
 		return nil, errors.Errorf(`cannot parse upstream url "%s": %w`, app.UpstreamHost, err)
 	}
 	return chain.Then(httputil.NewSingleHostReverseProxy(target)), nil
+}
+
+func protectedAppHandler(app DataApp, cfg config.Config, chain alice.Chain) (http.Handler, error) {
+	authValidator := func(email string) bool {
+		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
+		return true
+	}
+
+	config, err := authProxyConfig(app, cfg, chain)
+	if err != nil {
+		return nil, err
+	}
+
+	handler, err := oauthproxy.NewOAuthProxy(config, authValidator)
+	if err != nil {
+		return nil, err
+	}
+
+	return handler, nil
+}
+
+func authProxyConfig(app DataApp, cfg config.Config, chain alice.Chain) (*options.Options, error) {
+	v := options.NewOptions()
+
+	domain := app.ID.String() + "." + cfg.PublicAddress.Host
+
+	v.Cookie.Secret = cfg.CookieSecret
+	v.Cookie.Domains = []string{domain}
+	v.ProxyPrefix = "/oauth2"
+	v.RawRedirectURL = cfg.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
+
+	v.Providers = options.Providers{*app.Provider}
+	v.SkipProviderButton = true
+	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
+	v.EmailDomains = []string{"*"}
+	v.InjectRequestHeaders = []options.Header{headerFromClaim("X-Forwarded-Email", options.OIDCEmailClaim)}
+	v.UpstreamChain = chain
+	v.UpstreamServers = options.UpstreamConfig{
+		Upstreams: []options.Upstream{{ID: app.ID.String(), Path: "/", URI: "http://" + app.UpstreamHost}},
+	}
+
+	if err := validation.Validate(v); err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+func headerFromClaim(header, claim string) options.Header {
+	return options.Header{
+		Name: header,
+		Values: []options.HeaderValue{
+			{
+				ClaimSource: &options.ClaimSource{
+					Claim: claim,
+				},
+			},
+		},
+	}
 }
