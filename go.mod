@@ -4,7 +4,7 @@ go 1.21
 
 replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
-replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.5.1 => github.com/keboola/go-oauth2-proxy/v7 v7.5.2-0.20240119152932-e2555b4eb792
+replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.5.1 => github.com/keboola/go-oauth2-proxy/v7 v7.5.2-0.20240130153840-fe9b3a0fa072
 
 // https://github.com/etcd-io/etcd/issues/15877
 replace google.golang.org/grpc v1.55.0 => google.golang.org/grpc v1.54.1
