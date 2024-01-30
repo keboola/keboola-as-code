@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -449,7 +450,9 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 		// Apply configuration patch from the sink to the global config
 		cfg := r.config
 		if c.Sink.Table.Config != nil {
-			cfg = cfg.With(*c.Sink.Table.Config)
+			if err := configpatch.Apply(cfg, c.Sink.Table.Config); err != nil {
+				return nil, err
+			}
 		}
 
 		// Create file entity
