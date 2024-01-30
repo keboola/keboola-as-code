@@ -450,7 +450,7 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 		// Apply configuration patch from the sink to the global config
 		cfg := r.config
 		if c.Sink.Table.Config != nil {
-			if err := configpatch.Apply(cfg, c.Sink.Table.Config); err != nil {
+			if err := configpatch.Apply(&cfg, c.Sink.Table.Config); err != nil {
 				return nil, err
 			}
 		}

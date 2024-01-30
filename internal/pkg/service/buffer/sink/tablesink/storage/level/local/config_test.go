@@ -22,12 +22,12 @@ func TestConfig_With(t *testing.T) {
 
 	// Apply empty patch
 	patchedConfig1 := defaultConfig
-	require.NoError(t, configpatch.Apply(patchedConfig1, local.ConfigPatch{}))
+	require.NoError(t, configpatch.Apply(&patchedConfig1, local.ConfigPatch{}))
 	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// Apply full patch
 	patchedConfig2 := patchedConfig1
-	require.NoError(t, configpatch.Apply(patchedConfig2, local.ConfigPatch{
+	require.NoError(t, configpatch.Apply(&patchedConfig2, local.ConfigPatch{
 		Compression: &compression.ConfigPatch{
 			GZIP: &compression.GZIPConfigPatch{
 				Level:          test.Ptr(3),

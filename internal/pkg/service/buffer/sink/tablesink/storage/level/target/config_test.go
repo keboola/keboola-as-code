@@ -22,12 +22,12 @@ func TestConfig_With(t *testing.T) {
 
 	// Apply empty patch
 	patchedConfig1 := defaultConfig
-	require.NoError(t, configpatch.Apply(patchedConfig1, target.ConfigPatch{}))
+	require.NoError(t, configpatch.Apply(&patchedConfig1, target.ConfigPatch{}))
 	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// Apply full patch
 	patchedConfig2 := patchedConfig1
-	require.NoError(t, configpatch.Apply(patchedConfig2, target.ConfigPatch{
+	require.NoError(t, configpatch.Apply(&patchedConfig2, target.ConfigPatch{
 		Import: &target.ImportConfigPatch{
 			Trigger: &target.ImportTriggerPatch{
 				Interval: test.Ptr(duration.From(456 * time.Millisecond)),

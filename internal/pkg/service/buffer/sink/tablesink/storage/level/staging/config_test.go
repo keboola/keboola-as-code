@@ -22,12 +22,12 @@ func TestConfig_With(t *testing.T) {
 
 	// Apply empty patch
 	patchedConfig1 := defaultConfig
-	require.NoError(t, configpatch.Apply(patchedConfig1, staging.ConfigPatch{}))
+	require.NoError(t, configpatch.Apply(&patchedConfig1, staging.ConfigPatch{}))
 	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// Apply full patch
 	patchedConfig2 := patchedConfig1
-	require.NoError(t, configpatch.Apply(patchedConfig2, staging.ConfigPatch{
+	require.NoError(t, configpatch.Apply(&patchedConfig2, staging.ConfigPatch{
 		MaxSlicesPerFile: test.Ptr(123),
 		Upload: &staging.UploadConfigPatch{
 			Trigger: &staging.UploadTriggerPatch{

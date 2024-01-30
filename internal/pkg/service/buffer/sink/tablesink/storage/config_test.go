@@ -30,7 +30,7 @@ func TestConfig_With(t *testing.T) {
 
 	// Apply empty patch
 	patchedConfig1 := defaultConfig
-	require.NoError(t, configpatch.Apply(patchedConfig1, ConfigPatch{}))
+	require.NoError(t, configpatch.Apply(&patchedConfig1, ConfigPatch{}))
 	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// First patch
@@ -77,7 +77,7 @@ func TestConfig_With(t *testing.T) {
 	}
 	// Compare
 	patchedConfig2 := patchedConfig1
-	require.NoError(t, configpatch.Apply(patchedConfig2, ConfigPatch{
+	require.NoError(t, configpatch.Apply(&patchedConfig2, ConfigPatch{
 		Local:            localConfigPatch,
 		Staging:          stagingConfigPatch,
 		VolumeAssignment: volumeAssignmentPatch,
@@ -130,7 +130,7 @@ func TestConfig_With(t *testing.T) {
 	}
 	// Compare
 	patchedConfig3 := patchedConfig2
-	require.NoError(t, configpatch.Apply(patchedConfig3, ConfigPatch{
+	require.NoError(t, configpatch.Apply(&patchedConfig3, ConfigPatch{
 		Local:  localConfigPatch2,
 		Target: targetConfigPatch,
 	}))
