@@ -43,8 +43,11 @@ func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
 	configmap.MustVisit(
 		rootPtr,
 		configmap.VisitConfig{
-			InitNilPtr: true, // pointer to empty structs are later cleared in the AfterValue
-			OnField:    matchTaggedFields(cfg.nameTags),
+			// InitNilPtr - all pointer are initialized before processing.
+			InitNilPtr: true,
+			// EmptyStructToNilPtr - pointers to empty structs are replaced by a nil value, after processing.
+			EmptyStructToNilPtr: true,
+			OnField:             matchTaggedFields(cfg.nameTags),
 			OnValue: func(vc *configmap.VisitContext) error {
 				// Process only leaf values with a field name
 				if !vc.Leaf || vc.MappedPath.Last().String() == "" {
@@ -103,14 +106,6 @@ func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
 					vc.Value.Elem().Set(value.Convert(expectedType))
 				} else {
 					errs.Append(errors.Errorf(`invalid "%s" value: found type "%s", expected "%s"`, keyPath, actualType, expectedType))
-				}
-				return nil
-			},
-			AfterValue: func(vc *configmap.VisitContext) error {
-				// Set nil, if the value is a pointer to an empty struct
-				if vc.Value.CanAddr() && vc.Value.Kind() == reflect.Pointer && vc.Value.Elem().Kind() == reflect.Struct && vc.Value.Elem().IsZero() {
-					// Set nil
-					vc.Value.Set(reflect.Zero(vc.Value.Type()))
 				}
 				return nil
 			},
