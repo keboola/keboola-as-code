@@ -6,34 +6,39 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 func TestConfig_With(t *testing.T) {
 	t.Parallel()
 
-	defaultCfg := staging.NewConfig()
+	defaultConfig := staging.NewConfig()
 
 	// Apply empty patch
-	assert.Equal(t, defaultCfg, defaultCfg.With(staging.ConfigPatch{}))
+	patchedConfig1 := defaultConfig
+	require.NoError(t, configpatch.Apply(patchedConfig1, staging.ConfigPatch{}))
+	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// Apply full patch
-	patchedCfg := defaultCfg.With(staging.ConfigPatch{
+	patchedConfig2 := patchedConfig1
+	require.NoError(t, configpatch.Apply(patchedConfig2, staging.ConfigPatch{
 		MaxSlicesPerFile: test.Ptr(123),
 		Upload: &staging.UploadConfigPatch{
 			Trigger: &staging.UploadTriggerPatch{
 				Interval: test.Ptr(duration.From(456 * time.Millisecond)),
 			},
 		},
-	})
-	expectedCfg := defaultCfg
+	}))
+	expectedCfg := defaultConfig
 	expectedCfg.MaxSlicesPerFile = 123
 	expectedCfg.Upload.Trigger.Interval = duration.From(456 * time.Millisecond)
-	assert.Equal(t, expectedCfg, patchedCfg)
+	assert.Equal(t, expectedCfg, patchedConfig2)
 }
 
 func TestConfig_Validation(t *testing.T) {

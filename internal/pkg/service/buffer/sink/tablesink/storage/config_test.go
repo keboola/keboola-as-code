@@ -6,6 +6,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
@@ -14,23 +15,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/volume/assignment"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 func TestConfig_With(t *testing.T) {
 	t.Parallel()
 
-	defaultCfg := Config{
+	defaultConfig := Config{
 		Local:   local.NewConfig(),
 		Staging: staging.NewConfig(),
 		Target:  target.NewConfig(),
 	}
 
 	// Apply empty patch
-	assert.Equal(t, defaultCfg, defaultCfg.With(ConfigPatch{}))
+	patchedConfig1 := defaultConfig
+	require.NoError(t, configpatch.Apply(patchedConfig1, ConfigPatch{}))
+	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// First patch
-	expectedCfg := defaultCfg
+	expectedCfg := defaultConfig
 	localConfigPatch := &local.ConfigPatch{
 		Compression: &compression.ConfigPatch{
 			GZIP: &compression.GZIPConfigPatch{
@@ -72,12 +76,13 @@ func TestConfig_With(t *testing.T) {
 		Interval: duration.From(5 * time.Minute),
 	}
 	// Compare
-	patchedConfig1 := defaultCfg.With(ConfigPatch{
+	patchedConfig2 := patchedConfig1
+	require.NoError(t, configpatch.Apply(patchedConfig2, ConfigPatch{
 		Local:            localConfigPatch,
 		Staging:          stagingConfigPatch,
 		VolumeAssignment: volumeAssignmentPatch,
-	})
-	assert.Equal(t, expectedCfg, patchedConfig1)
+	}))
+	assert.Equal(t, expectedCfg, patchedConfig2)
 
 	// Second patch
 	localConfigPatch2 := &local.ConfigPatch{
@@ -124,9 +129,10 @@ func TestConfig_With(t *testing.T) {
 		Interval: duration.From(8 * time.Minute),
 	}
 	// Compare
-	patchedConfig2 := patchedConfig1.With(ConfigPatch{
+	patchedConfig3 := patchedConfig2
+	require.NoError(t, configpatch.Apply(patchedConfig3, ConfigPatch{
 		Local:  localConfigPatch2,
 		Target: targetConfigPatch,
-	})
-	assert.Equal(t, expectedCfg, patchedConfig2)
+	}))
+	assert.Equal(t, expectedCfg, patchedConfig3)
 }

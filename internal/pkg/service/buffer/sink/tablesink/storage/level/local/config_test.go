@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local"
@@ -11,18 +12,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/local/writer/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 )
 
 func TestConfig_With(t *testing.T) {
 	t.Parallel()
 
-	defaultCfg := local.NewConfig()
+	defaultConfig := local.NewConfig()
 
 	// Apply empty patch
-	assert.Equal(t, defaultCfg, defaultCfg.With(local.ConfigPatch{}))
+	patchedConfig1 := defaultConfig
+	require.NoError(t, configpatch.Apply(patchedConfig1, local.ConfigPatch{}))
+	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// Apply full patch
-	patchedCfg := defaultCfg.With(local.ConfigPatch{
+	patchedConfig2 := patchedConfig1
+	require.NoError(t, configpatch.Apply(patchedConfig2, local.ConfigPatch{
 		Compression: &compression.ConfigPatch{
 			GZIP: &compression.GZIPConfigPatch{
 				Level:          test.Ptr(3),
@@ -36,14 +41,14 @@ func TestConfig_With(t *testing.T) {
 		DiskAllocation: &diskalloc.ConfigPatch{
 			SizePercent: test.Ptr(123),
 		},
-	})
-	expectedCfg := defaultCfg
+	}))
+	expectedCfg := defaultConfig
 	expectedCfg.Compression.GZIP.Level = 3
 	expectedCfg.Compression.GZIP.Implementation = compression.GZIPImplStandard
 	expectedCfg.DiskSync.Mode = disksync.ModeCache
 	expectedCfg.DiskSync.Wait = false
 	expectedCfg.DiskAllocation.SizePercent = 123
-	assert.Equal(t, expectedCfg, patchedCfg)
+	assert.Equal(t, expectedCfg, patchedConfig2)
 }
 
 func TestConfig_Validation(t *testing.T) {
