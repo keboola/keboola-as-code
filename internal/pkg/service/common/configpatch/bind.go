@@ -20,7 +20,7 @@ type BindKV struct {
 }
 
 // BindKVs binds flattened key-value pairs from a client request to a patch structure.
-// Patch structure is modified in place.
+// The patch structure is modified in place.
 func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
 	cfg := newConfig(opts)
 
