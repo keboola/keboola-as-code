@@ -27,14 +27,3 @@ func NewConfig() Config {
 		PreferredTypes: []string{"default"},
 	}
 }
-
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.Count != nil {
-		c.Count = *v.Count
-	}
-	if v.PreferredTypes != nil {
-		c.PreferredTypes = *v.PreferredTypes
-	}
-	return c
-}

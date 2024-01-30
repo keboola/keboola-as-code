@@ -31,20 +31,6 @@ func NewConfig() Config {
 	}
 }
 
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.Enabled != nil {
-		c.Enabled = *v.Enabled
-	}
-	if v.Size != nil {
-		c.Size = *v.Size
-	}
-	if v.SizePercent != nil {
-		c.SizePercent = *v.SizePercent
-	}
-	return c
-}
-
 func (c Config) ForNextSlice(prevSliceSize datasize.ByteSize) datasize.ByteSize {
 	// Calculated pre-allocated disk space
 	if c.Enabled {

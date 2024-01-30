@@ -77,26 +77,3 @@ func NewConfig() Config {
 		IntervalTrigger: duration.From(50 * time.Millisecond),
 	}
 }
-
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.Mode != nil {
-		c.Mode = *v.Mode
-	}
-	if v.Wait != nil {
-		c.Wait = *v.Wait
-	}
-	if v.CheckInterval != nil {
-		c.CheckInterval = *v.CheckInterval
-	}
-	if v.CountTrigger != nil {
-		c.CountTrigger = *v.CountTrigger
-	}
-	if v.BytesTrigger != nil {
-		c.BytesTrigger = *v.BytesTrigger
-	}
-	if v.IntervalTrigger != nil {
-		c.IntervalTrigger = *v.IntervalTrigger
-	}
-	return c
-}

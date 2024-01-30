@@ -27,24 +27,6 @@ type ConfigPatch struct {
 	Target           *target.ConfigPatch     `json:"target,omitempty"`
 }
 
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	// Copy values from the ConfigPatch, if any.
-	if v.VolumeAssignment != nil {
-		c.VolumeAssignment = c.VolumeAssignment.With(*v.VolumeAssignment)
-	}
-	if v.Local != nil {
-		c.Local = c.Local.With(*v.Local)
-	}
-	if v.Staging != nil {
-		c.Staging = c.Staging.With(*v.Staging)
-	}
-	if v.Target != nil {
-		c.Target = c.Target.With(*v.Target)
-	}
-	return c
-}
-
 func NewConfig() Config {
 	return Config{
 		VolumeAssignment:   assignment.NewConfig(),

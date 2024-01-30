@@ -37,17 +37,6 @@ func NewConfig() Config {
 	}
 }
 
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.MaxSlicesPerFile != nil {
-		c.MaxSlicesPerFile = *v.MaxSlicesPerFile
-	}
-	if v.Upload != nil {
-		c.Upload = c.Upload.With(*v.Upload)
-	}
-	return c
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 
 // UploadConfig configures the slice upload.
@@ -60,14 +49,6 @@ type UploadConfig struct {
 // It is part of the definition.TableSink structure to allow modification of the default configuration.
 type UploadConfigPatch struct {
 	Trigger *UploadTriggerPatch `json:"trigger,omitempty"`
-}
-
-// With copies values from the UploadConfigPatch, if any.
-func (c UploadConfig) With(v UploadConfigPatch) UploadConfig {
-	if v.Trigger != nil {
-		c.Trigger = c.Trigger.With(*v.Trigger)
-	}
-	return c
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -85,18 +66,4 @@ type UploadTriggerPatch struct {
 	Count    *uint64            `json:"count,omitempty" configKey:"count"`
 	Size     *datasize.ByteSize `json:"size,omitempty" configKey:"size"`
 	Interval *duration.Duration `json:"interval,omitempty" configKey:"interval"`
-}
-
-// With copies values from the UploadTriggerPatch, if any.
-func (c UploadTrigger) With(v UploadTriggerPatch) UploadTrigger {
-	if v.Count != nil {
-		c.Count = *v.Count
-	}
-	if v.Size != nil {
-		c.Size = *v.Size
-	}
-	if v.Interval != nil {
-		c.Interval = *v.Interval
-	}
-	return c
 }

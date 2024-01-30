@@ -32,14 +32,6 @@ func NewConfig() Config {
 	}
 }
 
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.Import != nil {
-		c.Import = c.Import.With(*v.Import)
-	}
-	return c
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 
 // ImportConfig configures the file import.
@@ -52,14 +44,6 @@ type ImportConfig struct {
 // It is part of the definition.TableSink structure to allow modification of the default configuration.
 type ImportConfigPatch struct {
 	Trigger *ImportTriggerPatch `json:"trigger,omitempty"`
-}
-
-// With copies values from the ConfigPatch, if any.
-func (c ImportConfig) With(v ImportConfigPatch) ImportConfig {
-	if v.Trigger != nil {
-		c.Trigger = c.Trigger.With(*v.Trigger)
-	}
-	return c
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -77,18 +61,4 @@ type ImportTriggerPatch struct {
 	Count    *uint64            `json:"count,omitempty" configKey:"count"`
 	Size     *datasize.ByteSize `json:"size,omitempty" configKey:"size"`
 	Interval *duration.Duration `json:"interval,omitempty" configKey:"interval"`
-}
-
-// With copies values from the ImportTriggerPatch, if any.
-func (c ImportTrigger) With(v ImportTriggerPatch) ImportTrigger {
-	if v.Count != nil {
-		c.Count = *v.Count
-	}
-	if v.Size != nil {
-		c.Size = *v.Size
-	}
-	if v.Interval != nil {
-		c.Interval = *v.Interval
-	}
-	return c
 }
