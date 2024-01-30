@@ -52,7 +52,7 @@ func newTableSinkScope(defScope DefinitionScope, backoff storage.RetryBackoff) (
 		return nil, err
 	}
 
-	d.statisticsL2Cache, err = cache.NewL2Cache(d.Logger(), d.Clock(), d.statisticsL1Cache, d.Config().Sink.Table.Statistics.L2Cache)
+	d.statisticsL2Cache, err = cache.NewL2Cache(d.Logger(), d.Clock(), d.statisticsL1Cache, d.Config().Sink.Table.Statistics.Cache.L2)
 	if err != nil {
 		return nil, err
 	}

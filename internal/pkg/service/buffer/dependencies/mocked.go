@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
@@ -29,6 +30,14 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	// Create mocked common dependencies
 	opts = append(opts, dependencies.WithEnabledEtcdClient(), dependencies.WithMockedStorageAPIHost(cfg.StorageAPIHost))
 	mock := dependencies.NewMocked(t, opts...)
+
+	// Disable L2 memory cache.
+	// There is an invalidation timer with a few seconds interval.
+	// It causes problems when mocked clock is used.
+	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
+	if _, ok := mock.Clock().(*clock.Mock); ok {
+		cfg.Sink.Table.Statistics.Cache.L2.Enabled = false
+	}
 
 	// Obtain etcd credentials
 	cfg.Etcd = mock.TestEtcdConfig()

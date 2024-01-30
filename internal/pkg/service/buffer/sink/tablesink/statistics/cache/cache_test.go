@@ -40,7 +40,7 @@ func TestCaches(t *testing.T) {
 	require.NoError(t, err)
 	defer l1Cache.Stop()
 
-	l2Config := statistics.NewConfig().L2Cache
+	l2Config := statistics.NewConfig().Cache.L2
 	l2Cache, err := cache.NewL2Cache(d.Logger(), clk, l1Cache, l2Config)
 	require.NoError(t, err)
 	defer l2Cache.Stop()
