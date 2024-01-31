@@ -4,6 +4,9 @@
 < Enter the table name
 > table1
 
+< Would you define column types?
+> N
+
 < Enter a comma-separated list of column names
 > col1,col2,col3
 

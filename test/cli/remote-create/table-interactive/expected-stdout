@@ -7,6 +7,10 @@ Enter the table name.
 ? Table name: table1? Table name: table1
 
 
+Would you define column types?
+? Columns Types Definition: [? for help] (Y/n) N? Columns Types Definition: No
+
+
 Enter a comma-separated list of column names.
 ? Columns: col1,col2,col3? Columns: col1,col2,col3
 
