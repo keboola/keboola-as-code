@@ -2,14 +2,14 @@ package dialog
 
 import (
 	"encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"gopkg.in/yaml.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
@@ -40,7 +40,6 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 		}
 
 		opts.BucketKey = keboola.BucketKey{BranchID: branchKey.ID, BucketID: bucketID}
-
 		name := p.options.GetString(`name`)
 		if !p.options.IsSet(`name`) {
 			name, _ = p.Ask(&prompt.Question{
@@ -182,9 +181,8 @@ func parseColumnsDefinitionFromFile(input string) ([]keboola.Column, error) {
 	return result, err
 }
 
-func (d *Dialogs) defaultValue() string {
-	fileHeader :=
-		`#Command "remote create table"
+func (p *Dialogs) defaultValue() string {
+	fileHeader := `#Command "remote create table"
 
 #The CLI command creates a new storage table, and the table can be defined either by specifying the full table ID in the argument or by using the --bucket and --name flags.
 #In addition, you can specify column names and specify the primary key using the appropriate flags.
