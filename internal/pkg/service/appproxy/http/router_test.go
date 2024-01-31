@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
@@ -97,6 +98,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
 				cookies := rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 1)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
 
 				// Request to the OIDC provider
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -115,6 +118,9 @@ func TestAppProxyRouter(t *testing.T) {
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				cookies = rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 2)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
+				wildcards.Assert(t, "_oauth2_proxy=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[1])
 
 				// Request to private app (authorized)
 				rec = httptest.NewRecorder()
