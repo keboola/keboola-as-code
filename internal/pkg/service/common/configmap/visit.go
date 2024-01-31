@@ -8,12 +8,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type OnField func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool)
+
+type OnValue func(vc *VisitContext) error
+
+type AfterValue func(vc *VisitContext) error
+
 type VisitConfig struct {
+	// InitNilPtr initializes each found nil pointer with an empty struct.
+	InitNilPtr bool
 	// OnField maps field to a custom field name, for example from a tag.
 	// If ok == false, then the field is ignored.
-	OnField func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool)
+	OnField OnField
 	// OnValue is called on each field
-	OnValue func(vc *VisitContext) error
+	OnValue OnValue
+	// AfterValue is called after all nested fields are processed, if any. Can be nil.
+	AfterValue AfterValue
 }
 
 type VisitContext struct {
@@ -47,6 +57,13 @@ func Visit(value reflect.Value, cfg VisitConfig) error {
 	vc.PrimitiveValue = value
 	vc.Type = value.Type()
 	return doVisit(vc, cfg)
+}
+
+// MustVisit is similar to the Visit method, but no error is expected.
+func MustVisit(value reflect.Value, cfg VisitConfig) {
+	if err := Visit(value, cfg); err != nil {
+		panic(errors.New("no error expected"))
+	}
 }
 
 func doVisit(vc *VisitContext, cfg VisitConfig) error {
@@ -97,10 +114,18 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 			field.MappedPath = vc.MappedPath
 			field.Type = field.StructField.Type
 			field.Leaf = false
+
+			// Get field value, if the parent struct is valid/defined.
 			if value.IsValid() {
+				// Get field value
 				fv := value.Field(i)
 				field.Value = fv
 				field.PrimitiveValue = fv
+
+				// Initialize nil pointer with an empty struct. It is used by the configpatch.BindKVs.
+				if cfg.InitNilPtr && fv.Kind() == reflect.Pointer && fv.IsNil() {
+					fv.Set(reflect.New(field.Type.Elem()))
+				}
 			}
 
 			// Mark field and all its children as sensitive according to the tag
@@ -126,6 +151,13 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 
 			// Step down
 			if err := doVisit(field, cfg); err != nil {
+				return err
+			}
+		}
+
+		// Call AfterValue callback
+		if cfg.AfterValue != nil {
+			if err := cfg.AfterValue(vc); err != nil {
 				return err
 			}
 		}

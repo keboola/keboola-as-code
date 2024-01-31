@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/keboola/go-utils/pkg/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -41,80 +39,96 @@ func DumpKVs(configStruct, patchStruct any, opts ...Option) ([]DumpKV, error) {
 	// Visit patch, get patched values
 	patchKeys := make(map[string]bool)
 	patchedValues := make(map[string]reflect.Value)
-	visitStruct(cfg.nameTags, patchStruct, func(vc *configmap.VisitContext) {
-		// Process only leaf values with a field name
-		if !vc.Leaf || vc.MappedPath.Last().String() == "" {
-			return
-		}
+	configmap.MustVisit(
+		reflect.ValueOf(patchStruct),
+		configmap.VisitConfig{
+			OnField: matchTaggedFields(cfg.nameTags),
+			OnValue: func(vc *configmap.VisitContext) error {
+				// Process only leaf values with a field name
+				if !vc.Leaf || vc.MappedPath.Last().String() == "" {
+					return nil
+				}
 
-		// Patch field must be a pointer
-		keyPath := vc.MappedPath.String()
-		if vc.Type.Kind() != reflect.Pointer {
-			errs.Append(errors.Errorf(`patch field "%s" is not a pointer, but "%s"`, keyPath, vc.Type))
-			return
-		}
+				// Patch field must be a pointer
+				keyPath := vc.MappedPath.String()
+				if vc.Type.Kind() != reflect.Pointer {
+					errs.Append(errors.Errorf(`patch field "%s" is not a pointer, but "%s"`, keyPath, vc.Type))
+					return nil
+				}
 
-		// Store found key
-		patchKeys[keyPath] = true
+				// Store found key
+				patchKeys[keyPath] = true
 
-		// Nil means not set
-		if vc.Value.IsValid() && !vc.Value.IsNil() {
-			patchedValues[keyPath] = vc.Value.Elem()
-		}
-	})
+				// Nil means not set
+				if vc.Value.IsValid() && !vc.Value.IsNil() {
+					patchedValues[keyPath] = vc.Value.Elem()
+				}
+
+				return nil
+			},
+		},
+	)
 
 	// Visit config, generate output key-value pairs
 	var patchedProtected []string
-	visitStruct(cfg.nameTags, configStruct, func(vc *configmap.VisitContext) {
-		// Process only leaf values with a field name
-		if !vc.Leaf || vc.MappedPath.Last().String() == "" {
-			return
-		}
+	configmap.MustVisit(
+		reflect.ValueOf(configStruct),
+		configmap.VisitConfig{
+			OnField: matchTaggedFields(cfg.nameTags),
+			OnValue: func(vc *configmap.VisitContext) error {
+				// Process only leaf values with a field name
+				if !vc.Leaf || vc.MappedPath.Last().String() == "" {
+					return nil
+				}
 
-		// Ignore fields which are not present in the patch
-		keyPath := vc.MappedPath.String()
-		if !patchKeys[keyPath] {
-			return
-		}
+				// Ignore fields which are not present in the patch
+				keyPath := vc.MappedPath.String()
+				if !patchKeys[keyPath] {
+					return nil
+				}
 
-		// Get patched value, if any
-		defaultValue := vc.Value
-		value, overwritten := patchedValues[keyPath]
-		if overwritten {
-			// Deleted the map key, so unused patch keys can be processed bellow
-			delete(patchedValues, keyPath)
+				// Get patched value, if any
+				defaultValue := vc.Value
+				value, overwritten := patchedValues[keyPath]
+				if overwritten {
+					// Deleted the map key, so unused patch keys can be processed bellow
+					delete(patchedValues, keyPath)
 
-			// Validate type
-			if value.Type() != defaultValue.Type() {
-				errs.Append(errors.Errorf(
-					`patch field "%s" type "%s" doesn't match config field type "%s"`,
-					keyPath,
-					value.Type().String(),
-					defaultValue.Type().String(),
-				))
-				return
-			}
-		} else {
-			// The key is not overwritten by the patch, use default value
-			value = defaultValue
-		}
+					// Validate type
+					if value.Type() != defaultValue.Type() {
+						errs.Append(errors.Errorf(
+							`patch field "%s" type "%s" doesn't match config field type "%s"`,
+							keyPath,
+							value.Type().String(),
+							defaultValue.Type().String(),
+						))
+						return nil
+					}
+				} else {
+					// The key is not overwritten by the patch, use default value
+					value = defaultValue
+				}
 
-		// Note overwritten protected field
-		protected := vc.StructField.Tag.Get(cfg.protectedTag) == cfg.protectedTagValue
-		if overwritten && protected && !cfg.modifyProtected {
-			patchedProtected = append(patchedProtected, keyPath)
-		}
+				// Note overwritten protected field
+				protected := vc.StructField.Tag.Get(cfg.protectedTag) == cfg.protectedTagValue
+				if overwritten && protected && !cfg.modifyProtected {
+					patchedProtected = append(patchedProtected, keyPath)
+				}
 
-		// Generate DumpKV
-		kvs = append(kvs, DumpKV{
-			KeyPath:      keyPath,
-			Value:        value.Interface(),
-			DefaultValue: defaultValue.Interface(),
-			Overwritten:  overwritten,
-			Protected:    protected,
-			Validation:   vc.Validate,
-		})
-	})
+				// Generate DumpKV
+				kvs = append(kvs, DumpKV{
+					KeyPath:      keyPath,
+					Value:        value.Interface(),
+					DefaultValue: defaultValue.Interface(),
+					Overwritten:  overwritten,
+					Protected:    protected,
+					Validation:   vc.Validate,
+				})
+
+				return nil
+			},
+		},
+	)
 
 	// Check unexpected patch keys
 	if len(patchedValues) > 0 {
@@ -145,30 +159,4 @@ func DumpKVs(configStruct, patchStruct any, opts ...Option) ([]DumpKV, error) {
 	})
 
 	return kvs, nil
-}
-
-func visitStruct(nameTags []string, root any, onValue func(vc *configmap.VisitContext)) {
-	err := configmap.Visit(
-		reflect.ValueOf(root),
-		configmap.VisitConfig{
-			OnField: func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool) {
-				for _, nameTag := range nameTags {
-					tagValue := field.Tag.Get(nameTag)
-					fieldName, _, _ = strings.Cut(tagValue, ",")
-					if fieldName != "" {
-						break
-					}
-				}
-				return fieldName, fieldName != ""
-			},
-			OnValue: func(vc *configmap.VisitContext) error {
-				onValue(vc)
-				return nil
-			},
-		},
-	)
-	// OnValue function returns no error, so no error is expected at all
-	if err != nil {
-		panic(errors.New("no error expected"))
-	}
 }

@@ -103,7 +103,7 @@ func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedma
 	})
 }
 
-func mapAndFilterField() func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool) {
+func mapAndFilterField() OnField {
 	return func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool) {
 		// Field must have tag
 		if tag, found := field.Tag.Lookup(configKeyTag); found {
