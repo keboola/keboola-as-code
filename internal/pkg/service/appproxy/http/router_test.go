@@ -245,6 +245,7 @@ func TestAppProxyRouter(t *testing.T) {
 				req = httptest.NewRequest("GET", location, nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusForbidden, rec.Code)
+				wildcards.Assert(t, "%ALogin Failed: Unable to find a valid CSRF token. Please try again.%A", rec.Body.String())
 
 				// Request to private app
 				rec = httptest.NewRecorder()
@@ -290,6 +291,7 @@ func TestAppProxyRouter(t *testing.T) {
 				}
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusForbidden, rec.Code)
+				wildcards.Assert(t, "%AYou do not have permission to access this resource.%A", rec.Body.String())
 
 				// Request to private app
 				rec = httptest.NewRecorder()
