@@ -13,8 +13,12 @@ const (
 )
 
 type Config struct {
-	Collector SyncConfig    `configKey:"sync"`
-	L2Cache   L2CacheConfig `configKey:"cache"`
+	Collector SyncConfig  `configKey:"sync"`
+	Cache     CacheConfig `configKey:"cache"`
+}
+
+type CacheConfig struct {
+	L2 L2CacheConfig `configKey:"L2"`
 }
 
 type SyncConfig struct {
@@ -23,6 +27,7 @@ type SyncConfig struct {
 }
 
 type L2CacheConfig struct {
+	Enabled              bool              `configKey:"enabled" configUsage:"Enable statistics L2 in-memory cache, otherwise only L1 cache is used."`
 	InvalidationInterval duration.Duration `configKey:"invalidationInterval" configUsage:"Statistics L2 in-memory cache invalidation interval." validate:"required,minDuration=100ms,maxDuration=5s"`
 }
 
@@ -32,8 +37,11 @@ func NewConfig() Config {
 			SyncInterval: duration.From(DefaultSyncInterval),
 			SyncTimeout:  duration.From(DefaultSyncTimeout),
 		},
-		L2Cache: L2CacheConfig{
-			InvalidationInterval: duration.From(DefaultL2CacheInvalidationInterval),
+		Cache: CacheConfig{
+			L2: L2CacheConfig{
+				Enabled:              true,
+				InvalidationInterval: duration.From(DefaultL2CacheInvalidationInterval),
+			},
 		},
 	}
 }

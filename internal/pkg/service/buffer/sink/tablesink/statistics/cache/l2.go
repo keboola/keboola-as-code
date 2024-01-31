@@ -30,6 +30,7 @@ type L2 struct {
 	cancel context.CancelFunc
 	wg     *sync.WaitGroup
 
+	enabled   bool
 	cacheLock *sync.RWMutex
 	cache     l2CachePerObjectKey
 	revision  int64
@@ -42,6 +43,7 @@ func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statisti
 		logger:    logger.AddPrefix("[stats-cache-L2]"),
 		l1Cache:   l1Cache,
 		wg:        &sync.WaitGroup{},
+		enabled:   config.Enabled,
 		cacheLock: &sync.RWMutex{},
 		cache:     make(l2CachePerObjectKey),
 	}
@@ -51,20 +53,22 @@ func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statisti
 	ctx, c.cancel = context.WithCancel(context.Background())
 
 	// Periodically invalidates the cache.
-	c.wg.Add(1)
-	ticker := clk.Ticker(config.InvalidationInterval.Duration())
-	go func() {
-		defer c.wg.Done()
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				c.Clear()
+	if c.enabled {
+		c.wg.Add(1)
+		ticker := clk.Ticker(config.InvalidationInterval.Duration())
+		go func() {
+			defer c.wg.Done()
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					c.Clear()
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	// Setup getters
 	c.provider = repository.NewProvider(c.aggregate)
@@ -97,25 +101,33 @@ func (c *L2) Clear() {
 }
 
 func (c *L2) aggregate(ctx context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, err error) {
+	var found bool
+
+	cacheKey := objectKey.String()
+
 	// Load stats from the fast L2 cache
-	k := objectKey.String()
-	c.cacheLock.RLock()
-	out, found := c.cache[k]
-	c.cacheLock.RUnlock()
+	if c.enabled {
+		c.cacheLock.RLock()
+		out, found = c.cache[cacheKey]
+		c.cacheLock.RUnlock()
+	}
 
 	// If not found, then calculate statistics from the slower L1 cache.
 	if !found {
 		var rev int64
 		out, rev = c.l1Cache.aggregateWithRev(ctx, objectKey)
 
-		c.cacheLock.Lock()
-		c.cache[k] = out
-		if c.revision == 0 {
-			// Store the first revision = the lowest revision.
-			// The value is cleared on cache invalidation.
-			c.revision = rev
+		// Cache the result
+		if c.enabled {
+			c.cacheLock.Lock()
+			c.cache[cacheKey] = out
+			if c.revision == 0 {
+				// Store the first revision = the lowest revision.
+				// The value is cleared on cache invalidation.
+				c.revision = rev
+			}
+			c.cacheLock.Unlock()
 		}
-		c.cacheLock.Unlock()
 	}
 
 	return out, nil

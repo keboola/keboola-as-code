@@ -71,8 +71,11 @@ sink:
                 # Statistics synchronization timeout. Validation rules: required,minDuration=1s,maxDuration=1m
                 timeout: 30s
             cache:
-                # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
-                invalidationInterval: 1s
+                L2:
+                    # Enable statistics L2 in-memory cache, otherwise only L1 cache is used.
+                    enabled: true
+                    # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
+                    invalidationInterval: 1s
         storage:
             volumeAssignment:
                 # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
