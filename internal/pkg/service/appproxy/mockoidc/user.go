@@ -1,4 +1,4 @@
-// nolint: tagliatelle
+// nolint: tagliatelle // because tagliatelle forces camel case for json keys
 package mockoidc
 
 import (
