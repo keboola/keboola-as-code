@@ -23,11 +23,3 @@ func NewConfig() Config {
 		Storage:    storage.NewConfig(),
 	}
 }
-
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.Storage != nil {
-		c.Storage = c.Storage.With(*v.Storage)
-	}
-	return c
-}

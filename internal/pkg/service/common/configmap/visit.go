@@ -12,18 +12,18 @@ type OnField func(field reflect.StructField, path orderedmap.Path) (fieldName st
 
 type OnValue func(vc *VisitContext) error
 
-type AfterValue func(vc *VisitContext) error
-
 type VisitConfig struct {
 	// InitNilPtr initializes each found nil pointer with an empty struct.
+	// The operation is performed before all nested field are processed.
 	InitNilPtr bool
+	// EmptyStructToNilPtr replaces each found empty struct with nil pointer, if possible.
+	// The operation is performed after all nested field are processed.
+	EmptyStructToNilPtr bool
 	// OnField maps field to a custom field name, for example from a tag.
 	// If ok == false, then the field is ignored.
 	OnField OnField
 	// OnValue is called on each field
 	OnValue OnValue
-	// AfterValue is called after all nested fields are processed, if any. Can be nil.
-	AfterValue AfterValue
 }
 
 type VisitContext struct {
@@ -155,10 +155,10 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 			}
 		}
 
-		// Call AfterValue callback
-		if cfg.AfterValue != nil {
-			if err := cfg.AfterValue(vc); err != nil {
-				return err
+		// Set nil, if the value is a pointer to an empty struct
+		if cfg.EmptyStructToNilPtr {
+			if vc.Value.CanAddr() && vc.Value.Kind() == reflect.Pointer && vc.Value.Elem().Kind() == reflect.Struct && vc.Value.Elem().IsZero() {
+				vc.Value.Set(reflect.Zero(vc.Value.Type())) // nil is zero value for a pointer
 			}
 		}
 

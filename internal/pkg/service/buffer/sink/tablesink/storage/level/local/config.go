@@ -35,17 +35,3 @@ func NewConfig() Config {
 		DiskAllocation: diskalloc.NewConfig(),
 	}
 }
-
-// With copies values from the ConfigPatch, if any.
-func (c Config) With(v ConfigPatch) Config {
-	if v.Compression != nil {
-		c.Compression = c.Compression.With(*v.Compression)
-	}
-	if v.DiskSync != nil {
-		c.DiskSync = c.DiskSync.With(*v.DiskSync)
-	}
-	if v.DiskAllocation != nil {
-		c.DiskAllocation = c.DiskAllocation.With(*v.DiskAllocation)
-	}
-	return c
-}

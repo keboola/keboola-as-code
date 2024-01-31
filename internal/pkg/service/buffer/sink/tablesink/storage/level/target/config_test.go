@@ -6,32 +6,37 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/level/target"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/sink/tablesink/storage/test/testvalidation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 )
 
 func TestConfig_With(t *testing.T) {
 	t.Parallel()
 
-	defaultCfg := target.NewConfig()
+	defaultConfig := target.NewConfig()
 
 	// Apply empty patch
-	assert.Equal(t, defaultCfg, defaultCfg.With(target.ConfigPatch{}))
+	patchedConfig1 := defaultConfig
+	require.NoError(t, configpatch.Apply(&patchedConfig1, target.ConfigPatch{}))
+	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// Apply full patch
-	patchedCfg := defaultCfg.With(target.ConfigPatch{
+	patchedConfig2 := patchedConfig1
+	require.NoError(t, configpatch.Apply(&patchedConfig2, target.ConfigPatch{
 		Import: &target.ImportConfigPatch{
 			Trigger: &target.ImportTriggerPatch{
 				Interval: test.Ptr(duration.From(456 * time.Millisecond)),
 			},
 		},
-	})
-	expectedCfg := defaultCfg
+	}))
+	expectedCfg := defaultConfig
 	expectedCfg.Import.Trigger.Interval = duration.From(456 * time.Millisecond)
-	assert.Equal(t, expectedCfg, patchedCfg)
+	assert.Equal(t, expectedCfg, patchedConfig2)
 }
 
 func TestConfig_Validation(t *testing.T) {
