@@ -39,7 +39,7 @@ func handlerFor(app DataApp, cfg config.Config) (http.Handler, error) {
 func publicAppHandler(app DataApp, _ config.Config, chain alice.Chain) (http.Handler, error) {
 	target, err := url.Parse("http://" + app.UpstreamHost)
 	if err != nil {
-		return nil, errors.Errorf(`cannot parse upstream url "%s": %w`, app.UpstreamHost, err)
+		return nil, errors.Errorf(`cannot parse upstream url "%s" for app %s: %w`, app.UpstreamHost, app.ID, err)
 	}
 	return chain.Then(httputil.NewSingleHostReverseProxy(target)), nil
 }
@@ -52,12 +52,12 @@ func protectedAppHandler(app DataApp, cfg config.Config, chain alice.Chain) (htt
 
 	config, err := authProxyConfig(app, cfg, chain)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("unable to create oauth proxy config for app %s: %w", app.ID, err)
 	}
 
 	handler, err := oauthproxy.NewOAuthProxy(config, authValidator)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("unable to start oauth proxy for app %s: %w", app.ID, err)
 	}
 
 	return handler, nil
