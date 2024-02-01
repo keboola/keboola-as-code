@@ -239,6 +239,29 @@ type UpdateInstanceResponseBody struct {
 	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
 }
 
+// DeleteInstanceResponseBody is the type of the "templates" service
+// "DeleteInstance" endpoint HTTP response body.
+type DeleteInstanceResponseBody struct {
+	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
 // UpgradeInstanceResponseBody is the type of the "templates" service
 // "UpgradeInstance" endpoint HTTP response body.
 type UpgradeInstanceResponseBody struct {
@@ -911,7 +934,7 @@ type InputResponseBody struct {
 	// Kind of the input.
 	Kind string `form:"kind" json:"kind" xml:"kind"`
 	// Default value, match defined type.
-	Default any `form:"default" json:"default" xml:"default"`
+	Default interface{} `form:"default" json:"default" xml:"default"`
 	// Input options for type = select OR multiselect.
 	Options []*InputOptionResponseBody `form:"options,omitempty" json:"options,omitempty" xml:"options,omitempty"`
 	// Component id for "oauth" kind inputs.
@@ -1067,7 +1090,7 @@ type InputValueRequestBody struct {
 	// Unique ID of the input.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Input value filled in by user in the required type.
-	Value any `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
+	Value interface{} `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
 }
 
 // NewAPIVersionIndexResponseBody builds the HTTP response body from the result
@@ -1316,6 +1339,27 @@ func NewUpdateInstanceResponseBody(res *templates.InstanceDetail) *UpdateInstanc
 		for i, val := range res.Configurations {
 			body.Configurations[i] = marshalTemplatesConfigToConfigResponseBody(val)
 		}
+	}
+	return body
+}
+
+// NewDeleteInstanceResponseBody builds the HTTP response body from the result
+// of the "DeleteInstance" endpoint of the "templates" service.
+func NewDeleteInstanceResponseBody(res *templates.Task) *DeleteInstanceResponseBody {
+	body := &DeleteInstanceResponseBody{
+		ID:         string(res.ID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalTemplatesTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }
