@@ -34,7 +34,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request without app id
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				assert.Equal(t, http.StatusNotFound, rec.Code)
 				assert.Equal(t, `Unable to parse application ID from the URL.`, rec.Body.String())
@@ -45,7 +45,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request to unknown app
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://unknown.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://unknown.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				assert.Equal(t, http.StatusNotFound, rec.Code)
 				assert.Equal(t, `Application "unknown" not found.`, rec.Body.String())
@@ -56,7 +56,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request to public app
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://public.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://public.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				assert.Equal(t, http.StatusOK, rec.Code)
 				assert.Equal(t, "Hello, client", rec.Body.String())
@@ -69,7 +69,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to public app
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://public.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://public.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				assert.Equal(t, http.StatusBadGateway, rec.Code)
 			},
@@ -79,7 +79,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request to public app
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://public.data-apps.keboola.local/some/data/app/url?foo=bar", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://public.data-apps.keboola.local/some/data/app/url?foo=bar", nil)
 				req.Header.Set("User-Agent", "Internet Exploder")
 				req.Header.Set("Content-Type", "application/json")
 				handler.ServeHTTP(rec, req)
@@ -105,7 +105,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -123,7 +123,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", location, nil)
+				req = httptest.NewRequest(http.MethodGet, location, nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -136,7 +136,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (authorized)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -157,7 +157,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -173,7 +173,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", location, nil)
+				req = httptest.NewRequest(http.MethodGet, location, nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -183,7 +183,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (authorized)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -203,7 +203,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -218,7 +218,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (still unauthorized because login failed)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -238,7 +238,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -254,14 +254,14 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback (fails because of missing CSRF token)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", location, nil)
+				req = httptest.NewRequest(http.MethodGet, location, nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusForbidden, rec.Code)
 				wildcards.Assert(t, "%ALogin Failed: Unable to find a valid CSRF token. Please try again.%A", rec.Body.String())
 
 				// Request to private app
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -281,7 +281,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -297,7 +297,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback (fails because of missing group)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", location, nil)
+				req = httptest.NewRequest(http.MethodGet, location, nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -307,7 +307,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -328,7 +328,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -344,7 +344,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback (fails because of unverified email)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", location, nil)
+				req = httptest.NewRequest(http.MethodGet, location, nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -354,7 +354,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -371,7 +371,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -388,7 +388,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -410,7 +410,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (unauthorized)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				handler.ServeHTTP(rec, req)
 				require.Equal(t, http.StatusFound, rec.Code)
 				location := rec.Header()["Location"][0]
@@ -428,7 +428,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", location, nil)
+				req = httptest.NewRequest(http.MethodGet, location, nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
@@ -441,7 +441,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to private app (authorized but down)
 				rec = httptest.NewRecorder()
-				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				for _, cookie := range cookies {
 					req.Header.Add("Cookie", cookie)
 				}
