@@ -24,14 +24,14 @@ import (
 
 type testCase struct {
 	name string
-	run  func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request)
+	run  func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer)
 }
 
 func TestAppProxyRouter(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "missing-app-id",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request without app id
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest("GET", "https://data-apps.keboola.local/", nil)
@@ -42,7 +42,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "unknown-app-id",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request to unknown app
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest("GET", "https://unknown.data-apps.keboola.local/", nil)
@@ -53,7 +53,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request to public app
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest("GET", "https://public.data-apps.keboola.local/", nil)
@@ -63,8 +63,20 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "public-app-down",
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
+				appServer.Close()
+
+				// Request to public app
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest("GET", "https://public.data-apps.keboola.local/", nil)
+				handler.ServeHTTP(rec, req)
+				assert.Equal(t, http.StatusBadGateway, rec.Code)
+			},
+		},
+		{
 			name: "public-app-sub-url",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				// Request to public app
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest("GET", "https://public.data-apps.keboola.local/some/data/app/url?foo=bar", nil)
@@ -74,8 +86,8 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, http.StatusOK, rec.Code)
 				assert.Equal(t, "Hello, client", rec.Body.String())
 
-				require.Len(t, *appRequests, 1)
-				appRequest := (*appRequests)[0]
+				require.Len(t, *appServer.appRequests, 1)
+				appRequest := (*appServer.appRequests)[0]
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
 				assert.Equal(t, "Internet Exploder", appRequest.Header.Get("User-Agent"))
 				assert.Equal(t, "application/json", appRequest.Header.Get("Content-Type"))
@@ -83,7 +95,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-oidc",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				m.QueueUser(&mockoidcCustom.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -134,7 +146,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-verified-email",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				m.QueueUser(&mockoidcCustom.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
@@ -181,7 +193,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-unauthorized",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				m.QueueError(&mockoidc.ServerError{
 					Code:  http.StatusUnauthorized,
 					Error: mockoidc.InvalidRequest,
@@ -216,7 +228,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-missing-csrf-token",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				m.QueueUser(&mockoidcCustom.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -259,7 +271,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-group-mismatch",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				m.QueueUser(&mockoidcCustom.MockUser{
 					Email:  "manager@keboola.com",
 					Groups: []string{"manager"},
@@ -305,7 +317,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-unverified-email",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appRequests *[]*http.Request) {
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				m.QueueUser(&mockoidcCustom.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
@@ -350,6 +362,93 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, rec.Code)
 			},
 		},
+		{
+			name: "private-app-oidc-down",
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
+				m.Shutdown()
+
+				client := createNoRedirectHTTPClient()
+
+				// Request to private app (unauthorized)
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusFound, rec.Code)
+				location := rec.Header()["Location"][0]
+				cookies := rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 1)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
+
+				// Request to the OIDC provider
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.Error(t, err)
+				require.Nil(t, response)
+
+				// Request to private app (unauthorized)
+				rec = httptest.NewRecorder()
+				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				for _, cookie := range cookies {
+					req.Header.Add("Cookie", cookie)
+				}
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusFound, rec.Code)
+			},
+		},
+		{
+			name: "private-app-down",
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
+				appServer.Close()
+
+				m.QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				client := createNoRedirectHTTPClient()
+
+				// Request to private app (unauthorized)
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusFound, rec.Code)
+				location := rec.Header()["Location"][0]
+				cookies := rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 1)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
+
+				// Request to the OIDC provider
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				rec = httptest.NewRecorder()
+				req = httptest.NewRequest("GET", location, nil)
+				for _, cookie := range cookies {
+					req.Header.Add("Cookie", cookie)
+				}
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusFound, rec.Code)
+				cookies = rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 2)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
+				wildcards.Assert(t, "_oauth2_proxy=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[1])
+
+				// Request to private app (authorized but down)
+				rec = httptest.NewRecorder()
+				req = httptest.NewRequest("GET", "https://oidc.data-apps.keboola.local/", nil)
+				for _, cookie := range cookies {
+					req.Header.Add("Cookie", cookie)
+				}
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusBadGateway, rec.Code)
+			},
+		},
 	}
 
 	t.Parallel()
@@ -359,13 +458,13 @@ func TestAppProxyRouter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ts, appRequests := startAppServer()
-			defer ts.Close()
+			appServer := startAppServer()
+			defer appServer.Close()
 
 			m := startOIDCProviderServer(t)
 			defer m.Shutdown()
 
-			tsURL, err := url.Parse(ts.URL)
+			tsURL, err := url.Parse(appServer.URL)
 			require.NoError(t, err)
 
 			apps := []DataApp{
@@ -399,12 +498,17 @@ func TestAppProxyRouter(t *testing.T) {
 
 			handler := createProxyHandler(t, apps)
 
-			tc.run(t, handler, m, appRequests)
+			tc.run(t, handler, m, appServer)
 		})
 	}
 }
 
-func startAppServer() (*httptest.Server, *[]*http.Request) {
+type appServer struct {
+	*httptest.Server
+	appRequests *[]*http.Request
+}
+
+func startAppServer() *appServer {
 	var requests []*http.Request
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests = append(requests, r)
@@ -412,7 +516,7 @@ func startAppServer() (*httptest.Server, *[]*http.Request) {
 	}))
 	ts.EnableHTTP2 = true
 	ts.Start()
-	return ts, &requests
+	return &appServer{ts, &requests}
 }
 
 func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
