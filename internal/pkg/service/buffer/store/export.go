@@ -243,7 +243,6 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 			})
 			return nil
 		})
-
 	if err != nil {
 		return nil, err
 	}

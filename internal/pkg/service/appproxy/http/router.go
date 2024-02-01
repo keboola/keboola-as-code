@@ -43,7 +43,7 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp)
 func (r *Router) CreateHandler() http.Handler {
 	handler := mux.NewRouter()
 
-	handler.Path("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	handler.PathPrefix("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		appID, ok := parseAppID(req.URL.Host)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)

@@ -185,7 +185,6 @@ func (s *Store) ListReceivers(ctx context.Context, projectID keboola.ProjectID) 
 			})
 			return nil
 		})
-
 	if err != nil {
 		return nil, err
 	}
