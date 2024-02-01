@@ -52,17 +52,6 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
-			name: "public-app",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
-				// Request to public app
-				rec := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodGet, "https://public.data-apps.keboola.local/", nil)
-				handler.ServeHTTP(rec, req)
-				assert.Equal(t, http.StatusOK, rec.Code)
-				assert.Equal(t, "Hello, client", rec.Body.String())
-			},
-		},
-		{
 			name: "public-app-down",
 			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
 				appServer.Close()
@@ -91,57 +80,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
 				assert.Equal(t, "Internet Exploder", appRequest.Header.Get("User-Agent"))
 				assert.Equal(t, "application/json", appRequest.Header.Get("Content-Type"))
-			},
-		},
-		{
-			name: "private-app-oidc",
-			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
-				m.QueueUser(&mockoidcCustom.MockUser{
-					Email:  "admin@keboola.com",
-					Groups: []string{"admin"},
-				})
-
-				client := createNoRedirectHTTPClient()
-
-				// Request to private app (unauthorized)
-				rec := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
-				handler.ServeHTTP(rec, req)
-				require.Equal(t, http.StatusFound, rec.Code)
-				location := rec.Header()["Location"][0]
-				cookies := rec.Header()["Set-Cookie"]
-				assert.Len(t, cookies, 1)
-				wildcards.Assert(t, "_oauth2_proxy_csrf=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
-
-				// Request to the OIDC provider
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
-				require.NoError(t, err)
-				response, err := client.Do(request)
-				require.NoError(t, err)
-				require.Equal(t, http.StatusFound, response.StatusCode)
-				location = response.Header["Location"][0]
-
-				// Request to proxy callback
-				rec = httptest.NewRecorder()
-				req = httptest.NewRequest(http.MethodGet, location, nil)
-				for _, cookie := range cookies {
-					req.Header.Add("Cookie", cookie)
-				}
-				handler.ServeHTTP(rec, req)
-				require.Equal(t, http.StatusFound, rec.Code)
-				cookies = rec.Header()["Set-Cookie"]
-				assert.Len(t, cookies, 2)
-				wildcards.Assert(t, "_oauth2_proxy_csrf=; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
-				wildcards.Assert(t, "_oauth2_proxy=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[1])
-
-				// Request to private app (authorized)
-				rec = httptest.NewRecorder()
-				req = httptest.NewRequest(http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
-				for _, cookie := range cookies {
-					req.Header.Add("Cookie", cookie)
-				}
-				handler.ServeHTTP(rec, req)
-				require.Equal(t, http.StatusOK, rec.Code)
 			},
 		},
 		{
@@ -450,6 +388,92 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 	}
+
+	publicAppTestCaseFactory := func(method string) testCase {
+		return testCase{
+			name: "public-app-" + method,
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
+				// Request to public app
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(method, "https://public.data-apps.keboola.local/", nil)
+				handler.ServeHTTP(rec, req)
+				assert.Equal(t, http.StatusOK, rec.Code)
+				assert.Equal(t, "Hello, client", rec.Body.String())
+			},
+		}
+	}
+
+	testCases = append(
+		testCases,
+		publicAppTestCaseFactory(http.MethodGet),
+		publicAppTestCaseFactory(http.MethodPost),
+		publicAppTestCaseFactory(http.MethodPut),
+		publicAppTestCaseFactory(http.MethodPatch),
+		publicAppTestCaseFactory(http.MethodDelete),
+	)
+
+	privateAppTestCaseFactory := func(method string) testCase {
+		return testCase{
+			name: "private-app-oidc-" + method,
+			run: func(t *testing.T, handler http.Handler, m *mockoidc.MockOIDC, appServer *appServer) {
+				m.QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				client := createNoRedirectHTTPClient()
+
+				// Request to private app (unauthorized)
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(method, "https://oidc.data-apps.keboola.local/", nil)
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusFound, rec.Code)
+				location := rec.Header()["Location"][0]
+				cookies := rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 1)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
+
+				// Request to the OIDC provider
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				rec = httptest.NewRecorder()
+				req = httptest.NewRequest(http.MethodGet, location, nil)
+				for _, cookie := range cookies {
+					req.Header.Add("Cookie", cookie)
+				}
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusFound, rec.Code)
+				cookies = rec.Header()["Set-Cookie"]
+				assert.Len(t, cookies, 2)
+				wildcards.Assert(t, "_oauth2_proxy_csrf=; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[0])
+				wildcards.Assert(t, "_oauth2_proxy=%s; Path=/; Domain=oidc.data-apps.keboola.local; Expires=%s; HttpOnly; Secure", cookies[1])
+
+				// Request to private app (authorized)
+				rec = httptest.NewRecorder()
+				req = httptest.NewRequest(method, "https://oidc.data-apps.keboola.local/", nil)
+				for _, cookie := range cookies {
+					req.Header.Add("Cookie", cookie)
+				}
+				handler.ServeHTTP(rec, req)
+				require.Equal(t, http.StatusOK, rec.Code)
+			},
+		}
+	}
+
+	testCases = append(
+		testCases,
+		privateAppTestCaseFactory(http.MethodGet),
+		privateAppTestCaseFactory(http.MethodPost),
+		privateAppTestCaseFactory(http.MethodPut),
+		privateAppTestCaseFactory(http.MethodPatch),
+		privateAppTestCaseFactory(http.MethodDelete),
+	)
 
 	t.Parallel()
 
