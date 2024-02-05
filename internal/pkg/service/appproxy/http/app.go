@@ -15,10 +15,10 @@ import (
 )
 
 type DataApp struct {
-	ID           AppID             `json:"id" validator:"required"`
-	Name         string            `json:"name" validator:"required"`
-	UpstreamHost string            `json:"upstreamUrl" validator:"required"`
-	Provider     *options.Provider `json:"provider,omitempty"`
+	ID           AppID              `json:"id" validator:"required"`
+	Name         string             `json:"name" validator:"required"`
+	UpstreamHost string             `json:"upstreamUrl" validator:"required"`
+	Providers    []options.Provider `json:"providers"`
 }
 
 type AppID string
@@ -29,7 +29,7 @@ func (v AppID) String() string {
 
 func handlerFor(app DataApp, cfg config.Config) (http.Handler, error) {
 	chain := alice.New()
-	if app.Provider == nil {
+	if len(app.Providers) == 0 {
 		return publicAppHandler(app, cfg, chain)
 	} else {
 		return protectedAppHandler(app, cfg, chain)
@@ -50,7 +50,7 @@ func protectedAppHandler(app DataApp, cfg config.Config, chain alice.Chain) (htt
 		return true
 	}
 
-	config, err := authProxyConfig(app, cfg, chain)
+	config, err := authProxyConfig(app, app.Providers[0], cfg, chain)
 	if err != nil {
 		return nil, errors.Errorf("unable to create oauth proxy config for app %s: %w", app.ID, err)
 	}
@@ -63,7 +63,7 @@ func protectedAppHandler(app DataApp, cfg config.Config, chain alice.Chain) (htt
 	return handler, nil
 }
 
-func authProxyConfig(app DataApp, cfg config.Config, chain alice.Chain) (*options.Options, error) {
+func authProxyConfig(app DataApp, provider options.Provider, cfg config.Config, chain alice.Chain) (*options.Options, error) {
 	v := options.NewOptions()
 
 	domain := app.ID.String() + "." + cfg.PublicAddress.Host
@@ -73,7 +73,7 @@ func authProxyConfig(app DataApp, cfg config.Config, chain alice.Chain) (*option
 	v.ProxyPrefix = "/proxy"
 	v.RawRedirectURL = cfg.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
-	v.Providers = options.Providers{*app.Provider}
+	v.Providers = options.Providers{provider}
 	v.SkipProviderButton = true
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
 	v.EmailDomains = []string{"*"}
