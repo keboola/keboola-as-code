@@ -20,6 +20,8 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
@@ -410,6 +412,31 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 		},
+		{
+			name: "public-app-websocket",
+			run: func(t *testing.T, client *http.Client, m *mockoidc.MockOIDC, appServer *appServer) {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+
+				c, _, err := websocket.Dial(
+					ctx,
+					"wss://public.data-apps.keboola.local/ws",
+					&websocket.DialOptions{
+						HTTPClient: client,
+					},
+				)
+				require.NoError(t, err)
+				defer c.CloseNow()
+
+				var v interface{}
+				err = wsjson.Read(ctx, c, &v)
+				require.NoError(t, err)
+
+				assert.Equal(t, "Hello websocket", v)
+
+				c.Close(websocket.StatusNormalClosure, "")
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
@@ -509,7 +536,7 @@ func TestAppProxyRouter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			appServer := startAppServer()
+			appServer := startAppServer(t)
 			defer appServer.Close()
 
 			m := startOIDCProviderServer(t)
@@ -568,12 +595,31 @@ type appServer struct {
 	appRequests *[]*http.Request
 }
 
-func startAppServer() *appServer {
+func startAppServer(t *testing.T) *appServer {
+	t.Helper()
+
 	var requests []*http.Request
-	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		c, err := websocket.Accept(w, r, nil)
+		require.NoError(t, err)
+		defer c.CloseNow()
+
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+		defer cancel()
+
+		err = wsjson.Write(ctx, c, "Hello websocket")
+		require.NoError(t, err)
+
+		c.Close(websocket.StatusNormalClosure, "")
+	})
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		requests = append(requests, r)
 		fmt.Fprint(w, "Hello, client")
-	}))
+	})
+
+	ts := httptest.NewUnstartedServer(mux)
 	ts.EnableHTTP2 = true
 	ts.Start()
 	return &appServer{ts, &requests}

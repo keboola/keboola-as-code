@@ -84,6 +84,7 @@ require (
 	google.golang.org/grpc v1.55.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.54.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
+	nhooyr.io/websocket v1.8.10
 	v.io/x/lib v0.1.14
 )
 
