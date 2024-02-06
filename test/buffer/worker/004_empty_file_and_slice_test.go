@@ -3,8 +3,7 @@ package worker
 import (
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/stream/server"
 )
 
 // test004EmptyFileAndSlice triggers upload of an empty slice and import of an empty file

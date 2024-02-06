@@ -17,8 +17,8 @@ import (
 	"github.com/umisama/go-regexpcache"
 	"golang.org/x/sync/errgroup"
 
-	apiModel "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
+	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/stream/server"
+	apiModel "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )

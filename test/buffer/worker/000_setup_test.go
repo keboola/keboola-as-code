@@ -2,8 +2,6 @@ package worker
 
 import (
 	"strings"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 )
 
 // test000Setup creates receiver with two exports.

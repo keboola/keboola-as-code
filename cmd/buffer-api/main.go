@@ -15,8 +15,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	bufferGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
+	bufferGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/stream/server"
+	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"

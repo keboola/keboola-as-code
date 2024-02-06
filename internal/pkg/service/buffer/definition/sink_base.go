@@ -16,3 +16,7 @@ type Sink struct {
 	Description string     `json:"description,omitempty" validate:"max=4096"`
 	Table       *TableSink `json:"table" validate:"required_if=Type table"`
 }
+
+func (t SinkType) String() string {
+	return string(t)
+}
