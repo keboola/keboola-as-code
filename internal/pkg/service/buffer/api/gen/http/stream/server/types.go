@@ -686,7 +686,7 @@ type SettingResultResponse struct {
 	// Key path.
 	Key string `form:"key" json:"key" xml:"key"`
 	// Value type.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type string `form:"type" json:"type" xml:"type"`
 	// Actual value.
 	Value any `form:"value" json:"value" xml:"value"`
 	// Default value.

@@ -792,7 +792,7 @@ var SettingResult = Type("SettingResult", func() {
 		Description("Validation rules as a string definition.")
 		Example("minDuration=15s")
 	})
-	Required("key", "value", "defaultValue", "overwritten", "protected")
+	Required("key", "type", "value", "defaultValue", "overwritten", "protected")
 })
 
 var SettingsPatch = Type("SettingsPatch", ArrayOf(SettingPatch, func() {
