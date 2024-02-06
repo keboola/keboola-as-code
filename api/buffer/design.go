@@ -4,7 +4,11 @@ package buffer
 import (
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/repository"
+	"github.com/umisama/go-regexpcache"
+	"reflect"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -17,6 +21,7 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/errormsg"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/example"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
@@ -37,6 +42,7 @@ func init() {
 }
 
 var _ = API("stream", func() {
+	Randomizer(expr.NewDeterministicRandomizer())
 	Title("Stream Service")
 	Description("A service for continuously importing data to the Keboola platform.")
 	Version("1.0")
@@ -135,15 +141,15 @@ var _ = Service("stream", func() {
 		Meta("openapi:tag:documentation")
 	})
 
-	// Main endpoints ---------------------------------------------------------------------------------------------
+	// Source endpoints ------------------------------------------------------------------------------------------------
 
 	Method("CreateSource", func() {
 		Meta("openapi:summary", "Create source")
-		Description("Create a new source in the project")
+		Description("Create a new source in the branch.")
 		Result(Task)
 		Payload(CreateSourceRequest)
 		HTTP(func() {
-			POST("/{branchId}/sources")
+			POST("/branches/{branchId}/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceAlreadyExistsError()
@@ -157,7 +163,7 @@ var _ = Service("stream", func() {
 		Result(Source)
 		Payload(UpdateSourceRequest)
 		HTTP(func() {
-			PATCH("/{branchId}/sources/{sourceId}")
+			PATCH("/branches/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -166,11 +172,11 @@ var _ = Service("stream", func() {
 
 	Method("ListSources", func() {
 		Meta("openapi:summary", "List all sources")
-		Description("List all sources in the project.")
+		Description("List all sources in the branch.")
 		Payload(ListSourcesRequest)
 		Result(SourcesList)
 		HTTP(func() {
-			GET("/{branchId}/sources")
+			GET("/branches/{branchId}/sources")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 		})
@@ -182,7 +188,7 @@ var _ = Service("stream", func() {
 		Result(Source)
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			GET("/{branchId}/sources/{sourceId}")
+			GET("/branches/{branchId}/sources/{sourceId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -194,7 +200,33 @@ var _ = Service("stream", func() {
 		Description("Delete the source.")
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			DELETE("/{branchId}/sources/{sourceId}")
+			DELETE("/branches/{branchId}/sources/{sourceId}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
+	Method("GetSourceSettings", func() {
+		Meta("openapi:summary", "Get source settings")
+		Description("Get source settings.")
+		Result(SettingsResult)
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/settings")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
+	Method("UpdateSourceSettings", func() {
+		Meta("openapi:summary", "Update source settings")
+		Description("Update source settings.")
+		Result(SettingsResult)
+		Payload(SourceSettingsPatch)
+		HTTP(func() {
+			PATCH("/branches/{branchId}/sources/{sourceId}/settings")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -207,20 +239,22 @@ var _ = Service("stream", func() {
 		Result(Source)
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/{branchId}/sources/{sourceId}/tokens/refresh")
+			POST("/branches/{branchId}/sources/{sourceId}/tokens/refresh")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
 		})
 	})
 
+	// Sink endpoints --------------------------------------------------------------------------------------------------
+
 	Method("CreateSink", func() {
 		Meta("openapi:summary", "Create sink")
-		Description("Create a new sink for an existing source.")
+		Description("Create a new sink in the source.")
 		Result(Task)
 		Payload(CreateSinkRequest)
 		HTTP(func() {
-			POST("/sources/{sourceId}/sinks")
+			POST("/branches/{branchId}/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()
@@ -231,11 +265,39 @@ var _ = Service("stream", func() {
 
 	Method("GetSink", func() {
 		Meta("openapi:summary", "Get sink")
-		Description("Get the configuration of an sink.")
+		Description("Get the sink definition.")
 		Result(Sink)
 		Payload(GetSinkRequest)
 		HTTP(func() {
-			GET("/sources/{sourceId}/sinks/{sinkId}")
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("GetSinkSettings", func() {
+		Meta("openapi:summary", "Get sink settings")
+		Description("Get the sink settings.")
+		Result(SettingsResult)
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("UpdateSinkSettings", func() {
+		Meta("openapi:summary", "Update sink settings")
+		Description("Update sink settings.")
+		Result(SettingsResult)
+		Payload(SinkSettingsPatch)
+		HTTP(func() {
+			PATCH("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -245,11 +307,11 @@ var _ = Service("stream", func() {
 
 	Method("ListSinks", func() {
 		Meta("openapi:summary", "List sinks")
-		Description("List all sinks for a given source.")
+		Description("List all sinks in the source.")
 		Result(SinksList)
 		Payload(ListSinksRequest)
 		HTTP(func() {
-			GET("/sources/{sourceId}/sinks")
+			GET("/branches/{branchId}/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -258,11 +320,11 @@ var _ = Service("stream", func() {
 
 	Method("UpdateSink", func() {
 		Meta("openapi:summary", "Update sink")
-		Description("Update a source sink.")
+		Description("Update the sink.")
 		Result(Task)
 		Payload(UpdateSinkRequest)
 		HTTP(func() {
-			PATCH("/sources/{sourceId}/sinks/{sinkId}")
+			PATCH("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -272,10 +334,10 @@ var _ = Service("stream", func() {
 
 	Method("DeleteSink", func() {
 		Meta("openapi:summary", "Delete sink")
-		Description("Delete a source sink.")
+		Description("Delete the sink.")
 		Payload(GetSinkRequest)
 		HTTP(func() {
-			DELETE("/sources/{sourceId}/sinks/{sinkId}")
+			DELETE("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -283,34 +345,7 @@ var _ = Service("stream", func() {
 		})
 	})
 
-	Method("Import", func() {
-		Meta("openapi:summary", "Import data")
-		Description("Upload data into the source.")
-		NoSecurity()
-		Payload(func() {
-			Attribute("projectId", ProjectID)
-			Attribute("sourceId", SourceID)
-			Attribute("secret", String, func() {
-				Description("Secret used for authentication.")
-				MinLength(48)
-				MaxLength(48)
-				Example("UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH")
-			})
-			Attribute("contentType", String, func() {
-				Example("application/json")
-			})
-			Required("projectId", "sourceId", "secret", "contentType")
-		})
-		HTTP(func() {
-			POST("/import/{projectId}/{sourceId}/{secret}")
-			Meta("openapi:tag:import")
-			Header("contentType:Content-Type")
-			SkipRequestBodyEncodeDecode()
-			Response(StatusOK)
-			SourceNotFoundError()
-			PayloadTooLargeError()
-		})
-	})
+	// Task endpoints --------------------------------------------------------------------------------------------------
 
 	Method("GetTask", func() {
 		Meta("openapi:summary", "Get task")
@@ -318,7 +353,7 @@ var _ = Service("stream", func() {
 		Result(Task)
 		Payload(GetTaskRequest)
 		HTTP(func() {
-			GET("/tasks/{*taskId}")
+			GET("/branches/{branchId}/tasks/{*taskId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			TaskNotFoundError()
@@ -335,7 +370,7 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 // Types --------------------------------------------------------------------------------------------------------------
 
 var ServiceDetail = Type("ServiceDetail", func() {
-	Description("Information about the service")
+	Description("Information about the service.")
 	Attribute("api", String, "Name of the API", func() {
 		Example("stream")
 	})
@@ -348,15 +383,22 @@ var ServiceDetail = Type("ServiceDetail", func() {
 // ProjectID ----------------------------------------------------------------------------------------------------------
 
 var ProjectID = Type("ProjectID", Int, func() {
-	Description("ID of the project")
 	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
+	Description("ID of the project.")
+	Example(123)
 })
 
 // Branch -------------------------------------------------------------------------------------------------------------
 
 var BranchID = Type("BranchID", Int, func() {
-	Description("ID of the branch")
 	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/go-client/pkg/keboola")
+	Description("ID of the branch.")
+	Example(345)
+})
+
+var BranchIDOrDefault = Type("BranchIDOrDefault", String, func() {
+	Description(`ID of the branch or "default".`)
+	Example("default")
 })
 
 // Versioned trait ----------------------------------------------------------------------------------------------------
@@ -364,43 +406,81 @@ var BranchID = Type("BranchID", Int, func() {
 var EntityVersion = Type("Version", func() {
 	Meta("struct:field:type", "= definition.Version", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition")
 	Description("Version of the entity.")
-	Attribute("number", Int, "Version number counted from 1.")
-	Attribute("hash", String, "Hash of the entity state.")
+	Attribute("number", Int, func() {
+		Description("Version number counted from 1.")
+		Minimum(1)
+		Example(3)
+	})
+	Attribute("hash", String, func() {
+		Description("Hash of the entity state.")
+		Example("f43e93acd97eceb3")
+	})
 	Attribute("modifiedAt", String, func() {
 		Description("Date and time of the modification.")
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Attribute("description", String, "Description of the change.")
+	Attribute("description", String, func() {
+		Description("Description of the change.")
+		Example("The reason for the last change was...")
+	})
 	Required("number", "hash", "modifiedAt", "description")
 })
 
-// SoftDeletable trait ------------------------------------------------------------------------------------------------
+// DeletedEntity info --------------------------------------------------------------------------------------------------
 
-var SoftDeletable = Type("SoftDeletable", func() {
-	Description("Entity deletion status.")
-	Attribute("deleted", Boolean, "True, if the entity is soft deleted.")
-	Attribute("deletedAt", String, func() {
+var By = Type("By", func() {
+	Description("Information about the operation actor.")
+	Attribute("type", String, func() {
+		Description("Date and time of deletion.")
+		Enum("system", "user")
+		Example("user")
+	})
+	Attribute("tokenId", String, func() {
+		Description(`ID of the token.`)
+		Example("896455")
+	})
+	Attribute("userId", String, func() {
+		Description(`ID of the user.`)
+		Example("578621")
+	})
+	Attribute("userDescription", String, func() {
+		Description(`Description of the user.`)
+		Example("user@company.com")
+	})
+	Required("type")
+})
+
+var DeletedEntity = Type("DeletedEntity", func() {
+	Description("Information about the deleted entity.")
+	Attribute("at", String, func() {
 		Description("Date and time of deletion.")
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Required("deleted")
+	Attribute("by", By, func() {
+		Description(`Who deleted the entity, for example "system", "user", ...`)
+	})
+	Required("at", "by")
 })
 
-// Switchable trait ------------------------------------------------------------------------------------------------
+// DisabledEntity info -------------------------------------------------------------------------------------------------
 
-var Switchable = Type("Switchable", func() {
-	Description("Switchable")
-	Attribute("disabled", Boolean, "True, if the entity is disabled.")
-	Attribute("disabledBy", String, `Who turned off the entity, for example "system", "user", ...`)
-	Attribute("disabledAt", String, func() {
+var DisabledEntity = Type("DisabledEntity", func() {
+	Description("Information about the disabled entity.")
+	Attribute("at", String, func() {
 		Description("Date and time of disabling.")
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Attribute("disabledReason", String, "Why was the entity disabled?")
-	Required("disabled")
+	Attribute("by", By, func() {
+		Description(`Who disabled the entity, for example "system", "user", ...`)
+	})
+	Attribute("reason", String, func() {
+		Description("Why was the entity disabled?")
+		Example("Disabled for recurring problems.")
+	})
+	Required("at", "by", "reason")
 })
 
 // Source -------------------------------------------------------------------------------------------------------------
@@ -408,26 +488,34 @@ var Switchable = Type("Switchable", func() {
 var SourceID = Type("SourceID", String, func() {
 	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key")
 	Description("Unique ID of the source.")
-	MinLength(1)
-	MaxLength(48)
+	MinLength(cast.ToInt(fieldValidationRule(key.SourceKey{}, "SourceID", "min")))
+	MaxLength(cast.ToInt(fieldValidationRule(key.SourceKey{}, "SourceID", "max")))
 	Example("github-webhook-source")
 })
 
 var Source = Type("Source", func() {
 	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+
 	Attribute("projectId", ProjectID)
 	Attribute("branchId", BranchID)
 	Attribute("sourceId", SourceID)
-	Attribute("version", EntityVersion)
-	Extend(SoftDeletable)
-	Extend(Switchable)
-	sourceFields()
-	Attribute("sinks", ArrayOf(Sink), func() {
-		Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", repository.MaxSinksPerSource))
-		Example([]any{ExampleSink()})
+
+	SourceFieldsRW()
+	Attribute("http", HTTPSource, func() {
+		Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
 	})
+
+	Attribute("version", EntityVersion)
+	Attribute("deleted", DeletedEntity)
+	Attribute("disabled", DisabledEntity)
+
+	Attribute("sinks", Sinks)
+
 	Required("projectId", "branchId", "sourceId", "version", "type", "name", "description", "type", "sinks")
-	Example(ExampleSource())
+})
+
+var Sources = Type("Sources", ArrayOf(Source), func() {
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
 })
 
 var SourceType = Type("SourceType", String, func() {
@@ -436,207 +524,297 @@ var SourceType = Type("SourceType", String, func() {
 	Example(definition.SourceTypeHTTP.String())
 })
 
-var HTTPSource = Type("HTTPSource", func() {
-	Description("HTTP endpoint data source definition.")
-	Attribute("url", String, func() {
-		Description("URL of the HTTP source. Contains secret used for authentication.")
-	})
-	Required("url")
-})
-
 var CreateSourceRequest = Type("CreateSourceRequest", func() {
-	Attribute("branchId", BranchID)
-	Attribute("id", SourceID, func() {
+	Attribute("branchId", BranchIDOrDefault)
+	Attribute("sourceId", SourceID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
-	sourceFields()
+	SourceFieldsRW()
 	Required("branchId", "type", "name")
 })
 
 var GetSourceRequest = Type("GetSourceRequest", func() {
-	Attribute("branchId", BranchID)
+	Attribute("branchId", BranchIDOrDefault)
 	Attribute("sourceId", SourceID)
 	Required("branchId", "sourceId")
 })
 
 var ListSourcesRequest = Type("ListSourcesRequest", func() {
-	Attribute("branchId", BranchID)
+	Attribute("branchId", BranchIDOrDefault)
 	Required("branchId", "branchId")
 })
 
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 	Extend(GetSourceRequest)
-	sourceFields()
+	SourceFieldsRW()
+})
+
+var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
+	Extend(GetSourceRequest)
+	Attribute("patch", SettingsPatch)
 })
 
 var SourcesList = Type("SourcesList", func() {
-	Attribute("sources", ArrayOf(Source), func() {
-		Example([]any{ExampleSource()})
-	})
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Attribute("sources", Sources)
 	Required("sources")
 })
 
-var sourceFields = func() {
+var SourceFieldsRW = func() {
 	Attribute("type", SourceType)
 	Attribute("name", String, func() {
 		Description("Human readable name of the source.")
-		MinLength(1)
-		MaxLength(40)
+		MinLength(cast.ToInt(fieldValidationRule(definition.Source{}, "Name", "min")))
+		MaxLength(cast.ToInt(fieldValidationRule(definition.Source{}, "Name", "max")))
 		Example("Github Webhook Source")
 	})
 	Attribute("description", String, func() {
 		Description("Description of the source.")
-		MaxLength(4096)
-		Example("This source receives events from Github.")
-	})
-	Attribute("htto", HTTPSource, func() {
-		Description("Description of the source.")
+		MaxLength(cast.ToInt(fieldValidationRule(definition.Sink{}, "Description", "max")))
+		Example("The source receives events from Github.")
 	})
 }
 
-// Sink -------------------------------------------------------------------------------------------------------------
+// HTTP Source----------------------------------------------------------------------------------------------------------
+
+var HTTPSource = Type("HTTPSource", func() {
+	Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
+	Attribute("url", String, func() {
+		Description("URL of the HTTP source. Contains secret used for authentication.")
+		Example("https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
+	})
+	Required("url")
+})
+
+// Sink ----------------------------------------------------------------------------------------------------------------
 
 var SinkID = Type("SinkID", String, func() {
-	Meta("struct:field:type", "= key.SinkID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Meta("struct:field:type", "= key.SinkID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/key")
 	Description("Unique ID of the sink.")
-	MinLength(1)
-	MaxLength(48)
+	MinLength(cast.ToInt(fieldValidationRule(key.SinkKey{}, "SinkID", "min")))
+	MaxLength(cast.ToInt(fieldValidationRule(key.SinkKey{}, "SinkID", "max")))
 	Example("github-pr-table-sink")
 })
 
 var Sink = Type("Sink", func() {
 	Description("A mapping from imported data to a destination table.")
-	Attribute("id", SinkID)
+
+	Attribute("projectId", ProjectID)
+	Attribute("branchId", BranchID)
 	Attribute("sourceId", SourceID)
-	SinkFields()
-	Required("id", "sourceId", "name", "mapping", "conditions")
-	Example(ExampleSink())
+	Attribute("sinkId", SinkID)
+
+	SinkFieldsRW()
+
+	Attribute("version", EntityVersion)
+	Attribute("deleted", DeletedEntity)
+	Attribute("disabled", DisabledEntity)
+
+	Required("projectId", "branchId", "sourceId", "sinkId", "version", "name", "description")
+})
+
+var Sinks = Type("Sinks", ArrayOf(Sink), func() {
+	Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", repository.MaxSinksPerSource))
+})
+
+var SinkType = Type("SinkType", String, func() {
+	Meta("struct:field:type", "= definition.SinkType", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition")
+	Enum(definition.SinkTypeTable.String())
+	Example(definition.SinkTypeTable.String())
 })
 
 var SinksList = Type("SinksList", func() {
-	Attribute("sinks", ArrayOf(Sink), func() {
-		Example([]any{ExampleSink()})
-	})
-	Required("sinks")
-})
-
-var CreateSinkData = Type("CreateSinkData", func() {
-	Attribute("id", SinkID, func() {
-		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
-	})
-	SinkFields()
-	// Field "conditions" is optional
-	Required("name", "mapping")
+	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", repository.MaxSourcesPerBranch))
+	Attribute("branchId", BranchID)
+	Attribute("sourceId", SourceID)
+	Attribute("sinks", Sinks)
+	Required("branchId", "sourceId", "sinks")
 })
 
 var CreateSinkRequest = Type("CreateSinkRequest", func() {
 	Extend(GetSourceRequest)
-	Extend(CreateSinkData)
+	Attribute("sinkId", SinkID, func() {
+		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
+	})
+	SinkFieldsRW()
+	// Field "conditions" is optional
+	Required("name", "mapping")
 })
 
 var GetSinkRequest = Type("GetSinkRequest", func() {
+	Attribute("branchId", BranchIDOrDefault)
 	Attribute("sourceId", SourceID)
 	Attribute("sinkId", SinkID)
-	Required("sourceId", "sinkId")
+	Required("branchId", "sourceId", "sinkId")
 })
 
 var ListSinksRequest = Type("ListSinksRequest", func() {
+	Attribute("branchId", BranchIDOrDefault)
 	Attribute("sourceId", SourceID)
-	Required("sourceId")
+	Required("branchId", "sourceId")
 })
 
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
 	Extend(GetSinkRequest)
-	SinkFields()
+	SinkFieldsRW()
 })
 
-var SinkFields = func() {
+var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
+	Extend(GetSinkRequest)
+	Attribute("patch", SettingsPatch)
+})
+
+var SinkFieldsRW = func() {
+	Attribute("type", SinkType)
 	Attribute("name", String, func() {
 		Description("Human readable name of the sink.")
-		MinLength(1)
-		MaxLength(40)
+		MinLength(cast.ToInt(fieldValidationRule(definition.Sink{}, "Name", "min")))
+		MaxLength(cast.ToInt(fieldValidationRule(definition.Sink{}, "Name", "max")))
 		Example("Raw Data Sink")
 	})
-	Attribute("mapping", Mapping, func() {
-		Description("Sink column mapping.")
+	Attribute("description", String, func() {
+		Description("Description of the source.")
+		MaxLength(cast.ToInt(fieldValidationRule(definition.Sink{}, "Description", "max")))
+		Example("The sink stores records to a table.")
 	})
-	Attribute("conditions", ImportConditions, func() {
-		Description("Table import conditions.")
+	Attribute("table", TableSink, func() {
+		Description(fmt.Sprintf(`Table sink configuration for "type" = "%s".`, definition.SinkTypeTable))
 	})
 }
 
-// Mapping ------------------------------------------------------------------------------------------------------------
+// Table Sink ----------------------------------------------------------------------------------------------------------
 
-var Mapping = Type("Mapping", func() {
-	Description("Sink column mapping.")
-	Attribute("tableId", String, func() {
-		Description("Destination table ID.")
-	})
-	Attribute("incremental", Boolean, func() {
-		Description("Enables incremental loading to the table.")
-	})
-	Attribute("columns", ArrayOf(Column), func() {
-		Description("List of sink column mappings. An sink may have a maximum of 100 columns.")
-		MinLength(1)
-		MaxLength(100)
-		Example([]any{ExampleColumnTypeBody()})
-	})
-	Required("tableId", "columns")
-	Example(ExampleMapping())
+var TableSink = Type("TableSink", func() {
+	Description("Table sink definition.")
+	Attribute("mapping", TableMapping)
 })
 
-var Column = Type("Column", func() {
+var TableMapping = Type("TableMapping", func() {
+	Description("Table mapping definition.")
+	Attribute("tableId", TableID)
+	Attribute("columns", TableColumns)
+	Required("tableId", "columns")
+})
+
+var TableID = Type("TableID", String, func() {
+	Meta("struct:field:type", "= keboola.TableID", "github.com/keboola/go-client/pkg/keboola")
+	Example("in.c-bucket.table")
+})
+
+var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
+	minLength := cast.ToInt(fieldValidationRule(definition.TableMapping{}, "Columns", "min"))
+	maxLength := cast.ToInt(fieldValidationRule(definition.TableMapping{}, "Columns", "max"))
+	Description(fmt.Sprintf("List of export column mappings. An export may have a maximum of %d columns.", maxLength))
+	MinLength(minLength)
+	MaxLength(maxLength)
+	Example(column.Columns{
+		column.ID{Name: "id-col", PrimaryKey: true},
+		column.Datetime{Name: "datetime-col"},
+		column.IP{Name: "ip-col"},
+		column.Headers{Name: "headers-col"},
+		column.Body{Name: "body-col"},
+		column.Template{Name: "template-col", Language: "jsonnet", Content: `body.foo + "-" + body.bar`},
+	})
+})
+
+var TableColumn = Type("TableColumn", func() {
 	Description("An output mapping defined by a template.")
 	Attribute("primaryKey", Boolean, func() {
 		Description("Sets this column as a part of the primary key of the destination table.")
 		Default(false)
+		Example(false)
 	})
 	Attribute("type", String, func() {
-		Meta("struct:field:type", "column.Type", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column")
+		Meta("struct:field:type", "column.Type", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/definition/column")
 		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
 		Enum("id", "datetime", "ip", "body", "headers", "template")
+		Example("id")
 	})
-	Attribute("name", String, "Column name.")
-	Attribute("template", Template, func() {
+	Attribute("name", String, func() {
+		Description("Column name.")
+		Example("id-col")
+	})
+	Attribute("template", TableColumnTemplate, func() {
 		Description(`Template mapping details. Only for "type" = "template".`)
 	})
 	Required("type", "name")
-	Example(ExampleColumnTypeBody())
 })
 
-var Template = Type("Template", func() {
+var TableColumnTemplate = Type("TableColumnTemplate", func() {
+	Description(`Template column definition, for "type" = "template".`)
 	Attribute("language", String, func() {
 		Enum("jsonnet")
+		Example("jsonnet")
 	})
 	Attribute("content", String, func() {
-		MinLength(1)
-		MaxLength(4096)
+		MinLength(cast.ToInt(fieldValidationRule(column.Template{}, "Content", "min")))
+		MaxLength(cast.ToInt(fieldValidationRule(column.Template{}, "Content", "max")))
+		Example(`body.foo + "-" + body.bar`)
 	})
 	Required("language", "content")
-	Example(ExampleTemplate())
 })
 
-var ImportConditions = Type("Conditions", func() {
-	def := model.DefaultImportConditions()
-	Description("Table import triggers.")
-	Attribute("count", Int, func() {
-		Description("Maximum import buffer size in number of records.")
-		Minimum(1)
-		Maximum(10_000_000)
-		Default(int(def.Count))
+// Settings ------------------------------------------------------------------------------------------------------------
+
+var SettingsResult = Type("SettingsResult", ArrayOf(SettingResult, func() {
+	Description("List of settings key-value pairs.")
+}))
+
+var SettingResult = Type("SettingResult", func() {
+	Meta("struct:field:type", "= configpatch.DumpKV", "github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch")
+	Description("One setting key-value pair.")
+	Attribute("key", String, func() {
+		Description("Key path.")
+		Example("some.service.limit")
 	})
-	Attribute("size", String, func() {
-		Description("Maximum import buffer size in bytes. Units: B, KB, MB.")
-		Default(def.Size.String())
+	Attribute("type", String, func() {
+		Description("Value type.")
+		Enum("string", "int", "float", "boolean")
+		Example("string")
 	})
-	Attribute("time", String, func() {
-		Description("Minimum import interval. Units: [s]econd,[m]inute,[h]our.")
-		Default(def.Time.String())
+	Attribute("value", Any, func() {
+		Description("Actual value.")
+		Example("1m20s")
 	})
-	Example(ExampleConditions())
+	Attribute("defaultValue", Any, func() {
+		Description("Default value.")
+		Example("30s")
+	})
+	Attribute("overwritten", Boolean, func() {
+		Description("True, if the default value is locally overwritten.")
+		Example(true)
+	})
+	Attribute("protected", Boolean, func() {
+		Description("True, if only a super admin can modify the key.")
+		Example(false)
+	})
+	Attribute("validation", String, func() {
+		Description("Validation rules as a string definition.")
+		Example("minDuration=15s")
+	})
+	Required("key", "value", "defaultValue", "overwritten", "protected")
 })
 
-// Task --------------------------------------------------------------------------------------------------------------
+var SettingsPatch = Type("SettingsPatch", ArrayOf(SettingPatch, func() {
+	Description("List of settings key-value pairs for modification.")
+}))
+
+var SettingPatch = Type("SettingPatch", func() {
+	Meta("struct:field:type", "= configpatch.BindKV", "github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch")
+	Description("One setting key-value pair.")
+	Attribute("key", String, func() {
+		Description("Key path.")
+		MinLength(1)
+		Example("some.service.limit")
+	})
+	Attribute("value", Any, func() {
+		Description("A new key value. Use null to reset the value to the default value.")
+		Example("1m20s")
+	})
+	Required("key")
+})
+
+// Task ----------------------------------------------------------------------------------------------------------------
 
 var TaskID = Type("TaskID", String, func() {
 	Meta("struct:field:type", "= task.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task")
@@ -677,7 +855,6 @@ var Task = Type("Task", func() {
 	Attribute("error", String)
 	Attribute("outputs", TaskOutputs)
 	Required("id", "type", "url", "status", "isFinished", "createdAt")
-	Example(ExampleTask())
 })
 
 var TaskOutputs = Type("TaskOutputs", func() {
@@ -687,6 +864,7 @@ var TaskOutputs = Type("TaskOutputs", func() {
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
+	Attribute("branchId", BranchID)
 	Attribute("taskId", TaskID)
 	Required("taskId")
 })
@@ -694,7 +872,7 @@ var GetTaskRequest = Type("GetTaskRequest", func() {
 // Errors ------------------------------------------------------------------------------------------------------------
 
 var GenericErrorType = Type("GenericError", func() {
-	Description("Generic error")
+	Description("Generic error.")
 	Attribute("statusCode", Int, "HTTP status code.", func() {
 		Example(StatusInternalServerError)
 	})
@@ -708,6 +886,12 @@ var GenericErrorType = Type("GenericError", func() {
 	Required("statusCode", "error", "message")
 })
 
+type ExampleError struct {
+	StatusCode int    `json:"statusCode" yaml:"statusCode"`
+	Error      string `json:"error" yaml:"error"`
+	Message    string `json:"message" yaml:"message"`
+}
+
 func GenericError(statusCode int, name, description, example string) {
 	// Must be called inside HTTP definition
 	endpoint, ok := eval.Current().(*expr.HTTPEndpointExpr)
@@ -719,7 +903,11 @@ func GenericError(statusCode int, name, description, example string) {
 	eval.Execute(func() {
 		Error(name, GenericErrorType, func() {
 			Description(description)
-			Example(ExampleError(statusCode, name, example))
+			Example(ExampleError{
+				StatusCode: statusCode,
+				Error:      name,
+				Message:    example,
+			})
 		})
 	}, endpoint.MethodExpr)
 
@@ -736,198 +924,41 @@ func SinkNotFoundError() {
 }
 
 func SourceAlreadyExistsError() {
-	GenericError(StatusConflict, "stream.sourceAlreadyExists", "Source already exists in the project.", `Source already exists in the project.`)
+	GenericError(StatusConflict, "stream.sourceAlreadyExists", "Source already exists in the branch.", `Source already exists in the branch.`)
 }
 
 func SinkAlreadyExistsError() {
 	GenericError(StatusConflict, "stream.sinkAlreadyExists", "Sink already exists in the source.", `Sink already exists in the source.`)
 }
 
-func PayloadTooLargeError() {
-	GenericError(StatusRequestEntityTooLarge, "stream.payloadTooLarge", "Payload too large.", `Payload too large, the maximum size is 1MB.`)
-}
-
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", `Maximum number of sources per project is 100.`)
+	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, repository.MaxSourcesPerBranch))
 }
 
 func TaskNotFoundError() {
 	GenericError(StatusNotFound, "stream.taskNotFound", "Task not found error.", `Task "001" not found.`)
 }
 
-// Examples ------------------------------------------------------------------------------------------------------------
-
-type ExampleErrorDef struct {
-	StatusCode int    `json:"statusCode" yaml:"statusCode"`
-	Error      string `json:"error" yaml:"error"`
-	Message    string `json:"message" yaml:"message"`
-}
-
-func ExampleError(statusCode int, name, message string) ExampleErrorDef {
-	return ExampleErrorDef{
-		StatusCode: statusCode,
-		Error:      name,
-		Message:    message,
+func fieldValidationRule(targetStruct any, fieldName string, ruleName string) string {
+	value := reflect.ValueOf(targetStruct)
+	field, ok := value.Type().FieldByName(fieldName)
+	if !ok {
+		eval.ReportError(fmt.Sprintf(`field "%s" not found in struct "%s"`, fieldName, value.Type()))
 	}
-}
+	tag := field.Tag.Get("validate")
+	rules := regexpcache.MustCompile(`,|\|`).Split(tag, -1)
+	for _, rule := range rules {
+		// Skip field
+		if rule == "-" {
+			continue
+		}
 
-type ExampleSourceDef struct {
-	ID          string           `json:"id" yaml:"id"`
-	URL         string           `json:"url" yaml:"url"`
-	Name        string           `json:"name" yaml:"name"`
-	Description string           `json:"description" yaml:"description"`
-	Sinks       []ExampleSinkDef `json:"sinks" yaml:"sinks"`
-}
-
-type ExampleSinkDef struct {
-	ID         string               `json:"id" yaml:"id"`
-	SourceID   string               `json:"sourceId" yaml:"sourceId"`
-	Name       string               `json:"name" yaml:"name"`
-	Mapping    ExampleMappingDef    `json:"mapping" yaml:"mapping"`
-	Conditions ExampleConditionsDef `json:"conditions" yaml:"conditions"`
-}
-
-type ExampleMappingDef struct {
-	TableID     string             `json:"tableId" yaml:"tableId"`
-	Incremental bool               `json:"incremental" yaml:"incremental"`
-	Columns     []ExampleColumnDef `json:"columns" yaml:"columns"`
-}
-
-type ExampleColumnDef struct {
-	Type     string             `json:"type" yaml:"type"`
-	Name     string             `json:"name" yaml:"name"`
-	Template ExampleTemplateDef `json:"template" yaml:"template"`
-}
-
-type ExampleTemplateDef struct {
-	Language string `json:"language" yaml:"language"`
-	Content  string `json:"content" yaml:"content"`
-}
-
-type ExampleConditionsDef struct {
-	Count int    `json:"count" yaml:"count"`
-	Size  string `json:"size" yaml:"size"`
-	Time  string `json:"time" yaml:"time"`
-}
-
-type ExampleTaskDef struct {
-	ID         string         `json:"id" yaml:"id"`
-	SourceID   string         `json:"sourceId" yaml:"sourceId"`
-	URL        string         `json:"url" yaml:"url"`
-	Type       string         `json:"type" yaml:"type"`
-	CreatedAt  string         `json:"createdAt" yaml:"createdAt"`
-	FinishedAt string         `json:"finishedAt" yaml:"finishedAt"`
-	IsFinished bool           `json:"isFinished" yaml:"isFinished"`
-	Duration   int            `json:"duration" yaml:"duration"`
-	Result     string         `json:"result" yaml:"result"`
-	Outputs    map[string]any `json:"outputs" yaml:"outputs"`
-}
-
-func ExampleSource() ExampleSourceDef {
-	id := "github-pull-requests"
-	return ExampleSourceDef{
-		ID:          id,
-		URL:         "https://stream.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
-		Name:        "source 1",
-		Description: "Some description ...",
-		Sinks:       []ExampleSinkDef{ExampleSink()},
+		name, attrs, _ := strings.Cut(rule, "=")
+		if name == ruleName {
+			return attrs
+		}
 	}
-}
 
-func ExampleSink() ExampleSinkDef {
-	id := "github-changed-files"
-	return ExampleSinkDef{
-		ID:         id,
-		Name:       "GitHub Changed Files",
-		Mapping:    ExampleMapping(),
-		Conditions: ExampleConditions(),
-	}
-}
-
-func ExampleConditions() ExampleConditionsDef {
-	return ExampleConditionsDef{
-		Count: 100,
-		Size:  "12kB",
-		Time:  "1m10s",
-	}
-}
-
-func ExampleMapping() ExampleMappingDef {
-	return ExampleMappingDef{
-		TableID:     "in.c-github.changes",
-		Incremental: true,
-		Columns: []ExampleColumnDef{
-			ExampleColumnTypeID(),
-			ExampleColumnTypeDatetime(),
-			ExampleColumnTypeIP(),
-			ExampleColumnTypeHeaders(),
-			ExampleColumnTypeTemplate(),
-		},
-	}
-}
-
-func ExampleTemplate() ExampleTemplateDef {
-	return ExampleTemplateDef{
-		Language: "jsonnet",
-		Content:  `body.foo + "-" + body.bar`,
-	}
-}
-
-func ExampleColumnTypeID() ExampleColumnDef {
-	return ExampleColumnDef{
-		Type: "id",
-		Name: "column1",
-	}
-}
-
-func ExampleColumnTypeDatetime() ExampleColumnDef {
-	return ExampleColumnDef{
-		Type: "datetime",
-		Name: "column2",
-	}
-}
-
-func ExampleColumnTypeIP() ExampleColumnDef {
-	return ExampleColumnDef{
-		Type: "ip",
-		Name: "column3",
-	}
-}
-
-func ExampleColumnTypeBody() ExampleColumnDef {
-	return ExampleColumnDef{
-		Type: "body",
-		Name: "column4",
-	}
-}
-
-func ExampleColumnTypeHeaders() ExampleColumnDef {
-	return ExampleColumnDef{
-		Type: "headers",
-		Name: "column5",
-	}
-}
-
-func ExampleColumnTypeTemplate() ExampleColumnDef {
-	return ExampleColumnDef{
-		Type:     "template",
-		Name:     "column6",
-		Template: ExampleTemplate(),
-	}
-}
-
-func ExampleTask() ExampleTaskDef {
-	return ExampleTaskDef{
-		ID:         "source.create/2018-01-01T00:00:00.000Z_jdkLp",
-		Type:       "source.create",
-		URL:        "https://stream.keboola.com/v1/sources/source-1/tasks/source.create/2018-01-01T00:00:00.000Z_jdkLp",
-		CreatedAt:  "2018-01-01T00:00:00.000Z",
-		FinishedAt: "2018-01-01T00:00:00.000Z",
-		IsFinished: true,
-		Duration:   123,
-		Result:     "task succeeded",
-		Outputs: map[string]any{
-			"sourceId": "source-1",
-		},
-	}
+	eval.ReportError(fmt.Sprintf(`rule "%s" not found in field "%s", in struct "%s"`, ruleName, fieldName, value.Type()))
+	return ""
 }
