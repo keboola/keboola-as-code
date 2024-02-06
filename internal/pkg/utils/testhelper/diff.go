@@ -115,7 +115,6 @@ func compareDirectories(ctx context.Context, expectedFs filesystem.Fs, expectedD
 
 		return nil
 	})
-
 	if err != nil {
 		panic(errors.Errorf(`cannot iterate over directory "%s" in "%s": %w`, actualDir, actualFs.BasePath(), err))
 	}
@@ -152,7 +151,6 @@ func compareDirectories(ctx context.Context, expectedFs filesystem.Fs, expectedD
 
 		return nil
 	})
-
 	if err != nil {
 		panic(errors.Errorf(`cannot iterate over directory "%s" in "%s": %w`, expectedDir, expectedFs.BasePath(), err))
 	}
