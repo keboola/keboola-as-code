@@ -2154,7 +2154,7 @@ func unmarshalSourceResponseBodyToStreamSource(v *SourceResponseBody) *stream.So
 func unmarshalSettingResultResponseToStreamSettingResult(v *SettingResultResponse) *stream.SettingResult {
 	res := &stream.SettingResult{
 		Key:          *v.Key,
-		Type:         v.Type,
+		Type:         *v.Type,
 		Value:        v.Value,
 		DefaultValue: v.DefaultValue,
 		Overwritten:  *v.Overwritten,

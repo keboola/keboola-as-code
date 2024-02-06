@@ -2686,6 +2686,9 @@ func ValidateSettingResultResponse(body *SettingResultResponse) (err error) {
 	if body.Key == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("key", "body"))
 	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
 	if body.Value == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("value", "body"))
 	}

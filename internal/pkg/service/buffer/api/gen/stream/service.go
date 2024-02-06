@@ -273,7 +273,7 @@ type SettingResult struct {
 	// Key path.
 	Key string
 	// Value type.
-	Type *string
+	Type string
 	// Actual value.
 	Value any
 	// Default value.

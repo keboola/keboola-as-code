@@ -1745,6 +1745,7 @@ components:
                 validation: minDuration=15s
             required:
                 - key
+                - type
                 - value
                 - defaultValue
                 - overwritten
