@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	goaMiddleware "goa.design/goa/v3/middleware"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 )
 
@@ -37,4 +38,5 @@ func TestMetaMiddleware(t *testing.T) {
 	assert.NotEmpty(t, reqCtx.Value(middleware.RequestIDCtxKey))
 	assert.NotEmpty(t, reqCtx.Value(goaMiddleware.RequestIDKey))
 	assert.Equal(t, req.URL, reqCtx.Value(middleware.RequestURLCtxKey))
+	assert.True(t, ctxattr.Attributes(reqCtx).HasValue("http.request_id"))
 }

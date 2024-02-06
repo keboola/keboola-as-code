@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -172,78 +171,77 @@ node3
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// Logs differs in number of "the node ... gone" messages
-	wildcards.Assert(t, `
-[node1][distribution][my-group]INFO  node ID "node1"
-[node1][distribution][my-group][etcd-session]INFO  creating etcd session
-[node1][distribution][my-group][etcd-session]INFO  created etcd session | %s
-[node1][distribution][my-group]INFO  registering the node "node1"
-[node1][distribution][my-group]INFO  the node "node1" registered | %s
-[node1][distribution][my-group]INFO  watching for other nodes
-[node1][distribution][my-group]INFO  found a new node "node%d"
-[node1][distribution][my-group]INFO  found a new node "node%d"
-[node1][distribution][my-group]INFO  found a new node "node%d"
-[node1]INFO  exiting (bye bye 1)
-[node1][distribution][my-group][listeners]INFO  received shutdown request
-[node1][distribution][my-group][listeners]INFO  shutdown done
-[node1][distribution][my-group]INFO  received shutdown request
-[node1][distribution][my-group]INFO  unregistering the node "node1"
-[node1][distribution][my-group]INFO  the node "node1" unregistered | %s
-[node1][distribution][my-group][etcd-session]INFO  closing etcd session
-[node1][distribution][my-group][etcd-session]INFO  closed etcd session | %s
-[node1][distribution][my-group]INFO  shutdown done
-[node1][etcd-client]INFO  closing etcd connection
-[node1][etcd-client]INFO  closed etcd connection | %s
-[node1]INFO  exited
-`, loggers[0].AllMessages())
-	wildcards.Assert(t, `
-[node2][distribution][my-group]INFO  node ID "node2"
-[node2][distribution][my-group][etcd-session]INFO  creating etcd session
-[node2][distribution][my-group][etcd-session]INFO  created etcd session | %s
-[node2][distribution][my-group]INFO  registering the node "node2"
-[node2][distribution][my-group]INFO  the node "node2" registered | %s
-[node2][distribution][my-group]INFO  watching for other nodes
-[node2][distribution][my-group]INFO  found a new node "node%d"
-[node2][distribution][my-group]INFO  found a new node "node%d"
-[node2][distribution][my-group]INFO  found a new node "node%d"
-[node2][distribution][my-group]INFO  the node "node%d" gone
-[node2]INFO  exiting (bye bye 2)
-[node2][distribution][my-group][listeners]INFO  received shutdown request
-[node2][distribution][my-group][listeners]INFO  shutdown done
-[node2][distribution][my-group]INFO  received shutdown request
-[node2][distribution][my-group]INFO  unregistering the node "node2"
-[node2][distribution][my-group]INFO  the node "node2" unregistered | %s
-[node2][distribution][my-group][etcd-session]INFO  closing etcd session
-[node2][distribution][my-group][etcd-session]INFO  closed etcd session | %s
-[node2][distribution][my-group]INFO  shutdown done
-[node2][etcd-client]INFO  closing etcd connection
-[node2][etcd-client]INFO  closed etcd connection | %s
-[node2]INFO  exited
-`, loggers[1].AllMessages())
-	wildcards.Assert(t, `
-[node3][distribution][my-group]INFO  node ID "node3"
-[node3][distribution][my-group][etcd-session]INFO  creating etcd session
-[node3][distribution][my-group][etcd-session]INFO  created etcd session | %s
-[node3][distribution][my-group]INFO  registering the node "node3"
-[node3][distribution][my-group]INFO  the node "node3" registered | %s
-[node3][distribution][my-group]INFO  watching for other nodes
-[node3][distribution][my-group]INFO  found a new node "node%d"
-[node3][distribution][my-group]INFO  found a new node "node%d"
-[node3][distribution][my-group]INFO  found a new node "node%d"
-[node3][distribution][my-group]INFO  the node "node%d" gone
-[node3][distribution][my-group]INFO  the node "node%d" gone
-[node3]INFO  exiting (bye bye 3)
-[node3][distribution][my-group][listeners]INFO  received shutdown request
-[node3][distribution][my-group][listeners]INFO  shutdown done
-[node3][distribution][my-group]INFO  received shutdown request
-[node3][distribution][my-group]INFO  unregistering the node "node3"
-[node3][distribution][my-group]INFO  the node "node3" unregistered | %s
-[node3][distribution][my-group][etcd-session]INFO  closing etcd session
-[node3][distribution][my-group][etcd-session]INFO  closed etcd session | %s
-[node3][distribution][my-group]INFO  shutdown done
-[node3][etcd-client]INFO  closing etcd connection
-[node3][etcd-client]INFO  closed etcd connection | %s
-[node3]INFO  exited
-`, loggers[2].AllMessages())
+	loggers[0].AssertJSONMessages(t, `
+{"level":"info","message":"creating etcd session","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node1\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" registered | %s","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 1)"}
+{"level":"info","message":"received shutdown request","node":"node1","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node1","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node1\"","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" unregistered | %s","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node1","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
+`)
+
+	loggers[1].AssertJSONMessages(t, `
+{"level":"info","message":"creating etcd session","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node2\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" registered | %s","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" gone","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 2)"}
+{"level":"info","message":"received shutdown request","node":"node2","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node2","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node2\"","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" unregistered | %s","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node2","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
+`)
+
+	loggers[2].AssertJSONMessages(t, `
+{"level":"info","message":"creating etcd session","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node3\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node3\" registered | %s","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" gone","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" gone","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 3)"}
+{"level":"info","message":"received shutdown request","node":"node3","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node3","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node3\"","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node3\" unregistered | %s","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node3","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
+`)
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
@@ -266,27 +264,26 @@ node4
 	process4.WaitForShutdown()
 	etcdhelper.AssertKVsString(t, client, "")
 
-	wildcards.Assert(t, `
-[node4][distribution][my-group]INFO  node ID "node4"
-[node4][distribution][my-group][etcd-session]INFO  creating etcd session
-[node4][distribution][my-group][etcd-session]INFO  created etcd session | %s
-[node4][distribution][my-group]INFO  registering the node "node4"
-[node4][distribution][my-group]INFO  the node "node4" registered | %s
-[node4][distribution][my-group]INFO  watching for other nodes
-[node4][distribution][my-group]INFO  found a new node "node4"
-[node4]INFO  exiting (bye bye 4)
-[node4][distribution][my-group][listeners]INFO  received shutdown request
-[node4][distribution][my-group][listeners]INFO  shutdown done
-[node4][distribution][my-group]INFO  received shutdown request
-[node4][distribution][my-group]INFO  unregistering the node "node4"
-[node4][distribution][my-group]INFO  the node "node4" unregistered | %s
-[node4][distribution][my-group][etcd-session]INFO  closing etcd session
-[node4][distribution][my-group][etcd-session]INFO  closed etcd session | %s
-[node4][distribution][my-group]INFO  shutdown done
-[node4][etcd-client]INFO  closing etcd connection
-[node4][etcd-client]INFO  closed etcd connection | %s
-[node4]INFO  exited
-`, d4.DebugLogger().AllMessages())
+	d4.DebugLogger().AssertJSONMessages(t, `
+{"level":"info","message":"creating etcd session","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"created etcd session | %s","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"registering the node \"node4\"","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node4\" registered | %s","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"watching for other nodes","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"found a new node \"node4\"","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"exiting (bye bye 4)"}
+{"level":"info","message":"received shutdown request","node":"node4","component":"distribution.my-group.listeners"}
+{"level":"info","message":"shutdown done","node":"node4","component":"distribution.my-group.listeners"}
+{"level":"info","message":"received shutdown request","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"unregistering the node \"node4\"","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node4\" unregistered | %s","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd session","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","node":"node4","component":"distribution.my-group.etcd-session"}
+{"level":"info","message":"shutdown done","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"closing etcd connection","component":"etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"exited"}
+`)
 }
 
 func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeID string) (*distribution.Node, dependencies.Mocked) {
@@ -319,7 +316,7 @@ func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCfg etcdclien
 	d := dependencies.NewMocked(
 		t,
 		dependencies.WithClock(clk),
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeID)),
+		dependencies.WithNodeID(nodeID),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)
 	if logs != nil {

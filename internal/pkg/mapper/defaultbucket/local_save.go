@@ -19,7 +19,7 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(ctx context.Context, recipe *mo
 	}
 
 	if err := m.visitStorageInputTables(config, config.GetContent(), m.replaceDefaultBucketWithPlaceholder); err != nil {
-		m.logger.WarnfCtx(ctx, `Warning: %s`, err)
+		m.logger.Warnf(ctx, `Warning: %s`, err)
 	}
 	return nil
 }

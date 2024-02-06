@@ -19,7 +19,7 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) erro
 	warnings := errors.NewMultiError()
 	var newPaths []string
 	var pathsToRemove []string
-	m.logger.DebugfCtx(ctx, `Starting renaming of the %d paths.`, len(actions))
+	m.logger.Debugf(ctx, `Starting renaming of the %d paths.`, len(actions))
 	for _, action := range actions {
 		// Deep copy
 		err := m.fs.Copy(ctx, action.RenameFrom, action.NewPath)
@@ -43,7 +43,7 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) erro
 
 	if errs.Len() == 0 {
 		// No error -> remove old paths
-		m.logger.DebugCtx(ctx, "Removing old paths.")
+		m.logger.Debug(ctx, "Removing old paths.")
 		for _, oldPath := range pathsToRemove {
 			if err := m.fs.Remove(ctx, oldPath); err != nil {
 				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, oldPath)
@@ -51,19 +51,19 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) erro
 		}
 	} else {
 		// An error occurred -> keep old state -> remove new paths
-		m.logger.DebugCtx(ctx, "An error occurred, reverting rename.")
+		m.logger.Debug(ctx, "An error occurred, reverting rename.")
 		for _, newPath := range newPaths {
 			if err := m.fs.Remove(ctx, newPath); err != nil {
 				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, newPath)
 			}
 		}
-		m.logger.InfoCtx(ctx, `Error occurred, the rename operation was reverted.`)
+		m.logger.Info(ctx, `Error occurred, the rename operation was reverted.`)
 	}
 
 	// Log warnings
 	if warnings.Len() > 0 {
 		err := errors.PrefixError(warnings, "cannot finish objects renaming")
-		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		m.logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 
 	return errs.ErrorOrNil()

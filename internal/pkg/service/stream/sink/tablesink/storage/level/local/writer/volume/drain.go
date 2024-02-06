@@ -16,7 +16,7 @@ func (v *Volume) Drained() bool {
 func (v *Volume) watchDrainFile(ctx context.Context) error {
 	// Check presence of the file
 	if err := v.checkDrainFile(ctx); err != nil {
-		v.logger.ErrorfCtx(ctx, `cannot check the drain file: %s`, err)
+		v.logger.Errorf(ctx, `cannot check the drain file: %s`, err)
 		return err
 	}
 
@@ -29,12 +29,12 @@ func (v *Volume) watchDrainFile(ctx context.Context) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		// The error is not fatal, skip watching
-		v.logger.ErrorfCtx(ctx, `cannot create FS watcher: %s`, err)
+		v.logger.Errorf(ctx, `cannot create FS watcher: %s`, err)
 		return nil
 	}
 	if err := watcher.Add(v.Path()); err != nil {
 		// The error is not fatal, skip watching
-		v.logger.ErrorfCtx(ctx, `cannot add path to the FS watcher "%s": %s`, v.Path(), err)
+		v.logger.Errorf(ctx, `cannot add path to the FS watcher "%s": %s`, v.Path(), err)
 		return nil
 	}
 
@@ -44,7 +44,7 @@ func (v *Volume) watchDrainFile(ctx context.Context) error {
 
 		defer func() {
 			if err := watcher.Close(); err != nil {
-				v.logger.WarnfCtx(ctx, `cannot close FS watcher: %s`, err)
+				v.logger.Warnf(ctx, `cannot close FS watcher: %s`, err)
 			}
 		}()
 
@@ -58,14 +58,14 @@ func (v *Volume) watchDrainFile(ctx context.Context) error {
 				}
 				if event.Name == v.drainFilePath {
 					if err := v.checkDrainFile(ctx); err != nil {
-						v.logger.ErrorfCtx(ctx, `cannot check the drain file: %s`, err)
+						v.logger.Errorf(ctx, `cannot check the drain file: %s`, err)
 					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
-				v.logger.ErrorfCtx(ctx, `FS watcher error: %s`, err)
+				v.logger.Errorf(ctx, `FS watcher error: %s`, err)
 			}
 		}
 	}()

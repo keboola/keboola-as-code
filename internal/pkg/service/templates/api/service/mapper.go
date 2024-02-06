@@ -279,7 +279,7 @@ func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ProjectRe
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
 	defer span.End(nil)
 
-	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceID, tmpl.Inputs())
+	stepsGroupsExt := upgrade.ExportInputsValues(ctx, d.Logger().Infof, prjState.State(), branchKey, instance.InstanceID, tmpl.Inputs())
 	return InputsResponse(ctx, d, stepsGroupsExt)
 }
 

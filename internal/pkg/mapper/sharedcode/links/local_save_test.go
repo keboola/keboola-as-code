@@ -86,7 +86,7 @@ WARN  Warning:
 - Missing shared code config "branch:123/component:keboola.shared-code/config:missing":
   - Referenced from config "branch:123/component:keboola.python-transformation-v2/config:789".
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 
 	// Config file doesn't contain shared code path
 	_, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
@@ -151,7 +151,7 @@ WARN  Warning:
 - Missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
   - Referenced from branch/transformation/blocks/block-1/code-2.
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 
 	// Link to shared code is set, but without missing row
 	sharedCodeID, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -16,8 +17,7 @@ const (
 
 type Logger interface {
 	contextLogger
-	toWriter
-	withPrefix
+	withFields
 }
 
 type loggerWithZapCore interface {
@@ -36,53 +36,34 @@ type DebugLogger interface {
 	WarnMessages() string
 	WarnAndErrorMessages() string
 	ErrorMessages() string
-}
 
-type baseLogger interface {
-	Debug(args ...any)
-	Info(args ...any)
-	Warn(args ...any)
-	Error(args ...any)
+	AllMessagesTxt() string
 
-	Debugf(template string, args ...any)
-	Infof(template string, args ...any)
-	Warnf(template string, args ...any)
-	Errorf(template string, args ...any)
-
-	Sync() error
+	CompareJSONMessages(expected string) error
+	AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool
 }
 
 type contextLogger interface {
-	// Debug logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Debug logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Debug(ctx context.Context, message string)
-	// Info logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Info logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Info(ctx context.Context, message string)
-	// Warn logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Warn logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Warn(ctx context.Context, message string)
-	// Error logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Error logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
 	Error(ctx context.Context, message string)
 
-	LogCtx(ctx context.Context, level string, args ...any)
-	DebugCtx(ctx context.Context, args ...any)
-	InfoCtx(ctx context.Context, args ...any)
-	WarnCtx(ctx context.Context, args ...any)
-	ErrorCtx(ctx context.Context, args ...any)
+	Debugf(ctx context.Context, template string, args ...any)
+	Infof(ctx context.Context, template string, args ...any)
+	Warnf(ctx context.Context, template string, args ...any)
+	Errorf(ctx context.Context, template string, args ...any)
 
-	DebugfCtx(ctx context.Context, template string, args ...any)
-	InfofCtx(ctx context.Context, template string, args ...any)
-	WarnfCtx(ctx context.Context, template string, args ...any)
-	ErrorfCtx(ctx context.Context, template string, args ...any)
+	Log(ctx context.Context, level string, args ...any)
 
 	Sync() error
 }
 
-type toWriter interface {
-	DebugWriter() *LevelWriter
-	InfoWriter() *LevelWriter
-	WarnWriter() *LevelWriter
-	ErrorWriter() *LevelWriter
-}
-
-type withPrefix interface {
-	AddPrefix(prefix string) Logger
+type withFields interface {
+	With(args ...any) Logger
+	WithComponent(component string) Logger
 }

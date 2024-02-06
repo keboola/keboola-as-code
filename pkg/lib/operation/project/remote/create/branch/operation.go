@@ -33,6 +33,6 @@ func Run(ctx context.Context, o Options, d dependencies) (branch *keboola.Branch
 		return nil, errors.Errorf(`cannot create branch: %w`, err)
 	}
 
-	logger.InfofCtx(ctx, `Created new branch "%s".`, branch.Name)
+	logger.Infof(ctx, `Created new branch "%s".`, branch.Name)
 	return branch, nil
 }

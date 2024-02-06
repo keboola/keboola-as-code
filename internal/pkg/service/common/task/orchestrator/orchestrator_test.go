@@ -2,14 +2,12 @@ package orchestrator_test
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -83,7 +80,7 @@ func TestOrchestrator(t *testing.T) {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
-				logger.InfoCtx(ctx, "message from the task")
+				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -99,12 +96,12 @@ func TestOrchestrator(t *testing.T) {
 
 	// Wait for task on the node 2
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  lock released")
+		return d2.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	// Wait for  "not assigned" message form the node 1
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  not assigned")
+		return d1.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -114,27 +111,22 @@ func TestOrchestrator(t *testing.T) {
 	d2.Process().Shutdown(ctx, errors.New("bye bye 2"))
 	d2.Process().WaitForShutdown()
 
-	wildcards.Assert(t, `
-[orchestrator][some.task]INFO  ready
-[orchestrator][some.task]INFO  assigned "1000/my-prefix/some.task/ResourceID"
-[task][%s]INFO  started task
-[task][%s]DEBUG  lock acquired "runtime/lock/task/custom-lock"
-[task][%s]INFO  message from the task
-[task][%s]INFO  task succeeded (%s): ResourceID
-[task][%s]DEBUG  lock released "runtime/lock/task/custom-lock"
-%A
-`, strhelper.FilterLines(`^\[orchestrator|task\]`, d2.DebugLogger().AllMessages()))
+	expected := `
+{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"info","message":"task succeeded (%s): ResourceID","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+`
+	d2.DebugLogger().AssertJSONMessages(t, expected)
 
-	wildcards.Assert(t, `
-[orchestrator][some.task]INFO  ready
-%A
-`, strhelper.FilterLines(`^\[orchestrator|task\]`, d1.DebugLogger().AllMessages()))
-
-	wildcards.Assert(t, `
-%A
-[orchestrator][some.task]DEBUG  not assigned "1000/my-prefix/some.task/ResourceID", distribution key "foo"
-%A
-`, strhelper.FilterLines(`^\[orchestrator|task\]`, d1.DebugLogger().AllMessages()))
+	expected = `
+{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"debug","message":"not assigned \"1000/my-receiver/some.task/ResourceID\", distribution key \"1000/my-receiver\"","component":"orchestrator","task":"some.task"}
+`
+	d1.DebugLogger().AssertJSONMessages(t, expected)
 }
 
 func TestOrchestrator_StartTaskIf(t *testing.T) {
@@ -185,7 +177,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
-				logger.InfoCtx(ctx, "message from the task")
+				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -197,7 +189,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	assert.NoError(t, pfx.Key("key1").Put(client, v1).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("key2").Put(client, v2).Do(ctx).Err())
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -205,17 +197,17 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d.Process().WaitForShutdown()
 
-	wildcards.Assert(t, `
-[orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  skipped "1000/my-prefix/some.task/BadID", StartTaskIf condition evaluated as false
-[orchestrator][some.task]INFO  assigned "1000/my-prefix/some.task/GoodID"
-[task][1000/my-prefix/some.task/GoodID/%s]INFO  started task
-[task][1000/my-prefix/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-prefix/some.task/GoodID"
-[task][1000/my-prefix/some.task/GoodID/%s]INFO  message from the task
-[task][1000/my-prefix/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
-[task][1000/my-prefix/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/1000/my-prefix/some.task/GoodID"
-%A
-`, strhelper.FilterLines(`^\[orchestrator|task\]`, d.DebugLogger().AllMessages()))
+	expected := `
+{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"debug","message":"skipped \"1000/my-receiver/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-receiver/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"info","message":"task succeeded (%s): GoodID","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+`
+	d.DebugLogger().AssertJSONMessages(t, expected)
 }
 
 func TestOrchestrator_RestartInterval(t *testing.T) {
@@ -264,7 +256,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
-				logger.InfoCtx(ctx, "message from the task")
+				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
 			}
 		},
@@ -277,19 +269,19 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
 	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 	d.DebugLogger().Truncate()
 
 	// 3x restart interval
 	clk.Add(restartInterval)
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  restart")
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"restart"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	// Put some key to trigger the task
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
+		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -297,14 +289,14 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 
-	wildcards.Assert(t, `
-[orchestrator][some.task]DEBUG  restart
-[orchestrator][some.task]INFO  assigned "1000/my-prefix/some.task/ResourceID"
-[task][1000/my-prefix/some.task/ResourceID/%s]INFO  started task
-[task][1000/my-prefix/some.task/ResourceID/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-prefix/some.task/ResourceID"
-[task][1000/my-prefix/some.task/ResourceID/%s]INFO  message from the task
-[task][1000/my-prefix/some.task/ResourceID/%s]INFO  task succeeded (0s): ResourceID
-[task][1000/my-prefix/some.task/ResourceID/%s]DEBUG  lock released "runtime/lock/task/1000/my-prefix/some.task/ResourceID"
-%A
-`, d.DebugLogger().AllMessages())
+	expected := `
+{"level":"debug","message":"restart","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID1\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"info","message":"task succeeded (0s): ResourceID1","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+`
+	d.DebugLogger().AssertJSONMessages(t, expected)
 }

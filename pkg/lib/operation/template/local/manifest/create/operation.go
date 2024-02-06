@@ -26,6 +26,6 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (m *template.Man
 		return nil, err
 	}
 
-	d.Logger().InfofCtx(ctx, "Created template manifest file \"%s\".", templateManifest.Path())
+	d.Logger().Infof(ctx, "Created template manifest file \"%s\".", templateManifest.Path())
 	return templateManifest, nil
 }

@@ -25,7 +25,7 @@ func Run(ctx context.Context, repositoryDir filesystem.Fs, o Options, d dependen
 	if err := repositoryDir.Mkdir(ctx, o.Path); err != nil {
 		return nil, err
 	}
-	d.Logger().InfofCtx(ctx, `Created template dir "%s".`, o.Path)
+	d.Logger().Infof(ctx, `Created template dir "%s".`, o.Path)
 
 	// Return FS for the template dir
 	return repositoryDir.SubDirFs(o.Path)

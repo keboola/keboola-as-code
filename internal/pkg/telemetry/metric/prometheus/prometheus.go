@@ -3,6 +3,7 @@ package prometheus
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -37,7 +38,7 @@ type errLogger struct {
 
 func (l *errLogger) Println(v ...any) {
 	// The prometheus library doesn't provide a context of the message, so we have no choice but to use context.Background().
-	l.logger.ErrorCtx(context.Background(), v...)
+	l.logger.Error(context.Background(), fmt.Sprint(v...))
 }
 
 func NewConfig() Config {
@@ -49,7 +50,7 @@ func NewConfig() Config {
 // ServeMetrics starts HTTP server for Prometheus metrics and return OpenTelemetry metrics provider.
 // Inspired by: https://github.com/open-telemetry/opentelemetry-go/blob/main/example/prometheus/main.go
 func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *servicectx.Process, serviceName string) (*metric.MeterProvider, error) {
-	logger = logger.AddPrefix("[metrics]")
+	logger = logger.WithComponent("metrics")
 
 	// Create resource
 	res, err := resource.New(
@@ -78,7 +79,7 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 	handler.Handle("/"+Endpoint, promhttp.HandlerFor(registry, opts))
 	srv := &http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
-		logger.InfofCtx(ctx, `HTTP server listening on "%s/%s"`, cfg.Listen, Endpoint)
+		logger.Infof(ctx, `HTTP server listening on "%s/%s"`, cfg.Listen, Endpoint)
 		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
 		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
@@ -87,12 +88,12 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 		ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 		defer cancel()
 
-		logger.InfofCtx(ctx, `shutting down HTTP server at "%s"`, cfg.Listen)
+		logger.Infof(ctx, `shutting down HTTP server at "%s"`, cfg.Listen)
 
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.ErrorfCtx(ctx, `HTTP server shutdown error: %s`, err)
+			logger.Errorf(ctx, `HTTP server shutdown error: %s`, err)
 		}
-		logger.InfoCtx(ctx, "HTTP server shutdown finished")
+		logger.Info(ctx, "HTTP server shutdown finished")
 	})
 
 	// Wait for server

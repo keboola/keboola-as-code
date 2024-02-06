@@ -100,5 +100,5 @@ WARN  Warning:
   - Referenced from mocked key "123".
   - By relation "manifest_side_relation".
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessagesTxt())
 }

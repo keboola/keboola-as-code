@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
@@ -17,22 +18,44 @@ import (
 type baseScope struct {
 	logger     log.Logger
 	telemetry  telemetry.Telemetry
+	stdout     io.Writer
+	stderr     io.Writer
 	clock      clock.Clock
 	httpClient client.Client
 	validator  validator.Validator
 	process    *servicectx.Process
 }
 
-func NewBaseScope(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, clk clock.Clock, process *servicectx.Process, httpClient client.Client) BaseScope {
-	return newBaseScope(ctx, logger, tel, clk, process, httpClient)
+func NewBaseScope(
+	ctx context.Context,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+	clk clock.Clock,
+	process *servicectx.Process,
+	httpClient client.Client,
+) BaseScope {
+	return newBaseScope(ctx, logger, tel, stdout, stderr, clk, process, httpClient)
 }
 
-func newBaseScope(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, clk clock.Clock, process *servicectx.Process, httpClient client.Client) *baseScope {
+func newBaseScope(
+	ctx context.Context,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+	clk clock.Clock,
+	process *servicectx.Process,
+	httpClient client.Client,
+) *baseScope {
 	_, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.NewBaseScope")
 	defer span.End(nil)
 	return &baseScope{
 		logger:     logger,
 		telemetry:  tel,
+		stdout:     stdout,
+		stderr:     stderr,
 		clock:      clk,
 		process:    process,
 		httpClient: httpClient,
@@ -74,4 +97,14 @@ func (v *baseScope) HTTPClient() client.Client {
 func (v *baseScope) Validator() validator.Validator {
 	v.check()
 	return v.validator
+}
+
+func (v *baseScope) Stdout() io.Writer {
+	v.check()
+	return v.stdout
+}
+
+func (v *baseScope) Stderr() io.Writer {
+	v.check()
+	return v.stderr
 }

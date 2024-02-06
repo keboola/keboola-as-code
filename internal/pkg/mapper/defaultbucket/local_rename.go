@@ -37,9 +37,9 @@ func (m *defaultBucketMapper) onObjectsRename(ctx context.Context, renamed []mod
 	uow := m.state.LocalManager().NewUnitOfWork(ctx)
 	errs := errors.NewMultiError()
 	if len(objectsToUpdate) > 0 {
-		m.logger.DebugCtx(ctx, `Need to update configurations:`)
+		m.logger.Debug(ctx, `Need to update configurations:`)
 		for _, key := range objectsToUpdate {
-			m.logger.DebugfCtx(ctx, `  - %s`, key.Desc())
+			m.logger.Debugf(ctx, `  - %s`, key.Desc())
 			objectState := m.state.MustGet(key)
 			uow.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields(`configuration`))
 		}

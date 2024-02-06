@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -89,7 +90,7 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 		tracer:         d.Telemetry().Tracer(),
 		meters:         newMeters(d.Telemetry().Meter()),
 		clock:          d.Clock(),
-		logger:         d.Logger().AddPrefix("[task]"),
+		logger:         d.Logger().WithComponent("task"),
 		client:         d.EtcdClient(),
 		nodeID:         nodeID,
 		config:         c,
@@ -100,25 +101,28 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 	}
 
 	// Graceful shutdown
+	backgroundCtx := context.Background()
+	backgroundCtx = ctxattr.ContextWith(backgroundCtx, attribute.String("node", n.nodeID))
 	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
-	n.tasksCtx, cancelTasks = context.WithCancel(context.Background()) // nolint: contextcheck
+	n.tasksCtx, cancelTasks = context.WithCancel(backgroundCtx)
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(context.Background()) // nolint: contextcheck
+	sessionCtx, cancelSession := context.WithCancel(backgroundCtx)
 	proc.OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
+		n.logger.Info(ctx, "received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
-			n.logger.InfofCtx(ctx, `waiting for "%d" tasks to be finished`, c)
+			n.logger.Infof(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
 		cancelTasks()
 		n.tasksWg.Wait()
 		cancelSession()
 		sessionWg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Log node ID
-	n.logger.InfofCtx(n.tasksCtx, `node ID "%s"`, n.nodeID)
+	n.logger.Infof(n.tasksCtx, `node ID "%s"`, n.nodeID)
 
 	// Create etcd session
 	n.sessionLock = &sync.RWMutex{}
@@ -222,10 +226,11 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	session := n.session
 	n.sessionLock.RUnlock()
 
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
+
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
-	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
 		n.client,
 		n.taskEtcdPrefix.Key(taskKey.String()).Put(n.client, task),
@@ -236,18 +241,18 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, r.Err())
 	} else if !r.Succeeded() {
 		unlock()
-		logger.InfofCtx(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
+		n.logger.Infof(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil, nil
 	}
 
 	// Run operation in the background
-	logger.InfofCtx(ctx, `started task`)
-	logger.DebugfCtx(ctx, `lock acquired "%s"`, task.Lock.Key())
+	n.logger.Infof(ctx, `started task`)
+	n.logger.Debugf(ctx, `lock acquired "%s"`, task.Lock.Key())
 
 	// Return function, task is prepared, lock is locked, it can be run in background/foreground.
 	fn = func() (Result, error) {
 		defer unlock()
-		return n.runTask(logger, task, cfg)
+		return n.runTask(n.logger, task, cfg)
 	}
 	return &task, fn, nil
 }
@@ -255,6 +260,8 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result, err error) {
 	// Create task context
 	ctx, cancel := cfg.Context()
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
+
 	defer cancel()
 	if _, ok := ctx.Deadline(); !ok {
 		panic(errors.Errorf(`task "%s" context must have a deadline`, cfg.Type))
@@ -273,7 +280,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		defer func() {
 			if panicErr := recover(); panicErr != nil {
 				err := errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
-				logger.ErrorfCtx(ctx, `task panic: %s`, err)
+				logger.Errorf(ctx, `task panic: %s`, err)
 				if result.Error == nil {
 					result = ErrResult(err)
 				}
@@ -295,28 +302,28 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	if result.Error == nil {
 		task.Result = result.Result
 		if len(task.Outputs) > 0 {
-			logger.InfofCtx(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
+			logger.Infof(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.InfofCtx(ctx, `task succeeded (%s): %s`, duration, task.Result)
+			logger.Infof(ctx, `task succeeded (%s): %s`, duration, task.Result)
 		}
 	} else {
 		task.Error = result.Error.Error()
 		if len(task.Outputs) > 0 {
-			logger.WarnfCtx(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
+			logger.Warnf(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.WarnfCtx(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
+			logger.Warnf(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
 		}
 	}
 
 	// Create context for task finalization, the original context could have timed out.
 	// If release of the lock takes longer than the ttl, lease is expired anyway.
-	ctx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
+	finalizationCtx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
 	defer finalizationCancel()
 
 	// Update telemetry
 	span.SetAttributes(spanEndAttrs(&task, result)...)
-	n.meters.running.Add(ctx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
-	n.meters.duration.Record(ctx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
+	n.meters.running.Add(finalizationCtx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
+	n.meters.duration.Record(finalizationCtx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 
 	// Update task and release lock in etcd
 	finalizeTaskOp := op.MergeToTxn(
@@ -327,14 +334,14 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	r := finalizeTaskOp.Do(ctx)
 	if err := r.Err(); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
-		logger.ErrorCtx(ctx, err)
+		logger.Error(ctx, err.Error())
 		return result, err
 	} else if !r.Succeeded() {
 		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
-		logger.ErrorCtx(ctx, err)
+		logger.Error(ctx, err.Error())
 		return result, err
 	}
-	logger.DebugfCtx(ctx, `lock released "%s"`, task.Lock.Key())
+	logger.Debugf(ctx, `lock released "%s"`, task.Lock.Key())
 
 	return result, nil
 }

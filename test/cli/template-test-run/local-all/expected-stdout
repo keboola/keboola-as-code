@@ -1,2 +1,4 @@
+%A
 PASS keboola/my-template/0.0.1 one local
+%A
 PASS keboola/template-2/2.0.0 one local

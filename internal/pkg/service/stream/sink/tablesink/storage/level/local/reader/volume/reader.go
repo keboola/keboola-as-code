@@ -60,7 +60,7 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error)
 	if err == nil {
 		logger.Debug(v.ctx, "opened file")
 	} else {
-		logger.ErrorfCtx(v.ctx, `cannot open file "%s": %s`, filePath, err)
+		logger.Errorf(v.ctx, `cannot open file "%s": %s`, filePath, err)
 		return nil, err
 	}
 

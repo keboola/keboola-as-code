@@ -292,7 +292,7 @@ func (r *testReader) String() string {
 }
 
 func (r *testReader) Read(p []byte) (int, error) {
-	r.Logger.InfofCtx(context.Background(), `TEST: read "%s"`, r.Name)
+	r.Logger.Infof(context.Background(), `TEST: read "%s"`, r.Name)
 	if r.ReadError != nil {
 		return 0, r.ReadError
 	}
@@ -312,7 +312,7 @@ func (r *testReadCloser) String() string {
 }
 
 func (r *testReadCloser) Read(p []byte) (int, error) {
-	r.Logger.InfofCtx(context.Background(), `TEST: read "%s"`, r.Name)
+	r.Logger.Infof(context.Background(), `TEST: read "%s"`, r.Name)
 	if r.ReadError != nil {
 		return 0, r.ReadError
 	}
@@ -320,7 +320,7 @@ func (r *testReadCloser) Read(p []byte) (int, error) {
 }
 
 func (r *testReadCloser) Close() error {
-	r.Logger.InfofCtx(context.Background(), `TEST: close "%s"`, r.Name)
+	r.Logger.Infof(context.Background(), `TEST: close "%s"`, r.Name)
 	return r.CloseError
 }
 
@@ -335,6 +335,6 @@ func (c *testCloser) String() string {
 }
 
 func (c *testCloser) Close() error {
-	c.Logger.InfofCtx(context.Background(), `TEST: close "%s"`, c.Name)
+	c.Logger.Infof(context.Background(), `TEST: close "%s"`, c.Name)
 	return c.CloseError
 }

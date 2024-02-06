@@ -482,12 +482,12 @@ type testFlusherCloser struct {
 }
 
 func (w *testFile) Write(p []byte) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to file`, string(p))
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to file`, string(p))
 	return w.OsFile.Write(p)
 }
 
 func (w *testFile) WriteString(s string) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write string "%s" to file`, s)
+	w.Logger.Infof(context.Background(), `TEST: write string "%s" to file`, s)
 	return w.OsFile.WriteString(s)
 }
 
@@ -512,12 +512,12 @@ func (w *testBuffer) String() string {
 }
 
 func (w *testBuffer) Write(p []byte) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Buffer.Write(p)
 }
 
 func (w *testBuffer) Flush() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.Buffer.Flush()
 }
 
@@ -526,12 +526,12 @@ func (w *testWriterSimple) String() string {
 }
 
 func (w *testWriterSimple) Write(p []byte) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterSimple) WriteString(s string) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write string "%s" to writer "%s"`, s, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: write string "%s" to writer "%s"`, s, w.Name)
 	return w.Writer.WriteString(s)
 }
 
@@ -540,12 +540,12 @@ func (w *testWriterFlusher) String() string {
 }
 
 func (w *testWriterFlusher) Write(p []byte) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterFlusher) Flush() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.FlushError
 }
 
@@ -554,12 +554,12 @@ func (w *testWriterCloser) String() string {
 }
 
 func (w *testWriterCloser) Write(p []byte) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterCloser) Close() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: close writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: close writer "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -568,17 +568,17 @@ func (w *testWriterFlusherCloser) String() string {
 }
 
 func (w *testWriterFlusherCloser) Write(p []byte) (int, error) {
-	w.Logger.InfofCtx(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
 }
 
 func (w *testWriterFlusherCloser) Flush() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.FlushError
 }
 
 func (w *testWriterFlusherCloser) Close() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: close writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: close writer "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -587,7 +587,7 @@ func (w *testFlusher) String() string {
 }
 
 func (w *testFlusher) Flush() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: flush writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: flush writer "%s"`, w.Name)
 	return w.FlushError
 }
 
@@ -596,7 +596,7 @@ func (w *testCloser) String() string {
 }
 
 func (w *testCloser) Close() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: close writer "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: close writer "%s"`, w.Name)
 	return w.CloseError
 }
 
@@ -605,12 +605,12 @@ func (w *testFlusherCloser) String() string {
 }
 
 func (w *testFlusherCloser) Flush() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: flush "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: flush "%s"`, w.Name)
 	return w.FlushError
 }
 
 func (w *testFlusherCloser) Close() error {
-	w.Logger.InfofCtx(context.Background(), `TEST: close "%s"`, w.Name)
+	w.Logger.Infof(context.Background(), `TEST: close "%s"`, w.Name)
 	return w.CloseError
 }
 

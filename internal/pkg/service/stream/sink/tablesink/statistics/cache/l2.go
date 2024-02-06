@@ -40,7 +40,7 @@ type l2CachePerObjectKey map[string]statistics.Aggregated
 
 func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statistics.L2CacheConfig) (*L2, error) {
 	c := &L2{
-		logger:    logger.AddPrefix("[stats-cache-L2]"),
+		logger:    logger.WithComponent("stats.cache.L2"),
 		l1Cache:   l1Cache,
 		wg:        &sync.WaitGroup{},
 		enabled:   config.Enabled,

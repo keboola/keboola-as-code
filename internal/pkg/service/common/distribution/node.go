@@ -9,8 +9,10 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -63,7 +65,7 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 		assigner:    newAssigner(nodeID),
 		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", group)),
 		clock:       d.Clock(),
-		logger:      d.Logger().AddPrefix(fmt.Sprintf("[distribution][%s]", group)),
+		logger:      d.Logger().WithComponent("distribution." + group),
 		proc:        d.Process(),
 		client:      d.EtcdClient(),
 		config:      c,
@@ -74,16 +76,17 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
+		n.logger.Info(ctx, "received shutdown request")
 		watchCancel()
 		n.unregister(ctx, c.shutdownTimeout)
 		sessionCancel()
 		wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Log node ID
-	n.logger.InfofCtx(watchCtx, `node ID "%s"`, nodeID)
+	n.logger.Infof(watchCtx, `node ID "%s"`, nodeID)
 
 	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
 		// Register node
@@ -124,15 +127,17 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	ctx, cancel := context.WithTimeout(n.client.Ctx(), timeout)
 	defer cancel()
 
+	ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
+
 	startTime := time.Now()
-	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)
+	n.logger.Infof(ctx, `registering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Put(session.Client(), n.nodeID, etcd.WithLease(session.Lease())).Do(ctx).Err(); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.InfofCtx(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.Infof(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
 	return nil
 }
 
@@ -141,19 +146,19 @@ func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.InfofCtx(ctx, `unregistering the node "%s"`, n.nodeID)
+	n.logger.Infof(ctx, `unregistering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Delete(n.client).Do(ctx).Err(); err != nil {
-		n.logger.WarnfCtx(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
+		n.logger.Warnf(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.InfofCtx(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.Infof(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
 }
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	n.logger.InfoCtx(ctx, "watching for other nodes")
+	n.logger.Info(ctx, "watching for other nodes")
 	init := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
@@ -193,13 +198,13 @@ func (n *Node) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent, 
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
 			n.assigner.addNode(nodeID)
-			n.logger.InfofCtx(ctx, event.Message)
+			n.logger.Infof(ctx, event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
 			n.assigner.removeNode(nodeID)
-			n.logger.InfofCtx(ctx, event.Message)
+			n.logger.Infof(ctx, event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}

@@ -24,7 +24,7 @@ func newEtcdClientScope(ctx context.Context, baseScp BaseScope, cfg etcdclient.C
 	ctx, span := baseScp.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewEtcdClientScope")
 	defer span.End(&err)
 
-	client, err := etcdclient.New(ctx, baseScp.Process(), baseScp.Telemetry(), baseScp.Logger(), cfg)
+	client, err := etcdclient.New(ctx, baseScp.Process(), baseScp.Telemetry(), baseScp.Logger(), baseScp.Stderr(), cfg)
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,6 @@ package watcher_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"

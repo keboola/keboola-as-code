@@ -86,7 +86,7 @@ func (l *listeners) wait(ctx context.Context) {
 	l.lock.Unlock()
 
 	if count > 0 {
-		l.logger.InfofCtx(ctx, `waiting for "%d" listeners`, count)
+		l.logger.Infof(ctx, `waiting for "%d" listeners`, count)
 	}
 	l.wg.Wait()
 }

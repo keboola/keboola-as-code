@@ -68,11 +68,11 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		d.Logger().InfoCtx(ctx, "received shutdown request")
+		d.Logger().Info(ctx, "received shutdown request")
 		cancel()
-		d.Logger().InfoCtx(ctx, "waiting for orchestrators")
+		d.Logger().Info(ctx, "waiting for orchestrators")
 		wg.Wait()
-		d.Logger().InfoCtx(ctx, "shutdown done")
+		d.Logger().Info(ctx, "shutdown done")
 	})
 
 	// Tasks cleanup
@@ -685,12 +685,12 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 
 // tryLockProject.
 func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (dependencies.UnlockFn, error) {
-	d.Logger().InfofCtx(ctx, `requested lock for project "%d"`, d.ProjectID())
+	d.Logger().Infof(ctx, `requested lock for project "%d"`, d.ProjectID())
 
 	// Try lock
 	locked, unlockFn := d.ProjectLocker().TryLock(ctx, fmt.Sprintf("project-%d", d.ProjectID()))
 	if !locked {
-		d.Logger().InfofCtx(ctx, `project "%d" is locked by another request`, d.ProjectID())
+		d.Logger().Infof(ctx, `project "%d" is locked by another request`, d.ProjectID())
 		return nil, &ProjectLockedError{
 			StatusCode: http.StatusServiceUnavailable,
 			Name:       "templates.projectLocked",

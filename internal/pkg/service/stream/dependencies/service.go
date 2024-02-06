@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 
 	"github.com/benbjohnson/clock"
 
@@ -11,6 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+)
+
+const (
+	userAgent = "keboola-stream"
 )
 
 // serviceScope implements ServiceScope interface.
@@ -38,17 +43,33 @@ func (v *serviceScope) Config() config.Config {
 	return v.config
 }
 
-func NewServiceScope(ctx context.Context, cfg config.Config, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v ServiceScope, err error) {
+func NewServiceScope(
+	ctx context.Context,
+	cfg config.Config,
+	proc *servicectx.Process,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+) (v ServiceScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewServiceScope")
 	defer span.End(&err)
-	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, userAgent)
+	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
 	if err != nil {
 		return nil, err
 	}
 	return newServiceScope(parentSc, cfg), nil
 }
 
-func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v parentScopes, err error) {
+func newParentScopes(
+	ctx context.Context,
+	cfg config.Config,
+	proc *servicectx.Process,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+) (v parentScopes, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.newParentScopes")
 	defer span.End(&err)
 
@@ -58,17 +79,17 @@ func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Pr
 		httpclient.WithUserAgent(userAgent),
 		func(c *httpclient.Config) {
 			if cfg.DebugLog {
-				httpclient.WithDebugOutput(logger.DebugWriter())(c)
+				httpclient.WithDebugOutput(stdout)(c)
 			}
 			if cfg.DebugHTTPClient {
-				httpclient.WithDumpOutput(logger.DebugWriter())(c)
+				httpclient.WithDumpOutput(stdout)(c)
 			}
 		},
 	)
 
 	d := &parentScopesImpl{}
 
-	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, clock.New(), proc, httpClient)
+	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
 
 	d.PublicScope, err = dependencies.NewPublicScope(ctx, d, cfg.StorageAPIHost, dependencies.WithLogIndexLoading(true))
 	if err != nil {

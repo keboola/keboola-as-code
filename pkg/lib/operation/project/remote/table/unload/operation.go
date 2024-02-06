@@ -67,14 +67,14 @@ func Run(ctx context.Context, o Options, d dependencies) (file *keboola.Unloaded
 		if err != nil {
 			return nil, errors.Errorf("failed to start unload job: %w", err)
 		}
-		d.Logger().InfoCtx(ctx, `Storage job started successfully with ID "%d".`, job.ID)
+		d.Logger().Infof(ctx, `Storage job started successfully with ID "%d".`, job.ID)
 	} else {
-		d.Logger().InfoCtx(ctx, "Unloading table, please wait.")
+		d.Logger().Info(ctx, "Unloading table, please wait.")
 		unloadedFile, err := request.SendAndWait(ctx, o.Timeout)
 		if err != nil {
 			return nil, errors.Errorf(`failed to unload table "%s": %w`, o.TableKey, err)
 		}
-		d.Logger().InfofCtx(ctx, `Table "%s" unloaded to file "%d".`, o.TableKey.TableID, unloadedFile.File.FileID)
+		d.Logger().Infof(ctx, `Table "%s" unloaded to file "%d".`, o.TableKey.TableID, unloadedFile.File.FileID)
 		file = &unloadedFile.File
 	}
 

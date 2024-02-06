@@ -71,8 +71,16 @@ func DirectoryContentsSame(ctx context.Context, expectedFs filesystem.Fs, expect
 	return nil
 }
 
+type tHelper interface {
+	Helper()
+}
+
 // AssertDirectoryContentsSame compares two directories, in expected file content can be used wildcards.
 func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
 	err := DirectoryContentsSame(context.Background(), expectedFs, expectedDir, actualFs, actualDir)
 	if err != nil {
 		assert.Fail(t, err.Error())

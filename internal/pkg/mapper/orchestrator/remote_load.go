@@ -39,7 +39,7 @@ func (m *orchestratorMapper) onRemoteLoad(ctx context.Context, config *model.Con
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
 		err = errors.PrefixErrorf(err, `invalid orchestrator %s`, config.Desc())
-		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		m.logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 }
 

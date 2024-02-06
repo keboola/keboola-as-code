@@ -2,6 +2,8 @@ package list
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -12,13 +14,12 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.list")
 	defer span.End(&err)
-
-	w := d.Logger().InfoWriter()
 
 	// Get instances
 	instances, err := branch.Local.Metadata.TemplatesInstances()
@@ -26,19 +27,21 @@ func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err er
 		return err
 	}
 
+	w := d.Stdout()
+
 	for _, instance := range instances {
-		w.Writef("Template ID:          %s", instance.TemplateID)
-		w.Writef("Instance ID:          %s", instance.InstanceID)
-		w.Writef("RepositoryName:       %s", instance.RepositoryName)
-		w.Writef("Version:              %s", instance.Version)
-		w.Writef("Name:                 %s", instance.InstanceName)
-		w.Writef("Created:")
-		w.Writef("  Date:               %s", instance.Created.Date.Format(time.RFC3339))
-		w.Writef("  TokenID:            %s", instance.Created.TokenID)
-		w.Writef("Updated:")
-		w.Writef("  Date:               %s", instance.Updated.Date.Format(time.RFC3339))
-		w.Writef("  TokenID:            %s", instance.Updated.TokenID)
-		w.Writef("")
+		fmt.Fprintf(w, "Template ID:          %s\n", instance.TemplateID)
+		fmt.Fprintf(w, "Instance ID:          %s\n", instance.InstanceID)
+		fmt.Fprintf(w, "RepositoryName:       %s\n", instance.RepositoryName)
+		fmt.Fprintf(w, "Version:              %s\n", instance.Version)
+		fmt.Fprintf(w, "Name:                 %s\n", instance.InstanceName)
+		fmt.Fprintln(w, "Created:")
+		fmt.Fprintf(w, "  Date:               %s\n", instance.Created.Date.Format(time.RFC3339))
+		fmt.Fprintf(w, "  TokenID:            %s\n", instance.Created.TokenID)
+		fmt.Fprintln(w, "Updated:")
+		fmt.Fprintf(w, "  Date:               %s\n", instance.Updated.Date.Format(time.RFC3339))
+		fmt.Fprintf(w, "  TokenID:            %s\n", instance.Updated.TokenID)
+		fmt.Fprintln(w)
 	}
 
 	return nil

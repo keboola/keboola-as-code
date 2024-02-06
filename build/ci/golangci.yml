@@ -57,6 +57,8 @@ linters-settings:
       - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$(# "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client\.Transport = httpmock\.NewMockTransport() instead)?
       # Os ENVs singleton is forbidden, use env.Map instead
       - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$(# Os ENVs singleton is forbidden, use env\.Map instead)?
+      # Os Stdout and Stderr are forbidden, use dependencies instead
+      - ^os\.(Stdout|Stderr)$(# Use dependencies instead)?
       # No fmt.Errorf, use errors.Errorf instead to include stack trace
       - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
@@ -188,6 +190,10 @@ issues:
         - dogsled
         - bodyclose
         - contextcheck
+    - path: _test\.go
+      text: "use of `os.Std(out|err)` forbidden"
+      linters:
+        - forbidigo
     - path: internal/pkg/utils/errors/.*
       text: "use of `fmt.Errorf` forbidden"
       linters:

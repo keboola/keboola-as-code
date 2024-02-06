@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -276,15 +275,15 @@ func (r *RemoteRepository) runGitCmd(ctx context.Context, args ...string) (cmdRe
 func (r *RemoteRepository) doRunGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
 	r.cmdLock.Lock()
 	defer r.cmdLock.Unlock()
-	r.logger.DebugfCtx(ctx, `Running git command: git %s`, strings.Join(args, " "))
+	r.logger.Debugf(ctx, `Running git command: git %s`, strings.Join(args, " "))
 
 	var stdOutBuffer bytes.Buffer
 	var stdErrBuffer bytes.Buffer
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = r.workingDir.BasePath()
-	cmd.Stdout = io.MultiWriter(r.logger.DebugWriter(), &stdOutBuffer)
-	cmd.Stderr = io.MultiWriter(r.logger.DebugWriter(), &stdErrBuffer)
+	cmd.Stdout = &stdOutBuffer
+	cmd.Stderr = &stdErrBuffer
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
 

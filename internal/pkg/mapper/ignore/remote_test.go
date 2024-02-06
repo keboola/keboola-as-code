@@ -53,7 +53,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	changes.AddLoaded(targetVars)
 	changes.AddLoaded(unattachedVars)
 	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
-	assert.Equal(t, "DEBUG  Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\"\n", logger.AllMessages())
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\""}`)
 
 	// Unattached variables are removed
 	assert.Equal(t, []model.ObjectState{
@@ -114,7 +114,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	changes.AddLoaded(ignoredScheduler)
 	changes.AddLoaded(validScheduler)
 	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
-	assert.Equal(t, "DEBUG  Ignored scheduler config \"branch:1/component:keboola.scheduler/config:3\", target config \"branch:1/component:keboola.foo-bar/config:789\" not found\n", logger.AllMessages())
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored scheduler config \"branch:1/component:keboola.scheduler/config:3\", target config \"branch:1/component:keboola.foo-bar/config:789\" not found"}`)
 
 	// Unattached variables are removed
 	assert.Equal(t, []model.ObjectState{

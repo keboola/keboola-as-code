@@ -25,7 +25,7 @@ import (
 // OpenVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
 func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*Collection[V], error) {
-	logger.InfofCtx(ctx, `searching for volumes in "%s"`, volumesPath)
+	logger.Infof(ctx, `searching for volumes in "%s"`, volumesPath)
 
 	lock := &sync.Mutex{}
 	errs := errors.NewMultiError()
@@ -54,11 +54,11 @@ func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volum
 				// Create reference
 				typ, label := parts[0], parts[1]
 				typ = strings.ToLower(typ)
-				logger.InfofCtx(ctx, `found volume, type="%s", path="%s"`, typ, label)
+				logger.Infof(ctx, `found volume, type="%s", path="%s"`, typ, label)
 
 				// Check volume directory
 				if err = checkVolumeDir(path); err != nil {
-					logger.ErrorfCtx(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
+					logger.Errorf(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
 					errs.Append(err)
 					return
 				}
@@ -67,13 +67,13 @@ func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volum
 				info := Spec{NodeID: nodeID, Path: path, Type: typ, Label: label}
 				vol, err := opener(info)
 				if err != nil {
-					logger.ErrorfCtx(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
+					logger.Errorf(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
 					errs.Append(err)
 					return
 				}
 
 				// Log volume
-				logger.InfofCtx(ctx, `opened volume, id="%s", type="%s", path="%s"`, vol.ID(), vol.Type(), vol.Label())
+				logger.Infof(ctx, `opened volume, id="%s", type="%s", path="%s"`, vol.ID(), vol.Type(), vol.Label())
 
 				// Register the volume
 				lock.Lock()
@@ -110,6 +110,6 @@ func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volum
 		return nil, err
 	}
 
-	logger.InfofCtx(ctx, `found "%d" volumes`, collection.Count())
+	logger.Infof(ctx, `found "%d" volumes`, collection.Count())
 	return collection, nil
 }
