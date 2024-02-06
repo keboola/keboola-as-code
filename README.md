@@ -20,7 +20,7 @@
 ### Buffer Service
 
 - A Proxy API to buffer collected data and their import to Storage tables in batches.
-- See **[architecture overview](./docs/buffer/overview.md)** for more details.
+- See **[architecture overview](./docs/stream/overview.md)** for more details.
 
 
 ## Development

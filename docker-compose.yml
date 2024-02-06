@@ -18,18 +18,14 @@ services:
       - TEMPLATES_API_LISTEN_ADDRESS=0.0.0.0:8000
       - TEMPLATES_API_PUBLIC_URL=http://localhost:8000
       - TEMPLATES_METRICS_LISTEN_ADDRESS=0.0.0.0:9000
-      # For Buffer API
-      - BUFFER_API_STORAGE_API_HOST=connection.keboola.com
-      - BUFFER_API_LISTEN_ADDRESS=0.0.0.0:8001
-      - BUFFER_API_METRICS_LISTEN_ADDRESS=0.0.0.0:9001
-      - BUFFER_API_PUBLIC_ADDRESS=http://localhost:8001
-      # For Buffer Worker
-      - BUFFER_WORKER_STORAGE_API_HOST=connection.keboola.com
-      - BUFFER_WORKER_METRICS_LISTEN_ADDRESS=0.0.0.0:9002
+      # For Stream Service
+      - STREAM_STORAGE_API_HOST=connection.keboola.com
+      - STREAM_LISTEN_ADDRESS=0.0.0.0:8001
+      - STREAM_METRICS_LISTEN_ADDRESS=0.0.0.0:9001
+      - STREAM_PUBLIC_ADDRESS=http://localhost:8001
       # Disable DataDog integration
       - TEMPLATES_DATADOG_ENABLED=false
-      - BUFFER_API_DATADOG_ENABLED=false
-      - BUFFER_WORKER_DATADOG_ENABLED=false
+      - STREAM_DATADOG_ENABLED=false
       # Etcd for unit tests
       - UNIT_ETCD_ENABLED=true
       - UNIT_ETCD_ENDPOINT=etcd:2379
@@ -41,25 +37,18 @@ services:
       - TEMPLATES_ETCD_USERNAME=root
       - TEMPLATES_ETCD_PASSWORD=toor
       - TEMPLATES_ETCD_NAMESPACE=templates-api
-      # Etcd for the Buffer API
-      - BUFFER_API_ETCD_ENDPOINT=etcd:2379
-      - BUFFER_API_ETCD_USERNAME=root
-      - BUFFER_API_ETCD_PASSWORD=toor
-      - BUFFER_API_ETCD_NAMESPACE=buffer
-      # Etcd for the Buffer Worker
-      - BUFFER_WORKER_ETCD_ENDPOINT=etcd:2379
-      - BUFFER_WORKER_ETCD_USERNAME=root
-      - BUFFER_WORKER_ETCD_PASSWORD=toor
-      - BUFFER_WORKER_ETCD_NAMESPACE=buffer
+      # Etcd for the Stream Service
+      - STREAM_ETCD_ENDPOINT=etcd:2379
+      - STREAM_ETCD_USERNAME=root
+      - STREAM_ETCD_PASSWORD=toor
+      - STREAM_ETCD_NAMESPACE=stream
     ports:
       # Templates API
       - "8000:8000" # API
       - "9000:9000" # metrics
-      # Buffer API
+      # Stream Service
       - "8001:8001" # API
       - "9001:9001" # metrics
-      # Buffer Worker
-      - "9002:9002" # metrics
       # Go docs
       - "6060:6060"
   # Same etcd is used for all services, but with different namespace

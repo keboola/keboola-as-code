@@ -12,15 +12,15 @@ run:
     - third_party
     - vendor
     #TMP
-    - api/buffer
-    - cmd/buffer-api
-    - internal/pkg/service/buffer/condition
-    - internal/pkg/service/buffer/event
-    - internal/pkg/service/buffer/cleanup
-    - internal/pkg/service/buffer/watcher
-    - internal/pkg/service/buffer/api
-    - internal/pkg/service/buffer/worker
-    - test/buffer
+    - api/stream
+    - cmd/stream
+    - internal/pkg/service/stream/condition
+    - internal/pkg/service/stream/event
+    - internal/pkg/service/stream/cleanup
+    - internal/pkg/service/stream/watcher
+    - internal/pkg/service/stream/api
+    - internal/pkg/service/stream/worker
+    - test/stream
   skip-dirs-use-default: true
   modules-download-mode: mod
 
@@ -205,11 +205,11 @@ issues:
       linters:
         - forbidigo
     # Allow direct file operations in the Stream service
-    - path: internal/pkg/service/buffer/.*
+    - path: internal/pkg/service/stream/.*
       text: "os."
       linters:
         - forbidigo
-    - path: internal/pkg/service/buffer/.*
+    - path: internal/pkg/service/stream/.*
       text: "filepath."
       linters:
         - forbidigo

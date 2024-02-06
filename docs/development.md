@@ -93,7 +93,7 @@ To run Buffer Worker locally:
 2. Set env var with Keboola stack: `export BUFFER_WORKER_STORAGE_API_HOST=connection.keboola.com`
 3. In the container run `make run-buffer-worker`
 
-See [provisioning/buffer/README.md](../provisioning/buffer/README.md) or [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
+See [provisioning/stream/README.md](../provisioning/stream/README.md) or [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
 
 
 ### E2E Tests
