@@ -29,7 +29,7 @@ func IsIgnoredDir(path string, d filesystem.FileInfo) bool {
 //
 // Example:
 //
-//	test/api/buffer
+//	test/api/stream
 //	|- base
 //	   |- endpoint-not-found <- functional test
 //	      |- 001-endpoint
