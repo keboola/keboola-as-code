@@ -9,11 +9,13 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const componentID = keboola.ComponentID("keboola.keboola-buffer")
+const componentID = keboola.ComponentID("keboola.keboola-stream")
 
 type Sender struct {
 	logger log.Logger
@@ -28,13 +30,13 @@ func NewSender(d dependencies) *Sender {
 }
 
 type Params struct {
-	ProjectID  keboola.ProjectID
-	ReceiverID key.ReceiverID
-	ExportID   key.ExportID
-	Stats      statistics.Value
+	ProjectID keboola.ProjectID
+	SourceID  key.SourceID
+	SinkID    key.SinkID
+	Stats     statistics.Value
 }
 
-func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.AuthorizedAPI, start time.Time, errPtr *error, slice model.Slice, stats statistics.Value) {
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.AuthorizedAPI, duration time.Duration, errPtr *error, slice storage.Slice, stats statistics.Value) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -55,11 +57,11 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.Authoriz
 		}
 	}
 
-	s.sendEvent(ctx, api, start, err, "slice-upload", formatMsg, Params{
-		ProjectID:  slice.ProjectID,
-		ReceiverID: slice.ReceiverID,
-		ExportID:   slice.ExportID,
-		Stats:      stats,
+	s.sendEvent(ctx, api, duration, "slice-upload", err, formatMsg, Params{
+		ProjectID: slice.ProjectID,
+		SourceID:  slice.SourceID,
+		SinkID:    slice.SinkID,
+		Stats:     stats,
 	})
 
 	// Throw panic
@@ -68,7 +70,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.Authoriz
 	}
 }
 
-func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.AuthorizedAPI, start time.Time, errPtr *error, file model.File, stats statistics.Value) {
+func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.AuthorizedAPI, duration time.Duration, errPtr *error, file storage.File, stats statistics.Value) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -89,11 +91,11 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.Authorize
 		}
 	}
 
-	s.sendEvent(ctx, api, start, err, "file-import", formatMsg, Params{
-		ProjectID:  file.ProjectID,
-		ReceiverID: file.ReceiverID,
-		ExportID:   file.ExportID,
-		Stats:      stats,
+	s.sendEvent(ctx, api, duration, "file-import", err, formatMsg, Params{
+		ProjectID: file.ProjectID,
+		SourceID:  file.SourceID,
+		SinkID:    file.SinkID,
+		Stats:     stats,
 	})
 
 	// Throw panic
@@ -102,62 +104,19 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.Authorize
 	}
 }
 
-/*
-Ok:
-{
-	"componentId": "keboola.keboola-buffer",
-	"type": "info",
-	"message": "...",
-	"duration": "...",
-	"params": {
-		"task": "..."
-	},
-	"results": {
-		"projectId":  "...",
-		"receiverId": "...",
-		"exportId":   "...",
-		"statistics": {
-			"lastRecordAt": "...",
-			"recordsCount": "...",
-			"recordsSize":  "...",
-			"bodySize":     "...",
-			"fileSize":     "...",
-			"fileGZipSize": "...",
-		},
-	}
-}
-
-Error:
-{
-	"componentId": "keboola.keboola-buffer",
-	"type": "error",
-	"message": "...",
-	"duration": "...",
-	"params": {
-		"task": "..."
-	},
-	"results": {
-		"projectId": "...",
-		"receiverId": "...",
-		"exportId":   "...",
-		"error": "...",
-	}
-}
-*/
-
-func (s *Sender) sendEvent(ctx context.Context, api *keboola.AuthorizedAPI, start time.Time, err error, task string, msg func(error) string, params Params) {
+func (s *Sender) sendEvent(ctx context.Context, api *keboola.AuthorizedAPI, duration time.Duration, eventName string, err error, msg func(error) string, params Params) {
 	event := &keboola.Event{
 		ComponentID: componentID,
 		Message:     msg(err),
 		Type:        "info",
-		Duration:    client.DurationSeconds(time.Since(start)),
+		Duration:    client.DurationSeconds(duration),
 		Params: map[string]any{
-			"task": task,
+			"eventName": eventName,
 		},
 		Results: map[string]any{
-			"projectId":  params.ProjectID,
-			"receiverId": params.ReceiverID,
-			"exportId":   params.ExportID,
+			"projectId": params.ProjectID,
+			"sourceId":  params.SourceID,
+			"sinkId":    params.SinkID,
 		},
 	}
 	if err != nil {
@@ -165,19 +124,20 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.AuthorizedAPI, star
 		event.Results["error"] = fmt.Sprintf("%s", err)
 	} else {
 		event.Results["statistics"] = map[string]any{
-			"lastRecordAt": params.Stats.LastRecordAt.String(),
-			"recordsCount": params.Stats.RecordsCount,
-			"recordsSize":  params.Stats.RecordsSize.Bytes(),
-			"bodySize":     params.Stats.BodySize.Bytes(),
-			"fileSize":     params.Stats.UncompressedSize.Bytes(),
-			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
+			"firstRecordAt":    params.Stats.FirstRecordAt.String(),
+			"lastRecordAt":     params.Stats.LastRecordAt.String(),
+			"recordsCount":     params.Stats.RecordsCount,
+			"slicesCount":      params.Stats.SlicesCount,
+			"uncompressedSize": params.Stats.UncompressedSize.Bytes(),
+			"compressedSize":   params.Stats.CompressedSize.Bytes(),
+			"stagingSize":      params.Stats.StagingSize.Bytes(),
 		}
 	}
 
 	event, err = api.CreateEventRequest(event).Send(ctx)
 	if err == nil {
-		s.logger.Debugf(ctx, "Sent \"%s\" event id: \"%s\"", task, event.ID)
+		s.logger.Debugf(ctx, "Sent \"%s\" event id: \"%s\"", eventName, event.ID)
 	} else {
-		s.logger.Warnf(ctx, "Cannot send \"%s\" event: %s", task, err)
+		s.logger.Warnf(ctx, "Cannot send \"%s\" event: %s", eventName, err)
 	}
 }
