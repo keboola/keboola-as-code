@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
@@ -48,9 +47,9 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp)
 }
 
 func (r *Router) CreateHandler() http.Handler {
-	handler := mux.NewRouter()
+	mux := http.NewServeMux()
 
-	handler.PathPrefix("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		appID, ok := parseAppID(req.Host)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -64,9 +63,9 @@ func (r *Router) CreateHandler() http.Handler {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, `Application "%s" not found.`, appID)
 		}
-	}))
+	})
 
-	return handler
+	return mux
 }
 
 func handlerFor(app DataApp, cfg config.Config) (http.Handler, error) {
