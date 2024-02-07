@@ -11,7 +11,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -40,9 +39,9 @@ func TestNewSyncWriter_ModeDisabled(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is disabled
-DEBUG  stopping syncer
-DEBUG  syncer stopped
+{"level":"info","message":"sync is disabled"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -175,21 +174,21 @@ func TestSyncWriter_DoWithNotify_Wait(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -229,20 +228,20 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -285,17 +284,17 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -358,33 +357,33 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked - part 1
-INFO  TEST: sync wait unblocked - part 1
-INFO  TEST: sync wait unblocked - part 1
-INFO  TEST: write "data4"
-INFO  TEST: write "data5"
-INFO  TEST: write "data6"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked - part 2
-INFO  TEST: sync wait unblocked - part 2
-INFO  TEST: sync wait unblocked - part 2
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked - part 1"}
+{"level":"info","message":"TEST: sync wait unblocked - part 1"}
+{"level":"info","message":"TEST: sync wait unblocked - part 1"}
+{"level":"info","message":"TEST: write \"data4\""}
+{"level":"info","message":"TEST: write \"data5\""}
+{"level":"info","message":"TEST: write \"data6\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked - part 2"}
+{"level":"info","message":"TEST: sync wait unblocked - part 2"}
+{"level":"info","message":"TEST: sync wait unblocked - part 2"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -435,23 +434,23 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to disk failed: some sync error
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to disk failed: some sync error
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to disk failed: some sync error"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to disk failed: some sync error"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -488,20 +487,20 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}                            
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -545,20 +544,20 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to disk failed: some sync error
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to disk failed: some sync error
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to disk failed: some sync error"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to disk failed: some sync error"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -621,33 +620,33 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to cache done
-INFO  TEST: sync wait unblocked - part 1
-INFO  TEST: sync wait unblocked - part 1
-INFO  TEST: sync wait unblocked - part 1
-INFO  TEST: write "data4"
-INFO  TEST: write "data5"
-INFO  TEST: write "data6"
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to cache done
-INFO  TEST: sync wait unblocked - part 2
-INFO  TEST: sync wait unblocked - part 2
-INFO  TEST: sync wait unblocked - part 2
-DEBUG  stopping syncer
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to cache done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"info","message":"TEST: sync wait unblocked - part 1"}
+{"level":"info","message":"TEST: sync wait unblocked - part 1"}
+{"level":"info","message":"TEST: sync wait unblocked - part 1"}
+{"level":"info","message":"TEST: write \"data4\""}
+{"level":"info","message":"TEST: write \"data5\""}
+{"level":"info","message":"TEST: write \"data6\""}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"info","message":"TEST: sync wait unblocked - part 2"}
+{"level":"info","message":"TEST: sync wait unblocked - part 2"}
+{"level":"info","message":"TEST: sync wait unblocked - part 2"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -698,23 +697,23 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to cache failed: some flush error
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to cache failed: some flush error
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to cache failed: some flush error"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to cache failed: some flush error"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -751,20 +750,20 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to cache done
-DEBUG  stopping syncer
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to cache done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -808,20 +807,20 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to cache failed: some flush error
-DEBUG  stopping syncer
-DEBUG  starting sync to cache
-INFO  TEST: sync started
-INFO  TEST: sync done
-ERROR  sync to cache failed: some flush error
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to cache failed: some flush error"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"error","message":"sync to cache failed: some flush error"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -860,7 +859,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 
 	// Wait for sync start
 	assert.Eventually(t, func() bool {
-		return strings.Contains(tc.Logger.AllMessages(), `INFO  TEST: sync started`)
+		return tc.Logger.CompareJSONMessages(`{"level":"info","message":"TEST: sync started"}`) == nil
 	}, time.Second, 10*time.Millisecond)
 
 	// Write more data
@@ -884,27 +883,27 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: write "data4"
-INFO  TEST: write "data5"
-INFO  TEST: write "data6"
-INFO  TEST: write "data7"
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: write \"data4\""}
+{"level":"info","message":"TEST: write \"data5\""}
+{"level":"info","message":"TEST: write \"data6\""}
+{"level":"info","message":"TEST: write \"data7\""}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -954,23 +953,23 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -1012,23 +1011,23 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -1069,23 +1068,23 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "data1"
-INFO  TEST: write "data2"
-INFO  TEST: write "data3"
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"data1\""}
+{"level":"info","message":"TEST: write \"data2\""}
+{"level":"info","message":"TEST: write \"data3\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -1140,21 +1139,21 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms
-INFO  TEST: write "1234567890"
-INFO  TEST: write "--------------------..."
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-INFO  TEST: sync wait unblocked
-INFO  TEST: sync wait unblocked
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-INFO  TEST: sync started
-INFO  TEST: sync done
-DEBUG  sync to disk done
-DEBUG  syncer stopped
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"TEST: write \"1234567890\""}
+{"level":"info","message":"TEST: write \"--------------------...\""}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"info","message":"TEST: sync wait unblocked"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"info","message":"TEST: sync started"}
+{"level":"info","message":"TEST: sync done"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
 `)
 }
 
@@ -1249,5 +1248,5 @@ func (tc *writerTestCase) NewSyncer() *Syncer {
 }
 
 func (tc *writerTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }
