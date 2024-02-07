@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -179,20 +178,20 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 
 	// 1st read is the content, 2nd is EOF error
 	tc.AssertLogs(`
-INFO  TEST: read "RC2"
-INFO  TEST: read "R1"
-INFO  TEST: read "file"
-INFO  TEST: read "RC2"
-INFO  TEST: read "R1"
-INFO  TEST: read "file"
-DEBUG  closing chain
-INFO  TEST: close "FN2"
-INFO  TEST: close "FN1"
-INFO  TEST: close "RC2"
-INFO  TEST: close "file"
-INFO  TEST: close "FN3"
-INFO  TEST: close "FN4"
-DEBUG  chain closed
+{"level":"info","message":"TEST: read \"RC2\""}
+{"level":"info","message":"TEST: read \"R1\""}
+{"level":"info","message":"TEST: read \"file\""}
+{"level":"info","message":"TEST: read \"RC2\""}
+{"level":"info","message":"TEST: read \"R1\""}
+{"level":"info","message":"TEST: read \"file\""}
+{"level":"debug","message":"closing chain"}
+{"level":"info","message":"TEST: close \"FN2\""}
+{"level":"info","message":"TEST: close \"FN1\""}
+{"level":"info","message":"TEST: close \"RC2\""}
+{"level":"info","message":"TEST: close \"file\""}
+{"level":"info","message":"TEST: close \"FN3\""}
+{"level":"info","message":"TEST: close \"FN4\""}
+{"level":"debug","message":"chain closed"}
 `)
 }
 
@@ -216,8 +215,8 @@ func TestChain_ReadError(t *testing.T) {
 
 	// 1st read is the string, 2nd is EOF error
 	tc.AssertLogs(`
-INFO  TEST: read "RC2"
-INFO  TEST: read "R1"
+{"level":"info","message":"TEST: read \"RC2\""}
+{"level":"info","message":"TEST: read \"R1\""}
 `)
 }
 
@@ -247,18 +246,18 @@ func TestChain_CloseError(t *testing.T) {
 
 	// 1st read is the content, 2nd is EOF error
 	tc.AssertLogs(`
-INFO  TEST: read "RC2"
-INFO  TEST: read "RC1"
-INFO  TEST: read "file"
-INFO  TEST: read "RC2"
-INFO  TEST: read "RC1"
-INFO  TEST: read "file"
-DEBUG  closing chain
-INFO  TEST: close "RC2"
-ERROR  cannot close "RC2": some error
-INFO  TEST: close "RC1"
-INFO  TEST: close "file"
-DEBUG  chain closed
+{"level":"info","message":"TEST: read \"RC2\""}
+{"level":"info","message":"TEST: read \"RC1\""}
+{"level":"info","message":"TEST: read \"file\""}
+{"level":"info","message":"TEST: read \"RC2\""}
+{"level":"info","message":"TEST: read \"RC1\""}
+{"level":"info","message":"TEST: read \"file\""}
+{"level":"debug","message":"closing chain"}
+{"level":"info","message":"TEST: close \"RC2\""}
+{"level":"error","message":"cannot close \"RC2\": some error"}
+{"level":"info","message":"TEST: close \"RC1\""}
+{"level":"info","message":"TEST: close \"file\""}
+{"level":"debug","message":"chain closed"}
 `)
 }
 
@@ -277,7 +276,7 @@ func newChainTestCase(tb testing.TB) *chainTestCase {
 }
 
 func (tc *chainTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }
 
 type testReader struct {
