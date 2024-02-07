@@ -1,3 +1,5 @@
+// Package event provides the dispatch of events for platform telemetry purposes.
+// Events contain slice/file statistics, for example, for billing purposes.
 package event
 
 import (
