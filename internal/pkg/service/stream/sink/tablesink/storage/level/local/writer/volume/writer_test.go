@@ -174,45 +174,45 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
-DEBUG  starting sync to disk
-DEBUG  syncing file
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  sync to disk done
-INFO  TEST: write unblocked
-INFO  TEST: write unblocked
-DEBUG  starting sync to disk
-DEBUG  syncing file
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  sync to disk done
-INFO  TEST: write unblocked
-INFO  closing volume
-DEBUG  closing file
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-DEBUG  syncing file
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  sync to disk done
-DEBUG  syncer stopped
-DEBUG  closing chain
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  chain closed
-DEBUG  closed file
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}               
+{"level":"info","message":"opened volume"}                  
+{"level":"debug","message":"opened file"}                   
+{"level":"debug","message":"disk space allocation is not supported"}                        
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"starting sync to disk"}         
+{"level":"debug","message":"syncing file"}                  
+{"level":"debug","message":"flushing writers"}              
+{"level":"debug","message":"writers flushed"}               
+{"level":"debug","message":"syncing file"}                  
+{"level":"debug","message":"file synced"}                   
+{"level":"debug","message":"sync to disk done"}             
+{"level":"info","message":"TEST: write unblocked"}          
+{"level":"info","message":"TEST: write unblocked"}          
+{"level":"debug","message":"starting sync to disk"}         
+{"level":"debug","message":"syncing file"}                  
+{"level":"debug","message":"flushing writers"}              
+{"level":"debug","message":"writers flushed"}               
+{"level":"debug","message":"syncing file"}                  
+{"level":"debug","message":"file synced"}                   
+{"level":"debug","message":"sync to disk done"}             
+{"level":"info","message":"TEST: write unblocked"}          
+{"level":"info","message":"closing volume"}                 
+{"level":"debug","message":"closing file"}                  
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"chain closed"}
+{"level":"debug","message":"closed file"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -278,36 +278,36 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
-DEBUG  starting sync to cache
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  sync to cache done
-INFO  TEST: write unblocked
-INFO  TEST: write unblocked
-DEBUG  starting sync to cache
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  sync to cache done
-INFO  TEST: write unblocked
-INFO  closing volume
-DEBUG  closing file
-DEBUG  stopping syncer
-DEBUG  starting sync to cache
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  sync to cache done
-DEBUG  syncer stopped
-DEBUG  closing chain
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  chain closed
-DEBUG  closed file
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"info","message":"closing volume"}
+{"level":"debug","message":"closing file"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"debug","message":"syncer stopped"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"chain closed"}
+{"level":"debug","message":"closed file"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -351,42 +351,42 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
-DEBUG  starting sync to disk
-DEBUG  syncing file
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  sync to disk done
-DEBUG  starting sync to disk
-DEBUG  syncing file
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  sync to disk done
-INFO  closing volume
-DEBUG  closing file
-DEBUG  stopping syncer
-DEBUG  starting sync to disk
-DEBUG  syncing file
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  sync to disk done
-DEBUG  syncer stopped
-DEBUG  closing chain
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  chain closed
-DEBUG  closed file
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"closing volume"}
+{"level":"debug","message":"closing file"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"sync to disk done"}
+{"level":"debug","message":"syncer stopped"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"chain closed"}
+{"level":"debug","message":"closed file"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -430,33 +430,33 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
-DEBUG  starting sync to cache
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  sync to cache done
-DEBUG  starting sync to cache
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  sync to cache done
-INFO  closing volume
-DEBUG  closing file
-DEBUG  stopping syncer
-DEBUG  starting sync to cache
-DEBUG  flushing writers
-DEBUG  writers flushed
-DEBUG  sync to cache done
-DEBUG  syncer stopped
-DEBUG  closing chain
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  chain closed
-DEBUG  closed file
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"info","message":"closing volume"}
+{"level":"debug","message":"closing file"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"}
+{"level":"debug","message":"syncer stopped"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"chain closed"}
+{"level":"debug","message":"closed file"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -497,21 +497,21 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is not supported
-INFO  sync is disabled
-INFO  closing volume
-DEBUG  closing file
-DEBUG  stopping syncer
-DEBUG  syncer stopped
-DEBUG  closing chain
-DEBUG  syncing file
-DEBUG  file synced
-DEBUG  chain closed
-DEBUG  closed file
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+{"level":"info","message":"sync is disabled"}
+{"level":"info","message":"closing volume"}
+{"level":"debug","message":"closing file"}
+{"level":"debug","message":"stopping syncer"}
+{"level":"debug","message":"syncer stopped"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"syncing file"}
+{"level":"debug","message":"file synced"}
+{"level":"debug","message":"chain closed"}
+{"level":"debug","message":"closed file"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -532,14 +532,13 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-ERROR  cannot allocate disk space "10KB", allocation skipped: some space allocation error
-INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
-INFO  closing volume
-DEBUG  closing file
-%A
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"error","message":"cannot allocate disk space \"10KB\", allocation skipped: some space allocation error"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"closing volume"}
+{"level":"debug","message":"closing file"}
 `)
 }
 
@@ -560,14 +559,13 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is not supported
-INFO  sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms
-INFO  closing volume
-DEBUG  closing file
-%A
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"closing volume"}
+{"level":"debug","message":"closing file"}
 `)
 }
 
@@ -590,11 +588,10 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  disk space allocation is disabled
-%A
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is disabled"}
 `)
 }
 

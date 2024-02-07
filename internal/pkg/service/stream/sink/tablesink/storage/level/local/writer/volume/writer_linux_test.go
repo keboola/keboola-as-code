@@ -39,10 +39,9 @@ func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-DEBUG  opened file
-DEBUG  allocated disk space "10KB"
-%A
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"allocated disk space \"10KB\""}
 `)
 }
