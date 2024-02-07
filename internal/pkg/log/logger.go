@@ -23,13 +23,16 @@ type zapLogger struct {
 	component     string
 }
 
-func loggerFromZapCore(core zapcore.Core, with ...any) *zapLogger {
-	return &zapLogger{sugaredLogger: zap.New(core).Sugar().With(with...), core: core}
+func loggerFromZapCore(core zapcore.Core, attrs ...attribute.KeyValue) *zapLogger {
+	var fields []zap.Field
+	ctxattr.AttrsToZapFields(attrs, &fields)
+	core = core.With(fields)
+	return &zapLogger{sugaredLogger: zap.New(core).Sugar(), core: core}
 }
 
 // With creates a child logger and adds structured context to it.
-func (l *zapLogger) With(args ...any) Logger {
-	return loggerFromZapCore(l.core, args...)
+func (l *zapLogger) With(attrs ...attribute.KeyValue) Logger {
+	return loggerFromZapCore(l.core, attrs...)
 }
 
 // WithComponent creates a child logger with added component.

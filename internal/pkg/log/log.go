@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -17,7 +18,7 @@ const (
 
 type Logger interface {
 	contextLogger
-	withFields
+	withAttributes
 }
 
 type loggerWithZapCore interface {
@@ -63,7 +64,7 @@ type contextLogger interface {
 	Sync() error
 }
 
-type withFields interface {
-	With(args ...any) Logger
+type withAttributes interface {
+	With(attrs ...attribute.KeyValue) Logger
 	WithComponent(component string) Logger
 }
