@@ -18,7 +18,6 @@ run:
     - internal/pkg/service/stream/cleanup
     - internal/pkg/service/stream/watcher
     - internal/pkg/service/stream/api
-    - internal/pkg/service/stream/worker
     - test/stream
   skip-dirs-use-default: true
   modules-download-mode: mod
