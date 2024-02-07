@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
 
@@ -34,11 +35,8 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().String("description", "", "bucket description")
-	cmd.Flags().String("display-name", "", "display name for the UI")
-	cmd.Flags().String("name", "", "name of the bucket")
-	cmd.Flags().String("stage", "", "stage, allowed values: in, out")
+	bucketFlags := BucketFlags{}
+	_ = cliconfig.GenerateFlags(bucketFlags, cmd.Flags())
+
 	return cmd
 }

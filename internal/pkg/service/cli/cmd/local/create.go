@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -71,10 +72,9 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`component-id`, "c", ``, "component ID")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new config")
+	createConfigFlags := CreateConfigFlags{}
+	_ = cliconfig.GenerateFlags(createConfigFlags, cmd.Flags())
+
 	return cmd
 }
 

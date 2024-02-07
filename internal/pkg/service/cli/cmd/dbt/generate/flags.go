@@ -11,6 +11,6 @@ type ProfileFlag struct {
 }
 
 type SourceFlags struct {
-	StorageAPIHost string `mapstructure:"target-name" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost string `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
 	TargetName     string `mapstructure:"target-name" usage:"target name of the profile"`
 }

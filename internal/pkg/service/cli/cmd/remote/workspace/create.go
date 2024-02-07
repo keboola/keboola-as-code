@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
@@ -41,10 +42,8 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().String("name", "", "name of the workspace")
-	cmd.Flags().String("type", "", "type of the workspace")
-	cmd.Flags().String("size", "", "size of the workspace")
+	createCommandFlags := CreateFlags{}
+	_ = cliconfig.GenerateFlags(createCommandFlags, cmd.Flags())
 
 	return cmd
 }

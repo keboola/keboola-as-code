@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 )
 
@@ -32,7 +33,8 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
+	profileFlag := ProfileFlag{}
+	_ = cliconfig.GenerateFlags(profileFlag, cmd.Flags())
 
 	return cmd
 }

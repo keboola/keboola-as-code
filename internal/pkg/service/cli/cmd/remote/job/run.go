@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
@@ -41,9 +42,8 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().Bool("async", false, "do not wait for job to finish")
-	cmd.Flags().String("timeout", "5m", "how long to wait for job to finish")
+	runFlags := NewRunFlags()
+	_ = cliconfig.GenerateFlags(runFlags, cmd.Flags())
 
 	return cmd
 }

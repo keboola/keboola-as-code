@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -38,6 +39,9 @@ func EncryptCommand(p dependencies.Provider) *cobra.Command {
 			return encrypt.Run(cmd.Context(), projectState, options, d)
 		},
 	}
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+
+	encryptFlags := EncryptFlag{}
+	_ = cliconfig.GenerateFlags(encryptFlags, cmd.Flags())
+
 	return cmd
 }

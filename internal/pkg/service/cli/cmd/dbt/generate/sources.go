@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/sources"
 )
 
@@ -35,8 +36,8 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
+	sourceFlags := SourceFlags{}
+	_ = cliconfig.GenerateFlags(sourceFlags, cmd.Flags())
 
 	return cmd
 }

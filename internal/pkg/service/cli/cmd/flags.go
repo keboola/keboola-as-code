@@ -18,3 +18,7 @@ func NewGlobalFlags() *GlobalFlags {
 		LogFormat:    "console",
 	}
 }
+
+type RootFlag struct {
+	Version bool `mapstructure:"version" usage:"print version"`
+}

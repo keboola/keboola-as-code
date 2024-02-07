@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 )
 
@@ -65,9 +66,8 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("output", "o", "", "path to the destination file or directory")
-	cmd.Flags().Bool("allow-sliced", false, "output sliced files as a directory containing slices as individual files")
+	downloadFlags := DownloadFlags{}
+	_ = cliconfig.GenerateFlags(downloadFlags, cmd.Flags())
 
 	return cmd
 }

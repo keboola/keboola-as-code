@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/persist"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -39,8 +40,8 @@ func PersistCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	persistFlag := PersistFlag{}
+	_ = cliconfig.GenerateFlags(persistFlag, cmd.Flags())
 
 	return cmd
 }

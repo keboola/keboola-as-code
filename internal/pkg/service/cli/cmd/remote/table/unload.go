@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
 )
@@ -55,16 +56,8 @@ func UnloadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().String("changed-since", "", "only export rows imported after this date")
-	cmd.Flags().String("changed-until", "", "only export rows imported before this date")
-	cmd.Flags().StringSlice("columns", []string{}, "comma-separated list of columns to export")
-	cmd.Flags().Uint("limit", 0, "limit the number of exported rows")
-	cmd.Flags().String("where", "", "filter columns by value")
-	cmd.Flags().String("order", "", "order by one or more columns")
-	cmd.Flags().String("format", "csv", "output format (json/csv)")
-	cmd.Flags().Bool("async", false, "do not wait for unload to finish")
-	cmd.Flags().String("timeout", "5m", "how long to wait for job to finish")
+	unloadFlags := NewUnloadFlags()
+	_ = cliconfig.GenerateFlags(unloadFlags, cmd.Flags())
 
 	return cmd
 }

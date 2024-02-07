@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -120,20 +121,12 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 
 	// Persistent flags for all sub-commands
 	flags := root.PersistentFlags()
-	flags.SortFlags = true
-	flags.BoolP("help", "h", false, "print help for command")
-	flags.StringP("log-file", "l", "", "path to a log file for details")
-	flags.String("log-format", "console", "format of stdout and stderr")
-	flags.Bool("non-interactive", false, "disable interactive dialogs")
-	flags.StringP("working-dir", "d", "", "use other working directory")
-	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
-	flags.BoolP("verbose", "v", false, "print details")
-	flags.Bool("verbose-api", false, "log each API request and response")
-	flags.Bool("version-check", true, "checks if there is a newer version of the CLI")
+	persistentFlags := NewGlobalFlags()
+	_ = cliconfig.GenerateFlags(persistentFlags, flags)
 
 	// Root command flags
-	root.Flags().SortFlags = true
-	root.Flags().BoolP("version", "V", false, "print version")
+	rootFlag := RootFlag{}
+	_ = cliconfig.GenerateFlags(rootFlag, root.Flags())
 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}

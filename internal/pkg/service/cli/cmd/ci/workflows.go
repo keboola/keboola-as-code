@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
@@ -33,8 +34,8 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	WorkflowsCmdFlags(cmd.Flags())
+	workflowFlags := NewWorkflowFlags()
+	_ = cliconfig.GenerateFlags(workflowFlags, cmd.Flags())
 
 	return cmd
 }

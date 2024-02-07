@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	deleteOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -39,8 +40,8 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`instance`, "i", ``, "instance ID of the template to delete")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	deleteFlags := DeleteTemplateFlags{}
+	_ = cliconfig.GenerateFlags(deleteFlags, cmd.Flags())
+
 	return cmd
 }

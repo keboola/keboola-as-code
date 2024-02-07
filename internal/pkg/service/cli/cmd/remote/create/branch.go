@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
@@ -76,8 +77,8 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new branch")
+	branchFlags := BranchFlags{}
+	_ = cliconfig.GenerateFlags(branchFlags, cmd.Flags())
+
 	return cmd
 }

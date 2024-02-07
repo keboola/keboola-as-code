@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	useOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -72,10 +73,9 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "target branch ID or name")
-	cmd.Flags().StringP(`instance-name`, "n", ``, "name of new template instance")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
+	useFlags := UseTemplateFlags{}
+	_ = cliconfig.GenerateFlags(useFlags, cmd.Flags())
+
 	return cmd
 }
 

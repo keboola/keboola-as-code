@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
@@ -63,10 +64,8 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of the test to be created")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
-	cmd.Flags().Bool("verbose", false, "show details about creating test")
+	createFlags := CreateFlags{}
+	_ = cliconfig.GenerateFlags(createFlags, cmd.Flags())
 
 	return cmd
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -39,7 +40,8 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	fixPathsFlag := FixPathsFlag{}
+	_ = cliconfig.GenerateFlags(fixPathsFlag, cmd.Flags())
+
 	return cmd
 }
