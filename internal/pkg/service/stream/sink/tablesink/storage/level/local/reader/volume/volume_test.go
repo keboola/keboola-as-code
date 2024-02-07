@@ -80,10 +80,10 @@ func TestOpenVolume_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-INFO  closing volume
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"info","message":"closing volume"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -140,12 +140,12 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  waiting for volume ID file
-INFO  waiting for volume ID file
-INFO  opened volume
-INFO  closing volume
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"waiting for volume ID file"}
+{"level":"info","message":"waiting for volume ID file"}
+{"level":"info","message":"opened volume"}
+{"level":"info","message":"closing volume"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -186,12 +186,12 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  waiting for volume ID file
-INFO  waiting for volume ID file
-INFO  waiting for volume ID file
-INFO  waiting for volume ID file
-INFO  waiting for volume ID file
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"waiting for volume ID file"}
+{"level":"info","message":"waiting for volume ID file"}
+{"level":"info","message":"waiting for volume ID file"}
+{"level":"info","message":"waiting for volume ID file"}
+{"level":"info","message":"waiting for volume ID file"}
 `)
 }
 
@@ -290,5 +290,5 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }

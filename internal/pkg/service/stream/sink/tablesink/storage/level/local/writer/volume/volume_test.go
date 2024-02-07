@@ -98,11 +98,11 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  generated volume ID "%s"
-INFO  opened volume
-INFO  closing volume
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"generated volume ID \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"info","message":"closing volume"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -146,10 +146,10 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-INFO  opening volume "%s"
-INFO  opened volume
-INFO  closing volume
-INFO  closed volume
+{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opened volume"}
+{"level":"info","message":"closing volume"}
+{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -252,5 +252,5 @@ func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {
-	return wildcards.Assert(tc.TB, strings.TrimSpace(expected), strings.TrimSpace(tc.Logger.AllMessages()))
+	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }

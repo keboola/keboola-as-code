@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/level/local/writer/test"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 func TestEventWriter(t *testing.T) {
@@ -125,30 +123,30 @@ func TestEventWriter(t *testing.T) {
 	assert.NoError(t, volumes.Close(ctx))
 
 	// Check logs, closing is parallel, so writers logs are checked separately
-	assert.Equal(t, strings.TrimSpace(`
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: OPEN (4), level: volume1
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: OPEN (3), level: volume1
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: OPEN (2), level: volumes
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: OPEN (1), level: volumes
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: CLOSE (6), level: writer1
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: CLOSE (5), level: writer1
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: CLOSE (4), level: volume1
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: CLOSE (3), level: volume1
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: CLOSE (2), level: volumes
-INFO  EVENT: slice: "2001-01-01T00:00:00.000Z", event: CLOSE (1), level: volumes
-`), strings.TrimSpace(strhelper.FilterLines(`^INFO  EVENT: slice: "2001`, logger.InfoMessages())))
-	assert.Equal(t, strings.TrimSpace(`
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: OPEN (4), level: volume2
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: OPEN (3), level: volume2
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: OPEN (2), level: volumes
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: OPEN (1), level: volumes
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: CLOSE (6), level: writer2
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: CLOSE (5), level: writer2
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: CLOSE (4), level: volume2
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: CLOSE (3), level: volume2
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: CLOSE (2), level: volumes
-INFO  EVENT: slice: "2002-01-01T00:00:00.000Z", event: CLOSE (1), level: volumes
-`), strings.TrimSpace(strhelper.FilterLines(`^INFO  EVENT: slice: "2002`, logger.InfoMessages())))
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: OPEN (4), level: volume1"}                    
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: OPEN (3), level: volume1"}                    
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: OPEN (2), level: volumes"}                    
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: OPEN (1), level: volumes"} 
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: CLOSE (6), level: writer1"}
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: CLOSE (5), level: writer1"}
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: CLOSE (4), level: volume1"}
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: CLOSE (3), level: volume1"}
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: CLOSE (2), level: volumes"}
+{"level":"info","message":"EVENT: slice: \"2001-01-01T00:00:00.000Z\", event: CLOSE (1), level: volumes"}
+`)
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: OPEN (4), level: volume2"}                    
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: OPEN (3), level: volume2"}                    
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: OPEN (2), level: volumes"}                    
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: OPEN (1), level: volumes"}
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: CLOSE (6), level: writer2"}
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: CLOSE (5), level: writer2"}
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: CLOSE (4), level: volume2"}
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: CLOSE (3), level: volume2"}
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: CLOSE (2), level: volumes"}
+{"level":"info","message":"EVENT: slice: \"2002-01-01T00:00:00.000Z\", event: CLOSE (1), level: volumes"}
+`)
 }
 
 func TestEventWriter_OpenError(t *testing.T) {
