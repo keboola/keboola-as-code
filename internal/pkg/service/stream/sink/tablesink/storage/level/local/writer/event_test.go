@@ -43,19 +43,19 @@ func TestEventWriter(t *testing.T) {
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volumes" level
 	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: OPEN (1), level: volumes`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (1), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: OPEN (2), level: volumes`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (2), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	volumes.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (1), level: volumes`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (1), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	volumes.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (2), level: volumes`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (2), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
 
@@ -65,35 +65,35 @@ func TestEventWriter(t *testing.T) {
 	vol2, err := volumes.Volume("HDD_2")
 	assert.NoError(t, err)
 	vol1.Events().OnWriterOpen(func(w writer.Writer) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol1.Events().OnWriterOpen(func(w writer.Writer) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume1`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume1`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume1`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol2.Events().OnWriterOpen(func(w writer.Writer) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume2`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol2.Events().OnWriterOpen(func(w writer.Writer) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume2`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume2`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	vol2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume2`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 
@@ -105,19 +105,19 @@ func TestEventWriter(t *testing.T) {
 	writer2, err := vol2.NewWriterFor(slice2)
 	require.NoError(t, err)
 	writer1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer1`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer1`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	writer1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer1`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer1`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	writer2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer2`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 	writer2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
-		logger.InfofCtx(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer2`, w.SliceKey().OpenedAt())
+		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 

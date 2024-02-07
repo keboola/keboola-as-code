@@ -3,6 +3,7 @@ package use
 import (
 	"context"
 	"fmt"
+	"io"
 	"sort"
 	"time"
 
@@ -45,6 +46,7 @@ type dependencies interface {
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -255,7 +257,7 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 	}
 
 	// Log new objects
-	p.modified.Log(logger, p.options.Template)
+	p.modified.Log(p.deps.Stdout(), p.options.Template)
 
 	// Normalize paths
 	if _, err := rename.Run(ctx, p.options.ProjectState, rename.Options{DryRun: false, LogEmpty: false}, p.deps); err != nil {
@@ -264,10 +266,10 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 
 	// Validate schemas and encryption
 	if err := validate.Run(ctx, p.options.ProjectState, validate.Options{ValidateSecrets: !p.options.SkipSecretsValidation, ValidateJSONSchema: true}, p.deps); err != nil {
-		logger.WarnCtx(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-		logger.WarnCtx(ctx)
-		logger.WarnCtx(ctx, `Please correct the problems listed above.`)
-		logger.WarnCtx(ctx, `Push operation is only possible when project is valid.`)
+		logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		logger.Warn(ctx, "")
+		logger.Warn(ctx, `Please correct the problems listed above.`)
+		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 	}
 
 	result := &Result{InstanceID: p.options.InstanceID}
@@ -288,9 +290,9 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 
 	// Log success
 	if p.options.Upgrade {
-		logger.InfofCtx(ctx, `Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName())
+		logger.Infof(ctx, `Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName())
 	} else {
-		logger.InfofCtx(ctx, `Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID)
+		logger.Infof(ctx, `Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID)
 	}
 
 	return result, nil
@@ -362,14 +364,15 @@ type ModifiedObject struct {
 
 type ModifiedObjects []ModifiedObject
 
-func (v ModifiedObjects) Log(logger log.Logger, tmpl *template.Template) {
+func (v ModifiedObjects) Log(w io.Writer, tmpl *template.Template) {
 	sort.SliceStable(v, func(i, j int) bool {
 		return v[i].Path() < v[j].Path()
 	})
 
-	writer := logger.InfoWriter()
-	writer.WriteString(fmt.Sprintf(`Objects from "%s" template:`, tmpl.FullName()))
+	fmt.Fprintf(w, `Objects from "%s" template:`, tmpl.FullName())
+	fmt.Fprintln(w)
 	for _, o := range v {
-		writer.WriteStringIndent(1, fmt.Sprintf("%s %s %s", o.OpMark, o.Kind().Abbr, o.Path()))
+		fmt.Fprintf(w, "  %s %s %s", o.OpMark, o.Kind().Abbr, o.Path())
+		fmt.Fprintln(w)
 	}
 }

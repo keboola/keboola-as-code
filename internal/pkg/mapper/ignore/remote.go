@@ -63,7 +63,7 @@ func (m *ignoreMapper) isIgnoredConfig(ctx context.Context, config *model.Config
 	if config.ComponentID == keboola.VariablesComponentID {
 		// Without target config
 		if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
-			m.logger.DebugfCtx(ctx, "Ignored unattached variables %s", config.Desc())
+			m.logger.Debugf(ctx, "Ignored unattached variables %s", config.Desc())
 			return true
 		}
 		return false
@@ -87,7 +87,7 @@ func (m *ignoreMapper) isIgnoredConfig(ctx context.Context, config *model.Config
 
 		// Configuration must exists
 		if _, found := m.state.RemoteObjects().Get(targetConfigKey); !found {
-			m.logger.DebugfCtx(ctx, "Ignored scheduler %s, target %s not found", config.Desc(), targetConfigKey.Desc())
+			m.logger.Debugf(ctx, "Ignored scheduler %s, target %s not found", config.Desc(), targetConfigKey.Desc())
 			return true
 		}
 	}

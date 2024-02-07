@@ -58,7 +58,7 @@ type Volume struct {
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec volume.Spec, opts ...Option) (*Volume, error) {
-	logger.InfofCtx(ctx, `opening volume "%s"`, spec.Path)
+	logger.Infof(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
 		spec:          spec,
 		config:        newConfig(opts),
@@ -83,7 +83,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		// ID file doesn't exist, create it
 		if errors.Is(err, os.ErrNotExist) {
 			id := volume.GenerateID()
-			logger.InfofCtx(ctx, `generated volume ID "%s"`, id)
+			logger.Infof(ctx, `generated volume ID "%s"`, id)
 			content = []byte(id)
 			err = createVolumeIDFile(idFilePath, content)
 		}
@@ -112,7 +112,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		return nil, err
 	}
 
-	v.logger.InfoCtx(ctx, "opened volume")
+	v.logger.Info(ctx, "opened volume")
 	return v, nil
 }
 

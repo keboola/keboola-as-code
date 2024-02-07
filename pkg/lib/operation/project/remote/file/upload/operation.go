@@ -81,7 +81,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		if err != nil {
 			return nil, errors.Errorf(`error uploading file from stdin: %w`, err)
 		}
-		d.Logger().InfofCtx(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
+		d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
 		return file, nil
 	}
 
@@ -93,7 +93,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		if err != nil {
 			return nil, errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
 		}
-		d.Logger().InfofCtx(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
+		d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
 		return file, nil
 	}
 
@@ -118,7 +118,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		}
 	}
 
-	d.Logger().InfofCtx(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
+	d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
 	return file, nil
 }
 

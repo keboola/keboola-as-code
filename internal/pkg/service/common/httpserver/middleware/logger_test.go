@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/dimfeld/httptreemux/v5"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -69,7 +68,6 @@ func TestLoggerMiddleware(t *testing.T) {
 	assert.Equal(t, "OK", rec.Body.String())
 
 	// Assert
-	wildcards.Assert(t, `
-[http][requestId=%s]INFO  req /api/action status=200 bytes=2 time=%s client_ip=192.0.2.1 agent=my-user-agent
-`, logger.AllMessages())
+	expected := `{"level":"info","message":"req /api/action status=200 bytes=2 time=%s client_ip=192.0.2.1 agent=my-user-agent","component":"http","http.request_id":"%s"}`
+	logger.AssertJSONMessages(t, expected)
 }

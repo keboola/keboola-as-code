@@ -128,12 +128,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
@@ -144,7 +144,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
-		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
@@ -234,12 +234,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
@@ -250,7 +250,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
-		tc.Logger.InfofCtx(ctx, "TEST: write unblocked")
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)

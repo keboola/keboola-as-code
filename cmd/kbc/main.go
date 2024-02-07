@@ -16,6 +16,6 @@ func main() {
 	}
 
 	// Run command
-	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, osEnvs, clifs.New)
+	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, osEnvs, clifs.New) // nolint:forbidigo
 	os.Exit(rootCmd.Execute())
 }

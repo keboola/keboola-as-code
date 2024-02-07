@@ -103,7 +103,7 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
 	if opFn != nil {
-		s.logger.InfofCtx(
+		s.logger.Infof(
 			s.ctx,
 			`sync is enabled, mode=%s, sync each {count=%d or bytes=%s or interval=%s}, check each %s`,
 			config.Mode,
@@ -255,12 +255,12 @@ func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
 		defer s.wg.Done()
 
 		// Invoke the operation
-		s.logger.DebugfCtx(ctx, `starting sync to %s`, s.config.Mode)
+		s.logger.Debugf(ctx, `starting sync to %s`, s.config.Mode)
 		err := s.opFn(ctx)
 		if err == nil {
-			s.logger.DebugfCtx(ctx, `sync to %s done`, s.config.Mode)
+			s.logger.Debugf(ctx, `sync to %s done`, s.config.Mode)
 		} else {
-			s.logger.ErrorfCtx(ctx, `sync to %s failed: %s`, s.config.Mode, err)
+			s.logger.Errorf(ctx, `sync to %s failed: %s`, s.config.Mode, err)
 		}
 
 		// Release the lock

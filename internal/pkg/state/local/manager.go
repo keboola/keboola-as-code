@@ -168,27 +168,27 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 			if err := filter.AssertObjectAllowed(object); err != nil {
 				switch err.Reason() {
 				case model.IgnoredByAllowedBranches:
-					u.logger.WarnCtx(ctx, errors.Format(errors.NewNestedError(
+					u.logger.Warn(ctx, errors.Format(errors.NewNestedError(
 						errors.Errorf("found manifest record for %s", object.Desc()),
 						errors.New("it is not allowed by the manifest definition"),
 						errors.New("please, remove record from the manifest and the related directory"),
 						errors.New(`or modify "allowedBranches" key in the manifest`),
 					), errors.FormatAsSentences()))
 				case model.IgnoredByIgnoredComponents:
-					u.logger.WarnCtx(ctx, errors.Format(errors.NewNestedError(
+					u.logger.Warn(ctx, errors.Format(errors.NewNestedError(
 						errors.Errorf("found manifest record for %s", object.Desc()),
 						errors.New("it is not allowed by the manifest definition"),
 						errors.New("please, remove record from the manifest and the related directory"),
 						errors.New(`or modify "ignoredComponents" key in the manifest`),
 					), errors.FormatAsSentences()))
 				case model.IgnoredByAlwaysIgnoredComponents:
-					u.logger.WarnCtx(ctx, errors.Format(errors.NewNestedError(
+					u.logger.Warn(ctx, errors.Format(errors.NewNestedError(
 						errors.Errorf("found manifest record for %s", object.Desc()),
 						errors.New("the component cannot be configured using a definition"),
 						errors.New("please, remove record from the manifest and the related directory"),
 					), errors.FormatAsSentences()))
 				default:
-					u.logger.WarnCtx(ctx, errors.Format(err, errors.FormatAsSentences()))
+					u.logger.Warn(ctx, errors.Format(err, errors.FormatAsSentences()))
 				}
 				return nil
 			}

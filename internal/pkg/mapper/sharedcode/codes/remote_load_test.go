@@ -104,7 +104,7 @@ WARN  Warning:
 - Invalid config "branch:789/component:keboola.shared-code/config:123":
   - Key "componentId" should be string, found "int".
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 
 	// Check config and row
 	assert.Empty(t, configState.Remote.SharedCode)
@@ -132,7 +132,7 @@ WARN  Warning:
 - Invalid config row "branch:789/component:keboola.shared-code/config:123/row:456":
   - Key "code_content" should be string or array, found "int".
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 
 	// Check config and row
 	assert.Equal(t, &model.SharedCodeConfig{

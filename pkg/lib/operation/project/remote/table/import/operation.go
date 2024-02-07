@@ -35,7 +35,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	defer span.End(&err)
 
 	if !checkTableExists(ctx, d, o.TableKey) {
-		d.Logger().InfofCtx(ctx, `Table "%s" does not exist, creating it.`, o.TableKey.TableID)
+		d.Logger().Infof(ctx, `Table "%s" does not exist, creating it.`, o.TableKey.TableID)
 
 		rb := rollback.New(d.Logger())
 		err = EnsureBucketExists(ctx, d, rb, o.TableKey.BucketKey())
@@ -49,7 +49,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			return err
 		}
 
-		d.Logger().InfofCtx(ctx, `Created new table "%s" from file with id "%d".`, o.TableKey.TableID, o.FileKey.FileID)
+		d.Logger().Infof(ctx, `Created new table "%s" from file with id "%d".`, o.TableKey.TableID, o.FileKey.FileID)
 	} else {
 		job, err := d.KeboolaProjectAPI().LoadDataFromFileRequest(o.TableKey, o.FileKey, getLoadOptions(&o)...).Send(ctx)
 		if err != nil {
@@ -63,7 +63,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Logger().InfofCtx(ctx, `Loaded data from file "%d" into table "%s".`, o.FileKey.FileID, o.TableKey.TableID)
+		d.Logger().Infof(ctx, `Loaded data from file "%d" into table "%s".`, o.FileKey.FileID, o.TableKey.TableID)
 	}
 
 	return nil
@@ -92,7 +92,7 @@ func EnsureBucketExists(ctx context.Context, d dependencies, rb rollback.Builder
 	err := d.KeboolaProjectAPI().GetBucketRequest(bucketKey).SendOrErr(ctx)
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.buckets.notFound" {
-		d.Logger().InfofCtx(ctx, `Bucket "%s" does not exist, creating it.`, bucketKey.BucketID)
+		d.Logger().Infof(ctx, `Bucket "%s" does not exist, creating it.`, bucketKey.BucketID)
 		api := d.KeboolaProjectAPI()
 		// Bucket doesn't exist -> create it
 		bucket := &keboola.Bucket{BucketKey: bucketKey}

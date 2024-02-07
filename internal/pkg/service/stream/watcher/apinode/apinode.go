@@ -69,7 +69,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 	// Create
 	n := &Node{
 		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[api][watcher]"),
+		logger: d.Logger().WithComponent("api.watcher"),
 		client: d.EtcdClient(),
 		stats:  d.StatsCollector(),
 	}
@@ -79,10 +79,10 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 	n.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	n.wg = &sync.WaitGroup{}
 	proc.OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		cancel()
 		n.wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	// Sync slices revision to Worker nodes
@@ -108,7 +108,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 		errs.Append(err)
 	}
 	if errs.Len() == 0 {
-		n.logger.InfofCtx(n.ctx, `initialized | %s`, time.Since(startTime))
+		n.logger.Infof(n.ctx, `initialized | %s`, time.Since(startTime))
 	}
 	return n, errs.ErrorOrNil()
 }
@@ -174,17 +174,17 @@ func watch[T fmt.Stringer](n *Node, prefix etcdop.PrefixT[T], revSyncer *Revisio
 					case etcdop.CreateEvent:
 						t.Insert(k, event.Value)
 						if logsEnabled {
-							n.logger.InfofCtx(n.ctx, `created %s%s`, prefix.Prefix(), k)
+							n.logger.Infof(n.ctx, `created %s%s`, prefix.Prefix(), k)
 						}
 					case etcdop.UpdateEvent:
 						t.Insert(k, event.Value)
 						if logsEnabled {
-							n.logger.InfofCtx(n.ctx, `updated %s%s`, prefix.Prefix(), k)
+							n.logger.Infof(n.ctx, `updated %s%s`, prefix.Prefix(), k)
 						}
 					case etcdop.DeleteEvent:
 						t.Delete(k)
 						if logsEnabled {
-							n.logger.InfofCtx(n.ctx, `deleted %s%s`, prefix.Prefix(), k)
+							n.logger.Infof(n.ctx, `deleted %s%s`, prefix.Prefix(), k)
 						}
 					default:
 						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
@@ -194,7 +194,7 @@ func watch[T fmt.Stringer](n *Node, prefix etcdop.PrefixT[T], revSyncer *Revisio
 
 			// ACK revision, so worker nodes knows that the API node is switched to the new slice.
 			if revSyncer != nil {
-				n.logger.InfofCtx(n.ctx, `state updated to the revision "%v"`, header.Revision)
+				n.logger.Infof(n.ctx, `state updated to the revision "%v"`, header.Revision)
 				revSyncer.Notify(header.Revision)
 			}
 		}).

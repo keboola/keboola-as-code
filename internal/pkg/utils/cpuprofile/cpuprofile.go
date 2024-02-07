@@ -9,7 +9,7 @@ import (
 )
 
 func Start(ctx context.Context, filePath string, logger log.Logger) (stop func(), err error) {
-	logger = logger.AddPrefix("[cpu-profile]")
+	logger = logger.WithComponent("cpu-profile")
 
 	f, err := os.Create(filePath) //nolint: forbidigo
 	if err != nil {
@@ -20,13 +20,13 @@ func Start(ctx context.Context, filePath string, logger log.Logger) (stop func()
 		return nil, err
 	}
 
-	logger.InfoCtx(ctx, "started")
+	logger.Info(ctx, "started")
 	return func() {
 		pprof.StopCPUProfile()
 		if err := f.Close(); err != nil { //nolint: forbidigo
-			logger.ErrorCtx(ctx, err)
+			logger.Error(ctx, err.Error())
 			os.Exit(1)
 		}
-		logger.InfoCtx(ctx, "stopped")
+		logger.Info(ctx, "stopped")
 	}, nil
 }

@@ -5,7 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
 
 // Listener listens for distribution changes, when a node is added or removed.
@@ -29,7 +32,7 @@ type listeners struct {
 type listenerID string
 
 func newListeners(n *Node) *listeners {
-	logger := n.logger.AddPrefix("[listeners]")
+	logger := n.logger.WithComponent("listeners")
 
 	v := &listeners{
 		config:    n.config,
@@ -41,10 +44,11 @@ func newListeners(n *Node) *listeners {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
-		logger.InfoCtx(ctx, "received shutdown request")
+		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
+		logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		logger.InfoCtx(ctx, "shutdown done")
+		logger.Info(ctx, "shutdown done")
 	})
 
 	wg.Add(1)
@@ -70,7 +74,7 @@ func newListeners(n *Node) *listeners {
 				// Log info
 				count := len(v.listeners)
 				if count > 0 {
-					logger.InfofCtx(ctx, `waiting for "%d" listeners`, count)
+					logger.Infof(ctx, `waiting for "%d" listeners`, count)
 				}
 
 				// Process remaining events

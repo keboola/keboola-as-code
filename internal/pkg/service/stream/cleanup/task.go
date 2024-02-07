@@ -97,7 +97,7 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 		errs.Append(err)
 	}
 
-	t.logger.InfofCtx(ctx, `deleted "%d" files, "%d" slices, "%d" records`, filesCount, slicesCount, recordsCount)
+	t.logger.Infof(ctx, `deleted "%d" files, "%d" slices, "%d" records`, filesCount, slicesCount, recordsCount)
 	return errs.ErrorOrNil()
 }
 
@@ -125,7 +125,7 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 
 			// Delete the slice
 			if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, t.client); err == nil {
-				t.logger.DebugfCtx(ctx, `deleted slice "%s"`, file.FileKey.String())
+				t.logger.Debugf(ctx, `deleted slice "%s"`, file.FileKey.String())
 				slicesCount++
 			} else {
 				errs.Append(err)
@@ -149,6 +149,6 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 		return slicesCount, recordsCount, err
 	}
 
-	t.logger.DebugfCtx(ctx, `deleted file "%s"`, file.FileKey.String())
+	t.logger.Debugf(ctx, `deleted file "%s"`, file.FileKey.String())
 	return slicesCount, recordsCount, nil
 }

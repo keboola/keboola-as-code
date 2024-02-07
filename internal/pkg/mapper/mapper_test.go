@@ -2,7 +2,6 @@ package mapper
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,10 +67,10 @@ func TestMappers_ForEachReverse_DontStopOnFailure(t *testing.T) {
 func TestMapper_LoadLocalFile_DefaultHandler(t *testing.T) {
 	t.Parallel()
 	expectedLogs := `
-INFO  Handler 1
-INFO  Handler 2
-INFO  Handler 3
-DEBUG  Loaded "file.txt"
+{"level":"info","message":"Handler 1"}
+{"level":"info","message":"Handler 2"}
+{"level":"info","message":"Handler 3"}
+{"level":"debug","message":"Loaded \"file.txt\""}
 `
 	invokeLoadLocalFile(
 		t,
@@ -84,8 +83,8 @@ DEBUG  Loaded "file.txt"
 func TestMapper_LoadLocalFile_CustomHandler(t *testing.T) {
 	t.Parallel()
 	expectedLogs := `
-INFO  Handler 1
-INFO  Handler 2
+{"level":"info","message":"Handler 1"}
+{"level":"info","message":"Handler 2"}
 `
 	invokeLoadLocalFile(
 		t,
@@ -111,7 +110,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	// File load handlers
 	handler1 := func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file1.txt"
-		logger.InfoCtx(context.Background(), `Handler 1`)
+		logger.Info(context.Background(), `Handler 1`)
 		if def.Path() == "file1.txt" {
 			return filesystem.NewRawFile("file1.txt", "handler1"), nil
 		}
@@ -119,7 +118,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	}
 	handler2 := func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file2.txt"
-		logger.InfoCtx(context.Background(), `Handler 2`)
+		logger.Info(context.Background(), `Handler 2`)
 		if def.Path() == "file2.txt" {
 			return filesystem.NewRawFile("file2.txt", "handler2"), nil
 		}
@@ -127,7 +126,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	}
 	handler3 := func(ctx context.Context, def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 		// Match file path "file3.txt"
-		logger.InfoCtx(context.Background(), `Handler 3`)
+		logger.Info(context.Background(), `Handler 3`)
 		if def.Path() == "file3.txt" {
 			return filesystem.NewRawFile("file3.txt", "handler3"), nil
 		}
@@ -151,5 +150,5 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	output, err := mapper.NewFileLoader(fs).ReadRawFile(ctx, input)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, output)
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
+	logger.AssertJSONMessages(t, expectedLogs)
 }

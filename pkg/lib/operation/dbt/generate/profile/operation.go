@@ -102,6 +102,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	d.Logger().InfofCtx(ctx, `Profile stored in "%s".`, profilePath)
+	d.Logger().Infof(ctx, `Profile stored in "%s".`, profilePath)
 	return nil
 }

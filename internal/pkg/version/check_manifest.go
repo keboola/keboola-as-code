@@ -45,9 +45,9 @@ Warning: Your project needs to be migrated to the new version of the Keboola CLI
   2. Then run "kbc pull --force" to overwrite local state.
   3. Manually check that there are no unexpected changes in the project directory (git diff).
 		`
-		logger.WarnCtx(ctx, strings.TrimLeft(warning, "\n"))
+		logger.Warn(ctx, strings.TrimLeft(warning, "\n"))
 	} else {
-		logger.DebugfCtx(ctx, `Version "%d" in "%s" is up to date.`, version, manifestPath)
+		logger.Debugf(ctx, `Version "%d" in "%s" is up to date.`, version, manifestPath)
 	}
 
 	return nil

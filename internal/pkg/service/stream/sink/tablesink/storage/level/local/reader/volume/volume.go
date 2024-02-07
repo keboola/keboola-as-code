@@ -46,7 +46,7 @@ type Volume struct {
 //   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume.Spec, opts ...Option) (*Volume, error) {
-	logger.InfofCtx(ctx, `opening volume "%s"`, spec.Path)
+	logger.Infof(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
 		spec:        spec,
 		config:      newConfig(opts),
@@ -77,7 +77,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume
 		}
 	}
 
-	v.logger.InfofCtx(ctx, "opened volume")
+	v.logger.Infof(ctx, "opened volume")
 	return v, nil
 }
 
@@ -106,7 +106,7 @@ func (v *Volume) Metadata() volume.Metadata {
 
 func (v *Volume) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
-	v.logger.InfofCtx(ctx, "closing volume")
+	v.logger.Infof(ctx, "closing volume")
 
 	// Block NewReaderFor method
 	v.cancel()
@@ -133,7 +133,7 @@ func (v *Volume) Close(ctx context.Context) error {
 		errs.Append(errors.Errorf(`cannot remove reader lock "%s": %w`, v.fsLock.Path(), err))
 	}
 
-	v.logger.InfofCtx(ctx, "closed volume")
+	v.logger.Infof(ctx, "closed volume")
 	return errs.ErrorOrNil()
 }
 
@@ -155,7 +155,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return "", errors.Errorf(`cannot open volume ID file "%s": %w`, path, err)
 		} else {
-			v.logger.InfofCtx(ctx, `waiting for volume ID file`)
+			v.logger.Infof(ctx, `waiting for volume ID file`)
 		}
 
 		select {

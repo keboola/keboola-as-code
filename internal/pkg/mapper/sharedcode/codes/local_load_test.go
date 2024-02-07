@@ -35,7 +35,7 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 	rowRecipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.Manifest(), rowState.Local)
 	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
 	assert.NoError(t, err)
-	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logger.AllMessages())
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"branch/config/row/code.py\""}`)
 
 	// Structs are set
 	assert.Equal(t, &model.SharedCodeConfig{

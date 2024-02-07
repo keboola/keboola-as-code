@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -71,7 +72,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Assert
 	ctx := context.Background()
 	proc := servicectx.NewForTest(t)
-	baseScp := newBaseScope(ctx, logger, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
+	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
 	localScp, err := newLocalCommandScope(ctx, baseScp)
 	assert.NoError(t, err)
 	_, err = newRemoteCommandScope(ctx, localScp)

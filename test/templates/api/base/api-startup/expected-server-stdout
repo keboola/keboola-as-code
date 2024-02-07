@@ -1,0 +1,51 @@
+{"level":"info","message":"Configuration: {\"debug-log\":false,\"debugHTTPClient\":false,\"cpuProfilePath\":\"\",\"nodeID\":\"test-node\",\"datadog\":{\"enabled\":false,\"debug\":false},\"etcd\":{\"endpoint\":\"%s\",\"namespace\":\"%s\",\"username\":\"%s\",\"password\":\"*****\",\"connectTimeout\":\"30s\",\"keepAliveTimeout\":\"5s\",\"keepAliveInterval\":\"10s\",\"debugLog\":false},\"metrics\":{\"listen\":\"%s\"},\"api\":{\"listen\":\"%s\",\"publicURL\":\"https://templates.keboola.local\"},\"storage-api-host\":\"%s\",\"repositories\":\"keboola|https://github.com/keboola/keboola-as-code-templates.git|main\",\"tasks-cleanup-enabled\":true,\"tasks-cleanup-interval\":\"1h0m0s\"}","component":"templatesApi"}
+{"level":"info","message":"HTTP server listening on \"localhost:%d/metrics\"","component":"templatesApi.metrics"}
+{"level":"info","message":"loading Storage API index with components","component":"templatesApi"}
+{"level":"info","message":"loaded Storage API index with \"%s\" components | %s","component":"templatesApi"}
+{"level":"info","message":"connecting to etcd, connectTimeout=30s, keepAliveTimeout=5s, keepAliveInterval=10s","component":"templatesApi.etcd-client"}
+{"level":"info","message":"connected to etcd cluster \"%s\" | %s","component":"templatesApi.etcd-client"}
+{"level":"info","message":"creating etcd session","component":"templatesApi.task.etcd-session"}
+{"level":"info","message":"created etcd session | %s","component":"templatesApi.task.etcd-session"}
+{"level":"info","message":"creating etcd session","component":"templatesApi.distribution.templates-api.etcd-session"}
+{"level":"info","message":"created etcd session | %s","component":"templatesApi.distribution.templates-api.etcd-session"}
+{"level":"info","message":"registering the node \"%s\"","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"the node \"%s\" registered | %s","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"watching for other nodes","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"found a new node \"%s\"","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"checking out repository \"https://github.com/keboola/keboola-as-code-templates.git:main\"","component":"templatesApi"}
+{"level":"info","message":"checked out repository \"https://github.com/keboola/keboola-as-code-templates.git:main\" | %s","component":"templatesApi"}
+{"level":"info","message":"loading all templates from repository \"https://github.com/keboola/keboola-as-code-templates.git:main:%s\"","component":"templatesApi"}
+{"level":"info","message":"loaded all templates from repository \"https://github.com/keboola/keboola-as-code-templates.git:main:%s\" | %s","component":"templatesApi"}
+{"level":"info","message":"components update cron ready","component":"templatesApi"}
+{"level":"info","message":"repository pull cron ready","component":"templatesApi"}
+{"level":"info","message":"ready","component":"templatesApi.cleanup"}
+{"level":"info","message":"starting Templates API HTTP server, listen-address=localhost:%d","component":"templatesApi"}
+{"level":"info","message":"mounted HTTP endpoints","component":"templatesApi"}
+{"level":"info","message":"HTTP server listening on \"localhost:%d\"","component":"templatesApi"}
+{"level":"info","message":"req / status=301 bytes=%d time=%s client_ip=%s agent=%s","component":"templatesApi.http","http.request_id":"%s"}
+{"level":"info","message":"req /v1 status=200 bytes=%d time=%s client_ip=%s agent=%s","component":"templatesApi.http","http.request_id":"%s"}
+{"level":"info","message":"exiting (terminated)","component":"templatesApi"}
+{"level":"info","message":"shutting down HTTP server at \"localhost:%d\"","component":"templatesApi"}
+{"level":"info","message":"HTTP server shutdown finished","component":"templatesApi"}
+{"level":"info","message":"received shutdown request","component":"templatesApi"}
+{"level":"info","message":"waiting for orchestrators","component":"templatesApi"}
+{"level":"info","message":"shutdown done","component":"templatesApi"}
+{"level":"info","message":"cleaned repository cache \"https://github.com/keboola/keboola-as-code-templates.git:main:%s\"","component":"templatesApi"}
+{"level":"info","message":"repository manager cleaned up","component":"templatesApi"}
+{"level":"info","message":"received shutdown request","component":"templatesApi.distribution.templates-api.listeners"}
+{"level":"info","message":"shutdown done","component":"templatesApi.distribution.templates-api.listeners"}
+{"level":"info","message":"received shutdown request","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"unregistering the node \"%s\"","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"the node \"%s\" unregistered | %s","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"closing etcd session","component":"templatesApi.distribution.templates-api.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","component":"templatesApi.distribution.templates-api.etcd-session"}
+{"level":"info","message":"shutdown done","component":"templatesApi.distribution.templates-api"}
+{"level":"info","message":"received shutdown request","component":"templatesApi.task"}
+{"level":"info","message":"closing etcd session","component":"templatesApi.task.etcd-session"}
+{"level":"info","message":"closed etcd session | %s","component":"templatesApi.task.etcd-session"}
+{"level":"info","message":"shutdown done","component":"templatesApi.task"}
+{"level":"info","message":"closing etcd connection","component":"templatesApi.etcd-client"}
+{"level":"info","message":"closed etcd connection | %s","component":"templatesApi.etcd-client"}
+{"level":"info","message":"shutting down HTTP server at \"localhost:%d\"","component":"templatesApi.metrics"}
+{"level":"info","message":"HTTP server shutdown finished","component":"templatesApi.metrics"}
+{"level":"info","message":"exited","component":"templatesApi"}

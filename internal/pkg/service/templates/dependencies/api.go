@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 
 	"github.com/benbjohnson/clock"
 
@@ -47,15 +48,31 @@ type parentScopesImpl struct {
 	dependencies.DistributionScope
 }
 
-func NewAPIScope(ctx context.Context, cfg config.Config, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry) (v APIScope, err error) {
-	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel)
+func NewAPIScope(
+	ctx context.Context,
+	cfg config.Config,
+	proc *servicectx.Process,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+) (v APIScope, err error) {
+	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
 	if err != nil {
 		return nil, err
 	}
 	return newAPIScope(ctx, parentSc, cfg)
 }
 
-func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry) (v parentScopes, err error) {
+func newParentScopes(
+	ctx context.Context,
+	cfg config.Config,
+	proc *servicectx.Process,
+	logger log.Logger,
+	tel telemetry.Telemetry,
+	stdout io.Writer,
+	stderr io.Writer,
+) (v parentScopes, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.templates.api.dependencies.newParentScopes")
 	defer span.End(&err)
 
@@ -64,17 +81,17 @@ func newParentScopes(ctx context.Context, cfg config.Config, proc *servicectx.Pr
 		httpclient.WithUserAgent(userAgent),
 		func(c *httpclient.Config) {
 			if cfg.DebugLog {
-				httpclient.WithDebugOutput(logger.DebugWriter())(c)
+				httpclient.WithDebugOutput(stdout)(c)
 			}
 			if cfg.DebugHTTPClient {
-				httpclient.WithDumpOutput(logger.DebugWriter())(c)
+				httpclient.WithDumpOutput(stdout)(c)
 			}
 		},
 	)
 
 	d := &parentScopesImpl{}
 
-	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, clock.New(), proc, httpClient)
+	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
 
 	d.PublicScope, err = dependencies.NewPublicScope(
 		ctx, d, cfg.StorageAPIHost,

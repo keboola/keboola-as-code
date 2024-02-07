@@ -1,7 +1,6 @@
 package dependencies
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -23,7 +22,7 @@ func newPublicRequestScope(apiScp APIScope, reqInfo dependencies.RequestInfo) *p
 	d := &publicRequestScope{}
 	d.APIScope = apiScp
 	d.RequestInfo = reqInfo
-	d.logger = apiScp.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", reqInfo.RequestID()))
+	d.logger = apiScp.Logger()
 	return d
 }
 

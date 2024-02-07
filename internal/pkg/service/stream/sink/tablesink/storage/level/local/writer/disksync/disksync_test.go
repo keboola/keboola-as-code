@@ -1177,7 +1177,7 @@ type testChain struct {
 }
 
 func (c *testChain) Write(p []byte) (int, error) {
-	c.Logger.InfofCtx(context.Background(), `TEST: write "%s"`, strhelper.Truncate(string(p), 20, "..."))
+	c.Logger.Infof(context.Background(), `TEST: write "%s"`, strhelper.Truncate(string(p), 20, "..."))
 	if c.WriteError != nil {
 		return 0, c.WriteError
 	}
@@ -1185,7 +1185,7 @@ func (c *testChain) Write(p []byte) (int, error) {
 }
 
 func (c *testChain) WriteString(s string) (int, error) {
-	c.Logger.InfofCtx(context.Background(), `TEST: write "%s"`, strhelper.Truncate(s, 20, "..."))
+	c.Logger.Infof(context.Background(), `TEST: write "%s"`, strhelper.Truncate(s, 20, "..."))
 	if c.WriteError != nil {
 		return 0, c.WriteError
 	}
@@ -1193,20 +1193,20 @@ func (c *testChain) WriteString(s string) (int, error) {
 }
 
 func (c *testChain) Flush(ctx context.Context) error {
-	c.Logger.InfofCtx(ctx, `TEST: sync started`)
+	c.Logger.Infof(ctx, `TEST: sync started`)
 	c.SyncLock.Lock()
 	time.Sleep(5 * time.Millisecond)
 	c.SyncLock.Unlock()
-	c.Logger.InfofCtx(ctx, `TEST: sync done`)
+	c.Logger.Infof(ctx, `TEST: sync done`)
 	return c.FlushError
 }
 
 func (c *testChain) Sync(ctx context.Context) error {
-	c.Logger.InfofCtx(ctx, `TEST: sync started`)
+	c.Logger.Infof(ctx, `TEST: sync started`)
 	c.SyncLock.Lock()
 	time.Sleep(5 * time.Millisecond)
 	c.SyncLock.Unlock()
-	c.Logger.InfofCtx(ctx, `TEST: sync done`)
+	c.Logger.Infof(ctx, `TEST: sync done`)
 	return c.SyncError
 }
 

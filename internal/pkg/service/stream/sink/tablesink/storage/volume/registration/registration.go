@@ -33,10 +33,10 @@ func RegisterVolumes[V volume.Volume](d dependencies, cfg Config, volumes *volum
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		logger.InfoCtx(ctx, "received shutdown request")
+		logger.Info(ctx, "received shutdown request")
 		cancel()
 		wg.Wait()
-		logger.InfoCtx(ctx, "shutdown done")
+		logger.Info(ctx, "shutdown done")
 	})
 
 	// Register volumes

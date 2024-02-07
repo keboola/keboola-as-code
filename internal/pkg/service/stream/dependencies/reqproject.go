@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -29,14 +28,9 @@ func NewProjectRequestScope(ctx context.Context, pubReqScp PublicRequestScope, t
 
 func newProjectRequestScope(pubReqScp PublicRequestScope, prjScp dependencies.ProjectScope) *projectRequestScope {
 	d := &projectRequestScope{}
-
 	d.PublicRequestScope = pubReqScp
-
 	d.ProjectScope = prjScp
-
-	loggerPrefix := fmt.Sprintf("[project=%d][token=%s]", d.ProjectID(), d.StorageAPITokenID())
-	d.logger = pubReqScp.Logger().AddPrefix(loggerPrefix)
-
+	d.logger = pubReqScp.Logger()
 	return d
 }
 

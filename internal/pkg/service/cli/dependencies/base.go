@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
@@ -32,9 +33,19 @@ type dbtProjectValue struct {
 	value *dbt.Project
 }
 
-func newBaseScope(ctx context.Context, logger log.Logger, proc *servicectx.Process, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *baseScope {
+func newBaseScope(
+	ctx context.Context,
+	logger log.Logger,
+	stdout io.Writer,
+	stderr io.Writer,
+	proc *servicectx.Process,
+	httpClient client.Client,
+	fs filesystem.Fs,
+	dialogs *dialog.Dialogs,
+	opts *options.Options,
+) *baseScope {
 	return &baseScope{
-		BaseScope: dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), clock.New(), proc, httpClient),
+		BaseScope: dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clock.New(), proc, httpClient),
 		fs:        fs,
 		fsInfo:    FsInfo{fs: fs},
 		dialogs:   dialogs,

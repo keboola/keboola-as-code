@@ -39,7 +39,7 @@ type L1 struct {
 
 func NewL1Cache(logger log.Logger, r *repository.Repository) (*L1, error) {
 	c := &L1{
-		logger:     logger.AddPrefix("[stats-cache-L1]"),
+		logger:     logger.WithComponent("stats.cache.L1"),
 		repository: r,
 		wg:         &sync.WaitGroup{},
 	}

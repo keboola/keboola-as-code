@@ -64,12 +64,12 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[templatesApi]")
+	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("templatesApi") // nolint:forbidigo
 
 	// Dump configuration, sensitive values are masked
 	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
 	if err == nil {
-		logger.InfofCtx(ctx, "Configuration: %s", string(dump))
+		logger.Infof(ctx, "Configuration: %s", string(dump))
 	} else {
 		return err
 	}
@@ -109,7 +109,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel)
+	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.InfofCtx(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
+	logger.Infof(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
@@ -154,7 +154,7 @@ func run() error {
 			// Mount endpoints
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
-				logger.DebugfCtx(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+				logger.Debugf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
 	})
