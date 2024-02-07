@@ -10,6 +10,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -58,7 +59,6 @@ type Volume struct {
 //   - The local.VolumeIDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec volume.Spec, opts ...Option) (*Volume, error) {
-	logger.Infof(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
 		spec:          spec,
 		config:        newConfig(opts),
@@ -74,6 +74,8 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
+	v.logger.With(attribute.String("volume.path", spec.Path)).Infof(ctx, `opening volume`)
+
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
 	{
@@ -81,11 +83,11 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		content, err := os.ReadFile(idFilePath)
 
 		// ID file doesn't exist, create it
+		generated := false
 		if errors.Is(err, os.ErrNotExist) {
-			id := volume.GenerateID()
-			logger.Infof(ctx, `generated volume ID "%s"`, id)
-			content = []byte(id)
+			content = []byte(volume.GenerateID())
 			err = createVolumeIDFile(idFilePath, content)
+			generated = true
 		}
 
 		// Check ID file error
@@ -95,6 +97,10 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 
 		// Store volume ID
 		v.id = volume.ID(bytes.TrimSpace(content))
+		v.logger = v.logger.With(attribute.String("volume.id", v.id.String()))
+		if generated {
+			v.logger.Infof(ctx, `generated volume ID`)
+		}
 	}
 
 	// Create lock file
@@ -112,7 +118,16 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		return nil, err
 	}
 
-	v.logger.Info(ctx, "opened volume")
+	// Log volume details on open.
+	// Other log messages contain only the "volume.id", see above.
+	v.logger.
+		With(
+			attribute.String("volume.path", spec.Path),
+			attribute.String("volume.type", spec.Type),
+			attribute.String("volume.label", spec.Label),
+		).
+		Info(ctx, "opened volume")
+
 	return v, nil
 }
 
