@@ -18,8 +18,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
