@@ -8,12 +8,9 @@ E2E tests are divided by the service they test.
 - **Templates API**
   - Location: [`test/templates/api`](../test/templates/api)
   - Run the tests: `make tests-templates-api"`
-- **Buffer API**
+- **Stream API**
   - Location: [`test/stream/api`](../test/stream/api)
-  - Run the tests: `make tests-buffer-api"`
-- **Buffer Worker**
-  - Location: [`test/stream/worker`](../test/stream/worker)
-  - Run the tests: `make tests-buffer-worker`
+  - Run the tests: `make tests-stream-api"`
 
 Tests for each service are grouped according to a common functionality they test. Then each directory in this group 
 contains a single test.
