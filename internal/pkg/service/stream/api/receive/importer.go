@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/quota"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

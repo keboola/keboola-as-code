@@ -40,8 +40,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/prometheus/client_golang v1.15.1
-	github.com/prometheus/client_model v0.4.0
-	github.com/prometheus/common v0.42.0
 	github.com/relvacode/iso8601 v1.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
 	github.com/schollz/progressbar/v3 v3.13.1
@@ -219,6 +217,8 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/prometheus/client_model v0.4.0 // indirect
+	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
