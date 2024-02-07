@@ -98,11 +98,11 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
-{"level":"info","message":"generated volume ID \"%s\""}
-{"level":"info","message":"opened volume"}
-{"level":"info","message":"closing volume"}
-{"level":"info","message":"closed volume"}
+{"level":"info","message":"opening volume","volume.path":"%s"}
+{"level":"info","message":"generated volume ID","volume.id":"%s"}
+{"level":"info","message":"opened volume","volume.id":"%s","volume.path":"%s","volume.type":"hdd","volume.label":"1"}
+{"level":"info","message":"closing volume","volume.id":"%s"}
+{"level":"info","message":"closed volume","volume.id":"%s"}
 `)
 }
 
@@ -146,10 +146,10 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
-{"level":"info","message":"opened volume"}
-{"level":"info","message":"closing volume"}
-{"level":"info","message":"closed volume"}
+{"level":"info","message":"opening volume","volume.path":"%s"}
+{"level":"info","message":"opened volume","volume.id":"123456789","volume.path":"%s","volume.type":"hdd","volume.label":"1"}
+{"level":"info","message":"closing volume","volume.id":"123456789"}
+{"level":"info","message":"closed volume","volume.id":"123456789"}
 `)
 }
 

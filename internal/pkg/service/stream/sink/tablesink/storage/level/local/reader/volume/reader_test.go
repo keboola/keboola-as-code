@@ -37,6 +37,15 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 
 	assert.NoError(t, w.Close())
 	assert.Len(t, tc.Volume.readers, 0)
+
+	// Check logs
+	tc.AssertLogs(`
+{"level":"info","message":"opening volume"}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"chain closed"}
+`)
 }
 
 // TestVolume_NewReaderFor_Duplicate tests that only one reader for a slice can exist simultaneously.
