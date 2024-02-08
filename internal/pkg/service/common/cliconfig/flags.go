@@ -64,6 +64,7 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 
 		// Get optional usage tag
 		usage := field.Tag.Get("usage")
+		shorthand := field.Tag.Get("shorthand")
 		fieldPath := append([]string(nil), parents...)
 		fieldPath = append(fieldPath, partialName)
 		flagName := strings.Join(fieldPath, ".")
@@ -84,27 +85,30 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 			if str := v.String(); str != "0s" {
 				def = str
 			}
-			fs.String(flagName, def, usage)
+
+			fs.StringP(flagName, shorthand, def, usage)
 		case bool:
-			fs.Bool(flagName, v, usage)
+			fs.BoolP(flagName, shorthand, v, usage)
 		case string:
-			fs.String(flagName, v, usage)
+			fs.StringP(flagName, shorthand, v, usage)
 		case int:
-			fs.Int(flagName, v, usage)
+			fs.IntP(flagName, shorthand, v, usage)
 		case int32:
-			fs.Int32(flagName, v, usage)
+			fs.Int32P(flagName, shorthand, v, usage)
 		case int64:
-			fs.Int64(flagName, v, usage)
+			fs.Int64P(flagName, shorthand, v, usage)
 		case uint:
-			fs.Uint(flagName, v, usage)
+			fs.UintP(flagName, shorthand, v, usage)
 		case uint32:
-			fs.Uint32(flagName, v, usage)
+			fs.Uint32P(flagName, shorthand, v, usage)
 		case uint64:
-			fs.Uint64(flagName, v, usage)
+			fs.Uint64P(flagName, shorthand, v, usage)
 		case float32:
-			fs.Float32(flagName, v, usage)
+			fs.Float32P(flagName, shorthand, v, usage)
 		case float64:
-			fs.Float64(flagName, v, usage)
+			fs.Float64P(flagName, shorthand, v, usage)
+		case []string:
+			fs.StringSliceP(flagName, shorthand, v, usage)
 		default:
 			// Convert type to a pointer, some methods use pointer receiver
 			if fieldValue.Kind() != reflect.Pointer {
@@ -124,7 +128,7 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 						return err
 					}
 				}
-				fs.String(flagName, def, usage)
+				fs.StringP(flagName, shorthand, def, usage)
 			case encoding.BinaryUnmarshaler:
 				var def string
 				if v, ok := v.(encoding.BinaryMarshaler); ok && !fieldValue.IsZero() {
@@ -134,7 +138,8 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 						return err
 					}
 				}
-				fs.String(flagName, def, usage)
+				fs.StringP(flagName, shorthand, def, usage)
+
 			default:
 				// Otherwise iterate struct fields
 				parents = append([]string{}, parents...)
@@ -144,6 +149,5 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 			}
 		}
 	}
-
 	return nil
 }
