@@ -64,6 +64,20 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "broken-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to broken app
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://broken.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+			},
+		},
+		{
 			name: "public-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
 				appServer.Close()
@@ -626,6 +640,22 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "multi-app-broken-provider",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				appServer.Close()
+
+				// Provider selection
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=2", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+			},
+		},
+		{
 			name: "public-app-websocket",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -968,6 +998,31 @@ func TestAppProxyRouter(t *testing.T) {
 							AllowedGroups:       []string{"admin"},
 							OIDCConfig: options.OIDCOptions{
 								IssuerURL:      m1.Issuer(),
+								EmailClaim:     options.OIDCEmailClaim,
+								GroupsClaim:    options.OIDCGroupsClaim,
+								AudienceClaims: options.OIDCAudienceClaims,
+								UserIDClaim:    options.OIDCEmailClaim,
+							},
+						},
+						{
+							ID: "oidc2",
+						},
+					},
+				},
+				{
+					ID:           "broken",
+					Name:         "OIDC Misconfigured App",
+					UpstreamHost: tsURL.Host,
+					Providers: []options.Provider{
+						{
+							ID:                  "oidc",
+							ClientID:            "",
+							ClientSecret:        m0.Config().ClientSecret,
+							Type:                options.OIDCProvider,
+							CodeChallengeMethod: providers.CodeChallengeMethodS256,
+							AllowedGroups:       []string{"admin"},
+							OIDCConfig: options.OIDCOptions{
+								IssuerURL:      m0.Issuer(),
 								EmailClaim:     options.OIDCEmailClaim,
 								GroupsClaim:    options.OIDCGroupsClaim,
 								AudienceClaims: options.OIDCAudienceClaims,
