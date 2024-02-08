@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/volume"
@@ -173,22 +174,44 @@ func (h *hook) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
 	}
 }
 
-func (h *hook) DecorateFileStateTransition(atomicOp *op.AtomicOp[storage.File], _ time.Time, fileKey storage.FileKey, from, to storage.FileState) *op.AtomicOp[storage.File] {
+func (h *hook) DecorateFileStateTransition(atomicOp *op.AtomicOp[storage.File], fileKey storage.FileKey, from, to storage.FileState) *op.AtomicOp[storage.File] {
 	// Move statistics to the target storage level, if needed
 	fromLevel := from.Level()
 	toLevel := to.Level()
 	if fromLevel != toLevel {
-		atomicOp.AddFrom(h.stats.MoveAll(fileKey, fromLevel, toLevel))
+		atomicOp.AddFrom(h.stats.MoveAll(fileKey, fromLevel, toLevel, func(value *statistics.Value) {
+			// There is actually no additional compression, when uploading slice to the staging storage
+			if toLevel == storage.LevelStaging {
+				value.StagingSize = value.CompressedSize
+			}
+		}))
 	}
 	return atomicOp
 }
 
-func (h *hook) DecorateSliceStateTransition(atomicOp *op.AtomicOp[storage.Slice], _ time.Time, sliceKey storage.SliceKey, from, to storage.SliceState) *op.AtomicOp[storage.Slice] {
+func (h *hook) DecorateSliceStateTransition(atomicOp *op.AtomicOp[storage.Slice], sliceKey storage.SliceKey, from, to storage.SliceState) *op.AtomicOp[storage.Slice] {
 	// Move statistics to the target storage level, if needed
 	fromLevel := from.Level()
 	toLevel := to.Level()
 	if fromLevel != toLevel {
-		atomicOp.AddFrom(h.stats.Move(sliceKey, fromLevel, toLevel))
+		atomicOp.AddFrom(h.stats.Move(sliceKey, fromLevel, toLevel, func(value *statistics.Value) {
+			// There is actually no additional compression, when uploading slice to the staging storage
+			if toLevel == storage.LevelStaging {
+				value.StagingSize = value.CompressedSize
+			}
+		}))
 	}
+	return atomicOp
+}
+
+func (h *hook) DecorateFileDelete(atomicOp *op.AtomicOp[op.NoResult], fileKey storage.FileKey) *op.AtomicOp[op.NoResult] {
+	// Delete/rollup statistics
+	atomicOp.AddFrom(h.stats.Delete(fileKey))
+	return atomicOp
+}
+
+func (h *hook) DecorateSliceDelete(atomicOp *op.AtomicOp[op.NoResult], sliceKey storage.SliceKey) *op.AtomicOp[op.NoResult] {
+	// Delete/rollup statistics
+	atomicOp.AddFrom(h.stats.Delete(sliceKey))
 	return atomicOp
 }

@@ -117,16 +117,16 @@ func (r *SliceRepository) StateTransition(now time.Time, sliceKey storage.SliceK
 		}).
 		ReadOp(r.all.file.Get(sliceKey.FileKey).WithResultTo(&file))
 
-	return r.all.hook.DecorateSliceStateTransition(atomicOp, now, sliceKey, from, to)
+	return r.all.hook.DecorateSliceStateTransition(atomicOp, sliceKey, from, to)
 }
 
 // Delete slice.
 // This operation deletes only the metadata, the file resource in the staging storage is unaffected.
-func (r *SliceRepository) Delete(k storage.SliceKey) *op.TxnOp[op.NoResult] {
-	txn := op.Txn(r.client)
+func (r *SliceRepository) Delete(k storage.SliceKey) *op.AtomicOp[op.NoResult] {
+	atomicOp := op.Atomic(r.client, &op.NoResult{})
 
 	// Delete entity from All prefix
-	txn.Merge(
+	atomicOp.WriteOp(
 		r.schema.
 			AllLevels().ByKey(k).DeleteIfExists(r.client).
 			WithEmptyResultAsError(func() error {
@@ -136,10 +136,10 @@ func (r *SliceRepository) Delete(k storage.SliceKey) *op.TxnOp[op.NoResult] {
 
 	// Delete entity from InLevel prefixes
 	for _, l := range storage.AllLevels() {
-		txn.Then(r.schema.InLevel(l).ByKey(k).Delete(r.client))
+		atomicOp.WriteOp(r.schema.InLevel(l).ByKey(k).Delete(r.client))
 	}
 
-	return txn
+	return r.all.hook.DecorateSliceDelete(atomicOp, k)
 }
 
 // rotate is a common code for rotate and close operations.
