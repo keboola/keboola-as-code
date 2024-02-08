@@ -12,8 +12,8 @@ type DownloadFlags struct {
 	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
 	Where          string   `mapstructure:"where" usage:"filter columns by value"`
 	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
-	Format         string   `mapstructure:"format" usage:"output format (json/csv) (default \"csv\")"`
-	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish (default \"2m\")"`
+	Format         string   `mapstructure:"format" usage:"output format (json/csv)"`
+	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish"`
 	Output         string   `mapstructure:"output" shorthand:"o" usage:"path to the destination file or directory"`
 	AllowSliced    bool     `mapstructure:"allow-sliced" usage:"output sliced files as a directory containing slices as individual files"`
 }
