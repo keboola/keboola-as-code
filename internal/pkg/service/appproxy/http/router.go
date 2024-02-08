@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/justinas/alice"
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/cookies"
@@ -97,20 +96,18 @@ func (r *Router) CreateHandler() http.Handler {
 }
 
 func (r *Router) createDataAppHandler(app DataApp) (http.Handler, error) {
-	chain := alice.New()
 	if len(app.Providers) == 0 {
-		return r.publicAppHandler(app, chain)
-	} else {
-		return r.protectedAppHandler(app, chain)
+		return r.publicAppHandler(app)
 	}
+	return r.protectedAppHandler(app)
 }
 
-func (r *Router) publicAppHandler(app DataApp, chain alice.Chain) (http.Handler, error) {
+func (r *Router) publicAppHandler(app DataApp) (http.Handler, error) {
 	target, err := url.Parse("http://" + app.UpstreamHost)
 	if err != nil {
 		return nil, errors.Errorf(`cannot parse upstream url "%s" for app %s: %w`, app.UpstreamHost, app.ID, err)
 	}
-	return chain.Then(httputil.NewSingleHostReverseProxy(target)), nil
+	return httputil.NewSingleHostReverseProxy(target), nil
 }
 
 type oauthProvider struct {
@@ -120,7 +117,7 @@ type oauthProvider struct {
 	proxy          *oauthproxy.OAuthProxy
 }
 
-func (r *Router) protectedAppHandler(app DataApp, chain alice.Chain) (http.Handler, error) {
+func (r *Router) protectedAppHandler(app DataApp) (http.Handler, error) {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
@@ -129,7 +126,7 @@ func (r *Router) protectedAppHandler(app DataApp, chain alice.Chain) (http.Handl
 	oauthProviders := make(map[string]oauthProvider)
 
 	for i, providerConfig := range app.Providers {
-		proxyConfig, err := r.authProxyConfig(app, providerConfig, chain)
+		proxyConfig, err := r.authProxyConfig(app, providerConfig)
 		if err != nil {
 			return nil, errors.Errorf("unable to create oauth proxy config for app %s: %w", app.ID, err)
 		}
@@ -288,7 +285,7 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 	writer.WriteHeader(http.StatusFound)
 }
 
-func (r *Router) authProxyConfig(app DataApp, provider options.Provider, chain alice.Chain) (*options.Options, error) {
+func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*options.Options, error) {
 	v := options.NewOptions()
 
 	domain := app.ID.String() + "." + r.config.PublicAddress.Host
@@ -305,7 +302,6 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider, chain a
 	v.InjectRequestHeaders = []options.Header{
 		headerFromClaim("X-Forwarded-Email", options.OIDCEmailClaim),
 	}
-	v.UpstreamChain = chain
 	v.UpstreamServers = options.UpstreamConfig{
 		Upstreams: []options.Upstream{
 			{
