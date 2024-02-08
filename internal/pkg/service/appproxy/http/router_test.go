@@ -729,6 +729,77 @@ func TestAppProxyRouter(t *testing.T) {
 				c.Close(websocket.StatusNormalClosure, "")
 			},
 		},
+		{
+			name: "multi-app-websocket",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[1].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+
+				// Provider selection
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+				cookies := response.Header["Set-Cookie"]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.Header.Add("Cookie", cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Header["Set-Cookie"]...)
+
+				// Websocket request
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+
+				c, _, err := websocket.Dial(
+					ctx,
+					"wss://multi.data-apps.keboola.local/ws",
+					&websocket.DialOptions{
+						HTTPClient: client,
+						HTTPHeader: http.Header{
+							"Cookie": cookies,
+						},
+					},
+				)
+				require.NoError(t, err)
+				defer c.CloseNow()
+
+				var v interface{}
+				err = wsjson.Read(ctx, c, &v)
+				require.NoError(t, err)
+
+				assert.Equal(t, "Hello websocket", v)
+
+				c.Close(websocket.StatusNormalClosure, "")
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {

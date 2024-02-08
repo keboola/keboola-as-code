@@ -1,7 +1,11 @@
 package http
 
 import (
+	"bufio"
+	"net"
 	"net/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type StatusCodeCallback func(writer http.ResponseWriter, statusCode int)
@@ -26,4 +30,12 @@ func (w *callbackResponseWriter) WriteHeader(statusCode int) {
 		callback(w, statusCode)
 	}
 	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+// Hijack is necessary for websockets support.
+func (w *callbackResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, errors.New("http.Hijacker is not available on writer")
 }
