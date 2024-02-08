@@ -277,7 +277,8 @@ storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-vol
   "lastRecordAt": "2000-01-01T01:01:00.000Z",
   "recordsCount": 123,
   "uncompressedSize": "100MB",
-  "compressedSize": "100MB"
+  "compressedSize": "100MB",
+  "stagingSize": "100MB"
 }
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
