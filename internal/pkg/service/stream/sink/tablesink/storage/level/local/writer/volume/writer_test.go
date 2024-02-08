@@ -174,7 +174,7 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}               
+{"level":"info","message":"opening volume"}               
 {"level":"info","message":"opened volume"}                  
 {"level":"debug","message":"opened file"}                   
 {"level":"debug","message":"disk space allocation is not supported"}                        
@@ -278,7 +278,7 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
@@ -351,7 +351,7 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
@@ -430,7 +430,7 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
@@ -497,9 +497,9 @@ ghi,jkl,789
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is disabled"}
 {"level":"info","message":"closing volume"}
@@ -532,7 +532,7 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"error","message":"cannot allocate disk space \"10KB\", allocation skipped: some space allocation error"}
@@ -559,7 +559,7 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
@@ -588,7 +588,7 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is disabled"}

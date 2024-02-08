@@ -4,6 +4,8 @@ import (
 	"os"
 	"sort"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/level/local/writer"
@@ -26,7 +28,14 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, er
 	}
 
 	// Setup logger
-	logger := v.logger
+	logger := v.logger.With(
+		attribute.String("projectId", slice.ProjectID.String()),
+		attribute.String("branchId", slice.BranchID.String()),
+		attribute.String("sourceId", slice.SourceID.String()),
+		attribute.String("sinkId", slice.SinkID.String()),
+		attribute.String("fileId", slice.FileID.String()),
+		attribute.String("sliceId", slice.SliceID.String()),
+	)
 
 	// Setup events
 	events := v.events.Clone()
@@ -70,6 +79,7 @@ func (v *Volume) NewWriterFor(slice *storage.Slice) (out *writer.EventWriter, er
 
 	// Open file
 	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
+	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {
 		logger.Debug(v.ctx, "opened file")

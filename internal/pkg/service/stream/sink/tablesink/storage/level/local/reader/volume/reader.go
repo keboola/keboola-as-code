@@ -5,6 +5,8 @@ import (
 	"io"
 	"sort"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/compression"
@@ -26,7 +28,14 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error)
 	}
 
 	// Setup logger
-	logger := v.logger
+	logger := v.logger.With(
+		attribute.String("projectId", slice.ProjectID.String()),
+		attribute.String("branchId", slice.BranchID.String()),
+		attribute.String("sourceId", slice.SourceID.String()),
+		attribute.String("sinkId", slice.SinkID.String()),
+		attribute.String("fileId", slice.FileID.String()),
+		attribute.String("sliceId", slice.SliceID.String()),
+	)
 
 	// Check if the reader already exists, if not, register an empty reference to unlock immediately
 	ref, exists := v.addReaderFor(slice.SliceKey)
@@ -56,6 +65,7 @@ func (v *Volume) NewReaderFor(slice *storage.Slice) (r reader.Reader, err error)
 	// Open file
 	dirPath := filesystem.Join(v.Path(), slice.LocalStorage.Dir)
 	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
+	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {
 		logger.Debug(v.ctx, "opened file")

@@ -91,6 +91,6 @@ func TestAttributeConversion(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		assert.Equal(t, tc.Expected, convertAttributeToZapField(tc.In), tc.Name)
+		assert.Equal(t, tc.Expected, attrToZapField(tc.In), tc.Name)
 	}
 }

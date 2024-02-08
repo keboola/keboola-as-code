@@ -4,6 +4,8 @@ package log
 import (
 	"context"
 	"testing"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestMemoryLogger(t *testing.T) {
@@ -12,7 +14,7 @@ func TestMemoryLogger(t *testing.T) {
 	mem := NewMemoryLogger()
 	mem.Debug(context.Background(), `Debug message.`)
 	mem.Info(context.Background(), `Info message.`)
-	memWithCtx := mem.With("key1", "value1", "key2", "value2")
+	memWithCtx := mem.With(attribute.String("key1", "value1"), attribute.String("key2", "value2"))
 	memWithCtx.Debug(context.Background(), `Debug message.`)
 	memWithCtx.Info(context.Background(), `Info message.`)
 

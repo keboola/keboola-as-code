@@ -80,8 +80,8 @@ func TestOpenVolume_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
-{"level":"info","message":"opened volume"}
+{"level":"info","message":"opening volume","volume.path":"%s"}
+{"level":"info","message":"opened volume","volume.id":"abcdef","volume.path":"%s","volume.type":"hdd","volume.label":"1"}
 {"level":"info","message":"closing volume"}
 {"level":"info","message":"closed volume"}
 `)
@@ -140,7 +140,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"waiting for volume ID file"}
 {"level":"info","message":"waiting for volume ID file"}
 {"level":"info","message":"opened volume"}
@@ -186,7 +186,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume \"%s\""}
+{"level":"info","message":"opening volume"}
 {"level":"info","message":"waiting for volume ID file"}
 {"level":"info","message":"waiting for volume ID file"}
 {"level":"info","message":"waiting for volume ID file"}

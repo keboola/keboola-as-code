@@ -10,6 +10,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/level/local"
@@ -46,7 +47,6 @@ type Volume struct {
 //   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume.Spec, opts ...Option) (*Volume, error) {
-	logger.Infof(ctx, `opening volume "%s"`, spec.Path)
 	v := &Volume{
 		spec:        spec,
 		config:      newConfig(opts),
@@ -58,9 +58,12 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
+	v.logger.With(attribute.String("volume.path", spec.Path)).Infof(ctx, `opening volume`)
+
 	// Wait for volume ID
 	if volumeID, err := v.waitForVolumeID(ctx); err == nil {
 		v.id = volumeID
+		v.logger = v.logger.With(attribute.String("volume.id", v.id.String()))
 	} else {
 		return nil, err
 	}
@@ -77,7 +80,15 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume
 		}
 	}
 
-	v.logger.Infof(ctx, "opened volume")
+	// Log volume details on open.
+	// Other log messages contain only the "volume.id", see above.
+	v.logger.
+		With(
+			attribute.String("volume.path", spec.Path),
+			attribute.String("volume.type", spec.Type),
+			attribute.String("volume.label", spec.Label),
+		).
+		Info(ctx, "opened volume")
 	return v, nil
 }
 
