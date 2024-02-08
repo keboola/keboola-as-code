@@ -200,16 +200,16 @@ func (r *FileRepository) StateTransition(now time.Time, fileKey storage.FileKey,
 			return nil, nil
 		})
 
-	return r.all.hook.DecorateFileStateTransition(atomicOp, now, fileKey, from, to)
+	return r.all.hook.DecorateFileStateTransition(atomicOp, fileKey, from, to)
 }
 
 // Delete file a file slices.
 // This operation deletes only the metadata, the file resource in the staging storage is unaffected.
-func (r *FileRepository) Delete(k storage.FileKey) *op.TxnOp[op.NoResult] {
-	txn := op.Txn(r.client)
+func (r *FileRepository) Delete(k storage.FileKey) *op.AtomicOp[op.NoResult] {
+	atomicOp := op.Atomic(r.client, &op.NoResult{})
 
 	// Delete entity from All prefix
-	txn.Merge(
+	atomicOp.WriteOp(
 		r.schema.
 			AllLevels().ByKey(k).DeleteIfExists(r.client).
 			WithEmptyResultAsError(func() error {
@@ -219,13 +219,13 @@ func (r *FileRepository) Delete(k storage.FileKey) *op.TxnOp[op.NoResult] {
 
 	// Delete entity from InLevel prefixes
 	for _, l := range storage.AllLevels() {
-		txn.Then(r.schema.InLevel(l).ByKey(k).Delete(r.client))
+		atomicOp.WriteOp(r.schema.InLevel(l).ByKey(k).Delete(r.client))
 	}
 
 	// Delete all slices
-	txn.Merge(r.all.slice.deleteAll(k))
+	atomicOp.WriteOp(r.all.slice.deleteAll(k))
 
-	return txn
+	return r.all.hook.DecorateFileDelete(atomicOp, k)
 }
 
 // rotate one file, it is a special case of the rotateAllIn.

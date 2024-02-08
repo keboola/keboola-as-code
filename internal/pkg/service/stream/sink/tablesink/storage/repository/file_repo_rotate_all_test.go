@@ -48,7 +48,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
-	fileFacade := storageRepo.File()
+	fileRepo := storageRepo.File()
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
@@ -107,7 +107,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		etcdLogs.Reset()
-		require.NoError(t, fileFacade.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
 		rotateAllInEtcdLogs = etcdLogs.String()
 	}
 
@@ -115,14 +115,14 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileFacade.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
 	}
 
 	// Rotate file (3)
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileFacade.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).Err())
 	}
 
 	// Check Storage API calls
@@ -135,7 +135,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	rb.Invoke(ctx)
 	assert.Equal(t, 15, transport.GetCallCountInfo()[`DELETE =~/v2/storage/branch/456/files/\d+$`])
 
-	// Check etcd state
+	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdlogger.Assert(t, `
 // RotateAllIn - AtomicOp - Read Phase

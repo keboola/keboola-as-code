@@ -48,7 +48,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
-	fileFacade := storageRepo.File()
+	fileRepo := storageRepo.File()
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
@@ -84,7 +84,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	{
 		var err error
 		clk.Add(time.Hour)
-		file1, err = fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file1, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file1.OpenedAt().Time())
 	}
@@ -93,7 +93,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		file2, err := fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file2, err := fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file2.OpenedAt().Time())
 	}
@@ -104,7 +104,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	{
 		var err error
 		clk.Add(time.Hour)
-		file3, err = fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file3, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file3.OpenedAt().Time())
 	}
@@ -327,7 +327,7 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
-	fileFacade := storageRepo.File()
+	fileRepo := storageRepo.File()
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
@@ -370,7 +370,7 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 	// Create (the first file Rotate operation)
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		_, err := fileFacade.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		_, err := fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		if assert.Error(t, err) {
 			assert.Equal(t, strings.TrimSpace(`
 cannot create file resource:
@@ -408,7 +408,7 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
-	fileFacade := storageRepo.File()
+	fileRepo := storageRepo.File()
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
@@ -443,7 +443,7 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		sink.Table.Mapping.Columns = column.Columns{column.Body{Name: "body1"}}
-		file1, err := fileFacade.RotateOnSinkMod(rb, clk.Now(), sink).Do(ctx).ResultOrErr()
+		file1, err := fileRepo.RotateOnSinkMod(rb, clk.Now(), sink).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file1.OpenedAt().Time())
 	}
@@ -453,7 +453,7 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		sink.Table.Mapping.Columns = column.Columns{column.Body{Name: "body2"}}
-		file2, err := fileFacade.RotateOnSinkMod(rb, clk.Now(), sink).Do(ctx).ResultOrErr()
+		file2, err := fileRepo.RotateOnSinkMod(rb, clk.Now(), sink).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file2.OpenedAt().Time())
 	}
@@ -463,7 +463,7 @@ func TestFileRepository_RotateOnSinkMod(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		sink.Table.Mapping.Columns = column.Columns{column.Body{Name: "body3"}}
-		file3, err := fileFacade.RotateOnSinkMod(rb, clk.Now(), sink).Do(ctx).ResultOrErr()
+		file3, err := fileRepo.RotateOnSinkMod(rb, clk.Now(), sink).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file3.OpenedAt().Time())
 	}
