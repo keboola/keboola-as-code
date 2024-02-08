@@ -34,7 +34,13 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	workflowFlags := NewWorkflowFlags()
+	workflowFlags := WorkflowFlags{
+		CI:           true,
+		CIValidate:   true,
+		CIPush:       true,
+		CIPull:       true,
+		CIMainBranch: "main",
+	}
 	_ = cliconfig.GenerateFlags(workflowFlags, cmd.Flags())
 
 	return cmd

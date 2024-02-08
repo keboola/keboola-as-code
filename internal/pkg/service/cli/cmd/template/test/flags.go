@@ -2,7 +2,7 @@ package test
 
 type CreateFlags struct {
 	TestName   string `mapstructure:"test-name" usage:"name of the test to be created"`
-	InputsFile string `mapstructure:"inputs-file" usage:"JSON file with inputs values"`
+	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
 	Verbose    bool   `mapstructure:"verbose" usage:"show details about creating test"`
 }
 

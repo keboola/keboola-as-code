@@ -42,7 +42,9 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	runFlags := NewRunFlags()
+	runFlags := RunFlags{
+		Timeout: "5m",
+	}
 	_ = cliconfig.GenerateFlags(runFlags, cmd.Flags())
 
 	return cmd

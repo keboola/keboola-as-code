@@ -42,7 +42,13 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	initFlags := NewInitFlags()
+	initFlags := InitFlags{
+		CI:         true,
+		CIValidate: true,
+		CIPull:     true,
+		CIPush:     true,
+		Branches:   "main",
+	}
 	_ = cliconfig.GenerateFlags(initFlags, cmd.Flags())
 
 	return cmd

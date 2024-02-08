@@ -56,7 +56,12 @@ func UnloadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	unloadFlags := NewUnloadFlags()
+	unloadFlags := UnloadFlags{
+		Limit:   0,
+		Columns: []string{},
+		Format:  "csv",
+		Timeout: "5m",
+	}
 	_ = cliconfig.GenerateFlags(unloadFlags, cmd.Flags())
 
 	return cmd

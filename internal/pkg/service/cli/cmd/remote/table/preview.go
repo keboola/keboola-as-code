@@ -58,7 +58,11 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	previewFlags := NewPreviewFlags()
+	previewFlags := PreviewFlags{
+		Limit:   100,
+		Columns: []string{},
+		Format:  preview.TableFormatPretty,
+	}
 	_ = cliconfig.GenerateFlags(previewFlags, cmd.Flags())
 
 	return cmd

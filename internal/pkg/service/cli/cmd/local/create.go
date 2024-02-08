@@ -108,9 +108,8 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`config`, "c", ``, "config name or ID")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new config row")
+	createRowFlags := CreateRowFlags{}
+	_ = cliconfig.GenerateFlags(createRowFlags, cmd.Flags())
+
 	return cmd
 }

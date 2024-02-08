@@ -74,8 +74,12 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	downloadFlags := NewDownloadFlags()
+	downloadFlags := DownloadFlags{
+		Limit:   0,
+		Columns: []string{},
+		Format:  "csv",
+		Timeout: "2m",
+	}
 	_ = cliconfig.GenerateFlags(downloadFlags, cmd.Flags())
-
 	return cmd
 }

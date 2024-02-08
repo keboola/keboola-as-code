@@ -1,29 +1,25 @@
 package table
 
-import (
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
-)
-
 type DetailFlag struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
 }
 
 type DownloadFlags struct {
-	StorageAPIHost string   `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
 	ChangeSince    string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
 	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
-	Columns        []string `mapstructure:"columns" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
 	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
 	Where          string   `mapstructure:"where" usage:"filter columns by value"`
 	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
-	Format         string   `mapstructure:"format" usage:"output format (map structure/csv)"`
-	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish"`
-	Output         string   `mapstructure:"output" usage:"path to the destination file or directory"`
+	Format         string   `mapstructure:"format" usage:"output format (json/csv) (default \"csv\")"`
+	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish (default \"2m\")"`
+	Output         string   `mapstructure:"output" shorthand:"o" usage:"path to the destination file or directory"`
 	AllowSliced    bool     `mapstructure:"allow-sliced" usage:"output sliced files as a directory containing slices as individual files"`
 }
 
 type ImportFlags struct {
-	StorageAPIHost     string   `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost     string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
 	Columns            string   `mapstructure:"columns" usage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
 	IncrementalLoad    bool     `mapstructure:"incremental-load" usage:"data are either added to existing data in the table or replace the existing data"`
 	FileWithoutHeaders bool     `mapstructure:"file-without-headers" usage:"states if the CSV file contains headers on the first row or not"`
@@ -34,7 +30,7 @@ type ImportFlags struct {
 }
 
 type PreviewFlags struct {
-	StorageAPIHost string   `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
 	ChangedSince   string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
 	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
 	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
@@ -42,12 +38,12 @@ type PreviewFlags struct {
 	Where          string   `mapstructure:"where" usage:"filter columns by value"`
 	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
 	Format         string   `mapstructure:"format" usage:"output format (json/csv/pretty)"`
-	Out            string   `mapstructure:"out" usage:"export table to a file"`
+	Out            string   `mapstructure:"out" shorthand:"o" usage:"export table to a file"`
 	Force          bool     `mapstructure:"force" usage:"overwrite the output file if it already exists"`
 }
 
 type UnloadFlags struct {
-	StorageAPIHost string   `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
 	ChangedSince   string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
 	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
 	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
@@ -60,7 +56,7 @@ type UnloadFlags struct {
 }
 
 type UploadFlags struct {
-	StorageAPIHost    string   `mapstructure:"storage-api-host" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost    string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
 	Columns           string   `mapstructure:"columns" usage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
 	IncrementalLoad   bool     `mapstructure:"incremental-load" usage:"data are either added to existing data in the table or replace the existing data"`
 	FileWithoutHeader bool     `mapstructure:"file-without-headers" usage:"states if the CSV file contains headers on the first row or not"`
@@ -70,44 +66,4 @@ type UploadFlags struct {
 	FileDelimiter     string   `mapstructure:"file-delimiter" usage:"field delimiter used in the CSV file"`
 	FileEnclosure     string   `mapstructure:"file-enclosure" usage:"field enclosure used in the CSV file"`
 	FileEscapedBy     string   `mapstructure:"file-escaped-by" usage:"escape character used in the CSV file"`
-}
-
-func NewUploadFlags() *UploadFlags {
-	return &UploadFlags{
-		FileDelimiter: ",",
-		FileEnclosure: `"`,
-	}
-}
-
-func NewUnloadFlags() *UnloadFlags {
-	return &UnloadFlags{
-		Limit:   0,
-		Columns: []string{},
-		Format:  "csv",
-		Timeout: "5m",
-	}
-}
-
-func NewPreviewFlags() *PreviewFlags {
-	return &PreviewFlags{
-		Limit:   100,
-		Columns: []string{},
-		Format:  preview.TableFormatPretty,
-	}
-}
-
-func NewImportFlags() *ImportFlags {
-	return &ImportFlags{
-		FileDelimiter: ",",
-		FileEnclosure: `"`,
-	}
-}
-
-func NewDownloadFlags() *DownloadFlags {
-	return &DownloadFlags{
-		Limit:   0,
-		Columns: []string{},
-		Format:  "csv",
-		Timeout: "2m",
-	}
 }

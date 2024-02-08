@@ -7,13 +7,3 @@ type WorkflowFlags struct {
 	CIPull       bool   `mapstructure:"ci-pull" usage:"create workflow to sync main branch each hour"`
 	CIMainBranch string `mapstructure:"ci-main-branch" usage:"name of the main branch for push/pull workflows"`
 }
-
-func NewWorkflowFlags() *WorkflowFlags {
-	return &WorkflowFlags{
-		CI:           true,
-		CIValidate:   true,
-		CIPush:       true,
-		CIPull:       true,
-		CIMainBranch: "main",
-	}
-}

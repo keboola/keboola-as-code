@@ -121,7 +121,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 
 	// Persistent flags for all sub-commands
 	flags := root.PersistentFlags()
-	persistentFlags := NewGlobalFlags()
+	persistentFlags := GlobalFlags{
+		VersionCheck: true,
+		LogFormat:    "console",
+	}
 	_ = cliconfig.GenerateFlags(persistentFlags, flags)
 
 	// Root command flags

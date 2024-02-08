@@ -84,7 +84,10 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	importFlags := NewImportFlags()
+	importFlags := ImportFlags{
+		FileDelimiter: ",",
+		FileEnclosure: `"`,
+	}
 	_ = cliconfig.GenerateFlags(importFlags, cmd.Flags())
 
 	return cmd

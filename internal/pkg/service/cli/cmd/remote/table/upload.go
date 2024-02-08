@@ -81,7 +81,10 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	uploadFlags := NewUploadFlags()
+	uploadFlags := UploadFlags{
+		FileDelimiter: ",",
+		FileEnclosure: `"`,
+	}
 	_ = cliconfig.GenerateFlags(uploadFlags, cmd.Flags())
 
 	return cmd
