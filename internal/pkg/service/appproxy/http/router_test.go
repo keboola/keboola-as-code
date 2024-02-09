@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/mockoidc"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type testCase struct {
@@ -357,9 +359,12 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				response, err = client.Do(request)
+				_, err = client.Do(request)
 				require.Error(t, err)
-				require.Nil(t, response)
+				require.Contains(t, err.Error(), "refused")
+				var syscallError *os.SyscallError
+				errors.As(err, &syscallError)
+				require.Contains(t, syscallError.Syscall, "connect")
 
 				// Request to private app (unauthorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
@@ -694,6 +699,7 @@ func TestAppProxyRouter(t *testing.T) {
 					},
 				)
 				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to WebSocket dial: expected handshake response status code 101 but got 302")
 			},
 		},
 		{
