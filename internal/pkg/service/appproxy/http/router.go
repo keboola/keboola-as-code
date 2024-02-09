@@ -196,7 +196,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 
 	// Request to provider selection page
 	handler.HandleFunc(selectionPagePath, func(writer http.ResponseWriter, request *http.Request) {
-		selection := request.URL.Query().Get("select")
+		selection := request.URL.Query().Get("provider")
 		provider, ok := oauthProviders[selection]
 
 		if !ok {
@@ -207,7 +207,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 					Scheme:   r.config.PublicAddress.Scheme,
 					Host:     request.Host,
 					Path:     selectionPagePath,
-					RawQuery: "select=" + id,
+					RawQuery: "provider=" + id,
 				}
 
 				data.Providers = append(data.Providers, SelectionPageProvider{
