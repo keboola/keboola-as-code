@@ -101,7 +101,11 @@ func run() error {
 	}
 
 	logger.Infof(ctx, "starting App Proxy server, listen-address=%s", cfg.ListenAddress)
-	router := http.NewRouter(ctx, scope, []http.DataApp{})
+	router, err := http.NewRouter(ctx, scope, []http.DataApp{})
+	if err != nil {
+		return err
+	}
+
 	err = http.StartServer(ctx, scope, router.CreateHandler())
 	if err != nil {
 		return err

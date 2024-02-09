@@ -32,11 +32,9 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/gorilla/mux v1.8.1
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/justinas/alice v1.2.0
 	github.com/keboola/go-client v1.16.6
 	github.com/keboola/go-utils v0.8.1
 	github.com/klauspost/pgzip v1.2.6
@@ -210,6 +208,7 @@ require (
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
@@ -219,6 +218,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/justinas/alice v1.2.0 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.10 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
