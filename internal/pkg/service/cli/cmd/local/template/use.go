@@ -8,10 +8,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	useOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type UseTemplateFlags struct {
+	Branch       string `mapstructure:"branch" shorthand:"b" usage:"target branch ID or name"`
+	InstanceName string `mapstructure:"instance-name" shorthand:"n" usage:"name of new template instance"`
+	InputsFile   string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+}
 
 func UseCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -72,10 +79,8 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "target branch ID or name")
-	cmd.Flags().StringP(`instance-name`, "n", ``, "name of new template instance")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
+	cliconfig.MustGenerateFlags(UseTemplateFlags{}, cmd.Flags())
+
 	return cmd
 }
 

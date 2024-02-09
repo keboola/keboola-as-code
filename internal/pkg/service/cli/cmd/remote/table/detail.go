@@ -8,8 +8,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/detail"
 )
+
+type DetailFlag struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+}
 
 func DetailCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -46,7 +51,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+	cliconfig.MustGenerateFlags(DetailFlag{}, cmd.Flags())
 
 	return cmd
 }

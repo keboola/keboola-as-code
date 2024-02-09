@@ -6,9 +6,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	listOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/list"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type ListTemplateFlag struct {
+	Branch string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+}
 
 func ListCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -40,6 +45,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
+	cliconfig.MustGenerateFlags(ListTemplateFlag{}, cmd.Flags())
+
 	return cmd
 }

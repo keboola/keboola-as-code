@@ -8,10 +8,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type PullFlags struct {
+	Force  bool `mapstructure:"force" usage:"ignore invalid local state"`
+	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
 
 func PullCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -67,9 +73,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("force", false, "ignore invalid local state")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	cliconfig.MustGenerateFlags(PullFlags{}, cmd.Flags())
+
 	return cmd
 }

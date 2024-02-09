@@ -8,11 +8,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type BranchFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
+	Name           string `mapstructure:"name" shorthand:"n" usage:"name of the new branch"`
+}
 
 func BranchCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -76,8 +82,7 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new branch")
+	cliconfig.MustGenerateFlags(BranchFlags{}, cmd.Flags())
+
 	return cmd
 }

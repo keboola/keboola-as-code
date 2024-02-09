@@ -6,9 +6,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 )
+
+type EnvFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
+	WorkspaceID    string `mapstructure:"workspace-id" shorthand:"W" usage:"id of the workspace to use"`
+}
 
 func EnvCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -53,9 +60,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
-	cmd.Flags().StringP("workspace-id", "W", "", "id of the workspace to use")
+	cliconfig.MustGenerateFlags(EnvFlags{}, cmd.Flags())
 
 	return cmd
 }

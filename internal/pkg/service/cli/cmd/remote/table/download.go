@@ -8,9 +8,33 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
 )
+
+type DownloadFlags struct {
+	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangeSince    string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
+	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
+	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
+	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
+	Where          string   `mapstructure:"where" usage:"filter columns by value"`
+	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
+	Format         string   `mapstructure:"format" usage:"output format (json/csv)"`
+	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish"`
+	Output         string   `mapstructure:"output" shorthand:"o" usage:"path to the destination file or directory"`
+	AllowSliced    bool     `mapstructure:"allow-sliced" usage:"output sliced files as a directory containing slices as individual files"`
+}
+
+func DefaultDownloadFlags() *DownloadFlags {
+	return &DownloadFlags{
+		Limit:   0,
+		Columns: []string{},
+		Format:  "csv",
+		Timeout: "2m",
+	}
+}
 
 func DownloadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -73,17 +97,6 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().String("changed-since", "", "only export rows imported after this date")
-	cmd.Flags().String("changed-until", "", "only export rows imported before this date")
-	cmd.Flags().StringSlice("columns", []string{}, "comma-separated list of columns to export")
-	cmd.Flags().Uint("limit", 0, "limit the number of exported rows")
-	cmd.Flags().String("where", "", "filter columns by value")
-	cmd.Flags().String("order", "", "order by one or more columns")
-	cmd.Flags().String("format", "csv", "output format (json/csv)")
-	cmd.Flags().String("timeout", "2m", "how long to wait for the unload job to finish")
-	cmd.Flags().StringP("output", "o", "", "path to the destination file or directory")
-	cmd.Flags().Bool("allow-sliced", false, "output sliced files as a directory containing slices as individual files")
-
+	cliconfig.MustGenerateFlags(DefaultDownloadFlags(), cmd.Flags())
 	return cmd
 }

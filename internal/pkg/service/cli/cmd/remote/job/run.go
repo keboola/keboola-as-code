@@ -11,9 +11,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
+
+type RunFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Async          bool   `mapstructure:"async" usage:"do not wait for job to finish"`
+	Timeout        string `mapstructure:"timeout" usage:"how long to wait for job to finish"`
+}
+
+func DefaultRunFlags() *RunFlags {
+	return &RunFlags{
+		Timeout: "5m",
+	}
+}
 
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -41,9 +54,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().Bool("async", false, "do not wait for job to finish")
-	cmd.Flags().String("timeout", "5m", "how long to wait for job to finish")
+	cliconfig.MustGenerateFlags(DefaultRunFlags(), cmd.Flags())
 
 	return cmd
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	deleteOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/delete"
 )
@@ -46,8 +47,8 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("workspace-id", "W", "", "id of the workspace to delete")
+	deleteFlags := DeleteFlags{}
+	cliconfig.MustGenerateFlags(deleteFlags, cmd.Flags())
 
 	return cmd
 }

@@ -7,8 +7,17 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
+
+type BucketFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
+	Description    string `mapstructure:"description" usage:"bucket description"`
+	DisplayName    string `mapstructure:"display-name" usage:"display name for the UI"`
+	Name           string `mapstructure:"name" usage:"name of the bucket"`
+	Stage          string `mapstructure:"stage" usage:"stage, allowed values: in, out"`
+}
 
 func BucketCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -34,11 +43,7 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().String("description", "", "bucket description")
-	cmd.Flags().String("display-name", "", "display name for the UI")
-	cmd.Flags().String("name", "", "name of the bucket")
-	cmd.Flags().String("stage", "", "stage, allowed values: in, out")
+	cliconfig.MustGenerateFlags(BucketFlags{}, cmd.Flags())
+
 	return cmd
 }

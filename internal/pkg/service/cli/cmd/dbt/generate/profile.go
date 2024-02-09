@@ -5,8 +5,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 )
+
+type ProfileFlag struct {
+	TargetName string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
+}
 
 func ProfileCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -32,7 +37,7 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
+	cliconfig.MustGenerateFlags(ProfileFlag{}, cmd.Flags())
 
 	return cmd
 }

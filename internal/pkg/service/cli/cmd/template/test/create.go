@@ -6,9 +6,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
+
+type CreateFlags struct {
+	TestName   string `mapstructure:"test-name" usage:"name of the test to be created"`
+	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+	Verbose    bool   `mapstructure:"verbose" usage:"show details about creating test"`
+}
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -63,10 +70,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of the test to be created")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
-	cmd.Flags().Bool("verbose", false, "show details about creating test")
+	cliconfig.MustGenerateFlags(CreateFlags{}, cmd.Flags())
 
 	return cmd
 }

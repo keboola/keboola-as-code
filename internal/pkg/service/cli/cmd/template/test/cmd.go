@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 )
 
 func Commands(d dependencies.Provider) *cobra.Command {
@@ -17,11 +18,8 @@ func Commands(d dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of a single test to be run")
-	cmd.Flags().Bool("local-only", false, "run a local test only")
-	cmd.Flags().Bool("remote-only", false, "run a remote test only")
-	cmd.Flags().Bool("verbose", false, "show details about running tests")
+	runTestFlags := RunFlags{}
+	cliconfig.MustGenerateFlags(runTestFlags, cmd.Flags())
 
 	cmd.AddCommand(
 		CreateCommand(d),

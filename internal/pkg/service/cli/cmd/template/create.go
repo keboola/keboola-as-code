@@ -5,8 +5,21 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
+
+type CreateFlags struct {
+	ID             string `mapstructure:"id" usage:"template ID"`
+	Name           string `mapstructure:"name" usage:"template name"`
+	Description    string `mapstructure:"description" usage:"template description"`
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Branch         string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Configs        string `mapstructure:"configs" shorthand:"c" usage:"comma separated list of {componentId}:{configId}"`
+	UsedComponents string `mapstructure:"used-components" shorthand:"u" usage:"comma separated list of component ids"`
+	AllConfigs     bool   `mapstructure:"all-configs" shorthand:"a" usage:"use all configs from the branch"`
+	AllInputs      bool   `mapstructure:"all-inputs" usage:"use all found config/row fields as user inputs"`
+}
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -31,16 +44,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String(`id`, ``, "template ID")
-	cmd.Flags().String(`name`, ``, "template name")
-	cmd.Flags().String(`description`, ``, "template description")
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`configs`, "c", ``, "comma separated list of {componentId}:{configId}")
-	cmd.Flags().StringP(`used-components`, "u", ``, "comma separated list of component ids")
-	cmd.Flags().BoolP(`all-configs`, "a", false, "use all configs from the branch")
-	cmd.Flags().Bool(`all-inputs`, false, "use all found config/row fields as user inputs")
+	cliconfig.MustGenerateFlags(CreateFlags{}, cmd.Flags())
 
 	return cmd
 }

@@ -5,9 +5,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printdiff"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type DiffFlag struct {
+	Details bool `mapstructure:"details" usage:"print changed fields"`
+}
 
 func DiffCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -61,8 +66,7 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("details", false, "print changed fields")
+	cliconfig.MustGenerateFlags(DiffFlag{}, cmd.Flags())
 
 	return cmd
 }

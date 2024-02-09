@@ -7,9 +7,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type PushFlags struct {
+	Force   bool `mapstructure:"force" usage:"enable deleting of remote objects"`
+	DryRun  bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+	Encrypt bool `mapstructure:"encrypt" usage:"encrypt unencrypted values before push"`
+}
 
 func PushCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -64,10 +71,7 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("force", false, "enable deleting of remote objects")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
-	cmd.Flags().Bool("encrypt", false, "encrypt unencrypted values before push")
+	cliconfig.MustGenerateFlags(PushFlags{}, cmd.Flags())
+
 	return cmd
 }

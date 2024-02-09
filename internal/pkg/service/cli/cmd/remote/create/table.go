@@ -8,8 +8,17 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
+
+type TableFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
+	Bucket         string `mapstructure:"bucket" usage:"bucket ID (required if the tableId argument is empty)"`
+	Name           string `mapstructure:"name" usage:"name of the table (required if the tableId argument is empty)"`
+	Columns        string `mapstructure:"columns" usage:"comma-separated list of column names"`
+	PrimaryKey     string `mapstructure:"primary-key" usage:"columns used as primary key, comma-separated"`
+}
 
 func TableCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -45,12 +54,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().String("bucket", "", "bucket ID (required if the tableId argument is empty)")
-	cmd.Flags().String("name", "", "name of the table (required if the tableId argument is empty)")
-	cmd.Flags().String("columns", "", "comma-separated list of column names")
-	cmd.Flags().String("primary-key", "", "columns used as primary key, comma-separated")
+	cliconfig.MustGenerateFlags(TableFlags{}, cmd.Flags())
 
 	return cmd
 }

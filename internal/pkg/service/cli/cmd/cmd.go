@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -32,6 +33,29 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
+
+type RootFlag struct {
+	Version bool `mapstructure:"version" shorthand:"V" usage:"print version"`
+}
+
+type GlobalFlags struct {
+	Help            bool   `mapstructure:"help" shorthand:"h" usage:"print help for command"`
+	LogFile         string `mapstructure:"log-file" shorthand:"l" usage:"path to a log file for details"`
+	LogFormat       string `mapstructure:"log-format" usage:"format of stdout and stderr"`
+	NonInteractive  bool   `mapstructure:"non-interactive" usage:"disable interactive dialogs"`
+	WorkingDir      string `mapstructure:"working-dir" shorthand:"d" usage:"use other working directory"`
+	StorageAPIToken string `mapstructure:"storage-api-token" shorthand:"t" usage:"storage API token from your project"`
+	Verbose         bool   `mapstructure:"verbose" shorthand:"v" usage:"print details"`
+	VerboseAPI      bool   `mapstructure:"verbose-api" usage:"log each API request and response"`
+	VersionCheck    bool   `mapstructure:"version-check" usage:"checks if there is a newer version of the CLI"`
+}
+
+func DefaultGlobalFlags() *GlobalFlags {
+	return &GlobalFlags{
+		VersionCheck: true,
+		LogFormat:    "console",
+	}
+}
 
 // nolint: gochecknoinits
 func init() {
@@ -120,20 +144,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 
 	// Persistent flags for all sub-commands
 	flags := root.PersistentFlags()
-	flags.SortFlags = true
-	flags.BoolP("help", "h", false, "print help for command")
-	flags.StringP("log-file", "l", "", "path to a log file for details")
-	flags.String("log-format", "console", "format of stdout and stderr")
-	flags.Bool("non-interactive", false, "disable interactive dialogs")
-	flags.StringP("working-dir", "d", "", "use other working directory")
-	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
-	flags.BoolP("verbose", "v", false, "print details")
-	flags.Bool("verbose-api", false, "log each API request and response")
-	flags.Bool("version-check", true, "checks if there is a newer version of the CLI")
+	cliconfig.MustGenerateFlags(DefaultGlobalFlags(), flags)
 
 	// Root command flags
-	root.Flags().SortFlags = true
-	root.Flags().BoolP("version", "V", false, "print version")
+	cliconfig.MustGenerateFlags(RootFlag{}, root.Flags())
 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}

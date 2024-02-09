@@ -6,9 +6,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/persist"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type PersistFlag struct {
+	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
 
 func PersistCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -39,8 +44,7 @@ func PersistCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	cliconfig.MustGenerateFlags(PersistFlag{}, cmd.Flags())
 
 	return cmd
 }

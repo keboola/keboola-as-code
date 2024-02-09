@@ -6,10 +6,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	upgradeOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type UpgradeTemplateFlags struct {
+	Branch     string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Instance   string `mapstructure:"instance" shorthand:"i" usage:"instance ID of the template to upgrade"`
+	Version    string `mapstructure:"version" shorthand:"V" usage:"target version, default latest stable version"`
+	DryRun     bool   `mapstructure:"dry-run" usage:"print what needs to be done"`
+	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+}
 
 func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -71,11 +80,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`instance`, "i", ``, "instance ID of the template to upgrade")
-	cmd.Flags().StringP(`version`, "V", ``, "target version, default latest stable version")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
+	cliconfig.MustGenerateFlags(UpgradeTemplateFlags{}, cmd.Flags())
+
 	return cmd
 }

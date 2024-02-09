@@ -5,10 +5,23 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type CreateConfigFlags struct {
+	Branch      string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	ComponentID string `mapstructure:"component-id" shorthand:"c" usage:"component ID"`
+	Name        string `mapstructure:"name" shorthand:"n" usage:"name of the new config"`
+}
+
+type CreateRowFlags struct {
+	Branch string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Config string `mapstructure:"config" shorthand:"c" usage:"config name or ID"`
+	Name   string `mapstructure:"name" shorthand:"n" usage:"name of the new config row"`
+}
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
 	createConfigCmd := CreateConfigCommand(p)
@@ -71,10 +84,8 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`component-id`, "c", ``, "component ID")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new config")
+	cliconfig.MustGenerateFlags(CreateConfigFlags{}, cmd.Flags())
+
 	return cmd
 }
 
@@ -108,9 +119,7 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`config`, "c", ``, "config name or ID")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new config row")
+	cliconfig.MustGenerateFlags(CreateRowFlags{}, cmd.Flags())
+
 	return cmd
 }

@@ -7,8 +7,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
+
+type UploadFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Data           string `mapstructure:"data" usage:"path to the file to be uploaded"`
+	FileName       string `mapstructure:"file-name" usage:"name of the file to be created"`
+	FileTags       string `mapstructure:"file-tags" usage:"comma-separated list of tags"`
+}
 
 func UploadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -35,10 +43,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().String("data", "", "path to the file to be uploaded")
-	cmd.Flags().String("file-name", "", "name of the file to be created")
-	cmd.Flags().String("file-tags", "", "comma-separated list of tags")
+	cliconfig.MustGenerateFlags(UploadFlags{}, cmd.Flags())
 
 	return cmd
 }

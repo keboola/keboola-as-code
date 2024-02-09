@@ -6,10 +6,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/run"
 )
+
+type RunFlags struct {
+	TestName   string `mapstructure:"test-name" usage:"name of a single test to be run"`
+	LocalOnly  bool   `mapstructure:"local-only" usage:"run a local test only"`
+	RemoteOnly bool   `mapstructure:"remote-only" usage:"run a remote test only"`
+	Verbose    bool   `mapstructure:"verbose" usage:"show details about running tests"`
+}
 
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -77,11 +85,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of a single test to be run")
-	cmd.Flags().Bool("local-only", false, "run a local test only")
-	cmd.Flags().Bool("remote-only", false, "run a remote test only")
-	cmd.Flags().Bool("verbose", false, "show details about running tests")
+	cliconfig.MustGenerateFlags(RunFlags{}, cmd.Flags())
 
 	return cmd
 }
