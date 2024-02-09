@@ -50,7 +50,7 @@ type Service interface {
 	// UpdateInstance implements UpdateInstance.
 	UpdateInstance(context.Context, dependencies.ProjectRequestScope, *UpdateInstancePayload) (res *InstanceDetail, err error)
 	// DeleteInstance implements DeleteInstance.
-	DeleteInstance(context.Context, dependencies.ProjectRequestScope, *DeleteInstancePayload) (err error)
+	DeleteInstance(context.Context, dependencies.ProjectRequestScope, *DeleteInstancePayload) (res *Task, err error)
 	// UpgradeInstance implements UpgradeInstance.
 	UpgradeInstance(context.Context, dependencies.ProjectRequestScope, *UpgradeInstancePayload) (res *Task, err error)
 	// UpgradeInstanceInputsIndex implements UpgradeInstanceInputsIndex.
@@ -141,7 +141,7 @@ type Input struct {
 	// Kind of the input.
 	Kind string
 	// Default value, match defined type.
-	Default any
+	Default interface{}
 	// Input options for type = select OR multiselect.
 	Options []*InputOption
 	// Component id for "oauth" kind inputs.
@@ -173,7 +173,7 @@ type InputValue struct {
 	// Unique ID of the input.
 	ID string
 	// Input value filled in by user in the required type.
-	Value any
+	Value interface{}
 }
 
 // Inputs is the result type of the templates service InputsIndex method.

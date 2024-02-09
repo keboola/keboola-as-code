@@ -252,8 +252,17 @@ paths:
                   required: true
                   type: string
             responses:
-                "204":
-                    description: No Content response.
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/TemplatesDeleteInstanceResponseBody'
+                        required:
+                            - id
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -1430,6 +1439,74 @@ definitions:
         required:
             - api
             - documentation
+    TemplatesDeleteInstanceResponseBody:
+        title: TemplatesDeleteInstanceResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: Voluptates at.
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            id:
+                type: string
+                example: Quis est odio rerum deleniti.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: Sit architecto.
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            type:
+                type: string
+                description: Task type.
+                example: Earum deleniti.
+            url:
+                type: string
+                description: URL of the task.
+                example: Doloremque quia ut quaerat.
+        example:
+            id: task-1
+            url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
+            type: template.use
+            createdAt: "2018-01-01T00:00:00.000Z"
+            finishedAt: "2018-01-01T00:00:00.000Z"
+            isFinished: true
+            duration: 123
+            result: task succeeded
+            outputs:
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+        required:
+            - id
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
     TemplatesDeleteInstanceTemplatesBranchNotFoundResponseBody:
         title: TemplatesDeleteInstanceTemplatesBranchNotFoundResponseBody
         type: object
@@ -1524,7 +1601,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Pariatur aspernatur pariatur aliquam et quia.
+                example: Aut deserunt veritatis qui voluptatem aliquid.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1532,7 +1609,7 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Adipisci temporibus quidem.
+                example: Pariatur aliquam et quia placeat.
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -1541,11 +1618,11 @@ definitions:
                 $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Atque quod explicabo aperiam.
+                example: Aspernatur et distinctio ipsa asperiores impedit vel.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: success
+                example: error
                 enum:
                     - processing
                     - success
@@ -1553,11 +1630,11 @@ definitions:
             type:
                 type: string
                 description: Task type.
-                example: Est aliquid commodi illo dignissimos alias consequatur.
+                example: Pariatur officiis provident neque.
             url:
                 type: string
                 description: URL of the task.
-                example: Debitis vero.
+                example: Deserunt unde adipisci repudiandae iusto.
         example:
             id: task-1
             url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -3636,7 +3713,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Voluptates at.
+                example: Atque quod explicabo aperiam.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -3644,7 +3721,7 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Quis est odio rerum deleniti.
+                example: Fugiat consequuntur adipisci.
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -3653,7 +3730,7 @@ definitions:
                 $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Sit architecto.
+                example: Dolores debitis vero fuga aspernatur.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -3665,11 +3742,11 @@ definitions:
             type:
                 type: string
                 description: Task type.
-                example: Earum deleniti.
+                example: Quidem est est.
             url:
                 type: string
                 description: URL of the task.
-                example: Doloremque quia ut quaerat.
+                example: Commodi illo.
         example:
             id: task-1
             url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
