@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
@@ -67,4 +68,5 @@ type contextLogger interface {
 type withAttributes interface {
 	With(attrs ...attribute.KeyValue) Logger
 	WithComponent(component string) Logger
+	WithDuration(v time.Duration) Logger
 }

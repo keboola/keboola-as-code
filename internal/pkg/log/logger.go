@@ -48,6 +48,10 @@ func (l *zapLogger) WithComponent(component string) Logger {
 	return clone
 }
 
+func (l *zapLogger) WithDuration(v time.Duration) Logger {
+	return l.With(attribute.String("duration", v.String()))
+}
+
 func formatMessageUsingAttributes(message string, set *attribute.Set) string {
 	replacements := []string{}
 	for _, keyValue := range set.ToSlice() {
