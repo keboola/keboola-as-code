@@ -111,11 +111,11 @@ func TestCleanup(t *testing.T) {
 {"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd session","component":"task.etcd-session","node":"node1"}
-{"level":"info","message":"closed etcd session | %s","component":"task.etcd-session","node":"node1"}
+{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
 {"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd-client"}
-{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}
 `)
 

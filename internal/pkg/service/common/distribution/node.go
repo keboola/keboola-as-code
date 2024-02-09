@@ -72,8 +72,9 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
-	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	bgContext := ctxattr.ContextWith(context.Background(), attribute.String("node", nodeID)) // nolint: contextcheck
+	watchCtx, watchCancel := context.WithCancel(bgContext)
+	sessionCtx, sessionCancel := context.WithCancel(bgContext)
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
