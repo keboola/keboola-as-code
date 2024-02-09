@@ -70,7 +70,7 @@ func authProxyConfig(app DataApp, cfg config.Config, chain alice.Chain) (*option
 
 	v.Cookie.Secret = cfg.CookieSecret
 	v.Cookie.Domains = []string{domain}
-	v.ProxyPrefix = "/oauth2"
+	v.ProxyPrefix = "/proxy"
 	v.RawRedirectURL = cfg.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
 	v.Providers = options.Providers{*app.Provider}

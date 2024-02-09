@@ -44,7 +44,7 @@ func (r *Router) CreateHandler() http.Handler {
 	handler := mux.NewRouter()
 
 	handler.PathPrefix("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		appID, ok := parseAppID(req.URL.Host)
+		appID, ok := parseAppID(req.Host)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, `Unable to parse application ID from the URL.`)
