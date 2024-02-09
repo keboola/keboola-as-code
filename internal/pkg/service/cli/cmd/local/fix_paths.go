@@ -10,6 +10,10 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type FixPathsFlag struct {
+	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
+
 func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix-paths",
@@ -40,8 +44,7 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	fixPathsFlag := FixPathsFlag{}
-	_ = cliconfig.GenerateFlags(fixPathsFlag, cmd.Flags())
+	cliconfig.MustGenerateFlags(FixPathsFlag{}, cmd.Flags())
 
 	return cmd
 }

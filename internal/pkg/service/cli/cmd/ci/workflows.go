@@ -10,6 +10,24 @@ import (
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
+type WorkflowFlags struct {
+	CI           bool   `mapstructure:"ci" usage:"generate workflows"`
+	CIValidate   bool   `mapstructure:"ci-validate" usage:"create workflow to validate all branches on change"`
+	CIPush       bool   `mapstructure:"ci-push" usage:"create workflow to push change in main branch to the project"`
+	CIPull       bool   `mapstructure:"ci-pull" usage:"create workflow to sync main branch each hour"`
+	CIMainBranch string `mapstructure:"ci-main-branch" usage:"name of the main branch for push/pull workflows"`
+}
+
+func DefaultWorkflowFlags() *WorkflowFlags {
+	return &WorkflowFlags{
+		CI:           true,
+		CIValidate:   true,
+		CIPush:       true,
+		CIPull:       true,
+		CIMainBranch: "main",
+	}
+}
+
 func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workflows",
@@ -34,14 +52,7 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	workflowFlags := WorkflowFlags{
-		CI:           true,
-		CIValidate:   true,
-		CIPush:       true,
-		CIPull:       true,
-		CIMainBranch: "main",
-	}
-	_ = cliconfig.GenerateFlags(workflowFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DefaultWorkflowFlags(), cmd.Flags())
 
 	return cmd
 }

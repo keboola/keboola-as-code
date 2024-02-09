@@ -11,6 +11,14 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
 
+type BucketFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
+	Description    string `mapstructure:"description" usage:"bucket description"`
+	DisplayName    string `mapstructure:"display-name" usage:"display name for the UI"`
+	Name           string `mapstructure:"name" usage:"name of the bucket"`
+	Stage          string `mapstructure:"stage" usage:"stage, allowed values: in, out"`
+}
+
 func BucketCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bucket",
@@ -35,8 +43,7 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	bucketFlags := BucketFlags{}
-	_ = cliconfig.GenerateFlags(bucketFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(BucketFlags{}, cmd.Flags())
 
 	return cmd
 }

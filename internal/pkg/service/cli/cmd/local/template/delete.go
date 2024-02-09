@@ -10,6 +10,12 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type DeleteTemplateFlags struct {
+	Branch   string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Instance string `mapstructure:"instance" shorthand:"i" usage:"instance ID of the template to delete"`
+	DryRun   bool   `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
+
 func DeleteCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `delete`,
@@ -40,8 +46,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	deleteFlags := DeleteTemplateFlags{}
-	_ = cliconfig.GenerateFlags(deleteFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DeleteTemplateFlags{}, cmd.Flags())
 
 	return cmd
 }

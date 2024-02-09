@@ -9,6 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 )
 
+type ProfileFlag struct {
+	TargetName string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
+}
+
 func ProfileCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `profile`,
@@ -33,8 +37,7 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	profileFlag := ProfileFlag{}
-	_ = cliconfig.GenerateFlags(profileFlag, cmd.Flags())
+	cliconfig.MustGenerateFlags(ProfileFlag{}, cmd.Flags())
 
 	return cmd
 }

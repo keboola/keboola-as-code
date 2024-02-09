@@ -11,6 +11,10 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type ListTemplateFlag struct {
+	Branch string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+}
+
 func ListCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -41,8 +45,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	listFlags := ListTemplateFlag{}
-	_ = cliconfig.GenerateFlags(listFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(ListTemplateFlag{}, cmd.Flags())
 
 	return cmd
 }

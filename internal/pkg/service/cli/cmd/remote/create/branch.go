@@ -15,6 +15,11 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type BranchFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
+	Name           string `mapstructure:"name" shorthand:"n" usage:"name of the new branch"`
+}
+
 func BranchCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "branch",
@@ -77,8 +82,7 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	branchFlags := BranchFlags{}
-	_ = cliconfig.GenerateFlags(branchFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(BranchFlags{}, cmd.Flags())
 
 	return cmd
 }

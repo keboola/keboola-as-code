@@ -11,6 +11,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+func MustGenerateFlags(config any, fs *pflag.FlagSet) {
+	err := GenerateFlags(config, fs)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // GenerateFlags generates flags from the config structure to the FlagSet.
 // Each field tagged by "mapstructure" tag is mapped to one flag.
 // The config parameter can be a structure or a pointer to a structure.

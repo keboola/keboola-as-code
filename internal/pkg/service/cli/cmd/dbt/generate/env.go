@@ -11,6 +11,12 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 )
 
+type EnvFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
+	WorkspaceID    string `mapstructure:"workspace-id" shorthand:"W" usage:"id of the workspace to use"`
+}
+
 func EnvCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `env`,
@@ -54,8 +60,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	envFlags := EnvFlags{}
-	_ = cliconfig.GenerateFlags(envFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(EnvFlags{}, cmd.Flags())
 
 	return cmd
 }

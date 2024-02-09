@@ -9,6 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/sources"
 )
 
+type SourceFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
+}
+
 func SourcesCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `sources`,
@@ -36,8 +41,7 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	sourceFlags := SourceFlags{}
-	_ = cliconfig.GenerateFlags(sourceFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(SourceFlags{}, cmd.Flags())
 
 	return cmd
 }

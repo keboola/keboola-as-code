@@ -37,7 +37,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	listFlags := ListFlag{}
-	_ = cliconfig.GenerateFlags(listFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(listFlags, cmd.Flags())
 
 	return cmd
 }

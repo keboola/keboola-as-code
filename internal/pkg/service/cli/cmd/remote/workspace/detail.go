@@ -38,7 +38,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	detailFlags := DetailFlags{}
-	_ = cliconfig.GenerateFlags(detailFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(detailFlags, cmd.Flags())
 
 	return cmd
 }

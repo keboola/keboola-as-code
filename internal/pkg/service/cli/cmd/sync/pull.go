@@ -14,6 +14,11 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type PullFlags struct {
+	Force  bool `mapstructure:"force" usage:"ignore invalid local state"`
+	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
+
 func PullCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull",
@@ -68,8 +73,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	pullFlags := PullFlags{}
-	_ = cliconfig.GenerateFlags(pullFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(PullFlags{}, cmd.Flags())
 
 	return cmd
 }

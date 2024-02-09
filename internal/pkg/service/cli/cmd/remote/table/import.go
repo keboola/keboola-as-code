@@ -13,6 +13,24 @@ import (
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 
+type ImportFlags struct {
+	StorageAPIHost     string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Columns            string   `mapstructure:"columns" usage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
+	IncrementalLoad    bool     `mapstructure:"incremental-load" usage:"data are either added to existing data in the table or replace the existing data"`
+	FileWithoutHeaders bool     `mapstructure:"file-without-headers" usage:"states if the CSV file contains headers on the first row or not"`
+	PrimaryKeys        []string `mapstructure:"primary-key" usage:"primary key for the newly created table if the table doesn't exist"`
+	FileDelimiter      string   `mapstructure:"file-delimiter" usage:"field delimiter used in the CSV file"`
+	FileEnclosure      string   `mapstructure:"file-enclosure" usage:"field enclosure used in the CSV file"`
+	FileEscapedBy      string   `mapstructure:"file-escaped-by" usage:"escape character used in the CSV file"`
+}
+
+func DefaultImportFlags() *ImportFlags {
+	return &ImportFlags{
+		FileDelimiter: ",",
+		FileEnclosure: `"`,
+	}
+}
+
 func ImportCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `import [table] [file]`,
@@ -84,11 +102,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	importFlags := ImportFlags{
-		FileDelimiter: ",",
-		FileEnclosure: `"`,
-	}
-	_ = cliconfig.GenerateFlags(importFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DefaultImportFlags(), cmd.Flags())
 
 	return cmd
 }

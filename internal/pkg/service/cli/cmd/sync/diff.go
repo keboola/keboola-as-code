@@ -10,6 +10,10 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type DiffFlag struct {
+	Details bool `mapstructure:"details" usage:"print changed fields"`
+}
+
 func DiffCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diff",
@@ -62,8 +66,7 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	diffFlag := DiffFlag{}
-	_ = cliconfig.GenerateFlags(diffFlag, cmd.Flags())
+	cliconfig.MustGenerateFlags(DiffFlag{}, cmd.Flags())
 
 	return cmd
 }

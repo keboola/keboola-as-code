@@ -11,6 +11,18 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type CreateConfigFlags struct {
+	Branch      string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	ComponentID string `mapstructure:"component-id" shorthand:"c" usage:"component ID"`
+	Name        string `mapstructure:"name" shorthand:"n" usage:"name of the new config"`
+}
+
+type CreateRowFlags struct {
+	Branch string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Config string `mapstructure:"config" shorthand:"c" usage:"config name or ID"`
+	Name   string `mapstructure:"name" shorthand:"n" usage:"name of the new config row"`
+}
+
 func CreateCommand(p dependencies.Provider) *cobra.Command {
 	createConfigCmd := CreateConfigCommand(p)
 	createRowCmd := CreateRowCommand(p)
@@ -72,8 +84,7 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	createConfigFlags := CreateConfigFlags{}
-	_ = cliconfig.GenerateFlags(createConfigFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(CreateConfigFlags{}, cmd.Flags())
 
 	return cmd
 }
@@ -108,8 +119,7 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	createRowFlags := CreateRowFlags{}
-	_ = cliconfig.GenerateFlags(createRowFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(CreateRowFlags{}, cmd.Flags())
 
 	return cmd
 }

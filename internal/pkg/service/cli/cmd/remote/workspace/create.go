@@ -43,7 +43,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	createCommandFlags := CreateFlags{}
-	_ = cliconfig.GenerateFlags(createCommandFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(createCommandFlags, cmd.Flags())
 
 	return cmd
 }

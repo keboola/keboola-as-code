@@ -12,6 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
+type TableFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
+	Bucket         string `mapstructure:"bucket" usage:"bucket ID (required if the tableId argument is empty)"`
+	Name           string `mapstructure:"name" usage:"name of the table (required if the tableId argument is empty)"`
+	Columns        string `mapstructure:"columns" usage:"comma-separated list of column names"`
+	PrimaryKey     string `mapstructure:"primary-key" usage:"columns used as primary key, comma-separated"`
+}
+
 func TableCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "table [table]",
@@ -46,8 +54,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	tableFlags := TableFlags{}
-	_ = cliconfig.GenerateFlags(tableFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(TableFlags{}, cmd.Flags())
 
 	return cmd
 }

@@ -11,6 +11,10 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type PersistFlag struct {
+	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
+
 func PersistCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "persist",
@@ -40,8 +44,7 @@ func PersistCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	persistFlag := PersistFlag{}
-	_ = cliconfig.GenerateFlags(persistFlag, cmd.Flags())
+	cliconfig.MustGenerateFlags(PersistFlag{}, cmd.Flags())
 
 	return cmd
 }

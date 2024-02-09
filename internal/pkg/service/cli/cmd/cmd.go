@@ -34,6 +34,29 @@ import (
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
 
+type RootFlag struct {
+	Version bool `mapstructure:"version" shorthand:"V" usage:"print version"`
+}
+
+type GlobalFlags struct {
+	Help            bool   `mapstructure:"help" shorthand:"h" usage:"print help for command"`
+	LogFile         string `mapstructure:"log-file" shorthand:"l" usage:"path to a log file for details"`
+	LogFormat       string `mapstructure:"log-format" usage:"format of stdout and stderr"`
+	NonInteractive  bool   `mapstructure:"non-interactive" usage:"disable interactive dialogs"`
+	WorkingDir      string `mapstructure:"working-dir" shorthand:"d" usage:"use other working directory"`
+	StorageAPIToken string `mapstructure:"storage-api-token" shorthand:"t" usage:"storage API token from your project"`
+	Verbose         bool   `mapstructure:"verbose" shorthand:"v" usage:"print details"`
+	VerboseAPI      bool   `mapstructure:"verbose-api" usage:"log each API request and response"`
+	VersionCheck    bool   `mapstructure:"version-check" usage:"checks if there is a newer version of the CLI"`
+}
+
+func DefaultGlobalFlags() *GlobalFlags {
+	return &GlobalFlags{
+		VersionCheck: true,
+		LogFormat:    "console",
+	}
+}
+
 // nolint: gochecknoinits
 func init() {
 	// Disable commands auto-sorting
@@ -121,15 +144,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 
 	// Persistent flags for all sub-commands
 	flags := root.PersistentFlags()
-	persistentFlags := GlobalFlags{
-		VersionCheck: true,
-		LogFormat:    "console",
-	}
-	_ = cliconfig.GenerateFlags(persistentFlags, flags)
+	cliconfig.MustGenerateFlags(DefaultGlobalFlags(), flags)
 
 	// Root command flags
-	rootFlag := RootFlag{}
-	_ = cliconfig.GenerateFlags(rootFlag, root.Flags())
+	cliconfig.MustGenerateFlags(RootFlag{}, root.Flags())
 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}

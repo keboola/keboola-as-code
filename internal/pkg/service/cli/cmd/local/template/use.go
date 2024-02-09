@@ -14,6 +14,12 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type UseTemplateFlags struct {
+	Branch       string `mapstructure:"branch" shorthand:"b" usage:"target branch ID or name"`
+	InstanceName string `mapstructure:"instance-name" shorthand:"n" usage:"name of new template instance"`
+	InputsFile   string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+}
+
 func UseCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `use <repository>/<template>[/<version>]`,
@@ -73,8 +79,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	useFlags := UseTemplateFlags{}
-	_ = cliconfig.GenerateFlags(useFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(UseTemplateFlags{}, cmd.Flags())
 
 	return cmd
 }

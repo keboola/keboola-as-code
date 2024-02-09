@@ -12,6 +12,13 @@ import (
 	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/run"
 )
 
+type RunFlags struct {
+	TestName   string `mapstructure:"test-name" usage:"name of a single test to be run"`
+	LocalOnly  bool   `mapstructure:"local-only" usage:"run a local test only"`
+	RemoteOnly bool   `mapstructure:"remote-only" usage:"run a remote test only"`
+	Verbose    bool   `mapstructure:"verbose" usage:"show details about running tests"`
+}
+
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [template] [version]",
@@ -78,8 +85,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	runFlags := RunFlags{}
-	_ = cliconfig.GenerateFlags(runFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(RunFlags{}, cmd.Flags())
 
 	return cmd
 }

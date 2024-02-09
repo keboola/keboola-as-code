@@ -12,6 +12,12 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type PushFlags struct {
+	Force   bool `mapstructure:"force" usage:"enable deleting of remote objects"`
+	DryRun  bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+	Encrypt bool `mapstructure:"encrypt" usage:"encrypt unencrypted values before push"`
+}
+
 func PushCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
@@ -65,8 +71,7 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	pushFlags := PushFlags{}
-	_ = cliconfig.GenerateFlags(pushFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(PushFlags{}, cmd.Flags())
 
 	return cmd
 }

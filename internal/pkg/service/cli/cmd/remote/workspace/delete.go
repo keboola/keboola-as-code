@@ -48,7 +48,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	deleteFlags := DeleteFlags{}
-	_ = cliconfig.GenerateFlags(deleteFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(deleteFlags, cmd.Flags())
 
 	return cmd
 }

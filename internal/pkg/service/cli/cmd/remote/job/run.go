@@ -16,6 +16,18 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
 
+type RunFlags struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Async          bool   `mapstructure:"async" usage:"do not wait for job to finish"`
+	Timeout        string `mapstructure:"timeout" usage:"how long to wait for job to finish"`
+}
+
+func DefaultRunFlags() *RunFlags {
+	return &RunFlags{
+		Timeout: "5m",
+	}
+}
+
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `run [branch1/]component1/config1[@tag] [branch2/]component2/config2[@tag] ...`,
@@ -42,10 +54,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	runFlags := RunFlags{
-		Timeout: "5m",
-	}
-	_ = cliconfig.GenerateFlags(runFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DefaultRunFlags(), cmd.Flags())
 
 	return cmd
 }

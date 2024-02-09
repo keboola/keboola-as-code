@@ -13,6 +13,29 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
 )
 
+type DownloadFlags struct {
+	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangeSince    string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
+	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
+	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
+	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
+	Where          string   `mapstructure:"where" usage:"filter columns by value"`
+	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
+	Format         string   `mapstructure:"format" usage:"output format (json/csv)"`
+	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish"`
+	Output         string   `mapstructure:"output" shorthand:"o" usage:"path to the destination file or directory"`
+	AllowSliced    bool     `mapstructure:"allow-sliced" usage:"output sliced files as a directory containing slices as individual files"`
+}
+
+func DefaultDownloadFlags() *DownloadFlags {
+	return &DownloadFlags{
+		Limit:   0,
+		Columns: []string{},
+		Format:  "csv",
+		Timeout: "2m",
+	}
+}
+
 func DownloadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `download [table]`,
@@ -74,12 +97,6 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	downloadFlags := DownloadFlags{
-		Limit:   0,
-		Columns: []string{},
-		Format:  "csv",
-		Timeout: "2m",
-	}
-	_ = cliconfig.GenerateFlags(downloadFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DefaultDownloadFlags(), cmd.Flags())
 	return cmd
 }

@@ -11,6 +11,12 @@ import (
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
+type CreateFlags struct {
+	TestName   string `mapstructure:"test-name" usage:"name of the test to be created"`
+	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+	Verbose    bool   `mapstructure:"verbose" usage:"show details about creating test"`
+}
+
 func CreateCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create [template] [version]",
@@ -64,8 +70,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	createFlags := CreateFlags{}
-	_ = cliconfig.GenerateFlags(createFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(CreateFlags{}, cmd.Flags())
 
 	return cmd
 }

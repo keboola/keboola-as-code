@@ -10,6 +10,12 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type RenameFlags struct {
+	Branch   string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Instance string `mapstructure:"instance" shorthand:"i" usage:"instance ID of the template to delete"`
+	NewName  string `mapstructure:"new-name" shorthand:"n" usage:"new name of the template instance"`
+}
+
 func RenameCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `rename`,
@@ -39,8 +45,7 @@ func RenameCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	renameFlags := RenameFlags{}
-	_ = cliconfig.GenerateFlags(renameFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(RenameFlags{}, cmd.Flags())
 
 	return cmd
 }

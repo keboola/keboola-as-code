@@ -12,6 +12,14 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type UpgradeTemplateFlags struct {
+	Branch     string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Instance   string `mapstructure:"instance" shorthand:"i" usage:"instance ID of the template to upgrade"`
+	Version    string `mapstructure:"version" shorthand:"V" usage:"target version, default latest stable version"`
+	DryRun     bool   `mapstructure:"dry-run" usage:"print what needs to be done"`
+	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+}
+
 func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `upgrade`,
@@ -72,8 +80,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	upgradeFlags := UpgradeTemplateFlags{}
-	_ = cliconfig.GenerateFlags(upgradeFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(UpgradeTemplateFlags{}, cmd.Flags())
 
 	return cmd
 }

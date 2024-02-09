@@ -12,6 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/detail"
 )
 
+type DetailFlag struct {
+	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+}
+
 func DetailCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `detail [table]`,
@@ -47,8 +51,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	detailFlag := DetailFlag{}
-	_ = cliconfig.GenerateFlags(detailFlag, cmd.Flags())
+	cliconfig.MustGenerateFlags(DetailFlag{}, cmd.Flags())
 
 	return cmd
 }

@@ -13,6 +13,26 @@ import (
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 
+type UploadFlags struct {
+	StorageAPIHost    string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	Columns           string   `mapstructure:"columns" usage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
+	IncrementalLoad   bool     `mapstructure:"incremental-load" usage:"data are either added to existing data in the table or replace the existing data"`
+	FileWithoutHeader bool     `mapstructure:"file-without-headers" usage:"states if the CSV file contains headers on the first row or not"`
+	PrimaryKeys       []string `mapstructure:"primary-key" usage:"primary key for the newly created table if the table doesn't exist"`
+	FileName          string   `mapstructure:"file-name" usage:"name of the file to be created"`
+	FileTags          string   `mapstructure:"file-tags" usage:"comma-separated list of file tags"`
+	FileDelimiter     string   `mapstructure:"file-delimiter" usage:"field delimiter used in the CSV file"`
+	FileEnclosure     string   `mapstructure:"file-enclosure" usage:"field enclosure used in the CSV file"`
+	FileEscapedBy     string   `mapstructure:"file-escaped-by" usage:"escape character used in the CSV file"`
+}
+
+func DefaultUploadFlags() *UploadFlags {
+	return &UploadFlags{
+		FileDelimiter: ",",
+		FileEnclosure: `"`,
+	}
+}
+
 func UploadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `upload [table] [file]`,
@@ -81,11 +101,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	uploadFlags := UploadFlags{
-		FileDelimiter: ",",
-		FileEnclosure: `"`,
-	}
-	_ = cliconfig.GenerateFlags(uploadFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DefaultUploadFlags(), cmd.Flags())
 
 	return cmd
 }

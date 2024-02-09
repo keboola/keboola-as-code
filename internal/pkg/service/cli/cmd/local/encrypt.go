@@ -11,6 +11,10 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type EncryptFlag struct {
+	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+}
+
 func EncryptCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "encrypt",
@@ -40,8 +44,7 @@ func EncryptCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	encryptFlags := EncryptFlag{}
-	_ = cliconfig.GenerateFlags(encryptFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(EncryptFlag{}, cmd.Flags())
 
 	return cmd
 }

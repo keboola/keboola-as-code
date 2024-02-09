@@ -19,7 +19,7 @@ func Commands(d dependencies.Provider) *cobra.Command {
 	}
 
 	runTestFlags := RunFlags{}
-	_ = cliconfig.GenerateFlags(runTestFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(runTestFlags, cmd.Flags())
 
 	cmd.AddCommand(
 		CreateCommand(d),

@@ -18,6 +18,27 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
 
+type PreviewFlags struct {
+	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangedSince   string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
+	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
+	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
+	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
+	Where          string   `mapstructure:"where" usage:"filter columns by value"`
+	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
+	Format         string   `mapstructure:"format" usage:"output format (json/csv/pretty)"`
+	Out            string   `mapstructure:"out" shorthand:"o" usage:"export table to a file"`
+	Force          bool     `mapstructure:"force" usage:"overwrite the output file if it already exists"`
+}
+
+func DefaultPreviewFlags() *PreviewFlags {
+	return &PreviewFlags{
+		Limit:   100,
+		Columns: []string{},
+		Format:  preview.TableFormatPretty,
+	}
+}
+
 func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `preview [table]`,
@@ -58,12 +79,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	previewFlags := PreviewFlags{
-		Limit:   100,
-		Columns: []string{},
-		Format:  preview.TableFormatPretty,
-	}
-	_ = cliconfig.GenerateFlags(previewFlags, cmd.Flags())
+	cliconfig.MustGenerateFlags(DefaultPreviewFlags(), cmd.Flags())
 
 	return cmd
 }
