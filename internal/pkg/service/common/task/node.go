@@ -8,7 +8,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -50,8 +49,7 @@ type Node struct {
 	tasksCtx context.Context
 	tasksWg  *sync.WaitGroup
 
-	sessionLock *sync.RWMutex
-	session     *concurrency.Session
+	session *etcdop.Session
 
 	nodeID     string
 	config     nodeConfig
@@ -101,13 +99,12 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 	}
 
 	// Graceful shutdown
-	backgroundCtx := context.Background()
-	backgroundCtx = ctxattr.ContextWith(backgroundCtx, attribute.String("node", n.nodeID))
+	bgContext := ctxattr.ContextWith(context.Background(), attribute.String("node", n.nodeID)) // nolint: contextcheck
 	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
-	n.tasksCtx, cancelTasks = context.WithCancel(backgroundCtx)
+	n.tasksCtx, cancelTasks = context.WithCancel(bgContext)
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(backgroundCtx)
+	sessionCtx, cancelSession := context.WithCancel(bgContext)
 	proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.Info(ctx, "received shutdown request")
@@ -125,15 +122,13 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 	n.logger.Infof(n.tasksCtx, `node ID "%s"`, n.nodeID)
 
 	// Create etcd session
-	n.sessionLock = &sync.RWMutex{}
-	sessionInit := etcdop.ResistantSession(sessionCtx, sessionWg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
-		n.sessionLock.Lock()
+	session, errCh := etcdop.
+		NewSessionBuilder().
+		WithTTLSeconds(c.ttlSeconds).
+		Start(sessionCtx, sessionWg, n.logger, n.client)
+	if err := <-errCh; err == nil {
 		n.session = session
-		n.sessionLock.Unlock()
-		return nil
-	})
-
-	if err := <-sessionInit; err != nil {
+	} else {
 		return nil, err
 	}
 
@@ -222,9 +217,10 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	task := Task{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
 
 	// Get session
-	n.sessionLock.RLock()
-	session := n.session
-	n.sessionLock.RUnlock()
+	session, err := n.session.Session()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
 

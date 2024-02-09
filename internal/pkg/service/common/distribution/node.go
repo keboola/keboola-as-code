@@ -88,11 +88,13 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 	// Log node ID
 	n.logger.Infof(watchCtx, `node ID "%s"`, nodeID)
 
-	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
-		// Register node
-		return n.register(session, c.startupTimeout)
-	})
-	if err := <-sessionInit; err != nil {
+	// Register node
+	_, errCh := etcdop.
+		NewSessionBuilder().
+		WithTTLSeconds(c.ttlSeconds).
+		WithOnSession(func(session *concurrency.Session) error { return n.register(session, c.startupTimeout) }).
+		Start(sessionCtx, wg, n.logger, n.client)
+	if err := <-errCh; err != nil {
 		return nil, err
 	}
 
