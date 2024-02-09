@@ -441,7 +441,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Request to private selection page
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -451,11 +451,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/proxy/selection?select=0`)
-				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/proxy/selection?select=1`)
+				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?select=0`)
+				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?select=1`)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?select=1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -502,7 +502,7 @@ func TestAppProxyRouter(t *testing.T) {
 				})
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?select=1", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -519,7 +519,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 			},
 		},
 		{
@@ -532,7 +532,7 @@ func TestAppProxyRouter(t *testing.T) {
 				})
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?select=1", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -598,10 +598,10 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?select=1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -645,7 +645,7 @@ func TestAppProxyRouter(t *testing.T) {
 				appServer.Close()
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=2", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?select=2", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -774,10 +774,10 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?select=1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)

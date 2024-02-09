@@ -40,7 +40,7 @@ type Router struct {
 
 const ProviderCookie = "_oauth2_provider"
 
-const selectionPagePath = "/proxy/selection"
+const selectionPagePath = "/_proxy/selection"
 
 //go:embed template/*
 var templates embed.FS
@@ -319,7 +319,7 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 
 	v.Cookie.Secret = r.config.CookieSecret
 	v.Cookie.Domains = []string{domain}
-	v.ProxyPrefix = "/proxy"
+	v.ProxyPrefix = "/_proxy"
 	v.RawRedirectURL = r.config.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
 	v.Providers = options.Providers{provider}
