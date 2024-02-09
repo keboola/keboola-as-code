@@ -4,7 +4,7 @@
 < Enter the table name
 > table1
 
-< Would you define column types?
+< Want to define column types? Otherwise all columns default to strings.
 > N
 
 < Enter a comma-separated list of column names

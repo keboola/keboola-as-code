@@ -7,8 +7,8 @@ Enter the table name.
 ? Table name: table1? Table name: table1
 
 
-Would you define column types?
-? Columns Types Definition: [? for help] (Y/n) N? Columns Types Definition: No
+Want to define column types? Otherwise all columns default to strings.
+? Column types: (Y/n) N? Column types: No
 
 
 Enter a comma-separated list of column names.

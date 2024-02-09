@@ -81,8 +81,8 @@ func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, all
 		opts.CreateTableRequest.Columns = getOptionCreateRequest(colNames)
 	case columnsDefinitionInteractive:
 		input, _ := p.Editor("yaml", &prompt.Question{
-			Label:       "Columns definition from file",
-			Description: "Columns definition from file",
+			Label:       "Columns definitions",
+			Description: "Columns definitions",
 			Default:     p.defaultValue(),
 			Validator: func(val any) error {
 				_, err := parseColumnsDefinitionFromFile(val.(string))
@@ -120,10 +120,9 @@ func (p *Dialogs) columnsDefinitionMethod() (columnsDefinitionMethod, error) {
 	case !p.options.IsSet("columns-from") && !p.options.IsSet("columns"):
 		// Ask for method
 		specifyTypes := p.Prompt.Confirm(&prompt.Confirm{
-			Label:       "Columns Types Definition",
-			Description: "Would you define column types?",
+			Label:       "Column types",
+			Description: "Want to define column types? Otherwise all columns default to strings.",
 			Default:     true,
-			Help:        `"In Keboola you can define column types, if types won't be specified default value will be "string"`,
 		})
 		if specifyTypes {
 			return columnsDefinitionInteractive, nil
@@ -184,15 +183,7 @@ func parseColumnsDefinitionFromFile(input string) ([]keboola.Column, error) {
 func (p *Dialogs) defaultValue() string {
 	fileHeader := `#Command "remote create table"
 
-#The CLI command creates a new storage table, and the table can be defined either by specifying the full table ID in the argument or by using the --bucket and --name flags.
-#In addition, you can specify column names and specify the primary key using the appropriate flags.
-
-#Using the --columns-from flag to specify a yaml definition file with columns types.
-
-#Another way to define columns is to use the --columns-from flag and then specify the path to your json file.
-
-
-#Example definition file for --columns-from flag:
+#Edit or replace this part of the text with your definition. Keep the same format.Then save your changes and close the editor:
 
 - name: id
   definition:
