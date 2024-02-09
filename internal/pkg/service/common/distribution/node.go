@@ -140,7 +140,7 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.Infof(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.WithDuration(time.Since(startTime)).Infof(ctx, `the node "%s" registered`, n.nodeID)
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
 		n.logger.Warnf(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.Infof(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.WithDuration(time.Since(startTime)).Infof(ctx, `the node "%s" unregistered`, n.nodeID)
 }
 
 // watch for other nodes.

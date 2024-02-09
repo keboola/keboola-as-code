@@ -175,7 +175,7 @@ node3
 {"level":"info","message":"creating etcd session","node":"node1","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"created etcd session","node":"node1","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"registering the node \"node1\"","node":"node1","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node1\" registered | %s","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" registered","node":"node1","component":"distribution.my-group"}
 {"level":"info","message":"watching for other nodes","node":"node1","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node%d\"","node":"node1","component":"distribution.my-group"}
@@ -185,7 +185,7 @@ node3
 {"level":"info","message":"shutdown done","node":"node1","component":"distribution.my-group.listeners"}
 {"level":"info","message":"received shutdown request","node":"node1","component":"distribution.my-group"}
 {"level":"info","message":"unregistering the node \"node1\"","node":"node1","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node1\" unregistered | %s","node":"node1","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node1\" unregistered","node":"node1","component":"distribution.my-group"}
 {"level":"info","message":"closing etcd session: context canceled","node":"node1","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"closed etcd session","node":"node1","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"shutdown done","node":"node1","component":"distribution.my-group"}
@@ -198,7 +198,7 @@ node3
 {"level":"info","message":"creating etcd session","node":"node2","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"created etcd session","node":"node2","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"registering the node \"node2\"","node":"node2","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node2\" registered | %s","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" registered","node":"node2","component":"distribution.my-group"}
 {"level":"info","message":"watching for other nodes","node":"node2","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node%d\"","node":"node2","component":"distribution.my-group"}
@@ -209,7 +209,7 @@ node3
 {"level":"info","message":"shutdown done","node":"node2","component":"distribution.my-group.listeners"}
 {"level":"info","message":"received shutdown request","node":"node2","component":"distribution.my-group"}
 {"level":"info","message":"unregistering the node \"node2\"","node":"node2","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node2\" unregistered | %s","node":"node2","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node2\" unregistered","node":"node2","component":"distribution.my-group"}
 {"level":"info","message":"closing etcd session: context canceled","node":"node2","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"closed etcd session","node":"node2","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"shutdown done","node":"node2","component":"distribution.my-group"}
@@ -222,7 +222,7 @@ node3
 {"level":"info","message":"creating etcd session","node":"node3","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"created etcd session","node":"node3","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"registering the node \"node3\"","node":"node3","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node3\" registered | %s","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node3\" registered","node":"node3","component":"distribution.my-group"}
 {"level":"info","message":"watching for other nodes","node":"node3","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node%d\"","node":"node3","component":"distribution.my-group"}
@@ -234,7 +234,7 @@ node3
 {"level":"info","message":"shutdown done","node":"node3","component":"distribution.my-group.listeners"}
 {"level":"info","message":"received shutdown request","node":"node3","component":"distribution.my-group"}
 {"level":"info","message":"unregistering the node \"node3\"","node":"node3","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node3\" unregistered | %s","node":"node3","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node3\" unregistered","node":"node3","component":"distribution.my-group"}
 {"level":"info","message":"closing etcd session: context canceled","node":"node3","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"closed etcd session","node":"node3","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"shutdown done","node":"node3","component":"distribution.my-group"}
@@ -268,7 +268,7 @@ node4
 {"level":"info","message":"creating etcd session","node":"node4","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"created etcd session","node":"node4","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"registering the node \"node4\"","node":"node4","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node4\" registered | %s","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node4\" registered","node":"node4","component":"distribution.my-group"}
 {"level":"info","message":"watching for other nodes","node":"node4","component":"distribution.my-group"}
 {"level":"info","message":"found a new node \"node4\"","node":"node4","component":"distribution.my-group"}
 {"level":"info","message":"exiting (bye bye 4)"}
@@ -276,7 +276,7 @@ node4
 {"level":"info","message":"shutdown done","node":"node4","component":"distribution.my-group.listeners"}
 {"level":"info","message":"received shutdown request","node":"node4","component":"distribution.my-group"}
 {"level":"info","message":"unregistering the node \"node4\"","node":"node4","component":"distribution.my-group"}
-{"level":"info","message":"the node \"node4\" unregistered | %s","node":"node4","component":"distribution.my-group"}
+{"level":"info","message":"the node \"node4\" unregistered","node":"node4","component":"distribution.my-group"}
 {"level":"info","message":"closing etcd session: context canceled","node":"node4","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"closed etcd session","node":"node4","component":"distribution.my-group.etcd.session"}
 {"level":"info","message":"shutdown done","node":"node4","component":"distribution.my-group"}
