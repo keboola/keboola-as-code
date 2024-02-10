@@ -7,6 +7,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -34,6 +35,7 @@ import (
 type AtomicOp[R any] struct {
 	client         etcd.KV
 	result         *R
+	locks          []*concurrency.Mutex
 	readPhase      []HighLevelFactory
 	writePhase     []HighLevelFactory
 	processors     processors[R]
@@ -85,6 +87,20 @@ func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
 		out = append(out, func(ctx context.Context) (Op, error) { return v.writeTxn(ctx) })
 	}
 	return out
+}
+
+// RequireLock to run the operation. Internally, an IF condition is generated for each registered lock.
+//
+// The lock must be locked during the entire operation, otherwise the NotLockedError occurs.
+// This signals an error in the application logic.
+//
+// If the local state of the lock does not match the state in the database (edge case), then the LockedError occurs.
+// There are no automatic retries. Depending on the kind of the operation, you may retry or ignore the error.
+//
+// The method ensures that only the owner of the lock performs the database operation.
+func (v *AtomicOp[R]) RequireLock(lock *concurrency.Mutex) *AtomicOp[R] {
+	v.locks = append(v.locks, lock)
+	return v
 }
 
 func (v *AtomicOp[R]) ReadOp(ops ...Op) *AtomicOp[R] {
@@ -273,6 +289,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 }
 
 func (v *AtomicOp[R]) readTxn(ctx context.Context, tracker *TrackerKV) (*TxnOp[NoResult], error) {
+	// Create READ transaction
 	readTxn := Txn(tracker)
 	for _, opFactory := range v.readPhase {
 		if op, err := opFactory(ctx); err != nil {
@@ -281,11 +298,24 @@ func (v *AtomicOp[R]) readTxn(ctx context.Context, tracker *TrackerKV) (*TxnOp[N
 			readTxn.Merge(op)
 		}
 	}
+
+	// Stop the READ phase, if a lock is not locked
+	lockIfs, err := v.locksIfs()
+	if err != nil {
+		return nil, errors.PrefixError(err, "read phase")
+	}
+	readTxn.Merge(Txn(v.client).
+		If(lockIfs...).
+		OnFailed(func(r *TxnResult[NoResult]) {
+			r.AddErr(errors.PrefixError(LockedError{}, "read phase"))
+		}),
+	)
+
 	return readTxn, nil
 }
 
 func (v *AtomicOp[R]) writeTxn(ctx context.Context) (*TxnOp[R], error) {
-	// Create WRITE operation
+	// Create WRITE transaction
 	writeTxn := TxnWithResult[R](v.client, v.result)
 	for _, opFactory := range v.writePhase {
 		if op, err := opFactory(ctx); err != nil {
@@ -303,7 +333,29 @@ func (v *AtomicOp[R]) writeTxn(ctx context.Context) (*TxnOp[R], error) {
 		}
 	})
 
+	// Stop the WRITE phase, if a lock is not locked
+	lockIfs, err := v.locksIfs()
+	if err != nil {
+		return nil, errors.PrefixError(err, "write phase")
+	}
+	writeTxn.Merge(Txn(v.client).
+		If(lockIfs...).
+		OnFailed(func(r *TxnResult[NoResult]) {
+			r.AddErr(errors.PrefixError(LockedError{}, "write phase"))
+		}),
+	)
+
 	return writeTxn, nil
+}
+
+func (v *AtomicOp[R]) locksIfs() (cmps []etcd.Cmp, err error) {
+	for _, lock := range v.locks {
+		if key := lock.Key(); key == "" || key == "\x00" {
+			return nil, NotLockedError{}
+		}
+		cmps = append(cmps, lock.IsOwner())
+	}
+	return cmps, nil
 }
 
 // x Create IF part of the transaction.
