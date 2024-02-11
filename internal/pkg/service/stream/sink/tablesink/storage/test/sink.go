@@ -65,3 +65,12 @@ func NewSink(k key.SinkKey) definition.Sink {
 		},
 	}
 }
+
+func SinkStorageConfig(count int, preferred []string) *storage.ConfigPatch {
+	return &storage.ConfigPatch{
+		VolumeAssignment: &assignment.ConfigPatch{
+			Count:          Ptr(count),
+			PreferredTypes: Ptr(preferred),
+		},
+	}
+}

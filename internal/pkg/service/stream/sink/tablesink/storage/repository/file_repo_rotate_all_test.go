@@ -59,7 +59,8 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	mockStorageAPICalls(t, clk, branchKey, transport)
+	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
 	// Create parent branch, source, sinks and tokens
 	// -----------------------------------------------------------------------------------------------------------------
@@ -71,19 +72,19 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 		source2 := test.NewSource(sourceKey2)
 		require.NoError(t, defRepo.Source().Create("Create source", &source2).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = sinkStorageConfig(3, []string{"ssd"})
+		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Config.Storage = sinkStorageConfig(3, []string{"hdd"})
+		sink2.Table.Config.Storage = test.SinkStorageConfig(3, []string{"hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		sink3 := test.NewSink(sinkKey3)
-		sink3.Table.Config.Storage = sinkStorageConfig(2, []string{"ssd", "hdd"})
+		sink3.Table.Config.Storage = test.SinkStorageConfig(2, []string{"ssd", "hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink3).Do(ctx).Err())
 		sink4 := test.NewSink(sinkKey4)
-		sink4.Table.Config.Storage = sinkStorageConfig(1, []string{"ssd"})
+		sink4.Table.Config.Storage = test.SinkStorageConfig(1, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink4).Do(ctx).Err())
 		sink5 := test.NewSink(sinkKey5)
-		sink5.Table.Config.Storage = sinkStorageConfig(1, []string{"hdd"})
+		sink5.Table.Config.Storage = test.SinkStorageConfig(1, []string{"hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink5).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
@@ -98,7 +99,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		registerWriterVolumes(t, ctx, volumeRepo, session, 5)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 5)
 	}
 
 	// Create (the first file Rotate)

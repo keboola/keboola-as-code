@@ -58,7 +58,8 @@ func TestSliceRepository_Delete(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	mockStorageAPICalls(t, clk, branchKey, transport)
+	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
 	// Create parent branch, source, sinks and tokens
 	// -----------------------------------------------------------------------------------------------------------------
@@ -68,7 +69,7 @@ func TestSliceRepository_Delete(t *testing.T) {
 		source1 := test.NewSource(sourceKey1)
 		require.NoError(t, defRepo.Source().Create("Create source", &source1).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = sinkStorageConfig(3, []string{"ssd"})
+		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
@@ -79,7 +80,7 @@ func TestSliceRepository_Delete(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		registerWriterVolumes(t, ctx, volumeRepo, session, 5)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 5)
 	}
 
 	// Create 3 files, each has 2 slices
@@ -112,10 +113,10 @@ func TestSliceRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		switchSliceStates(t, ctx, clk, sliceRepo, s02, []storage.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s02, []storage.SliceState{
 			storage.SliceWriting, storage.SliceClosing,
 		})
-		switchSliceStates(t, ctx, clk, sliceRepo, s03, []storage.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s03, []storage.SliceState{
 			storage.SliceWriting, storage.SliceClosing, storage.SliceUploading, storage.SliceUploaded,
 		})
 	}

@@ -47,7 +47,8 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	mockStorageAPICalls(t, clk, branchKey, transport)
+	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
@@ -55,7 +56,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		registerWriterVolumes(t, ctx, volumeRepo, session, 5)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 5)
 	}
 
 	// Create parent branch, source, sink and token
@@ -66,7 +67,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
-		sink.Table.Config.Storage = sinkStorageConfig(3, []string{"default"})
+		sink.Table.Config.Storage = test.SinkStorageConfig(3, []string{"default"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}

@@ -21,9 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -62,7 +60,8 @@ func TestSliceRepository_Operations(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	mockStorageAPICalls(t, clk, branchKey, transport)
+	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
@@ -70,7 +69,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
 	// Empty
@@ -252,7 +251,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 
 	// Switch slice state
 	// -----------------------------------------------------------------------------------------------------------------
-	switchSliceStates(t, ctx, clk, sliceRepo, sliceKey1, []storage.SliceState{
+	test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey1, []storage.SliceState{
 		storage.SliceWriting, storage.SliceClosing, storage.SliceUploading, storage.SliceUploaded,
 	})
 
@@ -282,7 +281,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 
 	// Switch file state
 	// -----------------------------------------------------------------------------------------------------------------
-	switchFileStates(t, ctx, clk, fileRepo, fileKey1, []storage.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []storage.FileState{
 		storage.FileWriting, storage.FileClosing, storage.FileImporting, storage.FileImported,
 	})
 
@@ -436,47 +435,4 @@ storage/slice/level/local/123/456/my-source/my-sink-3/2000-01-01T01:00:00.000Z/m
 }
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/secret/token/|storage/volume/"))
-}
-
-func switchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, sliceRepo *repository.SliceRepository, sliceKey storage.SliceKey, states []storage.SliceState) {
-	t.Helper()
-	from := states[0]
-	for _, to := range states[1:] {
-		clk.Add(time.Hour)
-
-		// Slice must be closed by the Close method
-		var slice storage.Slice
-		var err error
-		if to == storage.SliceClosing {
-			require.NoError(t, sliceRepo.Close(clk.Now(), sliceKey.FileVolumeKey).Do(ctx).Err())
-			slice, err = sliceRepo.Get(sliceKey).Do(ctx).ResultOrErr()
-			require.NoError(t, err)
-		} else {
-			slice, err = sliceRepo.StateTransition(clk.Now(), sliceKey, from, to).Do(ctx).ResultOrErr()
-			require.NoError(t, err)
-		}
-
-		// Slice state has been switched
-		assert.Equal(t, to, slice.State)
-
-		// Retry should be reset
-		assert.Equal(t, 0, slice.RetryAttempt)
-		assert.Nil(t, slice.LastFailedAt)
-
-		// Check timestamp
-		switch to {
-		case storage.SliceClosing:
-			assert.Equal(t, utctime.From(clk.Now()).String(), slice.ClosingAt.String())
-		case storage.SliceUploading:
-			assert.Equal(t, utctime.From(clk.Now()).String(), slice.UploadingAt.String())
-		case storage.SliceUploaded:
-			assert.Equal(t, utctime.From(clk.Now()).String(), slice.UploadedAt.String())
-		case storage.SliceImported:
-			assert.Equal(t, utctime.From(clk.Now()).String(), slice.ImportedAt.String())
-		default:
-			panic(errors.Errorf(`unexpected slice state "%s"`, to))
-		}
-
-		from = to
-	}
 }
