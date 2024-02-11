@@ -53,3 +53,21 @@ key3/key4
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), dump)
 }
+
+func TestDumpAllKeys(t *testing.T) {
+	t.Parallel()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Put keys
+	_, err := client.Put(context.Background(), "key1", "value1")
+	assert.NoError(t, err)
+	_, err = client.Put(context.Background(), "key2", "value2")
+	assert.NoError(t, err)
+	_, err = client.Put(context.Background(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
+	assert.NoError(t, err)
+
+	// Dump
+	dump, err := etcdhelper.DumpAllKeys(context.Background(), client)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"key1", "key2", "key3/key4"}, dump)
+}
