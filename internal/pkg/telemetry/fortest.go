@@ -368,7 +368,7 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 	// Filter
 	var filtered []metricdata.Metrics
 	for _, metric := range *metrics {
-		// Invoke fileters
+		// Invoke filters
 		include := true
 		for _, f := range cfg.filters {
 			if !f(metric) {
