@@ -62,7 +62,7 @@ func (p *ComponentsProvider) Update(ctx context.Context) error {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.value = NewComponentsMap(index.Components)
-	p.logger.Infof(ctx, "components update finished | %s", time.Since(startTime))
+	p.logger.WithDuration(time.Since(startTime)).Infof(ctx, "components update finished")
 	return nil
 }
 

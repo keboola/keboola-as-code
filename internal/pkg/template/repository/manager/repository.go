@@ -118,7 +118,7 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 		r.templatesLock.Unlock()
 
 		// Load done
-		r.d.Logger().Infof(ctx, `loaded template "%s/%s" | %s`, reference.FullName(), r.git.CommitHash(), time.Since(startTime))
+		r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `loaded template "%s/%s"`, reference.FullName(), r.git.CommitHash())
 		return tmpl, nil
 	})
 
@@ -147,9 +147,9 @@ func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool,
 
 		// Done
 		if result.Changed {
-			r.d.Logger().Infof(ctx, `repository "%s" updated from %s to %s | %s`, r.URLAndRef(), result.OldHash, result.NewHash, time.Since(startTime))
+			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" updated from %s to %s`, r.URLAndRef(), result.OldHash, result.NewHash)
 		} else {
-			r.d.Logger().Infof(ctx, `repository "%s" update finished, no change found (%s) | %s`, r.URLAndRef(), result.NewHash, time.Since(startTime))
+			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" update finished, no change found (%s)`, r.URLAndRef(), result.NewHash)
 		}
 
 		// No change
@@ -206,9 +206,9 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 
 	wg.Wait()
 	if errs.Len() > 0 {
-		r.d.Logger().Errorf(ctx, `cannot load all templates from repository "%s", see previous errors | %s`, r.String(), time.Since(startTime))
+		r.d.Logger().WithDuration(time.Since(startTime)).Errorf(ctx, `cannot load all templates from repository "%s", see previous errors`, r.String())
 	} else {
-		r.d.Logger().Infof(ctx, `loaded all templates from repository "%s" | %s`, r.String(), time.Since(startTime))
+		r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `loaded all templates from repository "%s"`, r.String())
 	}
 
 	return errs.ErrorOrNil()

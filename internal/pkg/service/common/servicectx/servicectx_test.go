@@ -84,7 +84,6 @@ func TestProcess_Add(t *testing.T) {
 
 	// Check logs
 	expected := `
-{"level":"info","message":"process unique id \"<id>\""}
 {"level":"info","message":"exiting (operation failed)"}
 {"level":"info","message":"end"}
 {"level":"info","message":"end"}
@@ -154,7 +153,6 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	// Check logs
 	expected := `
-{"level":"info","message":"process unique id \"<id>\""}
 {"level":"info","message":"exiting (some error)"}
 {"level":"info","message":"end1"}
 {"level":"info","message":"end2"}

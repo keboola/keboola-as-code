@@ -72,8 +72,9 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
-	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	bgContext := ctxattr.ContextWith(context.Background(), attribute.String("node", nodeID)) // nolint: contextcheck
+	watchCtx, watchCancel := context.WithCancel(bgContext)
+	sessionCtx, sessionCancel := context.WithCancel(bgContext)
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
@@ -88,11 +89,13 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 	// Log node ID
 	n.logger.Infof(watchCtx, `node ID "%s"`, nodeID)
 
-	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
-		// Register node
-		return n.register(session, c.startupTimeout)
-	})
-	if err := <-sessionInit; err != nil {
+	// Register node
+	_, errCh := etcdop.
+		NewSessionBuilder().
+		WithTTLSeconds(c.ttlSeconds).
+		WithOnSession(func(session *concurrency.Session) error { return n.register(session, c.startupTimeout) }).
+		Start(sessionCtx, wg, n.logger, n.client)
+	if err := <-errCh; err != nil {
 		return nil, err
 	}
 
@@ -137,7 +140,7 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.Infof(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.WithDuration(time.Since(startTime)).Infof(ctx, `the node "%s" registered`, n.nodeID)
 	return nil
 }
 
@@ -153,7 +156,7 @@ func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
 		n.logger.Warnf(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.Infof(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.WithDuration(time.Since(startTime)).Infof(ctx, `the node "%s" unregistered`, n.nodeID)
 }
 
 // watch for other nodes.

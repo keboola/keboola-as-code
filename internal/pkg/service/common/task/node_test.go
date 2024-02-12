@@ -888,11 +888,11 @@ task/123/my-receiver/my-export/some.task/%s
 {"level":"info","message":"some message from the task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"info","message":"task succeeded (%s): some result","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
-{"level":"info","message":"closing etcd session","component":"task.etcd-session","node":"node1"}
-{"level":"info","message":"closed etcd session | %s","component":"task.etcd-session","node":"node1"}
+{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
 {"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd-client"}
-{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}
 `, logs.String())
 }

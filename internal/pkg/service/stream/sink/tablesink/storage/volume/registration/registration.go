@@ -40,13 +40,16 @@ func RegisterVolumes[V volume.Volume](d dependencies, cfg Config, volumes *volum
 	})
 
 	// Register volumes
-	errCh := etcdop.ResistantSession(ctx, wg, logger, client, cfg.TTLSeconds, func(session *concurrency.Session) error {
-		txn := op.Txn(client)
-		for _, vol := range volumes.All() {
-			txn.Merge(putOpFactory(vol.Metadata(), session.Lease()))
-		}
-		return txn.Do(ctx).Err()
-	})
-
+	_, errCh := etcdop.
+		NewSessionBuilder().
+		WithTTLSeconds(cfg.TTLSeconds).
+		WithOnSession(func(session *concurrency.Session) error {
+			txn := op.Txn(client)
+			for _, vol := range volumes.All() {
+				txn.Merge(putOpFactory(vol.Metadata(), session.Lease()))
+			}
+			return txn.Do(ctx).Err()
+		}).
+		Start(ctx, wg, logger, client)
 	return <-errCh
 }

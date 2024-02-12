@@ -43,7 +43,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
-	logger = logger.WithComponent("etcd-client")
+	logger = logger.WithComponent("etcd.client")
 
 	// Create a zap logger for etcd client
 	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
@@ -53,8 +53,8 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 			return
 		}
 
-		// Add component=etcd-client field
-		fields = append(fields, zapcore.Field{Key: "component", String: "etcd-client", Type: zapcore.StringType})
+		// Add component=etcd.client field
+		fields = append(fields, zapcore.Field{Key: "component", String: "etcd.client", Type: zapcore.StringType})
 
 		// Encode and log message
 		if bytes, err := encoder.EncodeEntry(entry, fields); err == nil {
@@ -120,10 +120,10 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		if err := c.Close(); err != nil {
 			logger.Warnf(ctx, "cannot close etcd connection: %s", err)
 		} else {
-			logger.Infof(ctx, "closed etcd connection | %s", time.Since(startTime))
+			logger.WithDuration(time.Since(startTime)).Infof(ctx, "closed etcd connection")
 		}
 	})
 
-	logger.Infof(ctx, `connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
+	logger.WithDuration(time.Since(startTime)).Infof(ctx, `connected to etcd cluster "%s"`, strings.Join(c.Endpoints(), ";"))
 	return c, nil
 }
