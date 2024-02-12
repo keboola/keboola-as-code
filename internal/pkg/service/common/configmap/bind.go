@@ -88,9 +88,8 @@ func Bind(cfg BindSpec, targets ...any) error {
 	}
 
 	// Generate flags from the structs
-	flagToFieldMap := make(map[string]orderedmap.Path)
 	for _, target := range targets {
-		if err := StructToFlags(flags, target, flagToFieldMap); err != nil {
+		if err := StructToFlags(flags, target); err != nil {
 			return err
 		}
 	}
@@ -118,6 +117,10 @@ func Bind(cfg BindSpec, targets ...any) error {
 	}
 
 	// Define mapping between flag and field path
+	flagToFieldMap, err := newFlagToFieldMap(targets...)
+	if err != nil {
+		return err
+	}
 	flagToField := func(flag *pflag.Flag) (orderedmap.Path, bool) {
 		v, ok := flagToFieldMap[flag.Name]
 		return v, ok
