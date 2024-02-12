@@ -48,12 +48,12 @@ var templates embed.FS
 func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp) (*Router, error) {
 	html, err := templates.ReadFile("template/selection.html.tmpl")
 	if err != nil {
-		return nil, errors.Wrap(err, "Selection template file not found")
+		return nil, errors.PrefixError(err, "selection template file not found")
 	}
 
 	tmpl, err := template.New("selection template").Parse(string(html))
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not parse selection template")
+		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
 	router := &Router{
@@ -153,19 +153,19 @@ func (r *Router) createProvider(providerConfig options.Provider, app DataApp) (o
 
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
-		return provider, errors.Errorf("unable to create oauth proxy config for app %s %s: %w", app.ID, app.Name, err)
+		return provider, errors.PrefixErrorf(err, "unable to create oauth proxy config for app %s %s", app.ID, app.Name)
 	}
 	provider.proxyConfig = proxyConfig
 
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
-		return provider, errors.Errorf("unable to create oauth provider for app %s %s: %w", app.ID, app.Name, err)
+		return provider, errors.PrefixErrorf(err, "unable to create oauth provider for app %s %s", app.ID, app.Name)
 	}
 	provider.proxyProvider = proxyProvider
 
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
-		return provider, errors.Errorf("unable to start oauth proxy for app %s %s: %w", app.ID, app.Name, err)
+		return provider, errors.PrefixErrorf(err, "unable to start oauth proxy for app %s %s", app.ID, app.Name)
 	}
 	provider.handler = proxy
 
