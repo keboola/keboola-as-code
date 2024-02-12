@@ -17,11 +17,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// TestBind_Empty tests empty binding without default values.
-func TestBind_Empty(t *testing.T) {
+// TestGenerateAndBind_Empty tests empty binding without default values.
+func TestGenerateAndBind_Empty(t *testing.T) {
 	t.Parallel()
 
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args:      []string(nil),
 		EnvNaming: env.NewNamingConvention("MY_APP_"),
 		Envs:      env.Empty(),
@@ -29,15 +29,15 @@ func TestBind_Empty(t *testing.T) {
 
 	target := TestConfig{}
 
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	assert.Equal(t, TestConfig{}, target)
 }
 
-// TestBind_NormalizeAndValidate tests the Normalize and Validate method calls if a type implements them.
-func TestBind_NormalizeAndValidate(t *testing.T) {
+// TestGenerateAndBind_NormalizeAndValidate tests the Normalize and Validate method calls if a type implements them.
+func TestGenerateAndBind_NormalizeAndValidate(t *testing.T) {
 	t.Parallel()
 
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args:      []string{"--key1-foo", "  Foo  "},
 		EnvNaming: env.NewNamingConvention("MY_APP_"),
 		Envs:      env.Empty(),
@@ -48,7 +48,7 @@ func TestBind_NormalizeAndValidate(t *testing.T) {
 	target.Key1 = TestValueNV{ValidationError: errors.New("key1 error")}
 	target.Key2.KeyB = TestValueNV{ValidationError: errors.New("keyB error")}
 
-	err := Bind(spec, &target)
+	err := GenerateAndBind(cfg, &target)
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 configuration is not valid:
@@ -62,11 +62,11 @@ configuration is not valid:
 	}
 }
 
-// TestBind_Default tests empty binding with default values.
-func TestBind_DefaultValues(t *testing.T) {
+// TestGenerateAndBind_Default tests empty binding with default values.
+func TestGenerateAndBind_DefaultValues(t *testing.T) {
 	t.Parallel()
 
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args:                   []string(nil),
 		EnvNaming:              env.NewNamingConvention("MY_APP_"),
 		Envs:                   env.Empty(),
@@ -98,16 +98,16 @@ func TestBind_DefaultValues(t *testing.T) {
 	target := expected
 
 	// TestConfig is unmodified, default values are kept
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	assert.NotSame(t, expected, target)
 	assert.Equal(t, expected, target)
 }
 
-// TestBind_Flags tests binding from flags to the configuration structure.
-func TestBind_Flags(t *testing.T) {
+// TestGenerateAndBind_Flags tests binding from flags to the configuration structure.
+func TestGenerateAndBind_Flags(t *testing.T) {
 	t.Parallel()
 
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args: []string{
 			"--embedded", "foo",
 			"--sensitive-string", "abc",
@@ -153,7 +153,7 @@ func TestBind_Flags(t *testing.T) {
 	// Default values are replaced from flags
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{10, 20, 30, 40})
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	assert.Equal(t, TestConfig{
 		Embedded:        Embedded{EmbeddedField: "foo"},
 		SensitiveString: "abc",
@@ -172,8 +172,8 @@ func TestBind_Flags(t *testing.T) {
 	}, target)
 }
 
-// TestBind_Env tests binding from ENVs to the configuration structure.
-func TestBind_Env(t *testing.T) {
+// TestGenerateAndBind_Env tests binding from ENVs to the configuration structure.
+func TestGenerateAndBind_Env(t *testing.T) {
 	t.Parallel()
 
 	envs := env.Empty()
@@ -189,7 +189,7 @@ func TestBind_Env(t *testing.T) {
 	envs.Set("MY_APP_ADDRESS", "10.20.30.40")
 	envs.Set("MY_APP_ADDRESS_NULLABLE", "10.20.30.40")
 
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args: []string{
 			"--embedded", "flag takes precedence over ENV",
 		},
@@ -224,7 +224,7 @@ func TestBind_Env(t *testing.T) {
 	// Default values are replaced from ENVs
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{10, 20, 30, 40})
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	assert.Equal(t, TestConfig{
 		Embedded: Embedded{
 			EmbeddedField: "flag takes precedence over ENV", // from flag
@@ -245,8 +245,8 @@ func TestBind_Env(t *testing.T) {
 	}, target)
 }
 
-// TestBind_ConfigFile_YAML tests binding from YAML config files to the configuration structure.
-func TestBind_ConfigFile_YAML(t *testing.T) {
+// TestGenerateAndBind_ConfigFile_YAML tests binding from YAML config files to the configuration structure.
+func TestGenerateAndBind_ConfigFile_YAML(t *testing.T) {
 	t.Parallel()
 
 	envs := env.Empty()
@@ -260,7 +260,7 @@ func TestBind_ConfigFile_YAML(t *testing.T) {
 
 	configFilePath1 := filesystem.Join(t.TempDir(), "config1.yaml")
 	configFilePath2 := filesystem.Join(t.TempDir(), "config2.yaml")
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args: []string{
 			"--embedded", "flag takes precedence over ENV",
 			"--config-file", configFilePath1,
@@ -310,7 +310,7 @@ int: 999
 	require.NoError(t, os.WriteFile(configFilePath2, []byte(config2), 0o600))
 
 	// Default values are replaced from the YAML config file.
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{11, 22, 33, 44})
 	assert.Equal(t, TestConfig{
@@ -333,8 +333,8 @@ int: 999
 	}, target)
 }
 
-// TestBind_ConfigFile_JSON tests binding from JSON config files to the configuration structure.
-func TestBind_ConfigFile_JSON(t *testing.T) {
+// TestGenerateAndBind_ConfigFile_JSON tests binding from JSON config files to the configuration structure.
+func TestGenerateAndBind_ConfigFile_JSON(t *testing.T) {
 	t.Parallel()
 
 	envs := env.Empty()
@@ -349,7 +349,7 @@ func TestBind_ConfigFile_JSON(t *testing.T) {
 	configFilePath1 := filesystem.Join(t.TempDir(), "config1.json")
 	configFilePath2 := filesystem.Join(t.TempDir(), "config2.json")
 
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args: []string{
 			"--embedded", "flag takes precedence over ENV",
 			"--config-file", configFilePath1,
@@ -404,7 +404,7 @@ func TestBind_ConfigFile_JSON(t *testing.T) {
 	require.NoError(t, os.WriteFile(configFilePath2, []byte(config2), 0o600))
 
 	// Default values are replaced from the YAML config file.
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{11, 22, 33, 44})
 	assert.Equal(t, TestConfig{
@@ -427,8 +427,8 @@ func TestBind_ConfigFile_JSON(t *testing.T) {
 	}, target)
 }
 
-// TestBind_ValueType tests usage of the Value type.
-func TestBind_ValueType(t *testing.T) {
+// TestGenerateAndBind_ValueType tests usage of the Value type.
+func TestGenerateAndBind_ValueType(t *testing.T) {
 	t.Parallel()
 
 	envs := env.Empty()
@@ -441,7 +441,7 @@ func TestBind_ValueType(t *testing.T) {
 	envs.Set("MY_APP_DURATION_NULLABLE", "100s")
 
 	configFilePath := filepath.Join(t.TempDir(), "config.yml") //nolint: forbidigo
-	spec := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args: []string{
 			"--embedded", "flag takes precedence over ENV",
 			"--address", "11.22.33.44",
@@ -483,7 +483,7 @@ stringSlice: a,b,c
 
 	// Default values are replaced from the flags and ENVs
 	// SetBy fields are filled in.
-	assert.NoError(t, Bind(spec, &target))
+	assert.NoError(t, GenerateAndBind(cfg, &target))
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{11, 22, 33, 44})
 	assert.Equal(t, TestConfigWithValueStruct{

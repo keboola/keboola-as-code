@@ -13,7 +13,7 @@ import (
 func TestLoadTo_Help_Minimal(t *testing.T) {
 	t.Parallel()
 
-	cfg := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args:                   []string{"app", "--help"},
 		GenerateHelpFlag:       true,
 		GenerateConfigFileFlag: false,
@@ -43,7 +43,7 @@ Usage of "app":
       --url string                 
 `
 
-	err := Bind(cfg, &target)
+	err := GenerateAndBind(cfg, &target)
 	if assert.Error(t, err) {
 		helpErr, ok := err.(HelpError)
 		require.True(t, ok)
@@ -55,7 +55,7 @@ Usage of "app":
 func TestLoadTo_Help_Full(t *testing.T) {
 	t.Parallel()
 
-	cfg := BindSpec{
+	cfg := GenerateAndBindConfig{
 		Args:                   []string{"app", "--help"},
 		EnvNaming:              env.NewNamingConvention("MY_APP_"),
 		Envs:                   env.Empty(),
@@ -98,7 +98,7 @@ Use "--config-file" flag to specify a JSON/YAML configuration file, it can be us
 Use "--dump-config" flag with "json" or "yaml" value to dump configuration to STDOUT.
 `
 
-	err := Bind(cfg, &target)
+	err := GenerateAndBind(cfg, &target)
 	if assert.Error(t, err) {
 		helpErr, ok := err.(HelpError)
 		require.True(t, ok)
