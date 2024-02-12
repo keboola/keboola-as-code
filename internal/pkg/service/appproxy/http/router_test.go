@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/logging"
 	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/mockoidc"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -1211,6 +1213,12 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	cfg.CookieSecret = string(secret)
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
+
+	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	logger.SetOutput(loggerWriter)
+	// Cannot separate errors from info because oauthproxy will override its error writer with either
+	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
+	logger.SetErrOutput(loggerWriter)
 
 	router, err := NewRouter(context.Background(), d, apps)
 	require.NoError(t, err)

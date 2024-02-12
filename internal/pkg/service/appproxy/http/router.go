@@ -354,6 +354,10 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 		},
 	}
 
+	// Cannot separate errors from info because when ErrToInfo is false (default),
+	// oauthproxy keeps forcibly setting its global error writer to os.Stderr whenever a new proxy instance is created.
+	v.Logging.ErrToInfo = true
+
 	if err := validation.Validate(v); err != nil {
 		return nil, err
 	}
