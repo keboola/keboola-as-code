@@ -1,12 +1,13 @@
 package configmap
 
 import (
-	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"reflect"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // flagFieldMapTo visits the structs in depth and generates a map: flagName => fieldPath.

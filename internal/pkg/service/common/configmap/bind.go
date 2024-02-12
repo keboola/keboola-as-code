@@ -37,11 +37,19 @@ const (
 
 type SetBy int
 
-// BindSpec is a configuration for the Bind function.
-type BindSpec struct {
-	Args                   []string
-	EnvNaming              *env.NamingConvention
-	Envs                   env.Provider
+type BindConfig struct {
+	Flags       *pflag.FlagSet        // required
+	Args        []string              // optional
+	ConfigFiles []string              // optional
+	EnvNaming   *env.NamingConvention // optional
+	Envs        env.Provider          // optional
+}
+
+type GenerateAndBindConfig struct {
+	Args                   []string              // optional
+	ConfigFiles            []string              // optional
+	EnvNaming              *env.NamingConvention // optional
+	Envs                   env.Provider          // optional
 	GenerateHelpFlag       bool
 	GenerateConfigFileFlag bool
 	GenerateDumpConfigFlag bool
@@ -60,8 +68,8 @@ type ValueWithValidation interface {
 // FlagToFieldFn translates flag definition to the field name in the configuration.
 type FlagToFieldFn func(flag *pflag.Flag) (orderedmap.Path, bool)
 
-// Bind flags, ENVs and config files to target configuration structures.
-func Bind(cfg BindSpec, targets ...any) error {
+// GenerateAndBind generates flags and then bind flags, ENVs and config files to target configuration structures.
+func GenerateAndBind(cfg GenerateAndBindConfig, targets ...any) error {
 	if len(targets) == 0 {
 		return errors.Errorf(`at least one ConfigStruct must be provided`)
 	}
@@ -89,7 +97,7 @@ func Bind(cfg BindSpec, targets ...any) error {
 
 	// Generate flags from the structs
 	for _, target := range targets {
-		if err := StructToFlags(flags, target); err != nil {
+		if err := GenerateFlags(flags, target); err != nil {
 			return err
 		}
 	}
@@ -134,7 +142,8 @@ func Bind(cfg BindSpec, targets ...any) error {
 			return errors.Errorf(`cannot bind to type "%s": expected a pointer to a struct`, v.Type().String())
 		}
 
-		if err := bind(cfg, target, flags, flagToField, configFiles); err != nil {
+		bindCfg := BindConfig{Flags: flags, Args: cfg.Args, ConfigFiles: configFiles, EnvNaming: cfg.EnvNaming, Envs: cfg.Envs}
+		if err := bind(bindCfg, target, flagToField); err != nil {
 			errs.Append(err)
 		}
 	}
@@ -149,6 +158,46 @@ func Bind(cfg BindSpec, targets ...any) error {
 			return DumpError{Dump: bytes}
 		} else {
 			return err
+		}
+	}
+
+	return errs.ErrorOrNil()
+}
+
+// Bind flags, ENVs and config files to target configuration structures.
+func Bind(inputs BindConfig, targets ...any) error {
+	if len(targets) == 0 {
+		return errors.Errorf(`at least one ConfigStruct must be provided`)
+	}
+	if inputs.Flags == nil {
+		return errors.Errorf(`flags must be specified`)
+	}
+
+	// Parse flags
+	if err := inputs.Flags.Parse(inputs.Args); err != nil {
+		return errors.Errorf(`cannot parse flags: %w`, err)
+	}
+
+	// Define mapping between flag and field path
+	flagToFieldMap, err := newFlagToFieldMap(targets...)
+	if err != nil {
+		return err
+	}
+	flagToField := func(flag *pflag.Flag) (orderedmap.Path, bool) {
+		v, ok := flagToFieldMap[flag.Name]
+		return v, ok
+	}
+
+	// Bind config files, flags, envs to the structs
+	errs := errors.NewMultiError()
+	for _, target := range targets {
+		// Validate type
+		if v := reflect.ValueOf(target); v.Kind() != reflect.Pointer && v.Type().Elem().Kind() != reflect.Pointer {
+			return errors.Errorf(`cannot bind to type "%s": expected a pointer to a struct`, v.Type().String())
+		}
+
+		if err := bind(inputs, target, flagToField); err != nil {
+			errs.Append(err)
 		}
 	}
 
@@ -202,8 +251,8 @@ func ValidateAndNormalize(target any) error {
 // bind binds flags, ENVs and config files to the configuration structure.
 // Flags have priority over environment variables.
 // The struct is normalized and validated.
-func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFieldFn, configFiles []string) error {
-	values, err := collectValues(flags, flagToFieldFn, cfg.EnvNaming, cfg.Envs, configFiles)
+func bind(inputs BindConfig, target any, flagToFieldFn FlagToFieldFn) error {
+	values, err := collectValues(inputs, flagToFieldFn)
 	if err != nil {
 		return err
 	}
@@ -231,12 +280,12 @@ func bind(cfg BindSpec, target any, flags *pflag.FlagSet, flagToFieldFn FlagToFi
 
 // collectValues defined in the configuration structure from flags, ENVs and config files.
 // Priority: 1. flag, 2. ENV, 3. config file.
-func collectValues(flags *pflag.FlagSet, flagToField FlagToFieldFn, envNaming *env.NamingConvention, envs env.Provider, configFiles []string) (*orderedmap.OrderedMap, error) {
+func collectValues(cfg BindConfig, flagToField FlagToFieldFn) (*orderedmap.OrderedMap, error) {
 	errs := errors.NewMultiError()
 	values := orderedmap.New()
 
 	// Flags default values
-	flags.VisitAll(func(flag *pflag.Flag) {
+	cfg.Flags.VisitAll(func(flag *pflag.Flag) {
 		if fieldPath, ok := flagToField(flag); ok {
 			if !flag.Changed {
 				if err := values.SetNestedPath(fieldPath, fieldValue{Value: flag.Value.String(), SetBy: SetByDefault}); err != nil {
@@ -247,7 +296,7 @@ func collectValues(flags *pflag.FlagSet, flagToField FlagToFieldFn, envNaming *e
 	})
 
 	// Parse configuration files
-	for _, path := range configFiles {
+	for _, path := range cfg.ConfigFiles {
 		// Read
 		content, err := os.ReadFile(path) //nolint: forbidigo
 		if err != nil {
@@ -286,15 +335,15 @@ func collectValues(flags *pflag.FlagSet, flagToField FlagToFieldFn, envNaming *e
 	}
 
 	// Bind flags and ENVs, flags have priority
-	flags.VisitAll(func(flag *pflag.Flag) {
+	cfg.Flags.VisitAll(func(flag *pflag.Flag) {
 		if fieldPath, ok := flagToField(flag); ok {
 			if flag.Changed {
 				if err := values.SetNestedPath(fieldPath, fieldValue{Value: flag.Value.String(), SetBy: SetByFlag}); err != nil {
 					errs.Append(err)
 				}
-			} else if envNaming != nil && envs != nil {
-				envName := envNaming.FlagToEnv(flag.Name)
-				if envValue, found := envs.Lookup(envName); found {
+			} else if cfg.EnvNaming != nil && cfg.Envs != nil {
+				envName := cfg.EnvNaming.FlagToEnv(flag.Name)
+				if envValue, found := cfg.Envs.Lookup(envName); found {
 					if err := values.SetNestedPath(fieldPath, fieldValue{Value: envValue, SetBy: SetByEnv}); err != nil {
 						errs.Append(err)
 					}

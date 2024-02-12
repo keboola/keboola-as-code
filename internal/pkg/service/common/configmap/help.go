@@ -15,7 +15,7 @@ func (h HelpError) Error() string {
 	return "help requested"
 }
 
-func newHelpError(name string, flags *pflag.FlagSet, cfg BindSpec) HelpError {
+func newHelpError(name string, flags *pflag.FlagSet, cfg GenerateAndBindConfig) HelpError {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf(`Usage of "%s":`, name))
