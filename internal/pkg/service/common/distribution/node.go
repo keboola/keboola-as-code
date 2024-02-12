@@ -32,7 +32,7 @@ type Node struct {
 	logger      log.Logger
 	proc        *servicectx.Process
 	client      *etcd.Client
-	config      nodeConfig
+	config      Config
 	listeners   *listeners
 }
 
@@ -45,19 +45,13 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(nodeID, group string, cfg Config, d dependencies) (*Node, error) {
 	// Validate
 	if nodeID == "" {
 		panic(errors.New("distribution.Node: node ID cannot be empty"))
 	}
 	if group == "" {
 		panic(errors.New("distribution.Node: group cannot be empty"))
-	}
-
-	// Apply options
-	c := defaultNodeConfig()
-	for _, o := range opts {
-		o(&c)
 	}
 
 	// Create instance
@@ -68,7 +62,7 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 		logger:      d.Logger().WithComponent("distribution." + group),
 		proc:        d.Process(),
 		client:      d.EtcdClient(),
-		config:      c,
+		config:      cfg,
 	}
 
 	// Graceful shutdown
@@ -80,7 +74,7 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.Info(ctx, "received shutdown request")
 		watchCancel()
-		n.unregister(ctx, c.shutdownTimeout)
+		n.unregister(ctx, cfg.ShutdownTimeout)
 		sessionCancel()
 		wg.Wait()
 		n.logger.Info(ctx, "shutdown done")
@@ -92,8 +86,8 @@ func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, e
 	// Register node
 	_, errCh := etcdop.
 		NewSessionBuilder().
-		WithTTLSeconds(c.ttlSeconds).
-		WithOnSession(func(session *concurrency.Session) error { return n.register(session, c.startupTimeout) }).
+		WithTTLSeconds(cfg.TTLSeconds).
+		WithOnSession(func(session *concurrency.Session) error { return n.register(session, cfg.StartupTimeout) }).
 		Start(sessionCtx, wg, n.logger, n.client)
 	if err := <-errCh; err != nil {
 		return nil, err

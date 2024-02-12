@@ -11,6 +11,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -301,13 +302,12 @@ func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeID
 	}
 
 	// Create node
-	node, err := distribution.NewNode(
-		nodeID, "my-group", d,
-		distribution.WithStartupTimeout(time.Second),
-		distribution.WithShutdownTimeout(time.Second),
-		distribution.WithEventsGroupInterval(groupInterval),
-	)
-	assert.NoError(t, err)
+	cfg := distribution.NewConfig()
+	cfg.StartupTimeout = time.Second
+	cfg.ShutdownTimeout = time.Second
+	cfg.EventsGroupInterval = groupInterval
+	node, err := distribution.NewNode(nodeID, "my-group", cfg, d)
+	require.NoError(t, err)
 	return node, d
 }
 
