@@ -23,7 +23,7 @@ type Listener struct {
 }
 
 type listeners struct {
-	config         nodeConfig
+	config         Config
 	lock           *sync.Mutex
 	bufferedEvents Events
 	listeners      map[listenerID]*Listener
@@ -59,8 +59,8 @@ func newListeners(n *Node) *listeners {
 		// but all events within the groupInterval are processed at once.
 		// Otherwise, trigger is called immediately, see Notify method.
 		var tickerC <-chan time.Time
-		if v.config.eventsGroupInterval > 0 {
-			ticker := n.clock.Ticker(v.config.eventsGroupInterval)
+		if v.config.EventsGroupInterval > 0 {
+			ticker := n.clock.Ticker(v.config.EventsGroupInterval)
 			defer ticker.Stop()
 			tickerC = ticker.C
 		}
@@ -117,7 +117,7 @@ func (v *listeners) Notify(events Events) {
 	v.bufferedEvents = append(v.bufferedEvents, events...)
 
 	// Trigger listeners immediately, if there is no grouping interval
-	if v.config.eventsGroupInterval == 0 {
+	if v.config.EventsGroupInterval == 0 {
 		v.trigger()
 	}
 }
