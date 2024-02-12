@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,10 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -565,4 +569,123 @@ key4
 4
 >>>>>
 `)
+}
+
+func TestAtomicOp_RequireLock(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	wg := &sync.WaitGroup{}
+
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	session, errCh := etcdop.NewSessionBuilder().Start(ctx, wg, log.NewNopLogger(), client)
+	require.NoError(t, <-errCh)
+	anotherSession, errCh := etcdop.NewSessionBuilder().Start(ctx, wg, log.NewNopLogger(), client)
+	require.NoError(t, <-errCh)
+
+	// Use the same distributed lock in two sessions
+	locksPfx := etcdop.NewPrefix("locks")
+	lockKey := locksPfx.Key("lock123").Key()
+	mutex, err := session.NewMutex(lockKey)
+	require.NoError(t, err)
+	anotherMutex, err := anotherSession.NewMutex(lockKey)
+	require.NoError(t, err)
+
+	// Prepare atomic operation, require the lock
+	var betweenPhasesFn func()
+	atomicOp := op.
+		Atomic(client, &op.NoResult{}).
+		RequireLock(mutex).
+		ReadOp(etcdop.NewKey("key1").Get(client)).
+		BeforeWrite(func(ctx context.Context) {
+			if betweenPhasesFn != nil {
+				betweenPhasesFn()
+			}
+		}).
+		WriteOp(etcdop.NewKey("key2").Put(client, "value"))
+
+	// Simple cases
+	// -----------------------------------------------------------------------------------------------------------------
+	// Lock is locked, atomic operation succeeded
+	require.NoError(t, mutex.Lock(ctx))
+	assert.NoError(t, atomicOp.Do(ctx).Err())
+	require.NoError(t, mutex.Unlock(ctx))
+
+	// Lock is not locked, atomic operation failed
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.False(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "read phase: lock is not locked", err.Error())
+	}
+
+	// The following cases are testing local state of the lock.
+	// The errors mean some logical error in the application,
+	// because the lock is not locked during the entire operation.
+	// -----------------------------------------------------------------------------------------------------------------
+
+	// Lock is locked, but it is released between READ/WRITE phases, atomic operation failed
+	require.NoError(t, mutex.Lock(ctx))
+	betweenPhasesFn = func() {
+		require.NoError(t, mutex.Unlock(ctx))
+	}
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.False(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "write phase: lock is not locked", err.Error())
+	}
+
+	// Lock is locked by another session, atomic operation failed
+	require.NoError(t, anotherMutex.Lock(ctx))
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.False(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "read phase: lock is not locked", err.Error())
+	}
+	require.NoError(t, anotherMutex.Unlock(ctx))
+
+	// Lock is locked by another session between READ/WRITE phases, atomic operation failed
+	require.NoError(t, mutex.Lock(ctx))
+	betweenPhasesFn = func() {
+		require.NoError(t, mutex.Unlock(ctx))
+		require.NoError(t, anotherMutex.Lock(ctx))
+	}
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.False(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "write phase: lock is not locked", err.Error())
+	}
+	require.NoError(t, anotherMutex.Unlock(ctx))
+
+	// The following cases are testing database state of the lock.
+	// Locally, the lock appears to be locked, but the state of the database may be different (edge case).
+	// The errors mean some network outage, etc.,
+	// which caused the lock to no longer locked, but the application does not know about it yet.
+	// -----------------------------------------------------------------------------------------------------------------
+
+	// Lock is locked, but it is released between READ/WRITE phases, atomic operation failed
+	require.NoError(t, mutex.Lock(ctx))
+	betweenPhasesFn = func() {
+		require.NoError(t, locksPfx.DeleteAll(client).Do(ctx).Err()) // modify the database directly
+	}
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.True(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "write phase: lock is locked by another session", err.Error())
+	}
+
+	// Lock is locked by another session, atomic operation failed
+	require.NoError(t, anotherMutex.Lock(ctx))
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.True(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "read phase: lock is locked by another session", err.Error())
+	}
+	require.NoError(t, anotherMutex.Unlock(ctx))
+
+	// Lock is locked by another session between READ/WRITE phases, atomic operation failed
+	require.NoError(t, mutex.Lock(ctx))
+	betweenPhasesFn = func() {
+		require.NoError(t, locksPfx.DeleteAll(client).Do(ctx).Err()) // modify the database directly
+		require.NoError(t, anotherMutex.Lock(ctx))
+	}
+	if err := atomicOp.Do(ctx).Err(); assert.Error(t, err) {
+		assert.True(t, errors.Is(err, concurrency.ErrLocked))
+		assert.Equal(t, "write phase: lock is locked by another session", err.Error())
+	}
+	require.NoError(t, anotherMutex.Unlock(ctx))
 }
