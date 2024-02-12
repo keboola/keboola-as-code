@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -23,16 +24,18 @@ type zapLogger struct {
 	component     string
 }
 
-func loggerFromZapCore(core zapcore.Core, attrs ...attribute.KeyValue) *zapLogger {
-	var fields []zap.Field
-	ctxattr.AttrsToZapFields(attrs, &fields)
-	core = core.With(fields)
+func loggerFromZapCore(core zapcore.Core) *zapLogger {
 	return &zapLogger{sugaredLogger: zap.New(core).Sugar(), core: core}
 }
 
 // With creates a child logger and adds structured context to it.
 func (l *zapLogger) With(attrs ...attribute.KeyValue) Logger {
-	return loggerFromZapCore(l.core, attrs...)
+	var fields []zap.Field
+	ctxattr.AttrsToZapFields(attrs, &fields)
+	core := l.core.With(fields)
+	clone := loggerFromZapCore(core)
+	clone.component = l.component
+	return clone
 }
 
 // WithComponent creates a child logger with added component.
@@ -40,13 +43,17 @@ func (l *zapLogger) WithComponent(component string) Logger {
 	if l.component != "" {
 		component = l.component + "." + component
 	}
-	clone := loggerFromZapCore(l.core)
+	clone := *l
 	clone.component = component
-	return clone
+	return &clone
+}
+
+func (l *zapLogger) WithDuration(v time.Duration) Logger {
+	return l.With(attribute.String("duration", v.String()))
 }
 
 func formatMessageUsingAttributes(message string, set *attribute.Set) string {
-	replacements := []string{}
+	var replacements []string
 	for _, keyValue := range set.ToSlice() {
 		replacements = append(replacements, "<"+string(keyValue.Key)+">", keyValue.Value.Emit())
 	}
