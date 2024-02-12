@@ -7,19 +7,19 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	t.Parallel()
 
-	dialog, o, console := createDialogs(t, true)
-
+	dialog, _, console := createDialogs(t, true)
+	flags := workflow.DefaultFlags()
 	// Default values are defined by options
-	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, o.BindPFlags(flags))
+	// flags := pflag.NewFlagSet(``, pflag.ExitOnError)
+	// workflow.WorkflowsCmdFlags(flags)
+	// assert.NoError(t, o.BindPFlags(flags))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -47,7 +47,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out := dialog.AskWorkflowsOptions()
+	out := workflow.AskWorkflowsOptions(*flags, dialog)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
@@ -72,11 +72,11 @@ func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
+	workflow.WorkflowsCmdFlags(flags)
 	assert.NoError(t, o.BindPFlags(flags))
 
 	// Run
-	out := dialog.AskWorkflowsOptions()
+	out := workflow.AskWorkflowsOptions(workflow.Flags{}, dialog)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,

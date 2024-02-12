@@ -3,6 +3,7 @@ package job
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/job/run"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 )
@@ -14,7 +15,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/job/long`),
 	}
 	cmd.AddCommand(
-		RunCommand(p),
+		run.Command(p),
 	)
 
 	return cmd
