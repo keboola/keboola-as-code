@@ -60,7 +60,8 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	mockStorageAPICalls(t, clk, branchKey, transport)
+	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
@@ -68,7 +69,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		registerWriterVolumes(t, ctx, volumeRepo, session, 1)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
 	// Create parent branch, source, sink, file and slice

@@ -16,18 +16,13 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -62,7 +57,8 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	mockStorageAPICalls(t, clk, branchKey, transport)
+	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
@@ -70,7 +66,7 @@ func TestFileRepository_Operations(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		registerWriterVolumes(t, ctx, volumeRepo, session, 5)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 5)
 	}
 
 	// Empty
@@ -112,11 +108,11 @@ func TestFileRepository_Operations(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = sinkStorageConfig(3, []string{"hdd"})
+		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"hdd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Config.Storage = sinkStorageConfig(3, []string{"ssd"})
+		sink2.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
@@ -238,7 +234,7 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Switch file state to storage.FileClosing
 	// -----------------------------------------------------------------------------------------------------------------
-	switchFileStates(t, ctx, clk, fileRepo, fileKey1, []storage.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []storage.FileState{
 		storage.FileWriting, storage.FileClosing,
 	})
 
@@ -256,7 +252,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		for _, sliceKey := range sliceKeys1 {
-			switchSliceStates(t, ctx, clk, sliceRepo, sliceKey, []storage.SliceState{
+			test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey, []storage.SliceState{
 				storage.SliceClosing, storage.SliceUploading, storage.SliceUploaded,
 			})
 		}
@@ -264,7 +260,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 
 	// Switch file state to storage.FileImported
 	// -----------------------------------------------------------------------------------------------------------------
-	switchFileStates(t, ctx, clk, fileRepo, fileKey1, []storage.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []storage.FileState{
 		storage.FileClosing, storage.FileImporting, storage.FileImported,
 	})
 
@@ -456,91 +452,4 @@ storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/
 }
 >>>>>
 `, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/slice/all|storage/secret/token/|storage/volume"))
-}
-
-func registerWriterVolumes(t *testing.T, ctx context.Context, volumeRepo *repository.VolumeRepository, session *concurrency.Session, count int) {
-	t.Helper()
-	volumes := []volume.Metadata{
-		{
-			VolumeID: "my-volume-1",
-			Spec:     volume.Spec{NodeID: "node-a", Type: "hdd", Label: "1", Path: "hdd/1"},
-		},
-		{
-			VolumeID: "my-volume-2",
-			Spec:     volume.Spec{NodeID: "node-b", Type: "ssd", Label: "2", Path: "ssd/2"},
-		},
-		{
-			VolumeID: "my-volume-3",
-			Spec:     volume.Spec{NodeID: "node-b", Type: "hdd", Label: "3", Path: "hdd/3"},
-		},
-		{
-			VolumeID: "my-volume-4",
-			Spec:     volume.Spec{NodeID: "node-b", Type: "ssd", Label: "4", Path: "ssd/4"},
-		},
-		{
-			VolumeID: "my-volume-5",
-			Spec:     volume.Spec{NodeID: "node-c", Type: "hdd", Label: "5", Path: "hdd/5"},
-		},
-	}
-
-	if count < 1 || count > 5 {
-		panic(errors.New("count must be 1-5"))
-	}
-
-	txn := op.Txn(session.Client())
-	for _, vol := range volumes[:count] {
-		txn.Merge(volumeRepo.RegisterWriterVolume(vol, session.Lease()))
-	}
-	require.NoError(t, txn.Do(ctx).Err())
-}
-
-func sinkStorageConfig(count int, preferred []string) *storage.ConfigPatch {
-	return &storage.ConfigPatch{
-		VolumeAssignment: &assignment.ConfigPatch{
-			Count:          test.Ptr(count),
-			PreferredTypes: test.Ptr(preferred),
-		},
-	}
-}
-
-func switchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRepo *repository.FileRepository, fileKey storage.FileKey, states []storage.FileState) {
-	t.Helper()
-	from := states[0]
-	for _, to := range states[1:] {
-		clk.Add(time.Hour)
-
-		// File must be closed by the CloseAllIn method
-		var file storage.File
-		var err error
-		if to == storage.FileClosing {
-			require.Equal(t, storage.FileWriting, from)
-			require.NoError(t, fileRepo.CloseAllIn(clk.Now(), fileKey.SinkKey).Do(ctx).Err())
-			file, err = fileRepo.Get(fileKey).Do(ctx).ResultOrErr()
-			require.NoError(t, err)
-		} else {
-			file, err = fileRepo.StateTransition(clk.Now(), fileKey, from, to).Do(ctx).ResultOrErr()
-			require.NoError(t, err)
-		}
-
-		// File state has been switched
-		assert.Equal(t, to, file.State)
-
-		// Retry should be reset
-		assert.Equal(t, 0, file.RetryAttempt)
-		assert.Nil(t, file.LastFailedAt)
-
-		// Check timestamp
-		switch to {
-		case storage.FileClosing:
-			assert.Equal(t, utctime.From(clk.Now()).String(), file.ClosingAt.String())
-		case storage.FileImporting:
-			assert.Equal(t, utctime.From(clk.Now()).String(), file.ImportingAt.String())
-		case storage.FileImported:
-			assert.Equal(t, utctime.From(clk.Now()).String(), file.ImportedAt.String())
-		default:
-			panic(errors.Errorf(`unexpected file state "%s"`, to))
-		}
-
-		from = to
-	}
 }
