@@ -85,6 +85,13 @@ func (r *Router) CreateHandler() http.Handler {
 			return
 		}
 
+		// Delete all X-Kbc-* headers as they're used for internal information.
+		for name := range req.Header {
+			if strings.HasPrefix(name, "X-Kbc-") {
+				req.Header.Del(name)
+			}
+		}
+
 		if handler, found := r.handlers[appID]; found {
 			handler.ServeHTTP(w, req)
 		} else {
@@ -328,7 +335,9 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
-		headerFromClaim("X-Forwarded-Email", options.OIDCEmailClaim),
+		headerFromClaim("X-Kbc-User-Name", "name"),
+		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
+		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),
 	}
 	v.UpstreamServers = options.UpstreamConfig{
 		Upstreams: []options.Upstream{

@@ -99,6 +99,8 @@ func TestAppProxyRouter(t *testing.T) {
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.data-apps.keboola.local/some/data/app/url?foo=bar", nil)
 				request.Header.Set("User-Agent", "Internet Exploder")
 				request.Header.Set("Content-Type", "application/json")
+				request.Header.Set("X-Kbc-Test", "something")
+				request.Header.Set("X-Kbc-User-Email", "admin@keboola.com")
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -112,6 +114,8 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
 				assert.Equal(t, "Internet Exploder", appRequest.Header.Get("User-Agent"))
 				assert.Equal(t, "application/json", appRequest.Header.Get("Content-Type"))
+				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
+				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-User-Email"))
 			},
 		},
 		{
@@ -528,7 +532,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/some/data/app/url?foo=bar", nil)
+				request.Header.Set("X-Kbc-Test", "something")
+				request.Header.Set("X-Kbc-User-Email", "manager@keboola.com")
 				require.NoError(t, err)
 				for _, cookie := range cookies {
 					request.AddCookie(cookie)
@@ -536,6 +542,13 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				require.Len(t, *appServer.appRequests, 1)
+				appRequest := (*appServer.appRequests)[0]
+				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
+				assert.Equal(t, "admin@keboola.com", appRequest.Header.Get("X-Kbc-User-Email"))
+				assert.Equal(t, "admin", appRequest.Header.Get("X-Kbc-User-Roles"))
+				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
 			},
 		},
 		{
@@ -975,7 +988,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
-				request, err = http.NewRequestWithContext(context.Background(), method, "https://oidc.data-apps.keboola.local/", nil)
+				request, err = http.NewRequestWithContext(context.Background(), method, "https://oidc.data-apps.keboola.local/some/data/app/url?foo=bar", nil)
 				require.NoError(t, err)
 				for _, cookie := range cookies {
 					request.AddCookie(cookie)
@@ -983,6 +996,12 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				require.Len(t, *appServer.appRequests, 1)
+				appRequest := (*appServer.appRequests)[0]
+				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
+				assert.Equal(t, "admin@keboola.com", appRequest.Header.Get("X-Kbc-User-Email"))
+				assert.Equal(t, "admin", appRequest.Header.Get("X-Kbc-User-Roles"))
 			},
 		}
 	}
