@@ -901,9 +901,13 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 	t.Helper()
 	return telemetry.
 		NewForTest(t).
-		SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		AddSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
 			// Ignore etcd spans
 			return !strings.HasPrefix(spanName, "etcd")
+		}).
+		AddMetricFilter(func(metric metricdata.Metrics) bool {
+			// Ignore etcd metrics
+			return !strings.HasPrefix(metric.Name, "rpc.")
 		})
 }
 

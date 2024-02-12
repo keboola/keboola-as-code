@@ -33,7 +33,8 @@ type ForTest interface {
 	TraceID(n int) trace.TraceID
 	SpanID(n int) trace.SpanID
 	Reset()
-	SetSpanFilter(f TestSpanFilter) ForTest
+	AddSpanFilter(f TestSpanFilter) ForTest
+	AddMetricFilter(f TestMetricFilter) ForTest
 	Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs
 	Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics
 	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption)
@@ -49,11 +50,15 @@ type TestMeterOption func(config *assertMetricConfig)
 // TestSpanFilter returns true, if the span should be included in collected spans in a test.
 type TestSpanFilter func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool
 
+// TestMetricFilter returns true, if the metric should be included in collected metrics in a test.
+type TestMetricFilter func(metric metricdata.Metrics) bool
+
 type assertSpanConfig struct {
 	attributeMapper TestAttributeMapper
 }
 
 type assertMetricConfig struct {
+	filters          []TestMetricFilter
 	keepHistogramSum bool
 	attributeMapper  TestAttributeMapper
 	dataPointSortKey func(attrs attribute.Set) string
@@ -65,6 +70,7 @@ type forTest struct {
 	spanExporter   *tracetest.InMemoryExporter
 	metricExporter metricsdk.Reader
 	traceProvider  *filterTraceProvider
+	metricFilters  []TestMetricFilter
 }
 
 // WithSpanAttributeMapper set a mapping function for span attributes.
@@ -86,6 +92,12 @@ func WithMeterAttributeMapper(v TestAttributeMapper) TestMeterOption {
 func WithDataPointSortKey(v func(attrs attribute.Set) string) TestMeterOption {
 	return func(cnf *assertMetricConfig) {
 		cnf.dataPointSortKey = v
+	}
+}
+
+func WithMetricFilter(v TestMetricFilter) TestMeterOption {
+	return func(cnf *assertMetricConfig) {
+		cnf.filters = append(cnf.filters, v)
 	}
 }
 
@@ -136,9 +148,14 @@ func NewForTest(t *testing.T) ForTest {
 	}
 }
 
-func (v *forTest) SetSpanFilter(f TestSpanFilter) ForTest {
-	v.traceProvider.filter = f
+func (v *forTest) AddSpanFilter(f TestSpanFilter) ForTest {
+	v.traceProvider.filters = append(v.traceProvider.filters, f)
 	v.Reset()
+	return v
+}
+
+func (v *forTest) AddMetricFilter(f TestMetricFilter) ForTest {
+	v.metricFilters = append(v.metricFilters, f)
 	return v
 }
 
@@ -197,6 +214,12 @@ func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, o
 
 func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics, opts ...TestMeterOption) {
 	t.Helper()
+
+	// Add global filters
+	for _, f := range v.metricFilters {
+		opts = append(opts, WithMetricFilter(f))
+	}
+
 	actualMetrics := v.Metrics(t, opts...)
 
 	// Compare metrics one by one, for easier debugging
@@ -226,7 +249,7 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 
 type filterTraceProvider struct {
 	embedded.TracerProvider
-	filter   TestSpanFilter
+	filters  []TestSpanFilter
 	provider trace.TracerProvider
 }
 
@@ -241,9 +264,19 @@ func (tp *filterTraceProvider) Tracer(name string, opts ...trace.TracerOption) t
 }
 
 func (t *filterTracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	if t.tp.filter != nil && !t.tp.filter(ctx, spanName, opts...) {
+	// Invoke filters
+	include := true
+	for _, f := range t.tp.filters {
+		if !f(ctx, spanName, opts...) {
+			include = false
+			break
+		}
+	}
+
+	if !include {
 		return nopTracer.Start(ctx, spanName, opts...)
 	}
+
 	return t.tracer.Start(ctx, spanName, opts...)
 }
 
@@ -325,12 +358,29 @@ func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader
 	for _, item := range all.ScopeMetrics {
 		out = append(out, item.Metrics...)
 	}
-	cleanAndSortMetrics(out, opts...)
+	cleanAndSortMetrics(&out, opts...)
 	return out
 }
 
-func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) {
+func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption) {
 	cfg := newAssertMeterConfig(opts)
+
+	// Filter
+	var filtered []metricdata.Metrics
+	for _, metric := range *metrics {
+		// Invoke filters
+		include := true
+		for _, f := range cfg.filters {
+			if !f(metric) {
+				include = false
+				break
+			}
+		}
+
+		if include {
+			filtered = append(filtered, metric)
+		}
+	}
 
 	// DataPoints have random order, sort them by statusCode and URL.
 	dataPointKey := func(attrs attribute.Set) string {
@@ -352,8 +402,8 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) 
 	}
 
 	// Clear dynamic values
-	for i := range metrics {
-		item := &metrics[i]
+	for i := range filtered {
+		item := &filtered[i]
 
 		switch record := item.Data.(type) {
 		case metricdata.Sum[int64]:
@@ -410,4 +460,7 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) 
 			}
 		}
 	}
+
+	// Update the slice
+	*metrics = filtered
 }

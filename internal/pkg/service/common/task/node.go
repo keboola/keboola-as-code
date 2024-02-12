@@ -327,7 +327,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		n.taskEtcdPrefix.Key(task.Key.String()).Put(n.client, task),
 		task.Lock.DeleteIfExists(n.client),
 	)
-	r := finalizeTaskOp.Do(ctx)
+	r := finalizeTaskOp.Do(finalizationCtx)
 	if err := r.Err(); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
 		logger.Error(ctx, err.Error())

@@ -431,12 +431,18 @@ func TestIteratorT_ForEach(t *testing.T) {
 	// Run op
 	assert.NoError(t, getAllOp.Do(ctx).Err())
 
+	// Clear loaded KVs before assert
+	operations := tracker.Operations()
+	for i := range operations {
+		operations[i].KVs = nil
+	}
+
 	// All requests can be tracked by the TrackerKV
 	assert.Equal(t, []op.TrackedOp{
 		{Type: op.GetOp, Key: []byte("some/prefix/"), RangeEnd: []byte("some/prefix0"), Count: 5},
 		{Type: op.GetOp, Key: []byte("some/prefix/foo003"), RangeEnd: []byte("some/prefix0"), Count: 3},
 		{Type: op.GetOp, Key: []byte("some/prefix/foo005"), RangeEnd: []byte("some/prefix0"), Count: 1},
-	}, tracker.Operations())
+	}, operations)
 
 	// All values have been received
 	assert.Equal(t, strings.TrimSpace(`
