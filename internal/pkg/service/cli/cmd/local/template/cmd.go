@@ -1,6 +1,11 @@
 package template
 
 import (
+	delete2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/delete"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/list"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/rename"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/upgrade"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/use"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -14,11 +19,11 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/template/long`),
 	}
 	cmd.AddCommand(
-		ListCommand(p),
-		UseCommand(p),
-		UpgradeCommand(p),
-		RenameCommand(p),
-		DeleteCommand(p),
+		list.Command(p),
+		use.Command(p),
+		upgrade.Command(p),
+		rename.Command(p),
+		delete2.Command(p),
 	)
 	return cmd
 }

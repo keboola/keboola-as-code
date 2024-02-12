@@ -1,6 +1,7 @@
 package dbt
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/dbt/init"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/dbt/generate"
@@ -15,7 +16,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`dbt/long`),
 	}
 	cmd.AddCommand(
-		InitCommand(p),
+		init.Command(p),
 		generate.Commands(p),
 	)
 	return cmd

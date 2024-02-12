@@ -2,6 +2,7 @@ package dialog_test
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
 	"sync"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
@@ -33,7 +33,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
+	workflow.WorkflowsCmdFlags(flags)
 	assert.NoError(t, o.BindPFlags(flags))
 
 	// Interaction
@@ -107,7 +107,7 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
+	workflow.WorkflowsCmdFlags(flags)
 	assert.NoError(t, o.BindPFlags(flags))
 	o.Set("ci", "false")
 	o.Set("branches", "main")

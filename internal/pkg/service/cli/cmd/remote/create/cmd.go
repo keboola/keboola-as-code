@@ -1,6 +1,9 @@
 package create
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/create/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/create/bucket"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/create/table"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -8,9 +11,9 @@ import (
 )
 
 func Commands(p dependencies.Provider) *cobra.Command {
-	createBranchCmd := BranchCommand(p)
-	createBucketCmd := BucketCommand(p)
-	createTableCmd := TableCommand(p)
+	createBranchCmd := branch.Command(p)
+	createBucketCmd := bucket.Command(p)
+	createTableCmd := table.Command(p)
 	cmd := &cobra.Command{
 		Use:   `create`,
 		Short: helpmsg.Read(`remote/create/short`),
