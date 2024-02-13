@@ -75,9 +75,7 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp)
 }
 
 func (r *Router) CreateHandler() http.Handler {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		appID, ok := parseAppID(req.Host)
 		if !ok {
 			if req.URL.Path == "/health-check" {
@@ -104,8 +102,6 @@ func (r *Router) CreateHandler() http.Handler {
 			fmt.Fprintf(w, `Application "%s" not found.`, appID)
 		}
 	})
-
-	return mux
 }
 
 func (r *Router) createConfigErrorHandler() http.Handler {
