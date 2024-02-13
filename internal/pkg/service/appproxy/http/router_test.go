@@ -49,13 +49,20 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Equal(t, `Unable to parse application ID from the URL.`, string(body))
+
+				// Request to health-check endpoint
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://data-apps.keboola.local/health-check", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 		},
 		{
 			name: "unknown-app-id",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
 				// Request to unknown app
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://unknown.data-apps.keboola.local/", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://unknown.data-apps.keboola.local/health-check", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)

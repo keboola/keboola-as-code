@@ -80,6 +80,11 @@ func (r *Router) CreateHandler() http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		appID, ok := parseAppID(req.Host)
 		if !ok {
+			if req.URL.Path == "/health-check" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, `Unable to parse application ID from the URL.`)
 			return
