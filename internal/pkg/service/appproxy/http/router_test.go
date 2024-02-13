@@ -1221,7 +1221,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
 	logger.SetErrOutput(loggerWriter)
 
-	router, err := NewRouter(context.Background(), d, apps)
+	router, err := NewRouter(context.Background(), d, "proxy-", apps)
 	require.NoError(t, err)
 
 	return middleware.Wrap(
