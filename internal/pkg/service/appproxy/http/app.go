@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
@@ -26,10 +27,10 @@ func (v AppID) String() string {
 
 const attrAppID = "proxy.appid"
 
-func appIDMiddleware() middleware.Middleware {
+func appIDMiddleware(publicAddress *url.URL) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			appID, ok := parseAppID(req.Host)
+			appID, ok := parseAppID(publicAddress, req.Host)
 
 			if ok {
 				ctx := req.Context()
@@ -42,8 +43,12 @@ func appIDMiddleware() middleware.Middleware {
 	}
 }
 
-func parseAppID(host string) (AppID, bool) {
-	if strings.Count(host, ".") != 3 {
+func parseAppID(publicAddress *url.URL, host string) (AppID, bool) {
+	if !strings.HasSuffix(host, "."+publicAddress.Host) {
+		return "", false
+	}
+
+	if strings.Count(host, ".") != strings.Count(publicAddress.Host, ".")+1 {
 		return "", false
 	}
 

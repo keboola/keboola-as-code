@@ -1226,7 +1226,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 
 	return middleware.Wrap(
 		router.CreateHandler(),
-		appIDMiddleware(),
+		appIDMiddleware(d.Config().PublicAddress),
 	)
 }
 
