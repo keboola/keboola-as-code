@@ -319,6 +319,7 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 
 	v.Cookie.Secret = r.config.CookieSecret
 	v.Cookie.Domains = []string{domain}
+	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = "/_proxy"
 	v.RawRedirectURL = r.config.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
