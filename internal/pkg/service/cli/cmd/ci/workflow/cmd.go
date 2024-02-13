@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -42,12 +43,18 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`ci/workflows/short`),
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			// Ask options
-			var flags Flags
-			//err = configmap.StructToFlags(cmd.Flags(), flags, nil)
-			//if err != nil {
-			//	return err
-			//}
+
+			flags := Flags{}
+			err = configmap.Bind(configmap.BindConfig{
+				Flags:     cmd.Flags(),
+				Args:      args,
+				EnvNaming: env.NewNamingConvention("KBC_"),
+				Envs:      env.Empty(),
+			}, &flags)
+			if err != nil {
+				return err
+			}
+
 			// Get dependencies
 			d, err := p.LocalCommandScope(cmd.Context())
 			if err != nil {
