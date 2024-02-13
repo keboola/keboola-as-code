@@ -66,6 +66,7 @@ func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler)
 		middleware.ContextTimout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
+		appIDMiddleware(),
 		middleware.Logger(logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
 	)
