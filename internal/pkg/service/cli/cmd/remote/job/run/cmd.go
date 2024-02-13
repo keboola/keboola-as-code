@@ -1,6 +1,7 @@
 package run
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strconv"
 	"strings"
@@ -11,20 +12,19 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
 
 type Flags struct {
-	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	Async          bool   `configKey:"async" configUsage:"do not wait for job to finish"`
-	Timeout        string `configKey:"timeout" configUsage:"how long to wait for job to finish"`
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Async          configmap.Value[bool]   `configKey:"async" configUsage:"do not wait for job to finish"`
+	Timeout        configmap.Value[string] `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }
 
 func DefaultRunFlags() *Flags {
 	return &Flags{
-		Timeout: "5m",
+		Timeout: configmap.NewValue("5m"),
 	}
 }
 
@@ -41,8 +41,19 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			flags := DefaultRunFlags()
+			err = configmap.Bind(configmap.BindConfig{
+				Flags:     cmd.Flags(),
+				Args:      args,
+				EnvNaming: env.NewNamingConvention("KBC_"),
+				Envs:      env.Empty(),
+			}, flags)
+			if err != nil {
+				return err
+			}
+
 			// Parse options
-			opts, err := parseJobRunOptions(d.Options(), args)
+			opts, err := parseJobRunOptions(flags, args)
 			if err != nil {
 				return err
 			}
@@ -54,16 +65,16 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultRunFlags())
 
 	return cmd
 }
 
-func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, error) {
+func parseJobRunOptions(f *Flags, args []string) (run.RunOptions, error) {
 	o := run.RunOptions{}
-	o.Async = opts.GetBool("async")
+	o.Async = f.Async.Value
 
-	timeout, err := time.ParseDuration(opts.GetString("timeout"))
+	timeout, err := time.ParseDuration(f.Timeout.Value)
 	if err != nil {
 		return run.RunOptions{}, err
 	}
