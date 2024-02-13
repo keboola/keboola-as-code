@@ -1,11 +1,11 @@
 package create
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -84,7 +84,7 @@ func ConfigCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cliconfig.MustGenerateFlags(ConfigFlags{}, cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), ConfigFlags{})
 
 	return cmd
 }
@@ -119,7 +119,7 @@ func RowCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cliconfig.MustGenerateFlags(RowFlags{}, cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), RowFlags{})
 
 	return cmd
 }

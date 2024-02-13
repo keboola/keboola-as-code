@@ -2,6 +2,7 @@ package preview
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strings"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
@@ -79,7 +79,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cliconfig.MustGenerateFlags(DefaultFlags(), cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

@@ -1,6 +1,7 @@
 package branch
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -8,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
@@ -82,7 +82,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cliconfig.MustGenerateFlags(Flags{}, cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

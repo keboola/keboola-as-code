@@ -1,13 +1,13 @@
 package upload
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
 
@@ -43,7 +43,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cliconfig.MustGenerateFlags(Flags{}, cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

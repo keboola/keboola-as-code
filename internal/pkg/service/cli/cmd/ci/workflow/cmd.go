@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
@@ -45,10 +44,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Ask options
 			var flags Flags
-			err = configmap.StructToFlags(cmd.Flags(), flags, nil)
-			if err != nil {
-				return err
-			}
+			//err = configmap.StructToFlags(cmd.Flags(), flags, nil)
+			//if err != nil {
+			//	return err
+			//}
 			// Get dependencies
 			d, err := p.LocalCommandScope(cmd.Context())
 			if err != nil {
@@ -65,7 +64,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cliconfig.MustGenerateFlags(DefaultFlags(), cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

@@ -1,6 +1,7 @@
 package detail
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/detail"
 )
 
@@ -42,8 +42,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	detailFlags := Flags{}
-	cliconfig.MustGenerateFlags(detailFlags, cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

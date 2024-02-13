@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"io"
 	"os"
 	"strings"
@@ -25,7 +26,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -143,11 +143,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 	root.SetUsageTemplate(helpmsg.Read(`usage`) + "\n")
 
 	// Persistent flags for all sub-commands
-	flags := root.PersistentFlags()
-	cliconfig.MustGenerateFlags(DefaultGlobalFlags(), flags)
+	configmap.MustGenerateFlags(root.PersistentFlags(), DefaultGlobalFlags())
 
 	// Root command flags
-	cliconfig.MustGenerateFlags(RootFlag{}, root.Flags())
+	configmap.MustGenerateFlags(root.Flags(), RootFlag{})
 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}

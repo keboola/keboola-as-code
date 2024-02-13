@@ -1,13 +1,13 @@
 package create
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
@@ -49,8 +49,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	createCommandFlags := Flags{}
-	cliconfig.MustGenerateFlags(createCommandFlags, cmd.Flags())
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }
