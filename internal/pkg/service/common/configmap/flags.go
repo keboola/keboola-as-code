@@ -13,6 +13,7 @@ import (
 // GenerateFlags generates FlagSet from the provided configuration structure.
 // Each field tagged by "configKey" tag is mapped to a flag.
 // Field can optionally have the "configUsage" tag.
+// Field can optionally have the "configShorthand" tag.
 // Inspired by: https://stackoverflow.com/a/72893101
 func GenerateFlags(fs *pflag.FlagSet, v any) error {
 	// Dereference pointer, if any
@@ -73,8 +74,8 @@ func GenerateFlags(fs *pflag.FlagSet, v any) error {
 			case string:
 				if !vc.Value.IsValid() || vc.Value.IsZero() {
 					// Don't set the default Value, if the original Value is empty.
-					// For example empty time.Duration(0) is represented as not empty string "0s",
-					// but we don't want to show the empty string, as we do not do in other empty cases either.
+					// For example: empty time.Duration(0) is represented as string "0s",
+					// but we don't want to show the empty value.
 					v = ""
 				}
 				fs.StringP(flagName, shorthand, v, usage)
