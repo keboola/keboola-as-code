@@ -18,26 +18,29 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/cookies"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Router struct {
-	logger            log.Logger
-	telemetry         telemetry.Telemetry
-	config            config.Config
-	clock             clock.Clock
-	handlers          map[AppID]http.Handler
-	selectionTemplate *template.Template
+	logger             log.Logger
+	telemetry          telemetry.Telemetry
+	config             config.Config
+	clock              clock.Clock
+	handlers           map[AppID]http.Handler
+	selectionTemplate  *template.Template
+	configErrorHandler http.Handler
 }
 
 const ProviderCookie = "_oauth2_provider"
 
-const selectionPagePath = "/proxy/selection"
+const selectionPagePath = "/_proxy/selection"
 
 //go:embed template/*
 var templates embed.FS
@@ -62,12 +65,10 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp)
 		selectionTemplate: tmpl,
 	}
 
+	router.configErrorHandler = router.createConfigErrorHandler()
+
 	for _, app := range apps {
-		if handler, err := router.createDataAppHandler(app); err == nil {
-			router.handlers[app.ID] = handler
-		} else {
-			router.logger.Errorf(ctx, `cannot initialize application "%s": %s`, app.ID, err)
-		}
+		router.handlers[app.ID] = router.createDataAppHandler(ctx, app)
 	}
 
 	return router, nil
@@ -95,65 +96,87 @@ func (r *Router) CreateHandler() http.Handler {
 	return mux
 }
 
-func (r *Router) createDataAppHandler(app DataApp) (http.Handler, error) {
-	if len(app.Providers) == 0 {
-		return r.publicAppHandler(app)
-	}
-	return r.protectedAppHandler(app)
+func (r *Router) createConfigErrorHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprintln(w, "Application has misconfigured OAuth2 provider.")
+	})
 }
 
-func (r *Router) publicAppHandler(app DataApp) (http.Handler, error) {
+func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Handler {
+	ctx = ctxattr.ContextWith(ctx, attribute.String("app", string(app.ID)))
+
+	if len(app.Providers) == 0 {
+		return r.publicAppHandler(ctx, app)
+	}
+	return r.protectedAppHandler(ctx, app)
+}
+
+func (r *Router) publicAppHandler(ctx context.Context, app DataApp) http.Handler {
 	target, err := url.Parse("http://" + app.UpstreamHost)
 	if err != nil {
-		return nil, errors.Errorf(`cannot parse upstream url "%s" for app %s: %w`, app.UpstreamHost, app.ID, err)
+		r.logger.Errorf(ctx, `cannot parse upstream url "%s" for app <app> %s: %w`, app.UpstreamHost, app.Name, err.Error())
+		return r.configErrorHandler
 	}
-	return httputil.NewSingleHostReverseProxy(target), nil
+	return httputil.NewSingleHostReverseProxy(target)
 }
 
 type oauthProvider struct {
 	providerConfig options.Provider
 	proxyConfig    *options.Options
 	proxyProvider  providers.Provider
-	proxy          *oauthproxy.OAuthProxy
+	handler        http.Handler
 }
 
-func (r *Router) protectedAppHandler(app DataApp) (http.Handler, error) {
+func (r *Router) createProvider(providerConfig options.Provider, app DataApp) (oauthProvider, error) {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
 	}
 
+	provider := oauthProvider{
+		providerConfig: providerConfig,
+		handler:        r.configErrorHandler,
+	}
+
+	proxyConfig, err := r.authProxyConfig(app, providerConfig)
+	if err != nil {
+		return provider, errors.Errorf("unable to create oauth proxy config for app %s %s: %w", app.ID, app.Name, err)
+	}
+	provider.proxyConfig = proxyConfig
+
+	proxyProvider, err := providers.NewProvider(providerConfig)
+	if err != nil {
+		return provider, errors.Errorf("unable to create oauth provider for app %s %s: %w", app.ID, app.Name, err)
+	}
+	provider.proxyProvider = proxyProvider
+
+	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
+	if err != nil {
+		return provider, errors.Errorf("unable to start oauth proxy for app %s %s: %w", app.ID, app.Name, err)
+	}
+	provider.handler = proxy
+
+	return provider, nil
+}
+
+func (r *Router) protectedAppHandler(ctx context.Context, app DataApp) http.Handler {
 	oauthProviders := make(map[string]oauthProvider)
 
 	for i, providerConfig := range app.Providers {
-		proxyConfig, err := r.authProxyConfig(app, providerConfig)
+		provider, err := r.createProvider(providerConfig, app)
 		if err != nil {
-			return nil, errors.Errorf("unable to create oauth proxy config for app %s: %w", app.ID, err)
+			r.logger.Error(ctx, err.Error())
 		}
 
-		proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
-		if err != nil {
-			return nil, errors.Errorf("unable to start oauth proxy for app %s: %w", app.ID, err)
-		}
-
-		proxyProvider, err := providers.NewProvider(providerConfig)
-		if err != nil {
-			return nil, errors.Errorf("unable to create oauth provider for app %s: %w", app.ID, err)
-		}
-
-		oauthProviders[strconv.Itoa(i)] = oauthProvider{
-			providerConfig: providerConfig,
-			proxyConfig:    proxyConfig,
-			proxyProvider:  proxyProvider,
-			proxy:          proxy,
-		}
+		oauthProviders[strconv.Itoa(i)] = provider
 	}
 
 	if len(app.Providers) == 1 {
-		return oauthProviders["0"].proxy, nil
+		return oauthProviders["0"].handler
 	}
 
-	return r.createMultiProviderHandler(oauthProviders), nil
+	return r.createMultiProviderHandler(oauthProviders)
 }
 
 type SelectionPageData struct {
@@ -173,7 +196,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 
 	// Request to provider selection page
 	handler.HandleFunc(selectionPagePath, func(writer http.ResponseWriter, request *http.Request) {
-		selection := request.URL.Query().Get("select")
+		selection := request.URL.Query().Get("provider")
 		provider, ok := oauthProviders[selection]
 
 		if !ok {
@@ -184,7 +207,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 					Scheme:   r.config.PublicAddress.Scheme,
 					Host:     request.Host,
 					Path:     selectionPagePath,
-					RawQuery: "select=" + id,
+					RawQuery: "provider=" + id,
 				}
 
 				data.Providers = append(data.Providers, SelectionPageProvider{
@@ -202,15 +225,17 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 			return
 		}
 
-		// Set cookie value to the selected provider
-		http.SetCookie(writer, cookies.MakeCookieFromOptions(
-			request,
-			ProviderCookie,
-			selection,
-			&provider.proxyConfig.Cookie,
-			provider.proxyConfig.Cookie.Expire,
-			r.clock.Now(),
-		))
+		if provider.proxyConfig != nil {
+			// Set cookie value to the selected provider
+			http.SetCookie(writer, cookies.MakeCookieFromOptions(
+				request,
+				ProviderCookie,
+				selection,
+				&provider.proxyConfig.Cookie,
+				provider.proxyConfig.Cookie.Expire,
+				r.clock.Now(),
+			))
+		}
 
 		// Request using the selected provider to trigger a redirect to the provider's sign in page
 		newRequest, err := http.NewRequestWithContext(request.Context(), http.MethodGet, "/", nil)
@@ -218,7 +243,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 			r.logger.Error(request.Context(), "could not create request")
 		}
 
-		provider.proxy.ServeHTTP(writer, newRequest)
+		provider.handler.ServeHTTP(writer, newRequest)
 	})
 
 	// Request to the data app itself
@@ -248,27 +273,29 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 			return
 		}
 
-		// If oauthproxy returns a redirect to login page, we instead redirect to provider selection page
-		cw := NewCallbackResponseWriter(writer, func(writer http.ResponseWriter, statusCode int) {
-			if statusCode != http.StatusFound {
-				return
-			}
-
-			locationURL, err := url.Parse(writer.Header().Get("Location"))
-			if err != nil {
-				return
-			}
-
+		if provider.proxyProvider != nil {
 			loginURL := provider.proxyProvider.Data().LoginURL
 
-			// Redirect to OAuth2 provider is instead redirected to selection page
-			if locationURL.Host == loginURL.Host && locationURL.Path == loginURL.Path {
-				r.redirectToProviderSelection(writer, request)
-			}
-		})
+			// If oauthproxy returns a redirect to login page, we instead redirect to provider selection page
+			writer = NewCallbackResponseWriter(writer, func(writer http.ResponseWriter, statusCode int) {
+				if statusCode != http.StatusFound {
+					return
+				}
+
+				locationURL, err := url.Parse(writer.Header().Get("Location"))
+				if err != nil {
+					return
+				}
+
+				// Redirect to OAuth2 provider is instead redirected to selection page
+				if locationURL.Host == loginURL.Host && locationURL.Path == loginURL.Path {
+					r.redirectToProviderSelection(writer, request)
+				}
+			})
+		}
 
 		// Authenticate the request by the provider selected in the cookie
-		provider.proxy.ServeHTTP(cw, request)
+		provider.handler.ServeHTTP(writer, request)
 	})
 
 	return handler
@@ -292,7 +319,7 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 
 	v.Cookie.Secret = r.config.CookieSecret
 	v.Cookie.Domains = []string{domain}
-	v.ProxyPrefix = "/proxy"
+	v.ProxyPrefix = "/_proxy"
 	v.RawRedirectURL = r.config.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
 	v.Providers = options.Providers{provider}

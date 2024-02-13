@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/mockoidc"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type testCase struct {
@@ -61,6 +63,20 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Equal(t, `Application "unknown" not found.`, string(body))
+			},
+		},
+		{
+			name: "broken-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to broken app
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://broken.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
 			},
 		},
 		{
@@ -343,9 +359,12 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				response, err = client.Do(request)
+				_, err = client.Do(request)
 				require.Error(t, err)
-				require.Nil(t, response)
+				require.Contains(t, err.Error(), "refused")
+				var syscallError *os.SyscallError
+				errors.As(err, &syscallError)
+				require.Contains(t, syscallError.Syscall, "connect")
 
 				// Request to private app (unauthorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
@@ -427,7 +446,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Request to private selection page
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -437,11 +456,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/proxy/selection?select=0`)
-				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/proxy/selection?select=1`)
+				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?provider=0`)
+				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?provider=1`)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -488,7 +507,7 @@ func TestAppProxyRouter(t *testing.T) {
 				})
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -505,7 +524,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 			},
 		},
 		{
@@ -518,7 +537,7 @@ func TestAppProxyRouter(t *testing.T) {
 				})
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -584,10 +603,10 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -623,6 +642,22 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
+			},
+		},
+		{
+			name: "multi-app-broken-provider",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				appServer.Close()
+
+				// Provider selection
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=2", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
 			},
 		},
 		{
@@ -664,6 +699,7 @@ func TestAppProxyRouter(t *testing.T) {
 					},
 				)
 				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to WebSocket dial: expected handshake response status code 101 but got 302")
 			},
 		},
 		{
@@ -744,10 +780,10 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				assert.Equal(t, "https://multi.data-apps.keboola.local/proxy/selection", location)
+				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/proxy/selection?select=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -968,6 +1004,31 @@ func TestAppProxyRouter(t *testing.T) {
 							AllowedGroups:       []string{"admin"},
 							OIDCConfig: options.OIDCOptions{
 								IssuerURL:      m1.Issuer(),
+								EmailClaim:     options.OIDCEmailClaim,
+								GroupsClaim:    options.OIDCGroupsClaim,
+								AudienceClaims: options.OIDCAudienceClaims,
+								UserIDClaim:    options.OIDCEmailClaim,
+							},
+						},
+						{
+							ID: "oidc2",
+						},
+					},
+				},
+				{
+					ID:           "broken",
+					Name:         "OIDC Misconfigured App",
+					UpstreamHost: tsURL.Host,
+					Providers: []options.Provider{
+						{
+							ID:                  "oidc",
+							ClientID:            "",
+							ClientSecret:        m0.Config().ClientSecret,
+							Type:                options.OIDCProvider,
+							CodeChallengeMethod: providers.CodeChallengeMethodS256,
+							AllowedGroups:       []string{"admin"},
+							OIDCConfig: options.OIDCOptions{
+								IssuerURL:      m0.Issuer(),
 								EmailClaim:     options.OIDCEmailClaim,
 								GroupsClaim:    options.OIDCGroupsClaim,
 								AudienceClaims: options.OIDCAudienceClaims,
