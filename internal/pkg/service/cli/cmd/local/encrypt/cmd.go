@@ -2,6 +2,7 @@
 package encrypt
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
@@ -27,6 +28,17 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			flag := Flag{}
+			err = configmap.Bind(configmap.BindConfig{
+				Flags:     cmd.Flags(),
+				Args:      args,
+				EnvNaming: env.NewNamingConvention("KBC_"),
+				Envs:      env.Empty(),
+			}, &flag)
+			if err != nil {
+				return err
+			}
+
 			// Load project state
 			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
@@ -35,7 +47,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := encrypt.Options{
-				DryRun:   d.Options().GetBool(`dry-run`),
+				DryRun:   flag.DryRun,
 				LogEmpty: true,
 			}
 
