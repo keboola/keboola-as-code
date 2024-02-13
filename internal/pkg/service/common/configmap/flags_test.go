@@ -7,12 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStructToFlags_AlmostEmpty(t *testing.T) {
+func TestGenerateFlags_AlmostEmpty(t *testing.T) {
 	t.Parallel()
 
 	in := TestConfig{Float: 123.45}
@@ -33,47 +32,23 @@ func TestStructToFlags_AlmostEmpty(t *testing.T) {
       --sensitive-string string    
       --string-slice strings       
       --string-with-usage string   An usage text.
-      --url string                 
+  -u, --url string                 
 `
 
 	// Struct
-	flagToField1 := make(map[string]orderedmap.Path)
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err := StructToFlags(fs1, in, flagToField1)
+	err := GenerateFlags(fs1, in)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
-	flagToField2 := make(map[string]orderedmap.Path)
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err = StructToFlags(fs2, &in, flagToField2)
+	err = GenerateFlags(fs2, &in)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
-
-	// Check flag to field mapping
-	expectedFlagToField := map[string]orderedmap.Path{
-		"address":           orderedmap.PathFromStr("address"),
-		"address-nullable":  orderedmap.PathFromStr("addressNullable"),
-		"custom-int":        orderedmap.PathFromStr("customInt"),
-		"custom-string":     orderedmap.PathFromStr("customString"),
-		"duration":          orderedmap.PathFromStr("duration"),
-		"duration-nullable": orderedmap.PathFromStr("durationNullable"),
-		"embedded":          orderedmap.PathFromStr("embedded"),
-		"float":             orderedmap.PathFromStr("float"),
-		"int":               orderedmap.PathFromStr("int"),
-		"int-slice":         orderedmap.PathFromStr("intSlice"),
-		"nested-bar":        orderedmap.PathFromStr("nested.bar"),
-		"nested-foo":        orderedmap.PathFromStr("nested.foo"),
-		"sensitive-string":  orderedmap.PathFromStr("sensitiveString"),
-		"string-slice":      orderedmap.PathFromStr("stringSlice"),
-		"string-with-usage": orderedmap.PathFromStr("stringWithUsage"),
-		"url":               orderedmap.PathFromStr("url"),
-	}
-	assert.Equal(t, expectedFlagToField, flagToField1)
-	assert.Equal(t, expectedFlagToField, flagToField2)
 }
 
-func TestStructToFlags_Default(t *testing.T) {
+func TestGenerateFlags_Default(t *testing.T) {
 	t.Parallel()
 
 	duration, _ := time.ParseDuration("123s")
@@ -115,42 +90,18 @@ func TestStructToFlags_Default(t *testing.T) {
       --sensitive-string string     (default "value1")
       --string-slice strings        (default [foo,bar])
       --string-with-usage string   An usage text. (default "value2")
-      --url string                  (default "http://localhost:1234")
+  -u, --url string                  (default "http://localhost:1234")
 `
 
 	// Struct
-	flagToField1 := make(map[string]orderedmap.Path)
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err := StructToFlags(fs1, in, flagToField1)
+	err := GenerateFlags(fs1, in)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
-	flagToField2 := make(map[string]orderedmap.Path)
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
-	err = StructToFlags(fs2, &in, flagToField2)
+	err = GenerateFlags(fs2, &in)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
-
-	// Check flag to field mapping
-	expectedFlagToField := map[string]orderedmap.Path{
-		"address":           orderedmap.PathFromStr("address"),
-		"address-nullable":  orderedmap.PathFromStr("addressNullable"),
-		"custom-int":        orderedmap.PathFromStr("customInt"),
-		"custom-string":     orderedmap.PathFromStr("customString"),
-		"duration":          orderedmap.PathFromStr("duration"),
-		"duration-nullable": orderedmap.PathFromStr("durationNullable"),
-		"embedded":          orderedmap.PathFromStr("embedded"),
-		"float":             orderedmap.PathFromStr("float"),
-		"int":               orderedmap.PathFromStr("int"),
-		"int-slice":         orderedmap.PathFromStr("intSlice"),
-		"nested-bar":        orderedmap.PathFromStr("nested.bar"),
-		"nested-foo":        orderedmap.PathFromStr("nested.foo"),
-		"sensitive-string":  orderedmap.PathFromStr("sensitiveString"),
-		"string-slice":      orderedmap.PathFromStr("stringSlice"),
-		"string-with-usage": orderedmap.PathFromStr("stringWithUsage"),
-		"url":               orderedmap.PathFromStr("url"),
-	}
-	assert.Equal(t, expectedFlagToField, flagToField1)
-	assert.Equal(t, expectedFlagToField, flagToField2)
 }

@@ -55,7 +55,7 @@ func run() error {
 	if err != nil {
 		return errors.Errorf("cannot load envs: %w", err)
 	}
-	cfg, err := config.Bind(os.Args, envs)
+	cfg, err := config.GenerateAndBind(os.Args, envs)
 	if errors.Is(err, pflag.ErrHelp) {
 		// Stop on --help flag
 		return nil

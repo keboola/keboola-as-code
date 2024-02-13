@@ -160,6 +160,7 @@ package configmap
 
 const (
 	configKeyTag       = "configKey"
+	configShorthandTag = "configShorthand"
 	configUsageTag     = "configUsage"
 	sensitiveTag       = "sensitive"
 	validateTag        = "validate"

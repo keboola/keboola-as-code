@@ -28,7 +28,7 @@ func (c *ExampleConfig) Validate() error {
 	return nil
 }
 
-func ExampleBind_help() {
+func ExampleGenerateAndBind_help() {
 	// Get ENVs
 	envs := env.Empty()
 
@@ -41,7 +41,7 @@ func ExampleBind_help() {
 	}
 
 	// Create bind specification
-	spec := configmap.BindSpec{
+	cfg := configmap.GenerateAndBindConfig{
 		Args:                   []string{"app", "--help"},
 		Envs:                   envs,
 		EnvNaming:              envNaming,
@@ -51,7 +51,7 @@ func ExampleBind_help() {
 	}
 
 	// Bind
-	helpErr := configmap.Bind(spec, &config)
+	helpErr := configmap.GenerateAndBind(cfg, &config)
 
 	// Print help
 	help := helpErr.(configmap.HelpError).Help
@@ -78,7 +78,7 @@ func ExampleBind_help() {
 	// Use "--dump-config" flag with "json" or "yaml" value to dump configuration to STDOUT.
 }
 
-func ExampleBind_dump() {
+func ExampleGenerateAndBind_dump() {
 	// Get ENVs
 	envs := env.Empty()
 	envs.Set("MY_APP_TAGS", "tag1,tag2")
@@ -92,7 +92,7 @@ func ExampleBind_dump() {
 	}
 
 	// Create bind specification
-	spec := configmap.BindSpec{
+	cfg := configmap.GenerateAndBindConfig{
 		Args:                   []string{"app", "--dump-config=yaml"},
 		Envs:                   envs,
 		EnvNaming:              envNaming,
@@ -102,7 +102,7 @@ func ExampleBind_dump() {
 	}
 
 	// Bind
-	dumpErr := configmap.Bind(spec, &config)
+	dumpErr := configmap.GenerateAndBind(cfg, &config)
 
 	// Print help
 	dump := string(dumpErr.(configmap.DumpError).Dump)
