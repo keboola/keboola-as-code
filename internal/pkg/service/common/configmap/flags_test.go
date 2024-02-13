@@ -32,7 +32,7 @@ func TestGenerateFlags_AlmostEmpty(t *testing.T) {
       --sensitive-string string    
       --string-slice strings       
       --string-with-usage string   An usage text.
-      --url string                 
+  -u, --url string                 
 `
 
 	// Struct
@@ -90,7 +90,7 @@ func TestGenerateFlags_Default(t *testing.T) {
       --sensitive-string string     (default "value1")
       --string-slice strings        (default [foo,bar])
       --string-with-usage string   An usage text. (default "value2")
-      --url string                  (default "http://localhost:1234")
+  -u, --url string                  (default "http://localhost:1234")
 `
 
 	// Struct

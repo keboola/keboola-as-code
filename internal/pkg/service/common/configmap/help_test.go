@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 )
 
-func TestLoadTo_Help_Minimal(t *testing.T) {
+func TestGenerateAndBind_Help_Minimal(t *testing.T) {
 	t.Parallel()
 
 	cfg := GenerateAndBindConfig{
@@ -40,7 +40,7 @@ Usage of "app":
       --sensitive-string string    
       --string-slice strings       
       --string-with-usage string   An usage text.
-      --url string                 
+  -u, --url string                 
 `
 
 	err := GenerateAndBind(cfg, &target)
@@ -52,7 +52,7 @@ Usage of "app":
 	}
 }
 
-func TestLoadTo_Help_Full(t *testing.T) {
+func TestGenerateAndBind_Help_Full(t *testing.T) {
 	t.Parallel()
 
 	cfg := GenerateAndBindConfig{
@@ -86,7 +86,7 @@ Usage of "app":
       --sensitive-string string    
       --string-slice strings       
       --string-with-usage string   An usage text.
-      --url string                 
+  -u, --url string                 
 
 Configuration source priority: 1. flag, 2. ENV, 3. config file
 
