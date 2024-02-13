@@ -12,7 +12,7 @@ import (
 )
 
 type Flag struct {
-	Branch string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
+	Branch string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

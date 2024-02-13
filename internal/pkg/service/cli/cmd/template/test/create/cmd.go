@@ -12,9 +12,9 @@ import (
 )
 
 type Flags struct {
-	TestName   string `mapstructure:"test-name" usage:"name of the test to be created"`
-	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
-	Verbose    bool   `mapstructure:"verbose" usage:"show details about creating test"`
+	TestName   string `configKey:"test-name" configUsage:"name of the test to be created"`
+	InputsFile string `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+	Verbose    bool   `configKey:"verbose" configUsage:"show details about creating test"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

@@ -35,19 +35,19 @@ import (
 )
 
 type RootFlag struct {
-	Version bool `mapstructure:"version" shorthand:"V" usage:"print version"`
+	Version bool `configKey:"version" configShorthand:"V" configUsage:"print version"`
 }
 
 type GlobalFlags struct {
-	Help            bool   `mapstructure:"help" shorthand:"h" usage:"print help for command"`
-	LogFile         string `mapstructure:"log-file" shorthand:"l" usage:"path to a log file for details"`
-	LogFormat       string `mapstructure:"log-format" usage:"format of stdout and stderr"`
-	NonInteractive  bool   `mapstructure:"non-interactive" usage:"disable interactive dialogs"`
-	WorkingDir      string `mapstructure:"working-dir" shorthand:"d" usage:"use other working directory"`
-	StorageAPIToken string `mapstructure:"storage-api-token" shorthand:"t" usage:"storage API token from your project"`
-	Verbose         bool   `mapstructure:"verbose" shorthand:"v" usage:"print details"`
-	VerboseAPI      bool   `mapstructure:"verbose-api" usage:"log each API request and response"`
-	VersionCheck    bool   `mapstructure:"version-check" usage:"checks if there is a newer version of the CLI"`
+	Help            bool   `configKey:"help" configShorthand:"h" configUsage:"print help for command"`
+	LogFile         string `configKey:"log-file" configShorthand:"l" configUsage:"path to a log file for details"`
+	LogFormat       string `configKey:"log-format" configUsage:"format of stdout and stderr"`
+	NonInteractive  bool   `configKey:"non-interactive" configUsage:"disable interactive dialogs"`
+	WorkingDir      string `configKey:"working-dir" configShorthand:"d" configUsage:"use other working directory"`
+	StorageAPIToken string `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Verbose         bool   `configKey:"verbose" configShorthand:"v" configUsage:"print details"`
+	VerboseAPI      bool   `configKey:"verbose-api" configUsage:"log each API request and response"`
+	VersionCheck    bool   `configKey:"version-check" configUsage:"checks if there is a newer version of the CLI"`
 }
 
 func DefaultGlobalFlags() *GlobalFlags {

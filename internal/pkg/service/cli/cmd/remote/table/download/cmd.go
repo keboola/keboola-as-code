@@ -15,17 +15,17 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	ChangeSince    string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
-	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
-	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
-	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
-	Where          string   `mapstructure:"where" usage:"filter columns by value"`
-	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
-	Format         string   `mapstructure:"format" usage:"output format (json/csv)"`
-	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for the unload job to finish"`
-	Output         string   `mapstructure:"output" shorthand:"o" usage:"path to the destination file or directory"`
-	AllowSliced    bool     `mapstructure:"allow-sliced" usage:"output sliced files as a directory containing slices as individual files"`
+	StorageAPIHost string   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangeSince    string   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
+	ChangedUntil   string   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
+	Columns        []string `configKey:"columns" configUsage:"comma-separated list of columns to export"`
+	Limit          uint     `configKey:"limit" configUsage:"limit the number of exported rows"`
+	Where          string   `configKey:"where" configUsage:"filter columns by value"`
+	Order          string   `configKey:"order" configUsage:"order by one or more columns"`
+	Format         string   `configKey:"format" configUsage:"output format (json/csv)"`
+	Timeout        string   `configKey:"timeout" configUsage:"how long to wait for the unload job to finish"`
+	Output         string   `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
+	AllowSliced    bool     `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
 }
 
 func DefaultFlags() *Flags {

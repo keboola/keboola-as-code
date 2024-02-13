@@ -12,13 +12,13 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Branches       string `mapstructure:"branches" shorthand:"b" usage:"comma separated IDs or name globs, use \"*\" for all"`
-	CI             bool   `mapstructure:"ci" usage:"generate workflows"`
-	CIValidate     bool   `mapstructure:"ci-validate" usage:"create workflow to validate all branches on change"`
-	CIPush         bool   `mapstructure:"ci-push" usage:"create workflow to push change in main branch to the project"`
-	CIPull         bool   `mapstructure:"ci-pull" usage:"create workflow to sync main branch each hour"`
-	CIMainBranch   string `mapstructure:"ci-main-branch" usage:"name of the main branch for push/pull workflows"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Branches       string `configKey:"branches" configShorthand:"b" configUsage:"comma separated IDs or name globs, use \"*\" for all"`
+	CI             bool   `configKey:"ci" configUsage:"generate workflows"`
+	CIValidate     bool   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
+	CIPush         bool   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
+	CIPull         bool   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
+	CIMainBranch   string `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
 }
 
 func DefaultFlags() *Flags {

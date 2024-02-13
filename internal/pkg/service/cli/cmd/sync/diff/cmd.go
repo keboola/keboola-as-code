@@ -11,7 +11,7 @@ import (
 )
 
 type Flag struct {
-	Details bool `mapstructure:"details" usage:"print changed fields"`
+	Details bool `configKey:"details" configUsage:"print changed fields"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

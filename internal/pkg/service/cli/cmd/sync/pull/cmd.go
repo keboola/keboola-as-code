@@ -15,8 +15,8 @@ import (
 )
 
 type Flags struct {
-	Force  bool `mapstructure:"force" usage:"ignore invalid local state"`
-	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+	Force  bool `configKey:"force" configUsage:"ignore invalid local state"`
+	DryRun bool `configKey:"dry-run" configUsage:"print what needs to be done"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

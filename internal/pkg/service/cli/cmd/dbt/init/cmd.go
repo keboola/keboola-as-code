@@ -10,9 +10,9 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	TargetName     string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
-	WorkspaceName  string `mapstructure:"workspace-name" shorthand:"W" usage:"name of workspace to create"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     string `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	WorkspaceName  string `configKey:"workspace-name" configShorthand:"W" configUsage:"name of workspace to create"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

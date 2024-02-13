@@ -13,10 +13,10 @@ import (
 )
 
 type Flags struct {
-	TestName   string `mapstructure:"test-name" usage:"name of a single test to be run"`
-	LocalOnly  bool   `mapstructure:"local-only" usage:"run a local test only"`
-	RemoteOnly bool   `mapstructure:"remote-only" usage:"run a remote test only"`
-	Verbose    bool   `mapstructure:"verbose" usage:"show details about running tests"`
+	TestName   string `configKey:"test-name" configUsage:"name of a single test to be run"`
+	LocalOnly  bool   `configKey:"local-only" configUsage:"run a local test only"`
+	RemoteOnly bool   `configKey:"remote-only" configUsage:"run a remote test only"`
+	Verbose    bool   `configKey:"verbose" configUsage:"show details about running tests"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

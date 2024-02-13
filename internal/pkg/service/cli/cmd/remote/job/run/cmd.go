@@ -17,9 +17,9 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Async          bool   `mapstructure:"async" usage:"do not wait for job to finish"`
-	Timeout        string `mapstructure:"timeout" usage:"how long to wait for job to finish"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Async          bool   `configKey:"async" configUsage:"do not wait for job to finish"`
+	Timeout        string `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }
 
 func DefaultRunFlags() *Flags {

@@ -10,15 +10,15 @@ import (
 )
 
 type Flags struct {
-	ID             string `mapstructure:"id" usage:"template ID"`
-	Name           string `mapstructure:"name" usage:"template name"`
-	Description    string `mapstructure:"description" usage:"template description"`
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Branch         string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
-	Configs        string `mapstructure:"configs" shorthand:"c" usage:"comma separated list of {componentId}:{configId}"`
-	UsedComponents string `mapstructure:"used-components" shorthand:"u" usage:"comma separated list of component ids"`
-	AllConfigs     bool   `mapstructure:"all-configs" shorthand:"a" usage:"use all configs from the branch"`
-	AllInputs      bool   `mapstructure:"all-inputs" usage:"use all found config/row fields as user inputs"`
+	ID             string `configKey:"id" configUsage:"template ID"`
+	Name           string `configKey:"name" configUsage:"template name"`
+	Description    string `configKey:"description" configUsage:"template description"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Branch         string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Configs        string `configKey:"configs" configShorthand:"c" configUsage:"comma separated list of {componentId}:{configId}"`
+	UsedComponents string `configKey:"used-components" configShorthand:"u" configUsage:"comma separated list of component ids"`
+	AllConfigs     bool   `configKey:"all-configs" configShorthand:"a" configUsage:"use all configs from the branch"`
+	AllInputs      bool   `configKey:"all-inputs" configUsage:"use all found config/row fields as user inputs"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

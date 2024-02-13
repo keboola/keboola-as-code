@@ -12,10 +12,10 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Data           string `mapstructure:"data" usage:"path to the file to be uploaded"`
-	FileName       string `mapstructure:"file-name" usage:"name of the file to be created"`
-	FileTags       string `mapstructure:"file-tags" usage:"comma-separated list of tags"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Data           string `configKey:"data" configUsage:"path to the file to be uploaded"`
+	FileName       string `configKey:"file-name" configUsage:"name of the file to be created"`
+	FileTags       string `configKey:"file-tags" configUsage:"comma-separated list of tags"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

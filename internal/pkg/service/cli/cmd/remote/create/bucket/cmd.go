@@ -12,11 +12,11 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
-	Description    string `mapstructure:"description" usage:"bucket description"`
-	DisplayName    string `mapstructure:"display-name" usage:"display name for the UI"`
-	Name           string `mapstructure:"name" usage:"name of the bucket"`
-	Stage          string `mapstructure:"stage" usage:"stage, allowed values: in, out"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	Description    string `configKey:"description" configUsage:"bucket description"`
+	DisplayName    string `configKey:"display-name" configUsage:"display name for the UI"`
+	Name           string `configKey:"name" configUsage:"name of the bucket"`
+	Stage          string `configKey:"stage" configUsage:"stage, allowed values: in, out"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

@@ -13,9 +13,9 @@ import (
 )
 
 type Flags struct {
-	Force   bool `mapstructure:"force" usage:"enable deleting of remote objects"`
-	DryRun  bool `mapstructure:"dry-run" usage:"print what needs to be done"`
-	Encrypt bool `mapstructure:"encrypt" usage:"encrypt unencrypted values before push"`
+	Force   bool `configShorthand:"force" configUsage:"enable deleting of remote objects"`
+	DryRun  bool `configShorthand:"dry-run" configUsage:"print what needs to be done"`
+	Encrypt bool `configShorthand:"encrypt" configUsage:"encrypt unencrypted values before push"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

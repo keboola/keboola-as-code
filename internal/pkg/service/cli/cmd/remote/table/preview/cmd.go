@@ -19,16 +19,16 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	ChangedSince   string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
-	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
-	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
-	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
-	Where          string   `mapstructure:"where" usage:"filter columns by value"`
-	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
-	Format         string   `mapstructure:"format" usage:"output format (json/csv/pretty)"`
-	Out            string   `mapstructure:"out" shorthand:"o" usage:"export table to a file"`
-	Force          bool     `mapstructure:"force" usage:"overwrite the output file if it already exists"`
+	StorageAPIHost string   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangedSince   string   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
+	ChangedUntil   string   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
+	Columns        []string `configKey:"columns" configUsage:"comma-separated list of columns to export"`
+	Limit          uint     `configKey:"limit" configUsage:"limit the number of exported rows"`
+	Where          string   `configKey:"where" configUsage:"filter columns by value"`
+	Order          string   `configKey:"order" configUsage:"order by one or more columns"`
+	Format         string   `configKey:"format" configUsage:"output format (json/csv/pretty)"`
+	Out            string   `configKey:"out" configShorthand:"o" configUsage:"export table to a file"`
+	Force          bool     `configKey:"force" configUsage:"overwrite the output file if it already exists"`
 }
 
 func DefaultFlags() *Flags {

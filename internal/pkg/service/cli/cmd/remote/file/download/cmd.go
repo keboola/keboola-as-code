@@ -13,9 +13,9 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Output         string `mapstructure:"output" shorthand:"o" usage:"path to the destination file or directory"`
-	AllowSliced    bool   `mapstructure:"allow-sliced" usage:"output sliced files as a directory containing slices as individual files"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Output         string `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
+	AllowSliced    bool   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

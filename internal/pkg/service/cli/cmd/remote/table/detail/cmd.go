@@ -14,7 +14,7 @@ import (
 )
 
 type Flag struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

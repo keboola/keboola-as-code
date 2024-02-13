@@ -11,9 +11,9 @@ import (
 )
 
 type Flags struct {
-	Branch   string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
-	Instance string `mapstructure:"instance" shorthand:"i" usage:"instance ID of the template to delete"`
-	DryRun   bool   `mapstructure:"dry-run" usage:"print what needs to be done"`
+	Branch   string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Instance string `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to delete"`
+	DryRun   bool   `configKey:"dry-run" configUsage:"print what needs to be done"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

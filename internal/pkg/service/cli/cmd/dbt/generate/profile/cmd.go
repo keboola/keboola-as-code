@@ -10,7 +10,7 @@ import (
 )
 
 type Flag struct {
-	TargetName string `mapstructure:"target-name" shorthand:"T" usage:"target name of the profile"`
+	TargetName string `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

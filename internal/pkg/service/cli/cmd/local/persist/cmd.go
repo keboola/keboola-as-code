@@ -12,7 +12,7 @@ import (
 )
 
 type Flag struct {
-	DryRun bool `mapstructure:"dry-run" usage:"print what needs to be done"`
+	DryRun bool `configKey:"dry-run" configUsage:"print what needs to be done"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

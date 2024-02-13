@@ -12,15 +12,15 @@ import (
 )
 
 type ConfigFlags struct {
-	Branch      string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
-	ComponentID string `mapstructure:"component-id" shorthand:"c" usage:"component ID"`
-	Name        string `mapstructure:"name" shorthand:"n" usage:"name of the new config"`
+	Branch      string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	ComponentID string `configKey:"component-id" configShorthand:"c" configUsage:"component ID"`
+	Name        string `configKey:"name" configShorthand:"n" configUsage:"name of the new config"`
 }
 
 type RowFlags struct {
-	Branch string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
-	Config string `mapstructure:"config" shorthand:"c" usage:"config name or ID"`
-	Name   string `mapstructure:"name" shorthand:"n" usage:"name of the new config row"`
+	Branch string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Config string `configKey:"config" configShorthand:"c" configUsage:"config name or ID"`
+	Name   string `configKey:"name" configShorthand:"n" configUsage:"name of the new config row"`
 }
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {

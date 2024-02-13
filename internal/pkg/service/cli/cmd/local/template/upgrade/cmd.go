@@ -13,11 +13,11 @@ import (
 )
 
 type Flags struct {
-	Branch     string `mapstructure:"branch" shorthand:"b" usage:"branch ID or name"`
-	Instance   string `mapstructure:"instance" shorthand:"i" usage:"instance ID of the template to upgrade"`
-	Version    string `mapstructure:"version" shorthand:"V" usage:"target version, default latest stable version"`
-	DryRun     bool   `mapstructure:"dry-run" usage:"print what needs to be done"`
-	InputsFile string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+	Branch     string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Instance   string `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to upgrade"`
+	Version    string `configKey:"version" configShorthand:"V" configUsage:"target version, default latest stable version"`
+	DryRun     bool   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	InputsFile string `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

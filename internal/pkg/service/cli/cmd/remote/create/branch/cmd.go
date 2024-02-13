@@ -16,8 +16,8 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
-	Name           string `mapstructure:"name" shorthand:"n" usage:"name of the new branch"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	Name           string `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

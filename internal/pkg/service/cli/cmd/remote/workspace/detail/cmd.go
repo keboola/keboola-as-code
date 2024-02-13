@@ -13,8 +13,8 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	WorkspaceID    string `mapstructure:"workspace-id" shorthand:"W" usage:"id of the workspace to fetch"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	WorkspaceID    string `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to fetch"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

@@ -15,16 +15,16 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost    string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Columns           string   `mapstructure:"columns" usage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
-	IncrementalLoad   bool     `mapstructure:"incremental-load" usage:"data are either added to existing data in the table or replace the existing data"`
-	FileWithoutHeader bool     `mapstructure:"file-without-headers" usage:"states if the CSV file contains headers on the first row or not"`
-	PrimaryKeys       []string `mapstructure:"primary-key" usage:"primary key for the newly created table if the table doesn't exist"`
-	FileName          string   `mapstructure:"file-name" usage:"name of the file to be created"`
-	FileTags          string   `mapstructure:"file-tags" usage:"comma-separated list of file tags"`
-	FileDelimiter     string   `mapstructure:"file-delimiter" usage:"field delimiter used in the CSV file"`
-	FileEnclosure     string   `mapstructure:"file-enclosure" usage:"field enclosure used in the CSV file"`
-	FileEscapedBy     string   `mapstructure:"file-escaped-by" usage:"escape character used in the CSV file"`
+	StorageAPIHost    string   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Columns           string   `configKey:"columns" configUsage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
+	IncrementalLoad   bool     `configKey:"incremental-load" configUsage:"data are either added to existing data in the table or replace the existing data"`
+	FileWithoutHeader bool     `configKey:"file-without-headers" configUsage:"states if the CSV file contains headers on the first row or not"`
+	PrimaryKeys       []string `configKey:"primary-key" configUsage:"primary key for the newly created table if the table doesn't exist"`
+	FileName          string   `configKey:"file-name" configUsage:"name of the file to be created"`
+	FileTags          string   `configKey:"file-tags" configUsage:"comma-separated list of file tags"`
+	FileDelimiter     string   `configKey:"file-delimiter" configUsage:"field delimiter used in the CSV file"`
+	FileEnclosure     string   `configKey:"file-enclosure" configUsage:"field enclosure used in the CSV file"`
+	FileEscapedBy     string   `configKey:"file-escaped-by" configUsage:"escape character used in the CSV file"`
 }
 
 func DefaultFlags() *Flags {

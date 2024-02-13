@@ -15,9 +15,9 @@ import (
 )
 
 type Flags struct {
-	Branch       string `mapstructure:"branch" shorthand:"b" usage:"target branch ID or name"`
-	InstanceName string `mapstructure:"instance-name" shorthand:"n" usage:"name of new template instance"`
-	InputsFile   string `mapstructure:"inputs-file" shorthand:"f" usage:"JSON file with inputs values"`
+	Branch       string `configKey:"branch" configShorthand:"b" configUsage:"target branch ID or name"`
+	InstanceName string `configKey:"instance-name" configShorthand:"n" configUsage:"name of new template instance"`
+	InputsFile   string `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

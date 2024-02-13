@@ -17,16 +17,16 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string   `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	ChangedSince   string   `mapstructure:"changed-since" usage:"only export rows imported after this date"`
-	ChangedUntil   string   `mapstructure:"changed-until" usage:"only export rows imported before this date"`
-	Columns        []string `mapstructure:"columns" usage:"comma-separated list of columns to export"`
-	Limit          uint     `mapstructure:"limit" usage:"limit the number of exported rows"`
-	Where          string   `mapstructure:"where" usage:"filter columns by value"`
-	Order          string   `mapstructure:"order" usage:"order by one or more columns"`
-	Format         string   `mapstructure:"format" usage:"output format (json/csv)"`
-	Async          bool     `mapstructure:"async" usage:"do not wait for unload to finish"`
-	Timeout        string   `mapstructure:"timeout" usage:"how long to wait for job to finish"`
+	StorageAPIHost string   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangedSince   string   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
+	ChangedUntil   string   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
+	Columns        []string `configKey:"columns" configUsage:"comma-separated list of columns to export"`
+	Limit          uint     `configKey:"limit" configUsage:"limit the number of exported rows"`
+	Where          string   `configKey:"where" configUsage:"filter columns by value"`
+	Order          string   `configKey:"order" configUsage:"order by one or more columns"`
+	Format         string   `configKey:"format" configUsage:"output format (json/csv)"`
+	Async          bool     `configKey:"async" configUsage:"do not wait for unload to finish"`
+	Timeout        string   `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }
 
 func DefaultFlags() *Flags {

@@ -12,10 +12,10 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"storage API host, eg. \"connection.keboola.com\""`
-	Name           string `mapstructure:"name" usage:"name of the workspace"`
-	Type           string `mapstructure:"type" usage:"type of the workspace"`
-	Size           string `mapstructure:"size" usage:"size of the workspace"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Name           string `configKey:"name" configUsage:"name of the workspace"`
+	Type           string `configKey:"type" configUsage:"type of the workspace"`
+	Size           string `configKey:"size" configUsage:"size of the workspace"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

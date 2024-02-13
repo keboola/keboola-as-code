@@ -13,11 +13,11 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `mapstructure:"storage-api-host" shorthand:"H" usage:"if command is run outside the project directory"`
-	Bucket         string `mapstructure:"bucket" usage:"bucket ID (required if the tableId argument is empty)"`
-	Name           string `mapstructure:"name" usage:"name of the table (required if the tableId argument is empty)"`
-	Columns        string `mapstructure:"columns" usage:"comma-separated list of column names"`
-	PrimaryKey     string `mapstructure:"primary-key" usage:"columns used as primary key, comma-separated"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	Bucket         string `configKey:"bucket" configUsage:"bucket ID (required if the tableId argument is empty)"`
+	Name           string `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
+	Columns        string `configKey:"columns" configUsage:"comma-separated list of column names"`
+	PrimaryKey     string `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
