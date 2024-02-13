@@ -30,6 +30,44 @@ type tHelper interface {
 	Helper()
 }
 
+// AssertKeys dumps all keys from an etcd database and compares them with the expected keys.
+func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ...AssertOption) bool {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
+	// Process options
+	c := assertConfig{}
+	for _, o := range ops {
+		o(&c)
+	}
+
+	// Dump actual state
+	actualKeysRaw, err := DumpAllKeys(context.Background(), client)
+	if err != nil {
+		t.Errorf(`cannot dump etcd keys: %s`, err)
+		return false
+	}
+
+	// Filter out ignored keys
+	var actualKeys []string
+	for _, key := range actualKeysRaw {
+		ignored := false
+		for _, pattern := range c.ignoredKeyPatterns {
+			if regexpcache.MustCompile(pattern).MatchString(key) {
+				ignored = true
+				break
+			}
+		}
+		if !ignored {
+			actualKeys = append(actualKeys, key)
+		}
+	}
+
+	// Compare expected and actual keys
+	return assert.Equal(t, expectedKeys, actualKeys)
+}
+
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
 func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) {
@@ -42,7 +80,7 @@ func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...
 
 // AssertKVs dumps all KVs from an etcd database and compares them with the expected KVs.
 // In the expected key/value string, a wildcards can be used, see the wildcards package.
-func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...AssertOption) {
+func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...AssertOption) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
@@ -57,7 +95,7 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 	actualKVsRaw, err := DumpAll(context.Background(), client)
 	if err != nil {
 		t.Errorf(`cannot dump etcd KVs: %s`, err)
-		return
+		return false
 	}
 
 	// Filter out ignored keys
@@ -122,6 +160,8 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 	if len(unmatchedActual) > 0 {
 		assert.Fail(t, fmt.Sprintf("These keys are in actual but not expected ectd state:\n%s", strings.Join(unmatchedActual, "\n")))
 	}
+
+	return len(unmatchedExpected) == 0 && len(unmatchedActual) == 0
 }
 
 // ExpectModificationInPrefix waits until the operation makes some change in etcd or a timeout occurs.

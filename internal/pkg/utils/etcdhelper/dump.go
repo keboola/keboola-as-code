@@ -54,6 +54,17 @@ func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
 	return b.String(), nil
 }
 
+func DumpAllKeys(ctx context.Context, client etcd.KV) (keys []string, err error) {
+	r, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithKeysOnly(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	if err != nil {
+		return nil, err
+	}
+	for _, kv := range r.Kvs {
+		keys = append(keys, string(kv.Key))
+	}
+	return keys, nil
+}
+
 func DumpAll(ctx context.Context, client etcd.KV) (out []KV, err error) {
 	r, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 	if err != nil {
