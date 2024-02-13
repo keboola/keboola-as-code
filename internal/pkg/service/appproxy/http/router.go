@@ -83,6 +83,7 @@ func (r *Router) CreateHandler() http.Handler {
 				return
 			}
 
+			r.logger.Info(req.Context(), `Unable to parse application ID from the URL.`)
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, `Unable to parse application ID from the URL.`)
 			return
@@ -98,6 +99,7 @@ func (r *Router) CreateHandler() http.Handler {
 		if handler, found := r.handlers[appID]; found {
 			handler.ServeHTTP(w, req)
 		} else {
+			r.logger.Infof(req.Context(), `Application "%s" not found.`, appID)
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, `Application "%s" not found.`, appID)
 		}
@@ -106,6 +108,7 @@ func (r *Router) CreateHandler() http.Handler {
 
 func (r *Router) createConfigErrorHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		r.logger.Warn(req.Context(), `Application has misconfigured OAuth2 provider.`)
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, "Application has misconfigured OAuth2 provider.")
 	})
