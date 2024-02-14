@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -117,19 +116,64 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 }
 
 func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Handler {
-	if len(app.Providers) == 0 {
-		return r.publicAppHandler(ctx, app)
-	}
-	return r.protectedAppHandler(ctx, app)
-}
-
-func (r *Router) publicAppHandler(ctx context.Context, app DataApp) http.Handler {
-	target, err := url.Parse("http://" + app.UpstreamHost)
-	if err != nil {
+	if len(app.Rules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `cannot parse upstream url "%s" for app "<proxy.appid>" "%s": %w`, app.UpstreamHost, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
 		return r.createConfigErrorHandler(exceptionID)
 	}
+
+	oauthProviders := make(map[string]oauthProvider)
+	for _, providerConfig := range app.Providers {
+		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
+	}
+
+	publicAppHandler := r.publicAppHandler(app)
+
+	mux := http.NewServeMux()
+
+	for _, rule := range app.Rules {
+		if rule.Type != PathPrefix {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
+			return r.createConfigErrorHandler(exceptionID)
+		}
+
+		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, publicAppHandler, oauthProviders, rule.Providers))
+	}
+
+	return mux
+}
+
+func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHandler http.Handler, oauthProviders map[string]oauthProvider, providers []string) http.Handler {
+	if len(providers) == 0 {
+		return publicAppHandler
+	}
+
+	selectedProviders := make(map[string]oauthProvider)
+	for _, id := range providers {
+		provider, found := oauthProviders[id]
+		if !found {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
+			return r.createConfigErrorHandler(exceptionID)
+		}
+
+		selectedProviders[id] = provider
+	}
+
+	if len(selectedProviders) == 1 {
+		return selectedProviders[providers[0]].handler
+	}
+
+	return r.createMultiProviderHandler(selectedProviders)
+}
+
+func (r *Router) publicAppHandler(app DataApp) http.Handler {
+	target := &url.URL{
+		Scheme: "http",
+		Host:   app.UpstreamHost,
+	}
+
 	return httputil.NewSingleHostReverseProxy(target)
 }
 
@@ -155,40 +199,26 @@ func (r *Router) createProvider(ctx context.Context, providerConfig options.Prov
 
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.proxyConfig = proxyConfig
 
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.proxyProvider = proxyProvider
 
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.handler = proxy
 
 	return provider
-}
-
-func (r *Router) protectedAppHandler(ctx context.Context, app DataApp) http.Handler {
-	oauthProviders := make(map[string]oauthProvider)
-
-	for i, providerConfig := range app.Providers {
-		oauthProviders[strconv.Itoa(i)] = r.createProvider(ctx, providerConfig, app)
-	}
-
-	if len(app.Providers) == 1 {
-		return oauthProviders["0"].handler
-	}
-
-	return r.createMultiProviderHandler(oauthProviders)
 }
 
 type SelectionPageData struct {
@@ -219,7 +249,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 					Scheme:   r.config.PublicAddress.Scheme,
 					Host:     request.Host,
 					Path:     selectionPagePath,
-					RawQuery: "provider=" + id,
+					RawQuery: "provider=" + url.PathEscape(id),
 				}
 
 				data.Providers = append(data.Providers, SelectionPageProvider{
