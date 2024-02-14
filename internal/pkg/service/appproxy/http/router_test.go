@@ -29,6 +29,7 @@ import (
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/logging"
 	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/mockoidc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -1223,7 +1224,10 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	router, err := NewRouter(context.Background(), d, apps)
 	require.NoError(t, err)
 
-	return router.CreateHandler()
+	return middleware.Wrap(
+		router.CreateHandler(),
+		appIDMiddleware(d.Config().PublicAddress),
+	)
 }
 
 func createHTTPClient(proxyURL *url.URL) *http.Client {

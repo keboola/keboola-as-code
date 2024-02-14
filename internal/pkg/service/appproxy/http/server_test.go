@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -27,6 +28,9 @@ func TestAppProxyHandler(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "OK")
 		}),
+		&url.URL{
+			Host: "data-apps.keboola.local",
+		},
 	)
 
 	// Send logged request

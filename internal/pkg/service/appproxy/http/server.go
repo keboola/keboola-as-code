@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/otel/propagation"
@@ -23,7 +24,7 @@ const (
 func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.Handler) error {
 	logger, tel, cfg := d.Logger(), d.Telemetry(), d.Config()
 
-	handler := newHandler(logger, tel, router)
+	handler := newHandler(logger, tel, router, cfg.PublicAddress)
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
@@ -52,7 +53,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.H
 	return nil
 }
 
-func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler) http.Handler {
+func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler, publicAddress *url.URL) http.Handler {
 	middlewareCfg := middleware.NewConfig(
 		middleware.WithPropagators(propagation.TraceContext{}),
 		// Ignore health checks
@@ -66,6 +67,7 @@ func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler)
 		middleware.ContextTimout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
+		appIDMiddleware(publicAddress),
 		middleware.Logger(logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
 	)

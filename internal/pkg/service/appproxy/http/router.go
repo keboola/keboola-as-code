@@ -18,7 +18,6 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/cookies"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
-	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
@@ -76,7 +75,7 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp)
 
 func (r *Router) CreateHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		appID, ok := parseAppID(req.Host)
+		appIDString, ok := ctxattr.Attributes(req.Context()).Value(attrAppID)
 		if !ok {
 			if req.URL.Path == "/health-check" {
 				w.WriteHeader(http.StatusOK)
@@ -95,6 +94,8 @@ func (r *Router) CreateHandler() http.Handler {
 				req.Header.Del(name)
 			}
 		}
+
+		appID := AppID(appIDString.Emit())
 
 		if handler, found := r.handlers[appID]; found {
 			handler.ServeHTTP(w, req)
@@ -115,8 +116,6 @@ func (r *Router) createConfigErrorHandler() http.Handler {
 }
 
 func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Handler {
-	ctx = ctxattr.ContextWith(ctx, attribute.String("app", string(app.ID)))
-
 	if len(app.Providers) == 0 {
 		return r.publicAppHandler(ctx, app)
 	}
@@ -126,7 +125,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 func (r *Router) publicAppHandler(ctx context.Context, app DataApp) http.Handler {
 	target, err := url.Parse("http://" + app.UpstreamHost)
 	if err != nil {
-		r.logger.Errorf(ctx, `cannot parse upstream url "%s" for app "<app>" "%s": %w`, app.UpstreamHost, app.Name, err.Error())
+		r.logger.Errorf(ctx, `cannot parse upstream url "%s" for app "<proxy.appid>" "%s": %w`, app.UpstreamHost, app.Name, err.Error())
 		return r.configErrorHandler
 	}
 	return httputil.NewSingleHostReverseProxy(target)
@@ -375,23 +374,4 @@ func headerFromClaim(header, claim string) options.Header {
 			},
 		},
 	}
-}
-
-func parseAppID(host string) (AppID, bool) {
-	if strings.Count(host, ".") != 3 {
-		return "", false
-	}
-
-	idx := strings.IndexByte(host, '.')
-	if idx < 0 {
-		return "", false
-	}
-
-	subdomain := host[:idx]
-	idx = strings.LastIndexByte(subdomain, '-')
-	if idx < 0 {
-		return AppID(subdomain), true
-	}
-
-	return AppID(subdomain[idx+1:]), true
 }
