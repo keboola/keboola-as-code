@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
@@ -93,6 +95,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	loggerWriter := logging.NewLoggerWriter(logger, "info")
+	oautproxylogger.SetOutput(loggerWriter)
+	// Cannot separate errors from info because oauthproxy will override its error writer with either
+	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
+	oautproxylogger.SetErrOutput(loggerWriter)
 
 	// Create dependencies.
 	scope, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo

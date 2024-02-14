@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/logging"
 	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/mockoidc"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -1041,97 +1043,9 @@ func TestAppProxyRouter(t *testing.T) {
 			tsURL, err := url.Parse(appServer.URL)
 			require.NoError(t, err)
 
-			apps := []DataApp{
-				{
-					ID:           "public",
-					Name:         "Public app",
-					UpstreamHost: tsURL.Host,
-				},
-				{
-					ID:           "oidc",
-					Name:         "OIDC Protected App",
-					UpstreamHost: tsURL.Host,
-					Providers: []options.Provider{
-						{
-							ID:                  "oidc",
-							ClientID:            m0.Config().ClientID,
-							ClientSecret:        m0.Config().ClientSecret,
-							Type:                options.OIDCProvider,
-							CodeChallengeMethod: providers.CodeChallengeMethodS256,
-							AllowedGroups:       []string{"admin"},
-							OIDCConfig: options.OIDCOptions{
-								IssuerURL:      m0.Issuer(),
-								EmailClaim:     options.OIDCEmailClaim,
-								GroupsClaim:    options.OIDCGroupsClaim,
-								AudienceClaims: options.OIDCAudienceClaims,
-								UserIDClaim:    options.OIDCEmailClaim,
-							},
-						},
-					},
-				},
-				{
-					ID:           "multi",
-					Name:         "App with multiple OIDC providers",
-					UpstreamHost: tsURL.Host,
-					Providers: []options.Provider{
-						{
-							ID:                  "oidc0",
-							ClientID:            m0.Config().ClientID,
-							ClientSecret:        m0.Config().ClientSecret,
-							Type:                options.OIDCProvider,
-							CodeChallengeMethod: providers.CodeChallengeMethodS256,
-							AllowedGroups:       []string{"manager"},
-							OIDCConfig: options.OIDCOptions{
-								IssuerURL:      m0.Issuer(),
-								EmailClaim:     options.OIDCEmailClaim,
-								GroupsClaim:    options.OIDCGroupsClaim,
-								AudienceClaims: options.OIDCAudienceClaims,
-								UserIDClaim:    options.OIDCEmailClaim,
-							},
-						},
-						{
-							ID:                  "oidc1",
-							ClientID:            m1.Config().ClientID,
-							ClientSecret:        m1.Config().ClientSecret,
-							Type:                options.OIDCProvider,
-							CodeChallengeMethod: providers.CodeChallengeMethodS256,
-							AllowedGroups:       []string{"admin"},
-							OIDCConfig: options.OIDCOptions{
-								IssuerURL:      m1.Issuer(),
-								EmailClaim:     options.OIDCEmailClaim,
-								GroupsClaim:    options.OIDCGroupsClaim,
-								AudienceClaims: options.OIDCAudienceClaims,
-								UserIDClaim:    options.OIDCEmailClaim,
-							},
-						},
-						{
-							ID: "oidc2",
-						},
-					},
-				},
-				{
-					ID:           "broken",
-					Name:         "OIDC Misconfigured App",
-					UpstreamHost: tsURL.Host,
-					Providers: []options.Provider{
-						{
-							ID:                  "oidc",
-							ClientID:            "",
-							ClientSecret:        m0.Config().ClientSecret,
-							Type:                options.OIDCProvider,
-							CodeChallengeMethod: providers.CodeChallengeMethodS256,
-							AllowedGroups:       []string{"admin"},
-							OIDCConfig: options.OIDCOptions{
-								IssuerURL:      m0.Issuer(),
-								EmailClaim:     options.OIDCEmailClaim,
-								GroupsClaim:    options.OIDCGroupsClaim,
-								AudienceClaims: options.OIDCAudienceClaims,
-								UserIDClaim:    options.OIDCEmailClaim,
-							},
-						},
-					},
-				},
-			}
+			m := []*mockoidc.MockOIDC{m0, m1}
+
+			apps := configureDataApps(tsURL, m)
 
 			handler := createProxyHandler(t, apps)
 
@@ -1144,8 +1058,102 @@ func TestAppProxyRouter(t *testing.T) {
 
 			client := createHTTPClient(proxyURL)
 
-			tc.run(t, client, []*mockoidc.MockOIDC{m0, m1}, appServer)
+			tc.run(t, client, m, appServer)
 		})
+	}
+}
+
+func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
+	return []DataApp{
+		{
+			ID:           "public",
+			Name:         "Public app",
+			UpstreamHost: tsURL.Host,
+		},
+		{
+			ID:           "oidc",
+			Name:         "OIDC Protected App",
+			UpstreamHost: tsURL.Host,
+			Providers: []options.Provider{
+				{
+					ID:                  "oidc",
+					ClientID:            m[0].Config().ClientID,
+					ClientSecret:        m[0].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[0].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+			},
+		},
+		{
+			ID:           "multi",
+			Name:         "App with multiple OIDC providers",
+			UpstreamHost: tsURL.Host,
+			Providers: []options.Provider{
+				{
+					ID:                  "oidc0",
+					ClientID:            m[0].Config().ClientID,
+					ClientSecret:        m[0].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"manager"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[0].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+				{
+					ID:                  "oidc1",
+					ClientID:            m[1].Config().ClientID,
+					ClientSecret:        m[1].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[1].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+				{
+					ID: "oidc2",
+				},
+			},
+		},
+		{
+			ID:           "broken",
+			Name:         "OIDC Misconfigured App",
+			UpstreamHost: tsURL.Host,
+			Providers: []options.Provider{
+				{
+					ID:                  "oidc",
+					ClientID:            "",
+					ClientSecret:        m[0].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[0].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -1181,6 +1189,7 @@ func startAppServer(t *testing.T) *appServer {
 	ts := httptest.NewUnstartedServer(mux)
 	ts.EnableHTTP2 = true
 	ts.Start()
+
 	return &appServer{ts, &requests}
 }
 
@@ -1204,6 +1213,12 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	cfg.CookieSecret = string(secret)
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
+
+	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	logger.SetOutput(loggerWriter)
+	// Cannot separate errors from info because oauthproxy will override its error writer with either
+	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
+	logger.SetErrOutput(loggerWriter)
 
 	router, err := NewRouter(context.Background(), d, apps)
 	require.NoError(t, err)

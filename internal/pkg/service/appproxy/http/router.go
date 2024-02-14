@@ -48,12 +48,12 @@ var templates embed.FS
 func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp) (*Router, error) {
 	html, err := templates.ReadFile("template/selection.html.tmpl")
 	if err != nil {
-		return nil, errors.Wrap(err, "Selection template file not found")
+		return nil, errors.PrefixError(err, "selection template file not found")
 	}
 
 	tmpl, err := template.New("selection template").Parse(string(html))
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not parse selection template")
+		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
 	router := &Router{
@@ -75,9 +75,7 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, apps []DataApp)
 }
 
 func (r *Router) CreateHandler() http.Handler {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		appID, ok := parseAppID(req.Host)
 		if !ok {
 			if req.URL.Path == "/health-check" {
@@ -85,6 +83,7 @@ func (r *Router) CreateHandler() http.Handler {
 				return
 			}
 
+			r.logger.Info(req.Context(), `unable to parse application ID from the URL`)
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, `Unable to parse application ID from the URL.`)
 			return
@@ -100,16 +99,16 @@ func (r *Router) CreateHandler() http.Handler {
 		if handler, found := r.handlers[appID]; found {
 			handler.ServeHTTP(w, req)
 		} else {
+			r.logger.Infof(req.Context(), `application "%s" not found`, appID)
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, `Application "%s" not found.`, appID)
 		}
 	})
-
-	return mux
 }
 
 func (r *Router) createConfigErrorHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		r.logger.Warn(req.Context(), `application has misconfigured OAuth2 provider`)
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, "Application has misconfigured OAuth2 provider.")
 	})
@@ -127,7 +126,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 func (r *Router) publicAppHandler(ctx context.Context, app DataApp) http.Handler {
 	target, err := url.Parse("http://" + app.UpstreamHost)
 	if err != nil {
-		r.logger.Errorf(ctx, `cannot parse upstream url "%s" for app <app> %s: %w`, app.UpstreamHost, app.Name, err.Error())
+		r.logger.Errorf(ctx, `cannot parse upstream url "%s" for app "<app>" "%s": %w`, app.UpstreamHost, app.Name, err.Error())
 		return r.configErrorHandler
 	}
 	return httputil.NewSingleHostReverseProxy(target)
@@ -153,19 +152,19 @@ func (r *Router) createProvider(providerConfig options.Provider, app DataApp) (o
 
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
-		return provider, errors.Errorf("unable to create oauth proxy config for app %s %s: %w", app.ID, app.Name, err)
+		return provider, errors.PrefixErrorf(err, `unable to create oauth proxy config for app "%s" "%s"`, app.ID, app.Name)
 	}
 	provider.proxyConfig = proxyConfig
 
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
-		return provider, errors.Errorf("unable to create oauth provider for app %s %s: %w", app.ID, app.Name, err)
+		return provider, errors.PrefixErrorf(err, `unable to create oauth provider for app "%s" "%s"`, app.ID, app.Name)
 	}
 	provider.proxyProvider = proxyProvider
 
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
-		return provider, errors.Errorf("unable to start oauth proxy for app %s %s: %w", app.ID, app.Name, err)
+		return provider, errors.PrefixErrorf(err, `unable to start oauth proxy for app "%s" "%s"`, app.ID, app.Name)
 	}
 	provider.handler = proxy
 
@@ -353,6 +352,10 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 			},
 		},
 	}
+
+	// Cannot separate errors from info because when ErrToInfo is false (default),
+	// oauthproxy keeps forcibly setting its global error writer to os.Stderr whenever a new proxy instance is created.
+	v.Logging.ErrToInfo = true
 
 	if err := validation.Validate(v); err != nil {
 		return nil, err
