@@ -1,6 +1,8 @@
 package profile
 
 import (
+	e "github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -10,7 +12,7 @@ import (
 )
 
 type Flag struct {
-	TargetName string `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	TargetName configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -24,14 +26,25 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			targetName, err := p.BaseScope().Dialogs().AskTargetName()
+			// Get dependencies
+			d := p.BaseScope()
+
+			flag := Flag{}
+			err := configmap.Bind(configmap.BindConfig{
+				Flags:     cmd.Flags(),
+				Args:      args,
+				EnvNaming: e.NewNamingConvention("KBC_"),
+				Envs:      e.Empty(),
+			}, &flag)
 			if err != nil {
 				return err
 			}
 
-			// Get dependencies
-			d := p.BaseScope()
+			// Ask options
+			targetName, err := utils.AskTargetName(d.Dialogs(), flag.TargetName)
+			if err != nil {
+				return err
+			}
 
 			return profile.Run(cmd.Context(), profile.Options{TargetName: targetName}, d)
 		},

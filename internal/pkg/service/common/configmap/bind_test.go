@@ -30,6 +30,7 @@ func TestGenerateAndBind_Empty(t *testing.T) {
 	target := TestConfig{}
 
 	assert.NoError(t, GenerateAndBind(cfg, &target))
+
 	assert.Equal(t, TestConfig{}, target)
 }
 

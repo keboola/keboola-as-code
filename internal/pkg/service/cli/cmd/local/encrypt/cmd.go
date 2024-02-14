@@ -3,13 +3,12 @@ package encrypt
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
-	"github.com/spf13/cobra"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	"github.com/spf13/cobra"
 )
 
 type Flag struct {
@@ -29,6 +28,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			flag := Flag{}
+
 			err = configmap.Bind(configmap.BindConfig{
 				Flags:     cmd.Flags(),
 				Args:      args,
@@ -45,7 +45,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Options
 			options := encrypt.Options{
 				DryRun:   flag.DryRun,
 				LogEmpty: true,

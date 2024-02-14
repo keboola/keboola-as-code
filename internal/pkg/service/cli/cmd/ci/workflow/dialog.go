@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
@@ -24,6 +25,7 @@ func AskWorkflowsOptions(flags Flags, d *dialog.Dialogs) workflowsGen.Options {
 		})
 	}
 	if !flags.CIPush.IsSet() {
+		fmt.Println("dsadas")
 		out.Push = d.Confirm(&prompt.Confirm{
 			Label:   "Generate \"push\" workflow?\nEach change in the main GitHub branch will be pushed to the project.",
 			Default: out.Push,

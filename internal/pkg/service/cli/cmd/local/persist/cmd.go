@@ -13,7 +13,7 @@ import (
 )
 
 type Flag struct {
-	DryRun bool `configKey:"dry-run" configUsage:"print what needs to be done"`
+	DryRun configmap.Value[bool] `configKey:"dry-run" configUsage:"print what needs to be done"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -47,7 +47,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := persist.Options{
-				DryRun:            flag.DryRun,
+				DryRun:            flag.DryRun.Value,
 				LogUntrackedPaths: true,
 			}
 			// Persist
