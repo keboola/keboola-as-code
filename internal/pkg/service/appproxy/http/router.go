@@ -161,10 +161,6 @@ func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHa
 		selectedProviders[id] = provider
 	}
 
-	if len(selectedProviders) == 1 {
-		return selectedProviders[providers[0]].handler
-	}
-
 	return r.createMultiProviderHandler(selectedProviders)
 }
 
@@ -300,17 +296,42 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 		}
 
 		if !ok {
-			// Clear the provider cookie in case it existed with an invalid value
-			http.SetCookie(writer, cookies.MakeCookieFromOptions(
-				request,
-				ProviderCookie,
-				"",
-				&options.NewOptions().Cookie,
-				time.Hour*-1,
-				r.clock.Now(),
-			))
+			if len(oauthProviders) == 1 {
+				// If only one provider is available for current path prefix, immediately set the cookie to it.
+				// It is necessary because even if this prefix doesn't have multiple providers, other prefix might.
+				// The /_proxy/callback url would not work correctly without the cookie.
 
-			r.redirectToProviderSelection(writer, request)
+				// Use maps.Keys() instead when possible: https://github.com/golang/go/issues/61900
+				var k string
+				for k = range oauthProviders {
+				}
+				provider := oauthProviders[k]
+
+				if provider.proxyConfig != nil {
+					http.SetCookie(writer, cookies.MakeCookieFromOptions(
+						request,
+						ProviderCookie,
+						provider.providerConfig.ID,
+						&provider.proxyConfig.Cookie,
+						provider.proxyConfig.Cookie.Expire,
+						r.clock.Now(),
+					))
+				}
+
+				provider.handler.ServeHTTP(writer, request)
+			} else {
+				// Clear the provider cookie in case it existed with an invalid value
+				http.SetCookie(writer, cookies.MakeCookieFromOptions(
+					request,
+					ProviderCookie,
+					"",
+					&options.NewOptions().Cookie,
+					time.Hour*-1,
+					r.clock.Now(),
+				))
+
+				r.redirectToProviderSelection(writer, request)
+			}
 
 			return
 		}

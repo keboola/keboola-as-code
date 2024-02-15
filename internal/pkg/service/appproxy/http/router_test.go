@@ -409,14 +409,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
-				assert.Len(t, cookies, 1)
+				assert.Len(t, cookies, 2)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "oidc", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -457,14 +465,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
-				assert.Len(t, cookies, 1)
+				assert.Len(t, cookies, 2)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "oidc", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -995,14 +1011,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
-				assert.Len(t, cookies, 1)
+				assert.Len(t, cookies, 2)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "oidc", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
