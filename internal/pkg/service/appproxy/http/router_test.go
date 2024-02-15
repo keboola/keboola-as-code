@@ -1048,6 +1048,71 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 		},
+		{
+			name: "prefix-app-web-auth",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[1].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private part (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Provider selection
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				cookies := response.Cookies()
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Cookies()...)
+
+				// Request to private part (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Since the provider is configured only for web, this needs to fail.
+				// !! In order for this to fail it is necessary for each provider to use a different cookie secret.
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {

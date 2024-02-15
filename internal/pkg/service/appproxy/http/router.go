@@ -2,9 +2,13 @@ package http
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
+	"encoding/binary"
 	"fmt"
 	"html/template"
+	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -384,7 +388,25 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 
 	domain := app.ID.String() + "." + r.config.PublicAddress.Host
 
-	v.Cookie.Secret = r.config.CookieSecret
+	// Need to use different cookie secret for each provider, otherwise cookies created by
+	// provider A would also be valid in a section that requires provider B but not A.
+	// To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
+	h := sha256.New()
+	if _, err := io.WriteString(h, provider.ID); err != nil {
+		return nil, err
+	}
+	if _, err := io.WriteString(h, r.config.CookieSecret); err != nil {
+		return nil, err
+	}
+	seed := binary.BigEndian.Uint64(h.Sum(nil))
+
+	secret := make([]byte, 32)
+	random := rand.New(rand.NewSource(int64(seed))) // nolint: gosec // crypto.rand doesn't accept a seed
+	if _, err := random.Read(secret); err != nil {
+		return nil, err
+	}
+
+	v.Cookie.Secret = string(secret)
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = "/_proxy"
