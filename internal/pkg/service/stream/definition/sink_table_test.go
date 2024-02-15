@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/test/testvalidation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
 
 func TestTableSink_Validation(t *testing.T) {
@@ -90,7 +90,7 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
 				Table: &TableSink{
-					Mapping: TableMapping{
+					Mapping: TableSinkMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
 							column.Body{
@@ -112,7 +112,7 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   strings.Repeat("a", 4096+1),
 				Table: &TableSink{
-					Mapping: TableMapping{
+					Mapping: TableSinkMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
 							column.Body{
@@ -133,7 +133,7 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					Mapping: TableMapping{
+					Mapping: TableSinkMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
 							column.Body{
@@ -154,7 +154,7 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					Mapping: TableMapping{
+					Mapping: TableSinkMapping{
 						TableID: keboola.MustParseTableID("in.bucket.table"),
 						Columns: column.Columns{
 							column.Body{
@@ -175,19 +175,19 @@ func TestTableMapping_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Test cases
-	cases := testvalidation.TestCases[TableMapping]{
+	cases := testvalidation.TestCases[TableSinkMapping]{
 		{
 			Name: "empty",
 			ExpectedError: `
 - "tableId" is a required field
 - "columns" is a required field
 `,
-			Value: TableMapping{},
+			Value: TableSinkMapping{},
 		},
 		{
 			Name:          "empty columns",
 			ExpectedError: `"columns" must contain at least 1 item`,
-			Value: TableMapping{
+			Value: TableSinkMapping{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 				Columns: column.Columns{},
 			},
@@ -195,7 +195,7 @@ func TestTableMapping_Validation(t *testing.T) {
 		{
 			Name:          "invalid column",
 			ExpectedError: `"columns[0].name" is a required field`,
-			Value: TableMapping{
+			Value: TableSinkMapping{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 				Columns: column.Columns{
 					column.Body{},
@@ -204,7 +204,7 @@ func TestTableMapping_Validation(t *testing.T) {
 		},
 		{
 			Name: "ok",
-			Value: TableMapping{
+			Value: TableSinkMapping{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 				Columns: column.Columns{
 					column.Body{
