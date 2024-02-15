@@ -1113,6 +1113,65 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 		},
+		{
+			name: "shared-provider",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[1].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Provider selection
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				cookies := response.Cookies()
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Cookies()...)
+
+				// Request to private part (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Use the same cookie values for another app, this needs to fail.
+				// !! In order for this to fail it is necessary for each app to use a different cookie secret even if the provider is the same.
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					cookie.Domain = `multi.data-apps.keboola.local`
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {

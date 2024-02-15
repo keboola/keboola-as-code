@@ -391,11 +391,15 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 	// Need to use different cookie secret for each provider, otherwise cookies created by
 	// provider A would also be valid in a section that requires provider B but not A.
 	// To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
+	// App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
 	h := sha256.New()
 	if _, err := io.WriteString(h, provider.ID); err != nil {
 		return nil, err
 	}
 	if _, err := io.WriteString(h, r.config.CookieSecret); err != nil {
+		return nil, err
+	}
+	if _, err := io.WriteString(h, app.ID.String()); err != nil {
 		return nil, err
 	}
 	seed := binary.BigEndian.Uint64(h.Sum(nil))
