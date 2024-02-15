@@ -10,6 +10,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+func MustGenerateFlags(fs *pflag.FlagSet, v any) {
+	if err := GenerateFlags(fs, v); err != nil {
+		panic(err)
+	}
+}
+
 // GenerateFlags generates FlagSet from the provided configuration structure.
 // Each field tagged by "configKey" tag is mapped to a flag.
 // Field can optionally have the "configUsage" tag.
@@ -41,8 +47,8 @@ func GenerateFlags(fs *pflag.FlagSet, v any) error {
 				return nil
 			}
 
-			shorthand := vc.StructField.Tag.Get(configShorthandTag)
-			usage := vc.StructField.Tag.Get(configUsageTag)
+			shorthand := vc.Shorthand
+			usage := vc.Usage
 
 			switch v := vc.PrimitiveValue.Interface().(type) {
 			case int:
