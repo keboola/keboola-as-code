@@ -15,7 +15,6 @@ type orchestratorScopeDeps interface {
 	BaseScope
 	EtcdClientScope
 	TaskScope
-	DistributionScope
 }
 
 func NewOrchestratorScope(ctx context.Context, d orchestratorScopeDeps) OrchestratorScope {
