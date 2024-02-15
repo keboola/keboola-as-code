@@ -384,11 +384,11 @@ func unmarshalHook(hooks *mapstructure.DecodeHookFunc) mapstructure.DecodeHookFu
 			internalType := v.ValueType()
 			internalValue := reflect.New(internalType).Elem()
 			if internalValueRaw, err := mapstructure.DecodeHookExec(*hooks, from, internalValue); err != nil {
-				return nil, fmt.Errorf(`cannot set "%s" to "%s": %w`, internalType.String(), to.Type().String(), err)
+				return nil, fmt.Errorf(`cannot set "%s" to "%s": %w`, internalType.String(), to.Type().String(), err) // nolint:forbidigo
 			} else if err = mapstructure.WeakDecode(internalValueRaw, internalValue.Addr().Interface()); err != nil {
-				return nil, fmt.Errorf(`cannot set "%s" to "%s": %w`, internalType.String(), to.Type().String(), err)
+				return nil, fmt.Errorf(`cannot set "%s" to "%s": %w`, internalType.String(), to.Type().String(), err) // nolint:forbidigo
 			} else if !v.TrySetValue(internalValue) {
-				return nil, fmt.Errorf(`cannot set "%s" to "%s"`, internalType.String(), to.Type().String())
+				return nil, fmt.Errorf(`cannot set "%s" to "%s"`, internalType.String(), to.Type().String()) // nolint:forbidigo
 			} else {
 				return v, nil
 			}

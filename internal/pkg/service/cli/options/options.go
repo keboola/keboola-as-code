@@ -3,10 +3,10 @@ package options
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/go-utils/pkg/orderedmap"
 	"sort"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 

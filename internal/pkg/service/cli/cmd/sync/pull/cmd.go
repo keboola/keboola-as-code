@@ -1,7 +1,6 @@
 package pull
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -9,6 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -37,9 +38,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// bind flags
+			flags := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &flags); err != nil {
+				return err
+			}
+
 			// Get local project
 			logger := d.Logger()
-			force := d.Options().GetBool(`force`)
+			force := flags.Force
 			prj, _, err := d.LocalProject(cmd.Context(), force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
@@ -61,7 +68,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := pull.Options{
-				DryRun:            d.Options().GetBool(`dry-run`),
+				DryRun:            flags.DryRun,
 				LogUntrackedPaths: true,
 			}
 

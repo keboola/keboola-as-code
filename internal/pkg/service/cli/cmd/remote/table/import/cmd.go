@@ -1,7 +1,6 @@
 package _import
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strconv"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 

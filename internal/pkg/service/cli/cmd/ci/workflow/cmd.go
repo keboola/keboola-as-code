@@ -1,10 +1,10 @@
 package workflow
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -17,14 +17,6 @@ type Flags struct {
 	CIPull       configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
 	CIMainBranch configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflow"`
 	CIPush       configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
-}
-
-func (f Flags) Normalize() {
-	return
-}
-
-func (f Flags) Validate() error {
-	return nil
 }
 
 func DefaultFlags() *Flags {
@@ -43,7 +35,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`ci/workflows/short`),
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			flags := Flags{}
 			err = configmap.Bind(configmap.BindConfig{
 				Flags:     cmd.Flags(),

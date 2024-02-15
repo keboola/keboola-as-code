@@ -6,18 +6,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
 
 func TestParseJobRunOptions(t *testing.T) {
 	t.Parallel()
 
-	opts := options.New()
-	opts.Set("timeout", "5m")
-	opts.Set("async", true)
+	flags := Flags{
+		Async:   configmap.NewValue(true),
+		Timeout: configmap.NewValue("5m"),
+	}
 
-	parsed, err := parseJobRunOptions(opts, []string{
+	parsed, err := parseJobRunOptions(&flags, []string{
 		"1234/component1/config1",
 		"1234/component1/config1",
 		"4321/component2/config2",

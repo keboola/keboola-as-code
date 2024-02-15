@@ -1,13 +1,14 @@
 package push
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -36,6 +37,12 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// bind flags
+			flags := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &flags); err != nil {
+				return err
+			}
+
 			// Get local project
 			prj, _, err := d.LocalProject(cmd.Context(), false)
 			if err != nil {
@@ -56,9 +63,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := push.Options{
-				Encrypt:           d.Options().GetBool("encrypt"),
-				DryRun:            d.Options().GetBool("dry-run"),
-				AllowRemoteDelete: d.Options().GetBool("force"),
+				Encrypt:           flags.Encrypt,
+				DryRun:            flags.DryRun,
+				AllowRemoteDelete: flags.Force,
 				LogUntrackedPaths: true,
 				ChangeDescription: changeDescription,
 			}

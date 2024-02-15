@@ -1,11 +1,12 @@
 package diff
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printdiff"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -44,9 +45,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			flag := Flag{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &flag); err != nil {
+				return err
+			}
+
 			// Options
 			options := printdiff.Options{
-				PrintDetails:      d.Options().GetBool(`details`),
+				PrintDetails:      flag.Details,
 				LogUntrackedPaths: true,
 			}
 

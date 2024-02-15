@@ -42,7 +42,7 @@ package create
 //	}).ask(ctx, flags)
 //}
 //
-//func (d *createTmplDialog) ask(ctx context.Context, flags Flags) (createTemplate.Options, error) {
+// func (d *createTmplDialog) ask(ctx context.Context, flags Flags) (createTemplate.Options, error) {
 //	// Get Storage API
 //	api := d.deps.KeboolaProjectAPI()
 //
@@ -141,7 +141,7 @@ package create
 //	return d.out, nil
 //}
 //
-//func (d *createTmplDialog) askComponents(all []*keboola.Component) []string {
+// func (d *createTmplDialog) askComponents(all []*keboola.Component) []string {
 //	opts := make([]string, 0)
 //	for _, c := range all {
 //		opts = append(opts, fmt.Sprintf("%s (%s)", c.Name, c.ID))
