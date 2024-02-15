@@ -10,6 +10,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+func MustGenerateFlags(fs *pflag.FlagSet, v any) {
+	if err := GenerateFlags(fs, v); err != nil {
+		panic(err)
+	}
+}
+
 // GenerateFlags generates FlagSet from the provided configuration structure.
 // Each field tagged by "configKey" tag is mapped to a flag.
 // Field can optionally have the "configUsage" tag.
