@@ -47,8 +47,8 @@ func GenerateFlags(fs *pflag.FlagSet, v any) error {
 				return nil
 			}
 
-			shorthand := vc.StructField.Tag.Get(configShorthandTag)
-			usage := vc.StructField.Tag.Get(configUsageTag)
+			shorthand := vc.Shorthand
+			usage := vc.Usage
 
 			switch v := vc.PrimitiveValue.Interface().(type) {
 			case int:

@@ -46,6 +46,8 @@ type VisitContext struct {
 	Sensitive bool
 	// Usage contains value from the "configUsage" tag, if any.
 	Usage string
+	// Usage contains value from the "configShorthand" tag, if any.
+	Shorthand string
 	// Validate contains value from the "validate" tag, if any.
 	Validate string
 }
@@ -131,10 +133,16 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 			// Mark field and all its children as sensitive according to the tag
 			field.Sensitive = vc.Sensitive || field.StructField.Tag.Get(sensitiveTag) == "true"
 
-			// Set usage from the tag, or use parent usage text
+			// Set usage from the tag, or use parent value
 			field.Usage = vc.Usage
 			if usage := field.StructField.Tag.Get(configUsageTag); usage != "" {
 				field.Usage = usage
+			}
+
+			// Set shorthand from the tag, or use parent value
+			field.Shorthand = vc.Shorthand
+			if shorthand := field.StructField.Tag.Get(configShorthandTag); shorthand != "" {
+				field.Shorthand = shorthand
 			}
 
 			// Set validate from the tag
