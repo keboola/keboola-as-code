@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	userAgent             = "keboola-templates-api"
-	distributionGroupName = "templates-api"
+	userAgent = "keboola-templates-api"
 )
 
 // apiScope implements APIScope interface.
@@ -37,7 +36,6 @@ type parentScopes interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
-	dependencies.DistributionScope
 }
 
 type parentScopesImpl struct {
@@ -45,7 +43,6 @@ type parentScopesImpl struct {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
-	dependencies.DistributionScope
 }
 
 func NewAPIScope(
@@ -108,11 +105,6 @@ func newParentScopes(
 	}
 
 	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, d)
-	if err != nil {
-		return nil, err
-	}
-
-	d.DistributionScope, err = dependencies.NewDistributionScope(ctx, cfg.NodeID, distributionGroupName, d)
 	if err != nil {
 		return nil, err
 	}

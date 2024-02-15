@@ -6,12 +6,6 @@
 {"level":"info","message":"connected to etcd cluster \"%s\"","component":"templatesApi.etcd.client"}
 {"level":"info","message":"creating etcd session","component":"templatesApi.task.etcd.session"}
 {"level":"info","message":"created etcd session","component":"templatesApi.task.etcd.session"}
-{"level":"info","message":"creating etcd session","component":"templatesApi.distribution.templates-api.etcd.session"}
-{"level":"info","message":"created etcd session","component":"templatesApi.distribution.templates-api.etcd.session"}
-{"level":"info","message":"registering the node \"%s\"","component":"templatesApi.distribution.templates-api"}
-{"level":"info","message":"the node \"%s\" registered","component":"templatesApi.distribution.templates-api"}
-{"level":"info","message":"watching for other nodes","component":"templatesApi.distribution.templates-api"}
-{"level":"info","message":"found a new node \"%s\"","component":"templatesApi.distribution.templates-api"}
 {"level":"info","message":"checking out repository \"https://github.com/keboola/keboola-as-code-templates.git:main\"","component":"templatesApi"}
 {"level":"info","message":"checked out repository \"https://github.com/keboola/keboola-as-code-templates.git:main\"","component":"templatesApi"}
 {"level":"info","message":"loading all templates from repository \"https://github.com/keboola/keboola-as-code-templates.git:main:%s\"","component":"templatesApi"}
@@ -32,14 +26,6 @@
 {"level":"info","message":"shutdown done","component":"templatesApi"}
 {"level":"info","message":"cleaned repository cache \"https://github.com/keboola/keboola-as-code-templates.git:main:%s\"","component":"templatesApi"}
 {"level":"info","message":"repository manager cleaned up","component":"templatesApi"}
-{"level":"info","message":"received shutdown request","component":"templatesApi.distribution.templates-api.listeners"}
-{"level":"info","message":"shutdown done","component":"templatesApi.distribution.templates-api.listeners"}
-{"level":"info","message":"received shutdown request","component":"templatesApi.distribution.templates-api"}
-{"level":"info","message":"unregistering the node \"%s\"","component":"templatesApi.distribution.templates-api"}
-{"level":"info","message":"the node \"%s\" unregistered","component":"templatesApi.distribution.templates-api"}
-{"level":"info","message":"closing etcd session: context canceled","component":"templatesApi.distribution.templates-api.etcd.session"}
-{"level":"info","message":"closed etcd session","component":"templatesApi.distribution.templates-api.etcd.session"}
-{"level":"info","message":"shutdown done","component":"templatesApi.distribution.templates-api"}
 {"level":"info","message":"received shutdown request","component":"templatesApi.task"}
 {"level":"info","message":"closing etcd session: context canceled","component":"templatesApi.task.etcd.session"}
 {"level":"info","message":"closed etcd session","component":"templatesApi.task.etcd.session"}
