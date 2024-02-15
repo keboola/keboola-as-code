@@ -702,8 +702,8 @@ var TableID = Type("TableID", String, func() {
 })
 
 var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
-	minLength := cast.ToInt(fieldValidationRule(definition.TableMapping{}, "Columns", "min"))
-	maxLength := cast.ToInt(fieldValidationRule(definition.TableMapping{}, "Columns", "max"))
+	minLength := cast.ToInt(fieldValidationRule(definition.TableSinkMapping{}, "Columns", "min"))
+	maxLength := cast.ToInt(fieldValidationRule(definition.TableSinkMapping{}, "Columns", "max"))
 	Description(fmt.Sprintf("List of export column mappings. An export may have a maximum of %d columns.", maxLength))
 	MinLength(minLength)
 	MaxLength(maxLength)

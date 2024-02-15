@@ -3,10 +3,10 @@ package dependencies
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics/cache"
-	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
-	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 )
 
 // serviceScope implements ServiceScope interface.
@@ -37,10 +37,10 @@ func (v *tableSinkScope) StorageRepository() *storageRepo.Repository {
 func NewTableSinkScope(ctx context.Context, defScope DefinitionScope) (v TableSinkScope, err error) {
 	ctx, span := defScope.Telemetry().Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewTableSinkScope")
 	defer span.End(nil)
-	return newTableSinkScope(defScope, storage.DefaultBackoff())
+	return newTableSinkScope(defScope, model.DefaultBackoff())
 }
 
-func newTableSinkScope(defScope DefinitionScope, backoff storage.RetryBackoff) (v TableSinkScope, err error) {
+func newTableSinkScope(defScope DefinitionScope, backoff model.RetryBackoff) (v TableSinkScope, err error) {
 	d := &tableSinkScope{}
 
 	d.DefinitionScope = defScope
@@ -52,7 +52,7 @@ func newTableSinkScope(defScope DefinitionScope, backoff storage.RetryBackoff) (
 		return nil, err
 	}
 
-	d.statisticsL2Cache, err = cache.NewL2Cache(d.Logger(), d.Clock(), d.statisticsL1Cache, d.Config().Sink.Table.Statistics.Cache.L2)
+	d.statisticsL2Cache, err = cache.NewL2Cache(d.Logger(), d.Clock(), d.statisticsL1Cache, d.Config().Storage.Statistics.Cache.L2)
 	if err != nil {
 		return nil, err
 	}

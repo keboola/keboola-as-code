@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
 func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, dependencies.Mocked) {
@@ -36,7 +36,7 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	// It causes problems when mocked clock is used.
 	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
 	if _, ok := mock.Clock().(*clock.Mock); ok {
-		cfg.Sink.Table.Statistics.Cache.L2.Enabled = false
+		cfg.Storage.Statistics.Cache.L2.Enabled = false
 	}
 
 	// Obtain etcd credentials
@@ -87,7 +87,7 @@ func NewMockedDefinitionScope(t *testing.T, cfg config.Config, opts ...dependenc
 func NewMockedTableSinkScope(t *testing.T, cfg config.Config, opts ...dependencies.MockedOption) (TableSinkScope, dependencies.Mocked) {
 	t.Helper()
 	svcScope, mocked := NewMockedDefinitionScope(t, cfg, opts...)
-	backoff := storage.NoRandomizationBackoff()
+	backoff := model.NoRandomizationBackoff()
 	d, err := newTableSinkScope(svcScope, backoff)
 	require.NoError(t, err)
 	return d, mocked

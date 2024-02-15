@@ -36,9 +36,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics/cache"
-	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/statistics/repository"
-	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/repository"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 )
 
 type ServiceScope interface {
