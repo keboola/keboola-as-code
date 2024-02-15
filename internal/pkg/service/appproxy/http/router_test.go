@@ -966,6 +966,88 @@ func TestAppProxyRouter(t *testing.T) {
 				c.Close(websocket.StatusNormalClosure, "")
 			},
 		},
+		{
+			name: "prefix-app-no-auth",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to public part of the app
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/public", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Request to api (unauthorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to web (unauthorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+		},
+		{
+			name: "prefix-app-api-auth",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[0].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private part (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				cookies := response.Cookies()
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Cookies()...)
+
+				// Request to private part (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Since the provider is configured for both /api and /web this works as well.
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
@@ -1275,6 +1357,59 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
 					Type:      PathPrefix,
 					Value:     "/",
 					Providers: []string{"oidc"},
+				},
+			},
+		},
+		{
+			ID:           "prefix",
+			Name:         "App with different configuration depending on path prefix",
+			UpstreamHost: tsURL.Host,
+			Providers: []options.Provider{
+				{
+					ID:                  "oidc0",
+					ClientID:            m[0].Config().ClientID,
+					ClientSecret:        m[0].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[0].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+				{
+					ID:                  "oidc1",
+					ClientID:            m[1].Config().ClientID,
+					ClientSecret:        m[1].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[1].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+			},
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/api",
+					Providers: []string{"oidc0"},
+				},
+				{
+					Type:      PathPrefix,
+					Value:     "/web",
+					Providers: []string{"oidc0", "oidc1"},
+				},
+				{
+					Type:  PathPrefix,
+					Value: "/",
 				},
 			},
 		},

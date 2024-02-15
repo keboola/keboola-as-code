@@ -131,6 +131,10 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 
 	mux := http.NewServeMux()
 
+	// Always send /_proxy/ requests to the correct provider.
+	// This is necessary for proxy callback url to work on an app with prefixed private parts.
+	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders))
+
 	for _, rule := range app.Rules {
 		if rule.Type != PathPrefix {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
