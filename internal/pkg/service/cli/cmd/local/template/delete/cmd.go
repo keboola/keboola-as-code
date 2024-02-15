@@ -1,7 +1,6 @@
 package delete
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
@@ -12,9 +11,9 @@ import (
 )
 
 type Flags struct {
-	Branch   configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
-	Instance configmap.Value[string] `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to delete"`
-	DryRun   configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	Branch   string `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Instance string `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to delete"`
+	DryRun   bool   `configKey:"dry-run" configUsage:"print what needs to be done"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -25,17 +24,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
 			prj, d, err := p.LocalProject(cmd.Context(), false)
-			if err != nil {
-				return err
-			}
-
-			flags := Flags{}
-			err = configmap.Bind(configmap.BindConfig{
-				Flags:     cmd.Flags(),
-				Args:      args,
-				EnvNaming: env.NewNamingConvention("KBC_"),
-				Envs:      env.Empty(),
-			}, &flags)
 			if err != nil {
 				return err
 			}

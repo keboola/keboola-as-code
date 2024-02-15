@@ -1,8 +1,6 @@
 package delete
 
 import (
-	e "github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
@@ -15,8 +13,8 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string                  `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	WorkspaceID    configmap.Value[string] `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to delete"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	WorkspaceID    string `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to delete"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -27,17 +25,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
 			d, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			flags := Flags{}
-			err = configmap.Bind(configmap.BindConfig{
-				Flags:     cmd.Flags(),
-				Args:      args,
-				EnvNaming: e.NewNamingConvention("KBC_"),
-				Envs:      e.Empty(),
-			}, &flags)
 			if err != nil {
 				return err
 			}
@@ -53,7 +40,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			sandbox, err := utils.AskWorkspace(allWorkspaces, d.Dialogs(), flags.WorkspaceID)
+			sandbox, err := d.Dialogs().AskWorkspace(allWorkspaces)
 			if err != nil {
 				return err
 			}

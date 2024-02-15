@@ -1,7 +1,6 @@
 package create
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
@@ -30,17 +29,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in template repository
 			d, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			flags := Flags{}
-			err = configmap.Bind(configmap.BindConfig{
-				Flags:     cmd.Flags(),
-				Args:      args,
-				EnvNaming: env.NewNamingConvention("KBC_"),
-				Envs:      env.Empty(),
-			}, &flags)
 			if err != nil {
 				return err
 			}

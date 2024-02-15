@@ -3,19 +3,18 @@ package env
 import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	"github.com/spf13/cobra"
 
-	e "github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
-	WorkspaceID    configmap.Value[string] `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to use"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     string `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	WorkspaceID    string `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to use"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -31,17 +30,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Get dependencies
 			d, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			flags := Flags{}
-			err = configmap.Bind(configmap.BindConfig{
-				Flags:     cmd.Flags(),
-				Args:      args,
-				EnvNaming: e.NewNamingConvention("KBC_"),
-				Envs:      e.Empty(),
-			}, &flags)
 			if err != nil {
 				return err
 			}
@@ -63,7 +51,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}
-			opts, err := AskGenerateEnv(snowflakeWorkspaces, d.Dialogs(), flags)
+			opts, err := d.Dialogs().AskGenerateEnv(snowflakeWorkspaces)
 			if err != nil {
 				return err
 			}

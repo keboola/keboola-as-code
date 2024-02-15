@@ -1,7 +1,6 @@
 package create
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
@@ -13,10 +12,10 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	Name           configmap.Value[string] `configKey:"name" configUsage:"name of the workspace"`
-	Type           configmap.Value[string] `configKey:"type" configUsage:"type of the workspace"`
-	Size           configmap.Value[string] `configKey:"size" configUsage:"size of the workspace"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Name           string `configKey:"name" configUsage:"name of the workspace"`
+	Type           string `configKey:"type" configUsage:"type of the workspace"`
+	Size           string `configKey:"size" configUsage:"size of the workspace"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -31,28 +30,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			flags := Flags{}
-			err = configmap.Bind(configmap.BindConfig{
-				Flags:     cmd.Flags(),
-				Args:      args,
-				EnvNaming: env.NewNamingConvention("KBC_"),
-				Envs:      env.Empty(),
-			}, &flags)
-			if err != nil {
-				return err
-			}
-
-			//err = configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-			//	Args:                   args,
-			//	EnvNaming:              env.NewNamingConvention("KBC_"),
-			//	Envs:                   env.Empty(),
-			//	GenerateHelpFlag:       true,
-			//	GenerateConfigFileFlag: true,
-			//	GenerateDumpConfigFlag: true,
-			//}, &flags)
-
 			// Ask options
-			options, err := AskCreateWorkspace(flags, d.Dialogs())
+			options, err := d.Dialogs().AskCreateWorkspace()
 			if err != nil {
 				return err
 			}

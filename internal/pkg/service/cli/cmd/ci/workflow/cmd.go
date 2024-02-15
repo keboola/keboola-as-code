@@ -14,9 +14,9 @@ import (
 type Flags struct {
 	CI           configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflow"`
 	CIValidate   configmap.Value[bool]   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
-	CIPush       configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
 	CIPull       configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
 	CIMainBranch configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflow"`
+	CIPush       configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
 }
 
 func (f Flags) Normalize() {
@@ -44,26 +44,16 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
-			flags := DefaultFlags()
-			//err = configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-			//	Args:                   args,
-			//	ConfigFiles:            nil,
-			//	EnvNaming:              env.NewNamingConvention("KBC_"),
-			//	Envs:                   env.Empty(),
-			//	GenerateHelpFlag:       true,
-			//	GenerateConfigFileFlag: true,
-			//	GenerateDumpConfigFlag: true,
-			//}, flags)
-			//if err != nil {
-			//	return err
-			//}
-
+			flags := Flags{}
 			err = configmap.Bind(configmap.BindConfig{
 				Flags:     cmd.Flags(),
 				Args:      args,
 				EnvNaming: env.NewNamingConvention("KBC_"),
 				Envs:      env.Empty(),
-			}, flags)
+			}, &flags)
+			if err != nil {
+				return err
+			}
 
 			// Get dependencies
 			d, err := p.LocalCommandScope(cmd.Context())
@@ -75,7 +65,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			options := AskWorkflowsOptions(*flags, d.Dialogs())
+			options := AskWorkflowsOptions(flags, d.Dialogs())
 			// Generate workflows
 			return workflowsGen.Run(cmd.Context(), prj.Fs(), options, d)
 		},

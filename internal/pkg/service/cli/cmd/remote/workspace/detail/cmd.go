@@ -1,7 +1,6 @@
 package detail
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	WorkspaceID    configmap.Value[string] `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to fetch"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	WorkspaceID    string `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to fetch"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -30,19 +29,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			flags := Flags{}
-			err = configmap.Bind(configmap.BindConfig{
-				Flags:     cmd.Flags(),
-				Args:      args,
-				EnvNaming: env.NewNamingConvention("KBC_"),
-				Envs:      env.Empty(),
-			}, &flags)
-			if err != nil {
-				return err
-			}
-
 			// Ask options
-			id, err := AskWorkspaceID(d.Dialogs(), flags)
+			id, err := d.Dialogs().AskWorkspaceID()
 			if err != nil {
 				return err
 			}

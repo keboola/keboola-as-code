@@ -200,6 +200,7 @@ func Bind(inputs BindConfig, targets ...any) error {
 			errs.Append(err)
 		}
 	}
+
 	return errs.ErrorOrNil()
 }
 

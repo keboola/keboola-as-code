@@ -1,8 +1,6 @@
 package init
 
 import (
-	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
@@ -12,9 +10,9 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
-	WorkspaceName  configmap.Value[string] `configKey:"workspace-name" configShorthand:"W" configUsage:"name of workspace to create"`
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     string `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	WorkspaceName  string `configKey:"workspace-name" configShorthand:"W" configUsage:"name of workspace to create"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -28,27 +26,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
-				return err
-			}
-			fmt.Println("ERROR")
-			flags := Flags{}
-			err = configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-				Args:                   args,
-				EnvNaming:              env.NewNamingConvention("MY_APP_"),
-				Envs:                   env.Empty(),
-				GenerateHelpFlag:       true,
-				GenerateConfigFileFlag: true,
-				GenerateDumpConfigFlag: true,
-			}, &flags)
+			// Ask options
+			opts, err := p.BaseScope().Dialogs().AskDbtInit()
 			if err != nil {
 				return err
 			}
 
-			// Ask options
-			opts, err := AskDbtInit(flags, d.Dialogs())
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
 				return err
 			}
