@@ -126,7 +126,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
-	oauthProviders := make(map[string]oauthProvider)
+	oauthProviders := make(map[string]*oauthProvider)
 	for _, providerConfig := range app.Providers {
 		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
 	}
@@ -154,12 +154,12 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHandler http.Handler, oauthProviders map[string]oauthProvider, providers []string) http.Handler {
+func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers []string) http.Handler {
 	if len(providers) == 0 {
 		return publicAppHandler
 	}
 
-	selectedProviders := make(map[string]oauthProvider)
+	selectedProviders := make(map[string]*oauthProvider)
 	for _, id := range providers {
 		provider, found := oauthProviders[id]
 		if !found {
@@ -190,7 +190,7 @@ type oauthProvider struct {
 	handler        http.Handler
 }
 
-func (r *Router) createProvider(ctx context.Context, providerConfig options.Provider, app DataApp) oauthProvider {
+func (r *Router) createProvider(ctx context.Context, providerConfig options.Provider, app DataApp) *oauthProvider {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
@@ -198,7 +198,7 @@ func (r *Router) createProvider(ctx context.Context, providerConfig options.Prov
 
 	exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 
-	provider := oauthProvider{
+	provider := &oauthProvider{
 		providerConfig: providerConfig,
 		handler:        r.createConfigErrorHandler(exceptionID),
 	}
@@ -236,7 +236,7 @@ type SelectionPageProvider struct {
 	URL  string
 }
 
-func (r *Router) createSelectionPageHandler(oauthProviders map[string]oauthProvider) http.Handler {
+func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProvider) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		selection := request.URL.Query().Get("provider")
 		provider, ok := oauthProviders[selection]
@@ -292,9 +292,9 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]oauthProvi
 // OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
 // So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
 // See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
-func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvider) http.Handler {
+func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		var provider oauthProvider
+		var provider *oauthProvider
 		ok := false
 
 		// Identify the provider chosen by the user using a cookie
