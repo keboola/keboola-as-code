@@ -48,7 +48,13 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 			MainBranch: f.CIMainBranch.Value,
 		}
 	} else if d.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
-		out.Workflows = workflow.AskWorkflowsOptions(*workflow.DefaultFlags(), d)
+		out.Workflows = workflow.AskWorkflowsOptions(workflow.Flags{
+			CI:           f.CI,
+			CIPush:       f.CIPush,
+			CIPull:       f.CIPull,
+			CIMainBranch: f.CIMainBranch,
+			CIValidate:   f.CIValidate,
+		}, d)
 	}
 
 	return out, nil

@@ -12,10 +12,10 @@ import (
 )
 
 type Flags struct {
-	CI           configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflow"`
+	CI           configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflows"`
 	CIValidate   configmap.Value[bool]   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
 	CIPull       configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
-	CIMainBranch configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflow"`
+	CIMainBranch configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
 	CIPush       configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
 }
 
