@@ -10,7 +10,7 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-    - host: "templates.${HOSTNAME_SUFFIX}"
+    - host: "hub.${HOSTNAME_SUFFIX}"
       http:
         paths:
           - backend:

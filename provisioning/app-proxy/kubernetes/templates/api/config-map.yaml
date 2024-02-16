@@ -7,7 +7,7 @@ metadata:
   labels:
     app: templates-api
 data:
-  storageApiHost: "https://connection.$HOSTNAME_SUFFIX"
-  templatesApiHost: "https://templates.$HOSTNAME_SUFFIX"
+  sandboxesApiHost: "http://sandboxes-service-api.default.svc.cluster.local)"
+  appProxyApiHost: "https://hub.$HOSTNAME_SUFFIX"
   keboolaStack: "$KEBOOLA_STACK"
   keboolaRevision: "$RELEASE_ID"
