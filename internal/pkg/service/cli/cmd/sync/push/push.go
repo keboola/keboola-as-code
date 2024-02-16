@@ -1,4 +1,4 @@
-package pull
+package push
 
 import (
 	"time"
