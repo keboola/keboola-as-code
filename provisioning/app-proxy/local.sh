@@ -14,9 +14,9 @@ if ! minikube status > /dev/null; then
 fi
 
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
-IMAGE="$TEMPLATES_API_REPOSITORY:$TEMPLATES_API_IMAGE_TAG"
+IMAGE="$APP_PROXY_REPOSITORY:$APP_PROXY_IMAGE_TAG"
 echo
-echo "Building API image ..."
+echo "Building Proxy image ..."
 echo "--------------------------"
 docker build -t "$IMAGE" -f "./docker/Dockerfile" "../../"
 
@@ -52,4 +52,4 @@ echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
 echo "Load balancer of the service is accessible at:"
-minikube service --url --namespace "$NAMESPACE" templates-api
+minikube service --url --namespace "$NAMESPACE" app-proxy

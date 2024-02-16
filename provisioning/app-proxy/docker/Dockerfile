@@ -12,13 +12,13 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY . .
-RUN make build-templates-api
+RUN make build-app-proxy
 
 # Production container
 FROM alpine:3.19
 RUN apk add -U --no-cache ca-certificates git
 
-COPY --from=buildContainer /app/target/templates/api /app/server
+COPY --from=buildContainer /app/target/app-proxy/proxy /app/server
 WORKDIR /app
 
 # API

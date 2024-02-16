@@ -11,21 +11,21 @@ fi
 # Default values
 KUBERNETES_ROLLOUT_WAIT="${KUBERNETES_ROLLOUT_WAIT:=1200s}"
 
-# Wait for the API rollout
+# Wait for the Proxy rollout
 echo
-echo "Waiting for the API rollout ..."
+echo "Waiting for the Proxy rollout ..."
 echo "--------------------------"
-if kubectl rollout status deployment/templates-api --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
+if kubectl rollout status deployment/app-proxy --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
   echo
-  echo "API deployment has been successful."
+  echo "Proxy deployment has been successful."
   echo "--------------------------"
 else
   echo
-  echo "API deployment failed."
+  echo "Proxy deployment failed."
   echo "--------------------------"
   echo "Logs:"
   echo "--------------------------"
-  kubectl logs --namespace "$NAMESPACE" --selector "app=templates-api" --all-containers --prefix --timestamps --tail=-1
+  kubectl logs --namespace "$NAMESPACE" --selector "app=app-proxy" --all-containers --prefix --timestamps --tail=-1
   echo "--------------------------"
   exit 1
 fi

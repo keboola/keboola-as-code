@@ -2,14 +2,14 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: templates-api
+  name: app-proxy
   namespace: $NAMESPACE
   labels:
-    app: templates-api
+    app: app-proxy
 spec:
   type: LoadBalancer
   selector:
-    app: templates-api
+    app: app-proxy
   ports:
     - port: 80
       targetPort: 8000

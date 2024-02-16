@@ -11,12 +11,12 @@ fi
 : ${RELEASE_ID?"Missing RELEASE_ID"}
 : ${KEBOOLA_STACK?"Missing KEBOOLA_STACK"}
 : ${HOSTNAME_SUFFIX?"Missing HOSTNAME_SUFFIX"}
-: ${TEMPLATES_API_REPOSITORY?"Missing TEMPLATES_API_REPOSITORY"}
-: ${TEMPLATES_API_IMAGE_TAG?"Missing TEMPLATES_API_IMAGE_TAG"}
-: ${TEMPLATES_API_REPLICAS?"Missing TEMPLATES_API_REPLICAS"}
+: ${APP_PROXY_REPOSITORY?"Missing APP_PROXY_REPOSITORY"}
+: ${APP_PROXY_IMAGE_TAG?"Missing APP_PROXY_IMAGE_TAG"}
+: ${APP_PROXY_REPLICAS?"Missing APP_PROXY_REPLICAS"}
 
 # Constants
-export NAMESPACE="templates-api"
+export NAMESPACE="app-proxy"
 
 # Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
@@ -24,8 +24,8 @@ export NAMESPACE="templates-api"
 # Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
-# API
-kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
-kubectl apply -f ./kubernetes/deploy/api/pdb.yaml
-kubectl apply -f ./kubernetes/deploy/api/network-policy.yaml
-kubectl apply -f ./kubernetes/deploy/api/deployment.yaml
+# Proxy
+kubectl apply -f ./kubernetes/deploy/proxy/config-map.yaml
+kubectl apply -f ./kubernetes/deploy/proxy/pdb.yaml
+kubectl apply -f ./kubernetes/deploy/proxy/network-policy.yaml
+kubectl apply -f ./kubernetes/deploy/proxy/deployment.yaml

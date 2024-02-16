@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: templates-api
+  name: app-proxy
   namespace: $NAMESPACE
   labels:
-    app: templates-api
+    app: app-proxy
 data:
   sandboxesApiHost: "http://sandboxes-service-api.default.svc.cluster.local)"
   appProxyApiHost: "https://hub.$HOSTNAME_SUFFIX"

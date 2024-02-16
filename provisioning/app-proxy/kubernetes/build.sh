@@ -7,11 +7,11 @@ cd "$(dirname "$0")"
 # Namespace
 envsubst < templates/namespace.yaml > deploy/namespace.yaml
 
-# API
-envsubst < templates/api/config-map.yaml     > deploy/api/config-map.yaml
-envsubst < templates/api/pdb.yaml            > deploy/api/pdb.yaml
-envsubst < templates/api/network-policy.yaml > deploy/api/network-policy.yaml
-envsubst < templates/api/deployment.yaml     > deploy/api/deployment.yaml
+# Proxy
+envsubst < templates/proxy/config-map.yaml     > deploy/proxy/config-map.yaml
+envsubst < templates/proxy/pdb.yaml            > deploy/proxy/pdb.yaml
+envsubst < templates/proxy/network-policy.yaml > deploy/proxy/network-policy.yaml
+envsubst < templates/proxy/deployment.yaml     > deploy/proxy/deployment.yaml
 
 # Remove resources requests/limits to fit all pods to the CI environment
 REMOVE_RESOURCES_LIMITS="${REMOVE_RESOURCES_LIMITS:=false}"

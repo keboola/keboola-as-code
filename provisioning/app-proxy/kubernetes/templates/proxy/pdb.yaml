@@ -2,12 +2,12 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: templates-api-pdb
+  name: app-proxy-pdb
   namespace: $NAMESPACE
   labels:
-    app: templates-api
+    app: app-proxy
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      app: templates-api
+      app: app-proxy

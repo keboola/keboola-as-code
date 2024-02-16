@@ -21,7 +21,7 @@ echo ""
 
 terraform -chdir=./gcp  init -input=false -no-color \
   -backend-config="bucket=${TERRAFORM_REMOTE_STATE_BUCKET}" \
-  -backend-config="prefix=keboola-as-code/templates-api"
+  -backend-config="prefix=keboola-as-code/app-proxy"
 
 echo "=> Validating configuration"
 terraform validate -no-color
