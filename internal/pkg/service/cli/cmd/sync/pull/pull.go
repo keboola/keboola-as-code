@@ -1,4 +1,4 @@
-package sync
+package pull
 
 import (
 	"time"
