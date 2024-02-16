@@ -1,0 +1,13 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: templates-api-pdb
+  namespace: $NAMESPACE
+  labels:
+    app: templates-api
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: templates-api

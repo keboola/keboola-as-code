@@ -1,0 +1,4 @@
+*
+!azure/
+!aws/
+!.gitignore
