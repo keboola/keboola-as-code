@@ -20,7 +20,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 	cmd.AddCommand(
 		syncInit.Command(p),
 		pull.Command(p),
-		push.PushCommand(p),
+		push.Command(p),
 		diff.Command(p),
 	)
 	return cmd
