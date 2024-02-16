@@ -6,14 +6,21 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func PullCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	Force  configmap.Value[bool] `configKey:"force" configUsage:"ignore invalid local state"`
+	DryRun configmap.Value[bool] `configKey:"dry-run" configUsage:"print what needs to be done"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Short: helpmsg.Read(`sync/pull/short`),
@@ -31,9 +38,14 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Get local project
 			logger := d.Logger()
-			force := d.Options().GetBool(`force`)
+			force := f.Force.Value
 			prj, _, err := d.LocalProject(cmd.Context(), force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
@@ -55,7 +67,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := pull.Options{
-				DryRun:            d.Options().GetBool(`dry-run`),
+				DryRun:            f.DryRun.Value,
 				LogUntrackedPaths: true,
 			}
 
@@ -68,8 +80,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	// Flags
-	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("force", false, "ignore invalid local state")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+
 	return cmd
 }
