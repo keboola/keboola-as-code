@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
@@ -21,8 +20,8 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithCtx(ctx))
-	client := mocked.TestEtcdClient()
+	d, mock := dependencies.NewMockedTableSinkScope(t, commonDeps.WithCtx(ctx))
+	client := mock.TestEtcdClient()
 	repo := d.StorageRepository().Volume()
 
 	// Fixtures
@@ -62,8 +61,8 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Register volumes
-	cfg := d.Config().Storage.Level.Local.Volume.Registration
-	require.NoError(t, registration.RegisterVolumes(d, cfg, collection, repo.RegisterWriterVolume))
+	cfg := mock.TestConfig().Storage.Level.Local.Volume.Registration
+	require.NoError(t, registration.RegisterVolumes(cfg, d, collection, repo.RegisterWriterVolume))
 
 	// List
 	result, err := repo.ListWriterVolumes().Do(ctx).All()

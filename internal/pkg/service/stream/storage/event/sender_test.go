@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -27,7 +26,7 @@ import (
 func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New())
+	d, mock := dependencies.NewMockedServiceScope(t)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	var body string
@@ -59,7 +58,7 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New())
+	d, mock := dependencies.NewMockedServiceScope(t)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	var body string
@@ -91,7 +90,7 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New())
+	d, mock := dependencies.NewMockedServiceScope(t)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	transport := mock.MockedHTTPTransport()
@@ -113,7 +112,7 @@ func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 func TestSender_SendFileImportEvent_OkEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New())
+	d, mock := dependencies.NewMockedServiceScope(t)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	var body string
@@ -145,7 +144,7 @@ func TestSender_SendFileImportEvent_OkEvent(t *testing.T) {
 func TestSender_SendFileImportEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New())
+	d, mock := dependencies.NewMockedServiceScope(t)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	var body string
@@ -177,7 +176,7 @@ func TestSender_SendFileImportEvent_ErrorEvent(t *testing.T) {
 func TestSender_SendFileImportEvent_HTTPError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New())
+	d, mock := dependencies.NewMockedServiceScope(t)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	transport := mock.MockedHTTPTransport()

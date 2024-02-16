@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -27,7 +26,7 @@ func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, mocked := dependencies.NewMockedTableSinkScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 
@@ -138,7 +137,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, mocked := dependencies.NewMockedTableSinkScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 

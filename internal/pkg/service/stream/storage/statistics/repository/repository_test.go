@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -14,7 +13,7 @@ import (
 func TestRepository_ObjectPrefix(t *testing.T) {
 	t.Parallel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, _ := dependencies.NewMockedTableSinkScope(t)
 	repo := d.StatisticsRepository()
 
 	expected := "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/"

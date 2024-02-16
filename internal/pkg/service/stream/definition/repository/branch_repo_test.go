@@ -13,7 +13,6 @@ import (
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -34,7 +33,7 @@ func TestRepository_Branch(t *testing.T) {
 	branchKey2 := key.BranchKey{ProjectID: 456, BranchID: 789}
 
 	// Get services
-	d, mocked := dependencies.NewMockedDefinitionScope(t, config.New(), deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedDefinitionScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()

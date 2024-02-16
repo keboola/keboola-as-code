@@ -14,7 +14,6 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -41,7 +40,7 @@ func TestFileRepository_Delete(t *testing.T) {
 	sinkKey3 := key.SinkKey{SourceKey: sourceKey1, SinkID: "my-sink-3"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()

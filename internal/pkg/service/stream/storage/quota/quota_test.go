@@ -11,7 +11,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -43,8 +42,7 @@ func TestQuota_Check(t *testing.T) {
 	}
 
 	// Dependencies
-	cfg := config.New()
-	d, mocked := dependencies.NewMockedTableSinkScope(t, cfg)
+	d, mocked := dependencies.NewMockedTableSinkScope(t)
 	client := mocked.TestEtcdClient()
 	repo := d.StatisticsRepository()
 	quoteChecker := quota.New(d)
