@@ -40,6 +40,12 @@ run-stream-service:
 run-stream-service-once: build-stream-service
 	./target/stream/service
 
+build-app-proxy:
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/app-proxy/proxy)" ./cmd/app-proxy
+
+run-app-proxy:
+	air -c ./provisioning/app-proxy/dev/.air-api.toml
+
 tests:
 	TEST_PACKAGE=./... bash ./scripts/tests.sh
 
