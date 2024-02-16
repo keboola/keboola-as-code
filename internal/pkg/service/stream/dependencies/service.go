@@ -53,7 +53,7 @@ func NewServiceScope(
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentSc, cfg), nil
+	return newServiceScope(parentSc), nil
 }
 
 func newParentScopes(
@@ -104,7 +104,7 @@ func newParentScopes(
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes, cfg config.Config) ServiceScope {
+func newServiceScope(parentScp parentScopes) ServiceScope {
 	d := &serviceScope{}
 
 	d.parentScopes = parentScp

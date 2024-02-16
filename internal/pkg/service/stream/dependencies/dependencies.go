@@ -34,6 +34,7 @@ package dependencies
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
@@ -72,4 +73,9 @@ type TableSinkScope interface {
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
 	StorageRepository() *storageRepo.Repository
+}
+
+type Mocked interface {
+	dependencies.Mocked
+	TestConfig() config.Config
 }
