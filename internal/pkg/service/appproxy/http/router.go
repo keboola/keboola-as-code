@@ -135,6 +135,8 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 
 	mux := http.NewServeMux()
 
+	mux.Handle(selectionPagePath, r.createSelectionPageHandler(oauthProviders))
+
 	// Always send /_proxy/ requests to the correct provider.
 	// This is necessary for proxy callback url to work on an app with prefixed private parts.
 	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders))
@@ -234,14 +236,8 @@ type SelectionPageProvider struct {
 	URL  string
 }
 
-// OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
-// So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
-// See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
-func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvider) http.Handler {
-	handler := http.NewServeMux()
-
-	// Request to provider selection page
-	handler.HandleFunc(selectionPagePath, func(writer http.ResponseWriter, request *http.Request) {
+func (r *Router) createSelectionPageHandler(oauthProviders map[string]oauthProvider) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		selection := request.URL.Query().Get("provider")
 		provider, ok := oauthProviders[selection]
 
@@ -291,9 +287,13 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 
 		provider.handler.ServeHTTP(writer, newRequest)
 	})
+}
 
-	// Request to the data app itself
-	handler.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+// OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
+// So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
+// See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
+func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvider) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var provider oauthProvider
 		ok := false
 
@@ -368,8 +368,6 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 		// Authenticate the request by the provider selected in the cookie
 		provider.handler.ServeHTTP(writer, request)
 	})
-
-	return handler
 }
 
 func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request *http.Request) {
