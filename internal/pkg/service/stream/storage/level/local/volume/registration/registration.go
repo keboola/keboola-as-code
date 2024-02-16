@@ -25,7 +25,7 @@ type putOpFactory func(metadata volume.Metadata, id etcd.LeaseID) op.WithResult[
 // RegisterVolumes in etcd with lease, so on node failure, records are automatically removed after TTL seconds.
 // On session failure, volumes are registered again by the callback.
 // List of the active volumes can be read by the repository.VolumeRepository.
-func RegisterVolumes[V volume.Volume](d dependencies, cfg Config, volumes *volume.Collection[V], putOpFactory putOpFactory) error {
+func RegisterVolumes[V volume.Volume](cfg Config, d dependencies, volumes *volume.Collection[V], putOpFactory putOpFactory) error {
 	logger := d.Logger()
 	client := d.EtcdClient()
 

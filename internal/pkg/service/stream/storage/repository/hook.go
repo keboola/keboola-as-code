@@ -52,11 +52,11 @@ type hook struct {
 	storage   *Repository
 }
 
-func newHook(d dependencies, repo *Repository) *hook {
+func newHook(cfg level.Config, d dependencies, repo *Repository) *hook {
 	return &hook{
 		client:    d.EtcdClient(),
 		publicAPI: d.KeboolaPublicAPI(),
-		config:    d.Config().Storage.Level,
+		config:    cfg,
 		stats:     d.StatisticsRepository(),
 		storage:   repo,
 	}
