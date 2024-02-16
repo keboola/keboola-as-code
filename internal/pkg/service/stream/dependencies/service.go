@@ -21,7 +21,6 @@ const (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
-	config config.Config
 }
 
 type parentScopes interface {
@@ -37,10 +36,6 @@ type parentScopesImpl struct {
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
 	dependencies.DistributionScope
-}
-
-func (v *serviceScope) Config() config.Config {
-	return v.config
 }
 
 func NewServiceScope(
@@ -111,8 +106,6 @@ func newParentScopes(
 
 func newServiceScope(parentScp parentScopes, cfg config.Config) ServiceScope {
 	d := &serviceScope{}
-
-	d.config = cfg
 
 	d.parentScopes = parentScp
 
