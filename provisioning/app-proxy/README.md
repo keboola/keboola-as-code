@@ -55,31 +55,3 @@ MINIKUBE_PROFILE=templates-api minikube delete --purge
 Load balancer of the service is accessible at:
 http://172.17.0.2:32183
 ```
-
-### etcd
-
-Etcd deployment includes a network policy,
-only pods with `templates-api-etcd-client=true` can connect to the etcd.
-
-#### Client
-
-If you need to start the etcd client, you can use this following commands.
-
-Run interactive container:
-```
-export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
-
-kubectl run --tty --stdin --rm --restart=Never templates-api-etcd-client \
-  --namespace templates-api \
-  --image docker.io/bitnami/etcd:3.5.5-debian-11-r16 \
-  --labels="templates-api-etcd-client=true" \
-  --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
-  --env="ETCDCTL_ENDPOINTS=templates-api-etcd:2379" \
-  --command -- bash
-```
-
-Use client inside container:
-```
-etcdctl --user root:$ETCD_ROOT_PASSWORD put /message Hello
-etcdctl --user root:$ETCD_ROOT_PASSWORD get /message
-```

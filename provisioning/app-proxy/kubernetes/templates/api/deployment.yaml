@@ -17,7 +17,6 @@ spec:
       labels:
         app: templates-api
         releaseId: $RELEASE_ID
-        templates-api-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
         tags.datadoghq.com/service: "templates-api"
         tags.datadoghq.com/version: "$RELEASE_ID"
@@ -65,17 +64,6 @@ spec:
                 configMapKeyRef:
                   name: templates-api
                   key: templatesApiHost
-            - name: TEMPLATES_API_ETCD_ENDPOINT
-              value: templates-api-etcd.templates-api.svc.cluster.local:2379
-            - name: TEMPLATES_API_ETCD_USERNAME
-              value: root
-            - name: TEMPLATES_API_ETCD_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: templates-api-etcd
-                  key: etcd-root-password
-            - name: TEMPLATES_API_ETCD_NAMESPACE
-              value: templates-api
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:

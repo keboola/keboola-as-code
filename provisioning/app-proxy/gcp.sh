@@ -51,7 +51,6 @@ sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
 gcloud container clusters get-credentials $GKE_CLUSTER_NAME --region $GKE_CLUSTER_LOCATION --project $GCP_PROJECT
 
 # Common part of the deploy
-export ETCD_STORAGE_CLASS_NAME=
 . ./common.sh
 
 # GCP specific part of the deploy

@@ -16,6 +16,5 @@ export HOSTNAME_SUFFIX="${HOSTNAME_SUFFIX:=keboola.com}"
 export TEMPLATES_API_REPOSITORY="${TEMPLATES_API_REPOSITORY:=docker.io/keboola/templates-api}" # docker.io prefix is required
 export TEMPLATES_API_IMAGE_TAG="${TEMPLATES_API_IMAGE_TAG:=$(git rev-parse --short HEAD)}"
 export TEMPLATES_API_REPLICAS="${TEMPLATES_API_REPLICAS:=3}"
-export TEMPLATES_API_ETCD_REPLICAS="${TEMPLATES_API_ETCD_REPLICAS:=1}"
 
 ./deploy.sh
