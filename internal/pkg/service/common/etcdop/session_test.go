@@ -128,32 +128,38 @@ func TestSession_NewMutex(t *testing.T) {
 	require.NoError(t, <-errCh)
 
 	// Locks
-	lock1, err := session1.NewMutex("lock")
-	require.NoError(t, err)
-	lock2, err := session2.NewMutex("lock")
-	require.NoError(t, err)
+	lock1 := session1.NewMutex("lock")
+	lock2 := session2.NewMutex("lock")
 
-	// Lock - same session - ok
+	// Lock twice - fail
 	require.NoError(t, lock1.TryLock(ctx))
-	require.NoError(t, lock1.TryLock(ctx))
-	err = lock2.TryLock(ctx)
+	err := lock1.TryLock(ctx)
+	if assert.Error(t, err) {
+		assert.ErrorAs(t, err, &AlreadyLockedError{})
+		assert.ErrorIs(t, err, concurrency.ErrLocked)
+	}
 
 	// Lock - different session - fail
+	err = lock2.TryLock(ctx)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, concurrency.ErrLocked))
 
 	// Unlock
 	require.NoError(t, lock1.Unlock(ctx))
 
-	// Lock - different session - ok
+	// Lock twice - fail
 	require.NoError(t, lock2.TryLock(ctx))
-	require.NoError(t, lock2.TryLock(ctx))
+	err = lock2.TryLock(ctx)
+	if assert.Error(t, err) {
+		assert.ErrorAs(t, err, &AlreadyLockedError{})
+		assert.ErrorIs(t, err, concurrency.ErrLocked)
+	}
 
 	// Close session
 	cancel()
 	wg.Wait()
-	assert.True(t, errors.Is(lock1.TryLock(ctx), context.Canceled))
-	assert.True(t, errors.Is(lock2.TryLock(ctx), context.Canceled))
+	assert.ErrorIs(t, lock1.TryLock(ctx), context.Canceled)
+	assert.ErrorIs(t, lock2.TryLock(ctx), context.Canceled)
 }
 
 func TestSessionBackoff(t *testing.T) {
