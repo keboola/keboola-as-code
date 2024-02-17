@@ -587,10 +587,8 @@ func TestAtomicOp_RequireLock(t *testing.T) {
 	// Use the same distributed lock in two sessions
 	locksPfx := etcdop.NewPrefix("locks")
 	lockKey := locksPfx.Key("lock123").Key()
-	mutex, err := session.NewMutex(lockKey)
-	require.NoError(t, err)
-	anotherMutex, err := anotherSession.NewMutex(lockKey)
-	require.NoError(t, err)
+	mutex := session.NewMutex(lockKey)
+	anotherMutex := anotherSession.NewMutex(lockKey)
 
 	// Prepare atomic operation, require the lock
 	var betweenPhasesFn func()

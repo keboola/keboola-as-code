@@ -7,7 +7,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -35,11 +34,17 @@ import (
 type AtomicOp[R any] struct {
 	client         etcd.KV
 	result         *R
-	locks          []*concurrency.Mutex
+	locks          []mutex
 	readPhase      []HighLevelFactory
 	writePhase     []HighLevelFactory
 	processors     processors[R]
 	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
+}
+
+// mutex abstracts concurrency.Mutex and etcdop.Mutex types.
+type mutex interface {
+	Key() string
+	IsOwner() etcd.Cmp
 }
 
 type AtomicOpInterface interface {
@@ -98,7 +103,7 @@ func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
 // There are no automatic retries. Depending on the kind of the operation, you may retry or ignore the error.
 //
 // The method ensures that only the owner of the lock performs the database operation.
-func (v *AtomicOp[R]) RequireLock(lock *concurrency.Mutex) *AtomicOp[R] {
+func (v *AtomicOp[R]) RequireLock(lock mutex) *AtomicOp[R] {
 	v.locks = append(v.locks, lock)
 	return v
 }
