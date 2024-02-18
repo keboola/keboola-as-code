@@ -2,16 +2,19 @@ package etcdop
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"fmt"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.uber.org/atomic"
-	"sync"
-	"testing"
-	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestMutex_LockUnlock(t *testing.T) {
@@ -83,4 +86,154 @@ func TestMutex_LockUnlock(t *testing.T) {
 	wg.Wait()
 	assert.ErrorIs(t, lock1.TryLock(ctx), context.Canceled)
 	assert.ErrorIs(t, lock2.TryLock(ctx), context.Canceled)
+}
+
+func TestMutex_ParallelWork(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		// Sessions - count on parallel sessions - virtual nodes.
+		Sessions int
+		// UniqueLocks - count of tested unique locks, each lock is tested in all sessions, in parallel.
+		UniqueLocks int
+		// Parallel - count of parallel operations per each unique lock and session.
+		// Total number of goroutines is: Sessions * UniqueLocks * Parallel.
+		Parallel int
+		// Serial defines how many times in a row one lock is tested, in each parallel cell.
+		Serial int
+	}
+
+	cases := []testCase{
+		{
+			Sessions:    1,
+			UniqueLocks: 1,
+			Parallel:    1,
+			Serial:      1,
+		},
+		{
+			Sessions:    50,
+			UniqueLocks: 3,
+			Parallel:    3,
+			Serial:      3,
+		},
+		{
+			Sessions:    3,
+			UniqueLocks: 3,
+			Parallel:    50,
+			Serial:      3,
+		},
+		{
+			Sessions:    3,
+			UniqueLocks: 50,
+			Parallel:    3,
+			Serial:      3,
+		},
+		{
+			Sessions:    3,
+			UniqueLocks: 3,
+			Parallel:    3,
+			Serial:      50,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		name := fmt.Sprintf(`Sessions%02d_UniqueLocks%02d_Parallel%02d_Serial%02d`, tc.Sessions, tc.UniqueLocks, tc.Parallel, tc.Serial)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			logger := log.NewDebugLogger()
+			etcdCfg := etcdhelper.TmpNamespace(t)
+
+			type lockTester struct {
+				LockName string
+				// CriticalWork is called from all parallel sessions,
+				// but if it works correctly, there is always only one call active.
+				CriticalWork func(mtx *Mutex)
+			}
+
+			total := atomic.NewInt64(0) // count and verify that all operations have been invoked
+			var lockTesters []lockTester
+			for i := 0; i < tc.UniqueLocks; i++ {
+				active := atomic.NewInt64(0) // count of active CriticalWork calls per lock, should be always at most one
+				lockTesters = append(lockTesters, lockTester{
+					LockName: fmt.Sprintf("locks/my-lock-%02d", i+1),
+					CriticalWork: func(mtx *Mutex) {
+						assert.NoError(t, mtx.Lock(ctx))
+						assert.Equal(t, int64(1), active.Add(1))  // !!!
+						<-time.After(1 * time.Millisecond)        // simulate some work
+						assert.Equal(t, int64(0), active.Add(-1)) // !!!
+						assert.NoError(t, mtx.Unlock(ctx))
+						total.Add(1)
+					},
+				})
+			}
+
+			start := make(chan struct{})
+			readyWg := &sync.WaitGroup{}
+			sessionWg := &sync.WaitGroup{}
+
+			// Start N sessions
+			workWg := &sync.WaitGroup{}
+			for i := 0; i < tc.Sessions; i++ {
+				workWg.Add(1)
+				readyWg.Add(1)
+				go func() {
+					defer workWg.Done()
+
+					// Create client and session
+					client := etcdhelper.ClientForTest(t, etcdCfg)
+					session, errCh := NewSessionBuilder().Start(ctx, sessionWg, logger, client)
+					require.NotNil(t, session)
+					require.NoError(t, <-errCh)
+					readyWg.Done()
+
+					// Create N unique locks in the session
+					locksWg := &sync.WaitGroup{}
+					for _, lockTester := range lockTesters {
+						lockTester := lockTester
+
+						// Use each lock N times in parallel
+						for k := 0; k < tc.Parallel; k++ {
+							workWg.Add(1)
+							locksWg.Add(1)
+							go func() {
+								defer workWg.Done()
+								defer locksWg.Done()
+
+								// Start all work at the same time
+								<-start
+
+								// Use each lock N time sequentially
+								for l := 0; l < tc.Serial; l++ {
+									lockTester.CriticalWork(session.NewMutex(lockTester.LockName))
+								}
+							}()
+						}
+					}
+
+					// There is no memory leak
+					locksWg.Wait()
+					assert.Len(t, session.mutexStore.all, 0)
+				}()
+			}
+
+			// Wait for initialization of all mutexes and start parallel work
+			readyWg.Wait()
+			close(start)
+
+			// Wait for all goroutines
+			workWg.Wait()
+
+			// Close session
+			cancel()
+			sessionWg.Wait()
+
+			// Check CriticalWork total calls count
+			assert.Equal(t, int64(tc.Sessions*tc.UniqueLocks*tc.Parallel*tc.Serial), total.Load()) // !!!
+		})
+	}
 }
