@@ -38,6 +38,8 @@ type Session struct {
 	client  *etcd.Client
 	backoff *backoff.ExponentialBackOff
 
+	mutexStore *mutexStore
+
 	lock    *sync.Mutex
 	created chan struct{} // see WaitForSession
 	actual  *concurrency.Session
@@ -99,6 +101,8 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 		lock:           &sync.Mutex{},
 		created:        make(chan struct{}),
 	}
+
+	s.mutexStore = newMutexStore(s)
 
 	wg.Add(1)
 	go func() {
@@ -205,12 +209,8 @@ func (s *Session) WaitForSession(ctx context.Context) (*concurrency.Session, err
 
 // NewMutex returns *concurrency.Mutex that implements the sync Locker interface with etcd.
 // IsOwner().
-func (s *Session) NewMutex(name string) (*concurrency.Mutex, error) {
-	if session, err := s.Session(); err == nil {
-		return concurrency.NewMutex(session, name), nil
-	} else {
-		return nil, err
-	}
+func (s *Session) NewMutex(name string) *Mutex {
+	return s.mutexStore.NewMutex(name)
 }
 
 // newSession underlying low-level *concurrency.Session.
