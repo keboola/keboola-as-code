@@ -113,9 +113,11 @@ func TestSession_NewMutex(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	wg := &sync.WaitGroup{}
 
-	// Setup
+	// Setup client
 	logger := log.NewDebugLogger()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
@@ -130,6 +132,13 @@ func TestSession_NewMutex(t *testing.T) {
 	// Locks
 	lock1 := session1.NewMutex("lock")
 	lock2 := session2.NewMutex("lock")
+
+	// Lock with cancelled context
+	cancelledContext, cancelFn := context.WithCancel(context.Background())
+	cancelFn()
+	if err := lock1.Lock(cancelledContext); assert.Error(t, err) {
+		assert.ErrorIs(t, err, context.Canceled)
+	}
 
 	// Lock twice - fail
 	require.NoError(t, lock1.TryLock(ctx))
