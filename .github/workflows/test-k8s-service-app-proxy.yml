@@ -133,27 +133,27 @@ jobs:
 
       - name: Check Proxy response
         if: always()
-        run: curl --fail -L -s --max-time 5 "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)"
+        run: curl --fail -L -s --max-time 5 "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)/health-check"
 
       - name: Diff the old and the new Kubernetes state
         if: always()
         run: |
           set -Eeuo pipefail
-          
+
           # Diff JSON states
           /tmp/latest-scripts/k8s/diff.sh \
             /tmp/artifacts/test-k8s-state.old.json \
             /tmp/artifacts/test-k8s-state.new.json \
-            /tmp/artifacts/test-k8s-state.diff
-          
+            /tmp/artifacts/test-k8s-state.diff || true
+
           # Remove ANSI sequences
           sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
-          
+
           # Prepare PR comment message
           echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message
+          head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message || true
           echo -e "\n\n(see artifacts in the Github Action for more information)\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
 
       - name: Dump logs
