@@ -88,6 +88,17 @@ func (b SessionBuilder) WithOnSession(fn onSession) SessionBuilder {
 	return b
 }
 
+// StartOrErr the resistant Session.
+// Any initialization error is returned.
+// After successful initialization, a new session is created after each failure until the context ends.
+func (b SessionBuilder) StartOrErr(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, client *etcd.Client) (*Session, error) {
+	sess, errCh := b.Start(ctx, wg, logger, client)
+	if err := <-errCh; err != nil {
+		return nil, err
+	}
+	return sess, nil
+}
+
 // Start the resistant Session.
 // Any initialization error is reported via the error channel.
 // After successful initialization, a new session is created after each failure until the context ends.
