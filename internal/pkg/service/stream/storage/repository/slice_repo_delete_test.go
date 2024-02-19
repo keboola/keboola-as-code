@@ -112,10 +112,10 @@ func TestSliceRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s02, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s02, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing,
 		})
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s03, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s03, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
 	}

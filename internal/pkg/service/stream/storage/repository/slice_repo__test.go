@@ -250,7 +250,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 
 	// Switch slice state
 	// -----------------------------------------------------------------------------------------------------------------
-	test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey1, []model.SliceState{
+	test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey1, time.Hour, []model.SliceState{
 		model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 	})
 
@@ -280,7 +280,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 
 	// Switch file state
 	// -----------------------------------------------------------------------------------------------------------------
-	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []model.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, time.Hour, []model.FileState{
 		model.FileWriting, model.FileClosing, model.FileImporting, model.FileImported,
 	})
 

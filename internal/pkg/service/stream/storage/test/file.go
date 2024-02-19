@@ -87,11 +87,11 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 	}
 }
 
-func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRepo fileRepository, fileKey model.FileKey, states []model.FileState) {
+func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRepo fileRepository, fileKey model.FileKey, interval time.Duration, states []model.FileState) {
 	t.Helper()
 	from := states[0]
 	for _, to := range states[1:] {
-		clk.Add(time.Hour)
+		clk.Add(interval)
 
 		// File must be closed by the CloseAllIn method
 		var file model.File

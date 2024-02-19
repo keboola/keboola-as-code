@@ -81,11 +81,11 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 	}
 }
 
-func SwitchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, sliceRepo sliceRepository, sliceKey model.SliceKey, states []model.SliceState) {
+func SwitchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, sliceRepo sliceRepository, sliceKey model.SliceKey, interval time.Duration, states []model.SliceState) {
 	t.Helper()
 	from := states[0]
 	for _, to := range states[1:] {
-		clk.Add(time.Hour)
+		clk.Add(interval)
 
 		// Slice must be closed by the Close method
 		var slice model.Slice

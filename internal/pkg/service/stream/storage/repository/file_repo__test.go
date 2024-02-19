@@ -233,7 +233,7 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Switch file state to storage.FileClosing
 	// -----------------------------------------------------------------------------------------------------------------
-	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []model.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, time.Hour, []model.FileState{
 		model.FileWriting, model.FileClosing,
 	})
 
@@ -251,7 +251,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		for _, sliceKey := range sliceKeys1 {
-			test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey, []model.SliceState{
+			test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey, time.Hour, []model.SliceState{
 				model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 			})
 		}
@@ -259,7 +259,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 
 	// Switch file state to storage.FileImported
 	// -----------------------------------------------------------------------------------------------------------------
-	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []model.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, time.Hour, []model.FileState{
 		model.FileClosing, model.FileImporting, model.FileImported,
 	})
 

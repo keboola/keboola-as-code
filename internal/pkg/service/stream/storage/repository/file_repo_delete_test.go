@@ -131,13 +131,13 @@ func TestFileRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0201, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0201, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0202, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0202, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchFileStates(t, ctx, clk, fileRepo, f2, []model.FileState{
+		test.SwitchFileStates(t, ctx, clk, fileRepo, f2, time.Hour, []model.FileState{
 			model.FileWriting, model.FileClosing,
 		})
 	}
@@ -146,13 +146,13 @@ func TestFileRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0301, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0301, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0302, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0302, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchFileStates(t, ctx, clk, fileRepo, f3, []model.FileState{
+		test.SwitchFileStates(t, ctx, clk, fileRepo, f3, time.Hour, []model.FileState{
 			model.FileWriting, model.FileClosing, model.FileImporting, model.FileImported,
 		})
 	}
