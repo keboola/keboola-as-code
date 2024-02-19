@@ -2,9 +2,9 @@ package env
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
