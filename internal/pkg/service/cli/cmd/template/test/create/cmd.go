@@ -1,16 +1,24 @@
-package test
+package create
 
 import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
-func CreateCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	TestName   configmap.Value[string] `configKey:"test-name" configUsage:"name of the test to be created"`
+	InputsFile configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+	Verbose    configmap.Value[bool]   `configKey:"verbose" configUsage:"show details about creating test"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create [template] [version]",
 		Short: helpmsg.Read(`template/test/create/short`),
@@ -25,6 +33,12 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New(`please enter argument with the template ID you want to use and optionally its version`)
 			}
 			templateID := args[0]
+
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
 
 			// Get template repository
 			repo, _, err := d.LocalTemplateRepository(cmd.Context())
@@ -44,7 +58,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, warnings, err := d.Dialogs().AskCreateTemplateTestOptions(cmd.Context(), tmpl)
+			options, warnings, err := AskCreateTemplateTestOptions(cmd.Context(), d.Dialogs(), tmpl, f)
 			if err != nil {
 				return err
 			}
@@ -63,10 +77,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of the test to be created")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
-	cmd.Flags().Bool("verbose", false, "show details about creating test")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

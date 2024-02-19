@@ -1,4 +1,4 @@
-package template
+package describe
 
 import (
 	"github.com/spf13/cobra"
@@ -10,7 +10,7 @@ import (
 	describeOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/describe"
 )
 
-func DescribeCommand(p dependencies.Provider) *cobra.Command {
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "describe <template> [version]",
 		Short: helpmsg.Read(`template/describe/short`),

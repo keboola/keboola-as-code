@@ -1,4 +1,4 @@
-package repository
+package respinit
 
 import (
 	"github.com/spf13/cobra"
@@ -8,7 +8,7 @@ import (
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/init"
 )
 
-func InitCommand(p dependencies.Provider) *cobra.Command {
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `init`,
 		Short: helpmsg.Read(`template/repository/init/short`),

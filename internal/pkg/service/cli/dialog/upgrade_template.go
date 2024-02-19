@@ -33,7 +33,7 @@ func (p *Dialogs) AskUpgradeTemplateOptions(ctx context.Context, d upgradeTmplDe
 
 func (d *upgradeTmplDialog) ask(ctx context.Context) (upgradeTemplate.Options, error) {
 	// User inputs
-	if v, _, err := d.askUseTemplateInputs(ctx, d.groups, false); err != nil {
+	if v, _, err := d.AskUseTemplateInputs(ctx, d.groups, false); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v

@@ -1,29 +1,42 @@
-package test
+package run
 
 import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/run"
 )
 
-func RunCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	TestName   string `configKey:"test-name" configUsage:"name of a single test to be run"`
+	LocalOnly  bool   `configKey:"local-only" configUsage:"run a local test only"`
+	RemoteOnly bool   `configKey:"remote-only" configUsage:"run a remote test only"`
+	Verbose    bool   `configKey:"verbose" configUsage:"show details about running tests"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [template] [version]",
 		Short: helpmsg.Read(`template/test/run/short`),
 		Long:  helpmsg.Read(`template/test/run/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			f := Flags{}
+			if err := configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Options
-			o := p.BaseScope().Options()
 			options := testOp.Options{
-				LocalOnly:  o.GetBool("local-only"),
-				RemoteOnly: o.GetBool("remote-only"),
-				TestName:   o.GetString("test-name"),
-				Verbose:    o.GetBool("verbose"),
+				LocalOnly:  f.LocalOnly,
+				RemoteOnly: f.RemoteOnly,
+				TestName:   f.TestName,
+				Verbose:    f.Verbose,
 			}
 
 			// Get dependencies
@@ -77,11 +90,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of a single test to be run")
-	cmd.Flags().Bool("local-only", false, "run a local test only")
-	cmd.Flags().Bool("remote-only", false, "run a remote test only")
-	cmd.Flags().Bool("verbose", false, "show details about running tests")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

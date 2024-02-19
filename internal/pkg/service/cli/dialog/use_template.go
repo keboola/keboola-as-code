@@ -59,7 +59,7 @@ func (d *useTmplDialog) ask(ctx context.Context) (useTemplate.Options, error) {
 	}
 
 	// User inputs
-	if v, _, err := d.askUseTemplateInputs(ctx, d.inputs.ToExtended(), false); err != nil {
+	if v, _, err := d.AskUseTemplateInputs(ctx, d.inputs.ToExtended(), false); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v
@@ -100,8 +100,8 @@ type useTmplInputsDialog struct {
 	inputsValues  map[string]any  // for input.Available
 }
 
-// askUseTemplateInputs - dialog to enter template inputs.
-func (p *Dialogs) askUseTemplateInputs(ctx context.Context, groups input.StepsGroupsExt, isForTest bool) (template.InputsValues, []string, error) {
+// AskUseTemplateInputs - dialog to enter template inputs.
+func (p *Dialogs) AskUseTemplateInputs(ctx context.Context, groups input.StepsGroupsExt, isForTest bool) (template.InputsValues, []string, error) {
 	dialog := &useTmplInputsDialog{
 		Dialogs:      p,
 		groups:       groups,

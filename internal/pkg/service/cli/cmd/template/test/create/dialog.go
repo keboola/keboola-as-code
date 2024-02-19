@@ -1,4 +1,4 @@
-package dialog
+package create
 
 import (
 	"context"
@@ -6,25 +6,26 @@ import (
 
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
-const testNameFlag = "test-name"
-
 type createTmplTestDialog struct {
-	*Dialogs
+	*dialog.Dialogs
+	Flags
 	out      createOp.Options
 	template *template.Template
 }
 
 // AskCreateTemplateTestOptions - dialog for creating a template test.
-func (p *Dialogs) AskCreateTemplateTestOptions(ctx context.Context, template *template.Template) (createOp.Options, []string, error) {
+func AskCreateTemplateTestOptions(ctx context.Context, d *dialog.Dialogs, template *template.Template, f Flags) (createOp.Options, []string, error) {
 	dialog := &createTmplTestDialog{
-		Dialogs:  p,
+		Dialogs:  d,
 		template: template,
+		Flags:    f,
 	}
 	return dialog.ask(ctx)
 }
@@ -38,7 +39,7 @@ func (d *createTmplTestDialog) ask(ctx context.Context) (createOp.Options, []str
 	}
 
 	// User inputs
-	v, warnings, err := d.askUseTemplateInputs(ctx, d.template.Inputs().ToExtended(), true)
+	v, warnings, err := d.Dialogs.AskUseTemplateInputs(ctx, d.template.Inputs().ToExtended(), true)
 	if err != nil {
 		return d.out, nil, err
 	} else {
@@ -50,8 +51,8 @@ func (d *createTmplTestDialog) ask(ctx context.Context) (createOp.Options, []str
 
 func (d *createTmplTestDialog) askTestName(ctx context.Context) (string, error) {
 	// Is flag set?
-	if d.options.IsSet(testNameFlag) {
-		v := d.options.GetString(testNameFlag)
+	if d.Flags.TestName.IsSet() {
+		v := d.Flags.TestName.Value
 		if len(v) > 0 {
 			err := d.checkTestNameIsUnique(ctx, v)
 			if err != nil {

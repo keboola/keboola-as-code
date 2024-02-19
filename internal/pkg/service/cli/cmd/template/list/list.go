@@ -1,4 +1,4 @@
-package template
+package list
 
 import (
 	"github.com/spf13/cobra"
@@ -8,7 +8,7 @@ import (
 	listOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/list"
 )
 
-func ListCommand(p dependencies.Provider) *cobra.Command {
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: helpmsg.Read(`template/list/short`),
