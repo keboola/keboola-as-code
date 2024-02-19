@@ -1,13 +1,20 @@
-package generate
+package source
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/sources"
 )
+
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+}
 
 func SourcesCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -26,6 +33,11 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
@@ -33,7 +45,7 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			targetName, err := p.BaseScope().Dialogs().AskTargetName()
+			targetName, err := p.BaseScope().Dialogs().AskTargetName(f.TargetName)
 			if err != nil {
 				return err
 			}
@@ -42,8 +54,7 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }
