@@ -28,7 +28,6 @@ type apiScope struct {
 	schema            *schema.Schema
 	store             *store.Store
 	repositoryManager *repositoryManager.Manager
-	projectLocker     *Locker
 }
 
 type parentScopes interface {
@@ -131,8 +130,6 @@ func newAPIScope(ctx context.Context, parentScp parentScopes, cfg config.Config)
 		return nil, err
 	}
 
-	d.projectLocker = NewLocker(d, ProjectLockTTLSeconds)
-
 	return d, nil
 }
 
@@ -150,8 +147,4 @@ func (v *apiScope) Store() *store.Store {
 
 func (v *apiScope) RepositoryManager() *repositoryManager.Manager {
 	return v.repositoryManager
-}
-
-func (v *apiScope) ProjectLocker() *Locker {
-	return v.projectLocker
 }

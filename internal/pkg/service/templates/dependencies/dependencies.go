@@ -57,7 +57,6 @@ type APIScope interface {
 	Schema() *schema.Schema
 	Store() *store.Store
 	RepositoryManager() *repositoryManager.Manager
-	ProjectLocker() *Locker
 }
 
 // PublicRequestScope interface provides dependencies for a public request that doesn't need the Storage API token.
