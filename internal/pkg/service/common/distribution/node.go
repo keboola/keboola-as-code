@@ -111,12 +111,13 @@ func newGroupMember(nodeID, groupID string, cfg Config, d dependencies) (*GroupN
 	g.logger.Info(ctx, "starting")
 
 	// Register node
-	_, errCh := etcdop.
+	_, err := etcdop.
 		NewSessionBuilder().
+		WithGrantTimeout(cfg.GrantTimeout).
 		WithTTLSeconds(cfg.TTLSeconds).
 		WithOnSession(g.register).
-		Start(sessionCtx, wg, g.logger, d.EtcdClient())
-	if err := <-errCh; err != nil {
+		StartOrErr(sessionCtx, wg, g.logger, d.EtcdClient())
+	if err != nil {
 		return nil, err
 	}
 
