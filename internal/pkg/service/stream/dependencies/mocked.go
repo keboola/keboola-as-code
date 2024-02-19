@@ -36,6 +36,8 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	commonMock := dependencies.NewMocked(t, append(
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
+			dependencies.WithEnabledDistribution(),
+			dependencies.WithEnabledDistributedLocks(),
 			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
 		},
 		opts...,
@@ -101,9 +103,14 @@ func NewMockedTableSinkScope(t *testing.T, opts ...dependencies.MockedOption) (T
 
 func NewMockedTableSinkScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
 	t.Helper()
-	svcScope, mocked := NewMockedDefinitionScopeWithConfig(t, modifyConfig, opts...)
+	defScope, mocked := NewMockedDefinitionScopeWithConfig(t, modifyConfig, opts...)
+	cfg := mocked.TestConfig()
 	backoff := model.NoRandomizationBackoff()
-	d, err := newTableSinkScope(svcScope, mocked.TestConfig().Storage, backoff)
+	d, err := newTableSinkScope(tableSinkParentScopesImpl{
+		DefinitionScope:      defScope,
+		DistributionScope:    mocked,
+		DistributedLockScope: mocked,
+	}, cfg, backoff)
 	require.NoError(t, err)
 	return d, mocked
 }
@@ -118,8 +125,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	cfg.API.PublicURL, _ = url.Parse("https://stream.keboola.local")
 	cfg.Etcd = d.TestEtcdConfig()
 
-	// Disable L2 memory cache.
-	// There is an invalidation timer with a few seconds interval.
+	// There are some timers with a few seconds interval.
 	// It causes problems when mocked clock is used.
 	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
 	if _, ok := d.Clock().(*clock.Mock); ok {

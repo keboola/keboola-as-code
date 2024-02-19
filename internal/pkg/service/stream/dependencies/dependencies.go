@@ -69,6 +69,8 @@ type DefinitionScope interface {
 
 type TableSinkScope interface {
 	DefinitionScope
+	dependencies.DistributionScope
+	dependencies.DistributedLockScope
 	StatisticsRepository() *statsRepo.Repository
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
