@@ -2,13 +2,16 @@ package http
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
+	"encoding/binary"
 	"fmt"
 	"html/template"
+	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -117,19 +120,66 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 }
 
 func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Handler {
-	if len(app.Providers) == 0 {
-		return r.publicAppHandler(ctx, app)
-	}
-	return r.protectedAppHandler(ctx, app)
-}
-
-func (r *Router) publicAppHandler(ctx context.Context, app DataApp) http.Handler {
-	target, err := url.Parse("http://" + app.UpstreamHost)
-	if err != nil {
+	if len(app.Rules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `cannot parse upstream url "%s" for app "<proxy.appid>" "%s": %w`, app.UpstreamHost, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
 		return r.createConfigErrorHandler(exceptionID)
 	}
+
+	oauthProviders := make(map[string]*oauthProvider)
+	for _, providerConfig := range app.Providers {
+		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
+	}
+
+	publicAppHandler := r.publicAppHandler(app)
+
+	mux := http.NewServeMux()
+
+	mux.Handle(selectionPagePath, r.createSelectionPageHandler(oauthProviders))
+
+	// Always send /_proxy/ requests to the correct provider.
+	// This is necessary for proxy callback url to work on an app with prefixed private parts.
+	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders))
+
+	for _, rule := range app.Rules {
+		if rule.Type != PathPrefix {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
+			return r.createConfigErrorHandler(exceptionID)
+		}
+
+		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, publicAppHandler, oauthProviders, rule.Providers))
+	}
+
+	return mux
+}
+
+func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers []string) http.Handler {
+	if len(providers) == 0 {
+		return publicAppHandler
+	}
+
+	selectedProviders := make(map[string]*oauthProvider)
+	for _, id := range providers {
+		provider, found := oauthProviders[id]
+		if !found {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
+			return r.createConfigErrorHandler(exceptionID)
+		}
+
+		selectedProviders[id] = provider
+	}
+
+	return r.createMultiProviderHandler(selectedProviders)
+}
+
+func (r *Router) publicAppHandler(app DataApp) http.Handler {
+	target := &url.URL{
+		Scheme: "http",
+		Host:   app.UpstreamHost,
+	}
+
 	return httputil.NewSingleHostReverseProxy(target)
 }
 
@@ -140,7 +190,7 @@ type oauthProvider struct {
 	handler        http.Handler
 }
 
-func (r *Router) createProvider(ctx context.Context, providerConfig options.Provider, app DataApp) oauthProvider {
+func (r *Router) createProvider(ctx context.Context, providerConfig options.Provider, app DataApp) *oauthProvider {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
@@ -148,47 +198,33 @@ func (r *Router) createProvider(ctx context.Context, providerConfig options.Prov
 
 	exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 
-	provider := oauthProvider{
+	provider := &oauthProvider{
 		providerConfig: providerConfig,
 		handler:        r.createConfigErrorHandler(exceptionID),
 	}
 
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.proxyConfig = proxyConfig
 
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.proxyProvider = proxyProvider
 
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Errorf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.handler = proxy
 
 	return provider
-}
-
-func (r *Router) protectedAppHandler(ctx context.Context, app DataApp) http.Handler {
-	oauthProviders := make(map[string]oauthProvider)
-
-	for i, providerConfig := range app.Providers {
-		oauthProviders[strconv.Itoa(i)] = r.createProvider(ctx, providerConfig, app)
-	}
-
-	if len(app.Providers) == 1 {
-		return oauthProviders["0"].handler
-	}
-
-	return r.createMultiProviderHandler(oauthProviders)
 }
 
 type SelectionPageData struct {
@@ -200,14 +236,8 @@ type SelectionPageProvider struct {
 	URL  string
 }
 
-// OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
-// So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
-// See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
-func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvider) http.Handler {
-	handler := http.NewServeMux()
-
-	// Request to provider selection page
-	handler.HandleFunc(selectionPagePath, func(writer http.ResponseWriter, request *http.Request) {
+func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProvider) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		selection := request.URL.Query().Get("provider")
 		provider, ok := oauthProviders[selection]
 
@@ -219,7 +249,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 					Scheme:   r.config.PublicAddress.Scheme,
 					Host:     request.Host,
 					Path:     selectionPagePath,
-					RawQuery: "provider=" + id,
+					RawQuery: "provider=" + url.PathEscape(id),
 				}
 
 				data.Providers = append(data.Providers, SelectionPageProvider{
@@ -257,10 +287,14 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 
 		provider.handler.ServeHTTP(writer, newRequest)
 	})
+}
 
-	// Request to the data app itself
-	handler.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		var provider oauthProvider
+// OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
+// So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
+// See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
+func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var provider *oauthProvider
 		ok := false
 
 		// Identify the provider chosen by the user using a cookie
@@ -270,17 +304,42 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 		}
 
 		if !ok {
-			// Clear the provider cookie in case it existed with an invalid value
-			http.SetCookie(writer, cookies.MakeCookieFromOptions(
-				request,
-				ProviderCookie,
-				"",
-				&options.NewOptions().Cookie,
-				time.Hour*-1,
-				r.clock.Now(),
-			))
+			if len(oauthProviders) == 1 {
+				// If only one provider is available for current path prefix, immediately set the cookie to it.
+				// It is necessary because even if this prefix doesn't have multiple providers, other prefix might.
+				// The /_proxy/callback url would not work correctly without the cookie.
 
-			r.redirectToProviderSelection(writer, request)
+				// Use maps.Keys() instead when possible: https://github.com/golang/go/issues/61900
+				var k string
+				for k = range oauthProviders {
+				}
+				provider := oauthProviders[k]
+
+				if provider.proxyConfig != nil {
+					http.SetCookie(writer, cookies.MakeCookieFromOptions(
+						request,
+						ProviderCookie,
+						provider.providerConfig.ID,
+						&provider.proxyConfig.Cookie,
+						provider.proxyConfig.Cookie.Expire,
+						r.clock.Now(),
+					))
+				}
+
+				provider.handler.ServeHTTP(writer, request)
+			} else {
+				// Clear the provider cookie in case it existed with an invalid value
+				http.SetCookie(writer, cookies.MakeCookieFromOptions(
+					request,
+					ProviderCookie,
+					"",
+					&options.NewOptions().Cookie,
+					time.Hour*-1,
+					r.clock.Now(),
+				))
+
+				r.redirectToProviderSelection(writer, request)
+			}
 
 			return
 		}
@@ -309,8 +368,6 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]oauthProvi
 		// Authenticate the request by the provider selected in the cookie
 		provider.handler.ServeHTTP(writer, request)
 	})
-
-	return handler
 }
 
 func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request *http.Request) {
@@ -329,7 +386,29 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 
 	domain := app.ID.String() + "." + r.config.PublicAddress.Host
 
-	v.Cookie.Secret = r.config.CookieSecret
+	// Need to use different cookie secret for each provider, otherwise cookies created by
+	// provider A would also be valid in a section that requires provider B but not A.
+	// To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
+	// App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
+	h := sha256.New()
+	if _, err := io.WriteString(h, provider.ID); err != nil {
+		return nil, err
+	}
+	if _, err := io.WriteString(h, r.config.CookieSecret); err != nil {
+		return nil, err
+	}
+	if _, err := io.WriteString(h, app.ID.String()); err != nil {
+		return nil, err
+	}
+	seed := binary.BigEndian.Uint64(h.Sum(nil))
+
+	secret := make([]byte, 32)
+	random := rand.New(rand.NewSource(int64(seed))) // nolint: gosec // crypto.rand doesn't accept a seed
+	if _, err := random.Read(secret); err != nil {
+		return nil, err
+	}
+
+	v.Cookie.Secret = string(secret)
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = "/_proxy"

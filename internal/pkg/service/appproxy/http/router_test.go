@@ -90,6 +90,48 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "no-rule-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to app with no path rules
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://norule.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+			},
+		},
+		{
+			name: "invalid-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to app with invalid rule type
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+			},
+		},
+		{
+			name: "badprovider-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to app with unknown provider
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://badprovider.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+			},
+		},
+		{
 			name: "public-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
 				appServer.Close()
@@ -367,14 +409,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
-				assert.Len(t, cookies, 1)
+				assert.Len(t, cookies, 2)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "oidc", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -415,14 +465,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
-				assert.Len(t, cookies, 1)
+				assert.Len(t, cookies, 2)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "oidc", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -495,11 +553,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?provider=0`)
-				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?provider=1`)
+				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc0`)
+				assert.Contains(t, string(body), `https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc1`)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -508,7 +566,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies := response.Cookies()
 
 				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
-				assert.Equal(t, "1", cookies[0].Value)
+				assert.Equal(t, "oidc1", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "multi.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
@@ -570,7 +628,7 @@ func TestAppProxyRouter(t *testing.T) {
 				})
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -600,7 +658,7 @@ func TestAppProxyRouter(t *testing.T) {
 				})
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -669,7 +727,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -713,7 +771,7 @@ func TestAppProxyRouter(t *testing.T) {
 				appServer.Close()
 
 				// Provider selection
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=2", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc2", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -851,7 +909,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "https://multi.data-apps.keboola.local/_proxy/selection", location)
 
 				// Provider selection
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=1", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -908,6 +966,212 @@ func TestAppProxyRouter(t *testing.T) {
 				c.Close(websocket.StatusNormalClosure, "")
 			},
 		},
+		{
+			name: "prefix-app-no-auth",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				// Request to public part of the app
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/public", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Request to api (unauthorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to web (unauthorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+		},
+		{
+			name: "prefix-app-api-auth",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[0].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private part (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				cookies := response.Cookies()
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Cookies()...)
+
+				// Request to private part (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Since the provider is configured for both /api and /web this works as well.
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+		},
+		{
+			name: "prefix-app-web-auth",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[1].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private part (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Provider selection
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				cookies := response.Cookies()
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Cookies()...)
+
+				// Request to private part (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Since the provider is configured only for web, this needs to fail.
+				// !! In order for this to fail it is necessary for each provider to use a different cookie secret.
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/api", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+		},
+		{
+			name: "shared-provider",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
+				m[1].QueueUser(&mockoidcCustom.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Provider selection
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/_proxy/selection?provider=oidc1", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+				cookies := response.Cookies()
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = append(cookies, response.Cookies()...)
+
+				// Request to private part (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.data-apps.keboola.local/web", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Use the same cookie values for another app, this needs to fail.
+				// !! In order for this to fail it is necessary for each app to use a different cookie secret even if the provider is the same.
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					cookie.Domain = `multi.data-apps.keboola.local`
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
@@ -953,14 +1217,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
-				assert.Len(t, cookies, 1)
+				assert.Len(t, cookies, 2)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "oidc", cookies[0].Value)
 				assert.Equal(t, "/", cookies[0].Path)
 				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.data-apps.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1067,9 +1339,45 @@ func TestAppProxyRouter(t *testing.T) {
 func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
 	return []DataApp{
 		{
+			ID:           "norule",
+			Name:         "No rule app",
+			UpstreamHost: tsURL.Host,
+		},
+		{
 			ID:           "public",
 			Name:         "Public app",
 			UpstreamHost: tsURL.Host,
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/",
+					Providers: []string{},
+				},
+			},
+		},
+		{
+			ID:           "invalid",
+			Name:         "App with invalid rule type",
+			UpstreamHost: tsURL.Host,
+			Rules: []Rule{
+				{
+					Type:      "unknown",
+					Value:     "/",
+					Providers: []string{},
+				},
+			},
+		},
+		{
+			ID:           "badprovider",
+			Name:         "App with invalid provider",
+			UpstreamHost: tsURL.Host,
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/",
+					Providers: []string{"unknown"},
+				},
+			},
 		},
 		{
 			ID:           "oidc",
@@ -1090,6 +1398,13 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
 						AudienceClaims: options.OIDCAudienceClaims,
 						UserIDClaim:    options.OIDCEmailClaim,
 					},
+				},
+			},
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/",
+					Providers: []string{"oidc"},
 				},
 			},
 		},
@@ -1132,6 +1447,13 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
 					ID: "oidc2",
 				},
 			},
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/",
+					Providers: []string{"oidc0", "oidc1", "oidc2"},
+				},
+			},
 		},
 		{
 			ID:           "broken",
@@ -1152,6 +1474,66 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
 						AudienceClaims: options.OIDCAudienceClaims,
 						UserIDClaim:    options.OIDCEmailClaim,
 					},
+				},
+			},
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/",
+					Providers: []string{"oidc"},
+				},
+			},
+		},
+		{
+			ID:           "prefix",
+			Name:         "App with different configuration depending on path prefix",
+			UpstreamHost: tsURL.Host,
+			Providers: []options.Provider{
+				{
+					ID:                  "oidc0",
+					ClientID:            m[0].Config().ClientID,
+					ClientSecret:        m[0].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[0].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+				{
+					ID:                  "oidc1",
+					ClientID:            m[1].Config().ClientID,
+					ClientSecret:        m[1].Config().ClientSecret,
+					Type:                options.OIDCProvider,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+					AllowedGroups:       []string{"admin"},
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      m[1].Issuer(),
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+				},
+			},
+			Rules: []Rule{
+				{
+					Type:      PathPrefix,
+					Value:     "/api",
+					Providers: []string{"oidc0"},
+				},
+				{
+					Type:      PathPrefix,
+					Value:     "/web",
+					Providers: []string{"oidc0", "oidc1"},
+				},
+				{
+					Type:  PathPrefix,
+					Value: "/",
 				},
 			},
 		},

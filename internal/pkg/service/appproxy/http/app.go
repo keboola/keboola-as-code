@@ -17,7 +17,17 @@ type DataApp struct {
 	Name         string             `json:"name" validator:"required"`
 	UpstreamHost string             `json:"upstreamUrl" validator:"required"`
 	Providers    []options.Provider `json:"providers"`
+	Rules        []Rule             `json:"rules"`
 }
+
+type Rule struct {
+	Type      RuleType `json:"type"`
+	Value     string   `json:"value"`
+	Providers []string `json:"providers"`
+}
+type RuleType string
+
+const PathPrefix = RuleType("pathPrefix")
 
 type AppID string
 
