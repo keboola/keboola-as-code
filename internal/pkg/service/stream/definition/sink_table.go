@@ -11,9 +11,10 @@ const (
 	SinkTypeTable = SinkType("table")
 )
 
+// TableSink configures destination table.
 type TableSink struct {
-	Config  TableSinkConfig  `json:"config,omitempty"`
-	Mapping TableSinkMapping `json:"mapping"`
+	Keboola TableSinkKeboola `json:"keboola"`
+	Mapping table.Mapping    `json:"mapping"`
 }
 
 type TableSinkConfig struct {

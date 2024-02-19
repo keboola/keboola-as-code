@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
 func TestMappedColumns_Serde(t *testing.T) {

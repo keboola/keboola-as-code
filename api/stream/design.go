@@ -5,9 +5,10 @@ package stream
 import (
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/umisama/go-regexpcache"
 	"reflect"
 	"strings"
@@ -725,7 +726,7 @@ var TableColumn = Type("TableColumn", func() {
 		Example(false)
 	})
 	Attribute("type", String, func() {
-		Meta("struct:field:type", "column.Type", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column")
+		Meta("struct:field:type", "column.Type", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column")
 		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
 		Enum("id", "datetime", "ip", "body", "headers", "template")
 		Example("id")
