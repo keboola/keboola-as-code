@@ -18,15 +18,15 @@ type distributionScopeDeps interface {
 	TaskScope
 }
 
-func NewDistributionScope(ctx context.Context, nodeID string, d distributionScopeDeps) (DistributionScope, error) {
-	return newDistributionScope(ctx, nodeID, d)
+func NewDistributionScope(ctx context.Context, nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) (DistributionScope, error) {
+	return newDistributionScope(ctx, nodeID, cfg, d)
 }
 
-func newDistributionScope(ctx context.Context, nodeID string, d distributionScopeDeps) (v *distributionScope, err error) {
+func newDistributionScope(ctx context.Context, nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) (v *distributionScope, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewDistributionScope")
 	defer span.End(&err)
 
-	node := distributionPkg.NewNode(nodeID, distributionPkg.NewConfig(), d)
+	node := distributionPkg.NewNode(nodeID, cfg, d)
 
 	return &distributionScope{node: node}, nil
 }
