@@ -75,10 +75,10 @@ func TestSliceRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// List - empty
-		slices, err := sliceRepo.List(projectID).Do(ctx).AllKVs()
+		slices, err := sliceRepo.ListIn(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, slices)
-		slices, err = sliceRepo.List(sinkKey1).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, slices)
 	}
@@ -139,7 +139,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var sliceKey1, sliceKey2, sliceKey3 model.SliceKey
 	{
-		slices, err := sliceRepo.List(sourceKey).Do(ctx).All()
+		slices, err := sliceRepo.ListIn(sourceKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 3)
 		sliceKey1 = slices[0].SliceKey
@@ -148,31 +148,31 @@ func TestSliceRepository_Operations(t *testing.T) {
 	}
 	{
 		// List
-		slices, err := sliceRepo.List(projectID).Do(ctx).AllKVs()
+		slices, err := sliceRepo.ListIn(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 3)
-		slices, err = sliceRepo.List(branchKey).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(branchKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 3)
-		slices, err = sliceRepo.List(sourceKey).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(sourceKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 3)
-		slices, err = sliceRepo.List(sinkKey1).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
-		slices, err = sliceRepo.List(sinkKey2).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
-		slices, err = sliceRepo.List(sinkKey3).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(sinkKey3).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
-		slices, err = sliceRepo.List(fileKey1).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(fileKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
-		slices, err = sliceRepo.List(fileKey2).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(fileKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
-		slices, err = sliceRepo.List(fileKey3).Do(ctx).AllKVs()
+		slices, err = sliceRepo.ListIn(fileKey3).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, slices, 1)
 	}
@@ -298,7 +298,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 	}
 	{
 		// List - empty
-		slices, err := sliceRepo.List(fileKey2).Do(ctx).AllKVs()
+		slices, err := sliceRepo.ListIn(fileKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, slices)
 	}

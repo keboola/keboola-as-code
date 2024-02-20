@@ -92,7 +92,7 @@ func TestSliceRepository_Delete(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
-		slices, err := sliceRepo.List(branchKey).Do(ctx).All()
+		slices, err := sliceRepo.ListIn(branchKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 3)
 		s01 = slices[0].SliceKey

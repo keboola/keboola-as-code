@@ -72,10 +72,10 @@ func TestFileRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// List - empty
-		files, err := fileRepo.List(projectID).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, files)
-		files, err = fileRepo.List(sinkKey1).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, files)
 	}
@@ -137,19 +137,19 @@ func TestFileRepository_Operations(t *testing.T) {
 	}
 	{
 		// List
-		files, err := fileRepo.List(projectID).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.List(branchKey).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(branchKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.List(sourceKey).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sourceKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.List(sinkKey1).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 1)
-		files, err = fileRepo.List(sinkKey2).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 1)
 	}
@@ -169,7 +169,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	{
 		// Slices in file1
 		sliceID1 := model.SliceID{OpenedAt: fileKey1.OpenedAt()}
-		require.NoError(t, sliceRepo.List(fileKey1).Do(ctx).ForEachValue(
+		require.NoError(t, sliceRepo.ListIn(fileKey1).Do(ctx).ForEachValue(
 			func(value model.Slice, header *iterator.Header) error {
 				sliceKeys1 = append(sliceKeys1, value.SliceKey)
 				return nil
@@ -183,7 +183,7 @@ func TestFileRepository_Operations(t *testing.T) {
 
 		// Slices in file2
 		sliceID2 := model.SliceID{OpenedAt: fileKey2.OpenedAt()}
-		require.NoError(t, sliceRepo.List(fileKey2).Do(ctx).ForEachValue(
+		require.NoError(t, sliceRepo.ListIn(fileKey2).Do(ctx).ForEachValue(
 			func(value model.Slice, header *iterator.Header) error {
 				sliceKeys2 = append(sliceKeys2, value.SliceKey)
 				return nil
@@ -291,7 +291,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	}
 	{
 		// List - empty
-		files, err := fileRepo.List(sinkKey2).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, files)
 	}

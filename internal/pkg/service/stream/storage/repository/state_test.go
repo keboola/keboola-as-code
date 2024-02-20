@@ -80,7 +80,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
-		slices, err := sliceRepo.List(file.FileKey).Do(ctx).All()
+		slices, err := sliceRepo.ListIn(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 3)
 		sliceKey1 = slices[0].SliceKey
