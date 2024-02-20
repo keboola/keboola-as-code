@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
@@ -11,10 +12,14 @@ type Sink struct {
 	Versioned
 	Switchable
 	SoftDeletable
-	Type        SinkType   `json:"type" validate:"required,oneof=table"`
-	Name        string     `json:"name" validate:"required,min=1,max=40"`
-	Description string     `json:"description,omitempty" validate:"max=4096"`
-	Table       *TableSink `json:"table" validate:"required_if=Type table"`
+	Type        SinkType             `json:"type" validate:"required,oneof=table"`
+	Name        string               `json:"name" validate:"required,min=1,max=40"`
+	Description string               `json:"description,omitempty" validate:"max=4096"`
+	Config      configpatch.PatchKVs `json:"config"` // see stream/config/config.Patch
+
+	// Sink type specific fields
+
+	Table *TableSink `json:"table" validate:"required_if=Type table"`
 }
 
 func (t SinkType) String() string {
