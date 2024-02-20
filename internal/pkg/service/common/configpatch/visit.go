@@ -83,16 +83,16 @@ func visitConfigAndPatch(configStruct, patchStruct reflect.Value, opts []Option,
 					return nil
 				}
 
-				// Config field cannot be a pointer
-				keyPath := configVc.MappedPath.String()
-				if configVc.Type.Kind() == reflect.Pointer {
-					errs.Append(errors.Errorf(`config field "%s" is a pointer, it is not allowed`, keyPath))
-				}
-
 				// Ignore fields which are not present in the patch
+				keyPath := configVc.MappedPath.String()
 				patchVc, ok := patchKeys[keyPath]
 				if !ok {
 					return nil
+				}
+
+				// Config field cannot be a pointer
+				if configVc.Type.Kind() == reflect.Pointer {
+					errs.Append(errors.Errorf(`config field "%s" is a pointer, it is not allowed`, keyPath))
 				}
 
 				// Get patched value, if any
