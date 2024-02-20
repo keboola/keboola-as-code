@@ -13,7 +13,7 @@ import (
 
 // BindKVs binds flattened key-value pairs from a client request to a patch structure.
 // The patch structure is modified in place.
-func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
+func BindKVs(patchStruct any, kvs PatchKVs, opts ...Option) error {
 	cfg := newConfig(opts)
 
 	rootPtr := reflect.ValueOf(patchStruct)

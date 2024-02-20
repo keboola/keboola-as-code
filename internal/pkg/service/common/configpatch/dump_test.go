@@ -50,16 +50,16 @@ type ConfigPatchInvalid struct {
 	Key9 *int    `json:"foo9"`
 }
 
-func TestDumpKVs_EmptyPatch(t *testing.T) {
+func TestDumpAll_EmptyPatch(t *testing.T) {
 	t.Parallel()
 
-	kvs, err := configpatch.DumpKVs(
+	kvs, err := configpatch.DumpAll(
 		newConfig(),
 		ConfigPatch{},
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, []configpatch.DumpKV{
+	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
 			Value:        []string{"bar1"},
@@ -90,16 +90,16 @@ func TestDumpKVs_EmptyPatch(t *testing.T) {
 	}, kvs)
 }
 
-func TestDumpKVs_Ok(t *testing.T) {
+func TestDumpAll_Ok(t *testing.T) {
 	t.Parallel()
 
-	kvs, err := configpatch.DumpKVs(
+	kvs, err := configpatch.DumpAll(
 		newConfig(),
 		newConfigPatch(),
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, []configpatch.DumpKV{
+	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
 			Value:        []string{"patch1"},
@@ -133,16 +133,16 @@ func TestDumpKVs_Ok(t *testing.T) {
 	}, kvs)
 }
 
-func TestDumpKVs_EmptyPatchPointer(t *testing.T) {
+func TestDumpAll_EmptyPatchPointer(t *testing.T) {
 	t.Parallel()
 
-	kvs, err := configpatch.DumpKVs(
+	kvs, err := configpatch.DumpAll(
 		newConfig(),
 		(*ConfigPatch)(nil),
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, []configpatch.DumpKV{
+	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
 			Value:        []string{"bar1"},
@@ -173,10 +173,10 @@ func TestDumpKVs_EmptyPatchPointer(t *testing.T) {
 	}, kvs)
 }
 
-func TestDumpKVs_CustomTags(t *testing.T) {
+func TestDumpAll_CustomTags(t *testing.T) {
 	t.Parallel()
 
-	kvs, err := configpatch.DumpKVs(
+	kvs, err := configpatch.DumpAll(
 		newConfig(),
 		ConfigPatch{
 			Key2: ptr(234),
@@ -189,7 +189,7 @@ func TestDumpKVs_CustomTags(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, []configpatch.DumpKV{
+	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "baz2",
 			Value:        234,
@@ -205,10 +205,10 @@ func TestDumpKVs_CustomTags(t *testing.T) {
 	}, kvs)
 }
 
-func TestDumpKVs_InvalidPatch(t *testing.T) {
+func TestDumpAll_InvalidPatch(t *testing.T) {
 	t.Parallel()
 
-	_, err := configpatch.DumpKVs(
+	_, err := configpatch.DumpAll(
 		newConfig(),
 		newConfigPatchInvalid(),
 	)
@@ -222,17 +222,17 @@ func TestDumpKVs_InvalidPatch(t *testing.T) {
 	}
 }
 
-func TestDumpKVs_Protected_Ok(t *testing.T) {
+func TestDumpAll_Protected_Ok(t *testing.T) {
 	t.Parallel()
 
-	kvs, err := configpatch.DumpKVs(
+	kvs, err := configpatch.DumpAll(
 		newConfig(),
 		newConfigPatchProtected(),
 		configpatch.WithModifyProtected(), // <<<<<
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, []configpatch.DumpKV{
+	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
 			Value:        []string{"bar1"},
@@ -267,9 +267,9 @@ func TestDumpKVs_Protected_Ok(t *testing.T) {
 	}, kvs)
 }
 
-func TestDumpKVs_Protected_Error(t *testing.T) {
+func TestDumpAll_Protected_Error(t *testing.T) {
 	t.Parallel()
-	_, err := configpatch.DumpKVs(newConfig(), newConfigPatchProtected())
+	_, err := configpatch.DumpAll(newConfig(), newConfigPatchProtected())
 	if assert.Error(t, err) {
 		assert.Equal(t, `cannot modify protected fields: "foo2", "foo3.foo6.foo8"`, err.Error())
 	}
