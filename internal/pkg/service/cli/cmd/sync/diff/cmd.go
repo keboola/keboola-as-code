@@ -1,15 +1,21 @@
-package sync
+package diff
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printdiff"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func DiffCommand(p dependencies.Provider) *cobra.Command {
+type Flag struct {
+	Details bool `configKey:"details" configUsage:"print changed fields"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diff",
 		Short: helpmsg.Read(`sync/diff/short`),
@@ -39,9 +45,14 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			f := Flag{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Options
 			options := printdiff.Options{
-				PrintDetails:      d.Options().GetBool(`details`),
+				PrintDetails:      f.Details,
 				LogUntrackedPaths: true,
 			}
 
@@ -61,8 +72,7 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("details", false, "print changed fields")
+	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
 
 	return cmd
 }

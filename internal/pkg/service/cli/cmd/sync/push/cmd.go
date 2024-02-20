@@ -1,17 +1,25 @@
-package sync
+package push
 
 import (
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func PushCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	Force   configmap.Value[bool] `configKey:"force" configUsage:"enable deleting of remote objects"`
+	DryRun  configmap.Value[bool] `configKey:"dry-run" configUsage:"print what needs to be done"`
+	Encrypt configmap.Value[bool] `configKey:"encrypt" configUsage:"encrypt unencrypted values before push"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
 		Short: helpmsg.Read(`sync/push/short`),
@@ -47,11 +55,16 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 				changeDescription = args[0]
 			}
 
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Options
 			options := push.Options{
-				Encrypt:           d.Options().GetBool("encrypt"),
-				DryRun:            d.Options().GetBool("dry-run"),
-				AllowRemoteDelete: d.Options().GetBool("force"),
+				Encrypt:           f.Encrypt.Value,
+				DryRun:            f.DryRun.Value,
+				AllowRemoteDelete: f.Force.Value,
 				LogUntrackedPaths: true,
 				ChangeDescription: changeDescription,
 			}
@@ -65,9 +78,7 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	// Flags
-	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("force", false, "enable deleting of remote objects")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
-	cmd.Flags().Bool("encrypt", false, "encrypt unencrypted values before push")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+
 	return cmd
 }
