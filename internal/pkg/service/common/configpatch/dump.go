@@ -29,6 +29,16 @@ func DumpKVs(configStruct, patchStruct any, opts ...Option) (kvs []DumpKV, err e
 	err = visitConfigAndPatch(reflect.ValueOf(configStruct), reflect.ValueOf(patchStruct), opts, func(vc *visitContext) {
 		// Generate DumpKV
 		kvs = append(kvs, DumpKV{
+		var value any
+		if vc.Value.IsValid() {
+			value = vc.Value.Interface()
+		}
+
+		var defaultValue any
+		if vc.ConfigValue.IsValid() {
+			defaultValue = vc.ConfigValue.Interface()
+		}
+
 			KeyPath:      vc.Config.MappedPath.String(),
 			Value:        vc.Value.Interface(),
 			DefaultValue: vc.ConfigValue.Interface(),

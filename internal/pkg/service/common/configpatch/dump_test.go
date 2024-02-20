@@ -133,6 +133,46 @@ func TestDumpKVs_Ok(t *testing.T) {
 	}, kvs)
 }
 
+func TestDumpKVs_EmptyPatchPointer(t *testing.T) {
+	t.Parallel()
+
+	kvs, err := configpatch.DumpKVs(
+		newConfig(),
+		(*ConfigPatch)(nil),
+	)
+
+	require.NoError(t, err)
+	assert.Equal(t, []configpatch.DumpKV{
+		{
+			KeyPath:      "foo1",
+			Value:        "bar1",
+			DefaultValue: "bar1",
+		},
+		{
+			KeyPath:      "foo2",
+			Value:        123,
+			DefaultValue: 123,
+			Protected:    true,
+		},
+		{
+			KeyPath:      "foo3.foo5",
+			Value:        234,
+			DefaultValue: 234,
+		},
+		{
+			KeyPath:      "foo3.foo6.foo7",
+			Value:        []string{"bar7"},
+			DefaultValue: []string{"bar7"},
+		},
+		{
+			KeyPath:      "foo3.foo6.foo8",
+			Value:        true,
+			DefaultValue: true,
+			Protected:    true,
+		},
+	}, kvs)
+}
+
 func TestDumpKVs_CustomTags(t *testing.T) {
 	t.Parallel()
 
