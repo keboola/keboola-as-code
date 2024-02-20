@@ -1,19 +1,13 @@
-// nolint: gochecknoglobals
-
+//nolint:gochecknoglobals
 package stream
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/umisama/go-regexpcache"
 	"reflect"
 	"strings"
 
 	"github.com/spf13/cast"
+	"github.com/umisama/go-regexpcache"
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
@@ -28,6 +22,11 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
 const (
