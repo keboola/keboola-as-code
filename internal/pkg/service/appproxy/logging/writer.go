@@ -10,10 +10,20 @@ import (
 type loggerWriter struct {
 	logger log.Logger
 	level  string
+	buffer []byte
 }
 
-func (w loggerWriter) Write(p []byte) (n int, err error) {
-	w.logger.LogCtx(context.Background(), w.level, string(p))
+const newLine = byte(10)
+
+func (w *loggerWriter) Write(p []byte) (n int, err error) {
+	w.buffer = append(w.buffer, p...)
+
+	if len(p) > 0 && p[len(p)-1] == newLine {
+		w.logger.LogCtx(context.Background(), w.level, string(w.buffer))
+		w.buffer = []byte{}
+		return 1, nil
+	}
+
 	return len(p), nil
 }
 
