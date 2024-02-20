@@ -11,14 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-// BindKV is input of the bind operation for a one configuration key.
-type BindKV struct {
-	// KeyPath is a configuration key, parts are joined with a dot "." separator.
-	KeyPath string `json:"key"`
-	// Value is a patched value of the configuration key.
-	Value any `json:"value"`
-}
-
 // BindKVs binds flattened key-value pairs from a client request to a patch structure.
 // The patch structure is modified in place.
 func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {

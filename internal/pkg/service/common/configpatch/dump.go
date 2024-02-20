@@ -5,22 +5,6 @@ import (
 	"sort"
 )
 
-// DumpKV is result of the patch operation for a one configuration key.
-type DumpKV struct {
-	// KeyPath is a configuration key, parts are joined with a dot "." separator.
-	KeyPath string `json:"key"`
-	// Value is an actual value of the configuration key.
-	Value any `json:"value"`
-	// DefaultValue of the configuration key.
-	DefaultValue any `json:"defaultValue"`
-	// Overwritten is true, if the DefaultValue was replaced by a value from the path.
-	Overwritten bool `json:"overwritten"`
-	// Protected configuration key can be modified only by a super-admin.
-	Protected bool `json:"protected"`
-	// Validation contains validation rules of the field, if any.
-	Validation string `json:"validation,omitempty"`
-}
-
 // DumpKVs generates key-value pairs from a configuration structure and a patch structure.
 // Only keys found in both, configuration and patch structure, are processed.
 // The structure is flattened, keys are joined with a dot "." separator.
