@@ -20,3 +20,13 @@ func Apply(configStruct, patchStruct any, opts ...Option) error {
 		}
 	})
 }
+
+// ApplyKVs applies a patch key-value pairs to a config structure.
+// The patch structure is used to detect all modifiable fields.
+// The config structure is modified in place.
+func ApplyKVs(configStruct, patchStruct any, kvs PatchKVs, opts ...Option) error {
+	if err := BindKVs(patchStruct, kvs); err != nil {
+		return err
+	}
+	return Apply(configStruct, patchStruct, opts...)
+}
