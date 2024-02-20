@@ -1,15 +1,23 @@
-package dbt
+package dbtinit
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/init"
 )
 
-func InitCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	WorkspaceName  configmap.Value[string] `configKey:"workspace-name" configShorthand:"W" configUsage:"name of workspace to create"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `init`,
 		Short: helpmsg.Read(`dbt/init/short`),
@@ -26,6 +34,11 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
@@ -33,7 +46,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			opts, err := p.BaseScope().Dialogs().AskDbtInit(branch.BranchKey)
+			opts, err := AskDbtInit(d.Dialogs(), f, branch.BranchKey)
 			if err != nil {
 				return err
 			}
@@ -42,9 +55,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
-	cmd.Flags().StringP("workspace-name", "W", "", "name of workspace to create")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

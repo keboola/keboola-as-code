@@ -1,16 +1,24 @@
-package generate
+package env
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 )
 
-func EnvCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	WorkspaceID    configmap.Value[string] `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to use"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `env`,
 		Short: helpmsg.Read(`dbt/generate/env/short`),
@@ -24,6 +32,11 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 			// Get dependencies
 			d, err := p.RemoteCommandScope(cmd.Context())
 			if err != nil {
+				return err
+			}
+
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -44,7 +57,8 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}
-			opts, err := d.Dialogs().AskGenerateEnv(branch.BranchKey, snowflakeWorkspaces)
+
+			opts, err := AskGenerateEnv(branch.BranchKey, d.Dialogs(), snowflakeWorkspaces, f)
 			if err != nil {
 				return err
 			}
@@ -53,9 +67,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
-	cmd.Flags().StringP("workspace-id", "W", "", "id of the workspace to use")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }
