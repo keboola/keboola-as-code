@@ -1,4 +1,4 @@
-package volume_test
+package opener_test
 
 import (
 	"context"
@@ -13,7 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/opener"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -86,35 +87,35 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "SSD", "1"), 0o750))
 	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "ssd", "2"), 0o750))
 
-	collection, err := tc.OpenVolumes()
+	volumes, err := tc.OpenVolumes()
 	require.NoError(t, err)
 
 	// Volume found
-	vol, err := collection.Volume("volume_hdd_3")
+	vol, err := volumes.Volume("volume_hdd_3")
 	require.NoError(t, err)
 	assert.Equal(t, &test.Volume{NodeIDValue: "my-node", IDValue: "volume_hdd_3", TypeValue: "hdd", LabelValue: "3", PathValue: filepath.Join(tc.VolumesPath, "hdd", "3")}, vol)
 
 	// Volume not found
-	vol, err = collection.Volume("foo")
+	vol, err = volumes.Volume("foo")
 	assert.Nil(t, vol)
 	if assert.Error(t, err) {
 		assert.Equal(t, `volume with ID "foo" not found`, err.Error())
 	}
 
 	// VolumeByType
-	assert.Len(t, collection.VolumeByType("foo"), 0)
+	assert.Len(t, volumes.VolumeByType("foo"), 0)
 	assert.Equal(t, []*test.Volume{
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_1", TypeValue: "hdd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "hdd", "1")},
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_2", TypeValue: "hdd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "HDD", "2")},
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_3", TypeValue: "hdd", LabelValue: "3", PathValue: filepath.Join(tc.VolumesPath, "hdd", "3")},
-	}, collection.VolumeByType("hdd"))
+	}, volumes.VolumeByType("hdd"))
 	assert.Equal(t, []*test.Volume{
 		{NodeIDValue: "my-node", IDValue: "volume_ssd_1", TypeValue: "ssd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "SSD", "1")},
 		{NodeIDValue: "my-node", IDValue: "volume_ssd_2", TypeValue: "ssd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "ssd", "2")},
-	}, collection.VolumeByType("ssd"))
+	}, volumes.VolumeByType("ssd"))
 
 	// Count
-	assert.Equal(t, 5, collection.Count())
+	assert.Equal(t, 5, volumes.Count())
 
 	// All
 	assert.Equal(t, []*test.Volume{
@@ -123,10 +124,10 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_3", TypeValue: "hdd", LabelValue: "3", PathValue: filepath.Join(tc.VolumesPath, "hdd", "3")},
 		{NodeIDValue: "my-node", IDValue: "volume_ssd_1", TypeValue: "ssd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "SSD", "1")},
 		{NodeIDValue: "my-node", IDValue: "volume_ssd_2", TypeValue: "ssd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "ssd", "2")},
-	}, collection.All())
+	}, volumes.All())
 
 	// Close - no error
-	require.NoError(t, collection.Close(context.Background()))
+	require.NoError(t, volumes.Close(context.Background()))
 }
 
 func TestOpenVolumes_CloseError(t *testing.T) {
@@ -143,12 +144,12 @@ func TestOpenVolumes_CloseError(t *testing.T) {
 		require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "default", cast.ToString(i)), 0o750))
 	}
 
-	collection, err := tc.OpenVolumes()
+	volumes, err := tc.OpenVolumes()
 	require.NoError(t, err)
-	assert.Len(t, collection.All(), 5)
+	assert.Len(t, volumes.All(), 5)
 
 	// Close - all volumes are closed in parallel, errors are aggregated
-	err = collection.Close(context.Background())
+	err = volumes.Close(context.Background())
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.Repeat("- some close error\n", 5), err.Error()+"\n")
 	}
@@ -158,7 +159,7 @@ type openTestCase struct {
 	Logger      log.DebugLogger
 	NodeID      string
 	VolumesPath string
-	Opener      volume.Opener[*test.Volume]
+	Opener      opener.Opener[*test.Volume]
 }
 
 func newVolumesTestCase(t *testing.T) *openTestCase {
@@ -173,5 +174,5 @@ func newVolumesTestCase(t *testing.T) *openTestCase {
 }
 
 func (tc *openTestCase) OpenVolumes() (*volume.Collection[*test.Volume], error) {
-	return volume.OpenVolumes[*test.Volume](context.Background(), tc.Logger, tc.NodeID, tc.VolumesPath, tc.Opener)
+	return opener.OpenVolumes[*test.Volume](context.Background(), tc.Logger, tc.NodeID, tc.VolumesPath, tc.Opener)
 }

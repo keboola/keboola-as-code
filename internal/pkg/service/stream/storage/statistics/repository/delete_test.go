@@ -16,10 +16,10 @@ import (
 )
 
 // TestRepository_Delete_LevelLocalAndStaging tests deletion
-// of the statistics on the storage.LevelLocal and storage.Staging.
+// of the statistics on the level.Local and storage.Staging.
 //
 // Statistics are permanently deleted without rollup to the higher level,
-// because the data are lost, they did not arrive to the storage.Target.
+// because the data are lost, they did not arrive to the level.Target.
 func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 	t.Parallel()
 
@@ -129,7 +129,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 	etcdhelper.AssertKVsString(t, client, ``)
 }
 
-// TestRepository_Delete_LevelTarget_Sum tests that statistics of data in storage.Target
+// TestRepository_Delete_LevelTarget_Sum tests that statistics of data in level.Target
 // are rolled up to the parent object sum when the object is deleted.
 func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	t.Parallel()

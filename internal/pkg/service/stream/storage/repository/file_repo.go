@@ -17,12 +17,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// FileRepository provides database operations with the storage.File entity.
+// FileRepository provides database operations with the model.File entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type FileRepository struct {
 	client  etcd.KV
@@ -42,9 +42,9 @@ type rotateSinkContext struct {
 	Sink definition.Sink
 	// Volumes provides all active volumes
 	Volumes []volume.Metadata
-	// OpenedFiles in the storage.FileWriting state to be closed, maximum one file
+	// OpenedFiles in the model.FileWriting state to be closed, maximum one file
 	OpenedFiles []model.File
-	// OpenedSlices in the storage.SliceWriting state to be closed
+	// OpenedSlices in the model.SliceWriting state to be closed
 	OpenedSlices []model.Slice
 	// 0 means disabled or no data
 	MaxUsedDiskSize datasize.ByteSize
@@ -89,9 +89,9 @@ func (r *FileRepository) Get(fileKey model.FileKey) op.WithResult[model.File] {
 }
 
 // Rotate closes the opened file, if present, and opens a new file in the table sink.
-//   - The old file, if present, is switched from the storage.FileWriting state to the storage.FileClosing state.
-//   - New file in the storage.FileWriting is created.
-//   - AllKVs file slices in the storage.SliceWriting state are switched to the storage.SliceClosing state.
+//   - The old file, if present, is switched from the model.FileWriting state to the model.FileClosing state.
+//   - New file in the model.FileWriting is created.
+//   - AllKVs file slices in the model.SliceWriting state are switched to the model.SliceClosing state.
 //   - Opening new slices in the file, on different volumes, is not the task of this method.
 //   - Files rotation is done atomically.
 //   - This method is used to rotate files when the import conditions are met.
@@ -114,7 +114,7 @@ func (r *FileRepository) RotateAllIn(rb rollback.Builder, now time.Time, parentK
 
 // CloseAllIn closes opened file in each table sink within the parentKey.
 // - NO NEW FILE is created, so the sink stops accepting new writes, that's the difference with RotateAllIn.
-// - THE OLD FILE in the storage.FileWriting state, IF PRESENT, is switched to the storage.FileClosing state.
+// - THE OLD FILE in the model.FileWriting state, IF PRESENT, is switched to the model.FileClosing state.
 // - Files closing is done atomically.
 // - This method is used on Sink/Source soft-delete or disable operation.
 func (r *FileRepository) CloseAllIn(now time.Time, parentKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
@@ -333,14 +333,14 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 		})
 	}
 
-	// Read opened files in the storage.FileWriting state.
-	// There can be a maximum of one old file in the storage.FileWriting state per each table sink.
-	// On rotation, opened files are switched to the storage.FileClosing state.
+	// Read opened files in the model.FileWriting state.
+	// There can be a maximum of one old file in the model.FileWriting state per each table sink.
+	// On rotation, opened files are switched to the model.FileClosing state.
 	var openedFiles []model.File
 	atomicOp.ReadOp(r.ListInState(parentKey, model.FileWriting).WithAllTo(&openedFiles))
 
-	// Read opened slices in the storage.SliceWriting state.
-	// On rotation, opened slices are switched to the storage.SliceClosing state.
+	// Read opened slices in the model.SliceWriting state.
+	// On rotation, opened slices are switched to the model.SliceClosing state.
 	var openedSlices []model.Slice
 	atomicOp.ReadOp(r.all.slice.ListInState(parentKey, model.SliceWriting).WithAllTo(&openedSlices))
 
@@ -428,7 +428,7 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 			// File already exists
 			return nil, serviceError.NewResourceAlreadyExistsError("file", oldFile.FileKey.String(), "sink")
 		} else if modified, err := oldFile.WithState(c.Now, model.FileClosing); err == nil {
-			// Switch the old file from the state storage.FileWriting to the state storage.FileClosing
+			// Switch the old file from the state model.FileWriting to the state model.FileClosing
 			txn.Merge(r.updateTxn(oldFile, modified))
 		} else {
 			return nil, err
@@ -438,7 +438,7 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 	// Close old slices, if present
 	for _, oldSlice := range c.OpenedSlices {
 		if modified, err := oldSlice.WithState(c.Now, model.SliceClosing); err == nil {
-			// Switch the old slice from the state storage.SliceWriting to the state storage.SliceClosing
+			// Switch the old slice from the state model.SliceWriting to the state model.SliceClosing
 			txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
 		} else {
 			return nil, err
@@ -449,7 +449,7 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 	if c.NewFileResource != nil {
 		// Apply configuration patch from the sink to the global config
 		cfg := r.config
-		if c.Sink.Table.Config.Storage != nil {
+		if c.Sink.Table.Config.Storage.Level != nil {
 			if err := configpatch.Apply(&cfg, c.Sink.Table.Config.Storage.Level); err != nil {
 				return nil, err
 			}

@@ -10,7 +10,7 @@ import (
 )
 
 // Delete returns an etcd operation to delete all statistics associated with the object key.
-// Statistics for the storage.Target are not deleted but are rolled up to the parent object.
+// Statistics for the level.Target are not deleted but are rolled up to the parent object.
 // This operation should not be used separately but atomically together with the deletion of the object.
 func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 	ops := op.Atomic(r.client, &op.NoResult{})

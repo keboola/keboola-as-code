@@ -1,4 +1,4 @@
-package volume_test
+package model_test
 
 import (
 	"testing"
@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
 func TestCollection_All_SortVolumes(t *testing.T) {
 	t.Parallel()
 
-	c, err := volume.NewCollection[*test.Volume]([]*test.Volume{
+	collection, err := volume.NewCollection([]*test.Volume{
 		{
 			IDValue:     "my-volume-5",
 			NodeIDValue: "node-b",
@@ -88,5 +88,5 @@ func TestCollection_All_SortVolumes(t *testing.T) {
 			TypeValue:   "type2",
 			LabelValue:  "002",
 		},
-	}, c.All())
+	}, collection.All())
 }

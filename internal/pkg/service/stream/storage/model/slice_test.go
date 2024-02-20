@@ -50,7 +50,7 @@ func TestFileVolumeKey_String(t *testing.T) {
 		testFileVolumeKey().String(),
 	)
 
-	// Empty VolumeID
+	// Empty ID
 	assert.Panics(t, func() {
 		_ = (FileVolumeKey{FileKey: testFileKey(), VolumeID: ""}).String()
 	})

@@ -11,8 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 )
 
 func TestOpenVolumes(t *testing.T) {
@@ -38,8 +37,8 @@ func TestOpenVolumes(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "drained", "1", drainFile), []byte{}, 0o640))
 
 	// Only two volumes has volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", local.VolumeIDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", local.VolumeIDFile), []byte("HDD_2"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Start volumes opening
 	var err error
@@ -72,10 +71,10 @@ func TestOpenVolumes(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	for _, path := range []string{
-		filepath.Join(volumesPath, "hdd", "3", local.VolumeIDFile),
-		filepath.Join(volumesPath, "SSD", "1", local.VolumeIDFile),
-		filepath.Join(volumesPath, "ssd", "2", local.VolumeIDFile),
-		filepath.Join(volumesPath, "drained", "1", local.VolumeIDFile),
+		filepath.Join(volumesPath, "hdd", "3", volume.IDFile),
+		filepath.Join(volumesPath, "SSD", "1", volume.IDFile),
+		filepath.Join(volumesPath, "ssd", "2", volume.IDFile),
+		filepath.Join(volumesPath, "drained", "1", volume.IDFile),
 	} {
 		content, err := os.ReadFile(path)
 		assert.NoError(t, err)

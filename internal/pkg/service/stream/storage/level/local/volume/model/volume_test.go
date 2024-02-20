@@ -1,4 +1,4 @@
-package volume
+package model
 
 import (
 	"testing"

@@ -13,8 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -43,8 +42,8 @@ type Volume struct {
 
 // Open volume for writing.
 //   - It is checked that the volume path exists.
-//   - The volume.IDFile is loaded.
-//   - If the volume.IDFile doesn't exist, the function waits until the writer.Open function will create it.
+//   - The IDFile is loaded.
+//   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
@@ -110,8 +109,8 @@ func (v *Volume) ID() volume.ID {
 
 func (v *Volume) Metadata() volume.Metadata {
 	return volume.Metadata{
-		VolumeID: v.id,
-		Spec:     v.spec,
+		ID:   v.id,
+		Spec: v.spec,
 	}
 }
 
@@ -158,7 +157,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 	ticker := v.clock.Ticker(waitForVolumeIDInterval)
 	defer ticker.Stop()
 
-	path := filepath.Join(v.spec.Path, local.VolumeIDFile)
+	path := filepath.Join(v.spec.Path, volume.IDFile)
 	for {
 		// Try open the file
 		if content, err := os.ReadFile(path); err == nil {

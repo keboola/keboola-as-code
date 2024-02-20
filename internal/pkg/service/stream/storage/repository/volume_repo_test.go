@@ -12,7 +12,7 @@ import (
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -35,7 +35,7 @@ func TestRepository_Volume(t *testing.T) {
 
 	// Fixtures
 	volume1 := volume.Metadata{
-		VolumeID: volume.ID("my-volume-1"),
+		ID: volume.ID("my-volume-1"),
 		Spec: volume.Spec{
 			NodeID: "writer-node",
 			Path:   "hdd/001",
@@ -44,7 +44,7 @@ func TestRepository_Volume(t *testing.T) {
 		},
 	}
 	volume2 := volume.Metadata{
-		VolumeID: volume.ID("my-volume-2"),
+		ID: volume.ID("my-volume-2"),
 		Spec: volume.Spec{
 			NodeID: "writer-node",
 			Path:   "hdd/002",
@@ -53,7 +53,7 @@ func TestRepository_Volume(t *testing.T) {
 		},
 	}
 	volume3 := volume.Metadata{
-		VolumeID: volume.ID("my-volume-3"),
+		ID: volume.ID("my-volume-3"),
 		Spec: volume.Spec{
 			NodeID: "reader-node",
 			Path:   "hdd/003",
@@ -62,7 +62,7 @@ func TestRepository_Volume(t *testing.T) {
 		},
 	}
 	volume4 := volume.Metadata{
-		VolumeID: volume.ID("my-volume-4"),
+		ID: volume.ID("my-volume-4"),
 		Spec: volume.Spec{
 			NodeID: "reader-node",
 			Path:   "hdd/004",

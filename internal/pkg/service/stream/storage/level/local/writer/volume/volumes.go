@@ -6,11 +6,12 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/opener"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 )
 
-type collection = volume.Collection[*Volume]
+type collection = model.Collection[*Volume]
 
 type Volumes struct {
 	*collection
@@ -21,7 +22,7 @@ type Volumes struct {
 func OpenVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, nodeID, volumesPath string, opts ...Option) (out *Volumes, err error) {
 	events := writer.NewEvents()
 	out = &Volumes{events: events}
-	out.collection, err = volume.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec volume.Spec) (*Volume, error) {
+	out.collection, err = opener.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec model.Spec) (*Volume, error) {
 		return Open(ctx, logger, clock, events.Clone(), spec, opts...)
 	})
 	if err != nil {

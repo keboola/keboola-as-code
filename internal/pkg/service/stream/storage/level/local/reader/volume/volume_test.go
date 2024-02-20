@@ -16,8 +16,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -42,7 +41,7 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, local.VolumeIDFile)
+	path := filesystem.Join(tc.VolumePath, volume.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -58,7 +57,7 @@ func TestOpenVolume_Ok(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
 
 	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
@@ -114,7 +113,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Create the volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
 	tc.Clock.Add(waitForVolumeIDInterval)
 
 	// Wait for the goroutine
@@ -201,7 +200,7 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
 
 	// Open volume - first instance - ok
 	_, err := tc.OpenVolume()
@@ -221,7 +220,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, local.VolumeIDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
 
 	// Open volume, replace file opener
 	vol, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {

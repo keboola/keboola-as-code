@@ -1,4 +1,4 @@
-package volume
+package model
 
 import (
 	"context"
@@ -16,9 +16,6 @@ type Collection[V Volume] struct {
 	byType map[string][]V
 }
 
-// Opener opens volume reader or writer instance of the V type on a local node.
-type Opener[V Volume] func(spec Spec) (V, error)
-
 func NewCollection[V Volume](volumes []V) (*Collection[V], error) {
 	collection := &Collection[V]{
 		byID:   make(map[ID]V),
@@ -27,15 +24,15 @@ func NewCollection[V Volume](volumes []V) (*Collection[V], error) {
 
 	// Add volumes
 	idCount := make(map[ID]int)
-	for _, volume := range volumes {
-		id := volume.ID()
+	for _, vol := range volumes {
+		id := vol.ID()
 		if id == "" {
 			return nil, errors.New("volume ID cannot be empty")
 		}
 
 		idCount[id]++
-		collection.byID[id] = volume
-		collection.byType[volume.Type()] = append(collection.byType[volume.Type()], volume)
+		collection.byID[id] = vol
+		collection.byType[vol.Type()] = append(collection.byType[vol.Type()], vol)
 	}
 
 	// Each volume ID must be unique

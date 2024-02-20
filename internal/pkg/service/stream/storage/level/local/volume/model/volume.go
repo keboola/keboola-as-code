@@ -1,4 +1,14 @@
-package volume
+// Package model contains common code for reader.Volumes and writer.Volumes implementations.
+//
+// Volume relative path has the following format: "{type}/{label}".
+//
+// The type is later used when assigning volumes.
+// Different use-cases may prefer a different type of volume.
+//
+// The label has no special meaning, volumes are identified by the unique volume.ID,
+// which is read from the IDFile on the volume, if the file does not exist,
+// it is generated and saved by the writer.Volume.
+package model
 
 import (
 	"context"
@@ -7,11 +17,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const IDLength = 10
+const (
+	IDLength = 10
+	IDFile   = "volume-id"
+)
 
+// ID of the volume.
 type ID string
 
-// Volume instance common interface.
+// Volume common interface.
 type Volume interface {
 	Path() string
 	Type() string
@@ -31,7 +45,7 @@ type Spec struct {
 
 // Metadata entity contains metadata about an active local volume that is connected to a writer/reader node.
 type Metadata struct {
-	VolumeID ID `json:"volumeId" validate:"required"`
+	ID ID `json:"volumeId" validate:"required"`
 	Spec
 }
 

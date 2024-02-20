@@ -16,9 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 

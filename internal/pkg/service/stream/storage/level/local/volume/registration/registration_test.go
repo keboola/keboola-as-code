@@ -9,8 +9,8 @@ import (
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -69,7 +69,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []volume.Metadata{
 		{
-			VolumeID: "my-volume-1",
+			ID: "my-volume-1",
 			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type1/001",
@@ -78,7 +78,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 			},
 		},
 		{
-			VolumeID: "my-volume-2",
+			ID: "my-volume-2",
 			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type1/003",
@@ -87,7 +87,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 			},
 		},
 		{
-			VolumeID: "my-volume-3",
+			ID: "my-volume-3",
 			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type2/001",
@@ -96,7 +96,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 			},
 		},
 		{
-			VolumeID: "my-volume-4",
+			ID: "my-volume-4",
 			Spec: volume.Spec{
 				NodeID: "node-1",
 				Path:   "type2/002",

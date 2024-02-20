@@ -417,7 +417,7 @@ func TestRepository_MaxUsedDiskSizeBySliceIn(t *testing.T) {
 	require.NoError(t, repo.Move(sliceKey5, level.Local, level.Staging).Do(ctx).Err())
 	require.NoError(t, repo.Move(sliceKey6, level.Local, level.Staging).Do(ctx).Err())
 
-	// Move statistics to the storage.Target
+	// Move statistics to the level.Target
 	require.NoError(t, repo.Move(sliceKey2, level.Staging, level.Target).Do(ctx).Err())
 	require.NoError(t, repo.Move(sliceKey4, level.Staging, level.Target).Do(ctx).Err())
 	require.NoError(t, repo.Move(sliceKey6, level.Staging, level.Target).Do(ctx).Err())

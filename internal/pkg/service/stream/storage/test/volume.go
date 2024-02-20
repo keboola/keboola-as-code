@@ -9,12 +9,12 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Volume struct {
-	IDValue     volume.ID
+	IDValue     model.ID
 	NodeIDValue string
 	PathValue   string
 	TypeValue   string
@@ -24,10 +24,10 @@ type Volume struct {
 
 // volumeRepository interface to prevent package import cycles.
 type volumeRepository interface {
-	RegisterWriterVolume(v volume.Metadata, leaseID etcd.LeaseID) op.WithResult[volume.Metadata]
+	RegisterWriterVolume(v model.Metadata, leaseID etcd.LeaseID) op.WithResult[model.Metadata]
 }
 
-func NewTestVolume(id volume.ID, nodeID string, info volume.Spec) *Volume {
+func NewTestVolume(id model.ID, nodeID string, info model.Spec) *Volume {
 	return &Volume{
 		IDValue:     id,
 		NodeIDValue: nodeID,
@@ -39,26 +39,26 @@ func NewTestVolume(id volume.ID, nodeID string, info volume.Spec) *Volume {
 
 func RegisterWriterVolumes(t *testing.T, ctx context.Context, volumeRepo volumeRepository, session *concurrency.Session, count int) {
 	t.Helper()
-	volumes := []volume.Metadata{
+	volumes := []model.Metadata{
 		{
-			VolumeID: "my-volume-1",
-			Spec:     volume.Spec{NodeID: "node-a", Type: "hdd", Label: "1", Path: "hdd/1"},
+			ID:   "my-volume-1",
+			Spec: model.Spec{NodeID: "node-a", Type: "hdd", Label: "1", Path: "hdd/1"},
 		},
 		{
-			VolumeID: "my-volume-2",
-			Spec:     volume.Spec{NodeID: "node-b", Type: "ssd", Label: "2", Path: "ssd/2"},
+			ID:   "my-volume-2",
+			Spec: model.Spec{NodeID: "node-b", Type: "ssd", Label: "2", Path: "ssd/2"},
 		},
 		{
-			VolumeID: "my-volume-3",
-			Spec:     volume.Spec{NodeID: "node-b", Type: "hdd", Label: "3", Path: "hdd/3"},
+			ID:   "my-volume-3",
+			Spec: model.Spec{NodeID: "node-b", Type: "hdd", Label: "3", Path: "hdd/3"},
 		},
 		{
-			VolumeID: "my-volume-4",
-			Spec:     volume.Spec{NodeID: "node-b", Type: "ssd", Label: "4", Path: "ssd/4"},
+			ID:   "my-volume-4",
+			Spec: model.Spec{NodeID: "node-b", Type: "ssd", Label: "4", Path: "ssd/4"},
 		},
 		{
-			VolumeID: "my-volume-5",
-			Spec:     volume.Spec{NodeID: "node-c", Type: "hdd", Label: "5", Path: "hdd/5"},
+			ID:   "my-volume-5",
+			Spec: model.Spec{NodeID: "node-c", Type: "hdd", Label: "5", Path: "hdd/5"},
 		},
 	}
 
@@ -73,7 +73,7 @@ func RegisterWriterVolumes(t *testing.T, ctx context.Context, volumeRepo volumeR
 	require.NoError(t, txn.Do(ctx).Err())
 }
 
-func (v *Volume) ID() volume.ID {
+func (v *Volume) ID() model.ID {
 	return v.IDValue
 }
 
@@ -89,10 +89,10 @@ func (v *Volume) Label() string {
 	return v.LabelValue
 }
 
-func (v *Volume) Metadata() volume.Metadata {
-	return volume.Metadata{
-		VolumeID: v.IDValue,
-		Spec: volume.Spec{
+func (v *Volume) Metadata() model.Metadata {
+	return model.Metadata{
+		ID: v.IDValue,
+		Spec: model.Spec{
 			Path:   v.PathValue,
 			Type:   v.TypeValue,
 			Label:  v.LabelValue,
