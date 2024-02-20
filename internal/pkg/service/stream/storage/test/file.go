@@ -80,9 +80,13 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 			UploadCredentials:           &keboola.FileUploadCredentials{},
 			UploadCredentialsExpiration: utctime.From(openedAt.Time().Add(time.Hour)),
 		},
-		TargetStorage: target.File{
-			TableID:    keboola.MustParseTableID("in.bucket.table"),
-			StorageJob: nil,
+		TargetStorage: target.Target{
+			Table: target.Table{
+				Keboola: target.KeboolaTable{
+					TableID:    keboola.MustParseTableID("in.bucket.table"),
+					StorageJob: nil,
+				},
+			},
 		},
 	}
 }

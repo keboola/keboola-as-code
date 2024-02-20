@@ -30,8 +30,9 @@ func NewSink(k key.SinkKey) definition.Sink {
 		Description: "My Description",
 		Table: &definition.TableSink{
 			Keboola: definition.TableSinkKeboola{
-			Mapping: definition.TableSinkMapping{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
+			},
+			Mapping: table.Mapping{
 				Columns: column.Columns{
 					column.Datetime{Name: "datetime"},
 					column.Body{Name: "body"},

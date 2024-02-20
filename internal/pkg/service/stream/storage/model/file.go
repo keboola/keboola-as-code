@@ -32,7 +32,7 @@ type File struct {
 	Assignment     assignment.Assignment `json:"assignment"`
 	LocalStorage   local.File            `json:"local"`
 	StagingStorage staging.File          `json:"staging"`
-	TargetStorage  target.File           `json:"target"`
+	TargetStorage  target.Target         `json:"target"`
 }
 
 type FileType string
