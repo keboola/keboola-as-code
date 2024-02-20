@@ -454,10 +454,8 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 	if c.NewFileResource != nil {
 		// Apply configuration patch from the sink to the global config
 		cfg := r.config
-		if c.Sink.Table.Config.Storage.Level != nil {
-			if err := configpatch.Apply(&cfg, c.Sink.Table.Config.Storage.Level); err != nil {
-				return nil, err
-			}
+		if err := configpatch.ApplyKVs(&cfg, &level.ConfigPatch{}, c.Sink.Config.In("storage.level")); err != nil {
+			return nil, err
 		}
 
 		// Create file entity
