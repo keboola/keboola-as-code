@@ -275,6 +275,55 @@ func TestDumpAll_Protected_Error(t *testing.T) {
 	}
 }
 
+func TestDumpPatch_EmptyPatch(t *testing.T) {
+	t.Parallel()
+
+	kvs, err := configpatch.DumpPatch(
+		newConfig(),
+		ConfigPatch{},
+	)
+
+	require.NoError(t, err)
+	assert.Empty(t, kvs)
+}
+
+func TestDumpPatch_EmptyPatchPointer(t *testing.T) {
+	t.Parallel()
+
+	kvs, err := configpatch.DumpPatch(
+		newConfig(),
+		&ConfigPatch{},
+	)
+
+	require.NoError(t, err)
+	assert.Empty(t, kvs)
+}
+
+func TestDumpPatch_Ok(t *testing.T) {
+	t.Parallel()
+
+	kvs, err := configpatch.DumpPatch(
+		newConfig(),
+		newConfigPatch(),
+	)
+
+	require.NoError(t, err)
+	assert.Equal(t, configpatch.PatchKVs{
+		{
+			KeyPath: "foo1",
+			Value:   []string{"patch1"},
+		},
+		{
+			KeyPath: "foo3.foo5",
+			Value:   789,
+		},
+		{
+			KeyPath: "foo3.foo6.foo7",
+			Value:   []string{"patch7"},
+		},
+	}, kvs)
+}
+
 func newConfig() Config {
 	return Config{
 		Key1: []string{"bar1"},
