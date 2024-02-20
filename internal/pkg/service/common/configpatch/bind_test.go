@@ -62,12 +62,13 @@ func TestBindKVs_Multiple(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
 	kvs := []configpatch.BindKV{
-		{KeyPath: "foo1", Value: "bar1"},
+	kvs := []configpatch.PatchKV{
+		{KeyPath: "foo1", Value: []any{"bar1"}}, // slice []any -> []string
 		{KeyPath: "foo3.foo5", Value: 789},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, patch, ConfigPatch{
-		Key1: ptr("bar1"),
+		Key1: ptr([]string{"bar1"}),
 		Key3: &ConfigNested1Patch{Key5: ptr(789)},
 	})
 }

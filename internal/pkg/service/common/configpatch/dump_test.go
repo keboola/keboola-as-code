@@ -11,7 +11,7 @@ import (
 )
 
 type Config struct {
-	Key1 string        `json:"foo1"`
+	Key1 []string      `json:"foo1"`
 	Key2 int           `json:"foo2" alternative:"baz2" protected:"true"`
 	Key3 ConfigNested1 `json:"foo3,omitempty" alternative:"baz3"`
 }
@@ -28,7 +28,7 @@ type ConfigNested2 struct {
 }
 
 type ConfigPatch struct {
-	Key1 *string             `json:"foo1"`
+	Key1 *[]string           `json:"foo1"`
 	Key2 *int                `json:"foo2" alternative:"baz2"`
 	Key3 *ConfigNested1Patch `json:"foo3,omitempty" alternative:"baz3"`
 }
@@ -62,8 +62,8 @@ func TestDumpKVs_EmptyPatch(t *testing.T) {
 	assert.Equal(t, []configpatch.DumpKV{
 		{
 			KeyPath:      "foo1",
-			Value:        "bar1",
-			DefaultValue: "bar1",
+			Value:        []string{"bar1"},
+			DefaultValue: []string{"bar1"},
 		},
 		{
 			KeyPath:      "foo2",
@@ -102,8 +102,8 @@ func TestDumpKVs_Ok(t *testing.T) {
 	assert.Equal(t, []configpatch.DumpKV{
 		{
 			KeyPath:      "foo1",
-			Value:        "patch1",
-			DefaultValue: "bar1",
+			Value:        []string{"patch1"},
+			DefaultValue: []string{"bar1"},
 			Overwritten:  true,
 		},
 		{
@@ -145,8 +145,8 @@ func TestDumpKVs_EmptyPatchPointer(t *testing.T) {
 	assert.Equal(t, []configpatch.DumpKV{
 		{
 			KeyPath:      "foo1",
-			Value:        "bar1",
-			DefaultValue: "bar1",
+			Value:        []string{"bar1"},
+			DefaultValue: []string{"bar1"},
 		},
 		{
 			KeyPath:      "foo2",
@@ -235,8 +235,8 @@ func TestDumpKVs_Protected_Ok(t *testing.T) {
 	assert.Equal(t, []configpatch.DumpKV{
 		{
 			KeyPath:      "foo1",
-			Value:        "bar1",
-			DefaultValue: "bar1",
+			Value:        []string{"bar1"},
+			DefaultValue: []string{"bar1"},
 		},
 		{
 			KeyPath:      "foo2",
@@ -277,7 +277,7 @@ func TestDumpKVs_Protected_Error(t *testing.T) {
 
 func newConfig() Config {
 	return Config{
-		Key1: "bar1",
+		Key1: []string{"bar1"},
 		Key2: 123,
 		Key3: ConfigNested1{
 			Key4: "bar4",
@@ -292,7 +292,7 @@ func newConfig() Config {
 
 func newConfigPatch() ConfigPatch {
 	return ConfigPatch{
-		Key1: ptr("patch1"),
+		Key1: ptr([]string{"patch1"}),
 		Key3: &ConfigNested1Patch{
 			Key5: ptr(789),
 			Key6: &ConfigNested2Patch{

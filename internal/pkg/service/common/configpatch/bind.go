@@ -91,14 +91,40 @@ func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
 					}
 				}
 
-				// Try type conversion
+				// Convert slice type, for example []any -> []string
 				actualType := value.Type()
 				expectedType := vc.Type.Elem()
+				if actualType.Kind() == reflect.Slice && expectedType.Kind() == reflect.Slice && !actualType.ConvertibleTo(expectedType) {
+					expectedItemType := expectedType.Elem()
+
+					// Init empty slice
+					targetSlice := vc.Value.Elem()
+					targetSlice.Set(reflect.Zero(expectedType))
+
+					// Convert items
+					for index := 0; index < value.Len(); index++ {
+						item := value.Index(index)
+						for item.Kind() == reflect.Pointer || item.Kind() == reflect.Interface {
+							item = item.Elem()
+						}
+
+						if actualItemType := item.Type(); actualItemType.ConvertibleTo(expectedItemType) {
+							targetSlice.Set(reflect.Append(targetSlice, item.Convert(expectedItemType)))
+						} else {
+							errs.Append(errors.Errorf(`invalid "%s" value: index %d: found type "%s", expected "%s"`, keyPath, index, actualItemType, expectedItemType))
+							break
+						}
+					}
+					return nil
+				}
+
+				// Try type conversion
 				if actualType.ConvertibleTo(expectedType) {
 					vc.Value.Elem().Set(value.Convert(expectedType))
 				} else {
 					errs.Append(errors.Errorf(`invalid "%s" value: found type "%s", expected "%s"`, keyPath, actualType, expectedType))
 				}
+
 				return nil
 			},
 		},
