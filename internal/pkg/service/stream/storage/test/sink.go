@@ -1,21 +1,13 @@
 package test
 
 import (
-	"time"
-
-	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
 func NewSinkKey() key.SinkKey {
@@ -38,48 +30,12 @@ func NewSink(k key.SinkKey) definition.Sink {
 		Name:        "My Sink",
 		Description: "My Description",
 		Table: &definition.TableSink{
-			Config: definition.TableSinkConfig{
-				Storage: &storage.ConfigPatch{
-					Level: &level.ConfigPatch{
-						Local: &local.ConfigPatch{
-							Volume: &volume.ConfigPatch{
-								Assignment: &assignment.ConfigPatch{
-									Count:          Ptr(1),
-									PreferredTypes: Ptr([]string{"default"}),
-								},
-								Sync: &disksync.ConfigPatch{
-									Mode:            Ptr(disksync.ModeDisk),
-									Wait:            Ptr(false),
-									CheckInterval:   Ptr(duration.From(1 * time.Millisecond)),
-									CountTrigger:    Ptr(uint(100)),
-									BytesTrigger:    Ptr(100 * datasize.KB),
-									IntervalTrigger: Ptr(duration.From(100 * time.Millisecond)),
-								},
-							},
-						},
-					},
-				},
-			},
+			Keboola: definition.TableSinkKeboola{
 			Mapping: definition.TableSinkMapping{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 				Columns: column.Columns{
 					column.Datetime{Name: "datetime"},
 					column.Body{Name: "body"},
-				},
-			},
-		},
-	}
-}
-
-func SinkStorageConfig(count int, preferred []string) *storage.ConfigPatch {
-	return &storage.ConfigPatch{
-		Level: &level.ConfigPatch{
-			Local: &local.ConfigPatch{
-				Volume: &volume.ConfigPatch{
-					Assignment: &assignment.ConfigPatch{
-						Count:          Ptr(count),
-						PreferredTypes: Ptr(preferred),
-					},
 				},
 			},
 		},
