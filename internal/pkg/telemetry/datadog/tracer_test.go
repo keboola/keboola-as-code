@@ -40,7 +40,7 @@ func TestContextAttributes(t *testing.T) {
 
 	// Create span
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.test")
-	defer span.End(nil)
+	span.End(nil)
 
 	// Tracer added TraceID and SpanID attributes to the context
 	traceID, ok := ctxattr.Attributes(ctx).Value("dd.trace_id")
@@ -49,7 +49,7 @@ func TestContextAttributes(t *testing.T) {
 	assert.True(t, ok)
 
 	// Context attributes match the span details
-	spans := mockTracer.OpenSpans()
+	spans := mockTracer.FinishedSpans()
 	assert.Len(t, spans, 1)
 	assert.Equal(t, fmt.Sprint(spans[0].TraceID()), traceID.Emit())
 	assert.Equal(t, fmt.Sprint(spans[0].SpanID()), spanID.Emit())

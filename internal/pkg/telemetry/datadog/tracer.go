@@ -6,7 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
@@ -25,12 +25,12 @@ func (t *wrappedDDTracer) Start(parentCtx context.Context, spanName string, opts
 	}
 
 	// Add TraceID and SpanID attributes for logs
-	if ddspan, ok := span.(ddtrace.Span); ok {
-		spanCtx := ddspan.Context()
+	if ddspan, ok := ddtracer.SpanFromContext(ctx); ok {
+		ddCtx := ddspan.Context()
 		ctx = ctxattr.ContextWith(
 			ctx,
-			attribute.String("dd.trace_id", strconv.FormatUint(spanCtx.TraceID(), 10)),
-			attribute.String("dd.span_id", strconv.FormatUint(spanCtx.SpanID(), 10)),
+			attribute.String("dd.trace_id", strconv.FormatUint(ddCtx.TraceID(), 10)),
+			attribute.String("dd.span_id", strconv.FormatUint(ddCtx.SpanID(), 10)),
 		)
 
 		span = &wrappedDDSpan{Span: span, tp: t.tp}
