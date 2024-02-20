@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -113,6 +114,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
+		sink1.Config = sink1.Config.With(testconfig.StorageConfigPatch())
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())

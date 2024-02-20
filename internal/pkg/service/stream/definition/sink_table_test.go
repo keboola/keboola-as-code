@@ -8,8 +8,9 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
 
@@ -68,8 +69,11 @@ func TestTableSink_Validation(t *testing.T) {
 			},
 		},
 		{
-			Name:          "nil table section",
-			ExpectedError: `"table" is a required field`,
+			Name: "empty table section",
+			ExpectedError: `
+- "table.keboola.tableId" is a required field
+- "table.mapping.columns" is a required field
+`,
 			Value: Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
@@ -77,6 +81,7 @@ func TestTableSink_Validation(t *testing.T) {
 				Type:          SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
+				Table:         &TableSink{},
 			},
 		},
 		{
@@ -90,8 +95,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
 				Table: &TableSink{
-					Mapping: TableSinkMapping{
-						TableID: keboola.MustParseTableID("in.bucket.table"),
+					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
 								Name: "body",
@@ -112,8 +117,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   strings.Repeat("a", 4096+1),
 				Table: &TableSink{
-					Mapping: TableSinkMapping{
-						TableID: keboola.MustParseTableID("in.bucket.table"),
+					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
 								Name: "body",
@@ -133,8 +138,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					Mapping: TableSinkMapping{
-						TableID: keboola.MustParseTableID("in.bucket.table"),
+					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
 								Name: "body",
@@ -154,8 +159,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					Mapping: TableSinkMapping{
-						TableID: keboola.MustParseTableID("in.bucket.table"),
+					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
 								Name: "body",
@@ -175,28 +180,23 @@ func TestTableMapping_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Test cases
-	cases := testvalidation.TestCases[TableSinkMapping]{
+	cases := testvalidation.TestCases[table.Mapping]{
 		{
-			Name: "empty",
-			ExpectedError: `
-- "tableId" is a required field
-- "columns" is a required field
-`,
-			Value: TableSinkMapping{},
+			Name:          "empty",
+			ExpectedError: `"columns" is a required field`,
+			Value:         table.Mapping{},
 		},
 		{
 			Name:          "empty columns",
 			ExpectedError: `"columns" must contain at least 1 item`,
-			Value: TableSinkMapping{
-				TableID: keboola.MustParseTableID("in.bucket.table"),
+			Value: table.Mapping{
 				Columns: column.Columns{},
 			},
 		},
 		{
 			Name:          "invalid column",
 			ExpectedError: `"columns[0].name" is a required field`,
-			Value: TableSinkMapping{
-				TableID: keboola.MustParseTableID("in.bucket.table"),
+			Value: table.Mapping{
 				Columns: column.Columns{
 					column.Body{},
 				},
@@ -204,8 +204,7 @@ func TestTableMapping_Validation(t *testing.T) {
 		},
 		{
 			Name: "ok",
-			Value: TableSinkMapping{
-				TableID: keboola.MustParseTableID("in.bucket.table"),
+			Value: table.Mapping{
 				Columns: column.Columns{
 					column.Body{
 						Name: "body",

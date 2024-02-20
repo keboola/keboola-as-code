@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
@@ -33,8 +34,10 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 		SinkKey: sinkKey,
 		Type:    definition.SinkTypeTable,
 		Table: &definition.TableSink{
-			Mapping: definition.TableSinkMapping{
+			Keboola: definition.TableSinkKeboola{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
+			},
+			Mapping: table.Mapping{
 				Columns: column.Columns{
 					column.Datetime{Name: "datetime"},
 					column.Body{Name: "body"},

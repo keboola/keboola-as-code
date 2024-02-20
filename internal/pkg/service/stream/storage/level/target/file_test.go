@@ -15,18 +15,22 @@ func TestFile_Validation(t *testing.T) {
 	cases := []struct {
 		Name          string
 		ExpectedError string
-		Value         File
+		Value         Target
 	}{
 		{
 			Name:          "empty",
-			ExpectedError: `"tableId" is a required field`,
-			Value:         File{},
+			ExpectedError: `"table.keboola.tableId" is a required field`,
+			Value:         Target{},
 		},
 		{
 			Name: "ok",
-			Value: File{
-				TableID:    keboola.MustParseTableID("in.bucket.table"),
-				StorageJob: &keboola.StorageJob{},
+			Value: Target{
+				Table: Table{
+					Keboola: KeboolaTable{
+						TableID:    keboola.MustParseTableID("in.bucket.table"),
+						StorageJob: &keboola.StorageJob{},
+					},
+				},
 			},
 		},
 	}

@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -107,11 +108,11 @@ func TestFileRepository_Operations(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"hdd"})
+		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(3, []string{"hdd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
+		sink2.Config = sink2.Config.With(testconfig.LocalVolumeConfig(3, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
@@ -382,7 +383,11 @@ storage/file/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z
     "credentialsExpiration": "2000-01-01T03:00:00.000Z"
   },
   "target": {
-    "tableId": "in.bucket.table"
+    "table": {
+      "keboola": {
+        "tableId": "in.bucket.table"
+      }
+    }
   }
 }
 >>>>>
