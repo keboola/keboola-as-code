@@ -12,6 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/row"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/create/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
@@ -22,7 +26,6 @@ import (
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
 	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -38,7 +41,7 @@ func TestAskCreateBranch(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateBranch(d)
+	opts, err := branch.AskCreateBranch(dialog, configmap.NewValue("Foo Bar"))
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -58,6 +61,7 @@ func TestAskCreateConfig(t *testing.T) {
 	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMocked(t)
+
 	ctx := context.Background()
 
 	// Create manifest file
@@ -109,8 +113,14 @@ func TestAskCreateConfig(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
+	f := config.Flags{
+		Branch:      configmap.Value[string]{Value: "Main"},
+		ComponentID: configmap.Value[string]{Value: "ex-generic-v2"},
+		Name:        configmap.Value[string]{Value: "Foo Bar"},
+	}
+
 	// Run
-	opts, err := dialog.AskCreateConfig(projectState, d)
+	opts, err := config.AskCreateConfig(projectState, dialog, d, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -196,8 +206,14 @@ func TestAskCreateRow(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
+	f := row.Flags{
+		Branch: configmap.Value[string]{},
+		Config: configmap.Value[string]{},
+		Name:   configmap.Value[string]{},
+	}
+
 	// Run
-	opts, err := dialog.AskCreateRow(projectState, d)
+	opts, err := row.AskCreateRow(projectState, dialog, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 func TestSelectBranchInteractive(t *testing.T) {
@@ -43,7 +44,7 @@ func TestSelectBranchInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectBranch(allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(branch2.String()))
 	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
 
@@ -67,7 +68,7 @@ func TestSelectBranchByFlag(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	out, err := dialog.SelectBranch(allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.Value[string]{Value: branch2.Name, SetBy: configmap.SetByFlag})
 	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
 }
@@ -86,7 +87,7 @@ func TestSelectBranchNonInteractive(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	_, err := dialog.SelectBranch(allBranches, `LABEL`)
+	_, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault})
 	assert.ErrorContains(t, err, "please specify branch")
 }
 
@@ -103,7 +104,7 @@ func TestSelectBranchMissing(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	out, err := dialog.SelectBranch(allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(""))
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify branch`, err.Error())

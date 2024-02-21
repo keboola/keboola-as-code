@@ -12,7 +12,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -186,7 +188,15 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
+	f := use.Flags{
+		Branch:     configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
+		Instance:   configmap.Value[string]{},
+		Version:    configmap.Value[string]{},
+		DryRun:     configmap.Value[bool]{},
+		InputsFile: configmap.Value[string]{},
+	}
+
+	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -307,7 +317,15 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
+	f := use.Flags{
+		Branch:     configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
+		Instance:   configmap.Value[string]{},
+		Version:    configmap.Value[string]{},
+		DryRun:     configmap.Value[bool]{},
+		InputsFile: configmap.Value[string]{},
+	}
+
+	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -453,7 +471,15 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
+	f := use.Flags{
+		Branch:     configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
+		Instance:   configmap.Value[string]{},
+		Version:    configmap.Value[string]{},
+		DryRun:     configmap.Value[bool]{},
+		InputsFile: configmap.Value[string]{},
+	}
+
+	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -483,10 +509,14 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, false)
-	o.Set("branch", "123") // see MinimalProjectFs
-	o.Set("instance-name", "My Instance")
-	o.Set("inputs-file", inputsFilePath)
+	dialog, _, _ := createDialogs(t, false)
+
+	f := use.Flags{
+		Branch:     configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
+		Instance:   configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
+		InputsFile: configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
+	}
+
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -551,7 +581,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
+	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	// Assert
@@ -577,10 +607,13 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, false)
-	o.Set("branch", "123") // see MinimalProjectFs
-	o.Set("instance-name", "My Instance")
-	o.Set("inputs-file", inputsFilePath)
+	dialog, _, _ := createDialogs(t, false)
+
+	f := use.Flags{
+		Branch:     configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
+		Instance:   configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
+		InputsFile: configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
+	}
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -645,7 +678,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		},
 	}
 
-	_, err = dialog.AskUseTemplateOptions(context.Background(), projectState, stepsGroups)
+	_, err = use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
 	expectedErr := `
 steps group 1 "Please select which steps you want to fill." is invalid:
 - all steps (3) must be selected

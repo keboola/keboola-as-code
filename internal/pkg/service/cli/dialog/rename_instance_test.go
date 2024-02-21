@@ -9,6 +9,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/rename"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -59,8 +61,14 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
+	f := rename.Flags{
+		Branch:   configmap.Value[string]{Value: branch.String(), SetBy: configmap.SetByDefault},
+		Instance: configmap.Value[string]{Value: instanceName, SetBy: configmap.SetByDefault},
+		NewName:  configmap.Value[string]{Value: "New Name", SetBy: configmap.SetByDefault},
+	}
+
 	// Run
-	opts, err := dialog.AskRenameInstance(projectState)
+	opts, err := rename.AskRenameInstance(projectState, dialog, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -77,7 +85,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, false)
+	dialog, _, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -95,10 +103,12 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
-	o.Set("branch", 123)
-	o.Set("instance", "inst1")
-	o.Set("new-name", "New Name")
-	opts, err := dialog.AskRenameInstance(projectState)
+	f := rename.Flags{
+		Branch:   configmap.Value[string]{Value: branch.Name, SetBy: configmap.SetByFlag},
+		Instance: configmap.Value[string]{Value: "inst1", SetBy: configmap.SetByFlag},
+		NewName:  configmap.Value[string]{Value: "New Name", SetBy: configmap.SetByFlag},
+	}
+	opts, err := rename.AskRenameInstance(projectState, dialog, f)
 	assert.NoError(t, err)
 	assert.Equal(t, renameOp.Options{
 		Branch:   branchKey,
