@@ -16,6 +16,7 @@ Included files (they are not called directly):
 - `common.sh` - main file for all deployments.
 - `aws.sh` - deploy script for AWS stacks.
 - `azure.sh` - deploy script for Azure stacks.
+- `gcp.sh` - deploy script for GCP stacks.
 - `local.sh` - deploy script for a local MiniKube deployment.
 
 ## Production Deployment

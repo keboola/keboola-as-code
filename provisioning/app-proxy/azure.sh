@@ -22,7 +22,6 @@ CLUSTER_NAME=$(az deployment group show \
 az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" --overwrite-existing
 
 # Common part of the deploy
-export ETCD_STORAGE_CLASS_NAME=
 . ./common.sh
 
 # Azure specific part of the deploy

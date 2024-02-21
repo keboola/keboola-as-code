@@ -20,3 +20,13 @@ spec:
                   number: 80
             path: /
             pathType: Prefix
+    - host: "*.hub.${HOSTNAME_SUFFIX}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: app-proxy
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
