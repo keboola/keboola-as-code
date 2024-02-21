@@ -13,81 +13,12 @@ import (
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 )
-
-const (
-	nameFlag       = "instance-name"
-	inputsFileFlag = "inputs-file"
-)
-
-type useTmplDialog struct {
-	*Dialogs
-	projectState *project.State
-	inputs       template.StepsGroups
-	out          useTemplate.Options
-}
-
-// AskUseTemplateOptions - dialog for using the template in the project.
-func (p *Dialogs) AskUseTemplateOptions(ctx context.Context, projectState *project.State, inputs template.StepsGroups) (useTemplate.Options, error) {
-	dialog := &useTmplDialog{
-		Dialogs:      p,
-		projectState: projectState,
-		inputs:       inputs,
-	}
-	return dialog.ask(ctx)
-}
-
-func (d *useTmplDialog) ask(ctx context.Context) (useTemplate.Options, error) {
-	// Target branch
-	targetBranch, err := d.SelectBranch(d.projectState.LocalObjects().Branches(), `Select the target branch`)
-	if err != nil {
-		return d.out, err
-	}
-	d.out.TargetBranch = targetBranch.BranchKey
-
-	// Instance name
-	if v, err := d.askInstanceName(); err != nil {
-		return d.out, err
-	} else {
-		d.out.InstanceName = v
-	}
-
-	// User inputs
-	if v, _, err := d.AskUseTemplateInputs(ctx, d.inputs.ToExtended(), false); err != nil {
-		return d.out, err
-	} else {
-		d.out.Inputs = v
-	}
-
-	return d.out, nil
-}
-
-func (d *useTmplDialog) askInstanceName() (string, error) {
-	// Is flag set?
-	if d.options.IsSet(nameFlag) {
-		v := d.options.GetString(nameFlag)
-		if len(v) > 0 {
-			return v, nil
-		}
-	}
-
-	// Ask for instance name
-	v, _ := d.Prompt.Ask(&prompt.Question{
-		Label:       "Instance Name",
-		Description: "Please enter an instance name to differentiate between multiple uses of the template.",
-		Validator:   prompt.ValueRequired,
-	})
-	if len(v) == 0 {
-		return "", errors.New(`please specify the instance name`)
-	}
-	return v, nil
-}
 
 type useTmplInputsDialog struct {
 	*Dialogs
@@ -101,7 +32,7 @@ type useTmplInputsDialog struct {
 }
 
 // AskUseTemplateInputs - dialog to enter template inputs.
-func (p *Dialogs) AskUseTemplateInputs(ctx context.Context, groups input.StepsGroupsExt, isForTest bool) (template.InputsValues, []string, error) {
+func (p *Dialogs) AskUseTemplateInputs(ctx context.Context, groups input.StepsGroupsExt, isForTest bool, inputsFileFlag configmap.Value[string]) (template.InputsValues, []string, error) {
 	dialog := &useTmplInputsDialog{
 		Dialogs:      p,
 		groups:       groups,
@@ -109,14 +40,14 @@ func (p *Dialogs) AskUseTemplateInputs(ctx context.Context, groups input.StepsGr
 		context:      context.Background(),
 		inputsValues: make(map[string]any),
 	}
-	return dialog.ask(ctx, isForTest)
+	return dialog.ask(ctx, isForTest, inputsFileFlag)
 }
 
-func (d *useTmplInputsDialog) ask(ctx context.Context, isForTest bool) (template.InputsValues, []string, error) {
+func (d *useTmplInputsDialog) ask(ctx context.Context, isForTest bool, inputsFile configmap.Value[string]) (template.InputsValues, []string, error) {
 	// Load inputs file
-	if d.options.IsSet(inputsFileFlag) {
+	if inputsFile.IsSet() {
 		d.useInputsFile = true
-		path := d.options.GetString(inputsFileFlag)
+		path := inputsFile.Value
 		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
 		if err != nil {
 			return d.out, nil, errors.Errorf(`cannot read inputs file "%s": %w`, path, err)

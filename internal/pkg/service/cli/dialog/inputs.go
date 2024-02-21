@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -18,9 +19,9 @@ type inputsDialogDeps interface {
 	Components() *model.ComponentsMap
 }
 
-// askNewTemplateInputs - dialog to define user inputs for a new template.
+// AskNewTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askNewTemplateInputs(ctx context.Context, deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
+func (p *Dialogs) AskNewTemplateInputs(ctx context.Context, deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows, allInputs configmap.Value[bool]) (objectInputsMap, template.StepsGroups, error) {
 	// Create empty inputs map
 	inputs := input.NewInputsMap()
 
@@ -28,8 +29,7 @@ func (p *Dialogs) askNewTemplateInputs(ctx context.Context, deps inputsDialogDep
 	components := deps.Components()
 
 	// Select which config/row fields will be replaced by user input.
-	selectAllInputs := p.options.GetBool("all-inputs")
-	selectDialog, err := newInputsSelectDialog(p.Prompt, selectAllInputs, components, branch, configs, inputs)
+	selectDialog, err := newInputsSelectDialog(p.Prompt, allInputs.Value, components, branch, configs, inputs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -122,7 +122,7 @@ func (v objectInputsMap) add(objectKey model.Key, inputDef create.InputDef) {
 	v[objectKey] = append(v[objectKey], inputDef)
 }
 
-func (v objectInputsMap) setTo(configs []create.ConfigDef) {
+func (v objectInputsMap) SetTo(configs []create.ConfigDef) {
 	for i := range configs {
 		c := &configs[i]
 		c.Inputs = v[c.Key]

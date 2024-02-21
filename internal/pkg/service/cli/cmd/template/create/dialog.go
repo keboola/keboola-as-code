@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
