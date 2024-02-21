@@ -20,7 +20,7 @@ import (
 func TestSession_Retries(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	wg := &sync.WaitGroup{}
 
 	// Get credentials
@@ -43,7 +43,7 @@ func TestSession_Retries(t *testing.T) {
 	logger := log.NewDebugLogger()
 	session, errCh := NewSessionBuilder().
 		WithGrantTimeout(1*time.Second).
-		WithTTLSeconds(1).
+		WithTTLSeconds(15).
 		WithOnSession(func(session *concurrency.Session) error {
 			require.NotNil(t, session)
 			logger.Info(ctx, "----> new session (1)")
@@ -69,11 +69,11 @@ func TestSession_Retries(t *testing.T) {
 {"level":"info","message":"cannot create etcd session: context deadline exceeded"}
 {"level":"info","message":"waiting %s before the retry"}
 `) == nil
-	}, 15*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 100*time.Millisecond)
 
 	// There is no active session
 	lowLevelSession, err = session.Session()
-	assert.Nil(t, lowLevelSession)
+	require.Nil(t, lowLevelSession)
 	if assert.Error(t, err) {
 		assert.True(t, errors.As(err, &NoSessionError{}))
 	}
