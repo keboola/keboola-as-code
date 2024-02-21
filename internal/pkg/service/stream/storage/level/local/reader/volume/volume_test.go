@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,11 @@ import (
 // TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume directory.
 func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newVolumeTestCase(t)
 
 	// Volume directory is readonly
@@ -37,6 +43,11 @@ func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 // TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume ID file.
 func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable

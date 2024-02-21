@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +35,11 @@ func TestOpen_NonExistentPath(t *testing.T) {
 
 func TestOpen_Error_DirPermissions(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newVolumeTestCase(t)
 
 	// Volume directory is readonly
@@ -47,6 +53,11 @@ func TestOpen_Error_DirPermissions(t *testing.T) {
 
 func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
@@ -157,7 +168,7 @@ func TestOpen_VolumeLock(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Open volume - first instance - ok
-	_, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
 
 	// Open volume - second instance - error
@@ -165,6 +176,9 @@ func TestOpen_VolumeLock(t *testing.T) {
 	if assert.Error(t, err) {
 		wildcards.Assert(t, `cannot acquire writer lock "%s": already locked`, err.Error())
 	}
+
+	// Close volume
+	assert.NoError(t, vol.Close(context.Background()))
 }
 
 func TestVolume_Close_Errors(t *testing.T) {

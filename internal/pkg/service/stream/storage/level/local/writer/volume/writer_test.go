@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -80,9 +81,15 @@ func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
 
 func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newWriterTestCase(t)
 
-	_, err := tc.OpenVolume()
+	// Open volume
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Block creating of the slice directory in the volume directory
@@ -95,10 +102,18 @@ func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
 
 	// Revert permission for cleanup
 	assert.NoError(t, os.Chmod(tc.VolumePath, 0o750))
+
+	// Close volume
+	assert.NoError(t, vol.Close(context.Background()))
 }
 
 func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newWriterTestCase(t)
 
 	// Create read only slice directory
@@ -158,8 +173,8 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	}()
 	tc.ExpectWritesCount(t, 1)
 
-	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer - it triggers the last sync
+	assert.NoError(t, w.Close(ctx))
 
 	// Wait for goroutine
 	wg.Wait()
@@ -195,8 +210,7 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}                  
 {"level":"debug","message":"file synced"}                   
 {"level":"debug","message":"sync to disk done"}             
-{"level":"info","message":"TEST: write unblocked"}          
-{"level":"info","message":"closing volume"}                 
+{"level":"info","message":"TEST: write unblocked"}           
 {"level":"debug","message":"closing file"}                  
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}
@@ -212,7 +226,6 @@ ghi,jkl,789
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed file"}
-{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -264,8 +277,8 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	}()
 	tc.ExpectWritesCount(t, 1)
 
-	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer - it triggers the last sync
+	assert.NoError(t, w.Close(ctx))
 	wg.Wait()
 
 	// Check file content
@@ -294,7 +307,6 @@ ghi,jkl,789
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"info","message":"TEST: write unblocked"}
-{"level":"info","message":"closing volume"}
 {"level":"debug","message":"closing file"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}
@@ -307,7 +319,6 @@ ghi,jkl,789
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed file"}
-{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -338,8 +349,8 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
-	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer - it triggers the last sync
+	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -370,7 +381,6 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"sync to disk done"}
-{"level":"info","message":"closing volume"}
 {"level":"debug","message":"closing file"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}
@@ -386,7 +396,6 @@ ghi,jkl,789
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed file"}
-{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -417,8 +426,8 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
-	// Close writer and volume - it triggers the last sync
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer - it triggers the last sync
+	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -443,7 +452,6 @@ ghi,jkl,789
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
-{"level":"info","message":"closing volume"}
 {"level":"debug","message":"closing file"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}
@@ -456,7 +464,6 @@ ghi,jkl,789
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed file"}
-{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -484,8 +491,8 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
-	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer
+	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -502,7 +509,6 @@ ghi,jkl,789
 {"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is disabled"}
-{"level":"info","message":"closing volume"}
 {"level":"debug","message":"closing file"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"syncer stopped"}
@@ -511,7 +517,6 @@ ghi,jkl,789
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed file"}
-{"level":"info","message":"closed volume"}
 `)
 }
 
@@ -526,8 +531,8 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 	assert.NoError(t, err)
 	assert.FileExists(t, w.FilePath())
 
-	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer
+	assert.NoError(t, w.Close(ctx))
 	assert.FileExists(t, w.FilePath())
 
 	// Check logs
@@ -537,7 +542,6 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 {"level":"debug","message":"opened file"}
 {"level":"error","message":"cannot allocate disk space \"10KB\", allocation skipped: some space allocation error"}
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
-{"level":"info","message":"closing volume"}
 {"level":"debug","message":"closing file"}
 `)
 }
@@ -553,8 +557,8 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 	assert.NoError(t, err)
 	assert.FileExists(t, w.FilePath())
 
-	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer
+	assert.NoError(t, w.Close(ctx))
 	assert.FileExists(t, w.FilePath())
 
 	// Check logs
@@ -564,7 +568,6 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
-{"level":"info","message":"closing volume"}
 {"level":"debug","message":"closing file"}
 `)
 }
@@ -583,8 +586,8 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	require.NoError(t, err)
 	assert.Less(t, allocated, datasize.KB)
 
-	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer
+	assert.NoError(t, w.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -621,8 +624,13 @@ func (tc *writerTestCase) NewWriter(opts ...Option) (writer.Writer, error) {
 		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
 
 		// Open volume
-		_, err := tc.OpenVolume(opts...)
+		vol, err := tc.OpenVolume(opts...)
 		require.NoError(tc.TB, err)
+
+		// Close volume after the test
+		tc.TB.Cleanup(func() {
+			assert.NoError(tc.TB, vol.Close(context.Background()))
+		})
 	}
 
 	// Slice definition must be valid

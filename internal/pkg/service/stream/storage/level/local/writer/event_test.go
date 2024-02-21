@@ -184,6 +184,9 @@ func TestEventWriter_OpenError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, "- error (2)\n- error (1)", err.Error())
 	}
+
+	// Close volumes
+	assert.NoError(t, volumes.Close(ctx))
 }
 
 func TestEventWriter_CloseError(t *testing.T) {
@@ -230,6 +233,9 @@ func TestEventWriter_CloseError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, "- error (3)\n- error (2)\n- error (1)", err.Error())
 	}
+
+	// Close volumes
+	assert.NoError(t, volumes.Close(ctx))
 }
 
 func volumeFactory(w *writer.BaseWriter) (writer.Writer, error) {

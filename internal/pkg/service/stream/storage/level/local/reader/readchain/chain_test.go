@@ -125,6 +125,9 @@ func TestChain_UnwrapFile_Ok(t *testing.T) {
 	file, ok = chain.UnwrapFile()
 	assert.Nil(t, file)
 	assert.False(t, ok)
+
+	// Close file
+	assert.NoError(t, expectedFile.Close())
 }
 
 func TestChain_UnwrapFile_NotOk(t *testing.T) {

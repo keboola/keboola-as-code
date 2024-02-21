@@ -43,7 +43,13 @@ func NewMeterWithBackupFile(w io.Writer, filePath string) (*MeterWithBackup, err
 		return nil, err
 	}
 
-	return NewMeterWithBackup(w, backupFile)
+	meter, err := NewMeterWithBackup(w, backupFile)
+	if err != nil {
+		_ = backupFile.Close()
+		return nil, err
+	}
+
+	return meter, nil
 }
 
 func NewMeterWithBackup(w io.Writer, backup backup) (*MeterWithBackup, error) {

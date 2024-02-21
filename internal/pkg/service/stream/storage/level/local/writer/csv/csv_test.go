@@ -68,6 +68,9 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, `expected 2 columns in the row, given 1`, err.Error())
 	}
+
+	// Close volume
+	assert.NoError(t, vol.Close(ctx))
 }
 
 func TestCSVWriter_CastToStringError(t *testing.T) {
@@ -98,6 +101,9 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, `cannot convert value of the column "id" to the string: unable to cast struct {}{} of type struct {} to string`, err.Error())
 	}
+
+	// Close volume
+	assert.NoError(t, vol.Close(ctx))
 }
 
 // TestCSVWriter_Close_WaitForWrites tests that the Close method waits for writes in progress
@@ -179,6 +185,9 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	content, err = os.ReadFile(filepath.Join(w.DirPath(), csv.RowsCounterFile))
 	assert.NoError(t, err)
 	assert.Equal(t, "2,2000-01-01T00:00:00.000Z,2000-01-01T00:00:00.000Z", string(content))
+
+	// Close volume
+	assert.NoError(t, vol.Close(ctx))
 }
 
 // nolint:tparallel // false positive
