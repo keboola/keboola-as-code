@@ -1,4 +1,4 @@
-package local
+package validate
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"

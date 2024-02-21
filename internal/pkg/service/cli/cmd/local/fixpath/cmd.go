@@ -1,15 +1,21 @@
-package local
+package fixpath
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func FixPathsCommand(p dependencies.Provider) *cobra.Command {
+type Flag struct {
+	DryRun configmap.Value[bool] `configKey:"dry-run" configUsage:"print what needs to be done"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix-paths",
 		Short: helpmsg.Read(`local/fix-paths/short`),
@@ -21,6 +27,12 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flag{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Load project state
 			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
@@ -29,7 +41,7 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := rename.Options{
-				DryRun:   d.Options().GetBool(`dry-run`),
+				DryRun:   f.DryRun.Value,
 				LogEmpty: true,
 			}
 
@@ -39,7 +51,7 @@ func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	// Flags
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
+
 	return cmd
 }

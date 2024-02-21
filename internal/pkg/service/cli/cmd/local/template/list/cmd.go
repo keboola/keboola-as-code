@@ -1,16 +1,22 @@
-package template
+package list
 
 import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	listOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/list"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func ListCommand(p dependencies.Provider) *cobra.Command {
+type Flag struct {
+	Branch configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: helpmsg.Read(`local/template/list/short`),
@@ -22,13 +28,19 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flag{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Load project state
 			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
 
-			branch, err := d.Dialogs().SelectBranch(projectState.LocalObjects().Branches(), `Select branch`)
+			branch, err := d.Dialogs().SelectBranch(projectState.LocalObjects().Branches(), `Select branch`, f.Branch)
 			if err != nil {
 				return err
 			}
@@ -40,6 +52,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
+	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
+
 	return cmd
 }

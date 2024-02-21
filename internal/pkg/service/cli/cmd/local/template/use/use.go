@@ -1,4 +1,4 @@
-package template
+package use
 
 import (
 	"strings"
@@ -6,14 +6,24 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	useOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func UseCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	Branch     configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Instance   configmap.Value[string] `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to upgrade"`
+	Version    configmap.Value[string] `configKey:"version" configShorthand:"V" configUsage:"target version, default latest stable version"`
+	DryRun     configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	InputsFile configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `use <repository>/<template>[/<version>]`,
 		Short: helpmsg.Read(`local/template/use/short`),
@@ -22,6 +32,12 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			// Command must be used in project directory
 			prj, d, err := p.LocalProject(cmd.Context(), false)
 			if err != nil {
+				return err
+			}
+
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -51,7 +67,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskUseTemplateOptions(cmd.Context(), projectState, template.Inputs())
+			options, err := AskUseTemplateOptions(cmd.Context(), d.Dialogs(), projectState, template.Inputs(), f)
 			if err != nil {
 				return err
 			}

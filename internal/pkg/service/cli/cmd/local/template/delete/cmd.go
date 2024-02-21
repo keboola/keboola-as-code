@@ -1,15 +1,23 @@
-package template
+package delete
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	deleteOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func DeleteCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	Branch   configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Instance configmap.Value[string] `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to delete"`
+	DryRun   configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `delete`,
 		Short: helpmsg.Read(`local/template/delete/short`),
@@ -21,6 +29,12 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Load project state
 			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
@@ -28,19 +42,18 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Select instance
-			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState)
+			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState, f.Branch, f.Instance)
 			if err != nil {
 				return err
 			}
 
 			// Delete template
-			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceID, DryRun: d.Options().GetBool("dry-run")}
+			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceID, DryRun: f.DryRun.Value}
 			return deleteOp.Run(cmd.Context(), projectState, options, d)
 		},
 	}
 
-	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`instance`, "i", ``, "instance ID of the template to delete")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+
 	return cmd
 }
