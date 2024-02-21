@@ -40,7 +40,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := dep.Dialogs().AskCreateTemplateOpts(cmd.Context(), dep)
+			options, err := AskCreateTemplateOpts(cmd.Context(), dep.Dialogs(), dep, f)
 			if err != nil {
 				return err
 			}
