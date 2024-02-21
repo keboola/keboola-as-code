@@ -7,6 +7,8 @@ import (
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Mutex provides distributed locking, the interface is compatible with the concurrency.Mutex.
@@ -292,9 +294,9 @@ func (m *activeMutex) localUnlock() error {
 func (m *activeMutex) dbLock(ctx context.Context) (err error) {
 	// Get session at the first time
 	if m.dbSession == nil {
-		m.dbSession, err = m.store.session.Session()
+		m.dbSession, err = m.store.session.WaitForSession(ctx)
 		if err != nil {
-			return err
+			return errors.PrefixError(err, "cannot get concurrency session")
 		}
 	}
 
