@@ -156,8 +156,23 @@ paths:
                     example: V1StGXR8IZ5jdHi6BAmyT
                   example: V1StGXR8IZ5jdHi6BAmyT
             responses:
-                "204":
-                    description: No Content response.
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                id: task-1
+                                url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
+                                type: template.use
+                                createdAt: "2018-01-01T00:00:00.000Z"
+                                finishedAt: "2018-01-01T00:00:00.000Z"
+                                isFinished: true
+                                duration: 123
+                                result: task succeeded
+                                outputs:
+                                    instanceId: V1StGXR8IZ5jdHi6BAmyT
                 "404":
                     description: 'templates.instanceNotFound: Instance not found error.'
                     content:

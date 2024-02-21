@@ -40,6 +40,7 @@ const (
 	ProjectLockedRetryAfter = 5 * time.Second
 	TemplateUpgradeTaskType = "template.upgrade"
 	TemplateUseTaskType     = "template.use"
+	TemplateDeleteTaskType  = "template.delete"
 )
 
 type service struct {
@@ -358,10 +359,10 @@ func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequ
 	return InstanceResponse(ctx, d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) error {
+func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) (*Task, error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
-		return err
+		return nil, err
 	} else {
 		defer unlockFn(ctx)
 	}
@@ -369,7 +370,7 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 	// Get instance
 	prjState, branchKey, _, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Delete template instance
@@ -378,18 +379,38 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 		DryRun:   false,
 		Instance: payload.InstanceID,
 	}
-	err = deleteTemplate.Run(ctx, prjState, deleteOpts, d)
+
+	taskKey := task.Key{
+		ProjectID: d.ProjectID(),
+		TaskID:    task.ID(TemplateDeleteTaskType),
+	}
+
+	t, err := s.tasks.StartTask(ctx, task.Config{
+		Type: TemplateDeleteTaskType,
+		Key:  taskKey,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), time.Minute*5)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			err = deleteTemplate.Run(ctx, prjState, deleteOpts, d)
+			if err != nil {
+				return task.ErrResult(err)
+			}
+
+			// Push changes
+			changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
+			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+				return task.ErrResult(err)
+			}
+
+			return task.OkResult(fmt.Sprintf(`"template instance with id "%s" is deleted"`, deleteOpts.Instance)).
+				WithOutput("instanceId", deleteOpts.Instance)
+		},
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	// Push changes
-	changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
-	if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
-		return err
-	}
-
-	return nil
+	return s.mapper.TaskPayload(t), err
 }
 
 func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpgradeInstancePayload) (res *Task, err error) {

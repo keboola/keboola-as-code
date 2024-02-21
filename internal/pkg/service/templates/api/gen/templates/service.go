@@ -50,7 +50,7 @@ type Service interface {
 	// UpdateInstance implements UpdateInstance.
 	UpdateInstance(context.Context, dependencies.ProjectRequestScope, *UpdateInstancePayload) (res *InstanceDetail, err error)
 	// DeleteInstance implements DeleteInstance.
-	DeleteInstance(context.Context, dependencies.ProjectRequestScope, *DeleteInstancePayload) (err error)
+	DeleteInstance(context.Context, dependencies.ProjectRequestScope, *DeleteInstancePayload) (res *Task, err error)
 	// UpgradeInstance implements UpgradeInstance.
 	UpgradeInstance(context.Context, dependencies.ProjectRequestScope, *UpgradeInstancePayload) (res *Task, err error)
 	// UpgradeInstanceInputsIndex implements UpgradeInstanceInputsIndex.

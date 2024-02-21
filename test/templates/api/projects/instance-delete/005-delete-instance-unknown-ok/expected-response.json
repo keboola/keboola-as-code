@@ -1,1 +1,8 @@
-{}
+{
+  "id": "template.delete/%s",
+  "type": "template.delete",
+  "url": "https://templates.keboola.local/v1/tasks/template.delete/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}

@@ -352,7 +352,7 @@ func NewDeleteInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return nil, s.DeleteInstance(ctx, deps, p)
+		return s.DeleteInstance(ctx, deps, p)
 	}
 }
 
