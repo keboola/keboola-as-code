@@ -1,4 +1,4 @@
-package create
+package branch
 
 import (
 	"time"
@@ -6,13 +6,20 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	Name           configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
+}
 
 func BranchCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -25,8 +32,13 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Options
-			options, err := d.Dialogs().AskCreateBranch(d)
+			options, err := AskCreateBranch(d.Dialogs(), f.Name)
 			if err != nil {
 				return err
 			}
@@ -76,8 +88,6 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new branch")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 	return cmd
 }
