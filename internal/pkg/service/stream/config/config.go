@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -31,6 +32,7 @@ type Config struct {
 	API             API               `configKey:"api"`
 	Source          source.Config     `configKey:"source"`
 	Sink            sink.Config       `configKey:"sink"`
+	Storage         storage.Config    `configKey:"storage"`
 }
 
 type API struct {
@@ -51,6 +53,7 @@ func New() Config {
 		API:             API{Listen: "0.0.0.0:8000", PublicURL: &url.URL{Scheme: "http", Host: "localhost:8000"}},
 		Source:          source.NewConfig(),
 		Sink:            sink.NewConfig(),
+		Storage:         storage.NewConfig(),
 	}
 }
 

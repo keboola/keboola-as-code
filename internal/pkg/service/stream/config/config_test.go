@@ -62,51 +62,32 @@ source:
     http:
         # Listen address of the HTTP source. Validation rules: required,hostname_port
         listen: 0.0.0.0:7000
-sink:
-    table:
-        statistics:
-            sync:
-                # Statistics synchronization interval, from memory to the etcd. Validation rules: required,minDuration=100ms,maxDuration=5s
+storage:
+    statistics:
+        sync:
+            # Statistics synchronization interval, from memory to the etcd. Validation rules: required,minDuration=100ms,maxDuration=5s
+            interval: 1s
+            # Statistics synchronization timeout. Validation rules: required,minDuration=1s,maxDuration=1m
+            timeout: 30s
+        cache:
+            L2:
+                # Enable statistics L2 in-memory cache, otherwise only L1 cache is used.
+                enabled: true
+                # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
                 interval: 1s
-                # Statistics synchronization timeout. Validation rules: required,minDuration=1s,maxDuration=1m
-                timeout: 30s
-            cache:
-                L2:
-                    # Enable statistics L2 in-memory cache, otherwise only L1 cache is used.
-                    enabled: true
-                    # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
-                    invalidationInterval: 1s
-        storage:
-            volumeAssignment:
-                # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
-                count: 1
-                # List of preferred volume types, start with the most preferred. Validation rules: required,min=1
-                preferredTypes:
-                    - default
-            volumeRegistration:
-                # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
-                registrationTTL: 10
-            local:
-                compression:
-                    # Compression type. Validation rules: required,oneof=none gzip zstd
-                    type: gzip
-                    gzip:
-                        # GZIP compression level: 1-9. Validation rules: min=1,max=9
-                        level: 1
-                        # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
-                        implementation: parallel
-                        # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
-                        blockSize: 256KB
-                        # GZIP parallel concurrency, 0 = auto.
-                        concurrency: 0
-                    zstd:
-                        # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
-                        level: 1
-                        # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
-                        windowSize: 1MB
-                        # ZSTD concurrency, 0 = auto
-                        concurrency: 0
-                diskSync:
+    level:
+        local:
+            volume:
+                assignment:
+                    # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
+                    count: 1
+                    # List of preferred volume types, start with the most preferred. Validation rules: required,min=1
+                    preferredTypes:
+                        - default
+                registration:
+                    # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
+                    ttlSeconds: 10
+                sync:
                     # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
                     mode: disk
                     # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
@@ -119,38 +100,57 @@ sink:
                     bytesTrigger: 1MB
                     # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     intervalTrigger: 50ms
-                diskAllocation:
+                allocation:
                     # Allocate disk space for each slice.
                     enabled: true
                     # Size of allocated disk space for a slice. Validation rules: required
-                    size: 100MB
+                    static: 100MB
                     # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
-                    sizePercent: 110
-            staging:
-                # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
-                maxSlicesPerFile: 100
-                # Maximum number of the Storage API file resources created in parallel within one operation. Validation rules: required,min=1,max=500
-                parallelFileCreateLimit: 50
-                upload:
-                    # Minimal interval between uploads. Validation rules: required,minDuration=1s,maxDuration=5m
-                    minInterval: 5s
-                    trigger:
-                        # Records count. Validation rules: required,min=1,max=10000000
-                        count: 10000
-                        # Records size. Validation rules: required,minBytes=100B,maxBytes=50MB
-                        size: 1MB
-                        # Duration from the last upload. Validation rules: required,minDuration=1s,maxDuration=30m
-                        interval: 1m0s
-            target:
-                import:
-                    # Minimal interval between imports. Validation rules: required,minDuration=30s,maxDuration=30m
-                    minInterval: 1m0s
-                    trigger:
-                        # Records count. Validation rules: required,min=1,max=10000000
-                        count: 50000
-                        # Records size. Validation rules: required,minBytes=100B,maxBytes=500MB
-                        size: 5MB
-                        # Duration from the last import. Validation rules: required,minDuration=60s,maxDuration=24h
-                        interval: 5m0s
+                    relative: 110
+            compression:
+                # Compression type. Validation rules: required,oneof=none gzip zstd
+                type: gzip
+                gzip:
+                    # GZIP compression level: 1-9. Validation rules: min=1,max=9
+                    level: 1
+                    # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
+                    implementation: parallel
+                    # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
+                    blockSize: 256KB
+                    # GZIP parallel concurrency, 0 = auto.
+                    concurrency: 0
+                zstd:
+                    # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
+                    level: 1
+                    # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
+                    windowSize: 1MB
+                    # ZSTD concurrency, 0 = auto
+                    concurrency: 0
+        staging:
+            # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
+            maxSlicesPerFile: 100
+            # Maximum number of the Storage API file resources created in parallel within one operation. Validation rules: required,min=1,max=500
+            parallelFileCreateLimit: 50
+            upload:
+                # Minimal interval between uploads. Validation rules: required,minDuration=1s,maxDuration=5m
+                minInterval: 5s
+                trigger:
+                    # Records count. Validation rules: required,min=1,max=10000000
+                    count: 10000
+                    # Records size. Validation rules: required,minBytes=100B,maxBytes=50MB
+                    size: 1MB
+                    # Duration from the last upload. Validation rules: required,minDuration=1s,maxDuration=30m
+                    interval: 1m0s
+        target:
+            import:
+                # Minimal interval between imports. Validation rules: required,minDuration=30s,maxDuration=30m
+                minInterval: 1m0s
+                trigger:
+                    # Records count. Validation rules: required,min=1,max=10000000
+                    count: 50000
+                    # Records size. Validation rules: required,minBytes=100B,maxBytes=500MB
+                    size: 5MB
+                    # Duration from the last import. Validation rules: required,minDuration=60s,maxDuration=24h
+                    interval: 5m0s
 `), strings.TrimSpace(string(bytes)))
 }

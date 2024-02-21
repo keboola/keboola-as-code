@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -450,7 +450,7 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "sinkId": "my-sink-1",
   "version": {
     "number": 5,
-    "hash": "901661a01d08dfce",
+    "hash": "8528182ae2310bfc",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
     "description": "Rollback to version 2"
   },
@@ -460,20 +460,24 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "table": {
     "config": {
       "storage": {
-        "volumeAssignment": {
-          "count": 1,
-          "preferredTypes": [
-            "default"
-          ]
-        },
-        "local": {
-          "diskSync": {
-            "mode": "disk",
-            "wait": false,
-            "checkInterval": "1ms",
-            "countTrigger": 100,
-            "bytesTrigger": "100KB",
-            "intervalTrigger": "100ms"
+        "level": {
+          "local": {
+            "volume": {
+              "assignment": {
+                "count": 1,
+                "preferredTypes": [
+                  "default"
+                ]
+              },
+              "sync": {
+                "mode": "disk",
+                "wait": false,
+                "checkInterval": "1ms",
+                "countTrigger": 100,
+                "bytesTrigger": "100KB",
+                "intervalTrigger": "100ms"
+              }
+            }
           }
         }
       }

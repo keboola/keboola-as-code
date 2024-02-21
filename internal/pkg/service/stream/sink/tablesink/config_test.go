@@ -11,22 +11,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/level/local/writer/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
 func TestConfig_ToKVs(t *testing.T) {
 	t.Parallel()
 
 	kvs, err := configpatch.DumpKVs(
-		tablesink.NewConfig(),
+		tablesink.NewRuntimeConfig(storage.NewConfig()),
 		tablesink.ConfigPatch{
 			Storage: &storage.ConfigPatch{
-				Local: &local.ConfigPatch{
-					DiskAllocation: &diskalloc.ConfigPatch{
-						Size: test.Ptr(456 * datasize.MB),
+				Level: &level.ConfigPatch{
+					Local: &local.ConfigPatch{
+						Volume: &volume.ConfigPatch{
+							Allocation: &diskalloc.ConfigPatch{
+								Static: test.Ptr(456 * datasize.MB),
+							},
+						},
 					},
 				},
 			},
@@ -37,7 +43,7 @@ func TestConfig_ToKVs(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(`
 [
   {
-    "key": "storage.local.compression.gzip.blockSize",
+    "key": "storage.level.local.compression.gzip.blockSize",
     "value": "256KB",
     "defaultValue": "256KB",
     "overwritten": false,
@@ -45,14 +51,14 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "required,minBytes=16kB,maxBytes=100MB"
   },
   {
-    "key": "storage.local.compression.gzip.concurrency",
+    "key": "storage.level.local.compression.gzip.concurrency",
     "value": 0,
     "defaultValue": 0,
     "overwritten": false,
     "protected": false
   },
   {
-    "key": "storage.local.compression.gzip.implementation",
+    "key": "storage.level.local.compression.gzip.implementation",
     "value": "parallel",
     "defaultValue": "parallel",
     "overwritten": false,
@@ -60,7 +66,7 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "required,oneof=standard fast parallel"
   },
   {
-    "key": "storage.local.compression.gzip.level",
+    "key": "storage.level.local.compression.gzip.level",
     "value": 1,
     "defaultValue": 1,
     "overwritten": false,
@@ -68,7 +74,7 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "min=1,max=9"
   },
   {
-    "key": "storage.local.compression.type",
+    "key": "storage.level.local.compression.type",
     "value": "gzip",
     "defaultValue": "gzip",
     "overwritten": false,
@@ -76,14 +82,14 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "required,oneof=none gzip zstd"
   },
   {
-    "key": "storage.local.compression.zstd.concurrency",
+    "key": "storage.level.local.compression.zstd.concurrency",
     "value": 0,
     "defaultValue": 0,
     "overwritten": false,
     "protected": false
   },
   {
-    "key": "storage.local.compression.zstd.level",
+    "key": "storage.level.local.compression.zstd.level",
     "value": 1,
     "defaultValue": 1,
     "overwritten": false,
@@ -91,7 +97,7 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "min=1,max=4"
   },
   {
-    "key": "storage.local.compression.zstd.windowSize",
+    "key": "storage.level.local.compression.zstd.windowSize",
     "value": "1MB",
     "defaultValue": "1MB",
     "overwritten": false,
@@ -99,22 +105,14 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "required,minBytes=1kB,maxBytes=512MB"
   },
   {
-    "key": "storage.local.diskAllocation.enabled",
+    "key": "storage.level.local.volume.allocation.enabled",
     "value": true,
     "defaultValue": true,
     "overwritten": false,
     "protected": false
   },
   {
-    "key": "storage.local.diskAllocation.size",
-    "value": "456MB",
-    "defaultValue": "100MB",
-    "overwritten": true,
-    "protected": false,
-    "validation": "required"
-  },
-  {
-    "key": "storage.local.diskAllocation.sizePercent",
+    "key": "storage.level.local.volume.allocation.relative",
     "value": 110,
     "defaultValue": 110,
     "overwritten": false,
@@ -122,110 +120,15 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "min=100,max=500"
   },
   {
-    "key": "storage.local.diskSync.bytesTrigger",
-    "value": "1MB",
-    "defaultValue": "1MB",
-    "overwritten": false,
+    "key": "storage.level.local.volume.allocation.static",
+    "value": "456MB",
+    "defaultValue": "100MB",
+    "overwritten": true,
     "protected": false,
-    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
+    "validation": "required"
   },
   {
-    "key": "storage.local.diskSync.checkInterval",
-    "value": "5ms",
-    "defaultValue": "5ms",
-    "overwritten": false,
-    "protected": false,
-    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.local.diskSync.countTrigger",
-    "value": 500,
-    "defaultValue": 500,
-    "overwritten": false,
-    "protected": false,
-    "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.local.diskSync.intervalTrigger",
-    "value": "50ms",
-    "defaultValue": "50ms",
-    "overwritten": false,
-    "protected": false,
-    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.local.diskSync.mode",
-    "value": "disk",
-    "defaultValue": "disk",
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,oneof=disabled disk cache"
-  },
-  {
-    "key": "storage.local.diskSync.wait",
-    "value": true,
-    "defaultValue": true,
-    "overwritten": false,
-    "protected": false
-  },
-  {
-    "key": "storage.staging.maxSlicesPerFile",
-    "value": 100,
-    "defaultValue": 100,
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,min=1,max=50000"
-  },
-  {
-    "key": "storage.staging.upload.trigger.count",
-    "value": 10000,
-    "defaultValue": 10000,
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,min=1,max=10000000"
-  },
-  {
-    "key": "storage.staging.upload.trigger.interval",
-    "value": "1m0s",
-    "defaultValue": "1m0s",
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,minDuration=1s,maxDuration=30m"
-  },
-  {
-    "key": "storage.staging.upload.trigger.size",
-    "value": "1MB",
-    "defaultValue": "1MB",
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,minBytes=100B,maxBytes=50MB"
-  },
-  {
-    "key": "storage.target.import.trigger.count",
-    "value": 50000,
-    "defaultValue": 50000,
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,min=1,max=10000000"
-  },
-  {
-    "key": "storage.target.import.trigger.interval",
-    "value": "5m0s",
-    "defaultValue": "5m0s",
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,minDuration=60s,maxDuration=24h"
-  },
-  {
-    "key": "storage.target.import.trigger.size",
-    "value": "5MB",
-    "defaultValue": "5MB",
-    "overwritten": false,
-    "protected": false,
-    "validation": "required,minBytes=100B,maxBytes=500MB"
-  },
-  {
-    "key": "storage.volumeAssignment.count",
+    "key": "storage.level.local.volume.assignment.count",
     "value": 1,
     "defaultValue": 1,
     "overwritten": false,
@@ -233,7 +136,7 @@ func TestConfig_ToKVs(t *testing.T) {
     "validation": "required,min=1,max=100"
   },
   {
-    "key": "storage.volumeAssignment.preferredTypes",
+    "key": "storage.level.local.volume.assignment.preferredTypes",
     "value": [
       "default"
     ],
@@ -243,6 +146,109 @@ func TestConfig_ToKVs(t *testing.T) {
     "overwritten": false,
     "protected": false,
     "validation": "required,min=1"
+  },
+  {
+    "key": "storage.level.local.volume.sync.bytesTrigger",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": false,
+    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.volume.sync.checkInterval",
+    "value": "5ms",
+    "defaultValue": "5ms",
+    "overwritten": false,
+    "protected": false,
+    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.volume.sync.countTrigger",
+    "value": 500,
+    "defaultValue": 500,
+    "overwritten": false,
+    "protected": false,
+    "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.volume.sync.intervalTrigger",
+    "value": "50ms",
+    "defaultValue": "50ms",
+    "overwritten": false,
+    "protected": false,
+    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.volume.sync.mode",
+    "value": "disk",
+    "defaultValue": "disk",
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,oneof=disabled disk cache"
+  },
+  {
+    "key": "storage.level.local.volume.sync.wait",
+    "value": true,
+    "defaultValue": true,
+    "overwritten": false,
+    "protected": false
+  },
+  {
+    "key": "storage.level.staging.maxSlicesPerFile",
+    "value": 100,
+    "defaultValue": 100,
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,min=1,max=50000"
+  },
+  {
+    "key": "storage.level.staging.upload.trigger.count",
+    "value": 10000,
+    "defaultValue": 10000,
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,min=1,max=10000000"
+  },
+  {
+    "key": "storage.level.staging.upload.trigger.interval",
+    "value": "1m0s",
+    "defaultValue": "1m0s",
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,minDuration=1s,maxDuration=30m"
+  },
+  {
+    "key": "storage.level.staging.upload.trigger.size",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,minBytes=100B,maxBytes=50MB"
+  },
+  {
+    "key": "storage.level.target.import.trigger.count",
+    "value": 50000,
+    "defaultValue": 50000,
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,min=1,max=10000000"
+  },
+  {
+    "key": "storage.level.target.import.trigger.interval",
+    "value": "5m0s",
+    "defaultValue": "5m0s",
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,minDuration=60s,maxDuration=24h"
+  },
+  {
+    "key": "storage.level.target.import.trigger.size",
+    "value": "5MB",
+    "defaultValue": "5MB",
+    "overwritten": false,
+    "protected": false,
+    "validation": "required,minBytes=100B,maxBytes=500MB"
   }
 ]
 `), strings.TrimSpace(json.MustEncodeString(kvs, true)))
@@ -254,16 +260,20 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 	patch := tablesink.ConfigPatch{}
 	require.NoError(t, configpatch.BindKVs(&patch, []configpatch.BindKV{
 		{
-			KeyPath: "storage.local.diskAllocation.size",
+			KeyPath: "storage.level.local.volume.allocation.static",
 			Value:   "456MB",
 		},
 	}))
 
 	assert.Equal(t, tablesink.ConfigPatch{
 		Storage: &storage.ConfigPatch{
-			Local: &local.ConfigPatch{
-				DiskAllocation: &diskalloc.ConfigPatch{
-					Size: test.Ptr(456 * datasize.MB),
+			Level: &level.ConfigPatch{
+				Local: &local.ConfigPatch{
+					Volume: &volume.ConfigPatch{
+						Allocation: &diskalloc.ConfigPatch{
+							Static: test.Ptr(456 * datasize.MB),
+						},
+					},
 				},
 			},
 		},
@@ -275,13 +285,13 @@ func TestConfig_BindKVs_InvalidType(t *testing.T) {
 
 	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.BindKV{
 		{
-			KeyPath: "storage.local.compression.gzip.level",
+			KeyPath: "storage.level.local.compression.gzip.level",
 			Value:   "foo",
 		},
 	})
 
 	if assert.Error(t, err) {
-		assert.Equal(t, `invalid "storage.local.compression.gzip.level" value: found type "string", expected "int"`, err.Error())
+		assert.Equal(t, `invalid "storage.level.local.compression.gzip.level" value: found type "string", expected "int"`, err.Error())
 	}
 }
 
@@ -290,12 +300,12 @@ func TestConfig_BindKVs_InvalidValue(t *testing.T) {
 
 	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.BindKV{
 		{
-			KeyPath: "storage.local.diskAllocation.size",
+			KeyPath: "storage.level.local.volume.allocation.static",
 			Value:   "foo",
 		},
 	})
 
 	if assert.Error(t, err) {
-		assert.Equal(t, `invalid "storage.local.diskAllocation.size" value "foo": invalid syntax`, err.Error())
+		assert.Equal(t, `invalid "storage.level.local.volume.allocation.static" value "foo": invalid syntax`, err.Error())
 	}
 }
