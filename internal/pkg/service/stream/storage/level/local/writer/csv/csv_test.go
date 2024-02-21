@@ -308,7 +308,7 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 	}
 
 	return &testcase.WriterTestCase{
-		Name:     fmt.Sprintf("compression=%s,syncMode=%s,wait=%t,parallelWrite=%t", comp.Name, syncMode, syncWait, parallelWrite),
+		Name:     fmt.Sprintf("compression-%s-sync-%s-wait-%t-parallel-%t", comp.Name, syncMode, syncWait, parallelWrite),
 		FileType: model.FileTypeCSV,
 		Columns: column.Columns{
 			// 2 columns, only the count is important for CSV
