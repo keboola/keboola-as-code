@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -41,7 +40,7 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, volume.IDFile)
+	path := filepath.Join(tc.VolumePath, volume.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 

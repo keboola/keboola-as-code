@@ -2,11 +2,11 @@ package volume
 
 import (
 	"os"
+	"path/filepath"
 	"sort"
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -72,13 +72,13 @@ func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err 
 	}()
 
 	// Create directory if not exists
-	dirPath := filesystem.Join(v.Path(), slice.LocalStorage.Dir)
+	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
 	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, errors.Errorf(`cannot create slice directory "%s": %w`, dirPath, err)
 	}
 
 	// Open file
-	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
+	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
 	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {

@@ -3,11 +3,11 @@ package volume
 
 import (
 	"io"
+	"path/filepath"
 	"sort"
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
@@ -63,8 +63,8 @@ func (v *Volume) NewReaderFor(slice *model.Slice) (r reader.Reader, err error) {
 	}()
 
 	// Open file
-	dirPath := filesystem.Join(v.Path(), slice.LocalStorage.Dir)
-	filePath := filesystem.Join(dirPath, slice.LocalStorage.Filename)
+	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
+	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
 	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = v.config.fileOpener(filePath)
 	if err == nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -176,7 +176,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	assert.Equal(t, "value\nvalue\n", string(content))
 
 	// Check rows count file
-	content, err = os.ReadFile(filesystem.Join(w.DirPath(), csv.RowsCounterFile))
+	content, err = os.ReadFile(filepath.Join(w.DirPath(), csv.RowsCounterFile))
 	assert.NoError(t, err)
 	assert.Equal(t, "2,2000-01-01T00:00:00.000Z,2000-01-01T00:00:00.000Z", string(content))
 }
