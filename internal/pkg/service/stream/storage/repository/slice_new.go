@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -30,16 +29,16 @@ func newSlice(now time.Time, file model.File, volumeID volume.ID, prevSliceSize 
 		FileVolumeKey: model.FileVolumeKey{FileKey: file.FileKey, VolumeID: volumeID},
 		SliceID:       model.SliceID{OpenedAt: utctime.From(now)},
 	}
-	sliceDir := filepath.FromSlash(sliceKey.SliceID.OpenedAt.String()) //nolint: forbidigo
 
-	// Generate unique staging storage path
+	localDir := sliceKey.OpenedAt().String()
+
 	stagingPath := fmt.Sprintf(`%s_%s`, sliceKey.OpenedAt().String(), sliceKey.VolumeID)
 
 	s.SliceKey = sliceKey
 	s.Type = file.Type
 	s.State = model.SliceWriting
 	s.Columns = file.Columns
-	if s.LocalStorage, err = file.LocalStorage.NewSlice(sliceDir, prevSliceSize); err != nil {
+	if s.LocalStorage, err = file.LocalStorage.NewSlice(localDir, prevSliceSize); err != nil {
 		return model.Slice{}, err
 	}
 	if s.StagingStorage, err = file.StagingStorage.NewSlice(stagingPath, s.LocalStorage); err != nil {

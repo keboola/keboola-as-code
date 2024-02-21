@@ -17,9 +17,9 @@ type File struct {
 	DiskAllocation diskalloc.Config `json:"diskAllocation"`
 }
 
-func NewFile(cfg Config, fileDir string) File {
+func NewFile(path string, cfg Config) File {
 	return File{
-		Dir:            fileDir,
+		Dir:            NormalizeDirPath(path),
 		Compression:    cfg.Compression.Simplify(),
 		DiskSync:       cfg.Volume.Sync,
 		DiskAllocation: cfg.Volume.Allocation,

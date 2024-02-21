@@ -343,7 +343,7 @@ storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
     }
   ],
   "local": {
-    "dir": "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/2000-01-01T01:00:00.000Z",
+    "dir": "123/456/my-source/my-sink-1/2000-01-01T01-00-00-000Z/2000-01-01T01-00-00-000Z",
     "filename": "slice.csv.gz",
     "compression": {
       "type": "gzip",
