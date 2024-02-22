@@ -111,7 +111,7 @@ func (n *Node) cleanFiles(ctx context.Context) (err error) {
 	defer func() {
 		cnt := count.Load()
 		span.SetAttributes(attribute.Int64("deletedFilesCount", cnt))
-		n.logger.With(attribute.Int64("count", cnt)).Infof(ctx, `deleted "%d" files`, cnt)
+		n.logger.With(attribute.Int64("deletedFilesCount", cnt)).Info(ctx, `deleted "<deletedFilesCount>" files`)
 	}()
 
 	// Delete files in parallel, but with limit
