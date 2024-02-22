@@ -252,8 +252,17 @@ paths:
                   required: true
                   type: string
             responses:
-                "204":
-                    description: No Content response.
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/TemplatesDeleteInstanceResponseBody'
+                        required:
+                            - id
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -1360,6 +1369,74 @@ definitions:
         required:
             - api
             - documentation
+    TemplatesDeleteInstanceResponseBody:
+        title: TemplatesDeleteInstanceResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            id:
+                type: string
+                example: abc123
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            id: task-1
+            url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
+            type: template.use
+            createdAt: "2018-01-01T00:00:00.000Z"
+            finishedAt: "2018-01-01T00:00:00.000Z"
+            isFinished: true
+            duration: 123
+            result: task succeeded
+            outputs:
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+        required:
+            - id
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
     TemplatesDeleteInstanceTemplatesBranchNotFoundResponseBody:
         title: TemplatesDeleteInstanceTemplatesBranchNotFoundResponseBody
         type: object

@@ -296,11 +296,12 @@ var _ = Service("templates", func() {
 
 	Method("DeleteInstance", func() {
 		Meta("openapi:summary", "Delete instance")
+		Result(Task)
 		Payload(InstanceRequest)
 		HTTP(func() {
 			DELETE("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
-			Response(StatusNoContent)
+			Response(StatusAccepted)
 			BranchNotFoundError()
 			InstanceNotFoundError()
 			ProjectLockedError()

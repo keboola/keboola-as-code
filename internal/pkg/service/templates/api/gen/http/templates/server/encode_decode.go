@@ -1117,8 +1117,11 @@ func EncodeUpdateInstanceError(encoder func(context.Context, http.ResponseWriter
 // the templates DeleteInstance endpoint.
 func EncodeDeleteInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		w.WriteHeader(http.StatusNoContent)
-		return nil
+		res, _ := v.(*templates.Task)
+		enc := encoder(ctx, w)
+		body := NewDeleteInstanceResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
 	}
 }
 
