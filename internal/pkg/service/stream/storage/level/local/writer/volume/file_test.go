@@ -41,8 +41,9 @@ func (f *testFile) Sync() error {
 }
 
 func (f *testFile) Close() error {
+	err := f.file.Close()
 	if f.CloseError != nil {
 		return f.CloseError
 	}
-	return f.file.Close()
+	return err
 }
