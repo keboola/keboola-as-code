@@ -67,7 +67,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, *syncInit.DefaultFlags())
+	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, syncInit.DefaultFlags())
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

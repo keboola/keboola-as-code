@@ -22,8 +22,8 @@ type Flags struct {
 	CIMainBranch   configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
 }
 
-func DefaultFlags() *Flags {
-	return &Flags{
+func DefaultFlags() Flags {
+	return Flags{
 		CI:           configmap.NewValue(true),
 		CIValidate:   configmap.NewValue(true),
 		CIPull:       configmap.NewValue(true),
