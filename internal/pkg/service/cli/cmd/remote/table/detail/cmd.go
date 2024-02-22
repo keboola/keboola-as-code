@@ -1,6 +1,9 @@
-package table
+package detail
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
+	u "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -12,7 +15,11 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/detail"
 )
 
-func DetailCommand(p dependencies.Provider) *cobra.Command {
+type Flag struct {
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `detail [table]`,
 		Short: helpmsg.Read(`remote/table/detail/short`),
@@ -25,6 +32,12 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flag{}
+			if err = configmap.Bind(u.GetBindConfig(cmd.Flags(), args), f); err != nil {
+				return err
+			}
+
 			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
@@ -34,7 +47,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 			// Ask options
 			tableKey := keboola.TableKey{BranchID: branch.ID}
 			if len(args) == 0 {
-				tableKey, _, err = askTable(cmd.Context(), d, branch.ID, false)
+				tableKey, _, err = utils.AskTable(cmd.Context(), d, branch.ID, false, configmap.Value[string]{Value: tableKey.TableID.String(), SetBy: configmap.SetByFlag})
 				if err != nil {
 					return err
 				}
@@ -51,7 +64,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
 
 	return cmd
 }

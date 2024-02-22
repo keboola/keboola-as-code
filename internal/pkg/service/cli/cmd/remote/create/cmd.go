@@ -11,9 +11,9 @@ import (
 )
 
 func Commands(p dependencies.Provider) *cobra.Command {
-	createBranchCmd := branch.BranchCommand(p)
-	createBucketCmd := bucket.BucketCommand(p)
-	createTableCmd := table.TableCommand(p)
+	createBranchCmd := branch.Command(p)
+	createBucketCmd := bucket.Command(p)
+	createTableCmd := table.Command(p)
 	cmd := &cobra.Command{
 		Use:   `create`,
 		Short: helpmsg.Read(`remote/create/short`),

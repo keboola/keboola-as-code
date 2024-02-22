@@ -1,6 +1,7 @@
-package workspace
+package list
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -10,7 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/list"
 )
 
-func ListCommand(p dependencies.Provider) *cobra.Command {
+type Flag struct {
+	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `list`,
 		Short: helpmsg.Read(`remote/workspace/list/short`),
@@ -35,7 +40,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
 
 	return cmd
 }

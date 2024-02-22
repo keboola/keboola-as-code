@@ -1,7 +1,10 @@
-package table
+package preview
 
 import (
 	"context"
+	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strings"
 	"time"
 
@@ -12,12 +15,32 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
 
-func PreviewCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	ChangedSince   configmap.Value[string]   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
+	ChangedUntil   configmap.Value[string]   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
+	Columns        configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of columns to export"`
+	Limit          configmap.Value[uint]     `configKey:"limit" configUsage:"limit the number of exported rows"`
+	Where          configmap.Value[string]   `configKey:"where" configUsage:"filter columns by value"`
+	Order          configmap.Value[string]   `configKey:"order" configUsage:"order by one or more columns"`
+	Format         configmap.Value[string]   `configKey:"format" configUsage:"output format (json/csv/pretty)"`
+	Out            configmap.Value[string]   `configKey:"out" configShorthand:"o" configUsage:"export table to a file"`
+	Force          configmap.Value[bool]     `configKey:"force" configUsage:"overwrite the output file if it already exists"`
+}
+
+func DefaultFlags() *Flags {
+	return &Flags{
+		Limit:   configmap.NewValue(uint(100)),
+		Columns: configmap.NewValue([]string{}),
+		Format:  configmap.NewValue(preview.TableFormatPretty),
+	}
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `preview [table]`,
 		Short: helpmsg.Read(`remote/table/preview/short`),
@@ -30,6 +53,12 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := DefaultFlags()
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), f); err != nil {
+				return err
+			}
+
 			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
@@ -39,7 +68,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 			// Get table key
 			tableKey := keboola.TableKey{BranchID: branch.ID}
 			if len(args) < 1 {
-				key, _, err := askTable(cmd.Context(), d, branch.ID, false)
+				key, _, err := utils2.AskTable(cmd.Context(), d, branch.ID, false, configmap.NewValue(tableKey.TableID.String()))
 				if err != nil {
 					return err
 				}
@@ -51,7 +80,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			opts, err := parsePreviewOptions(cmd.Context(), d.Options(), d.Fs(), tableKey)
+			opts, err := parsePreviewOptions(cmd.Context(), d.Fs(), tableKey, *f)
 			if err != nil {
 				return err
 			}
@@ -63,39 +92,30 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().String("changed-since", "", "only export rows imported after this date")
-	cmd.Flags().String("changed-until", "", "only export rows imported before this date")
-	cmd.Flags().StringSlice("columns", []string{}, "comma-separated list of columns to export")
-	cmd.Flags().Uint("limit", 100, "limit the number of exported rows")
-	cmd.Flags().String("where", "", "filter columns by value")
-	cmd.Flags().String("order", "", "order by one or more columns")
-	cmd.Flags().String("format", preview.TableFormatPretty, "output format (json/csv/pretty)")
-	cmd.Flags().StringP("out", "o", "", "export table to a file")
-	cmd.Flags().Bool("force", false, "overwrite the output file if it already exists")
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }
 
-func parsePreviewOptions(ctx context.Context, options *options.Options, fs filesystem.Fs, tableKey keboola.TableKey) (preview.Options, error) {
+func parsePreviewOptions(ctx context.Context, fs filesystem.Fs, tableKey keboola.TableKey, f Flags) (preview.Options, error) {
 	o := preview.Options{TableKey: tableKey}
 
-	o.ChangedSince = options.GetString("changed-since")
-	o.ChangedUntil = options.GetString("changed-until")
-	o.Columns = options.GetStringSlice("columns")
-	o.Limit = options.GetUint("limit")
+	o.ChangedSince = f.ChangedSince.Value
+	o.ChangedUntil = f.ChangedUntil.Value
+	o.Columns = f.Columns.Value
+	o.Limit = f.Limit.Value
 
 	e := errors.NewMultiError()
 
-	o.Out = options.GetString("out")
-	if fs.Exists(ctx, o.Out) && !options.GetBool("force") {
+	o.Out = f.Out.Value
+	if fs.Exists(ctx, o.Out) && !f.Force.IsSet() {
 		e.Append(errors.Errorf(`file "%s" already exists, use the "--force" flag to overwrite it`, o.Out))
 	}
 
-	whereString := options.GetString("where")
+	whereString := f.Where.Value
 	if len(whereString) > 0 {
 		for _, s := range strings.Split(whereString, ";") {
-			whereFilter, err := parseWhereFilter(s)
+			whereFilter, err := ParseWhereFilter(s)
 			if err != nil {
 				e.Append(err)
 				continue
@@ -104,10 +124,10 @@ func parsePreviewOptions(ctx context.Context, options *options.Options, fs files
 		}
 	}
 
-	orderString := options.GetString("order")
+	orderString := f.Order.Value
 	if len(orderString) > 0 {
 		for _, s := range strings.Split(orderString, ",") {
-			columnOrder, err := parseColumnOrder(s)
+			columnOrder, err := ParseColumnOrder(s)
 			if err != nil {
 				e.Append(err)
 				continue
@@ -116,7 +136,7 @@ func parsePreviewOptions(ctx context.Context, options *options.Options, fs files
 		}
 	}
 
-	format := options.GetString("format")
+	format := f.Format.Value
 	if !preview.IsValidFormat(format) {
 		return preview.Options{}, errors.Errorf(`invalid output format "%s"`, format)
 	}
@@ -125,7 +145,7 @@ func parsePreviewOptions(ctx context.Context, options *options.Options, fs files
 	return o, nil
 }
 
-func parseWhereFilter(s string) (preview.WhereFilter, error) {
+func ParseWhereFilter(s string) (preview.WhereFilter, error) {
 	m := regexpcache.MustCompile(`^(\w+)(=|!=|>=|<=)([^=!<>]*)$`).FindStringSubmatch(s)
 	if m == nil {
 		return preview.WhereFilter{}, errors.Errorf(`invalid where filter "%s"`, s)
@@ -145,7 +165,7 @@ func parseWhereFilter(s string) (preview.WhereFilter, error) {
 	}, nil
 }
 
-func parseColumnOrder(s string) (preview.ColumnOrder, error) {
+func ParseColumnOrder(s string) (preview.ColumnOrder, error) {
 	m := regexpcache.MustCompile(`(\w+)(?:=(asc|desc))?`).FindStringSubmatch(s)
 	if m == nil {
 		return preview.ColumnOrder{}, errors.Errorf(`invalid column order "%s"`, s)

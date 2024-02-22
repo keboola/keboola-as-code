@@ -1,6 +1,8 @@
 package table
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -12,7 +14,15 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
-func TableCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	Bucket         configmap.Value[string] `configKey:"bucket" configUsage:"bucket ID (required if the tableId argument is empty)"`
+	Name           configmap.Value[string] `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
+	Columns        configmap.Value[string] `configKey:"columns" configUsage:"comma-separated list of column names"`
+	PrimaryKey     configmap.Value[string] `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "table [table]",
 		Short: helpmsg.Read(`remote/create/table/short`),
@@ -22,6 +32,12 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 			// Get dependencies
 			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
+				return err
+			}
+
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -41,7 +57,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				}
 				allBuckets = *allBucketsPtr
 			}
-			opts, err := d.Dialogs().AskCreateTable(args, branch.BranchKey, allBuckets)
+			opts, err := AskCreateTable(args, branch.BranchKey, allBuckets, d.Dialogs(), f)
 			if err != nil {
 				return err
 			}
@@ -52,12 +68,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().String("bucket", "", "bucket ID (required if the tableId argument is empty)")
-	cmd.Flags().String("name", "", "name of the table (required if the tableId argument is empty)")
-	cmd.Flags().String("columns", "", "comma-separated list of column names")
-	cmd.Flags().String("primary-key", "", "columns used as primary key, comma-separated")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

@@ -1,6 +1,8 @@
-package file
+package download
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strconv"
 	"time"
 
@@ -13,7 +15,13 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 )
 
-func DownloadCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Output         configmap.Value[string] `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
+	AllowSliced    configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `download [file]`,
 		Short: helpmsg.Read(`remote/file/download/short`),
@@ -23,6 +31,12 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			// Get dependencies
 			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
 			if err != nil {
+				return err
+			}
+
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -51,7 +65,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			output, err := d.Dialogs().AskFileOutput()
+			output, err := d.Dialogs().AskFileOutput(f.Output)
 			if err != nil {
 				return err
 			}
@@ -67,16 +81,14 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			opts := download.Options{
 				File:        file,
 				Output:      output,
-				AllowSliced: d.Options().GetBool("allow-sliced"),
+				AllowSliced: f.AllowSliced.Value,
 			}
 
 			return download.Run(cmd.Context(), opts, d)
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("output", "o", "", "path to the destination file or directory")
-	cmd.Flags().Bool("allow-sliced", false, "output sliced files as a directory containing slices as individual files")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

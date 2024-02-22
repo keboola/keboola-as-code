@@ -1,6 +1,8 @@
-package workspace
+package detail
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -11,7 +13,12 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/detail"
 )
 
-func DetailCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	WorkspaceID    configmap.Value[string] `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to fetch"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `detail`,
 		Short: helpmsg.Read(`remote/workspace/detail/short`),
@@ -23,8 +30,14 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Ask options
-			id, err := d.Dialogs().AskWorkspaceID()
+			id, err := d.Dialogs().AskWorkspaceID(f.WorkspaceID)
 			if err != nil {
 				return err
 			}
@@ -36,8 +49,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("workspace-id", "W", "", "id of the workspace to fetch")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

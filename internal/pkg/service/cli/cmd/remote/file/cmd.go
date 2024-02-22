@@ -1,6 +1,8 @@
 package file
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/file/download"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/file/upload"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -14,8 +16,8 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/file/long`),
 	}
 	cmd.AddCommand(
-		DownloadCommand(p),
-		UploadCommand(p),
+		download.Command(p),
+		upload.Command(p),
 	)
 
 	return cmd

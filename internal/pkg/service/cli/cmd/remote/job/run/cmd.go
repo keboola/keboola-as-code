@@ -1,6 +1,8 @@
-package job
+package run
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strconv"
 	"strings"
 	"time"
@@ -10,12 +12,22 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
 
-func RunCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Async          configmap.Value[bool]   `configKey:"async" configUsage:"do not wait for job to finish"`
+	Timeout        configmap.Value[string] `configKey:"timeout" configUsage:"how long to wait for job to finish"`
+}
+
+func DefaultFlags() *Flags {
+	return &Flags{
+		Timeout: configmap.NewValue("5m"),
+	}
+}
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `run [branch1/]component1/config1[@tag] [branch2/]component2/config2[@tag] ...`,
 		Short: helpmsg.Read(`remote/job/run/short`),
@@ -28,8 +40,14 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := DefaultFlags()
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), f); err != nil {
+				return err
+			}
+
 			// Parse options
-			opts, err := parseJobRunOptions(d.Options(), args)
+			opts, err := parseJobRunOptions(args, *f)
 			if err != nil {
 				return err
 			}
@@ -41,18 +59,16 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().Bool("async", false, "do not wait for job to finish")
-	cmd.Flags().String("timeout", "5m", "how long to wait for job to finish")
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }
 
-func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, error) {
+func parseJobRunOptions(args []string, f Flags) (run.RunOptions, error) {
 	o := run.RunOptions{}
-	o.Async = opts.GetBool("async")
+	o.Async = f.Async.Value
 
-	timeout, err := time.ParseDuration(opts.GetString("timeout"))
+	timeout, err := time.ParseDuration(f.Timeout.Value)
 	if err != nil {
 		return run.RunOptions{}, err
 	}

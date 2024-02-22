@@ -21,7 +21,7 @@ type Flags struct {
 	Name           configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
 }
 
-func BranchCommand(p dependencies.Provider) *cobra.Command {
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "branch",
 		Short: helpmsg.Read(`remote/create/branch/short`),

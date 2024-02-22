@@ -1,6 +1,8 @@
-package workspace
+package create
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -10,7 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
-func CreateCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	Name           configmap.Value[string] `configKey:"name" configUsage:"name of the workspace"`
+	Type           configmap.Value[string] `configKey:"type" configUsage:"type of the workspace"`
+	Size           configmap.Value[string] `configKey:"size" configUsage:"size of the workspace"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `create`,
 		Short: helpmsg.Read(`remote/workspace/create/short`),
@@ -22,8 +31,14 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Ask options
-			options, err := d.Dialogs().AskCreateWorkspace()
+			options, err := AskCreateWorkspace(d.Dialogs(), f)
 			if err != nil {
 				return err
 			}
@@ -41,10 +56,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().String("name", "", "name of the workspace")
-	cmd.Flags().String("type", "", "type of the workspace")
-	cmd.Flags().String("size", "", "size of the workspace")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
 
 	return cmd
 }

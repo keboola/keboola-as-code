@@ -1,4 +1,4 @@
-package table
+package preview
 
 import (
 	"testing"
@@ -61,7 +61,7 @@ func TestParseWhereFilter(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual, err := parseWhereFilter(c.input)
+		actual, err := ParseWhereFilter(c.input)
 		assert.NoError(t, err)
 		assert.Equal(t, c.expected, actual)
 	}
@@ -78,7 +78,7 @@ func TestParseWhereFilter_Errors(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual, err := parseWhereFilter(c)
+		actual, err := ParseWhereFilter(c)
 		assert.Error(t, err)
 		assert.Empty(t, actual)
 	}
@@ -108,7 +108,7 @@ func TestParseColumnOrder(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual, err := parseColumnOrder(c.input)
+		actual, err := ParseColumnOrder(c.input)
 		assert.NoError(t, err)
 		assert.Equal(t, c.expected, actual)
 	}

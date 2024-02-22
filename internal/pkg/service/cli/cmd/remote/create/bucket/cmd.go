@@ -1,6 +1,8 @@
 package bucket
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -11,7 +13,15 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
 
-func BucketCommand(p dependencies.Provider) *cobra.Command {
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	Description    configmap.Value[string] `configKey:"description" configUsage:"bucket description"`
+	DisplayName    configmap.Value[string] `configKey:"display-name" configUsage:"display name for the UI"`
+	Name           configmap.Value[string] `configKey:"name" configUsage:"name of the bucket"`
+	Stage          configmap.Value[string] `configKey:"stage" configUsage:"stage, allowed values: in, out"`
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bucket",
 		Short: helpmsg.Read(`remote/create/bucket/short`),
@@ -23,6 +33,12 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+				return err
+			}
+
 			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
@@ -30,7 +46,7 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			opts, err := d.Dialogs().AskCreateBucket(branch.BranchKey)
+			opts, err := AskCreateBucket(branch.BranchKey, d.Dialogs(), f)
 			if err != nil {
 				return err
 			}
@@ -41,11 +57,7 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP("storage-api-host", "H", "", "if command is run outside the project directory")
-	cmd.Flags().String("description", "", "bucket description")
-	cmd.Flags().String("display-name", "", "display name for the UI")
-	cmd.Flags().String("name", "", "name of the bucket")
-	cmd.Flags().String("stage", "", "stage, allowed values: in, out")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+
 	return cmd
 }
