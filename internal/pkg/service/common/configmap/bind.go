@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	SetByUnknown SetBy = iota
-	SetByDefault
+	SetByDefault SetBy = iota
 	SetByConfig
 	SetByFlag
 	SetByEnv
