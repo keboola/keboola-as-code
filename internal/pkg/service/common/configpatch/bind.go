@@ -11,17 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-// BindKV is input of the bind operation for a one configuration key.
-type BindKV struct {
-	// KeyPath is a configuration key, parts are joined with a dot "." separator.
-	KeyPath string `json:"key"`
-	// Value is a patched value of the configuration key.
-	Value any `json:"value"`
-}
-
 // BindKVs binds flattened key-value pairs from a client request to a patch structure.
 // The patch structure is modified in place.
-func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
+func BindKVs(patchStruct any, kvs PatchKVs, opts ...Option) error {
 	cfg := newConfig(opts)
 
 	rootPtr := reflect.ValueOf(patchStruct)
@@ -99,14 +91,40 @@ func BindKVs(patchStruct any, kvs []BindKV, opts ...Option) error {
 					}
 				}
 
-				// Try type conversion
+				// Convert slice type, for example []any -> []string
 				actualType := value.Type()
 				expectedType := vc.Type.Elem()
+				if actualType.Kind() == reflect.Slice && expectedType.Kind() == reflect.Slice && !actualType.ConvertibleTo(expectedType) {
+					expectedItemType := expectedType.Elem()
+
+					// Init empty slice
+					targetSlice := vc.Value.Elem()
+					targetSlice.Set(reflect.Zero(expectedType))
+
+					// Convert items
+					for index := 0; index < value.Len(); index++ {
+						item := value.Index(index)
+						for item.Kind() == reflect.Pointer || item.Kind() == reflect.Interface {
+							item = item.Elem()
+						}
+
+						if actualItemType := item.Type(); actualItemType.ConvertibleTo(expectedItemType) {
+							targetSlice.Set(reflect.Append(targetSlice, item.Convert(expectedItemType)))
+						} else {
+							errs.Append(errors.Errorf(`invalid "%s" value: index %d: found type "%s", expected "%s"`, keyPath, index, actualItemType, expectedItemType))
+							break
+						}
+					}
+					return nil
+				}
+
+				// Try type conversion
 				if actualType.ConvertibleTo(expectedType) {
 					vc.Value.Elem().Set(value.Convert(expectedType))
 				} else {
 					errs.Append(errors.Errorf(`invalid "%s" value: found type "%s", expected "%s"`, keyPath, actualType, expectedType))
 				}
+
 				return nil
 			},
 		},

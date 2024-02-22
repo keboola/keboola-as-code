@@ -17,7 +17,7 @@ type ConfigPatchTextUnmarshaller struct {
 func TestBindKVs_NoStructPointer(t *testing.T) {
 	t.Parallel()
 	assert.PanicsWithError(t, `patch struct must be a pointer to a struct, found "configpatch_test.ConfigPatch"`, func() {
-		var kvs []configpatch.BindKV
+		var kvs []configpatch.PatchKV
 		_ = configpatch.BindKVs(ConfigPatch{}, kvs)
 	})
 }
@@ -25,7 +25,7 @@ func TestBindKVs_NoStructPointer(t *testing.T) {
 func TestBindKVs_Empty(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	var kvs []configpatch.BindKV
+	var kvs []configpatch.PatchKV
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, patch, ConfigPatch{})
 }
@@ -33,7 +33,7 @@ func TestBindKVs_Empty(t *testing.T) {
 func TestBindKVs_One(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "foo3.foo5", Value: 789},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
@@ -45,7 +45,7 @@ func TestBindKVs_One(t *testing.T) {
 func TestBindKVs_DeepNested(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "foo3.foo6.foo8", Value: false},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
@@ -61,13 +61,13 @@ func TestBindKVs_DeepNested(t *testing.T) {
 func TestBindKVs_Multiple(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
-		{KeyPath: "foo1", Value: "bar1"},
+	kvs := []configpatch.PatchKV{
+		{KeyPath: "foo1", Value: []any{"bar1"}}, // slice []any -> []string
 		{KeyPath: "foo3.foo5", Value: 789},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, patch, ConfigPatch{
-		Key1: ptr("bar1"),
+		Key1: ptr([]string{"bar1"}),
 		Key3: &ConfigNested1Patch{Key5: ptr(789)},
 	})
 }
@@ -75,7 +75,7 @@ func TestBindKVs_Multiple(t *testing.T) {
 func TestBindKVs_UnmarshalText_Ok(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatchTextUnmarshaller{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "duration", Value: "1h20m"},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
@@ -87,7 +87,7 @@ func TestBindKVs_UnmarshalText_Ok(t *testing.T) {
 func TestBindKVs_UnmarshalText_Error(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatchTextUnmarshaller{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "duration", Value: "invalid value"},
 	}
 	if err := configpatch.BindKVs(&patch, kvs); assert.Error(t, err) {
@@ -98,7 +98,7 @@ func TestBindKVs_UnmarshalText_Error(t *testing.T) {
 func TestBindKVs_CompatibleType(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "foo3.foo5", Value: float64(789)}, // different, but compatible type
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
@@ -110,7 +110,7 @@ func TestBindKVs_CompatibleType(t *testing.T) {
 func TestBindKVs_IncompatibleType(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "foo3.foo5", Value: "789"},
 	} // incompatible type, expected int
 	if err := configpatch.BindKVs(&patch, kvs); assert.Error(t, err) {
@@ -121,7 +121,7 @@ func TestBindKVs_IncompatibleType(t *testing.T) {
 func TestBindKVs_DuplicateKV(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: "foo3.foo5", Value: 789},
 		{KeyPath: "foo3.foo5", Value: 789},
 	}
@@ -133,7 +133,7 @@ func TestBindKVs_DuplicateKV(t *testing.T) {
 func TestBindKVs_KeyNotFound(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatch{}
-	kvs := []configpatch.BindKV{
+	kvs := []configpatch.PatchKV{
 		{KeyPath: `foo.bar.1`, Value: 123},
 		{KeyPath: `foo.bar.2`, Value: 234},
 	}
@@ -145,7 +145,7 @@ func TestBindKVs_KeyNotFound(t *testing.T) {
 func TestBindKVs_InvalidPatchStruct(t *testing.T) {
 	t.Parallel()
 	patch := ConfigPatchInvalid{}
-	var kvs []configpatch.BindKV
+	var kvs []configpatch.PatchKV
 	if err := configpatch.BindKVs(&patch, kvs); assert.Error(t, err) {
 		assert.Equal(t, `patch field "foo1" is not a pointer, but "string"`, err.Error())
 	}

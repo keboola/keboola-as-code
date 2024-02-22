@@ -22,7 +22,7 @@ import (
 func TestConfig_ToKVs(t *testing.T) {
 	t.Parallel()
 
-	kvs, err := configpatch.DumpKVs(
+	kvs, err := configpatch.DumpAll(
 		tablesink.NewRuntimeConfig(storage.NewConfig()),
 		tablesink.ConfigPatch{
 			Storage: &storage.ConfigPatch{
@@ -258,7 +258,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 	t.Parallel()
 
 	patch := tablesink.ConfigPatch{}
-	require.NoError(t, configpatch.BindKVs(&patch, []configpatch.BindKV{
+	require.NoError(t, configpatch.BindKVs(&patch, []configpatch.PatchKV{
 		{
 			KeyPath: "storage.level.local.volume.allocation.static",
 			Value:   "456MB",
@@ -283,7 +283,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 func TestConfig_BindKVs_InvalidType(t *testing.T) {
 	t.Parallel()
 
-	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.BindKV{
+	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.PatchKV{
 		{
 			KeyPath: "storage.level.local.compression.gzip.level",
 			Value:   "foo",
@@ -298,7 +298,7 @@ func TestConfig_BindKVs_InvalidType(t *testing.T) {
 func TestConfig_BindKVs_InvalidValue(t *testing.T) {
 	t.Parallel()
 
-	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.BindKV{
+	err := configpatch.BindKVs(&tablesink.ConfigPatch{}, []configpatch.PatchKV{
 		{
 			KeyPath: "storage.level.local.volume.allocation.static",
 			Value:   "foo",
