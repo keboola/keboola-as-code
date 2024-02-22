@@ -57,8 +57,8 @@ func (d *useTmplDialog) ask(ctx context.Context) (useTemplate.Options, error) {
 
 func (d *useTmplDialog) askInstanceName() (string, error) {
 	// Is flag set?
-	if d.Instance.IsSet() {
-		v := d.Instance.Value
+	if d.InstanceName.IsSet() {
+		v := d.InstanceName.Value
 		if len(v) > 0 {
 			return v, nil
 		}

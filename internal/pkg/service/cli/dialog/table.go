@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) AskPrimaryKey(primaryKey configmap.Value[string]) []string {
-	pkStr := primaryKey.Value
+func (p *Dialogs) AskPrimaryKey(primaryKey configmap.Value[[]string]) []string {
+	pkStr := primaryKey.Value[0]
 	if !primaryKey.IsSet() {
 		pkStr, _ = p.Ask(&prompt.Question{
 			Label:       "Primary key",

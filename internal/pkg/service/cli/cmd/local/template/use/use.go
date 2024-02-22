@@ -16,11 +16,9 @@ import (
 )
 
 type Flags struct {
-	Branch     configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
-	Instance   configmap.Value[string] `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to upgrade"`
-	Version    configmap.Value[string] `configKey:"version" configShorthand:"V" configUsage:"target version, default latest stable version"`
-	DryRun     configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
-	InputsFile configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+	Branch       configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"target branch ID or name"`
+	InstanceName configmap.Value[string] `configKey:"instance-name" configShorthand:"n" configUsage:"name of new template instance"`
+	InputsFile   configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -88,10 +86,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`branch`, "b", ``, "target branch ID or name")
-	cmd.Flags().StringP(`instance-name`, "n", ``, "name of new template instance")
-	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
+	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+
 	return cmd
 }
 

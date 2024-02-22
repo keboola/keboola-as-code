@@ -34,7 +34,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// flags
 			f := Flag{}
-			if err = configmap.Bind(u.GetBindConfig(cmd.Flags(), args), f); err != nil {
+			if err = configmap.Bind(u.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -47,7 +47,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Ask options
 			tableKey := keboola.TableKey{BranchID: branch.ID}
 			if len(args) == 0 {
-				tableKey, _, err = utils.AskTable(cmd.Context(), d, branch.ID, false, configmap.Value[string]{Value: tableKey.TableID.String(), SetBy: configmap.SetByFlag})
+				tableKey, _, err = utils.AskTable(cmd.Context(), d, branch.ID, false, configmap.NewValue(tableKey.TableID.String()))
 				if err != nil {
 					return err
 				}

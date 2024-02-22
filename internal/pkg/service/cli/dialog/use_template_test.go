@@ -189,11 +189,8 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	}
 
 	f := use.Flags{
-		Branch:     configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
-		Instance:   configmap.Value[string]{},
-		Version:    configmap.Value[string]{},
-		DryRun:     configmap.Value[bool]{},
-		InputsFile: configmap.Value[string]{},
+		Branch:       configmap.NewValue("123"),
+		InstanceName: configmap.NewValue("My Instance"),
 	}
 
 	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
@@ -318,11 +315,9 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	}
 
 	f := use.Flags{
-		Branch:     configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
-		Instance:   configmap.Value[string]{},
-		Version:    configmap.Value[string]{},
-		DryRun:     configmap.Value[bool]{},
-		InputsFile: configmap.Value[string]{},
+		Branch:       configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
+		InstanceName: configmap.Value[string]{},
+		InputsFile:   configmap.Value[string]{},
 	}
 
 	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
@@ -472,11 +467,9 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	}()
 
 	f := use.Flags{
-		Branch:     configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
-		Instance:   configmap.Value[string]{},
-		Version:    configmap.Value[string]{},
-		DryRun:     configmap.Value[bool]{},
-		InputsFile: configmap.Value[string]{},
+		Branch:       configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
+		InstanceName: configmap.Value[string]{},
+		InputsFile:   configmap.Value[string]{},
 	}
 
 	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
@@ -512,9 +505,9 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	dialog, _, _ := createDialogs(t, false)
 
 	f := use.Flags{
-		Branch:     configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
-		Instance:   configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
-		InputsFile: configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
+		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
+		InstanceName: configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
+		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
 
 	d := dependencies.NewMocked(t)
@@ -610,9 +603,9 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	dialog, _, _ := createDialogs(t, false)
 
 	f := use.Flags{
-		Branch:     configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
-		Instance:   configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
-		InputsFile: configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
+		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
+		InstanceName: configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
+		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)

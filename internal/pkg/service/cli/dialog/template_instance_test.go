@@ -50,7 +50,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	}()
 
 	// Run
-	branchKey, instance, err := dialog.AskTemplateInstance(projectState, configmap.Value[string]{Value: branch.String()}, configmap.Value[string]{Value: instanceName})
+	branchKey, instance, err := dialog.AskTemplateInstance(projectState, configmap.NewValue(branch.String()), configmap.NewValue(instanceID))
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
