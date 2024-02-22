@@ -1,17 +1,17 @@
 package download
 
 import (
-	u "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/unload"
-	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
+	u "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/unload"
+	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
@@ -39,6 +39,7 @@ func DefaultFlags() *Flags {
 		Timeout: configmap.NewValue("2m"),
 	}
 }
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `download [table]`,

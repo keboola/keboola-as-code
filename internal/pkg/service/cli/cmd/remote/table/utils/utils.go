@@ -2,12 +2,12 @@ package utils
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 // AskTable fetches the list of tables in the project, and asks the user to select one.

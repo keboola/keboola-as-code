@@ -1,22 +1,18 @@
 package upload
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
-
-type test interface {
-	dialog.AskUpload
-}
 
 type Flags struct {
 	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`

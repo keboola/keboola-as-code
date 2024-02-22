@@ -1,17 +1,17 @@
 package _import
 
 import (
-	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strconv"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
+	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
@@ -33,6 +33,7 @@ func DefaultFlags() *Flags {
 		FileEnclosure: configmap.NewValue(`"`),
 	}
 }
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `import [table] [file]`,

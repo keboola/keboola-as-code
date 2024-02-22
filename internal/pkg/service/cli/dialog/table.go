@@ -2,12 +2,12 @@ package dialog
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -57,7 +57,6 @@ func (p *Dialogs) AskTable(allTables []*keboola.Table, id configmap.Value[string
 	}
 
 	if id.IsSet() {
-		fmt.Println("Dsadlkahsd")
 		tableID, err := keboola.ParseTableID(id.Value)
 		if err != nil {
 			return nil, err

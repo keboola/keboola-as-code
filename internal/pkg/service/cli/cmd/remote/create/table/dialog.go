@@ -2,14 +2,14 @@ package table
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 

@@ -2,9 +2,6 @@ package preview
 
 import (
 	"context"
-	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strings"
 	"time"
 
@@ -13,8 +10,11 @@ import (
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
