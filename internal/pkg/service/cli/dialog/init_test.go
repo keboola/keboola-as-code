@@ -109,10 +109,9 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	o.Set("ci", "false")
 	o.Set("branches", "main")
 
-	f := syncInit.Flags{
-		Branches: configmap.NewValue("main"),
-		CI:       configmap.NewValue(false),
-	}
+	f := syncInit.DefaultFlags()
+	f.Branches = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
+	f.CI = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 
 	// Run
 	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, f)
