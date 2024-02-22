@@ -70,6 +70,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	distributionPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -137,6 +138,11 @@ type DistributionScope interface {
 	DistributionNode() *distributionPkg.Node
 }
 
+// DistributedLockScope dependencies to acquire distributed locks in the cluster.
+type DistributedLockScope interface {
+	DistributedLockProvider() *distlock.Provider
+}
+
 // OrchestratorScope dependencies to trigger tasks based on cluster nodes on etcd events.
 type OrchestratorScope interface {
 	OrchestratorNode() *orchestratorPkg.Node
@@ -152,6 +158,7 @@ type Mocked interface {
 	EtcdClientScope
 	TaskScope
 	DistributionScope
+	DistributedLockScope
 	OrchestratorScope
 
 	MockControl

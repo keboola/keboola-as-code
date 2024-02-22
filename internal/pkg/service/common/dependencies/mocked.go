@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -43,6 +44,7 @@ type mocked struct {
 	*etcdClientScope
 	*taskScope
 	*distributionScope
+	*distributedLockScope
 	*orchestratorScope
 	t                   *testing.T
 	config              *MockedConfig
@@ -51,10 +53,11 @@ type mocked struct {
 }
 
 type MockedConfig struct {
-	enableEtcdClient   bool
-	enableTasks        bool
-	enableDistribution bool
-	enableOrchestrator bool
+	enableEtcdClient       bool
+	enableTasks            bool
+	enableDistribution     bool
+	enableDistributedLocks bool
+	enableOrchestrator     bool
 
 	ctx         context.Context
 	clock       clock.Clock
@@ -100,6 +103,13 @@ func WithEnabledDistribution() MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
 		c.enableDistribution = true
+	}
+}
+
+func WithEnabledDistributedLocks() MockedOption {
+	return func(c *MockedConfig) {
+		WithEnabledEtcdClient()(c)
+		c.enableDistributedLocks = true
 	}
 }
 
@@ -338,6 +348,11 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	if cfg.enableDistribution {
 		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, d)
+		require.NoError(t, err)
+	}
+
+	if cfg.enableDistributedLocks {
+		d.distributedLockScope, err = newDistributedLockScope(cfg.ctx, distlock.NewConfig(), d)
 		require.NoError(t, err)
 	}
 
