@@ -1,4 +1,4 @@
-// nolint: gochecknoglobals
+//nolint:gochecknoglobals
 package templates
 
 import (

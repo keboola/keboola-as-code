@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
@@ -25,7 +25,7 @@ import (
 func TestOpen_NonExistentPath(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
-	tc.VolumePath = filesystem.Join("non-existent", "path")
+	tc.VolumePath = filepath.Join("non-existent", "path")
 
 	_, err := tc.OpenVolume()
 	if assert.Error(t, err) {
@@ -35,6 +35,11 @@ func TestOpen_NonExistentPath(t *testing.T) {
 
 func TestOpen_Error_DirPermissions(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newVolumeTestCase(t)
 
 	// Volume directory is readonly
@@ -48,10 +53,15 @@ func TestOpen_Error_DirPermissions(t *testing.T) {
 
 func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions work different on Windows")
+	}
+
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, volume.IDFile)
+	path := filepath.Join(tc.VolumePath, volume.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -158,7 +168,7 @@ func TestOpen_VolumeLock(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Open volume - first instance - ok
-	_, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
 
 	// Open volume - second instance - error
@@ -166,6 +176,9 @@ func TestOpen_VolumeLock(t *testing.T) {
 	if assert.Error(t, err) {
 		wildcards.Assert(t, `cannot acquire writer lock "%s": already locked`, err.Error())
 	}
+
+	// Close volume
+	assert.NoError(t, vol.Close(context.Background()))
 }
 
 func TestVolume_Close_Errors(t *testing.T) {

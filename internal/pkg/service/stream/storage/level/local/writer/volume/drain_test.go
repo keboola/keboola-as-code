@@ -1,6 +1,7 @@
 package volume
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,9 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return vol.Drained() == false
 	}, time.Second, 5*time.Millisecond)
+
+	// Close volume
+	assert.NoError(t, vol.Close(context.Background()))
 }
 
 // TestOpen_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
@@ -57,4 +61,7 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return vol.Drained() == true
 	}, time.Second, 5*time.Millisecond)
+
+	// Close volume
+	assert.NoError(t, vol.Close(context.Background()))
 }

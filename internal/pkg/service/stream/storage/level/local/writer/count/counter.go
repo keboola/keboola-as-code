@@ -47,7 +47,13 @@ func NewCounterWithBackupFile(filePath string) (*CounterWithBackup, error) {
 		return nil, err
 	}
 
-	return NewCounterWithBackup(backupFile)
+	counter, err := NewCounterWithBackup(backupFile)
+	if err != nil {
+		_ = backupFile.Close()
+		return nil, err
+	}
+
+	return counter, nil
 }
 
 func NewCounterWithBackup(backup backup) (*CounterWithBackup, error) {

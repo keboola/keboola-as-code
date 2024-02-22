@@ -82,9 +82,9 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "hdd", "1", "slices"), 0o750))
 	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumesPath, "hdd", "1", "drain"), nil, 0o640))
 	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumesPath, "hdd", "some-file"), nil, 0o640))
-	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "HDD", "2"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "hdd", "2"), 0o750))
 	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "hdd", "3"), 0o750))
-	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "SSD", "1"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "ssd", "1"), 0o750))
 	require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "ssd", "2"), 0o750))
 
 	volumes, err := tc.OpenVolumes()
@@ -106,11 +106,11 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 	assert.Len(t, volumes.VolumeByType("foo"), 0)
 	assert.Equal(t, []*test.Volume{
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_1", TypeValue: "hdd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "hdd", "1")},
-		{NodeIDValue: "my-node", IDValue: "volume_hdd_2", TypeValue: "hdd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "HDD", "2")},
+		{NodeIDValue: "my-node", IDValue: "volume_hdd_2", TypeValue: "hdd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "hdd", "2")},
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_3", TypeValue: "hdd", LabelValue: "3", PathValue: filepath.Join(tc.VolumesPath, "hdd", "3")},
 	}, volumes.VolumeByType("hdd"))
 	assert.Equal(t, []*test.Volume{
-		{NodeIDValue: "my-node", IDValue: "volume_ssd_1", TypeValue: "ssd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "SSD", "1")},
+		{NodeIDValue: "my-node", IDValue: "volume_ssd_1", TypeValue: "ssd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "ssd", "1")},
 		{NodeIDValue: "my-node", IDValue: "volume_ssd_2", TypeValue: "ssd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "ssd", "2")},
 	}, volumes.VolumeByType("ssd"))
 
@@ -120,9 +120,9 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 	// All
 	assert.Equal(t, []*test.Volume{
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_1", TypeValue: "hdd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "hdd", "1")},
-		{NodeIDValue: "my-node", IDValue: "volume_hdd_2", TypeValue: "hdd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "HDD", "2")},
+		{NodeIDValue: "my-node", IDValue: "volume_hdd_2", TypeValue: "hdd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "hdd", "2")},
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_3", TypeValue: "hdd", LabelValue: "3", PathValue: filepath.Join(tc.VolumesPath, "hdd", "3")},
-		{NodeIDValue: "my-node", IDValue: "volume_ssd_1", TypeValue: "ssd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "SSD", "1")},
+		{NodeIDValue: "my-node", IDValue: "volume_ssd_1", TypeValue: "ssd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "ssd", "1")},
 		{NodeIDValue: "my-node", IDValue: "volume_ssd_2", TypeValue: "ssd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "ssd", "2")},
 	}, volumes.All())
 

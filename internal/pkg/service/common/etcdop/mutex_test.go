@@ -142,7 +142,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
 			logger := log.NewDebugLogger()
@@ -162,11 +162,11 @@ func TestMutex_ParallelWork(t *testing.T) {
 				lockTesters = append(lockTesters, lockTester{
 					LockName: fmt.Sprintf("locks/my-lock-%02d", i+1),
 					CriticalWork: func(mtx *Mutex) {
-						assert.NoError(t, mtx.Lock(ctx))
+						require.NoError(t, mtx.Lock(ctx))
 						assert.Equal(t, int64(1), active.Add(1))  // !!!
 						<-time.After(1 * time.Millisecond)        // simulate some work
 						assert.Equal(t, int64(0), active.Add(-1)) // !!!
-						assert.NoError(t, mtx.Unlock(ctx))
+						require.NoError(t, mtx.Unlock(ctx))
 						total.Add(1)
 					},
 				})

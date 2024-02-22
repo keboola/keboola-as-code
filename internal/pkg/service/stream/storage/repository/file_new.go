@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"path/filepath"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
@@ -24,14 +22,13 @@ func newFile(cfg level.Config, resource FileResource, sink definition.Sink) (f m
 		return model.File{}, errors.Errorf(`file compression type "%s" is not supported`, cfg.Local.Compression.Type)
 	}
 
-	// Convert path separator, on Windows
-	fileDir := filepath.FromSlash(resource.FileKey.String()) //nolint:forbidigo
+	localDir := resource.FileKey.String()
 
 	f.FileKey = resource.FileKey
 	f.Type = model.FileTypeCSV // different file types are not supported now
 	f.State = model.FileWriting
 	f.Columns = sink.Table.Mapping.Columns
-	f.LocalStorage = local.NewFile(cfg.Local, fileDir)
+	f.LocalStorage = local.NewFile(localDir, cfg.Local)
 	f.StagingStorage = staging.NewFile(f.LocalStorage, resource.Credentials)
 	f.TargetStorage = target.New(sink.Table.Keboola.TableID)
 	f.Assignment.Config = cfg.Local.Volume.Assignment

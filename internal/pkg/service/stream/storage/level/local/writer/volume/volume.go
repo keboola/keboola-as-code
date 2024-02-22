@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
@@ -66,7 +65,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		events:        events,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
-		drainFilePath: filesystem.Join(spec.Path, drainFile),
+		drainFilePath: filepath.Join(spec.Path, drainFile),
 		writersLock:   &sync.Mutex{},
 		writers:       make(map[string]*writerRef),
 	}

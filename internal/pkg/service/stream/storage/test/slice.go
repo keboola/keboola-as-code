@@ -61,7 +61,7 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 			column.Body{},
 		},
 		LocalStorage: local.Slice{
-			Dir:                openedAt,
+			Dir:                local.NormalizeDirPath(openedAt),
 			Filename:           "slice.csv",
 			AllocatedDiskSpace: 10 * datasize.KB,
 			Compression:        compression.NewNoneConfig(),

@@ -125,6 +125,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	assert.NotEmpty(t, w.CompressedSize())
 	assert.NotEmpty(t, w.UncompressedSize())
 
+	// Close volume
+	assert.NoError(t, vol.Close(ctx))
+
 	// Check compressed size
 	stat, err := os.Stat(w.FilePath())
 	require.NoError(t, err)
@@ -147,6 +150,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Check written data
 	tc.Validator(t, string(content))
+
+	// Close file
+	assert.NoError(t, f.Close())
 }
 
 func (tc *WriterTestCase) newSlice(t *testing.T, volume *writerVolume.Volume) *model.Slice {

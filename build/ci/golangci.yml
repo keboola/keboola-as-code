@@ -11,12 +11,6 @@ run:
     - target
     - third_party
     - vendor
-    #TMP
-    - api/stream
-    - cmd/stream
-    - internal/pkg/service/stream/cleanup
-    - internal/pkg/service/stream/api
-    - test/stream
   skip-dirs-use-default: true
   modules-download-mode: mod
 

@@ -27,15 +27,15 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newReaderTestCase(t)
 
-	w, err := tc.NewReader()
-	assert.NoError(t, err)
+	r, err := tc.NewReader()
+	require.NoError(t, err)
 	assert.Len(t, tc.Volume.readers, 1)
 
-	assert.Equal(t, tc.Slice.SliceKey, w.SliceKey())
-	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), w.DirPath())
-	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename), w.FilePath())
+	assert.Equal(t, tc.Slice.SliceKey, r.SliceKey())
+	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), r.DirPath())
+	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename), r.FilePath())
 
-	assert.NoError(t, w.Close())
+	assert.NoError(t, r.Close())
 	assert.Len(t, tc.Volume.readers, 0)
 
 	// Check logs
@@ -55,7 +55,7 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 
 	// Create the writer first time - ok
 	w, err := tc.NewReader()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, tc.Volume.readers, 1)
 
 	// Create writer for the same slice again - error
@@ -341,14 +341,20 @@ func (tc *readerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 
 	vol, err := tc.volumeTestCase.OpenVolume(opts...)
 	tc.Volume = vol
+
 	return vol, err
 }
 
 func (tc *readerTestCase) NewReader(opts ...Option) (reader.Reader, error) {
 	if tc.Volume == nil {
 		// Open volume
-		_, err := tc.OpenVolume(opts...)
+		vol, err := tc.OpenVolume(opts...)
 		require.NoError(tc.TB, err)
+
+		// Close volume after the test
+		tc.TB.Cleanup(func() {
+			assert.NoError(tc.TB, vol.Close(context.Background()))
+		})
 	}
 
 	// Slice definition must be valid

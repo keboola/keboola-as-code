@@ -674,6 +674,7 @@ func TestAtomicOp_RequireLock(t *testing.T) {
 		assert.Equal(t, "read phase: lock is locked by another session", err.Error())
 	}
 	require.NoError(t, anotherMutex.Unlock(ctx))
+	require.NoError(t, mutex.Unlock(ctx))
 
 	// Lock is locked by another session between READ/WRITE phases, atomic operation failed
 	require.NoError(t, mutex.Lock(ctx))
@@ -685,5 +686,6 @@ func TestAtomicOp_RequireLock(t *testing.T) {
 		assert.True(t, errors.Is(err, concurrency.ErrLocked))
 		assert.Equal(t, "write phase: lock is locked by another session", err.Error())
 	}
+	require.NoError(t, mutex.Unlock(ctx))
 	require.NoError(t, anotherMutex.Unlock(ctx))
 }

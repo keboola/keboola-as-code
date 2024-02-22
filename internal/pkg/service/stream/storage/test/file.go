@@ -58,8 +58,9 @@ func NewFile() model.File {
 
 func NewFileOpenedAt(openedAtStr string) model.File {
 	openedAt := utctime.MustParse(openedAtStr)
+	fileKey := NewFileKeyOpenedAt(openedAtStr)
 	return model.File{
-		FileKey: NewFileKeyOpenedAt(openedAtStr),
+		FileKey: fileKey,
 		Type:    model.FileTypeCSV,
 		State:   model.FileWriting,
 		Columns: column.Columns{column.Body{}},
@@ -71,7 +72,7 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 			Volumes: []volume.ID{"my-volume"},
 		},
 		LocalStorage: local.File{
-			Dir:         "my-dir",
+			Dir:         local.NormalizeDirPath(fileKey.String()),
 			Compression: compression.NewNoneConfig(),
 			DiskSync:    disksync.NewConfig(),
 		},

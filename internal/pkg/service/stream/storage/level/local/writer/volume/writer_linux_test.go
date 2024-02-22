@@ -34,8 +34,8 @@ func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 	assert.GreaterOrEqual(t, allocated, expectedSize)
 	assert.Less(t, allocated, 2*expectedSize)
 
-	// Close writer and volume
-	assert.NoError(t, tc.Volume.Close(ctx))
+	// Close writer
+	assert.NoError(t, w.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`

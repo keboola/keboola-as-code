@@ -6,6 +6,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
@@ -28,17 +29,19 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
 	v, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, writerVolume.WithWriterFactory(factory.Default))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	slice := test.NewSlice()
 	slice.Type = model.FileTypeCSV
 
 	w, err := v.NewWriterFor(slice)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, w)
 
 	_, ok := w.Unwrap().(*csv.Writer)
 	assert.True(t, ok)
+
+	assert.NoError(t, v.Close(ctx))
 }
 
 // TestDefaultFactory_FileTypeInvalid test handling of an invalid file type.
@@ -59,4 +62,6 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, `unexpected file type "invalid"`, err.Error())
 	}
+
+	assert.NoError(t, v.Close(ctx))
 }
