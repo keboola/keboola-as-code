@@ -67,7 +67,7 @@ func NewNode(cfg Config, d dependencies) error {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(ctx) // nolint: contextcheck
+	ctx, cancel := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		n.logger.Info(ctx, "received shutdown request")
