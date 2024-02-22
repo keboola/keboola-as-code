@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -109,6 +110,7 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		sink1 := test.NewSink(sinkKey1)
 		sink1.Name = "My Sink 1"
+		sink1.Config = sink1.Config.With(testconfig.StorageConfigPatch())
 		result1, err := sinkRepo.Create("Create description", &sink1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, sink1, result1)
@@ -449,40 +451,54 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "sinkId": "my-sink-1",
   "version": {
     "number": 5,
-    "hash": "8528182ae2310bfc",
+    "hash": "46739e92e00d7521",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
     "description": "Rollback to version 2"
   },
   "type": "table",
   "name": "Modified Name",
   "description": "My Description",
+  "config": [
+    {
+      "key": "storage.level.local.volume.assignment.count",
+      "value": 1
+    },
+    {
+      "key": "storage.level.local.volume.assignment.preferredTypes",
+      "value": [
+        "default"
+      ]
+    },
+    {
+      "key": "storage.level.local.volume.sync.bytesTrigger",
+      "value": "100KB"
+    },
+    {
+      "key": "storage.level.local.volume.sync.checkInterval",
+      "value": "1ms"
+    },
+    {
+      "key": "storage.level.local.volume.sync.countTrigger",
+      "value": 100
+    },
+    {
+      "key": "storage.level.local.volume.sync.intervalTrigger",
+      "value": "100ms"
+    },
+    {
+      "key": "storage.level.local.volume.sync.mode",
+      "value": "disk"
+    },
+    {
+      "key": "storage.level.local.volume.sync.wait",
+      "value": false
+    }
+  ],
   "table": {
-    "config": {
-      "storage": {
-        "level": {
-          "local": {
-            "volume": {
-              "assignment": {
-                "count": 1,
-                "preferredTypes": [
-                  "default"
-                ]
-              },
-              "sync": {
-                "mode": "disk",
-                "wait": false,
-                "checkInterval": "1ms",
-                "countTrigger": 100,
-                "bytesTrigger": "100KB",
-                "intervalTrigger": "100ms"
-              }
-            }
-          }
-        }
-      }
+    "keboola": {
+      "tableId": "in.bucket.table"
     },
     "mapping": {
-      "tableId": "in.bucket.table",
       "columns": [
         {
           "type": "datetime",

@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -68,7 +69,7 @@ func TestSliceRepository_Delete(t *testing.T) {
 		source1 := test.NewSource(sourceKey1)
 		require.NoError(t, defRepo.Source().Create("Create source", &source1).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
+		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(3, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
@@ -92,7 +93,7 @@ func TestSliceRepository_Delete(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
-		slices, err := sliceRepo.List(branchKey).Do(ctx).All()
+		slices, err := sliceRepo.ListIn(branchKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 3)
 		s01 = slices[0].SliceKey
@@ -112,10 +113,10 @@ func TestSliceRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s02, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s02, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing,
 		})
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s03, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s03, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
 	}

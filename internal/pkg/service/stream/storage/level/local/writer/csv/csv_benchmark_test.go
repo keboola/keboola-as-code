@@ -10,7 +10,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test/benchmark"

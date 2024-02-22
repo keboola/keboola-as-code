@@ -18,8 +18,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
@@ -80,18 +80,22 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 			UploadCredentials:           &keboola.FileUploadCredentials{},
 			UploadCredentialsExpiration: utctime.From(openedAt.Time().Add(time.Hour)),
 		},
-		TargetStorage: target.File{
-			TableID:    keboola.MustParseTableID("in.bucket.table"),
-			StorageJob: nil,
+		TargetStorage: target.Target{
+			Table: target.Table{
+				Keboola: target.KeboolaTable{
+					TableID:    keboola.MustParseTableID("in.bucket.table"),
+					StorageJob: nil,
+				},
+			},
 		},
 	}
 }
 
-func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRepo fileRepository, fileKey model.FileKey, states []model.FileState) {
+func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRepo fileRepository, fileKey model.FileKey, interval time.Duration, states []model.FileState) {
 	t.Helper()
 	from := states[0]
 	for _, to := range states[1:] {
-		clk.Add(time.Hour)
+		clk.Add(interval)
 
 		// File must be closed by the CloseAllIn method
 		var file model.File

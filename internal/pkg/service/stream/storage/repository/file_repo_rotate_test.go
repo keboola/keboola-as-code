@@ -19,11 +19,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -73,7 +74,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
-		sink.Table.Config.Storage = test.SinkStorageConfig(2, []string{"default"})
+		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(2, []string{"default"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
@@ -362,7 +363,7 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
-		sink.Table.Config.Storage = test.SinkStorageConfig(1, []string{"default"})
+		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(1, []string{"default"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}

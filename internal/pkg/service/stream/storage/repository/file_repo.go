@@ -62,8 +62,13 @@ func newFileRepository(cfg level.Config, d dependencies, backoff model.RetryBack
 	}
 }
 
-// List files in all storage levels.
-func (r *FileRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
+// ListAll files in all storage levels.
+func (r *FileRepository) ListAll() iterator.DefinitionT[model.File] {
+	return r.schema.AllLevels().GetAll(r.client)
+}
+
+// ListIn files in all storage levels, in the parent.
+func (r *FileRepository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 
@@ -157,7 +162,7 @@ func (r *FileRepository) StateTransition(now time.Time, fileKey model.FileKey, f
 			return file.WithState(now, to)
 		}).
 		// Read slices for modification
-		ReadOp(r.all.slice.List(fileKey).WithAllTo(&fileSlices)).
+		ReadOp(r.all.slice.ListIn(fileKey).WithAllTo(&fileSlices)).
 		// Modify slices states, if needed
 		WriteOrErr(func(context.Context) (out op.Op, err error) {
 			txn := op.Txn(r.client)
@@ -449,10 +454,8 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 	if c.NewFileResource != nil {
 		// Apply configuration patch from the sink to the global config
 		cfg := r.config
-		if c.Sink.Table.Config.Storage.Level != nil {
-			if err := configpatch.Apply(&cfg, c.Sink.Table.Config.Storage.Level); err != nil {
-				return nil, err
-			}
+		if err := configpatch.ApplyKVs(&cfg, &level.ConfigPatch{}, c.Sink.Config.In("storage.level")); err != nil {
+			return nil, err
 		}
 
 		// Create file entity

@@ -1,9 +1,12 @@
 package model
 
 import (
+	"github.com/benbjohnson/clock"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
@@ -29,7 +32,7 @@ type File struct {
 	Assignment     assignment.Assignment `json:"assignment"`
 	LocalStorage   local.File            `json:"local"`
 	StagingStorage staging.File          `json:"staging"`
-	TargetStorage  target.File           `json:"target"`
+	TargetStorage  target.Target         `json:"target"`
 }
 
 type FileType string
@@ -56,4 +59,28 @@ func (v FileKey) String() string {
 
 func (v FileKey) OpenedAt() utctime.UTCTime {
 	return v.FileID.OpenedAt
+}
+
+func (f File) LastStateChange() utctime.UTCTime {
+	switch {
+	case f.ImportedAt != nil:
+		return *f.ImportedAt
+	case f.ImportingAt != nil:
+		return *f.ImportingAt
+	case f.ClosingAt != nil:
+		return *f.ClosingAt
+	default:
+		return f.OpenedAt()
+	}
+}
+
+func (f File) Telemetry(clk clock.Clock) []attribute.KeyValue {
+	lastStateChange := f.LastStateChange().Time()
+	return []attribute.KeyValue{
+		attribute.String("file.key", f.FileKey.String()),
+		attribute.String("file.age", clk.Since(lastStateChange).String()),
+		attribute.String("file.state", f.State.String()),
+		attribute.String("file.lastStateChange", lastStateChange.String()),
+		attribute.Int("file.retryAttempt", f.RetryAttempt),
+	}
 }

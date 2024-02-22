@@ -35,8 +35,8 @@ func newSliceRepository(d dependencies, backoff model.RetryBackoff, all *Reposit
 	}
 }
 
-// List slices in all storage levels.
-func (r *SliceRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[model.Slice] {
+// ListIn lists slices in the parent, in all storage levels.
+func (r *SliceRepository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.Slice] {
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 

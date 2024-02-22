@@ -23,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -67,6 +68,8 @@ type MockedConfig struct {
 
 	nodeID string
 
+	distributionConfig distribution.Config
+
 	etcdConfig   etcdclient.Config
 	etcdDebugLog bool
 
@@ -110,6 +113,14 @@ func WithEnabledDistributedLocks() MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
 		c.enableDistributedLocks = true
+	}
+}
+
+func WithDistributionConfig(cfg distribution.Config) MockedOption {
+	return func(c *MockedConfig) {
+		WithEnabledEtcdClient()(c)
+		WithEnabledDistribution()(c)
+		c.distributionConfig = cfg
 	}
 }
 
@@ -238,11 +249,12 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 	t.Helper()
 
 	cfg := &MockedConfig{
-		ctx:         context.Background(),
-		clock:       clock.New(),
-		telemetry:   telemetry.NewForTest(t),
-		nodeID:      "local-node",
-		useRealAPIs: false,
+		ctx:                context.Background(),
+		clock:              clock.New(),
+		telemetry:          telemetry.NewForTest(t),
+		nodeID:             "local-node",
+		distributionConfig: distribution.NewConfig(),
+		useRealAPIs:        false,
 		services: keboola.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
@@ -281,6 +293,10 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 
 	if cfg.stderr == nil {
 		cfg.stderr = os.Stderr // nolint:forbidigo
+	}
+
+	if _, ok := cfg.clock.(*clock.Mock); ok {
+		cfg.distributionConfig.EventsGroupInterval = 0 // disable timer
 	}
 
 	return cfg
@@ -347,7 +363,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableDistribution {
-		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, d)
+		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, cfg.distributionConfig, d)
 		require.NoError(t, err)
 	}
 

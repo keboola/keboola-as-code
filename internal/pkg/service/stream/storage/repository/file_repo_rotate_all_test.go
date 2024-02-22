@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -71,19 +72,19 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 		source2 := test.NewSource(sourceKey2)
 		require.NoError(t, defRepo.Source().Create("Create source", &source2).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
+		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(3, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Config.Storage = test.SinkStorageConfig(3, []string{"hdd"})
+		sink2.Config = sink2.Config.With(testconfig.LocalVolumeConfig(3, []string{"hdd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		sink3 := test.NewSink(sinkKey3)
-		sink3.Table.Config.Storage = test.SinkStorageConfig(2, []string{"ssd", "hdd"})
+		sink3.Config = sink3.Config.With(testconfig.LocalVolumeConfig(2, []string{"ssd", "hdd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink3).Do(ctx).Err())
 		sink4 := test.NewSink(sinkKey4)
-		sink4.Table.Config.Storage = test.SinkStorageConfig(1, []string{"ssd"})
+		sink4.Config = sink4.Config.With(testconfig.LocalVolumeConfig(1, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink4).Do(ctx).Err())
 		sink5 := test.NewSink(sinkKey5)
-		sink5.Table.Config.Storage = test.SinkStorageConfig(1, []string{"hdd"})
+		sink5.Config = sink5.Config.With(testconfig.LocalVolumeConfig(1, []string{"hdd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink5).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())

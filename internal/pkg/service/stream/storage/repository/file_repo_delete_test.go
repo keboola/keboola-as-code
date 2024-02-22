@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -69,13 +70,13 @@ func TestFileRepository_Delete(t *testing.T) {
 		source1 := test.NewSource(sourceKey1)
 		require.NoError(t, defRepo.Source().Create("Create source", &source1).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = test.SinkStorageConfig(2, []string{"ssd"})
+		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(2, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Config.Storage = test.SinkStorageConfig(2, []string{"ssd"})
+		sink2.Config = sink2.Config.With(testconfig.LocalVolumeConfig(2, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		sink3 := test.NewSink(sinkKey3)
-		sink3.Table.Config.Storage = test.SinkStorageConfig(2, []string{"ssd"})
+		sink3.Config = sink3.Config.With(testconfig.LocalVolumeConfig(2, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink3).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
@@ -105,7 +106,7 @@ func TestFileRepository_Delete(t *testing.T) {
 		f2 = files[1].FileKey
 		f3 = files[2].FileKey
 
-		slices, err := sliceRepo.List(branchKey).Do(ctx).All()
+		slices, err := sliceRepo.ListIn(branchKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 6)
 		s0101 = slices[0].SliceKey
@@ -131,13 +132,13 @@ func TestFileRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0201, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0201, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0202, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0202, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchFileStates(t, ctx, clk, fileRepo, f2, []model.FileState{
+		test.SwitchFileStates(t, ctx, clk, fileRepo, f2, time.Hour, []model.FileState{
 			model.FileWriting, model.FileClosing,
 		})
 	}
@@ -146,13 +147,13 @@ func TestFileRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(1 * time.Hour)
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0301, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0301, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0302, []model.SliceState{
+		test.SwitchSliceStates(t, ctx, clk, sliceRepo, s0302, time.Hour, []model.SliceState{
 			model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 		})
-		test.SwitchFileStates(t, ctx, clk, fileRepo, f3, []model.FileState{
+		test.SwitchFileStates(t, ctx, clk, fileRepo, f3, time.Hour, []model.FileState{
 			model.FileWriting, model.FileClosing, model.FileImporting, model.FileImported,
 		})
 	}

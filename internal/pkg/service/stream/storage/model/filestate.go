@@ -47,6 +47,10 @@ const FileImported FileState = "imported"
 //	FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
 
+func (s FileState) String() string {
+	return string(s)
+}
+
 func (f File) WithState(at time.Time, to FileState) (File, error) {
 	from := f.State
 	atUTC := utctime.From(at)

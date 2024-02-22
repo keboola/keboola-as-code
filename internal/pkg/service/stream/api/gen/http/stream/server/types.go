@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	stream "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	goa "goa.design/goa/v3/pkg"
 )
 

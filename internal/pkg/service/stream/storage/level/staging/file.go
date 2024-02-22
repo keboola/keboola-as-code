@@ -18,7 +18,7 @@ type File struct {
 	UploadCredentialsExpiration utctime.UTCTime                `json:"credentialsExpiration" validate:"required"`
 }
 
-func NewFile(cfg Config, localFile local.File, credentials *keboola.FileUploadCredentials) File {
+func NewFile(localFile local.File, credentials *keboola.FileUploadCredentials) File {
 	// Note: Compression in the staging storage is same as in the local storage, but it can be modified in the future.
 	return File{
 		Compression:                 localFile.Compression,

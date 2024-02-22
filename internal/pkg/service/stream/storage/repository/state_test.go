@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 )
 
 func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
@@ -66,7 +67,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
-		sink.Table.Config.Storage = test.SinkStorageConfig(3, []string{"default"})
+		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(3, []string{"default"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
@@ -80,7 +81,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
-		slices, err := sliceRepo.List(file.FileKey).Do(ctx).All()
+		slices, err := sliceRepo.ListIn(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 3)
 		sliceKey1 = slices[0].SliceKey

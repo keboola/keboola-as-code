@@ -1,4 +1,4 @@
-package storage_test
+package level_test
 
 import (
 	"testing"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
@@ -26,13 +25,11 @@ import (
 func TestConfig_With(t *testing.T) {
 	t.Parallel()
 
-	defaultConfig := storage.Config{
-		Level: level.NewConfig(),
-	}
+	defaultConfig := level.NewConfig()
 
 	// Apply empty patch
 	patchedConfig1 := defaultConfig
-	require.NoError(t, configpatch.Apply(&patchedConfig1, storage.ConfigPatch{}))
+	require.NoError(t, configpatch.Apply(&patchedConfig1, level.ConfigPatch{}))
 	assert.Equal(t, defaultConfig, patchedConfig1)
 
 	// First patch
@@ -53,13 +50,13 @@ func TestConfig_With(t *testing.T) {
 			},
 		},
 	}
-	expectedCfg.Level.Local.Compression.GZIP = &compression.GZIPConfig{
+	expectedCfg.Local.Compression.GZIP = &compression.GZIPConfig{
 		Level:          5,
 		Implementation: compression.GZIPImplFast,
 		BlockSize:      10 * datasize.MB,
 		Concurrency:    10,
 	}
-	expectedCfg.Level.Local.Volume.Assignment = assignment.Config{
+	expectedCfg.Local.Volume.Assignment = assignment.Config{
 		Count:          2,
 		PreferredTypes: []string{"foo", "bar"},
 	}
@@ -73,19 +70,17 @@ func TestConfig_With(t *testing.T) {
 			},
 		},
 	}
-	expectedCfg.Level.Staging.MaxSlicesPerFile = 1000
-	expectedCfg.Level.Staging.Upload.Trigger = staging.UploadTrigger{
+	expectedCfg.Staging.MaxSlicesPerFile = 1000
+	expectedCfg.Staging.Upload.Trigger = staging.UploadTrigger{
 		Count:    30000,
 		Size:     4 * datasize.MB,
 		Interval: duration.From(5 * time.Minute),
 	}
 	// Compare
 	patchedConfig2 := patchedConfig1
-	require.NoError(t, configpatch.Apply(&patchedConfig2, storage.ConfigPatch{
-		Level: &level.ConfigPatch{
-			Local:   localConfigPatch,
-			Staging: stagingConfigPatch,
-		},
+	require.NoError(t, configpatch.Apply(&patchedConfig2, level.ConfigPatch{
+		Local:   localConfigPatch,
+		Staging: stagingConfigPatch,
 	}))
 	assert.Equal(t, expectedCfg, patchedConfig2)
 
@@ -107,7 +102,7 @@ func TestConfig_With(t *testing.T) {
 			},
 		},
 	}
-	expectedCfg.Level.Local.Volume.Sync = disksync.Config{
+	expectedCfg.Local.Volume.Sync = disksync.Config{
 		Mode:            disksync.ModeCache,
 		Wait:            true,
 		CheckInterval:   duration.From(10 * time.Millisecond),
@@ -116,7 +111,7 @@ func TestConfig_With(t *testing.T) {
 		IntervalTrigger: duration.From(100 * time.Millisecond),
 	}
 
-	expectedCfg.Level.Local.Volume.Allocation = diskalloc.Config{
+	expectedCfg.Local.Volume.Allocation = diskalloc.Config{
 		Enabled:  true,
 		Static:   10 * datasize.MB,
 		Relative: 150,
@@ -130,18 +125,16 @@ func TestConfig_With(t *testing.T) {
 			},
 		},
 	}
-	expectedCfg.Level.Target.Import.Trigger = target.ImportTrigger{
+	expectedCfg.Target.Import.Trigger = target.ImportTrigger{
 		Count:    60000,
 		Size:     7 * datasize.MB,
 		Interval: duration.From(8 * time.Minute),
 	}
 	// Compare
 	patchedConfig3 := patchedConfig2
-	require.NoError(t, configpatch.Apply(&patchedConfig3, storage.ConfigPatch{
-		Level: &level.ConfigPatch{
-			Local:  localConfigPatch2,
-			Target: targetConfigPatch,
-		},
+	require.NoError(t, configpatch.Apply(&patchedConfig3, level.ConfigPatch{
+		Local:  localConfigPatch2,
+		Target: targetConfigPatch,
 	}))
 	assert.Equal(t, expectedCfg, patchedConfig3)
 }

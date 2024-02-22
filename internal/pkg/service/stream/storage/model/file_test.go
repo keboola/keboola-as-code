@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
@@ -101,9 +101,13 @@ func TestFile_Validation(t *testing.T) {
 		UploadCredentials:           &keboola.FileUploadCredentials{},
 		UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}
-	targetStorage := target.File{
-		TableID:    keboola.MustParseTableID("in.bucket.table"),
-		StorageJob: &keboola.StorageJob{},
+	targetStorage := target.Target{
+		Table: target.Table{
+			Keboola: target.KeboolaTable{
+				TableID:    keboola.MustParseTableID("in.bucket.table"),
+				StorageJob: &keboola.StorageJob{},
+			},
+		},
 	}
 	volumeAssignment := assignment.Assignment{
 		Config: assignment.Config{

@@ -85,7 +85,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		slices, err := sliceFacade.List(file.FileKey).Do(ctx).All()
+		slices, err := sliceFacade.ListIn(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 1)
 		slice := slices[0]

@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -72,10 +73,10 @@ func TestFileRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// List - empty
-		files, err := fileRepo.List(projectID).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, files)
-		files, err = fileRepo.List(sinkKey1).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, files)
 	}
@@ -107,11 +108,11 @@ func TestFileRepository_Operations(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 
 		sink1 := test.NewSink(sinkKey1)
-		sink1.Table.Config.Storage = test.SinkStorageConfig(3, []string{"hdd"})
+		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(3, []string{"hdd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
 
 		sink2 := test.NewSink(sinkKey2)
-		sink2.Table.Config.Storage = test.SinkStorageConfig(3, []string{"ssd"})
+		sink2.Config = sink2.Config.With(testconfig.LocalVolumeConfig(3, []string{"ssd"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
@@ -137,19 +138,19 @@ func TestFileRepository_Operations(t *testing.T) {
 	}
 	{
 		// List
-		files, err := fileRepo.List(projectID).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(projectID).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.List(branchKey).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(branchKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.List(sourceKey).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sourceKey).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.List(sinkKey1).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 1)
-		files, err = fileRepo.List(sinkKey2).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, files, 1)
 	}
@@ -169,7 +170,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	{
 		// Slices in file1
 		sliceID1 := model.SliceID{OpenedAt: fileKey1.OpenedAt()}
-		require.NoError(t, sliceRepo.List(fileKey1).Do(ctx).ForEachValue(
+		require.NoError(t, sliceRepo.ListIn(fileKey1).Do(ctx).ForEachValue(
 			func(value model.Slice, header *iterator.Header) error {
 				sliceKeys1 = append(sliceKeys1, value.SliceKey)
 				return nil
@@ -183,7 +184,7 @@ func TestFileRepository_Operations(t *testing.T) {
 
 		// Slices in file2
 		sliceID2 := model.SliceID{OpenedAt: fileKey2.OpenedAt()}
-		require.NoError(t, sliceRepo.List(fileKey2).Do(ctx).ForEachValue(
+		require.NoError(t, sliceRepo.ListIn(fileKey2).Do(ctx).ForEachValue(
 			func(value model.Slice, header *iterator.Header) error {
 				sliceKeys2 = append(sliceKeys2, value.SliceKey)
 				return nil
@@ -233,7 +234,7 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Switch file state to storage.FileClosing
 	// -----------------------------------------------------------------------------------------------------------------
-	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []model.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, time.Hour, []model.FileState{
 		model.FileWriting, model.FileClosing,
 	})
 
@@ -251,7 +252,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		for _, sliceKey := range sliceKeys1 {
-			test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey, []model.SliceState{
+			test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey, time.Hour, []model.SliceState{
 				model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 			})
 		}
@@ -259,7 +260,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 
 	// Switch file state to storage.FileImported
 	// -----------------------------------------------------------------------------------------------------------------
-	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, []model.FileState{
+	test.SwitchFileStates(t, ctx, clk, fileRepo, fileKey1, time.Hour, []model.FileState{
 		model.FileClosing, model.FileImporting, model.FileImported,
 	})
 
@@ -291,7 +292,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	}
 	{
 		// List - empty
-		files, err := fileRepo.List(sinkKey2).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Empty(t, files)
 	}
@@ -382,7 +383,11 @@ storage/file/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z
     "credentialsExpiration": "2000-01-01T03:00:00.000Z"
   },
   "target": {
-    "tableId": "in.bucket.table"
+    "table": {
+      "keboola": {
+        "tableId": "in.bucket.table"
+      }
+    }
   }
 }
 >>>>>

@@ -6,6 +6,10 @@ type Config struct {
 	Table tablesink.Config `configKey:"table"`
 }
 
+type ConfigPatch struct {
+	Table *tablesink.ConfigPatch `json:"table,omitempty"`
+}
+
 func NewConfig() Config {
 	return Config{
 		Table: tablesink.NewConfig(),
