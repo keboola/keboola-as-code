@@ -26,6 +26,9 @@ func newDistributedLockScope(ctx context.Context, cfg distlock.Config, d distrib
 	defer span.End(&err)
 
 	provider, err := distlock.NewProvider(cfg, d)
+	if err != nil {
+		return nil, err
+	}
 
 	return &distributedLockScope{provider: provider}, nil
 }
