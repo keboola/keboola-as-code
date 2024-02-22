@@ -184,8 +184,6 @@ node3
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"exiting (bye bye 1)"}
 {"level":"info","message":"received shutdown request"}
-{"level":"info","message":"shutdown done"}
-{"level":"info","message":"received shutdown request"}
 {"level":"info","message":"unregistering the node \"node1\""}
 {"level":"info","message":"the node \"node1\" unregistered"}
 {"level":"info","message":"closing etcd session: context canceled"}
@@ -208,8 +206,6 @@ node3
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"the node \"node1\" gone"}
 {"level":"info","message":"exiting (bye bye 2)"}
-{"level":"info","message":"received shutdown request"}
-{"level":"info","message":"shutdown done"}
 {"level":"info","message":"received shutdown request"}
 {"level":"info","message":"unregistering the node \"node2\""}
 {"level":"info","message":"the node \"node2\" unregistered"}
@@ -234,8 +230,6 @@ node3
 {"level":"info","message":"the node \"node1\" gone"}
 {"level":"info","message":"the node \"node2\" gone"}
 {"level":"info","message":"exiting (bye bye 3)"}
-{"level":"info","message":"received shutdown request"}
-{"level":"info","message":"shutdown done"}
 {"level":"info","message":"received shutdown request"}
 {"level":"info","message":"unregistering the node \"node3\""}
 {"level":"info","message":"the node \"node3\" unregistered"}
@@ -277,8 +271,6 @@ node4
 {"level":"info","message":"watching for other nodes"}
 {"level":"info","message":"found a new node \"node4\""}
 {"level":"info","message":"exiting (bye bye 4)"}
-{"level":"info","message":"received shutdown request"}
-{"level":"info","message":"shutdown done"}
 {"level":"info","message":"received shutdown request"}
 {"level":"info","message":"unregistering the node \"node4\""}
 {"level":"info","message":"the node \"node4\" unregistered"}

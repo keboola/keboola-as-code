@@ -29,7 +29,7 @@ type listeners struct {
 
 type listenerID string
 
-func newListeners(ctx context.Context, cfg Config, logger log.Logger, d dependencies) *listeners {
+func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger log.Logger, d dependencies) *listeners {
 	logger = logger.WithComponent("listeners")
 
 	v := &listeners{
@@ -37,16 +37,6 @@ func newListeners(ctx context.Context, cfg Config, logger log.Logger, d dependen
 		lock:      &sync.Mutex{},
 		listeners: make(map[listenerID]*Listener),
 	}
-
-	// Graceful shutdown
-	ctx, cancel := context.WithCancel(ctx)
-	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func(ctx context.Context) {
-		logger.Info(ctx, "received shutdown request")
-		cancel()
-		wg.Wait()
-		logger.Info(ctx, "shutdown done")
-	})
 
 	wg.Add(1)
 	go func() {

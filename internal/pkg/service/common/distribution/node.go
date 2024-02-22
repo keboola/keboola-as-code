@@ -121,7 +121,7 @@ func newGroupMember(nodeID, groupID string, cfg Config, d dependencies) (*GroupN
 	}
 
 	// Create listeners handler
-	g.listeners = newListeners(ctx, cfg, g.logger, d)
+	g.listeners = newListeners(watchCtx, wg, cfg, g.logger, d)
 
 	// Watch for nodes
 	if err := g.watch(watchCtx, wg); err != nil {
