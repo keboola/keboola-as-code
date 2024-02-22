@@ -13,7 +13,7 @@ func AskGenerateEnv(branchKey keboola.BranchKey, d *dialog.Dialogs, allWorkspace
 		return env.Options{}, err
 	}
 
-	workspace, err := d.AskWorkspace(allWorkspaces)
+	workspace, err := d.AskWorkspace(allWorkspaces, f.WorkspaceID)
 	if err != nil {
 		return env.Options{}, err
 	}

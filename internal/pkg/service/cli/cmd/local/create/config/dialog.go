@@ -47,12 +47,12 @@ func AskCreateConfig(projectState *project.State, d *dialog.Dialogs, deps create
 	return out, nil
 }
 
-func askComponentID(deps createDeps, d *dialog.Dialogs, componentId configmap.Value[string]) (keboola.ComponentID, error) {
+func askComponentID(deps createDeps, d *dialog.Dialogs, compID configmap.Value[string]) (keboola.ComponentID, error) {
 	componentID := keboola.ComponentID("")
 	components := deps.Components()
 
-	if componentId.IsSet() {
-		componentID = keboola.ComponentID(strings.TrimSpace(componentId.Value))
+	if compID.IsSet() {
+		componentID = keboola.ComponentID(strings.TrimSpace(compID.Value))
 	} else {
 		// Make select
 		selectOpts := make([]string, 0)

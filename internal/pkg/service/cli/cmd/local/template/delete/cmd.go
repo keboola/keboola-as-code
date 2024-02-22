@@ -1,4 +1,4 @@
-package delete
+package templatedelete
 
 import (
 	"github.com/spf13/cobra"
