@@ -19,8 +19,8 @@ type Flags struct {
 	CIPush       configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
 }
 
-func DefaultFlags() *Flags {
-	return &Flags{
+func DefaultFlags() Flags {
+	return Flags{
 		CI:           configmap.NewValue(true),
 		CIValidate:   configmap.NewValue(true),
 		CIPush:       configmap.NewValue(true),
@@ -35,9 +35,9 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`ci/workflows/short`),
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			f := DefaultFlags()
-			// bind flags to struct
-			if err := configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), f); err != nil {
+			// Bind flags to struct
+			f := Flags{}
+			if err := configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -52,7 +52,7 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			options := AskWorkflowsOptions(*f, d.Dialogs())
+			options := AskWorkflowsOptions(f, d.Dialogs())
 
 			// Generate workflows
 			return workflowsGen.Run(cmd.Context(), prj.Fs(), options, d)

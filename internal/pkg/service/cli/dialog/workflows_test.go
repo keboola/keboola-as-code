@@ -44,7 +44,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out := workflow.AskWorkflowsOptions(*f, dialog)
+	out := workflow.AskWorkflowsOptions(f, dialog)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
@@ -67,12 +67,11 @@ func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	o.Set(`ci-pull`, `false`)
 	o.Set(`ci-main-branch`, `main`)
 
-	f := workflow.Flags{
-		CIValidate:   configmap.NewValue(false),
-		CIPull:       configmap.NewValue(false),
-		CIMainBranch: configmap.NewValue("main"),
-		CIPush:       configmap.NewValue(true),
-	}
+	f := workflow.DefaultFlags()
+	f.CIValidate = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
+	f.CIPull = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
+	f.CIMainBranch = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
+	f.CIPush = configmap.NewValueWithOrigin(true, configmap.SetByFlag)
 
 	// Run
 	out := workflow.AskWorkflowsOptions(f, dialog)
