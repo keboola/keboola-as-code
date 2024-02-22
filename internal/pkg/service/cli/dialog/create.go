@@ -3,15 +3,10 @@ package dialog
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-type createDeps interface {
-	Components() *model.ComponentsMap
-}
 
 func (p *Dialogs) AskWhatCreateRemote() string {
 	out, _ := p.Select(&prompt.Select{

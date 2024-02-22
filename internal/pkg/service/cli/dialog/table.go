@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -10,9 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) AskPrimaryKey() []string {
-	pkStr := p.options.GetString(`primary-key`)
-	if !p.options.IsSet(`primary-key`) {
+func (p *Dialogs) AskPrimaryKey(primaryKey configmap.Value[string]) []string {
+	pkStr := primaryKey.Value
+	if !primaryKey.IsSet() {
 		pkStr, _ = p.Ask(&prompt.Question{
 			Label:       "Primary key",
 			Description: "Enter a comma-separated list of column names for use as the primary key.",
@@ -49,17 +50,15 @@ func WithAllowCreateNewTable() AskTableOption {
 }
 
 // AskTable returns `nil, nil` if the `WithAllowCreateNewTable` option is set, and the user asked to create a new table.
-func (p *Dialogs) AskTable(
-	allTables []*keboola.Table,
-	opts ...AskTableOption,
-) (*keboola.Table, error) {
+func (p *Dialogs) AskTable(allTables []*keboola.Table, id configmap.Value[string], opts ...AskTableOption) (*keboola.Table, error) {
 	config := &askTableConfig{}
 	for _, opt := range opts {
 		opt.apply(config)
 	}
 
-	if p.options.IsSet(`table-id`) {
-		tableID, err := keboola.ParseTableID(p.options.GetString(`table-id`))
+	if id.IsSet() {
+		fmt.Println("Dsadlkahsd")
+		tableID, err := keboola.ParseTableID(id.Value)
 		if err != nil {
 			return nil, err
 		}
