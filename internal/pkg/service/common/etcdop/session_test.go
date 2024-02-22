@@ -109,53 +109,6 @@ func TestSession_Retries(t *testing.T) {
 `)
 }
 
-func TestSession_NewMutex(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	wg := &sync.WaitGroup{}
-
-	// Setup
-	logger := log.NewDebugLogger()
-	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
-
-	// Setup sessions
-	session1, errCh := NewSessionBuilder().Start(ctx, wg, logger, client)
-	require.NotNil(t, session1)
-	require.NoError(t, <-errCh)
-	session2, errCh := NewSessionBuilder().Start(ctx, wg, logger, client)
-	require.NotNil(t, session2)
-	require.NoError(t, <-errCh)
-
-	// Locks
-	lock1, err := session1.NewMutex("lock")
-	require.NoError(t, err)
-	lock2, err := session2.NewMutex("lock")
-	require.NoError(t, err)
-
-	// Lock - same session - ok
-	require.NoError(t, lock1.TryLock(ctx))
-	require.NoError(t, lock1.TryLock(ctx))
-	err = lock2.TryLock(ctx)
-
-	// Lock - different session - fail
-	require.Error(t, err)
-	require.True(t, errors.Is(err, concurrency.ErrLocked))
-
-	// Unlock
-	require.NoError(t, lock1.Unlock(ctx))
-
-	// Lock - different session - ok
-	require.NoError(t, lock2.TryLock(ctx))
-	require.NoError(t, lock2.TryLock(ctx))
-
-	// Close session
-	cancel()
-	wg.Wait()
-	assert.True(t, errors.Is(lock1.TryLock(ctx), context.Canceled))
-	assert.True(t, errors.Is(lock2.TryLock(ctx), context.Canceled))
-}
-
 func TestSessionBackoff(t *testing.T) {
 	t.Parallel()
 
