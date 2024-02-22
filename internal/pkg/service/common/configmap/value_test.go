@@ -22,3 +22,9 @@ func TestNewValue(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, configmap.Value[int]{Value: 123, SetBy: configmap.SetByDefault}, configmap.NewValue(123))
 }
+
+func TestNewValueWithOrigin(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, configmap.Value[int]{Value: 123, SetBy: configmap.SetByDefault}, configmap.NewValueWithOrigin(123, configmap.SetByDefault))
+	assert.Equal(t, configmap.Value[int]{Value: 123, SetBy: configmap.SetByFlag}, configmap.NewValueWithOrigin(123, configmap.SetByFlag))
+}
