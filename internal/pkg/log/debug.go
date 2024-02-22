@@ -58,7 +58,7 @@ func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 		debugCore(l.warnOrError, WarnLevel),                     // warn or error = warn level and higher
 		debugCore(l.error, ErrorLevel),                          // error = error level and higher
 	)
-	l.zapLogger = loggerFromZapCore(cores)
+	l.zapLogger = newLoggerFromZapCore(cores)
 	return l
 }
 

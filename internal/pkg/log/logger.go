@@ -19,22 +19,28 @@ const ComponentKey = "component"
 // zapLogger is default implementation of the Logger interface.
 // It is wrapped zap.SugaredLogger.
 type zapLogger struct {
-	sugaredLogger *zap.SugaredLogger
-	core          zapcore.Core
-	component     string
+	logger     *zap.Logger
+	core       zapcore.Core
+	attributes []attribute.KeyValue
+	component  string
 }
 
-func loggerFromZapCore(core zapcore.Core) *zapLogger {
-	return &zapLogger{sugaredLogger: zap.New(core).Sugar(), core: core}
+func newLoggerFromZapCore(core zapcore.Core) *zapLogger {
+	return &zapLogger{logger: zap.New(core), core: core}
 }
 
 // With creates a child logger and adds structured context to it.
 func (l *zapLogger) With(attrs ...attribute.KeyValue) Logger {
 	var fields []zap.Field
 	ctxattr.AttrsToZapFields(attrs, &fields)
+
 	core := l.core.With(fields)
-	clone := loggerFromZapCore(core)
+
+	clone := newLoggerFromZapCore(core)
+	clone.attributes = append(clone.attributes, l.attributes...)
+	clone.attributes = append(clone.attributes, attrs...)
 	clone.component = l.component
+
 	return clone
 }
 
@@ -52,114 +58,94 @@ func (l *zapLogger) WithDuration(v time.Duration) Logger {
 	return l.With(attribute.String("duration", v.String()))
 }
 
-func formatMessageUsingAttributes(message string, set *attribute.Set) string {
+func (l *zapLogger) Debug(ctx context.Context, message string) {
+	l.logger.Debug(l.message(ctx, message), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Info(ctx context.Context, message string) {
+	l.logger.Info(l.message(ctx, message), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Warn(ctx context.Context, message string) {
+	l.logger.Warn(l.message(ctx, message), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Error(ctx context.Context, message string) {
+	l.logger.Error(l.message(ctx, message), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Log(ctx context.Context, level, message string) {
+	l.logInLevel(level, l.message(ctx, message), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Debugf(ctx context.Context, template string, args ...any) {
+	l.logger.Debug(l.template(ctx, template, args), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Infof(ctx context.Context, template string, args ...any) {
+	l.logger.Info(l.template(ctx, template, args), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Warnf(ctx context.Context, template string, args ...any) {
+	l.logger.Warn(l.template(ctx, template, args), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Errorf(ctx context.Context, template string, args ...any) {
+	l.logger.Error(l.template(ctx, template, args), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Logf(ctx context.Context, level, template string, args ...any) {
+	l.logInLevel(level, l.template(ctx, template, args), l.fields(ctx)...)
+}
+
+func (l *zapLogger) Sync() error {
+	return l.logger.Sync()
+}
+
+func (l *zapLogger) zapCore() zapcore.Core {
+	return l.core
+}
+
+func (l *zapLogger) logInLevel(level string, message string, fields ...zap.Field) {
+	switch level {
+	case "debug", "DEBUG":
+		l.logger.Debug(message, fields...)
+	case "info", "INFO":
+		l.logger.Info(message, fields...)
+	case "warn", "WARN":
+		l.logger.Warn(message, fields...)
+	case "error", "ERROR":
+		l.logger.Error(message, fields...)
+	case "dpanic", "DPANIC":
+		l.logger.DPanic(message, fields...)
+	case "panic", "PANIC":
+		l.logger.Panic(message, fields...)
+	case "fatal", "FATAL":
+		l.logger.Fatal(message, fields...)
+	default:
+		l.logger.Info(message, fields...)
+	}
+}
+
+func (l *zapLogger) message(ctx context.Context, message string) string {
 	var replacements []string
-	for _, keyValue := range set.ToSlice() {
-		replacements = append(replacements, "<"+string(keyValue.Key)+">", keyValue.Value.Emit())
+	for _, kv := range ctxattr.Attributes(ctx).ToSlice() {
+		replacements = append(replacements, "<"+string(kv.Key)+">", kv.Value.Emit())
+	}
+	for _, kv := range l.attributes {
+		replacements = append(replacements, "<"+string(kv.Key)+">", kv.Value.Emit())
 	}
 	return strings.NewReplacer(replacements...).Replace(message)
 }
 
-func (l *zapLogger) prepareFields(ctx context.Context) []zap.Field {
+func (l *zapLogger) template(ctx context.Context, template string, args []any) string {
+	return fmt.Sprintf(l.message(ctx, template), args...)
+}
+
+func (l *zapLogger) fields(ctx context.Context) []zap.Field {
 	fields := ctxattr.ZapFields(ctx)
 	if l.component != "" {
 		fields = append(fields, zap.String(ComponentKey, l.component))
 	}
 	return fields
-}
-
-func (l *zapLogger) Debug(ctx context.Context, message string) {
-	l.sugaredLogger.Desugar().Debug(
-		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Info(ctx context.Context, message string) {
-	l.sugaredLogger.Desugar().Info(
-		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Warn(ctx context.Context, message string) {
-	l.sugaredLogger.Desugar().Warn(
-		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Error(ctx context.Context, message string) {
-	l.sugaredLogger.Desugar().Error(
-		formatMessageUsingAttributes(message, ctxattr.Attributes(ctx)),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func formatMessage(args ...any) string {
-	if len(args) == 1 {
-		if str, ok := args[0].(string); ok {
-			return str
-		}
-	}
-	return fmt.Sprint(args...)
-}
-
-func (l *zapLogger) Log(ctx context.Context, level string, args ...any) {
-	message := formatMessage(args...)
-	fields := l.prepareFields(ctx)
-	switch level {
-	case "debug", "DEBUG":
-		l.sugaredLogger.Desugar().Debug(message, fields...)
-	case "info", "INFO":
-		l.sugaredLogger.Desugar().Info(message, fields...)
-	case "warn", "WARN":
-		l.sugaredLogger.Desugar().Warn(message, fields...)
-	case "error", "ERROR":
-		l.sugaredLogger.Desugar().Error(message, fields...)
-	case "dpanic", "DPANIC":
-		l.sugaredLogger.Desugar().DPanic(message, fields...)
-	case "panic", "PANIC":
-		l.sugaredLogger.Desugar().Panic(message, fields...)
-	case "fatal", "FATAL":
-		l.sugaredLogger.Desugar().Fatal(message, fields...)
-	default:
-		l.sugaredLogger.Desugar().Info(message, fields...)
-	}
-}
-
-func (l *zapLogger) Debugf(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Debug(
-		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Infof(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Info(
-		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Warnf(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Warn(
-		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Errorf(ctx context.Context, template string, args ...any) {
-	l.sugaredLogger.Desugar().Error(
-		fmt.Sprintf(formatMessageUsingAttributes(template, ctxattr.Attributes(ctx)), args...),
-		l.prepareFields(ctx)...,
-	)
-}
-
-func (l *zapLogger) Sync() error {
-	return l.sugaredLogger.Sync()
-}
-
-func (l *zapLogger) zapCore() zapcore.Core {
-	return l.core
 }
