@@ -14,7 +14,6 @@ import (
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -35,7 +34,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedTableSinkScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()

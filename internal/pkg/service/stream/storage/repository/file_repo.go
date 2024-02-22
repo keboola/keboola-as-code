@@ -52,11 +52,11 @@ type rotateSinkContext struct {
 	NewFileResource *FileResource
 }
 
-func newFileRepository(d dependencies, backoff model.RetryBackoff, all *Repository) *FileRepository {
+func newFileRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff, all *Repository) *FileRepository {
 	return &FileRepository{
 		client:  d.EtcdClient(),
 		schema:  newFileSchema(d.EtcdSerde()),
-		config:  d.Config().Storage.Level,
+		config:  cfg,
 		backoff: backoff,
 		all:     all,
 	}

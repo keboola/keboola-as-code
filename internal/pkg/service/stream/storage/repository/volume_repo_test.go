@@ -11,7 +11,6 @@ import (
 
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -26,7 +25,7 @@ func TestRepository_Volume(t *testing.T) {
 	clk.Set(utctime.MustParse("2000-01-03T01:00:00.000Z").Time())
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedTableSinkScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	r := d.StorageRepository().Volume()
 

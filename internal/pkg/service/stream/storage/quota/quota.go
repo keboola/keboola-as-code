@@ -11,7 +11,6 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -25,7 +24,6 @@ const (
 
 type Checker struct {
 	clock         clock.Clock
-	config        config.Config
 	cachedL2Stats *statsCache.L2
 
 	// nextLogAt prevents errors from flooding the log
@@ -34,7 +32,6 @@ type Checker struct {
 }
 
 type dependencies interface {
-	Config() config.Config
 	Clock() clock.Clock
 	StatisticsL2Cache() *statsCache.L2
 }
@@ -42,7 +39,6 @@ type dependencies interface {
 func New(d dependencies) *Checker {
 	return &Checker{
 		clock:         d.Clock(),
-		config:        d.Config(),
 		cachedL2Stats: d.StatisticsL2Cache(),
 		nextLogAtLock: &sync.RWMutex{},
 		nextLogAt:     make(map[key.SinkKey]time.Time),

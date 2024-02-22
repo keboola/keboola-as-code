@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -24,7 +23,7 @@ func TestProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, _ := dependencies.NewMockedTableSinkScope(t)
 	repo := d.StatisticsRepository()
 
 	// Fixtures
@@ -320,7 +319,7 @@ func TestRepository_MaxUsedDiskSizeBySliceIn(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, _ := dependencies.NewMockedTableSinkScope(t)
 	repo := d.StatisticsRepository()
 
 	// Fixtures

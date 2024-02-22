@@ -46,7 +46,6 @@ type ServiceScope interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
-	Config() config.Config
 }
 
 type APIScope interface {
@@ -74,4 +73,9 @@ type TableSinkScope interface {
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
 	StorageRepository() *storageRepo.Repository
+}
+
+type Mocked interface {
+	dependencies.Mocked
+	TestConfig() config.Config
 }

@@ -13,7 +13,6 @@ import (
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -38,7 +37,7 @@ func TestRepository_Token(t *testing.T) {
 	storageToken2 := keboola.Token{Token: "5678"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedTableSinkScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	r := d.StorageRepository().Token()

@@ -14,7 +14,6 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -36,7 +35,7 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
 	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()

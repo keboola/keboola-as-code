@@ -17,7 +17,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -48,7 +47,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 	}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New(), commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
 	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()

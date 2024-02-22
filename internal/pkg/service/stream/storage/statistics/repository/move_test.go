@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -20,7 +19,7 @@ import (
 func TestRepository_Move_SameLevels_Panic(t *testing.T) {
 	t.Parallel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, _ := dependencies.NewMockedTableSinkScope(t)
 	repo := d.StatisticsRepository()
 
 	assert.PanicsWithError(t, `"from" and "to" storage levels are same and equal to "staging"`, func() {
@@ -34,7 +33,7 @@ func TestRepository_Move(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, mocked := dependencies.NewMockedTableSinkScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 
@@ -130,7 +129,7 @@ func TestRepository_MoveAll(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t, config.New())
+	d, mocked := dependencies.NewMockedTableSinkScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 
