@@ -59,21 +59,21 @@ require (
 	go.etcd.io/etcd/tests/v3 v3.5.11
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.48.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
-	go.opentelemetry.io/otel v1.20.0
+	go.opentelemetry.io/otel v1.23.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.39.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.39.0
-	go.opentelemetry.io/otel/metric v1.20.0
+	go.opentelemetry.io/otel/metric v1.23.0
 	go.opentelemetry.io/otel/sdk v1.20.0
 	go.opentelemetry.io/otel/sdk/metric v0.39.0
-	go.opentelemetry.io/otel/trace v1.20.0
+	go.opentelemetry.io/otel/trace v1.23.0
 	go.uber.org/zap v1.26.0
 	goa.design/goa/v3 v3.14.6
 	goa.design/plugins/v3 v3.14.6
 	golang.org/x/sync v0.6.0
-	google.golang.org/grpc v1.60.1
+	google.golang.org/grpc v1.61.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.60.3
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.14
@@ -183,7 +183,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-chi/chi/v5 v5.0.11 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -240,7 +240,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	gocloud.dev v0.29.0 // indirect
 	golang.org/x/image v0.5.0 // indirect
-	golang.org/x/oauth2 v0.13.0 // indirect
+	golang.org/x/oauth2 v0.14.0 // indirect
 	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect
