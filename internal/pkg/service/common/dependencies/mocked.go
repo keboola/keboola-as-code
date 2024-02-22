@@ -34,10 +34,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
-const (
-	distributionGroup = "my-group"
-)
-
 // mocked dependencies container implements Mocked interface.
 type mocked struct {
 	*baseScope
@@ -341,7 +337,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableDistribution {
-		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, distributionGroup, d)
+		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, d)
 		require.NoError(t, err)
 	}
 

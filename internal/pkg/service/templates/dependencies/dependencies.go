@@ -53,7 +53,6 @@ type APIScope interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
-	dependencies.DistributionScope
 	APIConfig() config.Config
 	Schema() *schema.Schema
 	Store() *store.Store

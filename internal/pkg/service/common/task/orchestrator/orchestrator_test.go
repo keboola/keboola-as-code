@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -43,13 +44,18 @@ func TestOrchestrator(t *testing.T) {
 		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithNodeID("node1"),
 	)
+	grp1, err := d1.DistributionNode().Group("my-group")
+	require.NoError(t, err)
+	node1 := orchestrator.NewNode(d1)
+
 	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithNodeID("node2"),
 	)
-	node1 := orchestrator.NewNode(d1)
+	grp2, err := d2.DistributionNode().Group("my-group")
+	require.NoError(t, err)
 	node2 := orchestrator.NewNode(d2)
 
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -87,8 +93,8 @@ func TestOrchestrator(t *testing.T) {
 	}
 
 	// Create orchestrator per each node
-	assert.NoError(t, <-node1.Start(config))
-	assert.NoError(t, <-node2.Start(config))
+	assert.NoError(t, <-node1.Start(grp1, config))
+	assert.NoError(t, <-node2.Start(grp2, config))
 
 	// Put some key to trigger the task
 	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
@@ -99,7 +105,7 @@ func TestOrchestrator(t *testing.T) {
 		return d2.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	// Wait for  "not assigned" message form the node 1
+	// Wait for "not assigned" message form the node 1
 	assert.Eventually(t, func() bool {
 		return d1.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -145,6 +151,10 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
+
+	dist, err := d.DistributionNode().Group("my-group")
+	require.NoError(t, err)
+
 	node := orchestrator.NewNode(d)
 
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -183,7 +193,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, <-node.Start(config))
+	assert.NoError(t, <-node.Start(dist, config))
 	v1 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "BadID"}
 	v2 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "GoodID"}
 	assert.NoError(t, pfx.Key("key1").Put(client, v1).Do(ctx).Err())
@@ -229,6 +239,10 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
+
+	dist, err := d.DistributionNode().Group("my-group")
+	require.NoError(t, err)
+
 	node := orchestrator.NewNode(d)
 
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -263,7 +277,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	}
 
 	// Create orchestrator per each node
-	assert.NoError(t, <-node.Start(config))
+	assert.NoError(t, <-node.Start(dist, config))
 
 	// Put some key to trigger the task
 	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}

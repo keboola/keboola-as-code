@@ -25,7 +25,7 @@ func TestOnChangeListener(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var node1 *distribution.Node
+	var node1 *distribution.GroupNode
 	var d1, d2, d3, d4 dependencies.Mocked
 
 	listenerLogs := ioutil.NewAtomicWriter()

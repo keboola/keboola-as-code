@@ -5,10 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 // Listener listens for distribution changes, when a node is added or removed.
@@ -31,25 +29,14 @@ type listeners struct {
 
 type listenerID string
 
-func newListeners(n *Node) *listeners {
-	logger := n.logger.WithComponent("listeners")
+func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger log.Logger, d dependencies) *listeners {
+	logger = logger.WithComponent("listeners")
 
 	v := &listeners{
-		config:    n.config,
+		config:    cfg,
 		lock:      &sync.Mutex{},
 		listeners: make(map[listenerID]*Listener),
 	}
-
-	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
-	wg := &sync.WaitGroup{}
-	n.proc.OnShutdown(func(ctx context.Context) {
-		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
-		logger.Info(ctx, "received shutdown request")
-		cancel()
-		wg.Wait()
-		logger.Info(ctx, "shutdown done")
-	})
 
 	wg.Add(1)
 	go func() {
@@ -60,7 +47,7 @@ func newListeners(n *Node) *listeners {
 		// Otherwise, trigger is called immediately, see Notify method.
 		var tickerC <-chan time.Time
 		if v.config.EventsGroupInterval > 0 {
-			ticker := n.clock.Ticker(v.config.EventsGroupInterval)
+			ticker := d.Clock().Ticker(v.config.EventsGroupInterval)
 			defer ticker.Stop()
 			tickerC = ticker.C
 		}
