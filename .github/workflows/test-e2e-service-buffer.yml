@@ -65,7 +65,7 @@ jobs:
 #          BUFFER_WORKER_ETCD_NAMESPACE: buffer
 
       - name: Validate OpenAPI3 definition
-        uses: char0n/swagger-editor-validate@cb422b1e1eeb101aef1d8c908811c398fd4e785d
+        uses: char0n/swagger-editor-validate@b642f037ac53c392f9c8d781c369ce129684e93e
         with:
           definition-file: internal/pkg/service/stream/api/openapi/openapi3.yaml
 
