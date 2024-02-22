@@ -47,7 +47,7 @@ func TestRepository_Move(t *testing.T) {
 	require.NoError(t, repo.Move(sliceKey, level.Staging, level.Target).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, "")
 
-	// Create a record in the storage.LevelLocal
+	// Create a record in the level.Local
 	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey,
@@ -104,7 +104,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 >>>>>
 `)
 
-	// Move record to the storage.Target
+	// Move record to the level.Target
 	require.NoError(t, repo.Move(sliceKey, level.Staging, level.Target).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
@@ -146,7 +146,7 @@ func TestRepository_MoveAll(t *testing.T) {
 	require.NoError(t, repo.MoveAll(sourceKey, level.Staging, level.Target).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, "")
 
-	// Create a record in the storage.LevelLocal and storage.Staging
+	// Create a record in the level.Local and storage.Staging
 	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey1,
@@ -199,7 +199,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 `)
 
-	// Move sliceKey2 record from the storage.LevelLocal to the storage.Staging
+	// Move sliceKey2 record from the level.Local to the storage.Staging
 	require.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging, addStagingSize).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
@@ -230,7 +230,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 >>>>>
 `)
 
-	// MoveAll records (sliceKey1) from the storage.LevelLocal to the storage.Staging
+	// MoveAll records (sliceKey1) from the level.Local to the storage.Staging
 	require.NoError(t, repo.MoveAll(sourceKey, level.Local, level.Staging, addStagingSize).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
@@ -262,7 +262,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 >>>>>
 `)
 
-	// MoveAll records (sliceKey1, sliceKey2) from the storage.Staging to the storage.Target
+	// MoveAll records (sliceKey1, sliceKey2) from the level.Staging to the level.Target
 	sum, err := repo.MoveAll(sourceKey, level.Staging, level.Target).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Equal(t, statistics.Value{

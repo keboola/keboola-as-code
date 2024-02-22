@@ -16,10 +16,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -52,7 +51,7 @@ func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filesystem.Join(tc.VolumePath, local.VolumeIDFile)
+	path := filesystem.Join(tc.VolumePath, volume.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -72,7 +71,7 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read the volume ID file and check content length
-	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
+	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
 		assert.NoError(t, err)
@@ -112,7 +111,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Write volume ID file
-	idFilePath := filepath.Join(tc.VolumePath, local.VolumeIDFile)
+	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	writeContent := []byte("  123456789  ")
 	require.NoError(t, os.WriteFile(idFilePath, writeContent, 0o0640))
 

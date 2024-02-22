@@ -4,8 +4,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -30,7 +30,7 @@ type Slice struct {
 // FileVolumeKey groups file slices at the same volume.
 type FileVolumeKey struct {
 	FileKey
-	VolumeID volume.ID `json:"volumeId" validate:"required"`
+	VolumeID model.ID `json:"volumeId" validate:"required"`
 }
 
 type SliceKey struct {
@@ -44,7 +44,7 @@ type SliceID struct {
 
 func (v FileVolumeKey) String() string {
 	if v.VolumeID == "" {
-		panic(errors.New("storage.FileVolumeKey.VolumeID cannot be empty"))
+		panic(errors.New("storage.FileVolumeKey.ID cannot be empty"))
 	}
 	return v.FileKey.String() + "/" + v.VolumeID.String()
 }

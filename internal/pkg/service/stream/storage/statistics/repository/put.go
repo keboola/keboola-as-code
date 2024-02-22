@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Put creates or updates slices statistics records in the storage.LevelLocal.
+// Put creates or updates slices statistics records in the level.Local.
 func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err error) {
 	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.storage.statistics.Repository.Put")
 	defer span.End(&err)

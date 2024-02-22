@@ -15,9 +15,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -56,7 +55,7 @@ type Volume struct {
 // Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
-//   - The local.VolumeIDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
+//   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
@@ -79,7 +78,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
 	{
-		idFilePath := filepath.Join(v.spec.Path, local.VolumeIDFile)
+		idFilePath := filepath.Join(v.spec.Path, volume.IDFile)
 		content, err := os.ReadFile(idFilePath)
 
 		// ID file doesn't exist, create it
@@ -153,8 +152,8 @@ func (v *Volume) Events() *writer.Events {
 
 func (v *Volume) Metadata() volume.Metadata {
 	return volume.Metadata{
-		VolumeID: v.id,
-		Spec:     v.spec,
+		ID:   v.id,
+		Spec: v.spec,
 	}
 }
 

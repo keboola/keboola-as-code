@@ -66,8 +66,8 @@ func (v *provider) SliceStats(ctx context.Context, k model.SliceKey) (statistics
 }
 
 // MaxUsedDiskSizeBySliceIn scans the statistics in the parentKey, scanned are:
-//   - The last <limit> slices in storage.Staging (uploaded slices).
-//   - The last <limit> slices in storage.Target (imported slices).
+//   - The last <limit> slices in level.Staging (uploaded slices).
+//   - The last <limit> slices in level.Target  (imported slices).
 func (r *Repository) MaxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int) *op.TxnOp[datasize.ByteSize] {
 	var maxSize datasize.ByteSize
 	txn := op.TxnWithResult(r.client, &maxSize)

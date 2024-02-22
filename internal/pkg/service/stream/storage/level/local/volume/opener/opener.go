@@ -1,5 +1,4 @@
-// Package volume detect common code for reader.Volumes and writer.Volumes implementations.
-// The OpenVolumes function detects and opens all volumes in the volumesPath.
+// Package opener provides volumes detection in a configured volume path.
 //
 // Volume relative path has the following format: "{type}/{label}".
 //
@@ -9,7 +8,7 @@
 // The label has no special meaning, volumes are identified by the unique storage.ID,
 // which is read from the local.VolumeIDFile on the volume, if the file does not exist,
 // it is generated and saved by the writer.Volume.
-package volume
+package opener
 
 import (
 	"context"
@@ -19,12 +18,16 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Opener opens volume reader or writer instance of the V type on a local node.
+type Opener[V volume.Volume] func(spec volume.Spec) (V, error)
+
 // OpenVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
-func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*Collection[V], error) {
+func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*volume.Collection[V], error) {
 	logger.Infof(ctx, `searching for volumes in "%s"`, volumesPath)
 
 	lock := &sync.Mutex{}
@@ -64,7 +67,7 @@ func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volum
 				}
 
 				// Open the volume
-				info := Spec{NodeID: nodeID, Path: path, Type: typ, Label: label}
+				info := volume.Spec{NodeID: nodeID, Path: path, Type: typ, Label: label}
 				vol, err := opener(info)
 				if err != nil {
 					logger.Errorf(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
@@ -105,7 +108,7 @@ func OpenVolumes[V Volume](ctx context.Context, logger log.Logger, nodeID, volum
 	}
 
 	// Create collection
-	collection, err := NewCollection[V](volumes)
+	collection, err := volume.NewCollection[V](volumes)
 	if err != nil {
 		return nil, err
 	}

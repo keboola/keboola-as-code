@@ -7,7 +7,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 )
 
 type Assignment struct {
@@ -76,7 +76,7 @@ func VolumesFor(all []volume.Metadata, cfg Config, randomSeed int64) (out Assign
 			// Get top volume from the node, if any
 			if vol, ok := node.volumes.PopIf(matchVolType); ok {
 				found = true
-				out.Volumes = append(out.Volumes, vol.VolumeID)
+				out.Volumes = append(out.Volumes, vol.ID)
 			}
 		}
 

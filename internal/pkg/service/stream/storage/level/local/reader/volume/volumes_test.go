@@ -12,8 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/volume"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 )
 
 func TestVolumes(t *testing.T) {
@@ -36,8 +35,8 @@ func TestVolumes(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "ssd", "2"), 0o750))
 
 	// Only two volumes has volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", local.VolumeIDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", local.VolumeIDFile), []byte("HDD_2"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Start volumes opening
 	var err error
@@ -55,9 +54,9 @@ func TestVolumes(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Create remaining volume ID files
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", local.VolumeIDFile), []byte("HDD_3"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "SSD", "1", local.VolumeIDFile), []byte("SSD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "ssd", "2", local.VolumeIDFile), []byte("SSD_2"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", volume.IDFile), []byte("HDD_3"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "SSD", "1", volume.IDFile), []byte("SSD_1"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "ssd", "2", volume.IDFile), []byte("SSD_2"), 0o640))
 
 	// Wait for opening
 	select {
