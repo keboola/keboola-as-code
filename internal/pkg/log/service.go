@@ -15,5 +15,5 @@ func NewServiceLogger(writer io.Writer, verbose bool) Logger {
 	cores = append(cores, writerCore(writer, verbose))
 
 	// Create zapLogger
-	return loggerFromZapCore(zapcore.NewTee(cores...))
+	return newLoggerFromZapCore(zapcore.NewTee(cores...))
 }

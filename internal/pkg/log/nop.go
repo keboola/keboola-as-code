@@ -7,5 +7,5 @@ import (
 
 // NewNopLogger returns no operation log. The logs are discarded.
 func NewNopLogger() Logger {
-	return loggerFromZapCore(zapcore.NewNopCore())
+	return newLoggerFromZapCore(zapcore.NewNopCore())
 }

@@ -202,7 +202,7 @@ func TestNode(t *testing.T) {
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"deleting metadata of expired files"}
 {"level":"info","message":"deleted expired file","file.state":"imported","file.age":"7h48m0s","file.key":"123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"}
-{"level":"info","message":"deleted \"1\" files","count": 1}
+{"level":"info","message":"deleted \"1\" files","deletedFilesCount":1}
 `)
 	}
 	{
@@ -227,7 +227,7 @@ func TestNode(t *testing.T) {
 		doCleanup()
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"deleting metadata of expired files"}
-{"level":"info","message":"deleted \"0\" files","count":0}
+{"level":"info","message":"deleted \"0\" files","deletedFilesCount":0}
 `)
 	}
 	{
@@ -253,7 +253,7 @@ func TestNode(t *testing.T) {
 		doCleanup()
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"deleting metadata of expired files"}
-{"level":"info","message":"deleted \"3\" files","count":3,"component":"storage.cleanup"}
+{"level":"info","message":"deleted \"3\" files","deletedFilesCount":3,"component":"storage.cleanup"}
 `)
 		logger.AssertJSONMessages(t, `{"level":"info","message":"deleted expired file","file.state":"importing","file.age":"31h54m0s","file.key":"123/456/my-source/my-sink/2000-01-01T02:00:00.000Z"}`)
 		logger.AssertJSONMessages(t, `{"level":"info","message":"deleted expired file","file.state":"closing","file.age":"32h0m0s","file.key":"123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"}`)

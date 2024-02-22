@@ -46,21 +46,27 @@ type DebugLogger interface {
 }
 
 type contextLogger interface {
-	// Debug logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
+	// Debug logs message in the debug level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Debug(ctx context.Context, message string)
-	// Info logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
+	// Info logs message in the info level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Info(ctx context.Context, message string)
-	// Warn logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
+	// Warn logs message in the warning level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Warn(ctx context.Context, message string)
-	// Error logs message in the debug level, you can use an attribute <placeholder> defined by the ctxattr package.
+	// Error logs message in the error level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Error(ctx context.Context, message string)
+	// Log logs message in the level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Log(ctx context.Context, level string, message string)
 
+	// Debugf logs formatted message in the debug level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Debugf(ctx context.Context, template string, args ...any)
+	// Infof logs formatted message in the info level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Infof(ctx context.Context, template string, args ...any)
+	// Warnf logs formatted message in the warning level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Warnf(ctx context.Context, template string, args ...any)
+	// Errorf logs formatted message in the error level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Errorf(ctx context.Context, template string, args ...any)
-
-	Log(ctx context.Context, level string, args ...any)
+	// Logf logs formatted message in the level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Logf(ctx context.Context, level string, template string, args ...any)
 
 	Sync() error
 }

@@ -23,5 +23,5 @@ func NewCliLogger(stdout io.Writer, stderr io.Writer, logFile *File, logFormat L
 	cores = append(cores, stderrCore(stderr, logFormat, verbose))
 
 	// Create zapLogger
-	return loggerFromZapCore(zapcore.NewTee(cores...))
+	return newLoggerFromZapCore(zapcore.NewTee(cores...))
 }
