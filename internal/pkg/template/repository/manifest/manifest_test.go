@@ -81,8 +81,9 @@ func TestSaveManifestFile(t *testing.T) {
 
 		// Load file
 		file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
-		assert.NoError(t, err)
-		assert.Equal(t, wildcards.EscapeWhitespaces(c.json), wildcards.EscapeWhitespaces(file.Content), c.name)
+		if assert.NoError(t, err) {
+			assert.Equal(t, wildcards.EscapeWhitespaces(c.json), wildcards.EscapeWhitespaces(file.Content), c.name)
+		}
 	}
 }
 
