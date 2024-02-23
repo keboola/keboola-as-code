@@ -477,11 +477,11 @@ type Config struct {
 	Description    string                 `json:"description" diff:"true" descriptionFile:"true"`
 	IsDisabled     bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content        *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Transformation *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
-	SharedCode     *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
-	Orchestration  *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations      Relations              `json:"-" validate:"dive" diff:"true"`
-	Metadata       ConfigMetadata         `json:"-" validate:"dive" diff:"true"`
+	Transformation *Transformation        `json:"-" diff:"true"`
+	SharedCode     *SharedCodeConfig      `json:"-" diff:"true"`
+	Orchestration  *Orchestration         `json:"-" diff:"true"`
+	Metadata       ConfigMetadata         `json:"-" diff:"true"`
 }
 
 type ConfigWithRows struct {
@@ -502,8 +502,8 @@ type ConfigRow struct {
 	Description string                 `json:"description" diff:"true" descriptionFile:"true"`
 	IsDisabled  bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content     *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	SharedCode  *SharedCodeRow         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations   Relations              `json:"-" validate:"dive" diff:"true"`
+	SharedCode  *SharedCodeRow         `json:"-" diff:"true"`
 }
 
 // Job - Storage API job.
