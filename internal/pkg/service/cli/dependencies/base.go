@@ -8,8 +8,10 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -22,6 +24,7 @@ type baseScope struct {
 	dependencies.BaseScope
 	fs              filesystem.Fs
 	fsInfo          FsInfo
+	configBinder    *cmdconfig.Binder
 	dialogs         *dialog.Dialogs
 	options         *options.Options
 	emptyDir        dependencies.Lazy[filesystem.Fs]
@@ -43,13 +46,15 @@ func newBaseScope(
 	fs filesystem.Fs,
 	dialogs *dialog.Dialogs,
 	opts *options.Options,
+	osEnvs *env.Map,
 ) *baseScope {
 	return &baseScope{
-		BaseScope: dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clock.New(), proc, httpClient),
-		fs:        fs,
-		fsInfo:    FsInfo{fs: fs},
-		dialogs:   dialogs,
-		options:   opts,
+		BaseScope:    dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clock.New(), proc, httpClient),
+		fs:           fs,
+		fsInfo:       FsInfo{fs: fs},
+		configBinder: cmdconfig.NewBinder(osEnvs),
+		dialogs:      dialogs,
+		options:      opts,
 	}
 }
 
@@ -59,6 +64,10 @@ func (v *baseScope) Fs() filesystem.Fs {
 
 func (v *baseScope) FsInfo() FsInfo {
 	return v.fsInfo
+}
+
+func (v *baseScope) ConfigBinder() *cmdconfig.Binder {
+	return v.configBinder
 }
 
 func (v *baseScope) Dialogs() *dialog.Dialogs {
