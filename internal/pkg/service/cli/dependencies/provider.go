@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -26,6 +27,7 @@ type provider struct {
 	fs         filesystem.Fs
 	dialogs    *dialog.Dialogs
 	options    *options.Options
+	envs       *env.Map
 	stdout     io.Writer
 	stderr     io.Writer
 
@@ -52,6 +54,7 @@ func NewProvider(
 	fs filesystem.Fs,
 	dialogs *dialog.Dialogs,
 	opts *options.Options,
+	envs *env.Map,
 	stdout io.Writer,
 	stderr io.Writer,
 ) Provider {
@@ -62,6 +65,7 @@ func NewProvider(
 		fs:         fs,
 		dialogs:    dialogs,
 		options:    opts,
+		envs:       envs,
 		stdout:     stdout,
 		stderr:     stderr,
 	}
@@ -81,7 +85,7 @@ func (v *provider) BaseScope() BaseScope {
 				}
 			},
 		)
-		return newBaseScope(v.commandCtx, v.logger, v.stdout, v.stderr, v.proc, httpClient, v.fs, v.dialogs, v.options)
+		return newBaseScope(v.commandCtx, v.logger, v.stdout, v.stderr, v.proc, httpClient, v.fs, v.dialogs, v.options, v.envs)
 	})
 }
 

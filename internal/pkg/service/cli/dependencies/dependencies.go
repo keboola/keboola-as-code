@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
@@ -43,6 +44,7 @@ type BaseScope interface {
 	dependencies.BaseScope
 	Fs() filesystem.Fs
 	FsInfo() FsInfo
+	ConfigBinder() *cmdconfig.Binder
 	Dialogs() *dialog.Dialogs
 	Options() *options.Options
 	EmptyDir(ctx context.Context) (filesystem.Fs, error)
