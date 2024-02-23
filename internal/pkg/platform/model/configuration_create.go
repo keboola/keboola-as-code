@@ -98,7 +98,7 @@ func (cc *ConfigurationCreate) Mutation() *ConfigurationMutation {
 // Save creates the Configuration in the database.
 func (cc *ConfigurationCreate) Save(ctx context.Context) (*Configuration, error) {
 	cc.defaults()
-	return withHooks[*Configuration, ConfigurationMutation](ctx, cc.sqlSave, cc.mutation, cc.hooks)
+	return withHooks(ctx, cc.sqlSave, cc.mutation, cc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -268,11 +268,15 @@ func (cc *ConfigurationCreate) createSpec() (*Configuration, *sqlgraph.CreateSpe
 // ConfigurationCreateBulk is the builder for creating many Configuration entities in bulk.
 type ConfigurationCreateBulk struct {
 	config
+	err      error
 	builders []*ConfigurationCreate
 }
 
 // Save creates the Configuration entities in the database.
 func (ccb *ConfigurationCreateBulk) Save(ctx context.Context) ([]*Configuration, error) {
+	if ccb.err != nil {
+		return nil, ccb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(ccb.builders))
 	nodes := make([]*Configuration, len(ccb.builders))
 	mutators := make([]Mutator, len(ccb.builders))
