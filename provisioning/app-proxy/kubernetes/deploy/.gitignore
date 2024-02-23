@@ -1,7 +1,1 @@
-proxy/*
-cloud/*
-!azure/
-!aws/
-!gcp/
-!local/
-!.gitignore
+*.yaml
