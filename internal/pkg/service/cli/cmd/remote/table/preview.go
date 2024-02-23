@@ -30,22 +30,28 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			var tableID keboola.TableID
-			if len(args) == 0 {
-				tableID, _, err = askTable(cmd.Context(), d, false)
-				if err != nil {
-					return err
-				}
-			} else {
-				id, err := keboola.ParseTableID(args[0])
-				if err != nil {
-					return err
-				}
-				tableID = id
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			opts, err := parsePreviewOptions(cmd.Context(), d.Options(), d.Fs(), tableID)
+			// Get table key
+			tableKey := keboola.TableKey{BranchID: branch.ID}
+			if len(args) < 1 {
+				key, _, err := askTable(cmd.Context(), d, branch.ID, false)
+				if err != nil {
+					return err
+				}
+				tableKey = key
+			} else if id, err := keboola.ParseTableID(args[0]); err == nil {
+				tableKey.TableID = id
+			} else {
+				return err
+			}
+
+			// Ask options
+			opts, err := parsePreviewOptions(cmd.Context(), d.Options(), d.Fs(), tableKey)
 			if err != nil {
 				return err
 			}
@@ -71,8 +77,8 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
-func parsePreviewOptions(ctx context.Context, options *options.Options, fs filesystem.Fs, tableID keboola.TableID) (preview.Options, error) {
-	o := preview.Options{TableID: tableID}
+func parsePreviewOptions(ctx context.Context, options *options.Options, fs filesystem.Fs, tableKey keboola.TableKey) (preview.Options, error) {
+	o := preview.Options{TableKey: tableKey}
 
 	o.ChangedSince = options.GetString("changed-since")
 	o.ChangedUntil = options.GetString("changed-until")

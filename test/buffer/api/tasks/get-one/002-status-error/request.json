@@ -1,7 +1,0 @@
-{
-  "path": "/v1/tasks/my-receiver-b/receiver.create/2023-01-01T08:02:06.000Z_ghjkl",
-  "method": "GET",
-  "headers": {
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
-  }
-}

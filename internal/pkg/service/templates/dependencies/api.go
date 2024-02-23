@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	userAgent             = "keboola-templates-api"
-	distributionGroupName = "templates-api"
+	userAgent = "keboola-templates-api"
 )
 
 // apiScope implements APIScope interface.
@@ -30,23 +29,22 @@ type apiScope struct {
 	schema            *schema.Schema
 	store             *store.Store
 	repositoryManager *repositoryManager.Manager
-	projectLocker     *Locker
 }
 
 type parentScopes interface {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.DistributedLockScope
 	dependencies.TaskScope
-	dependencies.DistributionScope
 }
 
 type parentScopesImpl struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.DistributedLockScope
 	dependencies.TaskScope
-	dependencies.DistributionScope
 }
 
 func NewAPIScope(
@@ -84,7 +82,7 @@ func newParentScopes(
 			if cfg.DebugLog {
 				httpclient.WithDebugOutput(stdout)(c)
 			}
-			if cfg.DebugHTTP {
+			if cfg.DebugHTTPClient {
 				httpclient.WithDumpOutput(stdout)(c)
 			}
 		},
@@ -103,21 +101,17 @@ func newParentScopes(
 		return nil, err
 	}
 
-	d.EtcdClientScope, err = dependencies.NewEtcdClientScope(
-		ctx, d, cfg.Etcd,
-		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
-		etcdclient.WithDebugOpLogs(cfg.DebugEtcd),
-	)
+	d.EtcdClientScope, err = dependencies.NewEtcdClientScope(ctx, d, cfg.Etcd)
 	if err != nil {
 		return nil, err
 	}
 
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, d)
+	d.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), d)
 	if err != nil {
 		return nil, err
 	}
 
-	d.DistributionScope, err = dependencies.NewDistributionScope(ctx, d, distributionGroupName)
+	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, d)
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +138,6 @@ func newAPIScope(ctx context.Context, parentScp parentScopes, cfg config.Config)
 		return nil, err
 	}
 
-	d.projectLocker = NewLocker(d, ProjectLockTTLSeconds)
-
 	return d, nil
 }
 
@@ -163,8 +155,4 @@ func (v *apiScope) Store() *store.Store {
 
 func (v *apiScope) RepositoryManager() *repositoryManager.Manager {
 	return v.repositoryManager
-}
-
-func (v *apiScope) ProjectLocker() *Locker {
-	return v.projectLocker
 }

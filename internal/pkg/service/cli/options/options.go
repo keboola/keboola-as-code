@@ -6,13 +6,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 const (
@@ -32,7 +33,7 @@ type Options struct {
 	*parser
 	envNaming   *env.NamingConvention
 	envs        *env.Map
-	setBy       map[string]cliconfig.SetBy
+	setBy       map[string]configmap.SetBy
 	Verbose     bool   // verbose mode, print details to console
 	VerboseAPI  bool   // log each API request and response
 	LogFilePath string // path to the log file
@@ -43,7 +44,7 @@ func New() *Options {
 	envNaming := env.NewNamingConvention(EnvPrefix)
 	return &Options{
 		envNaming: envNaming,
-		setBy:     make(map[string]cliconfig.SetBy),
+		setBy:     make(map[string]configmap.SetBy),
 		parser:    viper.New(),
 		LogFormat: "console",
 	}
@@ -53,8 +54,13 @@ func (o *Options) Load(ctx context.Context, logger log.Logger, osEnvs *env.Map, 
 	// Load ENVs from OS and files
 	o.envs = o.loadEnvFiles(ctx, logger, osEnvs, fs)
 
+	// Define mapping between flag and field path
+	flagToField := func(flag *pflag.Flag) (orderedmap.Path, bool) {
+		return orderedmap.PathFromStr(flag.Name), true
+	}
+
 	// Bind all flags and corresponding ENVs
-	if setBy, err := cliconfig.BindToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
+	if setBy, err := configmap.BindToViper(o.parser, flagToField, configmap.BindConfig{Flags: flags, Envs: o.envs, EnvNaming: o.envNaming}); err != nil {
 		return err
 	} else {
 		for k, v := range setBy {
@@ -76,11 +82,11 @@ func (o *Options) GetEnvName(flagName string) string {
 
 func (o *Options) Set(key string, value any) {
 	o.parser.Set(key, value)
-	o.setBy[key] = cliconfig.SetManually
+	o.setBy[key] = configmap.SetManually
 }
 
 // KeySetBy method informs how the value of the key was set.
-func (o *Options) KeySetBy(key string) cliconfig.SetBy {
+func (o *Options) KeySetBy(key string) configmap.SetBy {
 	return o.setBy[key]
 }
 

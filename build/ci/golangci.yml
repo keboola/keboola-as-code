@@ -1,5 +1,5 @@
 run:
-  timeout: 10m
+  timeout: 15m
   concurrency: 8
   tests: true # check test files
   skip-files: [ ]
@@ -200,8 +200,17 @@ issues:
       text: "filepath."
       linters:
         - forbidigo
+    # Allow direct file operations in the Stream service
+    - path: internal/pkg/service/stream/.*
+      text: "os."
+      linters:
+        - forbidigo
+    - path: internal/pkg/service/stream/.*
+      text: "filepath."
+      linters:
+        - forbidigo
     # Allow direct printing to the console
-    - path: internal/pkg/service/common/cliconfig/*
+    - path: internal/pkg/service/common/configmap/*
       text: "fmt."
       linters:
         - forbidigo

@@ -30,7 +30,7 @@
 // Dependencies containers for services are in separate packages
 //   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
 //   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies]
-//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies]
+//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies]
 //
 // Example of difference between CLI and API dependencies implementations:
 //   - In the CLI the Storage API token is read from ENV or flag.
@@ -70,6 +70,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	distributionPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -97,7 +98,7 @@ type BaseScope interface {
 type PublicScope interface {
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
-	KeboolaPublicAPI() *keboola.API
+	KeboolaPublicAPI() *keboola.PublicAPI
 	StackFeatures() keboola.FeaturesMap
 	StackServices() keboola.ServicesMap
 	StorageAPIHost() string
@@ -105,7 +106,7 @@ type PublicScope interface {
 
 // ProjectScope dependencies require authentication - Storage API token.
 type ProjectScope interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	ProjectName() string
@@ -137,6 +138,11 @@ type DistributionScope interface {
 	DistributionNode() *distributionPkg.Node
 }
 
+// DistributedLockScope dependencies to acquire distributed locks in the cluster.
+type DistributedLockScope interface {
+	DistributedLockProvider() *distlock.Provider
+}
+
 // OrchestratorScope dependencies to trigger tasks based on cluster nodes on etcd events.
 type OrchestratorScope interface {
 	OrchestratorNode() *orchestratorPkg.Node
@@ -152,6 +158,7 @@ type Mocked interface {
 	EtcdClientScope
 	TaskScope
 	DistributionScope
+	DistributedLockScope
 	OrchestratorScope
 
 	MockControl
@@ -162,7 +169,7 @@ type MockControl interface {
 	DebugLogger() log.DebugLogger
 	TestContext() context.Context
 	TestTelemetry() telemetry.ForTest
-	TestEtcdCredentials() etcdclient.Credentials
+	TestEtcdConfig() etcdclient.Config
 	TestEtcdClient() *etcdPkg.Client
 	MockedRequest() *http.Request
 	MockedHTTPTransport() *httpmock.MockTransport

@@ -3,19 +3,17 @@ package dialog
 import (
 	"strings"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
-	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/init"
 )
 
-func (p *Dialogs) AskTargetName() (string, error) {
+func (p *Dialogs) AskTargetName(targetName configmap.Value[string]) (string, error) {
 	var name string
-	if p.options.IsSet(`target-name`) {
-		name = p.options.GetString(`target-name`)
+	if targetName.IsSet() {
+		name = targetName.Value
 	} else {
 		name = p.askTargetName()
 	}
@@ -47,54 +45,4 @@ func validateTargetName(val any) error {
 	}
 
 	return nil
-}
-
-func (p *Dialogs) AskGenerateEnv(allWorkspaces []*keboola.WorkspaceWithConfig) (env.Options, error) {
-	targetName, err := p.AskTargetName()
-	if err != nil {
-		return env.Options{}, err
-	}
-
-	workspace, err := p.AskWorkspace(allWorkspaces)
-	if err != nil {
-		return env.Options{}, err
-	}
-
-	return env.Options{
-		TargetName: targetName,
-		Workspace:  workspace.Workspace,
-	}, nil
-}
-
-func (p *Dialogs) AskDbtInit() (initOp.DbtInitOptions, error) {
-	targetName, err := p.AskTargetName()
-	if err != nil {
-		return initOp.DbtInitOptions{}, err
-	}
-
-	workspaceName, err := p.askWorkspaceNameForDbtInit()
-	if err != nil {
-		return initOp.DbtInitOptions{}, err
-	}
-
-	return initOp.DbtInitOptions{
-		TargetName:    targetName,
-		WorkspaceName: workspaceName,
-	}, nil
-}
-
-func (p *Dialogs) askWorkspaceNameForDbtInit() (string, error) {
-	if p.options.IsSet("workspace-name") {
-		return p.options.GetString("workspace-name"), nil
-	} else {
-		name, ok := p.Ask(&prompt.Question{
-			Label:     "Enter a name for a workspace to create",
-			Validator: prompt.ValueRequired,
-		})
-		if !ok || len(name) == 0 {
-			return "", errors.New("missing workspace name, please specify it")
-		}
-
-		return name, nil
-	}
 }

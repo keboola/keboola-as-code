@@ -4,10 +4,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 )
 
@@ -24,17 +26,16 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			output, err := d.Dialogs().AskFileOutput()
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
-				return err
+				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-file-download")
-
-			var fileID int
+			// Compose file key
+			fileKey := keboola.FileKey{BranchID: branch.ID}
 			if len(args) == 0 {
-				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(cmd.Context())
+				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest(branch.ID).Send(cmd.Context())
 				if err != nil {
 					return err
 				}
@@ -42,18 +43,26 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fileID = file.ID
+				fileKey = file.FileKey
+			} else if fileID, err := strconv.Atoi(args[0]); err == nil {
+				fileKey.FileID = keboola.FileID(fileID)
 			} else {
-				fileID, err = strconv.Atoi(args[0])
-				if err != nil {
-					return err
-				}
+				return err
 			}
 
-			file, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(fileID).Send(cmd.Context())
+			// Ask options
+			output, err := d.Dialogs().AskFileOutput()
 			if err != nil {
 				return err
 			}
+
+			// Get file
+			file, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(fileKey).Send(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-file-download")
 
 			opts := download.Options{
 				File:        file,

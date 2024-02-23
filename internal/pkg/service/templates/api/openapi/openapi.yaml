@@ -963,7 +963,7 @@ definitions:
                 $ref: '#/definitions/ChangeInfoResponseBody'
             instanceId:
                 type: string
-                example: Fuga necessitatibus.
+                example: abc123
             mainConfig:
                 $ref: '#/definitions/MainConfigResponseBody'
             name:
@@ -976,7 +976,7 @@ definitions:
                 example: keboola
             templateId:
                 type: string
-                example: 25r
+                example: aa
                 minLength: 1
                 maxLength: 40
             updated:
@@ -991,13 +991,13 @@ definitions:
             created:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
-            instanceId: Beatae cum earum minus incidunt ullam.
+            instanceId: abc123
             mainConfig:
                 componentId: keboola.orchestrator
                 configId: "7954825835"
             name: My Instance
             repositoryName: keboola
-            templateId: s
+            templateId: aa
             updated:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
@@ -1089,26 +1089,7 @@ definitions:
                         - error: API token cannot be empty.
                           id: api-token
                           visible: true
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                      valid: true
-                    - configured: false
-                      id: g01-s01
-                      inputs:
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                      valid: true
+                      valid: false
             valid:
                 type: boolean
                 description: True if the required number of steps is configured and all inputs are valid.
@@ -1124,52 +1105,7 @@ definitions:
                     - error: API token cannot be empty.
                       id: api-token
                       visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                  valid: true
-                - configured: false
-                  id: g01-s01
-                  inputs:
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                  valid: true
-                - configured: false
-                  id: g01-s01
-                  inputs:
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                  valid: true
-                - configured: false
-                  id: g01-s01
-                  inputs:
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                  valid: true
+                  valid: false
             valid: false
         required:
             - id
@@ -1226,21 +1162,15 @@ definitions:
                     - error: API token cannot be empty.
                       id: api-token
                       visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
             valid:
                 type: boolean
                 description: True if all inputs in the step are valid.
-                example: true
+                example: false
         description: Validation Detail of the step.
         example:
-            configured: true
+            configured: false
             id: g01-s01
             inputs:
-                - error: API token cannot be empty.
-                  id: api-token
-                  visible: true
                 - error: API token cannot be empty.
                   id: api-token
                   visible: true
@@ -1257,10 +1187,10 @@ definitions:
             instanceId:
                 type: string
                 description: ID of the created/updated template instance.
-                example: Et et ut tempora.
+                example: abc123
         description: Outputs generated by the task.
         example:
-            instanceId: Est aut aut.
+            instanceId: abc123
     TemplateBaseResponseBody:
         title: TemplateBaseResponseBody
         type: object
@@ -1285,7 +1215,7 @@ definitions:
                 maxLength: 200
             id:
                 type: string
-                example: "4"
+                example: aa
                 minLength: 1
                 maxLength: 40
             name:
@@ -1300,9 +1230,9 @@ definitions:
                 name: Keboola
                 url: https://www.keboola.com
             defaultVersion: v1.2.3
-            deprecated: true
+            deprecated: false
             description: Full workflow to load all user accounts from the Service.
-            id: qn6
+            id: aa
             name: My Template
         required:
             - id
@@ -1321,7 +1251,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Aut maiores.
+                    example: abc123
                 description: List of categories the template belongs to.
                 example:
                     - E-commerce
@@ -1331,7 +1261,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Vitae necessitatibus animi sit earum maxime distinctio.
+                    example: abc123
                 description: List of components used in the template.
                 example:
                     - ex-generic-v2
@@ -1345,7 +1275,7 @@ definitions:
             deprecated:
                 type: boolean
                 description: Deprecated template cannot be used.
-                example: true
+                example: false
             description:
                 type: string
                 description: Short description of the template.
@@ -1354,7 +1284,7 @@ definitions:
                 maxLength: 200
             id:
                 type: string
-                example: m
+                example: aa
                 minLength: 1
                 maxLength: 40
             name:
@@ -1394,9 +1324,9 @@ definitions:
                 - ex-generic-v2
                 - keboola.snowflake-transformation
             defaultVersion: v1.2.3
-            deprecated: true
+            deprecated: false
             description: Full workflow to load all user accounts from the Service.
-            id: ni
+            id: aa
             name: My Template
             versions:
                 - version: v0.1.1
@@ -1455,7 +1385,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Voluptates at.
+                example: abc123
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1463,7 +1393,7 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Quis est odio rerum deleniti.
+                example: abc123
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -1472,7 +1402,7 @@ definitions:
                 $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Sit architecto.
+                example: abc123
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -1484,11 +1414,11 @@ definitions:
             type:
                 type: string
                 description: Task type.
-                example: Earum deleniti.
+                example: abc123
             url:
                 type: string
                 description: URL of the task.
-                example: Doloremque quia ut quaerat.
+                example: abc123
         example:
             id: task-1
             url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -1601,7 +1531,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Aut deserunt veritatis qui voluptatem aliquid.
+                example: abc123
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1609,20 +1539,20 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Pariatur aliquam et quia placeat.
+                example: abc123
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
-                example: true
+                example: false
             outputs:
                 $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Aspernatur et distinctio ipsa asperiores impedit vel.
+                example: abc123
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: error
+                example: success
                 enum:
                     - processing
                     - success
@@ -1630,11 +1560,11 @@ definitions:
             type:
                 type: string
                 description: Task type.
-                example: Pariatur officiis provident neque.
+                example: abc123
             url:
                 type: string
                 description: URL of the task.
-                example: Deserunt unde adipisci repudiandae iusto.
+                example: abc123
         example:
             id: task-1
             url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -2184,17 +2114,11 @@ definitions:
                     - componentId: keboola.ex-db-mysql
                       configId: "7954825835"
                       name: My Extractor
-                    - componentId: keboola.ex-db-mysql
-                      configId: "7954825835"
-                      name: My Extractor
-                    - componentId: keboola.ex-db-mysql
-                      configId: "7954825835"
-                      name: My Extractor
             created:
                 $ref: '#/definitions/ChangeInfoResponseBody'
             instanceId:
                 type: string
-                example: Quod natus cupiditate numquam ut architecto.
+                example: abc123
             mainConfig:
                 $ref: '#/definitions/MainConfigResponseBody'
             name:
@@ -2203,17 +2127,17 @@ definitions:
                 example: My Instance
             repositoryName:
                 type: string
-                example: Doloribus quaerat deserunt ducimus dolorem.
+                example: abc123
             templateDetail:
                 $ref: '#/definitions/TemplateBaseResponseBody'
             templateId:
                 type: string
-                example: Accusantium eligendi.
+                example: abc123
             updated:
                 $ref: '#/definitions/ChangeInfoResponseBody'
             version:
                 type: string
-                example: Ut qui vel vitae ipsum.
+                example: abc123
             versionDetail:
                 $ref: '#/definitions/VersionDetailResponseBody'
         example:
@@ -2222,18 +2146,15 @@ definitions:
                 - componentId: keboola.ex-db-mysql
                   configId: "7954825835"
                   name: My Extractor
-                - componentId: keboola.ex-db-mysql
-                  configId: "7954825835"
-                  name: My Extractor
             created:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
-            instanceId: Accusamus perspiciatis vitae est.
+            instanceId: abc123
             mainConfig:
                 componentId: keboola.orchestrator
                 configId: "7954825835"
             name: My Instance
-            repositoryName: Qui consequatur dicta aut doloremque eum aperiam.
+            repositoryName: abc123
             templateDetail:
                 author:
                     name: Keboola
@@ -2241,13 +2162,13 @@ definitions:
                 defaultVersion: v1.2.3
                 deprecated: false
                 description: Full workflow to load all user accounts from the Service.
-                id: c
+                id: aa
                 name: My Template
-            templateId: Impedit a.
+            templateId: abc123
             updated:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
-            version: Ullam similique maiores fugiat ipsum.
+            version: abc123
             versionDetail:
                 exampleversiondata:
                     version: v1.2.3
@@ -2362,58 +2283,13 @@ definitions:
                       created:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
-                      instanceId: Temporibus praesentium explicabo laudantium.
+                      instanceId: abc123
                       mainConfig:
                         componentId: keboola.orchestrator
                         configId: "7954825835"
                       name: My Instance
                       repositoryName: keboola
-                      templateId: "9"
-                      updated:
-                        date: "2022-04-28T14:20:04+00:00"
-                        tokenId: "245941"
-                      version: v1.1.0
-                    - branch: "5876"
-                      created:
-                        date: "2022-04-28T14:20:04+00:00"
-                        tokenId: "245941"
-                      instanceId: Temporibus praesentium explicabo laudantium.
-                      mainConfig:
-                        componentId: keboola.orchestrator
-                        configId: "7954825835"
-                      name: My Instance
-                      repositoryName: keboola
-                      templateId: "9"
-                      updated:
-                        date: "2022-04-28T14:20:04+00:00"
-                        tokenId: "245941"
-                      version: v1.1.0
-                    - branch: "5876"
-                      created:
-                        date: "2022-04-28T14:20:04+00:00"
-                        tokenId: "245941"
-                      instanceId: Temporibus praesentium explicabo laudantium.
-                      mainConfig:
-                        componentId: keboola.orchestrator
-                        configId: "7954825835"
-                      name: My Instance
-                      repositoryName: keboola
-                      templateId: "9"
-                      updated:
-                        date: "2022-04-28T14:20:04+00:00"
-                        tokenId: "245941"
-                      version: v1.1.0
-                    - branch: "5876"
-                      created:
-                        date: "2022-04-28T14:20:04+00:00"
-                        tokenId: "245941"
-                      instanceId: Temporibus praesentium explicabo laudantium.
-                      mainConfig:
-                        componentId: keboola.orchestrator
-                        configId: "7954825835"
-                      name: My Instance
-                      repositoryName: keboola
-                      templateId: "9"
+                      templateId: aa
                       updated:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
@@ -2424,43 +2300,13 @@ definitions:
                   created:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
-                  instanceId: Temporibus praesentium explicabo laudantium.
+                  instanceId: abc123
                   mainConfig:
                     componentId: keboola.orchestrator
                     configId: "7954825835"
                   name: My Instance
                   repositoryName: keboola
-                  templateId: "9"
-                  updated:
-                    date: "2022-04-28T14:20:04+00:00"
-                    tokenId: "245941"
-                  version: v1.1.0
-                - branch: "5876"
-                  created:
-                    date: "2022-04-28T14:20:04+00:00"
-                    tokenId: "245941"
-                  instanceId: Temporibus praesentium explicabo laudantium.
-                  mainConfig:
-                    componentId: keboola.orchestrator
-                    configId: "7954825835"
-                  name: My Instance
-                  repositoryName: keboola
-                  templateId: "9"
-                  updated:
-                    date: "2022-04-28T14:20:04+00:00"
-                    tokenId: "245941"
-                  version: v1.1.0
-                - branch: "5876"
-                  created:
-                    date: "2022-04-28T14:20:04+00:00"
-                    tokenId: "245941"
-                  instanceId: Temporibus praesentium explicabo laudantium.
-                  mainConfig:
-                    componentId: keboola.orchestrator
-                    configId: "7954825835"
-                  name: My Instance
-                  repositoryName: keboola
-                  templateId: "9"
+                  templateId: aa
                   updated:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
@@ -2589,7 +2435,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Voluptatem pariatur quia nisi.
+                    example: abc123
                 description: List of categories the template belongs to.
                 example:
                     - E-commerce
@@ -2599,7 +2445,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolore veritatis.
+                    example: abc123
                 description: List of components used in the template.
                 example:
                     - ex-generic-v2
@@ -2622,7 +2468,7 @@ definitions:
                 maxLength: 200
             id:
                 type: string
-                example: c
+                example: aa
                 minLength: 1
                 maxLength: 40
             name:
@@ -2774,37 +2620,9 @@ definitions:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
                       defaultVersion: v1.2.3
-                      deprecated: true
+                      deprecated: false
                       description: Full workflow to load all user accounts from the Service.
-                      id: "9"
-                      name: My Template
-                      versions:
-                        - version: v0.1.1
-                          stable: false
-                          description: Initial version.
-                        - version: v1.1.1
-                          stable: true
-                          description: ""
-                        - version: v1.2.3
-                          stable: true
-                          description: ""
-                        - version: v2.0.0
-                          stable: false
-                          description: Experimental support for new API.
-                    - author:
-                        name: Keboola
-                        url: https://www.keboola.com
-                      categories:
-                        - E-commerce
-                        - Other
-                        - Social Media
-                      components:
-                        - ex-generic-v2
-                        - keboola.snowflake-transformation
-                      defaultVersion: v1.2.3
-                      deprecated: true
-                      description: Full workflow to load all user accounts from the Service.
-                      id: "9"
+                      id: aa
                       name: My Template
                       versions:
                         - version: v0.1.1
@@ -2933,17 +2751,11 @@ definitions:
                     - componentId: keboola.ex-db-mysql
                       configId: "7954825835"
                       name: My Extractor
-                    - componentId: keboola.ex-db-mysql
-                      configId: "7954825835"
-                      name: My Extractor
-                    - componentId: keboola.ex-db-mysql
-                      configId: "7954825835"
-                      name: My Extractor
             created:
                 $ref: '#/definitions/ChangeInfoResponseBody'
             instanceId:
                 type: string
-                example: Et ut sit dicta molestiae.
+                example: abc123
             mainConfig:
                 $ref: '#/definitions/MainConfigResponseBody'
             name:
@@ -2952,17 +2764,17 @@ definitions:
                 example: My Instance
             repositoryName:
                 type: string
-                example: Et porro libero sed.
+                example: abc123
             templateDetail:
                 $ref: '#/definitions/TemplateBaseResponseBody'
             templateId:
                 type: string
-                example: Reiciendis aut cupiditate esse.
+                example: abc123
             updated:
                 $ref: '#/definitions/ChangeInfoResponseBody'
             version:
                 type: string
-                example: Voluptas voluptas at labore blanditiis totam eius.
+                example: abc123
             versionDetail:
                 $ref: '#/definitions/VersionDetailResponseBody'
         example:
@@ -2971,24 +2783,15 @@ definitions:
                 - componentId: keboola.ex-db-mysql
                   configId: "7954825835"
                   name: My Extractor
-                - componentId: keboola.ex-db-mysql
-                  configId: "7954825835"
-                  name: My Extractor
-                - componentId: keboola.ex-db-mysql
-                  configId: "7954825835"
-                  name: My Extractor
-                - componentId: keboola.ex-db-mysql
-                  configId: "7954825835"
-                  name: My Extractor
             created:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
-            instanceId: Odit beatae est accusantium facere modi.
+            instanceId: abc123
             mainConfig:
                 componentId: keboola.orchestrator
                 configId: "7954825835"
             name: My Instance
-            repositoryName: Porro temporibus.
+            repositoryName: abc123
             templateDetail:
                 author:
                     name: Keboola
@@ -2996,13 +2799,13 @@ definitions:
                 defaultVersion: v1.2.3
                 deprecated: false
                 description: Full workflow to load all user accounts from the Service.
-                id: c
+                id: aa
                 name: My Template
-            templateId: Molestiae ut.
+            templateId: abc123
             updated:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
-            version: Quis temporibus expedita quidem.
+            version: abc123
             versionDetail:
                 exampleversiondata:
                     version: v1.2.3
@@ -3713,7 +3516,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Atque quod explicabo aperiam.
+                example: abc123
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -3721,7 +3524,7 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Fugiat consequuntur adipisci.
+                example: abc123
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -3730,7 +3533,7 @@ definitions:
                 $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Dolores debitis vero fuga aspernatur.
+                example: abc123
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -3742,11 +3545,11 @@ definitions:
             type:
                 type: string
                 description: Task type.
-                example: Quidem est est.
+                example: abc123
             url:
                 type: string
                 description: URL of the task.
-                example: Commodi illo.
+                example: abc123
         example:
             id: task-1
             url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -3940,56 +3743,7 @@ definitions:
                             - error: API token cannot be empty.
                               id: api-token
                               visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                      valid: false
-                    - error: All steps must be configured.
-                      id: g01
-                      steps:
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
+                          valid: false
                       valid: false
             valid:
                 type: boolean
@@ -4242,7 +3996,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Fugiat ab voluptatem.
+                example: abc123
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -4250,16 +4004,16 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Beatae similique et hic optio.
+                example: abc123
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
-                example: true
+                example: false
             outputs:
                 $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Asperiores excepturi.
+                example: abc123
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -4271,11 +4025,11 @@ definitions:
             type:
                 type: string
                 description: Task type.
-                example: Impedit vel qui qui.
+                example: abc123
             url:
                 type: string
                 description: URL of the task.
-                example: Repudiandae soluta est non ut.
+                example: abc123
         example:
             id: task-1
             url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -4443,61 +4197,12 @@ definitions:
                             - error: API token cannot be empty.
                               id: api-token
                               visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                      valid: false
-                    - error: All steps must be configured.
-                      id: g01
-                      steps:
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
+                          valid: false
                       valid: false
             valid:
                 type: boolean
                 description: True if all groups and inputs are valid.
-                example: true
+                example: false
         example:
             valid: false
             stepGroups:
@@ -4619,7 +4324,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ad modi.
+                    example: abc123
                 description: List of components used in the template version.
                 example:
                     - ex-generic-v2
@@ -4787,91 +4492,12 @@ definitions:
                             - error: API token cannot be empty.
                               id: api-token
                               visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                      valid: false
-                    - error: All steps must be configured.
-                      id: g01
-                      steps:
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                      valid: false
-                    - error: All steps must be configured.
-                      id: g01
-                      steps:
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
-                        - configured: false
-                          id: g01-s01
-                          inputs:
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                            - error: API token cannot be empty.
-                              id: api-token
-                              visible: true
-                          valid: true
+                          valid: false
                       valid: false
             valid:
                 type: boolean
                 description: True if all groups and inputs are valid.
-                example: true
+                example: false
         description: Detail of the inputs validation.
         example:
             valid: false
@@ -4916,7 +4542,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Repellendus quis laboriosam occaecati quam unde consequuntur.
+                    example: abc123
                 description: List of components used in the template version.
                 example:
                     - ex-generic-v2

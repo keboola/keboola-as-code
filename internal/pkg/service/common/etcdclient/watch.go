@@ -14,7 +14,7 @@ type watcherWrapper struct {
 	prefix string
 }
 
-func NewWatcher(client *etcd.Client, prefix string) *watcherWrapper {
+func NewWatcher(client *etcd.Client, prefix string) etcd.Watcher {
 	return &watcherWrapper{
 		client: client,
 		prefix: prefix,

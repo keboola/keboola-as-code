@@ -33,7 +33,7 @@ func TestServeMetrics(t *testing.T) {
 	// Serve metrics
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	endpointURL := fmt.Sprintf(`http://%s/%s`, listenAddr, prometheus.Endpoint)
-	provider, err := prometheus.ServeMetrics(ctx, "my-service", listenAddr, d.Logger(), d.Process())
+	provider, err := prometheus.ServeMetrics(ctx, prometheus.Config{Listen: listenAddr}, d.Logger(), d.Process(), "my-service")
 	assert.NoError(t, err)
 
 	// Get metrics, no meter

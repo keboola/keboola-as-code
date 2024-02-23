@@ -33,8 +33,8 @@ func TestSuccessfulTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -47,8 +47,8 @@ func TestSuccessfulTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
-	node2, _ := createNode(t, etcdCredentials, logs, tel, "node2")
+	node1, _ := createNode(t, etcdCfg, logs, tel, "node1")
+	node2, _ := createNode(t, etcdCfg, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -311,8 +311,8 @@ func TestFailedTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -325,8 +325,8 @@ func TestFailedTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
-	node2, _ := createNode(t, etcdCredentials, logs, tel, "node2")
+	node1, _ := createNode(t, etcdCfg, logs, tel, "node1")
+	node2, _ := createNode(t, etcdCfg, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -635,8 +635,8 @@ func TestTaskTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -648,7 +648,7 @@ func TestTaskTimeout(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create node and
-	node1, d := createNode(t, etcdCredentials, nil, tel, "node1")
+	node1, d := createNode(t, etcdCfg, nil, tel, "node1")
 	logger := d.DebugLogger()
 	logger.Truncate()
 	tel.Reset()
@@ -801,8 +801,8 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -815,7 +815,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create node
-	node1, d := createNode(t, etcdCredentials, logs, tel, "node1")
+	node1, d := createNode(t, etcdCfg, logs, tel, "node1")
 	tel.Reset()
 	logs.Truncate()
 
@@ -888,11 +888,11 @@ task/123/my-receiver/my-export/some.task/%s
 {"level":"info","message":"some message from the task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"info","message":"task succeeded (%s): some result","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
-{"level":"info","message":"closing etcd session","component":"task.etcd-session","node":"node1"}
-{"level":"info","message":"closed etcd session | %s","component":"task.etcd-session","node":"node1"}
+{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
 {"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd-client"}
-{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}
 `, logs.String())
 }
@@ -901,29 +901,33 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 	t.Helper()
 	return telemetry.
 		NewForTest(t).
-		SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		AddSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
 			// Ignore etcd spans
 			return !strings.HasPrefix(spanName, "etcd")
+		}).
+		AddMetricFilter(func(metric metricdata.Metrics) bool {
+			// Ignore etcd metrics
+			return !strings.HasPrefix(metric.Name, "rpc.")
 		})
 }
 
-func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
-	node, err := task.NewNode(d)
+	d := createDeps(t, etcdCfg, logs, tel, nodeID)
+	node, err := task.NewNode(nodeID, d)
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) dependencies.Mocked {
 	t.Helper()
 
 	d := dependencies.NewMocked(
 		t,
-		dependencies.WithUniqueID(nodeName),
+		dependencies.WithNodeID(nodeID),
 		dependencies.WithTelemetry(tel),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 	)
 
 	// Connect logs output

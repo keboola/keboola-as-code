@@ -253,7 +253,7 @@ func resolveNaming(roots []eval.Root, serviceName string) (string, string, strin
 
 	// Get naming from the service, by OpenApi tags (tag = service name)
 	for _, root := range roots {
-		root.WalkSets(func(set eval.ExpressionSet) error {
+		root.WalkSets(func(set eval.ExpressionSet) {
 			for _, item := range set {
 				if service, ok := item.(*expr.ServiceExpr); ok {
 					if service.Name == serviceName {
@@ -266,7 +266,6 @@ func resolveNaming(roots []eval.Root, serviceName string) (string, string, strin
 					}
 				}
 			}
-			return nil
 		})
 	}
 

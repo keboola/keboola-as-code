@@ -21,7 +21,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer

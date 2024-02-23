@@ -15,10 +15,10 @@ import (
 // If the user selects this entry, they will be asked to enter an ID for the new table
 // (which will be checked to be a valid table ID), and if successful, the return value of
 // `createNew` will be `true`.
-func askTable(ctx context.Context, d dependencies.RemoteCommandScope, allowCreateNew bool) (tableID keboola.TableID, createNew bool, err error) {
-	allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(ctx)
+func askTable(ctx context.Context, d dependencies.RemoteCommandScope, branchID keboola.BranchID, allowCreateNew bool) (tableKey keboola.TableKey, createNew bool, err error) {
+	allTables, err := d.KeboolaProjectAPI().ListTablesRequest(branchID, keboola.WithColumns()).Send(ctx)
 	if err != nil {
-		return keboola.TableID{}, false, err
+		return keboola.TableKey{}, false, err
 	}
 
 	var opts []dialog.AskTableOption
@@ -28,19 +28,19 @@ func askTable(ctx context.Context, d dependencies.RemoteCommandScope, allowCreat
 
 	table, err := d.Dialogs().AskTable(*allTables, opts...)
 	if err != nil {
-		return keboola.TableID{}, false, err
+		return keboola.TableKey{}, false, err
 	}
 
 	if table != nil {
 		// user selected table
-		return table.ID, false, nil
+		return table.TableKey, false, nil
 	} else {
 		// user asked to create new table
 		tableID, err := keboola.ParseTableID(d.Dialogs().AskTableID())
 		if err != nil {
-			return keboola.TableID{}, false, err
+			return keboola.TableKey{}, false, err
 		}
 
-		return tableID, true, nil
+		return keboola.TableKey{BranchID: branchID, TableID: tableID}, true, nil
 	}
 }

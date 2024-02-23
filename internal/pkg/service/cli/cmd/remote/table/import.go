@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 
@@ -25,30 +26,34 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask options
-			var tableID keboola.TableID
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
+			// Get table key
+			tableKey := keboola.TableKey{BranchID: branch.ID}
 			var primaryKey []string
 			if len(args) < 1 {
-				id, createNew, err := askTable(cmd.Context(), d, true)
+				key, createNew, err := askTable(cmd.Context(), d, branch.ID, true)
 				if err != nil {
 					return err
 				}
-				tableID = id
-
+				tableKey = key
 				if createNew {
 					primaryKey = d.Dialogs().AskPrimaryKey()
 				}
+			} else if id, err := keboola.ParseTableID(args[0]); err == nil {
+				tableKey.TableID = id
 			} else {
-				id, err := keboola.ParseTableID(args[0])
-				if err != nil {
-					return err
-				}
-				tableID = id
+				return err
 			}
 
-			var fileID int
+			// Get file key
+			fileKey := keboola.FileKey{BranchID: branch.ID}
 			if len(args) < 2 {
-				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(cmd.Context())
+				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest(branch.ID).Send(cmd.Context())
 				if err != nil {
 					return err
 				}
@@ -56,17 +61,16 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fileID = file.ID
+				fileKey = file.FileKey
+			} else if fileID, err := strconv.Atoi(args[1]); err == nil {
+				fileKey.FileID = keboola.FileID(fileID)
 			} else {
-				fileID, err = strconv.Atoi(args[1])
-				if err != nil {
-					return err
-				}
+				return err
 			}
 
 			opts := tableImport.Options{
-				FileID:          fileID,
-				TableID:         tableID,
+				FileKey:         fileKey,
+				TableKey:        tableKey,
 				Columns:         d.Options().GetStringSlice("columns"),
 				IncrementalLoad: d.Options().GetBool("incremental-load"),
 				WithoutHeaders:  d.Options().GetBool("file-without-headers"),

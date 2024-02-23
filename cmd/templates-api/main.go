@@ -15,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -25,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -53,7 +55,7 @@ func run() error {
 	if err != nil {
 		return errors.Errorf("cannot load envs: %w", err)
 	}
-	cfg, err := config.LoadFrom(os.Args, envs)
+	cfg, err := config.GenerateAndBind(os.Args, envs)
 	if errors.Is(err, pflag.ErrHelp) {
 		// Stop on --help flag
 		return nil
@@ -63,11 +65,18 @@ func run() error {
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("templatesApi") // nolint:forbidigo
-	logger.Infof(ctx, "Configuration: %s", cfg.Dump())
+
+	// Dump configuration, sensitive values are masked
+	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
+	if err == nil {
+		logger.Infof(ctx, "Configuration: %s", string(dump))
+	} else {
+		return err
+	}
 
 	// Start CPU profiling, if enabled.
-	if cfg.CpuProfFilePath != "" {
-		stop, err := cpuprofile.Start(ctx, cfg.CpuProfFilePath, logger)
+	if cfg.CPUProfFilePath != "" {
+		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
 		if err != nil {
 			return errors.Errorf(`cannot start cpu profiling: %w`, err)
 		}
@@ -75,27 +84,24 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
-	if err != nil {
-		return err
-	}
+	proc := servicectx.New(servicectx.WithLogger(logger))
 
 	// Setup telemetry
 	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
-			if cfg.DatadogEnabled {
-				return telemetry.NewDDTracerProvider(
+			if cfg.Datadog.Enabled {
+				return datadog.NewTracerProvider(
 					logger, proc,
 					tracer.WithRuntimeMetrics(),
 					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 					tracer.WithAnalyticsRate(1.0),
-					tracer.WithDebugMode(cfg.DatadogDebug),
+					tracer.WithDebugMode(cfg.Datadog.Debug),
 				), nil
 			}
 			return nil, nil
 		},
 		func() (metric.MeterProvider, error) {
-			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
+			return prometheus.ServeMetrics(ctx, cfg.Metrics, logger, proc, ServiceName)
 		},
 	)
 	if err != nil {
@@ -115,9 +121,9 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.Infof(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
+	logger.Infof(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
-		ListenAddress:     cfg.ListenAddress,
+		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		MiddlewareOptions: []middleware.Option{

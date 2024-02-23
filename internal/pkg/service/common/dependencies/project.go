@@ -19,7 +19,7 @@ import (
 type projectScope struct {
 	token             keboola.Token
 	projectFeatures   keboola.FeaturesMap
-	keboolaProjectAPI *keboola.API
+	keboolaProjectAPI *keboola.AuthorizedAPI
 }
 
 type projectScopeDeps interface {
@@ -102,7 +102,7 @@ func newProjectScope(ctx context.Context, prjScp projectScopeDeps, token keboola
 	}
 
 	httpClient := prjScp.HTTPClient()
-	api, err := keboola.NewAPI(ctx, prjScp.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token))
+	api, err := keboola.NewAuthorizedAPI(ctx, prjScp.StorageAPIHost(), token.Token, keboola.WithClient(&httpClient))
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (v *projectScope) StorageAPITokenID() string {
 	return v.token.ID
 }
 
-func (v *projectScope) KeboolaProjectAPI() *keboola.API {
+func (v *projectScope) KeboolaProjectAPI() *keboola.AuthorizedAPI {
 	v.check()
 	return v.keboolaProjectAPI
 }

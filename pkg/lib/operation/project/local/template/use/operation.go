@@ -39,7 +39,7 @@ type Options struct {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	StorageAPIHost() string
 	StorageAPITokenID() string
 	Logger() log.Logger

@@ -23,7 +23,6 @@ const testTimeout = 5 * time.Minute
 
 type Runner struct {
 	t          *testing.T
-	tempDir    string
 	testsDir   string
 	workingDir string
 }
@@ -38,7 +37,7 @@ func NewRunner(t *testing.T) *Runner {
 	assert.NoError(t, os.RemoveAll(workingDir))
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir, tempDir: t.TempDir()}
+	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir}
 }
 
 func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.CancelFunc) {
@@ -63,7 +62,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	ctx, cancelFn := context.WithTimeout(context.Background(), testTimeout)
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.KeboolaProjectAPI(), project.Env())
+	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.ProjectAPI(), project.Env())
 
 	envMap := project.Env()
 	// Disable version check

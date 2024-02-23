@@ -7,7 +7,7 @@ import (
 )
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
 type schedulerMapper struct {

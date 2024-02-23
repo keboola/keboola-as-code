@@ -1,4 +1,4 @@
-// nolint: gochecknoglobals
+//nolint:gochecknoglobals
 package templates
 
 import (
@@ -38,6 +38,7 @@ func init() {
 }
 
 var _ = API("templates", func() {
+	Randomizer(expr.NewDeterministicRandomizer())
 	Title("Templates Service")
 	Description("A service for applying templates to Keboola projects.")
 	Version("1.0")

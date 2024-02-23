@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
@@ -104,7 +105,7 @@ func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope)
 }
 
 func (s *service) APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *ServiceDetail, err error) {
-	url := *s.deps.APIConfig().PublicAddress
+	url := *s.deps.APIConfig().API.PublicURL
 	url.Path = path.Join(url.Path, "v1/documentation")
 	res = &ServiceDetail{
 		API:           "templates",
@@ -177,7 +178,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Note:
@@ -329,7 +330,7 @@ func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequ
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Get instance
@@ -363,7 +364,7 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Get instance
@@ -417,7 +418,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Get instance
@@ -522,15 +523,13 @@ func (s *service) UpgradeInstanceValidateInputs(ctx context.Context, d dependenc
 func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScope, payload *GetTaskPayload) (res *Task, err error) {
 	str := d.Store()
 
-	t, err := str.GetTask(ctx, task.Key{
-		ProjectID: d.ProjectID(),
-		TaskID:    payload.TaskID,
-	})
+	k := task.Key{ProjectID: d.ProjectID(), TaskID: payload.TaskID}
+	t, err := str.GetTask(k).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}
 
-	return s.mapper.TaskPayload(&t), nil
+	return s.mapper.TaskPayload(&t.Value), nil
 }
 
 func repositoryRef(d dependencies.ProjectRequestScope, name string) (model.TemplateRepository, error) {
@@ -707,21 +706,29 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 }
 
 // tryLockProject.
-func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (dependencies.UnlockFn, error) {
+func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (unlock func(ctx context.Context), err error) {
 	d.Logger().Infof(ctx, `requested lock for project "%d"`, d.ProjectID())
 
-	// Try lock
-	locked, unlockFn := d.ProjectLocker().TryLock(ctx, fmt.Sprintf("project-%d", d.ProjectID()))
-	if !locked {
-		d.Logger().Infof(ctx, `project "%d" is locked by another request`, d.ProjectID())
-		return nil, &ProjectLockedError{
+	mutex := d.DistributedLockProvider().NewMutex(fmt.Sprintf("project/%d", d.ProjectID()))
+
+	err = mutex.TryLock(ctx)
+	if errors.As(err, &etcdop.AlreadyLockedError{}) {
+		err = &ProjectLockedError{
 			StatusCode: http.StatusServiceUnavailable,
 			Name:       "templates.projectLocked",
 			Message:    "The project is locked, another operation is in progress, please try again later.",
 			RetryAfter: time.Now().Add(ProjectLockedRetryAfter).UTC().Format(http.TimeFormat),
 		}
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	// Locked!
+	unlockFn := func(ctx context.Context) {
+		if err := mutex.Unlock(ctx); err != nil {
+			d.Logger().Warnf(ctx, `cannot unlock project "%d": %s`, d.ProjectID(), err)
+		}
+	}
 	return unlockFn, nil
 }

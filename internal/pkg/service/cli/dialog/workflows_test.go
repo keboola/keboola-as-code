@@ -4,22 +4,19 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	t.Parallel()
 
-	dialog, o, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 
-	// Default values are defined by options
-	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, o.BindPFlags(flags))
+	f := workflow.DefaultFlags()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -47,7 +44,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out := dialog.AskWorkflowsOptions()
+	out := workflow.AskWorkflowsOptions(f, dialog)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
@@ -70,13 +67,14 @@ func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	o.Set(`ci-pull`, `false`)
 	o.Set(`ci-main-branch`, `main`)
 
-	// Default values are defined by options
-	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, o.BindPFlags(flags))
+	f := workflow.DefaultFlags()
+	f.CIValidate = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
+	f.CIPull = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
+	f.CIMainBranch = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
+	f.CIPush = configmap.NewValueWithOrigin(true, configmap.SetByFlag)
 
 	// Run
-	out := dialog.AskWorkflowsOptions()
+	out := workflow.AskWorkflowsOptions(f, dialog)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,

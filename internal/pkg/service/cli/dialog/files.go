@@ -14,7 +14,7 @@ import (
 func (p *Dialogs) AskFile(allFiles []*keboola.File) (*keboola.File, error) {
 	selectOpts := make([]string, 0)
 	for _, w := range allFiles {
-		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%d)`, w.Name, w.ID))
+		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%d)`, w.Name, w.FileID))
 	}
 	if index, ok := p.SelectIndex(&prompt.SelectIndex{
 		Label:   "File",
@@ -43,8 +43,8 @@ func (p *Dialogs) AskFileOutput() (string, error) {
 	return output, nil
 }
 
-func (p *Dialogs) AskUploadFile(input string, defaultName string) (upload.Options, error) {
-	res := upload.Options{}
+func (p *Dialogs) AskUploadFile(branchKey keboola.BranchKey, input string, defaultName string) (upload.Options, error) {
+	res := upload.Options{BranchKey: branchKey}
 
 	name, err := p.askFileName(defaultName)
 	if err != nil {

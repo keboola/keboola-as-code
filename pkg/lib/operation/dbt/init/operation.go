@@ -17,12 +17,13 @@ import (
 )
 
 type DbtInitOptions struct {
+	BranchKey     keboola.BranchKey
 	TargetName    string
 	WorkspaceName string
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
@@ -61,6 +62,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// List buckets
 	buckets, err := listbuckets.Run(ctx, listbuckets.Options{
+		BranchKey:  o.BranchKey,
 		TargetName: o.TargetName,
 	}, d)
 	if err != nil {
@@ -77,6 +79,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// Generate sources
 	err = sources.Run(ctx, sources.Options{
+		BranchKey:  o.BranchKey,
 		TargetName: o.TargetName,
 		Buckets:    buckets,
 	}, d)
@@ -86,6 +89,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// Generate env
 	err = env.Run(ctx, env.Options{
+		BranchKey:  o.BranchKey,
 		TargetName: o.TargetName,
 		Workspace:  workspace,
 		Buckets:    buckets,

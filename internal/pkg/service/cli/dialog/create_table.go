@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
-func (p *Dialogs) AskCreateTable(args []string, allBuckets []*keboola.Bucket) (table.Options, error) {
+func (p *Dialogs) AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*keboola.Bucket) (table.Options, error) {
 	opts := table.Options{}
 
 	if len(args) == 1 {
@@ -17,14 +17,15 @@ func (p *Dialogs) AskCreateTable(args []string, allBuckets []*keboola.Bucket) (t
 		if err != nil {
 			return opts, err
 		}
-		opts.BucketID = tableID.BucketID
+		opts.BucketKey = keboola.BucketKey{BranchID: branchKey.ID, BucketID: tableID.BucketID}
 		opts.Name = tableID.TableName
 	} else {
 		bucketID, err := p.AskBucketID(allBuckets)
 		if err != nil {
 			return opts, err
 		}
-		opts.BucketID = bucketID
+
+		opts.BucketKey = keboola.BucketKey{BranchID: branchKey.ID, BucketID: bucketID}
 
 		name := p.options.GetString(`name`)
 		if !p.options.IsSet(`name`) {

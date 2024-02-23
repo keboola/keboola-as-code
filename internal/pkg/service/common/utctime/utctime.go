@@ -17,6 +17,10 @@ func (v UTCTime) String() string {
 	return FormatTime(time.Time(v))
 }
 
+func (v UTCTime) Add(d time.Duration) UTCTime {
+	return From(time.Time(v).Add(d))
+}
+
 func (v UTCTime) IsZero() bool {
 	return time.Time(v).IsZero()
 }
@@ -52,4 +56,20 @@ func FormatTime(t time.Time) string {
 
 func From(t time.Time) UTCTime {
 	return UTCTime(t.UTC().Truncate(time.Millisecond))
+}
+
+func MustParse(s string) UTCTime {
+	t, err := Parse(s)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+func Parse(s string) (UTCTime, error) {
+	t, err := time.Parse(TimeFormat, s)
+	if err != nil {
+		return UTCTime{}, err
+	}
+	return UTCTime(t), nil
 }

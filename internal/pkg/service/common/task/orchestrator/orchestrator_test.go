@@ -2,16 +2,16 @@ package orchestrator_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -23,16 +23,9 @@ import (
 )
 
 type testResource struct {
-	ReceiverKey key.ReceiverKey
-	ID          string
-}
-
-func (v testResource) GetReceiverKey() key.ReceiverKey {
-	return v.ReceiverKey
-}
-
-func (v testResource) String() string {
-	return v.ReceiverKey.String() + "/" + v.ID
+	ProjectID       keboola.ProjectID
+	DistributionKey string
+	ID              string
 }
 
 func TestOrchestrator(t *testing.T) {
@@ -42,25 +35,29 @@ func TestOrchestrator(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	d1 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
-		dependencies.WithUniqueID("node1"),
+		dependencies.WithNodeID("node1"),
 	)
+	grp1, err := d1.DistributionNode().Group("my-group")
+	require.NoError(t, err)
+	node1 := orchestrator.NewNode(d1)
+
 	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithEnabledOrchestrator(),
-		dependencies.WithUniqueID("node2"),
+		dependencies.WithNodeID("node2"),
 	)
-	node1 := orchestrator.NewNode(d1)
+	grp2, err := d2.DistributionNode().Group("my-group")
+	require.NoError(t, err)
 	node2 := orchestrator.NewNode(d2)
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -71,18 +68,17 @@ func TestOrchestrator(t *testing.T) {
 			RestartInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
-			return event.Value.ReceiverKey.String()
+			return event.Value.DistributionKey
 		},
 		Lock: func(event etcdop.WatchEventT[testResource]) string {
 			// Define a custom lock name
-			resource := event.Value
-			return fmt.Sprintf(`%s/%s`, resource.ReceiverKey.String(), resource.ID)
+			return "custom-lock"
 		},
 		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
-				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
+				ProjectID: resource.ProjectID,
+				TaskID:    task.ID("my-prefix/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -97,18 +93,19 @@ func TestOrchestrator(t *testing.T) {
 	}
 
 	// Create orchestrator per each node
-	assert.NoError(t, <-node1.Start(config))
-	assert.NoError(t, <-node2.Start(config))
+	assert.NoError(t, <-node1.Start(grp1, config))
+	assert.NoError(t, <-node2.Start(grp2, config))
 
 	// Put some key to trigger the task
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID"}).Do(ctx, client))
+	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
+	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
 
 	// Wait for task on the node 2
 	assert.Eventually(t, func() bool {
 		return d2.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	// Wait for  "not assigned" message form the node 1
+	// Wait for "not assigned" message form the node 1
 	assert.Eventually(t, func() bool {
 		return d1.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -122,18 +119,18 @@ func TestOrchestrator(t *testing.T) {
 
 	expected := `
 {"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
-{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
-{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
-{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
-{"level":"info","message":"task succeeded (%s): ResourceID","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/ResourceID\"","component":"task","task":"1000/my-receiver/some.task/ResourceID/%s"}
+{"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/custom-lock\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"info","message":"task succeeded (%s): ResourceID","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/custom-lock\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 `
 	d2.DebugLogger().AssertJSONMessages(t, expected)
 
 	expected = `
 {"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
-{"level":"debug","message":"not assigned \"1000/my-receiver/some.task/ResourceID\", distribution key \"1000/my-receiver\"","component":"orchestrator","task":"some.task"}
+{"level":"debug","message":"not assigned \"1000/my-prefix/some.task/ResourceID\", distribution key \"foo\"","component":"orchestrator","task":"some.task"}
 `
 	d1.DebugLogger().AssertJSONMessages(t, expected)
 }
@@ -145,18 +142,21 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdCredentials(etcdCredentials),
-		dependencies.WithUniqueID("node1"),
+		dependencies.WithEtcdConfig(etcdCfg),
+		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
+
+	dist, err := d.DistributionNode().Group("my-group")
+	require.NoError(t, err)
+
 	node := orchestrator.NewNode(d)
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -167,13 +167,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 			RestartInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
-			return event.Value.ReceiverKey.String()
+			return event.Value.DistributionKey
 		},
 		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
-				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
+				ProjectID: resource.ProjectID,
+				TaskID:    task.ID("my-prefix/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -193,9 +193,11 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, <-node.Start(config))
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "BadID"}).Do(ctx, client))
-	assert.NoError(t, pfx.Key("key2").Put(testResource{ReceiverKey: receiverKey, ID: "GoodID"}).Do(ctx, client))
+	assert.NoError(t, <-node.Start(dist, config))
+	v1 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "BadID"}
+	v2 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "GoodID"}
+	assert.NoError(t, pfx.Key("key1").Put(client, v1).Do(ctx).Err())
+	assert.NoError(t, pfx.Key("key2").Put(client, v2).Do(ctx).Err())
 	assert.Eventually(t, func() bool {
 		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -207,13 +209,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 
 	expected := `
 {"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
-{"level":"debug","message":"skipped \"1000/my-receiver/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
-{"level":"info","message":"assigned \"1000/my-receiver/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
-{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
-{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
-{"level":"info","message":"task succeeded (%s): GoodID","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/GoodID\"","component":"task","task":"1000/my-receiver/some.task/GoodID/%s"}
+{"level":"debug","message":"skipped \"1000/my-prefix/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"assigned \"1000/my-prefix/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/GoodID\"","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
+{"level":"info","message":"task succeeded (%s): GoodID","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-prefix/some.task/GoodID\"","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
 `
 	d.DebugLogger().AssertJSONMessages(t, expected)
 }
@@ -225,21 +227,24 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 
 	restartInterval := time.Millisecond
 	clk := clock.NewMock()
 	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdCredentials(etcdCredentials),
-		dependencies.WithUniqueID("node1"),
+		dependencies.WithEtcdConfig(etcdCfg),
+		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
+
+	dist, err := d.DistributionNode().Group("my-group")
+	require.NoError(t, err)
+
 	node := orchestrator.NewNode(d)
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -250,13 +255,13 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			RestartInterval: restartInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
-			return event.Value.ReceiverKey.String()
+			return event.Value.DistributionKey
 		},
 		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
-				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
+				ProjectID: resource.ProjectID,
+				TaskID:    task.ID("my-prefix/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -272,10 +277,11 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	}
 
 	// Create orchestrator per each node
-	assert.NoError(t, <-node.Start(config))
+	assert.NoError(t, <-node.Start(dist, config))
 
 	// Put some key to trigger the task
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID1"}).Do(ctx, client))
+	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
+	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
 	assert.Eventually(t, func() bool {
 		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -299,12 +305,12 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 
 	expected := `
 {"level":"debug","message":"restart","component":"orchestrator","task":"some.task"}
-{"level":"info","message":"assigned \"1000/my-receiver/some.task/ResourceID1\"","component":"orchestrator","task":"some.task"}
-{"level":"info","message":"started task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
-{"level":"info","message":"message from the task","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
-{"level":"info","message":"task succeeded (0s): ResourceID1","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
-{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-receiver/some.task/ResourceID1\"","component":"task","task":"1000/my-receiver/some.task/ResourceID1/%s"}
+{"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"info","message":"task succeeded (0s): ResourceID","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 `
 	d.DebugLogger().AssertJSONMessages(t, expected)
 }

@@ -121,6 +121,24 @@ func TestCliCmdFlags(t *testing.T) {
 		names = append(names, flag.Name)
 	})
 
+	var persistentFlags []string
+	root.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+		persistentFlags = append(persistentFlags, flag.Name)
+	})
+
+	persistentExpected := []string{
+		"help",
+		"log-file",
+		"log-format",
+		"non-interactive",
+		"storage-api-token",
+		"verbose",
+		"verbose-api",
+		"version-check",
+		"working-dir",
+	}
+
+	assert.Equal(t, persistentExpected, persistentFlags)
 	// Assert
 	expected := []string{
 		"version",

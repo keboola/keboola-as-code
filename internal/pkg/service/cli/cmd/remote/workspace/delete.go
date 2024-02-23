@@ -23,17 +23,17 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Options
+			// Get default branch
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
 			if err != nil {
-				return errors.Errorf("cannot find default branch: %w", err)
+				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
+			// Options
 			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(cmd.Context(), branch.ID)
 			if err != nil {
 				return err
 			}
-
 			sandbox, err := d.Dialogs().AskWorkspace(allWorkspaces)
 			if err != nil {
 				return err

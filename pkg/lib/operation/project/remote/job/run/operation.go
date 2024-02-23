@@ -15,7 +15,7 @@ import (
 )
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	ProjectFeatures() keboola.FeaturesMap
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
@@ -80,7 +80,7 @@ type JobQueue struct {
 	hasQueueV2 bool
 
 	ctx    context.Context
-	api    *keboola.API
+	api    *keboola.AuthorizedAPI
 	logger log.Logger
 
 	wg  *sync.WaitGroup
@@ -196,7 +196,7 @@ func (o *Job) Key() string {
 	return out
 }
 
-func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
+func (o *Job) Start(ctx context.Context, api *keboola.AuthorizedAPI, async bool, hasQueueV2 bool) error {
 	if hasQueueV2 {
 		job, err := api.NewCreateJobRequest(o.ComponentID).
 			WithConfig(o.ConfigID).

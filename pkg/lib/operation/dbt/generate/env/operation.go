@@ -14,13 +14,14 @@ import (
 )
 
 type Options struct {
+	BranchKey  keboola.BranchKey
 	TargetName string
 	Workspace  *keboola.Workspace
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
@@ -36,7 +37,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	// List bucket, if not set
-	o.Buckets, err = listbuckets.Run(ctx, listbuckets.Options{TargetName: o.TargetName}, d)
+	o.Buckets, err = listbuckets.Run(ctx, listbuckets.Options{BranchKey: o.BranchKey, TargetName: o.TargetName}, d)
 	if err != nil {
 		return errors.Errorf("could not list buckets: %w", err)
 	}

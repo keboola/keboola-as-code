@@ -27,10 +27,8 @@ func ContextWith(ctx context.Context, newAttributes ...attribute.KeyValue) conte
 	ctx = context.WithValue(ctx, contextAttributes, &set)
 
 	// Add logger attributes to the context
-	logFields := make([]zap.Field, set.Len())
-	for i, keyValue := range set.ToSlice() {
-		logFields[i] = convertAttributeToZapField(keyValue)
-	}
+	logFields := make([]zap.Field, 0, set.Len())
+	AttrsToZapFields(set.ToSlice(), &logFields)
 	ctx = context.WithValue(ctx, contextZapFields, logFields)
 
 	return ctx
@@ -60,7 +58,13 @@ func ZapFields(ctx context.Context) []zap.Field {
 	return nil
 }
 
-func convertAttributeToZapField(keyValue attribute.KeyValue) zap.Field {
+func AttrsToZapFields(attrs []attribute.KeyValue, target *[]zap.Field) {
+	for _, keyValue := range attrs {
+		*target = append(*target, attrToZapField(keyValue))
+	}
+}
+
+func attrToZapField(keyValue attribute.KeyValue) zap.Field {
 	key := string(keyValue.Key)
 	value := keyValue.Value
 

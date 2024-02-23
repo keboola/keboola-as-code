@@ -19,11 +19,11 @@ const ComponentsUpdateTimeout = 20 * time.Second
 type ComponentsProvider struct {
 	updateLock       *sync.RWMutex
 	logger           log.Logger
-	keboolaPublicAPI *keboola.API
+	keboolaPublicAPI *keboola.PublicAPI
 	value            *ComponentsMap
 }
 
-func NewComponentsProvider(index *keboola.IndexComponents, logger log.Logger, keboolaPublicAPI *keboola.API) *ComponentsProvider {
+func NewComponentsProvider(index *keboola.IndexComponents, logger log.Logger, keboolaPublicAPI *keboola.PublicAPI) *ComponentsProvider {
 	return &ComponentsProvider{
 		updateLock:       &sync.RWMutex{},
 		logger:           logger,
@@ -62,7 +62,7 @@ func (p *ComponentsProvider) Update(ctx context.Context) error {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.value = NewComponentsMap(index.Components)
-	p.logger.Infof(ctx, "components update finished | %s", time.Since(startTime))
+	p.logger.WithDuration(time.Since(startTime)).Infof(ctx, "components update finished")
 	return nil
 }
 

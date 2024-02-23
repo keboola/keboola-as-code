@@ -24,25 +24,25 @@ func TestValidationError(t *testing.T) {
 	))
 
 	// Test Put
-	err := pfxFailingValidation.Key("my-key").Put("value").Do(ctx, client)
+	err := pfxFailingValidation.Key("my-key").Put(client, "value").Do(ctx).Err()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd operation "put" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Test PutIfNotExists
-	_, err = pfxFailingValidation.Key("my-key").PutIfNotExists("value").Do(ctx, client)
+	err = pfxFailingValidation.Key("my-key").PutIfNotExists(client, "value").Do(ctx).Err()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd operation "put if not exists" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Create key
-	assert.NoError(t, pfxNoValidation.Key("my-key").Put(`"foo"`).Do(ctx, client))
+	assert.NoError(t, pfxNoValidation.Key("my-key").Put(client, `"foo"`).Do(ctx).Err())
 
-	// Test Get
-	_, err = pfxFailingValidation.Key("my-key").Get().Do(ctx, client)
+	// Test GetKV
+	err = pfxFailingValidation.Key("my-key").GetKV(client).Do(ctx).Err()
 	assert.Error(t, err)
-	assert.Equal(t, `etcd operation "get one" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
+	assert.Equal(t, `etcd operation "get" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Test GetAll
-	_, err = pfxFailingValidation.GetAll().Do(ctx, client).All()
+	_, err = pfxFailingValidation.GetAll(client).Do(ctx).AllKVs()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd iterator failed: cannot decode key "my-prefix/my-key", page=1, index=0: validation error`, err.Error())
 }
@@ -66,25 +66,25 @@ func TestEncodeDecodeError(t *testing.T) {
 	))
 
 	// Test Put
-	err := pfxFailingEncode.Key("my-key").Put("value").Do(ctx, client)
+	err := pfxFailingEncode.Key("my-key").Put(client, "value").Do(ctx).Err()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd operation "put" failed: invalid value for "my-prefix/my-key": encode error`, err.Error())
 
 	// Test PutIfNotExists
-	_, err = pfxFailingEncode.Key("my-key").PutIfNotExists("value").Do(ctx, client)
+	err = pfxFailingEncode.Key("my-key").PutIfNotExists(client, "value").Do(ctx).Err()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd operation "put if not exists" failed: invalid value for "my-prefix/my-key": encode error`, err.Error())
 
 	// Create key
-	assert.NoError(t, pfxNoValidation.Key("my-key").Put(`"foo"`).Do(ctx, client))
+	assert.NoError(t, pfxNoValidation.Key("my-key").Put(client, `"foo"`).Do(ctx).Err())
 
-	// Test Get
-	_, err = pfxFailingEncode.Key("my-key").Get().Do(ctx, client)
+	// Test GetKV
+	err = pfxFailingEncode.Key("my-key").GetKV(client).Do(ctx).Err()
 	assert.Error(t, err)
-	assert.Equal(t, `etcd operation "get one" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
+	assert.Equal(t, `etcd operation "get" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
 
 	// Test GetAll
-	_, err = pfxFailingEncode.GetAll().Do(ctx, client).All()
+	_, err = pfxFailingEncode.GetAll(client).Do(ctx).AllKVs()
 	assert.Error(t, err)
 	assert.Equal(t, `etcd iterator failed: cannot decode key "my-prefix/my-key", page=1, index=0: decode error`, err.Error())
 }

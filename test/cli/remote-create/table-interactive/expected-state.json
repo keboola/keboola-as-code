@@ -36,7 +36,7 @@
   ],
   "files": [
     {
-      "name": "table1",
+      "name": "create_table_in.c_bucket.table1",
       "tags": [],
       "isSliced": false,
       "isEncrypted": true,

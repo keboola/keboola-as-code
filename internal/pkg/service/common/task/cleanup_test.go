@@ -29,12 +29,12 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	etcdCredentials := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	etcdCfg := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCfg)
 	tel := newTestTelemetryWithFilter(t)
 
 	logs := ioutil.NewAtomicWriter()
-	node, d := createNode(t, etcdCredentials, logs, tel, "node1")
+	node, d := createNode(t, etcdCfg, logs, tel, "node1")
 	logger := d.DebugLogger()
 	logger.Truncate()
 	tel.Reset()
@@ -56,7 +56,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "err",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey1.String()).Put(task1).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey1.String()).Put(client, task1).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
@@ -73,7 +73,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(task2).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(client, task2).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
@@ -90,7 +90,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(task3).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
 
 	// Run the cleanup
 	tel.Reset()
@@ -111,11 +111,11 @@ func TestCleanup(t *testing.T) {
 {"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd session","component":"task.etcd-session","node":"node1"}
-{"level":"info","message":"closed etcd session | %s","component":"task.etcd-session","node":"node1"}
+{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
 {"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd-client"}
-{"level":"info","message":"closed etcd connection | %s","component":"etcd-client"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}
 `)
 
