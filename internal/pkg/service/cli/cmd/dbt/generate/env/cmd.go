@@ -35,6 +35,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// flags
 			f := Flags{}
 			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err

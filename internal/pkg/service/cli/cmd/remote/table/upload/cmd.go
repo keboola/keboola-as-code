@@ -31,8 +31,8 @@ type Flags struct {
 	FileEscapedBy     configmap.Value[string]   `configKey:"file-escaped-by" configUsage:"escape character used in the CSV file"`
 }
 
-func DefaultFlags() *Flags {
-	return &Flags{
+func DefaultFlags() Flags {
+	return Flags{
 		FileDelimiter: configmap.NewValue(","),
 		FileEnclosure: configmap.NewValue(`"`),
 	}
@@ -52,8 +52,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// flags
-			f := DefaultFlags()
-			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), f); err != nil {
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 

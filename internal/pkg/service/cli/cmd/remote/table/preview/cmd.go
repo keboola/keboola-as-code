@@ -32,8 +32,8 @@ type Flags struct {
 	Force          configmap.Value[bool]     `configKey:"force" configUsage:"overwrite the output file if it already exists"`
 }
 
-func DefaultFlags() *Flags {
-	return &Flags{
+func DefaultFlags() Flags {
+	return Flags{
 		Limit:   configmap.NewValue(uint(100)),
 		Columns: configmap.NewValue([]string{}),
 		Format:  configmap.NewValue(preview.TableFormatPretty),
@@ -54,8 +54,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// flags
-			f := DefaultFlags()
-			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), f); err != nil {
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
@@ -80,7 +80,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			opts, err := parsePreviewOptions(cmd.Context(), d.Fs(), tableKey, *f)
+			opts, err := parsePreviewOptions(cmd.Context(), d.Fs(), tableKey, f)
 			if err != nil {
 				return err
 			}

@@ -22,8 +22,8 @@ type Flags struct {
 	Timeout        configmap.Value[string] `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }
 
-func DefaultFlags() *Flags {
-	return &Flags{
+func DefaultFlags() Flags {
+	return Flags{
 		Timeout: configmap.NewValue("5m"),
 	}
 }
@@ -42,13 +42,13 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// flags
-			f := DefaultFlags()
-			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), f); err != nil {
+			f := Flags{}
+			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
 				return err
 			}
 
 			// Parse options
-			opts, err := parseJobRunOptions(args, *f)
+			opts, err := parseJobRunOptions(args, f)
 			if err != nil {
 				return err
 			}

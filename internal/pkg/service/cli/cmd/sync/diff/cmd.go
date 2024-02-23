@@ -12,7 +12,7 @@ import (
 )
 
 type Flag struct {
-	Details bool `configKey:"details" configUsage:"print changed fields"`
+	Details configmap.Value[bool] `configKey:"details" configUsage:"print changed fields"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -52,7 +52,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := printdiff.Options{
-				PrintDetails:      f.Details,
+				PrintDetails:      f.Details.Value,
 				LogUntrackedPaths: true,
 			}
 
