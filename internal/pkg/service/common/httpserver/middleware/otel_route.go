@@ -35,12 +35,18 @@ func OpenTelemetryExtractRoute() Middleware {
 
 				// Set span attributes
 				if span, found := RequestSpan(ctx); found {
+					var target string
+					if req != nil && req.URL != nil {
+						target = req.URL.Path
+					}
+
 					redactedRouteParams, _ := ctx.Value(redactedRouteParamsCtxKey).(map[string]struct{})
 					span.SetAttributes(attribute.String(attrResourceName, route), semconv.HTTPRoute(route))
 					var attrs []attribute.KeyValue
 					for key, value := range routerData.Params() {
 						if redactedRouteParams != nil {
 							if _, found := redactedRouteParams[strings.ToLower(key)]; found {
+								target = strings.ReplaceAll(target, value, maskedValue)
 								value = maskedValue
 							}
 						}
@@ -50,6 +56,9 @@ func OpenTelemetryExtractRoute() Middleware {
 						return attrs[i].Key < attrs[j].Key
 					})
 					span.SetAttributes(attrs...)
+
+					// Set masked target
+					span.SetAttributes(semconv.HTTPTarget(target))
 				}
 			}
 
