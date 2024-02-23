@@ -1593,7 +1593,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	require.NoError(t, err)
 
 	cfg := config.NewConfig()
-	cfg.CookieSecret = string(secret)
+	cfg.CookieSecretSalt = string(secret)
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
 

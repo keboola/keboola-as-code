@@ -386,26 +386,9 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 
 	domain := app.ID.String() + "." + r.config.PublicAddress.Host
 
-	// Need to use different cookie secret for each provider, otherwise cookies created by
-	// provider A would also be valid in a section that requires provider B but not A.
-	// To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
-	// App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
-	h := sha256.New()
-	if _, err := io.WriteString(h, provider.ID); err != nil {
-		return nil, err
-	}
-	if _, err := io.WriteString(h, r.config.CookieSecret); err != nil {
-		return nil, err
-	}
-	if _, err := io.WriteString(h, app.ID.String()); err != nil {
-		return nil, err
-	}
-	seed := binary.BigEndian.Uint64(h.Sum(nil))
-
-	secret := make([]byte, 32)
-	random := rand.New(rand.NewSource(int64(seed))) // nolint: gosec // crypto.rand doesn't accept a seed
-	if _, err := random.Read(secret); err != nil {
-		return nil, err
+	secret, err := r.generateCookieSecret(app, provider)
+	if err != nil {
+		return v, err
 	}
 
 	v.Cookie.Secret = string(secret)
@@ -442,6 +425,29 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 	}
 
 	return v, nil
+}
+
+// generateCookieSecret creates a unique cookie secret for each app and provider.
+// This is necessary because otherwise cookies created by provider A would also be valid in a section that requires provider B but not A.
+// To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
+// App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
+func (r *Router) generateCookieSecret(app DataApp, provider options.Provider) ([]byte, error) {
+	if r.config.CookieSecretSalt == "" {
+		return nil, errors.New("missing cookie secret salt")
+	}
+
+	h := sha256.New()
+	if _, err := io.WriteString(h, app.ID.String()+"/"+provider.ID+"/"+r.config.CookieSecretSalt); err != nil {
+		return nil, err
+	}
+	seed := binary.BigEndian.Uint64(h.Sum(nil))
+
+	secret := make([]byte, 32)
+	random := rand.New(rand.NewSource(int64(seed))) // nolint: gosec // crypto.rand doesn't accept a seed
+	if _, err := random.Read(secret); err != nil {
+		return nil, err
+	}
+	return secret, nil
 }
 
 func headerFromClaim(header, claim string) options.Header {
