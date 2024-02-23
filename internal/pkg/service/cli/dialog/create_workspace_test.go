@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	createWorkspace "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/workspace/create"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
@@ -37,14 +36,8 @@ func TestAskCreateWorkspace(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	f := createWorkspace.Flags{
-		Name: configmap.Value[string]{Value: "foo"},
-		Type: configmap.Value[string]{Value: "python"},
-		Size: configmap.Value[string]{Value: "small"},
-	}
-
 	// Run
-	opts, err := createWorkspace.AskCreateWorkspace(dialog, f)
+	opts, err := createWorkspace.AskCreateWorkspace(dialog, createWorkspace.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

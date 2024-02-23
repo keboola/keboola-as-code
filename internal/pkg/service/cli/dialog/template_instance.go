@@ -11,7 +11,7 @@ import (
 )
 
 // AskTemplateInstance - dialog to select template instance.
-func (p *Dialogs) AskTemplateInstance(projectState *project.State, branchName configmap.Value[string], instanceName configmap.Value[string]) (branchKey model.BranchKey, instance *model.TemplateInstance, err error) {
+func (p *Dialogs) AskTemplateInstance(projectState *project.State, branchName configmap.Value[string], instanceID configmap.Value[string]) (branchKey model.BranchKey, instance *model.TemplateInstance, err error) {
 	// Branch
 	branch, err := p.SelectBranch(projectState.LocalObjects().Branches(), `Select branch`, branchName)
 	if err != nil {
@@ -19,20 +19,20 @@ func (p *Dialogs) AskTemplateInstance(projectState *project.State, branchName co
 	}
 
 	// Template instance
-	instance, err = p.selectTemplateInstance(branch, `Select template instance`, instanceName)
+	instance, err = p.selectTemplateInstance(branch, `Select template instance`, instanceID)
 	return branch.BranchKey, instance, err
 }
 
-func (p *Dialogs) selectTemplateInstance(branch *model.Branch, label string, instanceName configmap.Value[string]) (*model.TemplateInstance, error) {
-	if instanceName.IsSet() {
-		usage, found, err := branch.Metadata.TemplateInstance(instanceName.Value)
+func (p *Dialogs) selectTemplateInstance(branch *model.Branch, label string, instanceID configmap.Value[string]) (*model.TemplateInstance, error) {
+	if instanceID.IsSet() {
+		usage, found, err := branch.Metadata.TemplateInstance(instanceID.Value)
 		if err != nil {
 			return nil, err
 		}
 		if found {
 			return usage, nil
 		}
-		return nil, errors.Errorf(`template instance "%s" was not found in branch "%s"`, p.options.GetString(`instance`), branch.Name)
+		return nil, errors.Errorf(`template instance "%s" was not found in branch "%s"`, instanceID.Value, branch.Name)
 	}
 
 	all, err := branch.Metadata.TemplatesInstances()

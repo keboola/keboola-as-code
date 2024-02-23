@@ -78,7 +78,7 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	tokenID := "1234"
 	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
-	_, _, err = dialog.AskTemplateInstance(projectState, configmap.Value[string]{Value: branch.String(), SetBy: configmap.SetByFlag}, configmap.Value[string]{Value: instanceName, SetBy: configmap.SetByFlag})
+	_, _, err = dialog.AskTemplateInstance(projectState, configmap.NewValueWithOrigin("123", configmap.SetByFlag), configmap.NewValueWithOrigin("inst2", configmap.SetByFlag))
 	assert.Error(t, err)
 	assert.Equal(t, `template instance "inst2" was not found in branch "Main"`, err.Error())
 }
@@ -101,6 +101,6 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	tokenID := "1234"
 	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
-	_, _, err = dialog.AskTemplateInstance(projectState, configmap.Value[string]{Value: branch.String(), SetBy: configmap.SetByFlag}, configmap.Value[string]{Value: instanceName, SetBy: configmap.SetByFlag})
+	_, _, err = dialog.AskTemplateInstance(projectState, configmap.NewValueWithOrigin("123", configmap.SetByFlag), configmap.NewValueWithOrigin(instanceID, configmap.SetByFlag))
 	assert.NoError(t, err)
 }

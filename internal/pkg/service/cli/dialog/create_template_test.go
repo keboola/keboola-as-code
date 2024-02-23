@@ -99,16 +99,8 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	// flags
-	f := createTemp.Flags{
-		ID:          configmap.NewValue("my-super-template"),
-		Name:        configmap.NewValue("My Super Template"),
-		Branch:      configmap.NewValue("123"),
-		Configs:     configmap.NewValue("Config 1 (keboola.my-component:1)"),
-		Description: configmap.NewValue("Full workflow to ..."),
-	}
 	// Run
-	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, f)
+	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, createTemp.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

@@ -113,14 +113,8 @@ func TestAskCreateConfig(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	f := config.Flags{
-		Branch:      configmap.Value[string]{Value: "Main"},
-		ComponentID: configmap.Value[string]{Value: "ex-generic-v2"},
-		Name:        configmap.Value[string]{Value: "Foo Bar"},
-	}
-
 	// Run
-	opts, err := config.AskCreateConfig(projectState, dialog, d, f)
+	opts, err := config.AskCreateConfig(projectState, dialog, d, config.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -206,14 +200,8 @@ func TestAskCreateRow(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	f := row.Flags{
-		Branch: configmap.Value[string]{},
-		Config: configmap.Value[string]{},
-		Name:   configmap.Value[string]{},
-	}
-
 	// Run
-	opts, err := row.AskCreateRow(projectState, dialog, f)
+	opts, err := row.AskCreateRow(projectState, dialog, row.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

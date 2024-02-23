@@ -61,14 +61,8 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	f := rename.Flags{
-		Branch:   configmap.Value[string]{Value: branch.String(), SetBy: configmap.SetByDefault},
-		Instance: configmap.Value[string]{Value: instanceName, SetBy: configmap.SetByDefault},
-		NewName:  configmap.Value[string]{Value: "New Name", SetBy: configmap.SetByDefault},
-	}
-
 	// Run
-	opts, err := rename.AskRenameInstance(projectState, dialog, f)
+	opts, err := rename.AskRenameInstance(projectState, dialog, rename.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

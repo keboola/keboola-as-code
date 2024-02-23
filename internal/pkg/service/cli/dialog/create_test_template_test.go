@@ -25,7 +25,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
@@ -84,8 +84,9 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	}()
 
 	// Run
-	o.Set(`test-name`, `one`)
-	f := create.Flags{TestName: configmap.NewValue("one")}
+	f := create.Flags{
+		TestName: configmap.NewValueWithOrigin("one", configmap.SetByFlag),
+	}
 	opts, warnings, err := create.AskCreateTemplateTestOptions(context.Background(), dialog, tmpl, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
