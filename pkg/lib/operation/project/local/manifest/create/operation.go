@@ -48,6 +48,6 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 		return nil, err
 	}
 
-	logger.InfofCtx(ctx, "Created manifest file \"%s\".", projectManifest.Path())
+	logger.Infof(ctx, "Created manifest file \"%s\".", projectManifest.Path())
 	return manifest, nil
 }

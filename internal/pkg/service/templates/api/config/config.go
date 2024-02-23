@@ -57,9 +57,10 @@ func New() Config {
 	}
 }
 
-func Bind(args []string, envs env.Provider) (Config, error) {
+// GenerateAndBind generates flags and then bind flags, ENVs and config files to target configuration structures.
+func GenerateAndBind(args []string, envs env.Provider) (Config, error) {
 	cfg := New()
-	err := configmap.Bind(configmap.BindSpec{
+	err := configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
 		Args:                   args,
 		EnvNaming:              env.NewNamingConvention(EnvPrefix),
 		Envs:                   envs,

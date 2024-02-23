@@ -11,7 +11,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
+	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
@@ -22,7 +24,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	t.Parallel()
 
 	// testDependencies
-	dialog, o, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
@@ -30,11 +32,6 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)
-
-	// Default values are defined by options
-	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, o.BindPFlags(flags))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -70,7 +67,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskInitOptions(context.Background(), d)
+	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, syncInit.DefaultFlags())
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -107,13 +104,17 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
+	workflow.WorkflowsCmdFlags(flags)
 	assert.NoError(t, o.BindPFlags(flags))
 	o.Set("ci", "false")
 	o.Set("branches", "main")
 
+	f := syncInit.DefaultFlags()
+	f.Branches = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
+	f.CI = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
+
 	// Run
-	opts, err := dialog.AskInitOptions(context.Background(), d)
+	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	assert.NoError(t, console.Close())

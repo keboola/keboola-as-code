@@ -2,13 +2,14 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -23,7 +24,6 @@ type Node struct {
 	tracer telemetry.Tracer
 	client *etcd.Client
 	tasks  *task.Node
-	dist   *distribution.Node
 }
 
 type dependencies interface {
@@ -33,12 +33,11 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	EtcdClient() *etcd.Client
 	TaskNode() *task.Node
-	DistributionNode() *distribution.Node
 }
 
 // config is interface for generic type Config[T].
 type configInterface interface {
-	newOrchestrator(node *Node) orchestratorInterface
+	newOrchestrator(node *Node, dist *distribution.GroupNode) orchestratorInterface
 }
 
 // orchestrator is interface for generic type orchestrator[T].
@@ -49,11 +48,10 @@ type orchestratorInterface interface {
 func NewNode(d dependencies) *Node {
 	n := &Node{
 		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[orchestrator]"),
+		logger: d.Logger().WithComponent("orchestrator"),
 		tracer: d.Telemetry().Tracer(),
 		client: d.EtcdClient(),
 		tasks:  d.TaskNode(),
-		dist:   d.DistributionNode(),
 	}
 
 	// Graceful shutdown
@@ -61,11 +59,11 @@ func NewNode(d dependencies) *Node {
 	n.ctx, cancel = context.WithCancel(context.Background()) // nolint: contextcheck
 	n.wg = &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+		n.logger.Info(ctx, "received shutdown request")
 		cancel()
-		n.logger.InfoCtx(ctx, `waiting for orchestrators to finish`)
+		n.logger.Info(ctx, `waiting for orchestrators to finish`)
 		n.wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		n.logger.Info(ctx, "shutdown done")
 	})
 
 	return n
@@ -74,11 +72,11 @@ func NewNode(d dependencies) *Node {
 // Start a new orchestrator.
 // The returned channel signals completion of initialization and return an error if one occurred.
 // If an error occurs during execution, after successful initialization, it retries until the error is resolved.
-func (n *Node) Start(config configInterface) <-chan error {
-	return config.newOrchestrator(n).start()
+func (n *Node) Start(dist *distribution.GroupNode, config configInterface) <-chan error {
+	return config.newOrchestrator(n, dist).start()
 }
 
-func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
+func (c Config[T]) newOrchestrator(node *Node, dist *distribution.GroupNode) orchestratorInterface {
 	// Validate config
 	if err := c.Validate(); err != nil {
 		panic(err)
@@ -87,8 +85,8 @@ func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
 	// Delete events are not needed
 	c.Source.WatchEtcdOps = append(c.Source.WatchEtcdOps, etcd.WithFilterDelete())
 
-	// Setup logger
-	logger := node.logger.AddPrefix(fmt.Sprintf("[%s]", c.Name))
+	// Setup context
+	node.ctx = ctxattr.ContextWith(node.ctx, attribute.String("task", c.Name))
 
-	return &orchestrator[T]{config: c, node: node, logger: logger}
+	return &orchestrator[T]{config: c, node: node, dist: dist, logger: node.logger}
 }

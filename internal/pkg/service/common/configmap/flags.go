@@ -10,11 +10,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// StructToFlags generates FlagSet from the provided configuration structure.
+func MustGenerateFlags(fs *pflag.FlagSet, v any) {
+	if err := GenerateFlags(fs, v); err != nil {
+		panic(err)
+	}
+}
+
+// GenerateFlags generates FlagSet from the provided configuration structure.
 // Each field tagged by "configKey" tag is mapped to a flag.
 // Field can optionally have the "configUsage" tag.
+// Field can optionally have the "configShorthand" tag.
 // Inspired by: https://stackoverflow.com/a/72893101
-func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedmap.Path) error {
+func GenerateFlags(fs *pflag.FlagSet, v any) error {
 	// Dereference pointer, if any
 	value := reflect.ValueOf(v)
 	if value.Kind() == reflect.Pointer {
@@ -40,61 +47,58 @@ func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedma
 				return nil
 			}
 
-			if outFlagToField != nil {
-				outFlagToField[flagName] = vc.MappedPath
-			}
-
-			usage := vc.StructField.Tag.Get(configUsageTag)
+			shorthand := vc.Shorthand
+			usage := vc.Usage
 
 			switch v := vc.PrimitiveValue.Interface().(type) {
 			case int:
-				fs.Int(flagName, v, usage)
+				fs.IntP(flagName, shorthand, v, usage)
 			case int8:
-				fs.Int8(flagName, v, usage)
+				fs.Int8P(flagName, shorthand, v, usage)
 			case int16:
-				fs.Int16(flagName, v, usage)
+				fs.Int16P(flagName, shorthand, v, usage)
 			case int32:
-				fs.Int32(flagName, v, usage)
+				fs.Int32P(flagName, shorthand, v, usage)
 			case int64:
-				fs.Int64(flagName, v, usage)
+				fs.Int64P(flagName, shorthand, v, usage)
 			case uint:
-				fs.Uint(flagName, v, usage)
+				fs.UintP(flagName, shorthand, v, usage)
 			case uint8:
-				fs.Uint8(flagName, v, usage)
+				fs.Uint8P(flagName, shorthand, v, usage)
 			case uint16:
-				fs.Uint16(flagName, v, usage)
+				fs.Uint16P(flagName, shorthand, v, usage)
 			case uint32:
-				fs.Uint32(flagName, v, usage)
+				fs.Uint32P(flagName, shorthand, v, usage)
 			case uint64:
-				fs.Uint64(flagName, v, usage)
+				fs.Uint64P(flagName, shorthand, v, usage)
 			case float32:
-				fs.Float32(flagName, v, usage)
+				fs.Float32P(flagName, shorthand, v, usage)
 			case float64:
-				fs.Float64(flagName, v, usage)
+				fs.Float64P(flagName, shorthand, v, usage)
 			case bool:
-				fs.Bool(flagName, v, usage)
+				fs.BoolP(flagName, shorthand, v, usage)
 			case string:
-				if vc.Value.IsZero() {
+				if !vc.Value.IsValid() || vc.Value.IsZero() {
 					// Don't set the default Value, if the original Value is empty.
-					// For example empty time.Duration(0) is represented as not empty string "0s",
-					// but we don't want to show the empty string, as we do not do in other empty cases either.
+					// For example: empty time.Duration(0) is represented as string "0s",
+					// but we don't want to show the empty value.
 					v = ""
 				}
-				fs.String(flagName, v, usage)
+				fs.StringP(flagName, shorthand, v, usage)
 			case []string:
-				fs.StringSlice(flagName, v, usage)
+				fs.StringSliceP(flagName, shorthand, v, usage)
 			case []int:
-				fs.IntSlice(flagName, v, usage)
+				fs.IntSliceP(flagName, shorthand, v, usage)
 			case []int32:
-				fs.Int32Slice(flagName, v, usage)
+				fs.Int32SliceP(flagName, shorthand, v, usage)
 			case []int64:
-				fs.Int64Slice(flagName, v, usage)
+				fs.Int64SliceP(flagName, shorthand, v, usage)
 			case []uint:
-				fs.UintSlice(flagName, v, usage)
+				fs.UintSliceP(flagName, shorthand, v, usage)
 			case []float32:
-				fs.Float32Slice(flagName, v, usage)
+				fs.Float32SliceP(flagName, shorthand, v, usage)
 			case []float64:
-				fs.Float64Slice(flagName, v, usage)
+				fs.Float64SliceP(flagName, shorthand, v, usage)
 			default:
 				return errors.Errorf(`unexpected type "%T", please implement some method to convert the type to string`, vc.PrimitiveValue.Interface())
 			}
@@ -103,8 +107,8 @@ func StructToFlags(fs *pflag.FlagSet, v any, outFlagToField map[string]orderedma
 	})
 }
 
-func mapAndFilterField() func(field reflect.StructField) (fieldName string, ok bool) {
-	return func(field reflect.StructField) (fieldName string, ok bool) {
+func mapAndFilterField() OnField {
+	return func(field reflect.StructField, path orderedmap.Path) (fieldName string, ok bool) {
 		// Field must have tag
 		if tag, found := field.Tag.Lookup(configKeyTag); found {
 			parts := strings.Split(tag, tagValuesSeparator)

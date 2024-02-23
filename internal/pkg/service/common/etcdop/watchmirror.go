@@ -94,7 +94,7 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				mirror.revisionLock.Lock()
 				mirror.revision = header.Revision
 				mirror.revisionLock.Unlock()
-				s.logger.DebugfCtx(ctx, `synced to revision %d`, header.Revision)
+				s.logger.Debugf(ctx, `synced to revision %d`, header.Revision)
 			})
 		}).
 		StartConsumer(ctx, wg)

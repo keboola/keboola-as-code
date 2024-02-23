@@ -2,10 +2,15 @@
 package log
 
 import (
+	"bufio"
 	"io"
+	"strings"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
@@ -53,11 +58,7 @@ func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 		debugCore(l.warnOrError, WarnLevel),                     // warn or error = warn level and higher
 		debugCore(l.error, ErrorLevel),                          // error = error level and higher
 	)
-	if prefix != "" {
-		cores = cores.With([]zapcore.Field{{Key: "prefix", String: prefix, Type: zapcore.StringType}})
-	}
-	l.zapLogger = loggerFromZapCore(cores)
-	l.zapLogger.prefix = prefix
+	l.zapLogger = newLoggerFromZapCore(cores)
 	return l
 }
 
@@ -109,20 +110,63 @@ func (l *debugLogger) ErrorMessages() string {
 	return l.error.String()
 }
 
+// AllMessagesTxt returns all error messages as text only (without fields) and Truncate all messages.
+// Panics on a non-json message.
+func (l *debugLogger) AllMessagesTxt() string {
+	_ = l.Sync()
+
+	allMessages := l.all.String()
+	scanner := bufio.NewScanner(strings.NewReader(strings.Trim(allMessages, "\n")))
+
+	output := ""
+	for scanner.Scan() {
+		message := scanner.Text()
+		var messageData map[string]any
+		err := json.DecodeString(message, &messageData)
+		if err != nil {
+			panic(err)
+		}
+
+		message, ok := messageData["message"].(string)
+		if !ok {
+			panic(errors.New("log message is a json but does not have a \"message\" field"))
+		}
+
+		level, ok := messageData["level"].(string)
+		if !ok {
+			panic(errors.New("log message is a json but does not have a \"level\" field"))
+		}
+
+		output += strings.ToUpper(level) + "  " + message + "\n"
+	}
+
+	return output
+}
+
+// CompareJSONMessages checks that expected json messages appear in actual in the same order.
+// Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
+// Returns nil if the expectations are met or an error with the first unmatched expected line and all remaining actual lines.
+func (l *debugLogger) CompareJSONMessages(expected string) error {
+	return CompareJSONMessages(expected, l.AllMessages())
+}
+
+// AssertJSONMessages checks that expected json messages appear in actual in the same order.
+// Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
+func (l *debugLogger) AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
+	return AssertJSONMessages(t, expected, l.AllMessages(), msgAndArgs)
+}
+
 func (l *debugLogger) allWriters() []*ioutil.AtomicWriter {
 	return []*ioutil.AtomicWriter{l.all, l.debug, l.info, l.warn, l.warnOrError, l.error}
 }
 
 func debugCore(writer *ioutil.AtomicWriter, level zapcore.LevelEnabler) zapcore.Core {
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "  ",
-	}
 	return zapcore.NewCore(
-		newPrefixEncoder(zapcore.NewConsoleEncoder(encoderConfig)),
+		newJSONEncoder(),
 		writer,
 		level,
 	)

@@ -30,7 +30,7 @@ func TestValuesPriority(t *testing.T) {
 	err := options.Load(context.Background(), logger, env.Empty(), fs, &pflag.FlagSet{})
 	assert.NoError(t, err)
 	assert.Equal(t, "", options.GetString(key))
-	assert.Equal(t, configmap.SetByUnknown, options.KeySetBy(key))
+	assert.Equal(t, configmap.SetByDefault, options.KeySetBy(key))
 
 	// 2. Lowest priority, flag default value
 	flags := &pflag.FlagSet{}

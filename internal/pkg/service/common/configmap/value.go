@@ -26,6 +26,14 @@ type Value[T any] struct {
 	SetBy SetBy
 }
 
+func NewValue[T any](v T) Value[T] {
+	return Value[T]{Value: v, SetBy: SetByDefault}
+}
+
+func NewValueWithOrigin[T any](v T, setBy SetBy) Value[T] {
+	return Value[T]{Value: v, SetBy: setBy}
+}
+
 func (v fieldValue) IsSet() bool {
 	return v.SetBy != SetByDefault
 }

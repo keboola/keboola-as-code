@@ -2,6 +2,7 @@ package upgrade
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -31,6 +32,7 @@ type dependencies interface {
 	StorageAPIHost() string
 	StorageAPITokenID() string
 	Telemetry() telemetry.Telemetry
+	Stdout() io.Writer
 }
 
 func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *use.Result, err error) {

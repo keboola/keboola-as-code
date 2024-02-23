@@ -26,7 +26,7 @@ func Run(ctx context.Context, tableKey keboola.TableKey, d dependencies) (err er
 		return err
 	}
 
-	d.Logger().InfofCtx(ctx, `Table "%s":
+	d.Logger().Infof(ctx, `Table "%s":
   Name: %s
   Primary key: %s
   Columns: %s

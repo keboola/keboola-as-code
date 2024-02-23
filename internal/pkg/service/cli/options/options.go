@@ -60,7 +60,7 @@ func (o *Options) Load(ctx context.Context, logger log.Logger, osEnvs *env.Map, 
 	}
 
 	// Bind all flags and corresponding ENVs
-	if setBy, err := configmap.BindToViper(o.parser, flags, flagToField, o.envs, o.envNaming, nil); err != nil {
+	if setBy, err := configmap.BindToViper(o.parser, flagToField, configmap.BindConfig{Flags: flags, Envs: o.envs, EnvNaming: o.envNaming}); err != nil {
 		return err
 	} else {
 		for k, v := range setBy {

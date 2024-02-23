@@ -9,28 +9,37 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Node is created within each node in the group.
+// Node is factory for GroupNode.
+type Node struct {
+	id           string
+	config       Config
+	dependencies dependencies
+	groups       map[string]*GroupNode
+}
+
+// GroupNode is created within each node in the group.
+// One physical cluster node can be present in multiple independent distribution groups.
 //
 // It is responsible for:
 // - Registration/un-registration of the node in the cluster, see register and unregister methods.
 // - Discovery of the self and other nodes in the cluster, see watch method.
 // - Embedded Assigner locally assigns a owner for a key, see documentation of the Assigner.
 // - Embedded listeners listen for distribution changes, when a node is added or removed.
-type Node struct {
+type GroupNode struct {
 	*assigner
-	groupPrefix etcdop.Prefix
-	clock       clock.Clock
 	logger      log.Logger
-	proc        *servicectx.Process
+	config      Config
 	client      *etcd.Client
-	config      nodeConfig
+	groupPrefix etcdop.Prefix
 	listeners   *listeners
 }
 
@@ -43,117 +52,138 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(nodeID, group string, d dependencies, opts ...NodeOption) (*Node, error) {
-	// Validate
+func NewNode(nodeID string, cfg Config, d dependencies) *Node {
 	if nodeID == "" {
 		panic(errors.New("distribution.Node: node ID cannot be empty"))
 	}
-	if group == "" {
-		panic(errors.New("distribution.Node: group cannot be empty"))
+	return &Node{id: nodeID, config: cfg, dependencies: d, groups: make(map[string]*GroupNode)}
+}
+
+func (n *Node) Group(group string) (*GroupNode, error) {
+	if _, ok := n.groups[group]; ok {
+		return nil, errors.Errorf(`group "%s" has already been initialized`, group)
 	}
 
-	// Apply options
-	c := defaultNodeConfig()
-	for _, o := range opts {
-		o(&c)
+	g, err := newGroupMember(n.id, group, n.config, n.dependencies)
+	if err != nil {
+		return nil, err
 	}
+
+	n.groups[group] = g
+	return g, nil
+}
+
+func newGroupMember(nodeID, groupID string, cfg Config, d dependencies) (*GroupNode, error) {
+	// Validate
+	if groupID == "" {
+		return nil, errors.Errorf("distribution group cannot be empty")
+	}
+
+	ctx := ctxattr.ContextWith(
+		context.Background(), // nolint: contextcheck
+		attribute.String("distribution.node", nodeID),
+		attribute.String("distribution.group", groupID),
+	)
 
 	// Create instance
-	n := &Node{
+	g := &GroupNode{
 		assigner:    newAssigner(nodeID),
-		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", group)),
-		clock:       d.Clock(),
-		logger:      d.Logger().AddPrefix(fmt.Sprintf("[distribution][%s]", group)),
-		proc:        d.Process(),
+		logger:      d.Logger().WithComponent("distribution"),
+		config:      cfg,
 		client:      d.EtcdClient(),
-		config:      c,
+		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", groupID)),
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(context.Background())     // nolint: contextcheck
-	sessionCtx, sessionCancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	watchCtx, watchCancel := context.WithCancel(ctx)
+	sessionCtx, sessionCancel := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
-	n.proc.OnShutdown(func(ctx context.Context) {
-		n.logger.InfoCtx(ctx, "received shutdown request")
+	d.Process().OnShutdown(func(ctx context.Context) {
+		g.logger.Info(ctx, "received shutdown request")
 		watchCancel()
-		n.unregister(ctx, c.shutdownTimeout)
+		g.unregister(ctx, cfg.ShutdownTimeout)
 		sessionCancel()
 		wg.Wait()
-		n.logger.InfoCtx(ctx, "shutdown done")
+		g.logger.Info(ctx, "shutdown done")
 	})
 
 	// Log node ID
-	n.logger.InfofCtx(watchCtx, `node ID "%s"`, nodeID)
+	g.logger.Info(ctx, "starting")
 
-	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
-		// Register node
-		return n.register(session, c.startupTimeout)
-	})
-	if err := <-sessionInit; err != nil {
+	// Register node
+	_, err := etcdop.
+		NewSessionBuilder().
+		WithGrantTimeout(cfg.GrantTimeout).
+		WithTTLSeconds(cfg.TTLSeconds).
+		WithOnSession(g.register).
+		StartOrErr(sessionCtx, wg, g.logger, d.EtcdClient())
+	if err != nil {
 		return nil, err
 	}
 
 	// Create listeners handler
-	n.listeners = newListeners(n)
+	g.listeners = newListeners(watchCtx, wg, cfg, g.logger, d)
 
 	// Watch for nodes
-	if err := n.watch(watchCtx, wg); err != nil {
+	if err := g.watch(watchCtx, wg); err != nil {
 		return nil, err
 	}
 
 	// Reset events created during the initialization.
-	// There is no listener yet, and some events can be buffered by grouping interval.
-	n.listeners.Reset()
+	// There is no listener yet, but some events can be buffered by grouping interval.
+	g.listeners.Reset()
 
-	return n, nil
+	return g, nil
 }
 
 // OnChangeListener returns a new listener, it contains channel C with streamed distribution change Events.
-func (n *Node) OnChangeListener() *Listener {
+func (n *GroupNode) OnChangeListener() *Listener {
 	return n.listeners.add()
 }
 
 // CloneAssigner returns cloned Assigner frozen in the actual distribution.
-func (n *Node) CloneAssigner() *Assigner {
+func (n *GroupNode) CloneAssigner() *Assigner {
 	return n.assigner.clone()
 }
 
 // register node in the etcd prefix,
-// Deregistration is ensured double: by OnShutdown callback and by the lease.
-func (n *Node) register(session *concurrency.Session, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(n.client.Ctx(), timeout)
+// Un-registration is ensured double: by OnShutdown callback and by the lease.
+func (n *GroupNode) register(session *concurrency.Session) error {
+	ctx, cancel := context.WithTimeout(session.Client().Ctx(), n.config.StartupTimeout)
 	defer cancel()
 
+	ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
+
 	startTime := time.Now()
-	n.logger.InfofCtx(ctx, `registering the node "%s"`, n.nodeID)
+	n.logger.Infof(ctx, `registering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Put(session.Client(), n.nodeID, etcd.WithLease(session.Lease())).Do(ctx).Err(); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.logger.InfofCtx(ctx, `the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.WithDuration(time.Since(startTime)).Infof(ctx, `the node "%s" registered`, n.nodeID)
 	return nil
 }
 
-func (n *Node) unregister(ctx context.Context, timeout time.Duration) {
+func (n *GroupNode) unregister(ctx context.Context, timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.InfofCtx(ctx, `unregistering the node "%s"`, n.nodeID)
+	n.logger.Infof(ctx, `unregistering the node "%s"`, n.nodeID)
 
 	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Delete(n.client).Do(ctx).Err(); err != nil {
-		n.logger.WarnfCtx(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
+		n.logger.Warnf(ctx, `cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.InfofCtx(ctx, `the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
+	n.logger.WithDuration(time.Since(startTime)).Infof(ctx, `the node "%s" unregistered`, n.nodeID)
 }
 
 // watch for other nodes.
-func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	n.logger.InfoCtx(ctx, "watching for other nodes")
+func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
+	n.logger.Info(ctx, "watching for other nodes")
 	init := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
@@ -177,7 +207,7 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 }
 
 // updateNodesFrom events. The operation is atomic.
-func (n *Node) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent, reset bool) Events {
+func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent, reset bool) Events {
 	n.assigner.lock()
 	defer n.assigner.unlock()
 
@@ -193,13 +223,13 @@ func (n *Node) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent, 
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
 			n.assigner.addNode(nodeID)
-			n.logger.InfofCtx(ctx, event.Message)
+			n.logger.Infof(ctx, event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
 			n.assigner.removeNode(nodeID)
-			n.logger.InfofCtx(ctx, event.Message)
+			n.logger.Infof(ctx, event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}

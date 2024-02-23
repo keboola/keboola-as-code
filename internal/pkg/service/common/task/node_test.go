@@ -2,13 +2,11 @@ package task_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -67,7 +65,7 @@ func TestSuccessfulTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.InfoCtx(ctx, "some message from the task (1)")
+			logger.Info(ctx, "some message from the task (1)")
 			return task.OkResult("some result (1)").WithOutput("key", "value")
 		},
 	})
@@ -146,7 +144,7 @@ task/123/my-receiver/my-export/some.task/%s
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.InfoCtx(ctx, "some message from the task (2)")
+			logger.Info(ctx, "some message from the task (2)")
 			return task.OkResult("some result (2)")
 		},
 	})
@@ -194,18 +192,18 @@ task/123/my-receiver/my-export/some.task/%s
 `)
 
 	// Check logs
-	wildcards.Assert(t, `
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  started task
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (1) outputs: {"key":"value"}
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
-[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (2)
-[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"info","message":"some message from the task (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"task succeeded (%s): some result (1) outputs: {\"key\":\"value\"}","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"info","message":"some message from the task (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"info","message":"task succeeded (%s): some result (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 `, logs.String())
 
 	// Check spans
@@ -345,7 +343,7 @@ func TestFailedTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.InfoCtx(ctx, "some message from the task (1)")
+			logger.Info(ctx, "some message from the task (1)")
 			return task.
 				ErrResult(task.WrapUserError(errors.New("some error (1) - expected"))).
 				WithOutput("key", "value")
@@ -426,7 +424,7 @@ task/123/my-receiver/my-export/some.task/%s
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
-			logger.InfoCtx(ctx, "some message from the task (2)")
+			logger.Info(ctx, "some message from the task (2)")
 			return task.ErrResult(errors.New("some error (2) - unexpected"))
 		},
 	})
@@ -474,18 +472,18 @@ task/123/my-receiver/my-export/some.task/%s
 `)
 
 	// Check logs
-	wildcards.Assert(t, `
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  started task
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) - expected %A outputs: {"key":"value"}
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
-[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
-[node2][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (2) - unexpected [%s]
-[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"info","message":"some message from the task (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"warn","message":"task failed (%s): some error (1) - expected [%s] (*task.UserError):\n- some error (1) - expected [%s] outputs: {\"key\":\"value\"}","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"info","message":"some message from the task (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"warn","message":"task failed (%s): some error (2) - unexpected [%s]","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 `, logs.String())
 
 	// Check spans
@@ -677,7 +675,7 @@ func TestTaskTimeout(t *testing.T) {
 
 	// Wait for the task
 	assert.Eventually(t, func() bool {
-		return strings.Contains(logger.AllMessages(), "DEBUG  lock released")
+		return logger.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 100*time.Millisecond, logger.AllMessages())
 
 	// Check etcd state after task
@@ -700,12 +698,12 @@ task/123/my-receiver/my-export/some.task/%s
 `)
 
 	// Check logs
-	wildcards.Assert(t, `
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  started task
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): context deadline exceeded
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
-`, logger.AllMessages())
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"warn","message":"task failed (%s): context deadline exceeded","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+`)
 
 	// Check spans
 	tel.AssertSpans(t,
@@ -835,7 +833,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 			Operation: func(ctx context.Context, logger log.Logger) task.Result {
 				defer close(taskDone)
 				<-taskWork
-				logger.InfoCtx(ctx, "some message from the task")
+				logger.Info(ctx, "some message from the task")
 				return task.OkResult("some result")
 			},
 		})
@@ -881,21 +879,21 @@ task/123/my-receiver/my-export/some.task/%s
 `)
 
 	// Check logs
-	wildcards.Assert(t, `
-[node1][task][%s]INFO  started task
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node1]INFO  exiting (some reason)
-[node1][task]INFO  received shutdown request
-[node1][task]INFO  waiting for "1" tasks to be finished
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result
-[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
-[node1][task][etcd-session]INFO  closing etcd session
-[node1][task][etcd-session]INFO  closed etcd session | %s
-[node1][task]INFO  shutdown done
-[node1][etcd-client]INFO  closing etcd connection
-[node1][etcd-client]INFO  closed etcd connection | %s
-[node1]INFO  exited
+	log.AssertJSONMessages(t, `
+{"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"exiting (some reason)"}
+{"level":"info","message":"received shutdown request","component":"task","node":"node1"}
+{"level":"info","message":"waiting for \"1\" tasks to be finished","component":"task","node":"node1"}
+{"level":"info","message":"some message from the task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"task succeeded (%s): some result","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"shutdown done","component":"task","node":"node1"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
+{"level":"info","message":"exited"}
 `, logs.String())
 }
 
@@ -903,9 +901,13 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 	t.Helper()
 	return telemetry.
 		NewForTest(t).
-		SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		AddSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
 			// Ignore etcd spans
 			return !strings.HasPrefix(spanName, "etcd")
+		}).
+		AddMetricFilter(func(metric metricdata.Metrics) bool {
+			// Ignore etcd metrics
+			return !strings.HasPrefix(metric.Name, "rpc.")
 		})
 }
 
@@ -923,7 +925,7 @@ func createDeps(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel tel
 
 	d := dependencies.NewMocked(
 		t,
-		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeID)),
+		dependencies.WithNodeID(nodeID),
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)

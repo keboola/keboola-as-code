@@ -48,6 +48,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
-	logger.InfofCtx(ctx, `Created bucket "%s".`, b.BucketID.String())
+	logger.Infof(ctx, `Created bucket "%s".`, b.BucketID.String())
 	return nil
 }

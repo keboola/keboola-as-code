@@ -41,6 +41,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	d.Logger().InfofCtx(ctx, `Created table "%s".`, res.TableID.String())
+	d.Logger().Infof(ctx, `Created table "%s".`, res.TableID.String())
 	return nil
 }

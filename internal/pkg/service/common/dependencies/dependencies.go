@@ -30,7 +30,7 @@
 // Dependencies containers for services are in separate packages
 //   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
 //   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies]
-//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies]
+//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies]
 //
 // Example of difference between CLI and API dependencies implementations:
 //   - In the CLI the Storage API token is read from ENV or flag.
@@ -56,6 +56,7 @@ package dependencies
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 
@@ -69,6 +70,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	distributionPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -88,6 +90,8 @@ type BaseScope interface {
 	HTTPClient() client.Client
 	Validator() validator.Validator
 	Process() *servicectx.Process
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 // PublicScope dependencies are available from the Storage API and other sources without authentication / Storage API token.
@@ -134,6 +138,11 @@ type DistributionScope interface {
 	DistributionNode() *distributionPkg.Node
 }
 
+// DistributedLockScope dependencies to acquire distributed locks in the cluster.
+type DistributedLockScope interface {
+	DistributedLockProvider() *distlock.Provider
+}
+
 // OrchestratorScope dependencies to trigger tasks based on cluster nodes on etcd events.
 type OrchestratorScope interface {
 	OrchestratorNode() *orchestratorPkg.Node
@@ -149,6 +158,7 @@ type Mocked interface {
 	EtcdClientScope
 	TaskScope
 	DistributionScope
+	DistributedLockScope
 	OrchestratorScope
 
 	MockControl

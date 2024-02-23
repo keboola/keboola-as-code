@@ -1,8 +1,0 @@
-{
-  "path": "/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-1/<<RECEIVER_SECRET>>",
-  "method": "POST",
-  "headers": {
-    "Content-Type": "application/json"
-  },
-  "body": {}
-}

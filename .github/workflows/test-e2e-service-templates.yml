@@ -63,6 +63,6 @@ jobs:
           TEMPLATES_ETCD_NAMESPACE: templates-api
 
       - name: Validate OpenAPI3 definition
-        uses: char0n/swagger-editor-validate@v1
+        uses: char0n/swagger-editor-validate@b642f037ac53c392f9c8d781c369ce129684e93e
         with:
           definition-file: internal/pkg/service/templates/api/openapi/openapi3.yaml

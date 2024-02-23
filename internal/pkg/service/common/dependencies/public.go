@@ -75,20 +75,20 @@ func newPublicScope(ctx context.Context, baseScp BaseScope, storageAPIHost strin
 	var index *keboola.Index
 	var indexWithComponents *keboola.IndexComponents
 	if cfg.preloadComponents {
-		logger.InfoCtx(ctx, "loading Storage API index with components")
+		logger.Info(ctx, "loading Storage API index with components")
 		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
 		index = &indexWithComponents.Index
-		logger.InfofCtx(ctx, `loaded Storage API index with "%d" components | %s`, len(indexWithComponents.Components), time.Since(startTime))
+		logger.WithDuration(time.Since(startTime)).Infof(ctx, `loaded Storage API index with "%d" components`, len(indexWithComponents.Components))
 	} else {
-		logger.InfoCtx(ctx, "loading Storage API index without components")
+		logger.Info(ctx, "loading Storage API index without components")
 		index, err = keboola.APIIndex(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
-		logger.InfofCtx(ctx, "loaded Storage API index without components | %s", time.Since(startTime))
+		logger.WithDuration(time.Since(startTime)).Infof(ctx, "loaded Storage API index without component")
 	}
 
 	// Create API
@@ -115,7 +115,7 @@ func storageAPIIndexWithComponents(ctx context.Context, d BaseScope, keboolaPubl
 	if err != nil {
 		return nil, err
 	}
-	d.Logger().DebugfCtx(ctx, "Storage API index with components loaded | %s", time.Since(startTime))
+	d.Logger().WithDuration(time.Since(startTime)).Debugf(ctx, "Storage API index with components loaded")
 	return index, nil
 }
 

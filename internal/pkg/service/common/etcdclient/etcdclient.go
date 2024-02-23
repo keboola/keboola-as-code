@@ -2,6 +2,7 @@ package etcdclient
 
 import (
 	"context"
+	"io"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ func UseNamespace(c *etcd.Client, prefix string) {
 
 // New creates new etcd client.
 // The client terminates the connection when the context is done.
-func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, logger log.Logger, cfg Config) (c *etcd.Client, err error) {
+func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, logger log.Logger, stderr io.Writer, cfg Config) (c *etcd.Client, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.EtcdClient")
 	defer span.End(&err)
 
@@ -42,7 +43,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
-	logger = logger.AddPrefix("[etcd-client]")
+	logger = logger.WithComponent("etcd.client")
 
 	// Create a zap logger for etcd client
 	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
@@ -52,14 +53,14 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 			return
 		}
 
-		// Add component=etcd-client field
-		fields = append(fields, zapcore.Field{Key: "component", String: "etcd-client", Type: zapcore.StringType})
+		// Add component=etcd.client field
+		fields = append(fields, zapcore.Field{Key: "component", String: "etcd.client", Type: zapcore.StringType})
 
 		// Encode and log message
 		if bytes, err := encoder.EncodeEntry(entry, fields); err == nil {
-			logger.LogCtx(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
+			logger.Log(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
 		} else {
-			logger.WarnfCtx(ctx, "cannot log msg from etcd client: %s", err)
+			logger.Warnf(ctx, "cannot log msg from etcd client: %s", err)
 		}
 	}))
 
@@ -69,7 +70,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	// Create client
 	startTime := time.Now()
-	logger.InfofCtx(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.ConnectTimeout, cfg.KeepAliveTimeout, cfg.KeepAliveInterval)
+	logger.Infof(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.ConnectTimeout, cfg.KeepAliveTimeout, cfg.KeepAliveInterval)
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{cfg.Endpoint},
@@ -81,8 +82,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		Logger:               etcdLogger,
 		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
 			grpc.WithBlock(), // wait for the connection
 			grpc.WithReturnConnectionError(),
 			grpc.WithConnectParams(grpc.ConnectParams{
@@ -104,7 +104,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 
 	// Log each KV operation as a debug message, if enabled
 	if cfg.DebugLog {
-		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
+		c.KV = etcdlogger.KVLogWrapper(c.KV, stderr)
 	}
 
 	// Connection check: get cluster members
@@ -116,14 +116,14 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	// Close client when shutting down the server
 	proc.OnShutdown(func(ctx context.Context) {
 		startTime := time.Now()
-		logger.InfoCtx(ctx, "closing etcd connection")
+		logger.Info(ctx, "closing etcd connection")
 		if err := c.Close(); err != nil {
-			logger.WarnfCtx(ctx, "cannot close etcd connection: %s", err)
+			logger.Warnf(ctx, "cannot close etcd connection: %s", err)
 		} else {
-			logger.InfofCtx(ctx, "closed etcd connection | %s", time.Since(startTime))
+			logger.WithDuration(time.Since(startTime)).Infof(ctx, "closed etcd connection")
 		}
 	})
 
-	logger.InfofCtx(ctx, `connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
+	logger.WithDuration(time.Since(startTime)).Infof(ctx, `connected to etcd cluster "%s"`, strings.Join(c.Endpoints(), ";"))
 	return c, nil
 }

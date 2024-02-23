@@ -38,18 +38,18 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	if results.Equal {
-		logger.InfoCtx(ctx, "No difference.")
+		logger.Info(ctx, "No difference.")
 	} else {
 		// Explain
-		logger.InfoCtx(ctx, diff.ChangeMark+" changed")
-		logger.InfoCtx(ctx, diff.OnlyInRemoteMark+" remote state")
-		logger.InfoCtx(ctx, diff.OnlyInLocalMark+" local state")
-		logger.InfoCtx(ctx, "")
+		logger.Info(ctx, diff.ChangeMark+" changed")
+		logger.Info(ctx, diff.OnlyInRemoteMark+" remote state")
+		logger.Info(ctx, diff.OnlyInLocalMark+" local state")
+		logger.Info(ctx, "")
 
 		// Print diff
-		logger.InfoCtx(ctx, "Diff:")
+		logger.Info(ctx, "Diff:")
 		for _, line := range results.Format(o.PrintDetails) {
-			logger.InfoCtx(ctx, line)
+			logger.Info(ctx, line)
 		}
 	}
 

@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
@@ -39,6 +40,7 @@ const (
 	ProjectLockedRetryAfter = 5 * time.Second
 	TemplateUpgradeTaskType = "template.upgrade"
 	TemplateUseTaskType     = "template.use"
+	TemplateDeleteTaskType  = "template.delete"
 )
 
 type service struct {
@@ -68,11 +70,11 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
-		d.Logger().InfoCtx(ctx, "received shutdown request")
+		d.Logger().Info(ctx, "received shutdown request")
 		cancel()
-		d.Logger().InfoCtx(ctx, "waiting for orchestrators")
+		d.Logger().Info(ctx, "waiting for orchestrators")
 		wg.Wait()
-		d.Logger().InfoCtx(ctx, "shutdown done")
+		d.Logger().Info(ctx, "shutdown done")
 	})
 
 	// Tasks cleanup
@@ -176,7 +178,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Note:
@@ -328,7 +330,7 @@ func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequ
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Get instance
@@ -357,18 +359,18 @@ func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequ
 	return InstanceResponse(ctx, d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) error {
+func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) (*Task, error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
-		return err
+		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Get instance
 	prjState, branchKey, _, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Delete template instance
@@ -377,18 +379,38 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 		DryRun:   false,
 		Instance: payload.InstanceID,
 	}
-	err = deleteTemplate.Run(ctx, prjState, deleteOpts, d)
+
+	taskKey := task.Key{
+		ProjectID: d.ProjectID(),
+		TaskID:    task.ID(TemplateDeleteTaskType),
+	}
+
+	t, err := s.tasks.StartTask(ctx, task.Config{
+		Type: TemplateDeleteTaskType,
+		Key:  taskKey,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), time.Minute*5)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			err = deleteTemplate.Run(ctx, prjState, deleteOpts, d)
+			if err != nil {
+				return task.ErrResult(err)
+			}
+
+			// Push changes
+			changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
+			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+				return task.ErrResult(err)
+			}
+
+			return task.OkResult(fmt.Sprintf(`"template instance with id "%s" is deleted"`, deleteOpts.Instance)).
+				WithOutput("instanceId", deleteOpts.Instance)
+		},
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	// Push changes
-	changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
-	if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
-		return err
-	}
-
-	return nil
+	return s.mapper.TaskPayload(t), err
 }
 
 func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpgradeInstancePayload) (res *Task, err error) {
@@ -396,7 +418,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 	if unlockFn, err := tryLockProject(ctx, d); err != nil {
 		return nil, err
 	} else {
-		defer unlockFn()
+		defer unlockFn(ctx)
 	}
 
 	// Get instance
@@ -684,21 +706,29 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 }
 
 // tryLockProject.
-func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (dependencies.UnlockFn, error) {
-	d.Logger().InfofCtx(ctx, `requested lock for project "%d"`, d.ProjectID())
+func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (unlock func(ctx context.Context), err error) {
+	d.Logger().Infof(ctx, `requested lock for project "%d"`, d.ProjectID())
 
-	// Try lock
-	locked, unlockFn := d.ProjectLocker().TryLock(ctx, fmt.Sprintf("project-%d", d.ProjectID()))
-	if !locked {
-		d.Logger().InfofCtx(ctx, `project "%d" is locked by another request`, d.ProjectID())
-		return nil, &ProjectLockedError{
+	mutex := d.DistributedLockProvider().NewMutex(fmt.Sprintf("project/%d", d.ProjectID()))
+
+	err = mutex.TryLock(ctx)
+	if errors.As(err, &etcdop.AlreadyLockedError{}) {
+		err = &ProjectLockedError{
 			StatusCode: http.StatusServiceUnavailable,
 			Name:       "templates.projectLocked",
 			Message:    "The project is locked, another operation is in progress, please try again later.",
 			RetryAfter: time.Now().Add(ProjectLockedRetryAfter).UTC().Format(http.TimeFormat),
 		}
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	// Locked!
+	unlockFn := func(ctx context.Context) {
+		if err := mutex.Unlock(ctx); err != nil {
+			d.Logger().Warnf(ctx, `cannot unlock project "%d": %s`, d.ProjectID(), err)
+		}
+	}
 	return unlockFn, nil
 }

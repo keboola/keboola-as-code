@@ -1,6 +1,0 @@
-{
-  "statusCode": 404,
-  "error": "buffer.exportNotFound",
-  "message": "Export \"my-export-1\" not found in the receiver."
-}
-

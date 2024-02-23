@@ -11,16 +11,6 @@ run:
     - target
     - third_party
     - vendor
-    #TMP
-    - api/buffer
-    - cmd/buffer-api
-    - internal/pkg/service/buffer/condition
-    - internal/pkg/service/buffer/event
-    - internal/pkg/service/buffer/cleanup
-    - internal/pkg/service/buffer/watcher
-    - internal/pkg/service/buffer/api
-    - internal/pkg/service/buffer/worker
-    - test/buffer
   skip-dirs-use-default: true
   modules-download-mode: mod
 
@@ -57,6 +47,8 @@ linters-settings:
       - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$(# "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client\.Transport = httpmock\.NewMockTransport() instead)?
       # Os ENVs singleton is forbidden, use env.Map instead
       - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$(# Os ENVs singleton is forbidden, use env\.Map instead)?
+      # Os Stdout and Stderr are forbidden, use dependencies instead
+      - ^os\.(Stdout|Stderr)$(# Use dependencies instead)?
       # No fmt.Errorf, use errors.Errorf instead to include stack trace
       - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
@@ -188,6 +180,10 @@ issues:
         - dogsled
         - bodyclose
         - contextcheck
+    - path: _test\.go
+      text: "use of `os.Std(out|err)` forbidden"
+      linters:
+        - forbidigo
     - path: internal/pkg/utils/errors/.*
       text: "use of `fmt.Errorf` forbidden"
       linters:
@@ -205,11 +201,11 @@ issues:
       linters:
         - forbidigo
     # Allow direct file operations in the Stream service
-    - path: internal/pkg/service/buffer/.*
+    - path: internal/pkg/service/stream/.*
       text: "os."
       linters:
         - forbidigo
-    - path: internal/pkg/service/buffer/.*
+    - path: internal/pkg/service/stream/.*
       text: "filepath."
       linters:
         - forbidigo

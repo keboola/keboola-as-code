@@ -34,10 +34,17 @@ import (
 type AtomicOp[R any] struct {
 	client         etcd.KV
 	result         *R
+	locks          []mutex
 	readPhase      []HighLevelFactory
 	writePhase     []HighLevelFactory
 	processors     processors[R]
 	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
+}
+
+// mutex abstracts concurrency.Mutex and etcdop.Mutex types.
+type mutex interface {
+	Key() string
+	IsOwner() etcd.Cmp
 }
 
 type AtomicOpInterface interface {
@@ -82,9 +89,23 @@ func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
 		// There is no processor callback, we can pass write phase as is
 		out = append(out, v.writePhase...)
 	} else {
-		out = append(out, func(ctx context.Context) (Op, error) { return v.createWriteTxn(ctx) })
+		out = append(out, func(ctx context.Context) (Op, error) { return v.writeTxn(ctx) })
 	}
 	return out
+}
+
+// RequireLock to run the operation. Internally, an IF condition is generated for each registered lock.
+//
+// The lock must be locked during the entire operation, otherwise the NotLockedError occurs.
+// This signals an error in the application logic.
+//
+// If the local state of the lock does not match the state in the database (edge case), then the LockedError occurs.
+// There are no automatic retries. Depending on the kind of the operation, you may retry or ignore the error.
+//
+// The method ensures that only the owner of the lock performs the database operation.
+func (v *AtomicOp[R]) RequireLock(lock mutex) *AtomicOp[R] {
+	v.locks = append(v.locks, lock)
+	return v
 }
 
 func (v *AtomicOp[R]) ReadOp(ops ...Op) *AtomicOp[R] {
@@ -248,13 +269,9 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 	tracker := NewTracker(v.client)
 
 	// Create READ operations
-	readTxn := Txn(tracker)
-	for _, opFactory := range v.readPhase {
-		if op, err := opFactory(ctx); err != nil {
-			return newErrorTxnResult[R](err)
-		} else if op != nil {
-			readTxn.Merge(op)
-		}
+	readTxn, err := v.readTxn(ctx, tracker)
+	if err != nil {
+		return newErrorTxnResult[R](err)
 	}
 
 	// Run READ phase, track used keys/prefixes
@@ -263,9 +280,92 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 		return newErrorTxnResult[R](err)
 	}
 
-	// Create IF part of the transaction
-	var cmps []etcd.Cmp
-	for _, op := range removeOpsOverlaps(tracker.Operations()) {
+	// Create WRITE transaction
+	writeTxn, err := v.writeTxn(ctx)
+	if err != nil {
+		return newErrorTxnResult[R](err)
+	}
+
+	// Add IF conditions
+	writeTxn.If(v.writeIfConditions(tracker, readResult.Header().Revision)...)
+
+	// Do
+	return writeTxn.Do(ctx)
+}
+
+func (v *AtomicOp[R]) readTxn(ctx context.Context, tracker *TrackerKV) (*TxnOp[NoResult], error) {
+	// Create READ transaction
+	readTxn := Txn(tracker)
+	for _, opFactory := range v.readPhase {
+		if op, err := opFactory(ctx); err != nil {
+			return nil, err
+		} else if op != nil {
+			readTxn.Merge(op)
+		}
+	}
+
+	// Stop the READ phase, if a lock is not locked
+	lockIfs, err := v.locksIfs()
+	if err != nil {
+		return nil, errors.PrefixError(err, "read phase")
+	}
+	readTxn.Merge(Txn(v.client).
+		If(lockIfs...).
+		OnFailed(func(r *TxnResult[NoResult]) {
+			r.AddErr(errors.PrefixError(LockedError{}, "read phase"))
+		}),
+	)
+
+	return readTxn, nil
+}
+
+func (v *AtomicOp[R]) writeTxn(ctx context.Context) (*TxnOp[R], error) {
+	// Create WRITE transaction
+	writeTxn := TxnWithResult[R](v.client, v.result)
+	for _, opFactory := range v.writePhase {
+		if op, err := opFactory(ctx); err != nil {
+			return nil, err
+		} else if op != nil {
+			writeTxn.Merge(op)
+		}
+	}
+
+	// Processors are invoked if the transaction succeeded or there is an error.
+	// If the transaction failed, the atomic operation is retried, see Do method.
+	writeTxn.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
+		if r.Succeeded() || r.Err() != nil {
+			v.processors.invoke(ctx, r.result)
+		}
+	})
+
+	// Stop the WRITE phase, if a lock is not locked
+	lockIfs, err := v.locksIfs()
+	if err != nil {
+		return nil, errors.PrefixError(err, "write phase")
+	}
+	writeTxn.Merge(Txn(v.client).
+		If(lockIfs...).
+		OnFailed(func(r *TxnResult[NoResult]) {
+			r.AddErr(errors.PrefixError(LockedError{}, "write phase"))
+		}),
+	)
+
+	return writeTxn, nil
+}
+
+func (v *AtomicOp[R]) locksIfs() (cmps []etcd.Cmp, err error) {
+	for _, lock := range v.locks {
+		if key := lock.Key(); key == "" || key == "\x00" {
+			return nil, NotLockedError{}
+		}
+		cmps = append(cmps, lock.IsOwner())
+	}
+	return cmps, nil
+}
+
+// x Create IF part of the transaction.
+func (v *AtomicOp[R]) writeIfConditions(tracker *TrackerKV, readRev int64) (cmps []etcd.Cmp) {
+	for _, op := range tracker.Operations() {
 		mustExist := (op.Type == GetOp || op.Type == PutOp) && op.Count > 0
 		mustNotExist := op.Type == DeleteOp || op.Count == 0
 		switch {
@@ -290,7 +390,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 				etcd.Cmp{
 					Target:      etcdserverpb.Compare_MOD,
 					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readResult.Header().Revision + 1},
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readRev + 1},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
 				},
@@ -325,38 +425,5 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 			panic(errors.Errorf(`unexpected state, operation type "%v"`, op.Type))
 		}
 	}
-
-	// Create WRITE transaction
-	writeTxn, err := v.createWriteTxn(ctx)
-	if err != nil {
-		return newErrorTxnResult[R](err)
-	}
-
-	// Add IF conditions
-	writeTxn.If(cmps...)
-
-	// Do
-	return writeTxn.Do(ctx)
-}
-
-func (v *AtomicOp[R]) createWriteTxn(ctx context.Context) (*TxnOp[R], error) {
-	// Create WRITE operation
-	writeTxn := TxnWithResult[R](v.client, v.result)
-	for _, opFactory := range v.writePhase {
-		if op, err := opFactory(ctx); err != nil {
-			return nil, err
-		} else if op != nil {
-			writeTxn.Merge(op)
-		}
-	}
-
-	// Processors are invoked if the transaction succeeded or there is an error.
-	// If the transaction failed, the atomic operation is retried, see Do method.
-	writeTxn.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
-		if r.Succeeded() || r.Err() != nil {
-			v.processors.invoke(ctx, r.result)
-		}
-	})
-
-	return writeTxn, nil
+	return cmps
 }

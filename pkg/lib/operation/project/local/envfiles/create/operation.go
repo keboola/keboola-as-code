@@ -62,9 +62,9 @@ func createFile(ctx context.Context, logger log.Logger, fs filesystem.Fs, path, 
 	}
 
 	if updated {
-		logger.InfofCtx(ctx, "Updated file \"%s\"%s.", path, desc)
+		logger.Infof(ctx, "Updated file \"%s\"%s.", path, desc)
 	} else {
-		logger.InfofCtx(ctx, "Created file \"%s\"%s.", path, desc)
+		logger.Infof(ctx, "Created file \"%s\"%s.", path, desc)
 	}
 
 	return nil

@@ -1,8 +1,8 @@
 %A
 DEBUG	Project state has been successfully loaded.
-INFO	Plan for "pull" operation:
-INFO	  + B main
-INFO	  + C main/transformation/keboola.python-transformation-v2/empty-transformation
+Plan for "pull" operation:
+  + B main
+  + C main/transformation/keboola.python-transformation-v2/empty-transformation
 %A
 DEBUG	Saved "main/transformation/keboola.python-transformation-v2/empty-transformation/blocks/.gitkeep"
 %A

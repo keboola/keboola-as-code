@@ -3,6 +3,10 @@ package sync
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/diff"
+	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/pull"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 )
@@ -14,10 +18,10 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/long`),
 	}
 	cmd.AddCommand(
-		InitCommand(p),
-		PullCommand(p),
-		PushCommand(p),
-		DiffCommand(p),
+		syncInit.Command(p),
+		pull.Command(p),
+		push.Command(p),
+		diff.Command(p),
 	)
 	return cmd
 }

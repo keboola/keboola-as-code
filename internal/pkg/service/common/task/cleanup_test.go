@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -102,23 +101,23 @@ func TestCleanup(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// Check logs
-	wildcards.Assert(t, `
-[node1][task][_system_/tasks.cleanup/%s]INFO  started task
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "123/some.task/2006-01-02T08:04:05.000Z_abcdef"
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
-[node1][task][_system_/tasks.cleanup/%s]INFO  deleted "2" tasks
-[node1][task][_system_/tasks.cleanup/%s]INFO  task succeeded (%s): deleted "2" tasks
-[node1][task][_system_/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
-[node1]INFO  exiting (bye bye)
-[node1][task]INFO  received shutdown request
-[node1][task][etcd-session]INFO  closing etcd session
-[node1][task][etcd-session]INFO  closed etcd session | %s
-[node1][task]INFO  shutdown done
-[node1][etcd-client]INFO  closing etcd connection
-[node1][etcd-client]INFO  closed etcd connection | %s
-[node1]INFO  exited
-`, d.DebugLogger().AllMessages())
+	d.DebugLogger().AssertJSONMessages(t, `
+{"level":"info","message":"started task","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"exiting (bye bye)"}
+{"level":"info","message":"received shutdown request","component":"task","node":"node1"}
+{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
+{"level":"info","message":"shutdown done","component":"task","node":"node1"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
+{"level":"info","message":"exited"}
+`)
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `

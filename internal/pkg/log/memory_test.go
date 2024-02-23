@@ -3,30 +3,40 @@ package log
 
 import (
 	"context"
-	"strings"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
 
 func TestMemoryLogger(t *testing.T) {
 	t.Parallel()
 
 	mem := NewMemoryLogger()
-	mem.DebugCtx(context.Background(), `Debug message.`)
-	mem.InfoCtx(context.Background(), `Info message.`)
-	memWithCtx := mem.With("key1", "value1", "key2", "value2")
-	memWithCtx.DebugCtx(context.Background(), `Debug message.`)
-	memWithCtx.InfoCtx(context.Background(), `Info message.`)
+	mem.Debug(context.Background(), `Debug message.`)
+	mem.Info(context.Background(), `Info message.`)
+
+	memWithAttrs := mem.
+		WithComponent("c1").
+		With(attribute.String("key1", "value1"), attribute.String("key2", "value2")).
+		WithComponent("c2").
+		With(attribute.String("key3", "value3")).
+		WithDuration(123 * time.Second)
+
+	ctx := ctxattr.ContextWith(context.Background(), attribute.String("key4", "value4"))
+	memWithAttrs.Debug(ctx, `Debug message - <key1> <key2> <key3> <key4>`)
+	memWithAttrs.Info(ctx, `Info message - <key1> <key2> <key3> <key4>`)
 
 	target := NewDebugLogger()
 	mem.CopyLogsTo(target)
 
 	expected := `
-DEBUG  Debug message.
-INFO  Info message.
-DEBUG  Debug message.  {"key1": "value1", "key2": "value2"}
-INFO  Info message.  {"key1": "value1", "key2": "value2"}
+{"level":"debug","message":"Debug message."}
+{"level":"info","message":"Info message."}
+{"level":"debug","message":"Debug message - value1 value2 value3 value4", "component":"c1.c2", "duration":"2m3s", "key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"}
+{"level":"info","message":"Info message - value1 value2 value3 value4", "component":"c1.c2", "duration":"2m3s", "key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"}
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), target.AllMessages())
+	target.AssertJSONMessages(t, expected, target)
 }

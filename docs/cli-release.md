@@ -38,6 +38,9 @@ The release process is handled by [.github/workflows](../.github/workflows).
 - The package is created and pushed to the community repository using `update-repositories-windows` step of the [GitHub Workflow](#workflow-steps)
 - The package is published to the community repository: https://community.chocolatey.org/packages/keboola-cli
 - Updates to the package are authenticated by API key stored in `CHOCOLATEY_KEY` secret 
+- Our release workflow sends the new version to Chocolatey which then runs 3 [steps](https://community.chocolatey.org/packages/keboola-cli#testingResults) called "Validation", "Verification" and "Scan"
+- Check the current status on top of the page for the new version which is linked from the [version history](https://community.chocolatey.org/packages/keboola-cli#versionhistory)
+- Sometimes Chocolatey checks may decide that a manual review is necessary which can take longer
 
 ## Scoop
 
@@ -52,6 +55,8 @@ The release process is handled by [.github/workflows](../.github/workflows).
 - The manifest is created using [wingetcreate](https://github.com/microsoft/winget-create) tool and pushed to the repository using `update-repositories-windows` step of the [GitHub Workflow](#workflow-steps)
 - The manifest is published to the official repository
 - [Initial PR](https://github.com/microsoft/winget-pkgs/pull/47486)
+- Our release workflow sends a new PR to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs/pulls?q=is%3Apr+sort%3Aupdated-desc+Keboola)
+- We need to wait for one of the maintainers to merge the PR, this can take a few days
 
 ## Linux Repositories
 

@@ -31,9 +31,9 @@ We take privacy seriously, and do not perform any automated log file collection.
 Thank you kindly!`
 
 func ProcessPanic(ctx context.Context, err any, logger log.Logger, logFilePath string) int {
-	logger.DebugfCtx(ctx, "Unexpected panic: %s", err)
-	logger.DebugfCtx(ctx, "Trace:\n"+string(debug.Stack()))
-	logger.InfoCtx(ctx, panicMessage(logFilePath))
+	logger.Debugf(ctx, "Unexpected panic: %s", err)
+	logger.Debugf(ctx, "Trace:\n"+string(debug.Stack()))
+	logger.Info(ctx, panicMessage(logFilePath))
 	return 1
 }
 

@@ -61,6 +61,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	logger.InfofCtx(ctx, `Created new %s "%s"`, key.Kind().Name, projectState.MustGet(key).Path())
+	logger.Infof(ctx, `Created new %s "%s"`, key.Kind().Name, projectState.MustGet(key).Path())
 	return nil
 }

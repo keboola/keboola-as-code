@@ -92,7 +92,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 		logger = zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
 			if entry.Level > log.DebugLevel {
 				bytes, _ := encoder.EncodeEntry(entry, fields)
-				_, _ = os.Stdout.Write(bytes.Bytes())
+				_, _ = os.Stdout.Write(bytes.Bytes()) // nolint:forbidigo
 			}
 		}))
 	}
@@ -107,7 +107,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 				BaseDelay:  100 * time.Millisecond,
 				Multiplier: 1.5,
 				Jitter:     0.2,
-				MaxDelay:   15 * time.Second,
+				MaxDelay:   5 * time.Second,
 			},
 		}),
 	)
@@ -116,7 +116,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              ctx,
 		Endpoints:            []string{cfg.Endpoint},
-		DialTimeout:          10 * time.Second,
+		DialTimeout:          15 * time.Second,
 		DialKeepAliveTimeout: 5 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
 		Username:             cfg.Username, // optional
@@ -133,7 +133,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 
 	// Add operations logger
 	if verbose {
-		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout)
+		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout) // nolint:forbidigo
 	}
 
 	return etcdClient

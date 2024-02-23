@@ -35,8 +35,8 @@ INFO	Init done.
 INFO	Running pull.
 %A
 DEBUG	Project state has been successfully loaded.
-INFO	Plan for "pull" operation:
-INFO	  + B main
+Plan for "pull" operation:
+  + B main
 DEBUG	Execution plan is valid.
 DEBUG	Saved "description.md"
 DEBUG	Created directory "main"

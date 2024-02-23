@@ -1,7 +1,0 @@
-{
-  "path": "/v1/receivers/my-receiver/exports/export-c",
-  "method": "GET",
-  "headers": {
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
-  }
-}

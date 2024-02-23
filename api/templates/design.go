@@ -1,4 +1,4 @@
-// nolint: gochecknoglobals
+//nolint:gochecknoglobals
 package templates
 
 import (
@@ -38,6 +38,7 @@ func init() {
 }
 
 var _ = API("templates", func() {
+	Randomizer(expr.NewDeterministicRandomizer())
 	Title("Templates Service")
 	Description("A service for applying templates to Keboola projects.")
 	Version("1.0")
@@ -295,11 +296,12 @@ var _ = Service("templates", func() {
 
 	Method("DeleteInstance", func() {
 		Meta("openapi:summary", "Delete instance")
+		Result(Task)
 		Payload(InstanceRequest)
 		HTTP(func() {
 			DELETE("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
-			Response(StatusNoContent)
+			Response(StatusAccepted)
 			BranchNotFoundError()
 			InstanceNotFoundError()
 			ProjectLockedError()

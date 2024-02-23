@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -21,6 +22,7 @@ const (
 type orchestrator[T any] struct {
 	config Config[T]
 	node   *Node
+	dist   *distribution.GroupNode
 	logger log.Logger
 }
 
@@ -29,7 +31,7 @@ func (o orchestrator[T]) start() <-chan error {
 	o.node.wg.Add(1)
 	go func() {
 		defer o.node.wg.Done()
-		defer o.logger.InfoCtx(o.node.ctx, "stopped")
+		defer o.logger.Info(o.node.ctx, "stopped")
 
 		initDone := initDone
 		b := newRetryBackoff()
@@ -43,14 +45,14 @@ func (o orchestrator[T]) start() <-chan error {
 
 				// The watcher is periodically restarted to rescan existing keys.
 				if initDone == nil {
-					o.logger.DebugCtx(ctx, "restart")
+					o.logger.Debug(ctx, "restart")
 				}
 
 				// Run the watch operation for the RestartInterval.
 				err := o.watch(ctx, span, o.config.Source.RestartInterval, func() {
 					if initDone != nil {
 						// Initialization was successful
-						o.logger.InfoCtx(ctx, "ready")
+						o.logger.Info(ctx, "ready")
 						close(initDone)
 						initDone = nil
 					}
@@ -72,7 +74,7 @@ func (o orchestrator[T]) start() <-chan error {
 
 					// An error occurred, wait before reset.
 					delay := b.NextBackOff()
-					o.logger.WarnfCtx(ctx, "re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
+					o.logger.Warnf(ctx, "re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
 					<-time.After(delay)
 				}
 			}
@@ -127,16 +129,16 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	distributionKey := o.config.DistributionKey(event)
 
 	// Error is not expected, there is present always at least one node - self.
-	if !o.node.dist.MustCheckIsOwner(distributionKey) {
+	if !o.dist.MustCheckIsOwner(distributionKey) {
 		// Another node handles the resource.
-		o.logger.DebugfCtx(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
+		o.logger.Debugf(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
 	}
 
 	// Should be the task started?
 	if o.config.StartTaskIf != nil {
 		if skipReason, start := o.config.StartTaskIf(event); !start {
-			o.logger.DebugfCtx(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
+			o.logger.Debugf(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
 			return
 		}
 	}
@@ -144,7 +146,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	// Create task handler
 	taskFn := o.config.TaskFactory(event)
 	if taskFn == nil {
-		o.logger.InfofCtx(ctx, `skipped "%s"`, taskKey)
+		o.logger.Infof(ctx, `skipped "%s"`, taskKey)
 		return
 	}
 
@@ -155,7 +157,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	}
 
 	// Run task in the background
-	o.logger.InfofCtx(ctx, `assigned "%s"`, taskKey)
+	o.logger.Infof(ctx, `assigned "%s"`, taskKey)
 	taskCfg := task.Config{
 		Type:      o.config.Name,
 		Key:       taskKey,
@@ -164,6 +166,6 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 		Operation: taskFn,
 	}
 	if _, err := o.node.tasks.StartTask(ctx, taskCfg); err != nil {
-		o.logger.ErrorCtx(ctx, err)
+		o.logger.Error(ctx, err.Error())
 	}
 }

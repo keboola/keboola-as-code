@@ -20,7 +20,7 @@ func (m *relationsMapper) AfterLocalOperation(ctx context.Context, changes *mode
 
 	// Log errors as warning
 	if errs.Len() > 0 {
-		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		m.logger.Warn(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func (m *relationsMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 
 	// Log errors as warning
 	if errs.Len() > 0 {
-		m.logger.WarnCtx(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		m.logger.Warn(ctx, errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 
 	return nil

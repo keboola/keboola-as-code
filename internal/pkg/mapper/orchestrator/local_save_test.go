@@ -134,5 +134,5 @@ WARN  Warning:
     - Cannot save task "001-task-4":
       - Config "branch:123/component:foo.bar2/config:456" not found.
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.AllMessagesTxt())
 }

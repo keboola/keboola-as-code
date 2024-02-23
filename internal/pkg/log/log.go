@@ -3,7 +3,10 @@ package log
 import (
 	"context"
 	"io"
+	"time"
 
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -16,8 +19,7 @@ const (
 
 type Logger interface {
 	contextLogger
-	toWriter
-	withPrefix
+	withAttributes
 }
 
 type loggerWithZapCore interface {
@@ -36,53 +38,41 @@ type DebugLogger interface {
 	WarnMessages() string
 	WarnAndErrorMessages() string
 	ErrorMessages() string
-}
 
-type baseLogger interface {
-	Debug(args ...any)
-	Info(args ...any)
-	Warn(args ...any)
-	Error(args ...any)
+	AllMessagesTxt() string
 
-	Debugf(template string, args ...any)
-	Infof(template string, args ...any)
-	Warnf(template string, args ...any)
-	Errorf(template string, args ...any)
-
-	Sync() error
+	CompareJSONMessages(expected string) error
+	AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool
 }
 
 type contextLogger interface {
-	// Debug logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Debug logs message in the debug level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Debug(ctx context.Context, message string)
-	// Info logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Info logs message in the info level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Info(ctx context.Context, message string)
-	// Warn logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Warn logs message in the warning level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Warn(ctx context.Context, message string)
-	// Error logs message in the debug level, you can use an attribute %placeholder% defined by the ctxattr package.
+	// Error logs message in the error level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
 	Error(ctx context.Context, message string)
+	// Log logs message in the level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Log(ctx context.Context, level string, message string)
 
-	LogCtx(ctx context.Context, level string, args ...any)
-	DebugCtx(ctx context.Context, args ...any)
-	InfoCtx(ctx context.Context, args ...any)
-	WarnCtx(ctx context.Context, args ...any)
-	ErrorCtx(ctx context.Context, args ...any)
-
-	DebugfCtx(ctx context.Context, template string, args ...any)
-	InfofCtx(ctx context.Context, template string, args ...any)
-	WarnfCtx(ctx context.Context, template string, args ...any)
-	ErrorfCtx(ctx context.Context, template string, args ...any)
+	// Debugf logs formatted message in the debug level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Debugf(ctx context.Context, template string, args ...any)
+	// Infof logs formatted message in the info level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Infof(ctx context.Context, template string, args ...any)
+	// Warnf logs formatted message in the warning level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Warnf(ctx context.Context, template string, args ...any)
+	// Errorf logs formatted message in the error level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Errorf(ctx context.Context, template string, args ...any)
+	// Logf logs formatted message in the level, you can use an attribute <placeholder> for ctxattr or Logger.With attributes.
+	Logf(ctx context.Context, level string, template string, args ...any)
 
 	Sync() error
 }
 
-type toWriter interface {
-	DebugWriter() *LevelWriter
-	InfoWriter() *LevelWriter
-	WarnWriter() *LevelWriter
-	ErrorWriter() *LevelWriter
-}
-
-type withPrefix interface {
-	AddPrefix(prefix string) Logger
+type withAttributes interface {
+	With(attrs ...attribute.KeyValue) Logger
+	WithComponent(component string) Logger
+	WithDuration(v time.Duration) Logger
 }

@@ -331,7 +331,7 @@ WARN  Warning:
     - Missing "phase" key.
     - Missing "task" key.
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.AllMessagesTxt())
 
 	// Assert orchestration
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -628,5 +628,5 @@ WARN  Warning:
     - 1 -> 2 -> 1
     - 5 -> 8 -> 7 -> 6 -> 5
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.AllMessagesTxt())
 }

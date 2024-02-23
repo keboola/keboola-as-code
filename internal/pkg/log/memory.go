@@ -12,7 +12,7 @@ func NewMemoryLogger() *MemoryLogger {
 	var entries []memoryEntry
 	core := &memoryCore{entries: &entries}
 	return &MemoryLogger{
-		zapLogger: loggerFromZapCore(core),
+		zapLogger: newLoggerFromZapCore(core),
 		core:      core,
 	}
 }

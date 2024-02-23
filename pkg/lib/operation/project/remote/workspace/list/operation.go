@@ -28,19 +28,19 @@ func Run(ctx context.Context, d dependencies) (err error) {
 		return errors.Errorf("cannot find default branch: %w", err)
 	}
 
-	logger.InfoCtx(ctx, "Loading workspaces, please wait.")
+	logger.Info(ctx, "Loading workspaces, please wait.")
 	workspaces, err := d.KeboolaProjectAPI().ListWorkspaces(ctx, branch.ID)
 	if err != nil {
 		return err
 	}
 	sort.Slice(workspaces, func(i, j int) bool { return workspaces[i].Config.Name < workspaces[j].Config.Name })
 
-	logger.InfoCtx(ctx, "Found workspaces:")
+	logger.Info(ctx, "Found workspaces:")
 	for _, workspace := range workspaces {
 		if keboola.WorkspaceSupportsSizes(workspace.Workspace.Type) {
-			logger.InfofCtx(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type, workspace.Workspace.Size)
+			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type, workspace.Workspace.Size)
 		} else {
-			logger.InfofCtx(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type)
+			logger.Infof(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type)
 		}
 	}
 

@@ -14,13 +14,5 @@ func writerCore(stderr io.Writer, verbose bool) zapcore.Core {
 		minLevel = zapcore.DebugLevel
 	}
 
-	// Create encoder
-	encoder := newPrefixEncoder(zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		MessageKey:       "msg",
-		LevelKey:         "level",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: " ",
-	}))
-
-	return zapcore.NewCore(encoder, zapcore.AddSync(stderr), minLevel)
+	return zapcore.NewCore(newJSONEncoder(), zapcore.AddSync(stderr), minLevel)
 }

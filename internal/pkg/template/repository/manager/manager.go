@@ -201,7 +201,7 @@ func (m *Manager) Free(ctx context.Context) {
 	}
 
 	wg.Wait()
-	m.logger.InfofCtx(ctx, "repository manager cleaned up")
+	m.logger.Infof(ctx, "repository manager cleaned up")
 }
 
 func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) (*CachedRepository, error) {
@@ -238,7 +238,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 		if ref.Type == model.RepositoryTypeGit {
 			// Remote repository
 			startTime := time.Now()
-			m.logger.InfofCtx(ctx, `checking out repository "%s:%s"`, ref.URL, ref.Ref)
+			m.logger.Infof(ctx, `checking out repository "%s:%s"`, ref.URL, ref.Ref)
 
 			// Checkout
 			gitRepo, err = checkoutOp.Run(ctx, ref, m.deps)
@@ -247,7 +247,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 			}
 
 			// Checkout done
-			m.logger.InfofCtx(ctx, `checked out repository "%s" | %s`, gitRepo, time.Since(startTime))
+			m.logger.WithDuration(time.Since(startTime)).Infof(ctx, `checked out repository "%s"`, gitRepo)
 		} else {
 			// Local directory
 			fs, err := aferofs.NewLocalFs(ref.URL, filesystem.WithLogger(m.deps.Logger()))
@@ -255,7 +255,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 				return nil, err
 			}
 			gitRepo = git.NewLocalRepository(ref, fs)
-			m.logger.InfofCtx(ctx, `found local repository "%s"`, gitRepo)
+			m.logger.Infof(ctx, `found local repository "%s"`, gitRepo)
 		}
 
 		// Load content of the template repository

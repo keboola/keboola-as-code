@@ -84,10 +84,10 @@ func find(ctx context.Context, logger log.Logger, workingDir string) (string, er
 			if stat.IsDir() {
 				return actualDir, nil
 			} else {
-				logger.DebugfCtx(ctx, "Expected dir, but found file at \"%s\"", metadataDir)
+				logger.Debugf(ctx, "Expected dir, but found file at \"%s\"", metadataDir)
 			}
 		} else if !os.IsNotExist(err) {
-			logger.DebugfCtx(ctx, "Cannot check if path \"%s\" exists: %s", metadataDir, err)
+			logger.Debugf(ctx, "Cannot check if path \"%s\" exists: %s", metadataDir, err)
 		}
 
 		// Check "dbt_project.yml"
@@ -96,10 +96,10 @@ func find(ctx context.Context, logger log.Logger, workingDir string) (string, er
 			if !stat.IsDir() {
 				return actualDir, nil
 			} else {
-				logger.DebugfCtx(ctx, "Expected file, but found dir at \"%s\"", dbtFile)
+				logger.Debugf(ctx, "Expected file, but found dir at \"%s\"", dbtFile)
 			}
 		} else if !os.IsNotExist(err) {
-			logger.DebugfCtx(ctx, "Cannot check if path \"%s\" exists: %s", dbtFile, err)
+			logger.Debugf(ctx, "Cannot check if path \"%s\" exists: %s", dbtFile, err)
 		}
 
 		// Go up to the parent directory

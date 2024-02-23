@@ -57,7 +57,7 @@ type TestConfig struct {
 	StringWithUsage  string           `configKey:"stringWithUsage" configUsage:"An usage text." validate:"ne=invalid"`
 	Duration         time.Duration    `configKey:"duration"`
 	DurationNullable *time.Duration   `configKey:"durationNullable"`
-	URL              *url.URL         `configKey:"url"`
+	URL              *url.URL         `configKey:"url" configShorthand:"u"`
 	Addr             netip.Addr       `configKey:"address"`         // TextUnmarshaler/BinaryUnmarshaler interface
 	AddrNullable     *netip.Addr      `configKey:"addressNullable"` // TextUnmarshaler/BinaryUnmarshaler interface
 	Nested           Nested           `configKey:"nested"`
@@ -85,7 +85,7 @@ type TestConfigWithValueStruct struct {
 	StringWithUsage  Value[string]           `configKey:"stringWithUsage" configUsage:"An usage text."`
 	Duration         Value[time.Duration]    `configKey:"duration"`
 	DurationNullable Value[*time.Duration]   `configKey:"durationNullable"`
-	URL              Value[*url.URL]         `configKey:"url"`
+	URL              Value[*url.URL]         `configKey:"url" configShorthand:"u"`
 	Addr             Value[netip.Addr]       `configKey:"address"`         // TextUnmarshaler/BinaryUnmarshaler interface
 	AddrNullable     Value[*netip.Addr]      `configKey:"addressNullable"` // TextUnmarshaler/BinaryUnmarshaler interface
 	Nested           NestedValue             `configKey:"nested"`

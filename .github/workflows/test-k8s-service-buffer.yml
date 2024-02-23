@@ -9,7 +9,7 @@ on:
 #  pull_request:
 #    paths:
 #      - .github/workflows/test-k8s-service-buffer.yml
-#      - provisioning/buffer/**
+#      - provisioning/stream/**
 #      - provisioning/common/**
 
 env:
