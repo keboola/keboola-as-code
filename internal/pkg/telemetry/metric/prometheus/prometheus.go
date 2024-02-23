@@ -114,17 +114,8 @@ func View() metric.View {
 		metric.Instrument{Name: "*"},
 		metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
 			switch value.Key {
-			// Remove invalid otelhttp metric attributes with high cardinality.
-			// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
-			case "net.sock.peer.addr",
-				"net.sock.peer.port",
-				"http.user_agent",
-				"http.client_ip",
-				"http.request_content_length",
-				"http.response_content_length":
-				return false
 			// Remove unused attributes.
-			case "http.flavor":
+			case "http.flavor", "net.protocol.name", "net.protocol.version":
 				return false
 			}
 			return true
