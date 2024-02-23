@@ -58,7 +58,6 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.12
 	go.etcd.io/etcd/tests/v3 v3.5.12
 	go.nhat.io/aferocopy/v2 v2.0.1
-	go.opencensus.io v0.24.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.48.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.23.0
@@ -237,6 +236,7 @@ require (
 	go.etcd.io/etcd/pkg/v3 v3.5.12 // indirect
 	go.etcd.io/etcd/raft/v3 v3.5.12 // indirect
 	go.etcd.io/etcd/server/v3 v3.5.12 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.20.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect

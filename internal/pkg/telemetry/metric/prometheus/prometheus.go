@@ -70,9 +70,6 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 		return nil, err
 	}
 
-	// Register legacy OpenCensus metrics, for go-cloud (https://github.com/google/go-cloud/issues/2877)
-	exporter.RegisterProducer(opencensus.NewMetricProducer())
-
 	// Create HTTP metrics server
 	opts := promhttp.HandlerOpts{ErrorLog: &errLogger{logger: logger}}
 	handler := http.NewServeMux()
@@ -104,6 +101,8 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 	// Create OpenTelemetry metrics provider
 	provider := metric.NewMeterProvider(
 		metric.WithReader(exporter),
+		// Register legacy OpenCensus metrics, for go-cloud (https://github.com/google/go-cloud/issues/2877)
+		metric.WithReader(metric.NewManualReader(metric.WithProducer(opencensus.NewMetricProducer()))),
 		metric.WithResource(res),
 		metric.WithView(View()),
 	)
