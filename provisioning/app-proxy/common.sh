@@ -24,6 +24,13 @@ export NAMESPACE="app-proxy"
 # Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
+if ! kubectl get secret app-proxy --namespace app-proxy > /dev/null 2>&1; then
+  COOKIE_SECRET_SALT=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 128)
+  export COOKIE_SECRET_SALT
+  envsubst < kubernetes/templates/proxy/secret.yaml > kubernetes/deploy/proxy/secret.yaml
+  kubectl apply -f ./kubernetes/deploy/proxy/secret.yaml
+fi
+
 # Proxy
 kubectl apply -f ./kubernetes/deploy/proxy/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/pdb.yaml

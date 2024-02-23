@@ -64,6 +64,11 @@ spec:
                 configMapKeyRef:
                   name: app-proxy
                   key: appProxyApiHost
+            - name: APP_PROXY_COOKIE_SECRET_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: app-proxy
+                  key: cookieSecretSalt
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
