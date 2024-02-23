@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -37,7 +36,7 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Bind flags to struct
 			f := Flags{}
-			if err := configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 

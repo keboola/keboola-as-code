@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
-	u "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -34,7 +33,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// flags
 			f := Flag{}
-			if err = configmap.Bind(u.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
