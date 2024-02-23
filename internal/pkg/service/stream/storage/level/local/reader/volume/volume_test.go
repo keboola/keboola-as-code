@@ -213,7 +213,7 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("abcdef"), 0o640))
 
 	// Open volume - first instance - ok
-	_, err := tc.OpenVolume()
+	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
 
 	// Open volume - second instance - error
@@ -221,6 +221,9 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	if assert.Error(t, err) {
 		wildcards.Assert(t, `cannot acquire reader lock "%s": already locked`, err.Error())
 	}
+
+	// Close volume
+	assert.NoError(t, vol.Close(context.Background()))
 }
 
 // TestVolume_Close_Errors tests propagation of readers close errors on Volume.Close().
