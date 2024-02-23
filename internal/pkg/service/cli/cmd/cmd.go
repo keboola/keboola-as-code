@@ -112,7 +112,7 @@ type RootCommand struct {
 }
 
 // NewRootCommand creates parent of all sub-commands.
-func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *env.Map, fsFactory filesystem.Factory) *RootCommand {
+func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
 		options:   options.New(),
@@ -160,7 +160,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		}
 
 		// Load values from flags and envs
-		if err = root.options.Load(cmd.Context(), root.logger, envs, root.fs, cmd.Flags()); err != nil {
+		if err = root.options.Load(cmd.Context(), root.logger, osEnvs, root.fs, cmd.Flags()); err != nil {
 			return err
 		}
 
@@ -175,6 +175,9 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		// Create process abstraction
 		proc := servicectx.New()
 
+		// Load ENVs
+		envs := loadEnvFiles(cmd.Context(), root.logger, osEnvs, root.fs)
+
 		// Create dependencies provider
 		p.Set(dependencies.NewProvider(
 			cmd.Context(),
@@ -183,6 +186,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 			root.fs,
 			dialog.New(prompt, root.options),
 			root.options,
+			envs,
 			stdout,
 			stderr,
 		))
@@ -203,8 +207,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		StatusCommand(p),
 		sync.Commands(p),
 		ci.Commands(p),
-		local.Commands(p, envs),
-		remote.Commands(p, envs),
+		local.Commands(p, osEnvs),
+		remote.Commands(p, osEnvs),
 		dbt.Commands(p),
 		template.Commands(p),
 	)
