@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	SetByUnknown SetBy = iota
-	SetByDefault
+	SetByDefault SetBy = iota
 	SetByConfig
 	SetByFlag
 	SetByEnv
@@ -192,7 +191,7 @@ func Bind(inputs BindConfig, targets ...any) error {
 	errs := errors.NewMultiError()
 	for _, target := range targets {
 		// Validate type
-		if v := reflect.ValueOf(target); v.Kind() != reflect.Pointer && v.Type().Elem().Kind() != reflect.Pointer {
+		if v := reflect.ValueOf(target); v.Kind() != reflect.Pointer || v.Type().Elem().Kind() != reflect.Struct {
 			return errors.Errorf(`cannot bind to type "%s": expected a pointer to a struct`, v.Type().String())
 		}
 

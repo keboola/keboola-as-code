@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,7 +94,6 @@ func TestNode(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(2, []string{"default"}))
-		spew.Dump(testconfig.LocalVolumeConfig(2, []string{"default"}))
 		require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
