@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -186,4 +188,14 @@ func (v *wrapper) registerCustomRules() {
 			},
 		},
 	)
+}
+
+func (v *wrapper) registerCustomTypes() {
+	// Convert value to string using String method
+	v.validator.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if v, ok := field.Interface().(fmt.Stringer); ok {
+			return v.String()
+		}
+		return field
+	}, model.SemVersion{})
 }
