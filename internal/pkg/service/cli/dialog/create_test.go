@@ -257,13 +257,13 @@ func TestAskCreate(t *testing.T) {
 
 			assert.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Would you define column types?"))
+			assert.NoError(t, console.ExpectString("Want to define column types?"))
 
 			assert.NoError(t, console.Send("Y"))
 
 			assert.NoError(t, console.SendEnter()) // confirm
 
-			assert.NoError(t, console.ExpectString("Columns definition from file"))
+			assert.NoError(t, console.ExpectString("Columns definitions"))
 
 			assert.NoError(t, console.SendEnter())
 
@@ -342,7 +342,7 @@ func TestAskCreate(t *testing.T) {
 
 			assert.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Would you define column types?"))
+			assert.NoError(t, console.ExpectString("Want to define column types?"))
 
 			assert.NoError(t, console.Send("N"))
 
