@@ -10,7 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
@@ -25,17 +26,21 @@ const (
 // TestAllowedBranchesByFlag use flag value if present.
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
-	dialog, o, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
-	o.SetDefault(`branches`, `*`)
-	o.Set(`branches`, `foo, bar`)
+	// o.SetDefault(`branches`, `*`)
+	// o.Set(`branches`, `foo, bar`)
+
+	f := syncInit.Flags{
+		Branches: configmap.NewValueWithOrigin("foo, bar", configmap.SetByFlag),
+	}
 
 	// No interaction expected
-	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
+	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, f)
 	assert.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
 	assert.NoError(t, console.Tty().Close())
@@ -45,16 +50,19 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
-	dialog, o, _ := createDialogs(t, false)
+	dialog, _, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
-	o.SetDefault(`branches`, `*`)
+
+	f := syncInit.Flags{
+		Branches: configmap.NewValueWithOrigin("*", configmap.SetByFlag),
+	}
 
 	// No interaction expected
-	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
+	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, f)
 	assert.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
 }
@@ -80,7 +88,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
+	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -111,7 +119,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
+	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -163,7 +171,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
+	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -203,7 +211,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
+	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -218,10 +226,10 @@ func selectOption(t *testing.T, option int, c terminal.Console) {
 	t.Helper()
 
 	assert.NoError(t, c.ExpectString("Allowed project's branches:"))
-	assert.NoError(t, c.ExpectString(ModeMainBranch))
-	assert.NoError(t, c.ExpectString(ModeAllBranches))
-	assert.NoError(t, c.ExpectString(ModeSelectSpecific))
-	assert.NoError(t, c.ExpectString(ModeTypeList))
+	assert.NoError(t, c.ExpectString(syncInit.ModeMainBranch))
+	assert.NoError(t, c.ExpectString(syncInit.ModeAllBranches))
+	assert.NoError(t, c.ExpectString(syncInit.ModeSelectSpecific))
+	assert.NoError(t, c.ExpectString(syncInit.ModeTypeList))
 	for i := 1; i < option; i++ {
 		assert.NoError(t, c.SendDownArrow())
 	}
