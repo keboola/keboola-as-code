@@ -2,9 +2,13 @@ package key
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/keboola/go-client/pkg/keboola"
 )
+
+// BranchIDOrDefault is used in the API payloads, it should contain "default" string, or branchID (int).
+type BranchIDOrDefault string
 
 type BranchKey struct {
 	ProjectID keboola.ProjectID `json:"projectId" validate:"required,min=1"`
@@ -13,4 +17,12 @@ type BranchKey struct {
 
 func (v BranchKey) String() string {
 	return fmt.Sprintf("%s/%s", v.ProjectID.String(), v.BranchID.String())
+}
+
+func (v BranchIDOrDefault) Default() bool {
+	return v == "default"
+}
+
+func (v BranchIDOrDefault) Int() (int, error) {
+	return strconv.Atoi(string(v))
 }

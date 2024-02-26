@@ -413,6 +413,7 @@ var BranchID = Type("BranchID", Int, func() {
 })
 
 var BranchIDOrDefault = Type("BranchIDOrDefault", String, func() {
+	Meta("struct:field:type", "= key.BranchIDOrDefault", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
 	Description(`ID of the branch or "default".`)
 	Example("default")
 })
