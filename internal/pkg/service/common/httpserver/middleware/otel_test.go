@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -161,10 +162,7 @@ func middlewareTests() []MiddlewareTest {
 		},
 	}
 
-	// TMP: Use slices.Concat after updating to Go 1.22
-	allMetrics := []metricdata.Metrics{}
-	allMetrics = append(allMetrics, basicMetrics...)
-	allMetrics = append(allMetrics, apdexMetrics...)
+	allMetrics := slices.Concat(basicMetrics, apdexMetrics)
 
 	return []MiddlewareTest{
 		{
