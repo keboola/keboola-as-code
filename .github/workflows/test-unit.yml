@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.21.5
+  GO_VERSION: 1.22.0
   TEST_PARALLELISM: 6
   TEST_PARALLELISM_PKG: 6
   TEST_PROJECTS_LINUX: |

@@ -1,14 +1,5 @@
 {
   "backend": {
     "type": "snowflake"
-  },
-  "branches": [
-    {
-      "branch": {
-        "name": "Main",
-        "isDefault": true
-      },
-      "configs": []
-    }
-  ]
+  }
 }
