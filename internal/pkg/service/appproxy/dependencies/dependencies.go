@@ -88,7 +88,7 @@ func newParentScopes(
 			if cfg.DebugLog {
 				httpclient.WithDebugOutput(stdout)(c)
 			}
-			if cfg.DebugHTTP {
+			if cfg.DebugHTTPClient {
 				httpclient.WithDumpOutput(stdout)(c)
 			}
 		},

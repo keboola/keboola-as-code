@@ -1592,7 +1592,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	_, err := rand.Read(secret)
 	require.NoError(t, err)
 
-	cfg := config.NewConfig()
+	cfg := config.New()
 	cfg.CookieSecretSalt = string(secret)
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
@@ -1608,7 +1608,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 
 	return middleware.Wrap(
 		router.CreateHandler(),
-		appIDMiddleware(d.Config().PublicAddress),
+		appIDMiddleware(d.Config().API.PublicURL),
 	)
 }
 

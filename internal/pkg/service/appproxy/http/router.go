@@ -21,6 +21,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/cookies"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -122,7 +123,7 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Handler {
 	if len(app.Rules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
@@ -144,7 +145,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 	for _, rule := range app.Rules {
 		if rule.Type != PathPrefix {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
+			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
 			return r.createConfigErrorHandler(exceptionID)
 		}
 
@@ -164,7 +165,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHa
 		provider, found := oauthProviders[id]
 		if !found {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
+			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
 			return r.createConfigErrorHandler(exceptionID)
 		}
 
@@ -205,21 +206,21 @@ func (r *Router) createProvider(ctx context.Context, providerConfig options.Prov
 
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.proxyConfig = proxyConfig
 
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.proxyProvider = proxyProvider
 
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
-		r.logger.With("exceptionId", exceptionID).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
 	provider.handler = proxy
@@ -246,7 +247,7 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProv
 			data := SelectionPageData{}
 			for id, oauthProvider := range oauthProviders {
 				providerURL := &url.URL{
-					Scheme:   r.config.PublicAddress.Scheme,
+					Scheme:   r.config.API.PublicURL.Scheme,
 					Host:     request.Host,
 					Path:     selectionPagePath,
 					RawQuery: "provider=" + url.PathEscape(id),
@@ -372,7 +373,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 
 func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request *http.Request) {
 	selectionPageURL := &url.URL{
-		Scheme: r.config.PublicAddress.Scheme,
+		Scheme: r.config.API.PublicURL.Scheme,
 		Host:   request.Host,
 		Path:   selectionPagePath,
 	}
@@ -384,7 +385,7 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*options.Options, error) {
 	v := options.NewOptions()
 
-	domain := app.ID.String() + "." + r.config.PublicAddress.Host
+	domain := app.ID.String() + "." + r.config.API.PublicURL.Host
 
 	secret, err := r.generateCookieSecret(app, provider)
 	if err != nil {
@@ -395,7 +396,7 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = "/_proxy"
-	v.RawRedirectURL = r.config.PublicAddress.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
+	v.RawRedirectURL = r.config.API.PublicURL.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
 	v.Providers = options.Providers{provider}
 	v.SkipProviderButton = true
