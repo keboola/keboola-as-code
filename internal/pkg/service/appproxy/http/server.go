@@ -24,14 +24,14 @@ const (
 func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.Handler) error {
 	logger, tel, cfg := d.Logger(), d.Telemetry(), d.Config()
 
-	handler := newHandler(logger, tel, router, cfg.PublicAddress)
+	handler := newHandler(logger, tel, router, cfg.API.PublicURL)
 
 	// Start HTTP server
-	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
+	srv := &http.Server{Addr: cfg.API.Listen, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
-		logger.Infof(ctx, "HTTP server listening on %q", cfg.ListenAddress)
+		logger.Infof(ctx, "HTTP server listening on %q", cfg.API.Listen)
 		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
 		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
@@ -42,7 +42,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.H
 		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 		defer cancel()
 
-		logger.Infof(ctx, "shutting down HTTP server at %q", cfg.ListenAddress)
+		logger.Infof(ctx, "shutting down HTTP server at %q", cfg.API.Listen)
 
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.Errorf(ctx, `HTTP server shutdown error: %s`, err)

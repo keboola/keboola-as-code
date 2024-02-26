@@ -19,7 +19,7 @@ import (
 func TestAppProxyHandler(t *testing.T) {
 	t.Parallel()
 
-	d, mocked := proxyDependencies.NewMockedServiceScope(t, config.NewConfig())
+	d, mocked := proxyDependencies.NewMockedServiceScope(t, config.New())
 
 	// Create dummy handler
 	handler := newHandler(
@@ -63,9 +63,9 @@ func TestAppProxyHandler(t *testing.T) {
 		t,
 		[]metricdata.Metrics{
 			{
-				Name:        "keboola.go.http.server.request_content_length",
-				Description: "",
-				Unit:        "",
+				Name:        "keboola.go.http.server.request.size",
+				Description: "Measures the size of HTTP request messages.",
+				Unit:        "By",
 				Data: metricdata.Sum[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
@@ -81,9 +81,9 @@ func TestAppProxyHandler(t *testing.T) {
 				},
 			},
 			{
-				Name:        "keboola.go.http.server.response_content_length",
-				Description: "",
-				Unit:        "",
+				Name:        "keboola.go.http.server.response.size",
+				Description: "Measures the size of HTTP response messages.",
+				Unit:        "By",
 				Data: metricdata.Sum[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
@@ -100,8 +100,8 @@ func TestAppProxyHandler(t *testing.T) {
 			},
 			{
 				Name:        "keboola.go.http.server.duration",
-				Description: "",
-				Unit:        "",
+				Description: "Measures the duration of inbound HTTP requests.",
+				Unit:        "ms",
 				Data: metricdata.Histogram[float64]{
 					DataPoints: []metricdata.HistogramDataPoint[float64]{
 						{

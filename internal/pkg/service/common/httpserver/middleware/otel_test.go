@@ -52,8 +52,9 @@ func middlewareTests() []MiddlewareTest {
 	)
 	basicMetrics := []metricdata.Metrics{
 		{
-			Name:        "keboola.go.http.server.request_content_length",
-			Description: "",
+			Name:        "keboola.go.http.server.request.size",
+			Description: "Measures the size of HTTP request messages.",
+			Unit:        "By",
 			Data: metricdata.Sum[int64]{
 				Temporality: 1,
 				IsMonotonic: true, // counter
@@ -64,8 +65,9 @@ func middlewareTests() []MiddlewareTest {
 			},
 		},
 		{
-			Name:        "keboola.go.http.server.response_content_length",
-			Description: "",
+			Name:        "keboola.go.http.server.response.size",
+			Description: "Measures the size of HTTP response messages.",
+			Unit:        "By",
 			Data: metricdata.Sum[int64]{
 				Temporality: 1,
 				IsMonotonic: true, // counter
@@ -77,8 +79,8 @@ func middlewareTests() []MiddlewareTest {
 		},
 		{
 			Name:        "keboola.go.http.server.duration",
-			Description: "",
-			Unit:        "",
+			Description: "Measures the duration of inbound HTTP requests.",
+			Unit:        "ms",
 			Data: metricdata.Histogram[float64]{
 				Temporality: 1,
 				DataPoints: []metricdata.HistogramDataPoint[float64]{
@@ -339,135 +341,6 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				attribute.String("http.response.header.x-request-id", "<dynamic>"),
 				attribute.Int("http.wrote_bytes", len(responseContent)),
 				attribute.Int("http.status_code", http.StatusInternalServerError),
-			},
-		},
-	}
-}
-
-func expectedMetrics() []metricdata.Metrics {
-	req1Attrs := attribute.NewSet(
-		attribute.String("http.method", "GET"),
-		attribute.String("http.scheme", "http"),
-		attribute.String("net.host.name", "example.com"),
-		attribute.String("http.route", "/api/ignored-tracing"),
-		attribute.Int("http.status_code", http.StatusOK),
-		attribute.String("endpoint.name", "/api/ignored-tracing"),
-	)
-	req2Attrs := attribute.NewSet(
-		attribute.String("http.method", "POST"),
-		attribute.String("http.scheme", "http"),
-		attribute.String("net.host.name", "example.com"),
-		attribute.String("http.route", "/api/item/:id/:secret1"),
-		attribute.Int("http.status_code", http.StatusInternalServerError),
-		attribute.String("endpoint.name", "my-endpoint"),
-	)
-	apdexReq1Attrs := attribute.NewSet(
-		attribute.String("http.route", "/api/ignored-tracing"),
-		attribute.String("endpoint.name", "/api/ignored-tracing"),
-	)
-	apdexReq2Attrs := attribute.NewSet(
-		attribute.String("http.route", "/api/item/:id/:secret1"),
-		attribute.String("endpoint.name", "my-endpoint"),
-	)
-	return []metricdata.Metrics{
-		{
-			Name:        "keboola.go.http.server.request.size",
-			Description: "Measures the size of HTTP request messages.",
-			Unit:        "By",
-			Data: metricdata.Sum[int64]{
-				Temporality: 1,
-				IsMonotonic: true, // counter
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 0, Attributes: req1Attrs},
-					{Value: 0, Attributes: req2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola.go.http.server.response.size",
-			Description: "Measures the size of HTTP response messages.",
-			Unit:        "By",
-			Data: metricdata.Sum[int64]{
-				Temporality: 1,
-				IsMonotonic: true, // counter
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: int64(len(responseContent)), Attributes: req1Attrs},
-					{Value: int64(len(responseContent)), Attributes: req2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola.go.http.server.duration",
-			Description: "Measures the duration of inbound HTTP requests.",
-			Unit:        "ms",
-			Data: metricdata.Histogram[float64]{
-				Temporality: 1,
-				DataPoints: []metricdata.HistogramDataPoint[float64]{
-					{
-						Count:      1,
-						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-						Attributes: req1Attrs,
-					},
-					{
-						Count:      1,
-						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-						Attributes: req2Attrs,
-					},
-				},
-			},
-		},
-		{
-			Name:        "keboola_go_http_server_apdex_count",
-			Description: "",
-			Data: metricdata.Sum[int64]{
-				Temporality: 1,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 1, Attributes: apdexReq1Attrs},
-					{Value: 1, Attributes: apdexReq2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola_go_http_server_apdex_500_sum",
-			Description: "",
-			Data: metricdata.Sum[float64]{
-				Temporality: 1,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[float64]{
-					// status code = 200, duration OK, apdex=1
-					{Value: 1, Attributes: apdexReq1Attrs},
-					// status code = 500, apdex=0
-					{Value: 0, Attributes: apdexReq2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola_go_http_server_apdex_1000_sum",
-			Description: "",
-			Data: metricdata.Sum[float64]{
-				Temporality: 1,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[float64]{
-					// status code = 200, duration OK, apdex=1
-					{Value: 1, Attributes: apdexReq1Attrs},
-					// status code = 500, apdex=0
-					{Value: 0, Attributes: apdexReq2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola_go_http_server_apdex_2000_sum",
-			Description: "",
-			Data: metricdata.Sum[float64]{
-				Temporality: 1,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[float64]{
-					// status code = 200, duration OK, apdex=1
-					{Value: 1, Attributes: apdexReq1Attrs},
-					// status code = 500, apdex=0
-					{Value: 0, Attributes: apdexReq2Attrs},
-				},
 			},
 		},
 	}
