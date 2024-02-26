@@ -20,6 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/row"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/create/branch"
+	createTable "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/create/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
@@ -28,6 +30,49 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+func ColumnsInput() string {
+	return `[{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]`
+}
+
+func TestParseJsonInput(t *testing.T) {
+	t.Parallel()
+	// Create a temporary directory
+	tempDir := t.TempDir()
+
+	// Create a temporary file within the temporary directory
+	tempFile, err := os.Create(filepath.Join(tempDir, "foo.json")) // nolint:forbidigo
+	require.NoError(t, err)
+
+	defer tempFile.Close()
+
+	// Write content to the temporary file
+	_, err = tempFile.Write([]byte(ColumnsInput()))
+	require.NoError(t, err)
+
+	// Get the file path of the temporary file
+	filePath := tempFile.Name()
+
+	// Read and parse the content of the temporary file
+	res, err := createTable.ParseJSONInputForCreateTable(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, []keboola.Column{
+		{
+			Name: "id",
+			Definition: keboola.ColumnDefinition{
+				Type: "INT",
+			},
+			BaseType: "NUMERIC",
+		},
+		{
+			Name: "name",
+			Definition: keboola.ColumnDefinition{
+				Type: "STRING",
+			},
+			BaseType: "STRING",
+		},
+	}, res)
+}
 
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
@@ -281,7 +326,7 @@ func TestAskCreate(t *testing.T) {
 			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
-		res, err := dialog.AskCreateTable(args, branch.BranchKey, buckets)
+		res, err := createTable.AskCreateTable(args, branch.BranchKey, buckets, dialog, createTable.Flags{})
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -368,7 +413,7 @@ func TestAskCreate(t *testing.T) {
 			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
-		res, err := dialog.AskCreateTable(args, branch.BranchKey, buckets)
+		res, err := createTable.AskCreateTable(args, branch.BranchKey, buckets, dialog, createTable.Flags{})
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -407,7 +452,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from flag", func(t *testing.T) {
 		t.Parallel()
 		// Test dependencies
-		dialog, o, console := createDialogs(t, true)
+		dialog, _, console := createDialogs(t, true)
 
 		// Set fake file editor
 		dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -452,15 +497,17 @@ func TestAskCreate(t *testing.T) {
 		defer tempFile.Close()
 
 		// Write content to the temporary file
-		_, err = tempFile.Write([]byte(d.ColumnsInput()))
+		_, err = tempFile.Write([]byte(ColumnsInput()))
 		require.NoError(t, err)
 
 		// Get the file path of the temporary file
 		filePath := tempFile.Name()
 
 		// set flag columns-from
-		o.Set("columns-from", filePath)
-		res, err := dialog.AskCreateTable(args, branch.BranchKey, buckets)
+		f := createTable.Flags{
+			ColumnsFrom: configmap.NewValueWithOrigin(filePath, configmap.SetByFlag),
+		}
+		res, err := createTable.AskCreateTable(args, branch.BranchKey, buckets, dialog, f)
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -499,7 +546,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name from flag", func(t *testing.T) {
 		t.Parallel()
 		// Test dependencies
-		dialog, o, console := createDialogs(t, true)
+		dialog, _, console := createDialogs(t, true)
 
 		// Set fake file editor
 		dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -536,8 +583,10 @@ func TestAskCreate(t *testing.T) {
 		}()
 
 		// set flag --columns
-		o.Set("columns", "id,name")
-		res, err := dialog.AskCreateTable(args, branch.BranchKey, buckets)
+		f := createTable.Flags{
+			Columns: configmap.NewValueWithOrigin("id,name", configmap.SetByFlag),
+		}
+		res, err := createTable.AskCreateTable(args, branch.BranchKey, buckets, dialog, f)
 		assert.NoError(t, err)
 		wg.Wait()
 
