@@ -44,12 +44,18 @@ func init() {
 		Package: "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies",
 		DependenciesTypeFn: func(method *service.MethodData) string {
 			if dependencies.HasSecurityScheme("APIKey", method) {
+				if strings.Contains(method.PayloadDef, "\tBranchID") {
+					return "dependencies.BranchRequestScope"
+				}
 				return "dependencies.ProjectRequestScope"
 			}
 			return "dependencies.PublicRequestScope"
 		},
 		DependenciesProviderFn: func(method *service.EndpointMethodData) string {
 			if dependencies.HasSecurityScheme("APIKey", method.MethodData) {
+				if strings.Contains(method.PayloadDef, "\tBranchID") {
+					return "ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)"
+				}
 				return "ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)"
 			}
 			return "ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)"
@@ -880,7 +886,7 @@ var TaskOutputs = Type("TaskOutputs", func() {
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
-	Attribute("branchId", BranchID)
+	Attribute("branchId", BranchIDOrDefault)
 	Attribute("taskId", TaskID)
 	Required("taskId")
 })

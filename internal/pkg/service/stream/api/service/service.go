@@ -31,66 +31,66 @@ func (s *service) HealthCheck(context.Context, dependencies.PublicRequestScope) 
 	return "OK", nil
 }
 
-func (s *service) CreateSource(context.Context, dependencies.ProjectRequestScope, *stream.CreateSourcePayload) (res *stream.Task, err error) {
+func (s *service) CreateSource(context.Context, dependencies.BranchRequestScope, *stream.CreateSourcePayload) (res *stream.Task, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) UpdateSource(context.Context, dependencies.ProjectRequestScope, *stream.UpdateSourcePayload) (res *stream.Source, err error) {
+func (s *service) UpdateSource(context.Context, dependencies.BranchRequestScope, *stream.UpdateSourcePayload) (res *stream.Source, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) ListSources(context.Context, dependencies.ProjectRequestScope, *stream.ListSourcesPayload) (res *stream.SourcesList, err error) {
+func (s *service) ListSources(context.Context, dependencies.BranchRequestScope, *stream.ListSourcesPayload) (res *stream.SourcesList, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) GetSource(context.Context, dependencies.ProjectRequestScope, *stream.GetSourcePayload) (res *stream.Source, err error) {
+func (s *service) GetSource(context.Context, dependencies.BranchRequestScope, *stream.GetSourcePayload) (res *stream.Source, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) DeleteSource(context.Context, dependencies.ProjectRequestScope, *stream.DeleteSourcePayload) (err error) {
+func (s *service) DeleteSource(context.Context, dependencies.BranchRequestScope, *stream.DeleteSourcePayload) (err error) {
 	return errors.NewNotImplementedError()
 }
 
-func (s *service) GetSourceSettings(context.Context, dependencies.ProjectRequestScope, *stream.GetSourceSettingsPayload) (res stream.SettingsResult, err error) {
+func (s *service) GetSourceSettings(context.Context, dependencies.BranchRequestScope, *stream.GetSourceSettingsPayload) (res stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) UpdateSourceSettings(context.Context, dependencies.ProjectRequestScope, *stream.UpdateSourceSettingsPayload) (res stream.SettingsResult, err error) {
+func (s *service) UpdateSourceSettings(context.Context, dependencies.BranchRequestScope, *stream.UpdateSourceSettingsPayload) (res stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) RefreshSourceTokens(context.Context, dependencies.ProjectRequestScope, *stream.RefreshSourceTokensPayload) (res *stream.Source, err error) {
+func (s *service) RefreshSourceTokens(context.Context, dependencies.BranchRequestScope, *stream.RefreshSourceTokensPayload) (res *stream.Source, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) CreateSink(context.Context, dependencies.ProjectRequestScope, *stream.CreateSinkPayload) (res *stream.Task, err error) {
+func (s *service) CreateSink(context.Context, dependencies.BranchRequestScope, *stream.CreateSinkPayload) (res *stream.Task, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) GetSink(context.Context, dependencies.ProjectRequestScope, *stream.GetSinkPayload) (res *stream.Sink, err error) {
+func (s *service) GetSink(context.Context, dependencies.BranchRequestScope, *stream.GetSinkPayload) (res *stream.Sink, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) ListSinks(context.Context, dependencies.ProjectRequestScope, *stream.ListSinksPayload) (res *stream.SinksList, err error) {
+func (s *service) ListSinks(context.Context, dependencies.BranchRequestScope, *stream.ListSinksPayload) (res *stream.SinksList, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) UpdateSink(context.Context, dependencies.ProjectRequestScope, *stream.UpdateSinkPayload) (res *stream.Task, err error) {
+func (s *service) UpdateSink(context.Context, dependencies.BranchRequestScope, *stream.UpdateSinkPayload) (res *stream.Task, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) DeleteSink(context.Context, dependencies.ProjectRequestScope, *stream.DeleteSinkPayload) (err error) {
+func (s *service) DeleteSink(context.Context, dependencies.BranchRequestScope, *stream.DeleteSinkPayload) (err error) {
 	return errors.NewNotImplementedError()
 }
 
-func (s *service) GetSinkSettings(context.Context, dependencies.ProjectRequestScope, *stream.GetSinkSettingsPayload) (res stream.SettingsResult, err error) {
+func (s *service) GetSinkSettings(context.Context, dependencies.BranchRequestScope, *stream.GetSinkSettingsPayload) (res stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) UpdateSinkSettings(context.Context, dependencies.ProjectRequestScope, *stream.UpdateSinkSettingsPayload) (res stream.SettingsResult, err error) {
+func (s *service) UpdateSinkSettings(context.Context, dependencies.BranchRequestScope, *stream.UpdateSinkSettingsPayload) (res stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) GetTask(context.Context, dependencies.ProjectRequestScope, *stream.GetTaskPayload) (res *stream.Task, err error) {
+func (s *service) GetTask(context.Context, dependencies.BranchRequestScope, *stream.GetTaskPayload) (res *stream.Task, err error) {
 	return nil, errors.NewNotImplementedError()
 }
