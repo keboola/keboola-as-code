@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 	_ "goa.design/goa/v3/codegen/generator"
+	"goa.design/goa/v3/codegen/service"
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
@@ -39,7 +40,21 @@ const (
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies")
+	dependencies.RegisterPlugin(dependencies.Config{
+		Package: "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies",
+		DependenciesTypeFn: func(method *service.MethodData) string {
+			if dependencies.HasSecurityScheme("APIKey", method) {
+				return "dependencies.ProjectRequestScope"
+			}
+			return "dependencies.PublicRequestScope"
+		},
+		DependenciesProviderFn: func(method *service.EndpointMethodData) string {
+			if dependencies.HasSecurityScheme("APIKey", method.MethodData) {
+				return "ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)"
+			}
+			return "ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)"
+		},
+	})
 }
 
 var _ = API("stream", func() {
