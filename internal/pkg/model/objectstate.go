@@ -35,20 +35,20 @@ type ObjectState interface {
 
 type BranchState struct {
 	*BranchManifest
-	Remote *Branch `validate:"omitempty,dive"`
-	Local  *Branch `validate:"omitempty,dive"`
+	Remote *Branch
+	Local  *Branch
 }
 
 type ConfigState struct {
 	*ConfigManifest
-	Remote *Config `validate:"omitempty,dive"`
-	Local  *Config `validate:"omitempty,dive"`
+	Remote *Config
+	Local  *Config
 }
 
 type ConfigRowState struct {
 	*ConfigRowManifest
-	Remote *ConfigRow `validate:"omitempty,dive"`
-	Local  *ConfigRow `validate:"omitempty,dive"`
+	Remote *ConfigRow
+	Local  *ConfigRow
 }
 
 // ToAPIObjectKey ...

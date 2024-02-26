@@ -104,7 +104,7 @@ func (crc *ConfigurationRowCreate) Mutation() *ConfigurationRowMutation {
 // Save creates the ConfigurationRow in the database.
 func (crc *ConfigurationRowCreate) Save(ctx context.Context) (*ConfigurationRow, error) {
 	crc.defaults()
-	return withHooks[*ConfigurationRow, ConfigurationRowMutation](ctx, crc.sqlSave, crc.mutation, crc.hooks)
+	return withHooks(ctx, crc.sqlSave, crc.mutation, crc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -286,11 +286,15 @@ func (crc *ConfigurationRowCreate) createSpec() (*ConfigurationRow, *sqlgraph.Cr
 // ConfigurationRowCreateBulk is the builder for creating many ConfigurationRow entities in bulk.
 type ConfigurationRowCreateBulk struct {
 	config
+	err      error
 	builders []*ConfigurationRowCreate
 }
 
 // Save creates the ConfigurationRow entities in the database.
 func (crcb *ConfigurationRowCreateBulk) Save(ctx context.Context) ([]*ConfigurationRow, error) {
+	if crcb.err != nil {
+		return nil, crcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(crcb.builders))
 	nodes := make([]*ConfigurationRow, len(crcb.builders))
 	mutators := make([]Mutator, len(crcb.builders))

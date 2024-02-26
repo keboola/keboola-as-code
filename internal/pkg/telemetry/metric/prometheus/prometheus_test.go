@@ -59,14 +59,6 @@ target_info{service_name="my-service"} 1
 	counter.Add(context.Background(), 5, metric.WithAttributes(
 		attribute.Key("A").String("B"),
 		attribute.Key("C").String("D"),
-		// Test removing of invalid otelhttp metric attributes with high cardinality.
-		// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
-		attribute.String("net.sock.peer.addr", "<should be ignored>"),
-		attribute.String("net.sock.peer.port", "<should be ignored>"),
-		attribute.String("http.user_agent", "<should be ignored>"),
-		attribute.String("http.client_ip", "<should be ignored>"),
-		attribute.String("http.request_content_length", "<should be ignored>"),
-		attribute.String("http.response_content_length", "<should be ignored>"),
 	))
 
 	// Get metrics, meter with a value

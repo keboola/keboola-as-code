@@ -60,13 +60,15 @@ type wrapper struct {
 func New(rules ...Rule) Validator {
 	// Create validator and translator
 	v := &wrapper{
-		validator:  validator.New(),
+		// WithRequiredStructEnabled: https://github.com/go-playground/validator/issues/1142
+		validator:  validator.New(validator.WithRequiredStructEnabled()),
 		translator: ut.New(en.New()).GetFallback(),
 	}
 
 	v.registerDefaultErrorMessages()
 	v.registerCustomRules()
 	v.registerCustomMessages()
+	v.registerCustomTypes()
 
 	// Modify fields names in error "namespace".
 	v.validator.RegisterTagNameFunc(func(fld reflect.StructField) string {

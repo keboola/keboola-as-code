@@ -154,11 +154,12 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 			Attributes: []attribute.KeyValue{
 				attribute.String("http.method", "POST"),
 				attribute.String("http.scheme", "http"),
-				attribute.String("http.flavor", "1.1"),
 				attribute.String("net.host.name", "example.com"),
 				attribute.String("net.sock.peer.addr", "192.0.2.1"),
 				attribute.Int("net.sock.peer.port", 1234),
-				attribute.String("http.user_agent", "my-user-agent"),
+				attribute.String("user_agent.original", "my-user-agent"),
+				attribute.String("http.target", "/api/item/123/****"),
+				attribute.String("net.protocol.version", "1.1"),
 				attribute.String("http.request_id", "<dynamic>"),
 				attribute.String("span.kind", "server"),
 				attribute.String("span.type", "web"),
@@ -207,8 +208,9 @@ func expectedMetrics() []metricdata.Metrics {
 	)
 	return []metricdata.Metrics{
 		{
-			Name:        "keboola.go.http.server.request_content_length",
-			Description: "",
+			Name:        "keboola.go.http.server.request.size",
+			Description: "Measures the size of HTTP request messages.",
+			Unit:        "By",
 			Data: metricdata.Sum[int64]{
 				Temporality: 1,
 				IsMonotonic: true, // counter
@@ -219,8 +221,9 @@ func expectedMetrics() []metricdata.Metrics {
 			},
 		},
 		{
-			Name:        "keboola.go.http.server.response_content_length",
-			Description: "",
+			Name:        "keboola.go.http.server.response.size",
+			Description: "Measures the size of HTTP response messages.",
+			Unit:        "By",
 			Data: metricdata.Sum[int64]{
 				Temporality: 1,
 				IsMonotonic: true, // counter
@@ -232,8 +235,8 @@ func expectedMetrics() []metricdata.Metrics {
 		},
 		{
 			Name:        "keboola.go.http.server.duration",
-			Description: "",
-			Unit:        "",
+			Description: "Measures the duration of inbound HTTP requests.",
+			Unit:        "ms",
 			Data: metricdata.Histogram[float64]{
 				Temporality: 1,
 				DataPoints: []metricdata.HistogramDataPoint[float64]{

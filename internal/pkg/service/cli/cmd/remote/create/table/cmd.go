@@ -19,6 +19,7 @@ type Flags struct {
 	Name           configmap.Value[string] `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
 	Columns        configmap.Value[string] `configKey:"columns" configUsage:"comma-separated list of column names"`
 	PrimaryKey     configmap.Value[string] `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
+	ColumnsFrom     configmap.Value[string] `configKey:"columns-from" configUsage:"the path to the table definition file in json"`
 }
 
 func Command(p dependencies.Provider) *cobra.Command {

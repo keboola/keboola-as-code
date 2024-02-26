@@ -70,9 +70,6 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 		return nil, err
 	}
 
-	// Register legacy OpenCensus metrics, for go-cloud (https://github.com/google/go-cloud/issues/2877)
-	exporter.RegisterProducer(opencensus.NewMetricProducer())
-
 	// Create HTTP metrics server
 	opts := promhttp.HandlerOpts{ErrorLog: &errLogger{logger: logger}}
 	handler := http.NewServeMux()
@@ -104,6 +101,8 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 	// Create OpenTelemetry metrics provider
 	provider := metric.NewMeterProvider(
 		metric.WithReader(exporter),
+		// Register legacy OpenCensus metrics, for go-cloud (https://github.com/google/go-cloud/issues/2877)
+		metric.WithReader(metric.NewManualReader(metric.WithProducer(opencensus.NewMetricProducer()))),
 		metric.WithResource(res),
 		metric.WithView(View()),
 	)
@@ -115,17 +114,8 @@ func View() metric.View {
 		metric.Instrument{Name: "*"},
 		metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
 			switch value.Key {
-			// Remove invalid otelhttp metric attributes with high cardinality.
-			// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
-			case "net.sock.peer.addr",
-				"net.sock.peer.port",
-				"http.user_agent",
-				"http.client_ip",
-				"http.request_content_length",
-				"http.response_content_length":
-				return false
 			// Remove unused attributes.
-			case "http.flavor":
+			case "http.flavor", "net.protocol.name", "net.protocol.version":
 				return false
 			}
 			return true

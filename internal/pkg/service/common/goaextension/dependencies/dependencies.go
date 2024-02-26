@@ -6,14 +6,35 @@ import (
 	"strings"
 
 	"goa.design/goa/v3/codegen"
+	"goa.design/goa/v3/codegen/service"
 	"goa.design/goa/v3/eval"
 )
 
-func RegisterPlugin(pkgPath string) {
+type Config struct {
+	// Package with dependencies, in the generated code, it is imported as "dependencies".
+	Package string
+	// DependenciesTypeFn generates Go code - dependencies type.
+	DependenciesTypeFn func(method *service.MethodData) string
+	// DependenciesTypeFn generates Go code to get dependencies from the context.
+	DependenciesProviderFn func(method *service.EndpointMethodData) string
+}
+
+func HasSecurityScheme(schemeType string, method *service.MethodData) bool {
+	for _, r := range method.Requirements {
+		for _, s := range r.Schemes {
+			if s.Type == schemeType {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func RegisterPlugin(cfg Config) {
 	addPackageImport := func(s *codegen.SectionTemplate) {
 		data := s.Data.(map[string]any)
 		imports := data["Imports"].([]*codegen.ImportSpec)
-		imports = append(imports, &codegen.ImportSpec{Name: "dependencies", Path: pkgPath})
+		imports = append(imports, &codegen.ImportSpec{Name: "dependencies", Path: cfg.Package})
 		data["Imports"] = imports
 	}
 
@@ -30,22 +51,9 @@ func RegisterPlugin(pkgPath string) {
 					case "service":
 						// Add dependencies to the service interface, instead of context (it is included in dependencies)
 						search := `{{ .VarName }}(context.Context`
-						replace := `{{ .VarName }}(context.Context, 
-{{- $authFound := false}}
-{{- range .Requirements }}
-	{{- range .Schemes }}
-		{{- if eq .Type "APIKey" -}}
-			dependencies.ProjectRequestScope
-			{{- $authFound = true}}
-			{{- break}}
-		{{- end }}
-	{{- end }}
-{{- end }}
-{{- if eq $authFound false -}}
-dependencies.PublicRequestScope
-{{- end -}}
-	`
+						replace := `{{ .VarName }}(context.Context, {{ dependenciesType . }}`
 						s.Source = strings.ReplaceAll(s.Source, search, replace)
+						s.FuncMap["dependenciesType"] = cfg.DependenciesTypeFn
 					}
 				}
 			case "endpoints.go":
@@ -55,27 +63,10 @@ dependencies.PublicRequestScope
 						// Import dependencies package
 						addPackageImport(s)
 					case "endpoint-method":
-
-						search := `
-{{- if .ServerStream }}
-	`
-						replace := `
-{{- $authFound := false}}
-{{- range .Requirements }}
-	{{- range .Schemes }}
-		{{- if eq .Type "APIKey" }}
-			deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-			{{- $authFound = true}}
-			{{- break}}
-		{{- end }}
-	{{- end }}
-{{- end }}
-{{- if eq $authFound false }}
-	deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-{{- end }}
-{{- if .ServerStream }}
-	`
+						search := "{{- if .ServerStream }}\n"
+						replace := "deps := {{ dependenciesProvider . }}\n{{- if .ServerStream }}\n"
 						s.Source = strings.ReplaceAll(s.Source, search, replace)
+						s.FuncMap["dependenciesProvider"] = cfg.DependenciesProviderFn
 
 						// Add dependencies to the service method call
 						s.Source = strings.ReplaceAll(

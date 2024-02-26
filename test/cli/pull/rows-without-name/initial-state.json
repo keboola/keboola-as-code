@@ -1,4 +1,7 @@
 {
+  "backend": {
+    "type": "snowflake"
+  },
   "allBranchesConfigs": [
     "rows-without-name"
   ],

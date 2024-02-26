@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
@@ -49,10 +50,10 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 
 	repo, unlockFn, err := m.Repository(ctx, ref)
-	assert.NoError(t, err)
-	defer unlockFn()
-
-	assert.True(t, repo.Fs().Exists(context.Background(), "template1"))
+	if assert.NoError(t, err) {
+		defer unlockFn()
+		assert.True(t, repo.Fs().Exists(context.Background(), "template1"))
+	}
 }
 
 func TestRepository(t *testing.T) {
@@ -76,17 +77,19 @@ func TestRepository(t *testing.T) {
 	ctx := context.Background()
 	d := dependencies.NewMocked(t)
 	m, err := manager.New(ctx, d, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	v, unlockFn1, err := m.Repository(ctx, repo)
-	assert.NotNil(t, v)
-	assert.NoError(t, err)
-	defer unlockFn1()
+	if assert.NoError(t, err) {
+		assert.NotNil(t, v)
+		defer unlockFn1()
+	}
 
 	v, unlockFn2, err := m.Repository(ctx, repo)
-	assert.NotNil(t, v)
-	assert.NoError(t, err)
-	defer unlockFn2()
+	if assert.NoError(t, err) {
+		assert.NotNil(t, v)
+		defer unlockFn2()
+	}
 }
 
 func TestRepositoryUpdate(t *testing.T) {
@@ -112,16 +115,17 @@ func TestRepositoryUpdate(t *testing.T) {
 	// Create manager
 	d := dependencies.NewMocked(t)
 	m, err := manager.New(ctx, d, []model.TemplateRepository{repo})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check FS
 	repoInst, unlock, err := m.Repository(ctx, repo)
-	assert.NoError(t, err)
-	assert.True(t, repoInst.Fs().Exists(ctx, ".keboola"))
-	assert.True(t, repoInst.Fs().Exists(ctx, "_common"))
-	assert.True(t, repoInst.Fs().Exists(ctx, "template1"))
-	assert.False(t, repoInst.Fs().Exists(ctx, "template2"))
-	unlock()
+	if assert.NoError(t, err) {
+		assert.True(t, repoInst.Fs().Exists(ctx, ".keboola"))
+		assert.True(t, repoInst.Fs().Exists(ctx, "_common"))
+		assert.True(t, repoInst.Fs().Exists(ctx, "template1"))
+		assert.False(t, repoInst.Fs().Exists(ctx, "template2"))
+		unlock()
+	}
 
 	// 1. update - no change
 	assert.NoError(t, <-m.Update(ctx))
@@ -134,12 +138,13 @@ func TestRepositoryUpdate(t *testing.T) {
 
 	// Check FS
 	repoInst, unlock, err = m.Repository(ctx, repo)
-	assert.NoError(t, err)
-	assert.True(t, repoInst.Fs().Exists(ctx, ".keboola"))
-	assert.False(t, repoInst.Fs().Exists(ctx, "_common"))
-	assert.False(t, repoInst.Fs().Exists(ctx, "template1"))
-	assert.True(t, repoInst.Fs().Exists(ctx, "template2"))
-	unlock()
+	if assert.NoError(t, err) {
+		assert.True(t, repoInst.Fs().Exists(ctx, ".keboola"))
+		assert.False(t, repoInst.Fs().Exists(ctx, "_common"))
+		assert.False(t, repoInst.Fs().Exists(ctx, "template1"))
+		assert.True(t, repoInst.Fs().Exists(ctx, "template2"))
+		unlock()
+	}
 
 	// Check metrics
 	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms

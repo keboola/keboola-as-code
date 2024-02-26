@@ -4,15 +4,17 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.21.5
+  GO_VERSION: 1.22.0
   TEST_PARALLELISM: 4
   TEST_PARALLELISM_PKG: 1
   TEST_KBC_PROJECTS: |
     [
-      {"host":"connection.keboola.com","project":8769,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }}"},
-      {"host":"connection.keboola.com","project":8775,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10900,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10900_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10906,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10906_TOKEN }}"}
+      {"host":"connection.keboola.com","project":8769,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8775,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":43,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_43_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":44,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_44_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10900,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10900_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10906,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10906_TOKEN }}"}
     ]
 
 jobs:

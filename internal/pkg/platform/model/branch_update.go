@@ -35,9 +35,25 @@ func (bu *BranchUpdate) SetName(s string) *BranchUpdate {
 	return bu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableName(s *string) *BranchUpdate {
+	if s != nil {
+		bu.SetName(*s)
+	}
+	return bu
+}
+
 // SetDescription sets the "description" field.
 func (bu *BranchUpdate) SetDescription(s string) *BranchUpdate {
 	bu.mutation.SetDescription(s)
+	return bu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (bu *BranchUpdate) SetNillableDescription(s *string) *BranchUpdate {
+	if s != nil {
+		bu.SetDescription(*s)
+	}
 	return bu
 }
 
@@ -84,7 +100,7 @@ func (bu *BranchUpdate) RemoveConfigurations(c ...*Configuration) *BranchUpdate 
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (bu *BranchUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, BranchMutation](ctx, bu.sqlSave, bu.mutation, bu.hooks)
+	return withHooks(ctx, bu.sqlSave, bu.mutation, bu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -208,9 +224,25 @@ func (buo *BranchUpdateOne) SetName(s string) *BranchUpdateOne {
 	return buo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableName(s *string) *BranchUpdateOne {
+	if s != nil {
+		buo.SetName(*s)
+	}
+	return buo
+}
+
 // SetDescription sets the "description" field.
 func (buo *BranchUpdateOne) SetDescription(s string) *BranchUpdateOne {
 	buo.mutation.SetDescription(s)
+	return buo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (buo *BranchUpdateOne) SetNillableDescription(s *string) *BranchUpdateOne {
+	if s != nil {
+		buo.SetDescription(*s)
+	}
 	return buo
 }
 
@@ -270,7 +302,7 @@ func (buo *BranchUpdateOne) Select(field string, fields ...string) *BranchUpdate
 
 // Save executes the query and returns the updated Branch entity.
 func (buo *BranchUpdateOne) Save(ctx context.Context) (*Branch, error) {
-	return withHooks[*Branch, BranchMutation](ctx, buo.sqlSave, buo.mutation, buo.hooks)
+	return withHooks(ctx, buo.sqlSave, buo.mutation, buo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
