@@ -7,7 +7,7 @@ import (
 )
 
 func NewCallbackLogger(fn callbackFn) Logger {
-	return loggerFromZapCore(NewCallbackCore(fn))
+	return newLoggerFromZapCore(NewCallbackCore(fn))
 }
 
 func NewCallbackCore(fn callbackFn) zapcore.Core {

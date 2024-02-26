@@ -12,23 +12,24 @@ type NoResult struct{}
 // It is implemented a little differently than other operations,
 // because it has only one return value of type error (not two).
 type NoResultOp struct {
-	ForType[NoResult]
+	WithResult[NoResult]
 }
 
 // NoResultMapper checks and converts raw etcd response to an error or nil.
-type NoResultMapper func(ctx context.Context, r etcd.OpResponse) error
+type NoResultMapper func(ctx context.Context, raw RawResponse) error
 
 // NewNoResultOp wraps an operation, the result of which is an error or nil.
-func NewNoResultOp(factory Factory, mapper NoResultMapper) NoResultOp {
+func NewNoResultOp(client etcd.KV, factory LowLevelFactory, mapper NoResultMapper) NoResultOp {
 	out := NoResultOp{}
+	out.client = client
 	out.factory = factory
-	out.mapper = func(ctx context.Context, r etcd.OpResponse) (NoResult, error) {
-		err := mapper(ctx, r)
+	out.mapper = func(ctx context.Context, raw RawResponse) (NoResult, error) {
+		err := mapper(ctx, raw)
 		return NoResult{}, err
 	}
 	return out
 }
 
-func (v NoResultOp) Do(ctx context.Context, client etcd.KV) error {
-	return v.ForType.DoOrErr(ctx, client)
+func (v NoResultOp) Do(ctx context.Context) *Result[NoResult] {
+	return v.WithResult.Do(ctx)
 }

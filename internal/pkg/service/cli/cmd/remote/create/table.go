@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
@@ -24,17 +25,23 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
 			// Options
 			var allBuckets []*keboola.Bucket
 			if len(args) == 0 && !d.Options().IsSet("bucket") {
 				// Get buckets list for dialog select only if needed
-				allBucketsPtr, err := d.KeboolaProjectAPI().ListBucketsRequest().Send(cmd.Context())
+				allBucketsPtr, err := d.KeboolaProjectAPI().ListBucketsRequest(branch.ID).Send(cmd.Context())
 				if err != nil {
 					return err
 				}
 				allBuckets = *allBucketsPtr
 			}
-			opts, err := d.Dialogs().AskCreateTable(args, allBuckets)
+			opts, err := d.Dialogs().AskCreateTable(args, branch.BranchKey, allBuckets)
 			if err != nil {
 				return err
 			}
@@ -51,6 +58,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().String("name", "", "name of the table (required if the tableId argument is empty)")
 	cmd.Flags().String("columns", "", "comma-separated list of column names")
 	cmd.Flags().String("primary-key", "", "columns used as primary key, comma-separated")
+	cmd.Flags().String("columns-from", "", "the path to the table definition file in json")
 
 	return cmd
 }

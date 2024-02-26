@@ -30,14 +30,14 @@ type Phase struct {
 // ConfigId and ConfigData can be empty if Enabled=false.
 type Task struct {
 	TaskKey
-	AbsPath     `validate:"dive"`
+	AbsPath
 	Name        string `validate:"required"`
 	Enabled     bool
 	ComponentID keboola.ComponentID `validate:"required"`
 	ConfigID    keboola.ConfigID
 	ConfigData  *orderedmap.OrderedMap
-	ConfigPath  string                 // target config path if any
-	Content     *orderedmap.OrderedMap `validate:"dive"`
+	ConfigPath  string // target config path if any
+	Content     *orderedmap.OrderedMap
 }
 
 func (p Phase) String() string {

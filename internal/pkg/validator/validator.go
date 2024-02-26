@@ -60,13 +60,15 @@ type wrapper struct {
 func New(rules ...Rule) Validator {
 	// Create validator and translator
 	v := &wrapper{
-		validator:  validator.New(),
+		// WithRequiredStructEnabled: https://github.com/go-playground/validator/issues/1142
+		validator:  validator.New(validator.WithRequiredStructEnabled()),
 		translator: ut.New(en.New()).GetFallback(),
 	}
 
 	v.registerDefaultErrorMessages()
 	v.registerCustomRules()
 	v.registerCustomMessages()
+	v.registerCustomTypes()
 
 	// Modify fields names in error "namespace".
 	v.validator.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -76,8 +78,13 @@ func New(rules ...Rule) Validator {
 			return anonymousField
 		}
 
-		// Prefer JSON field name in error messages
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		// Prefer name defined by the configKey tag
+		name := strings.SplitN(fld.Tag.Get("configKey"), ",", 2)[0]
+
+		// Alternatively use JSON field name in error messages
+		if name == "" {
+			name = strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		}
 
 		// Alternatively use YAML field name
 		if name == "" {

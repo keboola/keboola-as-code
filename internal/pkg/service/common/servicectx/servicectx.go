@@ -3,7 +3,6 @@ package servicectx
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -34,8 +33,6 @@ const (
 //   - Call of the Shutdown method.
 //   - Call of the ShutdownFn function provided by the Add method.
 type Process struct {
-	uniqueID string
-
 	logger log.Logger
 	// wg waits for all goroutines registered by the Add method.
 	wg *sync.WaitGroup
@@ -61,16 +58,7 @@ type ShutdownFn func(context.Context, error)
 type Option func(c *config)
 
 type config struct {
-	uniqueID string
-	logger   log.Logger
-}
-
-// WithUniqueID sets unique ID of the service process.
-// By default, it is generated from the hostname and PID.
-func WithUniqueID(v string) Option {
-	return func(c *config) {
-		c.uniqueID = v
-	}
+	logger log.Logger
 }
 
 func WithLogger(v log.Logger) Option {
@@ -79,7 +67,7 @@ func WithLogger(v log.Logger) Option {
 	}
 }
 
-func New(opts ...Option) (*Process, error) {
+func New(opts ...Option) *Process {
 	// Apply options
 	c := config{}
 	for _, o := range opts {
@@ -91,23 +79,7 @@ func New(opts ...Option) (*Process, error) {
 		c.logger = log.NewNopLogger()
 	}
 
-	// Generate uniqueID if not set
-	if c.uniqueID == "" {
-		// Get hostname
-		hostname, err := os.Hostname()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get PID
-		pid := os.Getpid()
-
-		// Compose unique ID
-		c.uniqueID = fmt.Sprintf(`%s-%05d`, hostname, pid)
-	}
-
 	v := &Process{
-		uniqueID:    c.uniqueID,
 		logger:      c.logger,
 		wg:          &sync.WaitGroup{},
 		done:        make(chan struct{}),
@@ -150,20 +122,13 @@ func New(opts ...Option) (*Process, error) {
 		}
 	}()
 
-	// The unique id will be removed from the package.
-	v.logger.Infof(context.TODO(), `process unique id "%s"`, v.UniqueID())
-	return v, nil
+	return v
 }
 
 func NewForTest(t *testing.T, opts ...Option) *Process {
 	t.Helper()
 
-	proc, err := New(opts...)
-	if err != nil {
-		t.Fatal(err)
-		return nil
-	}
-
+	proc := New(opts...)
 	t.Cleanup(func() {
 		proc.Shutdown(context.Background(), errors.New("test cleanup"))
 		proc.WaitForShutdown()
@@ -189,27 +154,16 @@ func (v *Process) Shutdown(ctx context.Context, err error) {
 	}
 }
 
-// UniqueID returns unique process ID, it consists of hostname and PID.
-func (v *Process) UniqueID() string {
-	return v.uniqueID
-}
-
-// Add a root operation.
-// The operation can terminate the entire process by calling the shutdown callback with an error.
+// Add an operation.
+// The Process is graceful terminated when all operations are completed.
+// The ctx parameter can be used to wait for the service termination.
+// The errCh parameter can be used to stop the service with an error.
 func (v *Process) Add(operation func(ShutdownFn)) {
-	v.lock.Lock()
-	defer v.lock.Unlock()
-
-	select {
-	case <-v.terminating:
-		v.logger.Errorf(v.shutdownCtx, `cannot Add operation: the Process is terminating`)
-	default:
-		v.wg.Add(1)
-		go func() {
-			defer v.wg.Done()
-			operation(v.Shutdown)
-		}()
-	}
+	v.wg.Add(1)
+	go func() {
+		defer v.wg.Done()
+		operation(v.Shutdown)
+	}()
 }
 
 // OnShutdown registers a callback that is invoked when the process is terminating.

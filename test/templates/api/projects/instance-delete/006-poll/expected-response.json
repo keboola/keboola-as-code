@@ -1,0 +1,15 @@
+{
+  "id": "template.delete/%s",
+  "type": "template.delete",
+  "url": "https://templates.keboola.local/v1/tasks/template.delete/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "\"template instance with id \"%s\" is deleted\"",
+  "outputs": {
+    "instanceId": "%s"
+  }
+}
+

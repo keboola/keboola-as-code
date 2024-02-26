@@ -16,18 +16,24 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	t.Parallel()
 
 	bucket := &keboola.Bucket{
-		ID:          keboola.MustParseBucketID("out.c-main"),
+		BucketKey: keboola.BucketKey{
+			BranchID: 123,
+			BucketID: keboola.MustParseBucketID("out.c-main"),
+		},
 		URI:         "/uri",
 		DisplayName: "main",
 	}
 
 	dbtBucket := listbuckets.Bucket{
-		SourceName:  bucket.ID.String(),
-		Schema:      bucket.ID.String(),
+		SourceName:  bucket.BucketID.String(),
+		Schema:      bucket.BucketID.String(),
 		DatabaseEnv: "DBT_KBC_TARGET1_DATABASE",
 		Tables: []keboola.Table{
 			{
-				ID:          keboola.MustParseTableID("out.c-main.products"),
+				TableKey: keboola.TableKey{
+					BranchID: 123,
+					TableID:  keboola.MustParseTableID("out.c-main.products"),
+				},
 				URI:         "/uri",
 				Name:        "products",
 				DisplayName: "Products",
@@ -35,7 +41,10 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 				Bucket:      bucket,
 			},
 			{
-				ID:          keboola.MustParseTableID("out.c-main.categories"),
+				TableKey: keboola.TableKey{
+					BranchID: 123,
+					TableID:  keboola.MustParseTableID("out.c-main.categories"),
+				},
 				URI:         "/uri",
 				Name:        "categories",
 				DisplayName: "Categories",
@@ -132,19 +141,25 @@ func TestGenerateSourcesDefinition_LinkedBucket(t *testing.T) {
 	t.Parallel()
 
 	bucket := &keboola.Bucket{
-		ID:          keboola.MustParseBucketID("out.c-main"),
+		BucketKey: keboola.BucketKey{
+			BranchID: 123,
+			BucketID: keboola.MustParseBucketID("out.c-main"),
+		},
 		URI:         "/uri",
 		DisplayName: "main",
 	}
 
 	dbtBucket := listbuckets.Bucket{
 		LinkedProjectID: 12345,
-		SourceName:      bucket.ID.String(),
-		Schema:          bucket.ID.String(),
+		SourceName:      bucket.BucketID.String(),
+		Schema:          bucket.BucketID.String(),
 		DatabaseEnv:     "DBT_KBC_TARGET1_12345_DATABASE",
 		Tables: []keboola.Table{
 			{
-				ID:          keboola.MustParseTableID("out.c-main.products"),
+				TableKey: keboola.TableKey{
+					BranchID: 123,
+					TableID:  keboola.MustParseTableID("out.c-main.products"),
+				},
 				URI:         "/uri",
 				Name:        "products",
 				DisplayName: "Products",
@@ -152,7 +167,10 @@ func TestGenerateSourcesDefinition_LinkedBucket(t *testing.T) {
 				Bucket:      bucket,
 			},
 			{
-				ID:          keboola.MustParseTableID("out.c-main.categories"),
+				TableKey: keboola.TableKey{
+					BranchID: 123,
+					TableID:  keboola.MustParseTableID("out.c-main.categories"),
+				},
 				URI:         "/uri",
 				Name:        "categories",
 				DisplayName: "Categories",

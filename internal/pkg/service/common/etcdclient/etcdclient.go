@@ -21,106 +21,29 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
-const (
-	defaultConnectionTimeout = 10 * time.Second
-	defaultKeepAliveTimeout  = 5 * time.Second
-	defaultKeepAliveInterval = 10 * time.Second
-)
-
-type config struct {
-	credentials       Credentials
-	debugOpLogs       bool
-	connectTimeout    time.Duration
-	keepAliveTimeout  time.Duration
-	keepAliveInterval time.Duration
-	logger            log.Logger
-}
-
-type Option func(c *config)
-
 func UseNamespace(c *etcd.Client, prefix string) {
 	c.KV = etcdNamespace.NewKV(c.KV, prefix)
 	c.Watcher = NewWatcher(c, prefix)
 	c.Lease = etcdNamespace.NewLease(c.Lease, prefix)
 }
 
-// WithDebugOpLogs allows logging of each KV operation as a debug message.
-func WithDebugOpLogs(v bool) Option {
-	return func(c *config) {
-		c.debugOpLogs = v
-	}
-}
-
-// WithConnectTimeout defines the maximum time for creating a connection in the New function.
-func WithConnectTimeout(v time.Duration) Option {
-	return func(c *config) {
-		c.connectTimeout = v
-	}
-}
-
-// WithDialTimeout defines the maximum time of one connection attempt.
-// In case of failure, a retry follow.
-func WithDialTimeout(v time.Duration) Option {
-	return func(c *config) {
-		c.connectTimeout = v
-	}
-}
-
-func WithKeepAliveTimeout(v time.Duration) Option {
-	return func(c *config) {
-		c.keepAliveTimeout = v
-	}
-}
-
-func WithKeepAliveInterval(v time.Duration) Option {
-	return func(c *config) {
-		c.keepAliveInterval = v
-	}
-}
-
-// WithAutoSyncInterval defines how often the list of cluster nodes/endpoints will be synced.
-// This is useful if the cluster will scale up or down.
-func WithAutoSyncInterval(v time.Duration) Option {
-	return func(c *config) {
-		c.keepAliveTimeout = v
-	}
-}
-
-func WithLogger(v log.Logger) Option {
-	return func(c *config) {
-		c.logger = v
-	}
-}
-
 // New creates new etcd client.
 // The client terminates the connection when the context is done.
-func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, stderr io.Writer, credentials Credentials, opts ...Option) (c *etcd.Client, err error) {
+func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, logger log.Logger, stderr io.Writer, cfg Config) (c *etcd.Client, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.EtcdClient")
 	defer span.End(&err)
 
-	// Apply options
-	cfg := config{
-		credentials:       credentials,
-		connectTimeout:    defaultConnectionTimeout,
-		keepAliveTimeout:  defaultKeepAliveTimeout,
-		keepAliveInterval: defaultKeepAliveInterval,
-		logger:            log.NewNopLogger(),
-	}
-	for _, o := range opts {
-		o(&cfg)
-	}
-
 	// Normalize and validate
-	cfg.credentials.Normalize()
-	if err := cfg.credentials.Validate(); err != nil {
+	cfg.Normalize()
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
 	// Setup logger
-	logger := cfg.logger.WithComponent("etcd-client")
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
+	logger = logger.WithComponent("etcd.client")
 
 	// Create a zap logger for etcd client
 	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
@@ -130,37 +53,36 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 			return
 		}
 
-		// Add component=etcd-client field
-		fields = append(fields, zapcore.Field{Key: "component", String: "etcd-client", Type: zapcore.StringType})
+		// Add component=etcd.client field
+		fields = append(fields, zapcore.Field{Key: "component", String: "etcd.client", Type: zapcore.StringType})
 
 		// Encode and log message
 		if bytes, err := encoder.EncodeEntry(entry, fields); err == nil {
-			logger.LogCtx(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
+			logger.Log(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
 		} else {
 			logger.Warnf(ctx, "cannot log msg from etcd client: %s", err)
 		}
 	}))
 
 	// Create connect context
-	connectCtx, connectCancel := context.WithTimeout(ctx, cfg.connectTimeout)
+	connectCtx, connectCancel := context.WithTimeout(ctx, cfg.ConnectTimeout)
 	defer connectCancel()
 
 	// Create client
 	startTime := time.Now()
-	logger.Infof(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.connectTimeout, cfg.keepAliveTimeout, cfg.keepAliveInterval)
+	logger.Infof(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.ConnectTimeout, cfg.KeepAliveTimeout, cfg.KeepAliveInterval)
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
-		Endpoints:            []string{cfg.credentials.Endpoint},
-		DialTimeout:          cfg.connectTimeout,
-		DialKeepAliveTimeout: cfg.keepAliveTimeout,
-		DialKeepAliveTime:    cfg.keepAliveInterval,
-		Username:             cfg.credentials.Username, // optional
-		Password:             cfg.credentials.Password, // optional
+		Endpoints:            []string{cfg.Endpoint},
+		DialTimeout:          cfg.ConnectTimeout,
+		DialKeepAliveTimeout: cfg.KeepAliveTimeout,
+		DialKeepAliveTime:    cfg.KeepAliveInterval,
+		Username:             cfg.Username, // optional
+		Password:             cfg.Password, // optional
 		Logger:               etcdLogger,
 		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
 			grpc.WithBlock(), // wait for the connection
 			grpc.WithReturnConnectionError(),
 			grpc.WithConnectParams(grpc.ConnectParams{
@@ -178,10 +100,10 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	}
 
 	// Prefix client by namespace
-	UseNamespace(c, cfg.credentials.Namespace)
+	UseNamespace(c, cfg.Namespace)
 
 	// Log each KV operation as a debug message, if enabled
-	if cfg.debugOpLogs {
+	if cfg.DebugLog {
 		c.KV = etcdlogger.KVLogWrapper(c.KV, stderr)
 	}
 
@@ -198,10 +120,10 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		if err := c.Close(); err != nil {
 			logger.Warnf(ctx, "cannot close etcd connection: %s", err)
 		} else {
-			logger.Infof(ctx, "closed etcd connection | %s", time.Since(startTime))
+			logger.WithDuration(time.Since(startTime)).Infof(ctx, "closed etcd connection")
 		}
 	})
 
-	logger.Infof(ctx, `connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
+	logger.WithDuration(time.Since(startTime)).Infof(ctx, `connected to etcd cluster "%s"`, strings.Join(c.Endpoints(), ";"))
 	return c, nil
 }

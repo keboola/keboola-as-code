@@ -15,7 +15,9 @@
 # Test binary, build with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Output of the go coverage tool
+coverage.html
+benchmark.txt
 *.out
 
 # IDE
@@ -25,7 +27,7 @@
 vendor/*
 
 # Build dir
-target
+/target
 
 # Environment
 /.env

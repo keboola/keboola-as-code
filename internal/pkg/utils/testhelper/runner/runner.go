@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
+	tp "github.com/keboola/go-utils/pkg/testproject"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -23,7 +26,6 @@ const testTimeout = 5 * time.Minute
 
 type Runner struct {
 	t          *testing.T
-	tempDir    string
 	testsDir   string
 	workingDir string
 }
@@ -38,7 +40,7 @@ func NewRunner(t *testing.T) *Runner {
 	assert.NoError(t, os.RemoveAll(workingDir))
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir, tempDir: t.TempDir()}
+	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir}
 }
 
 func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.CancelFunc) {
@@ -56,14 +58,26 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	workingDirFS, err := aferofs.NewLocalFs(workingDir)
 	assert.NoError(t, err)
 
-	project := testproject.GetTestProjectForTest(t)
+	state := &fixtures.StateFile{}
 
+	if testDirFS.IsFile(context.Background(), initialStateFileName) {
+		state, err = fixtures.LoadStateFile(testDir + "/" + initialStateFileName)
+		require.NoError(t, err)
+	}
+
+	var backendOptions []tp.Option
+
+	if state.Backend != nil {
+		backendOptions = append(backendOptions, GetBackendOption(t, state.Backend))
+	}
+
+	project := testproject.GetTestProjectForTest(t, backendOptions...)
 	// Create context with timeout.
 	// Acquiring a test project and setting it up is not part of the timeout.
 	ctx, cancelFn := context.WithTimeout(context.Background(), testTimeout)
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.KeboolaProjectAPI(), project.Env())
+	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.ProjectAPI(), project.Env())
 
 	envMap := project.Env()
 	// Disable version check
@@ -98,4 +112,18 @@ func (r *Runner) ForEachTest(runFn func(test *Test)) {
 			runFn(test)
 		})
 	}
+}
+
+func GetBackendOption(t *testing.T, backendDefinition *fixtures.BackendDefinition) tp.Option {
+	t.Helper()
+	if backendDefinition.Type == tp.BackendSnowflake {
+		return tp.WithSnowflakeBackend()
+	}
+
+	if backendDefinition.Type == tp.BackendBigQuery {
+		return tp.WithBigQueryBackend()
+	}
+
+	require.Failf(t, "unexcepted type", `unexcepted type: "%s"`, backendDefinition.Type)
+	return nil
 }

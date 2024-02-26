@@ -155,11 +155,11 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	bucketsMap := map[keboola.BucketID]*fixtures.Bucket{}
 	grp.Go(func() error {
 		req := p.keboolaProjectAPI.
-			ListBucketsRequest().
+			ListBucketsRequest(p.defaultBranch.ID).
 			WithOnSuccess(func(_ context.Context, apiBuckets *[]*keboola.Bucket) error {
 				for _, b := range *apiBuckets {
-					bucketsMap[b.ID] = &fixtures.Bucket{
-						ID:          b.ID,
+					bucketsMap[b.BucketID] = &fixtures.Bucket{
+						ID:          b.BucketID,
 						URI:         b.URI,
 						DisplayName: b.DisplayName,
 						Description: b.Description,
@@ -175,9 +175,21 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	var tables []*keboola.Table
 	grp.Go(func() error {
 		req := p.keboolaProjectAPI.
-			ListTablesRequest(keboola.WithBuckets(), keboola.WithColumns()).
-			WithOnSuccess(func(_ context.Context, apiTables *[]*keboola.Table) error {
-				tables = append(tables, *apiTables...)
+			ListTablesRequest(p.defaultBranch.ID).
+			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
+				for _, table := range *apiTables {
+					table := table
+					// The table list does not contain the "definition" field, so we have to load the tables separately.
+					grp.Go(func() error {
+						return p.keboolaProjectAPI.
+							GetTableRequest(table.TableKey).
+							WithOnSuccess(func(ctx context.Context, table *keboola.Table) error {
+								tables = append(tables, table)
+								return nil
+							}).
+							SendOrErr(ctx)
+					})
+				}
 				return nil
 			})
 		return req.SendOrErr(ctx)
@@ -192,7 +204,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		for attempt := 0; attempt < 10; attempt++ {
 			time.Sleep(100 * time.Millisecond)
 			err := p.keboolaProjectAPI.
-				ListFilesRequest().
+				ListFilesRequest(p.defaultBranch.ID).
 				WithOnSuccess(func(_ context.Context, apiFiles *[]*keboola.File) error {
 					// Reset the counter, if results differs.
 					// Ignore the URL field, it may contain a random/volatile time-based signature.
@@ -217,12 +229,13 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join buckets with tables
 	for _, t := range tables {
-		b := bucketsMap[t.ID.BucketID]
+		b := bucketsMap[t.TableID.BucketID]
 		b.Tables = append(b.Tables, &fixtures.Table{
-			ID:          t.ID,
+			ID:          t.TableID,
 			URI:         t.URI,
 			Name:        t.Name,
 			DisplayName: t.DisplayName,
+			Definition:  t.Definition,
 			PrimaryKey:  t.PrimaryKey,
 			Columns:     t.Columns,
 			RowsCount:   t.RowsCount,

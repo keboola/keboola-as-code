@@ -27,7 +27,7 @@ type branchesDialog struct {
 }
 
 type branchesDialogDeps interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
 func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDeps) (model.AllowedBranches, error) {

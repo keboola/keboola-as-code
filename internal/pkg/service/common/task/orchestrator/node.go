@@ -24,7 +24,6 @@ type Node struct {
 	tracer telemetry.Tracer
 	client *etcd.Client
 	tasks  *task.Node
-	dist   *distribution.Node
 }
 
 type dependencies interface {
@@ -34,12 +33,11 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	EtcdClient() *etcd.Client
 	TaskNode() *task.Node
-	DistributionNode() *distribution.Node
 }
 
 // config is interface for generic type Config[T].
 type configInterface interface {
-	newOrchestrator(node *Node) orchestratorInterface
+	newOrchestrator(node *Node, dist *distribution.GroupNode) orchestratorInterface
 }
 
 // orchestrator is interface for generic type orchestrator[T].
@@ -54,7 +52,6 @@ func NewNode(d dependencies) *Node {
 		tracer: d.Telemetry().Tracer(),
 		client: d.EtcdClient(),
 		tasks:  d.TaskNode(),
-		dist:   d.DistributionNode(),
 	}
 
 	// Graceful shutdown
@@ -75,11 +72,11 @@ func NewNode(d dependencies) *Node {
 // Start a new orchestrator.
 // The returned channel signals completion of initialization and return an error if one occurred.
 // If an error occurs during execution, after successful initialization, it retries until the error is resolved.
-func (n *Node) Start(config configInterface) <-chan error {
-	return config.newOrchestrator(n).start()
+func (n *Node) Start(dist *distribution.GroupNode, config configInterface) <-chan error {
+	return config.newOrchestrator(n, dist).start()
 }
 
-func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
+func (c Config[T]) newOrchestrator(node *Node, dist *distribution.GroupNode) orchestratorInterface {
 	// Validate config
 	if err := c.Validate(); err != nil {
 		panic(err)
@@ -91,5 +88,5 @@ func (c Config[T]) newOrchestrator(node *Node) orchestratorInterface {
 	// Setup context
 	node.ctx = ctxattr.ContextWith(node.ctx, attribute.String("task", c.Name))
 
-	return &orchestrator[T]{config: c, node: node, logger: node.logger}
+	return &orchestrator[T]{config: c, node: node, dist: dist, logger: node.logger}
 }

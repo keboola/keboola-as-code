@@ -21,7 +21,7 @@ func Path() string {
 
 // file is template manifest JSON file.
 type file struct {
-	MainConfig *model.ConfigKey                `json:"mainConfig,omitempty" validate:"omitempty,dive"`
+	MainConfig *model.ConfigKey                `json:"mainConfig,omitempty"`
 	Configs    []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 

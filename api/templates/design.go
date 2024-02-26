@@ -1,4 +1,4 @@
-// nolint: gochecknoglobals
+//nolint:gochecknoglobals
 package templates
 
 import (
@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cast"
 	_ "goa.design/goa/v3/codegen/generator"
+	"goa.design/goa/v3/codegen/service"
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
@@ -34,10 +35,25 @@ const (
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies")
+	dependencies.RegisterPlugin(dependencies.Config{
+		Package: "github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies",
+		DependenciesTypeFn: func(method *service.MethodData) string {
+			if dependencies.HasSecurityScheme("APIKey", method) {
+				return "dependencies.ProjectRequestScope"
+			}
+			return "dependencies.PublicRequestScope"
+		},
+		DependenciesProviderFn: func(method *service.EndpointMethodData) string {
+			if dependencies.HasSecurityScheme("APIKey", method.MethodData) {
+				return "ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)"
+			}
+			return "ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)"
+		},
+	})
 }
 
 var _ = API("templates", func() {
+	Randomizer(expr.NewDeterministicRandomizer())
 	Title("Templates Service")
 	Description("A service for applying templates to Keboola projects.")
 	Version("1.0")
@@ -295,11 +311,12 @@ var _ = Service("templates", func() {
 
 	Method("DeleteInstance", func() {
 		Meta("openapi:summary", "Delete instance")
+		Result(Task)
 		Payload(InstanceRequest)
 		HTTP(func() {
 			DELETE("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
-			Response(StatusNoContent)
+			Response(StatusAccepted)
 			BranchNotFoundError()
 			InstanceNotFoundError()
 			ProjectLockedError()

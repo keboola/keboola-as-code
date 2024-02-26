@@ -30,7 +30,7 @@ func LoadManifest(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Ma
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }

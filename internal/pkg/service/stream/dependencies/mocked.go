@@ -1,0 +1,139 @@
+package dependencies
+
+import (
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/benbjohnson/clock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+)
+
+// mocked implements Mocked interface.
+type mocked struct {
+	dependencies.Mocked
+	config config.Config
+}
+
+func (v *mocked) TestConfig() config.Config {
+	return v.config
+}
+
+func NewMockedServiceScope(t *testing.T, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	t.Helper()
+	return NewMockedServiceScopeWithConfig(t, nil, opts...)
+}
+
+func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	t.Helper()
+
+	// Create common mocked dependencies
+	commonMock := dependencies.NewMocked(t, append(
+		[]dependencies.MockedOption{
+			dependencies.WithEnabledEtcdClient(),
+			dependencies.WithEnabledDistribution(),
+			dependencies.WithEnabledDistributedLocks(),
+			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
+		},
+		opts...,
+	)...)
+
+	// Get and modify test config
+	cfg := testConfig(t, commonMock)
+	if modifyConfig != nil {
+		modifyConfig(&cfg)
+	}
+
+	// Create service mocked dependencies
+	mock := &mocked{Mocked: commonMock, config: cfg}
+
+	serviceScp := newServiceScope(mock)
+
+	mock.DebugLogger().Truncate()
+	return serviceScp, mock
+}
+
+func NewMockedAPIScope(t *testing.T, opts ...dependencies.MockedOption) (APIScope, Mocked) {
+	t.Helper()
+
+	opts = append(opts, dependencies.WithEnabledTasks())
+	serviceScp, mock := NewMockedServiceScope(t, opts...)
+
+	apiScp := newAPIScope(serviceScp)
+
+	mock.DebugLogger().Truncate()
+	return apiScp, mock
+}
+
+func NewMockedPublicRequestScope(t *testing.T, opts ...dependencies.MockedOption) (PublicRequestScope, Mocked) {
+	t.Helper()
+	apiScp, mock := NewMockedAPIScope(t, opts...)
+	pubReqScp := newPublicRequestScope(apiScp, mock)
+	mock.DebugLogger().Truncate()
+	return pubReqScp, mock
+}
+
+func NewMockedProjectRequestScope(t *testing.T, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
+	t.Helper()
+	pubReqScp, mocked := NewMockedPublicRequestScope(t, opts...)
+	prjReqScp := newProjectRequestScope(pubReqScp, mocked)
+	return prjReqScp, mocked
+}
+
+func NewMockedDefinitionScope(t *testing.T, opts ...dependencies.MockedOption) (DefinitionScope, Mocked) {
+	t.Helper()
+	return NewMockedDefinitionScopeWithConfig(t, nil, opts...)
+}
+
+func NewMockedDefinitionScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (DefinitionScope, Mocked) {
+	t.Helper()
+	svcScope, mocked := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
+	return newDefinitionScope(svcScope), mocked
+}
+
+func NewMockedTableSinkScope(t *testing.T, opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
+	t.Helper()
+	return NewMockedTableSinkScopeWithConfig(t, nil, opts...)
+}
+
+func NewMockedTableSinkScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
+	t.Helper()
+	defScope, mocked := NewMockedDefinitionScopeWithConfig(t, modifyConfig, opts...)
+	cfg := mocked.TestConfig()
+	backoff := model.NoRandomizationBackoff()
+	d, err := newTableSinkScope(tableSinkParentScopesImpl{
+		DefinitionScope:      defScope,
+		DistributionScope:    mocked,
+		DistributedLockScope: mocked,
+	}, cfg, backoff)
+	require.NoError(t, err)
+	return d, mocked
+}
+
+func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
+	t.Helper()
+	cfg := config.New()
+
+	// Complete configuration
+	cfg.NodeID = "test-node"
+	cfg.StorageAPIHost = strings.TrimPrefix(d.StorageAPIHost(), "https://")
+	cfg.API.PublicURL, _ = url.Parse("https://stream.keboola.local")
+	cfg.Etcd = d.TestEtcdConfig()
+
+	// There are some timers with a few seconds interval.
+	// It causes problems when mocked clock is used.
+	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
+	if _, ok := d.Clock().(*clock.Mock); ok {
+		cfg.Storage.Statistics.Cache.L2.Enabled = false
+	}
+
+	// Validate configuration
+	require.NoError(t, configmap.ValidateAndNormalize(cfg))
+
+	return cfg
+}

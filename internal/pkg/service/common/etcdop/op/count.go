@@ -6,12 +6,12 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
-type CountOp = ForType[int64]
+type CountOp = WithResult[int64]
 
 // CountMapper an etcd response to a count.
-type CountMapper func(ctx context.Context, r etcd.OpResponse) (int64, error)
+type CountMapper func(ctx context.Context, raw RawResponse) (int64, error)
 
 // NewCountOp wraps an operation, the result of which is a count.
-func NewCountOp(factory Factory, mapper CountMapper) CountOp {
-	return ForType[int64]{factory: factory, mapper: mapper}
+func NewCountOp(client etcd.KV, factory LowLevelFactory, mapper CountMapper) CountOp {
+	return NewForType[int64](client, factory, mapper)
 }

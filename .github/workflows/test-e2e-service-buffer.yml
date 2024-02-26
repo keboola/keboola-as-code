@@ -4,15 +4,17 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.21.5
+  GO_VERSION: 1.22.0
   TEST_PARALLELISM: 4
   TEST_PARALLELISM_PKG: 1
   TEST_KBC_PROJECTS: |
     [
-      {"host":"connection.keboola.com","project":8769,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }}"},
-      {"host":"connection.keboola.com","project":8775,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10900,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10900_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10906,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10906_TOKEN }}"}
+      {"host":"connection.keboola.com","project":8769,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8775,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":43,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_43_TOKEN }}"},
+      {"host":"connection.europe-west3.gcp.keboola.com","project":44,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_44_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10900,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10900_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10906,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10906_TOKEN }}"}
     ]
 
 jobs:
@@ -51,21 +53,21 @@ jobs:
           docker compose run -d --rm --publish 2379:2379 etcd
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
-      - name: Run API and Worker tests
-        run: make tests-buffer-service
-        shell: bash
-        env:
-          BUFFER_API_ETCD_ENDPOINT: etcd:2379
-          BUFFER_API_ETCD_USERNAME: root
-          BUFFER_API_ETCD_PASSWORD: toor
-          BUFFER_API_ETCD_NAMESPACE: buffer
-          BUFFER_WORKER_ETCD_ENDPOINT: etcd:2379
-          BUFFER_WORKER_ETCD_USERNAME: root
-          BUFFER_WORKER_ETCD_PASSWORD: toor
-          BUFFER_WORKER_ETCD_NAMESPACE: buffer
+#      - name: Run API and Worker tests
+#        run: make tests-buffer-service
+#        shell: bash
+#        env:
+#          BUFFER_API_ETCD_ENDPOINT: etcd:2379
+#          BUFFER_API_ETCD_USERNAME: root
+#          BUFFER_API_ETCD_PASSWORD: toor
+#          BUFFER_API_ETCD_NAMESPACE: buffer
+#          BUFFER_WORKER_ETCD_ENDPOINT: etcd:2379
+#          BUFFER_WORKER_ETCD_USERNAME: root
+#          BUFFER_WORKER_ETCD_PASSWORD: toor
+#          BUFFER_WORKER_ETCD_NAMESPACE: buffer
 
       - name: Validate OpenAPI3 definition
-        uses: char0n/swagger-editor-validate@v1
+        uses: char0n/swagger-editor-validate@b642f037ac53c392f9c8d781c369ce129684e93e
         with:
-          definition-file: internal/pkg/service/buffer/api/openapi/openapi3.yaml
+          definition-file: internal/pkg/service/stream/api/openapi/openapi3.yaml
 

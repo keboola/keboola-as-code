@@ -23,7 +23,7 @@ func groupTables(targetName string, in []*keboola.Table) (out []Bucket) {
 		var schema string
 		var databaseEnv string
 		if table.SourceTable == nil {
-			schema = table.ID.BucketID.String()
+			schema = table.TableID.BucketID.String()
 			databaseEnv = fmt.Sprintf("DBT_KBC_%s_DATABASE", strings.ToUpper(targetName))
 		} else {
 			projectID = table.SourceTable.Project.ID
@@ -31,12 +31,12 @@ func groupTables(targetName string, in []*keboola.Table) (out []Bucket) {
 			databaseEnv = fmt.Sprintf("DBT_KBC_%s_%d_DATABASE", strings.ToUpper(targetName), projectID)
 		}
 
-		key := table.Bucket.ID.String()
+		key := table.Bucket.BucketID.String()
 		bucket, ok := groupMap[key]
 		if !ok {
 			bucket.LinkedProjectID = projectID
 			bucket.Schema = schema
-			bucket.SourceName = table.Bucket.ID.String()
+			bucket.SourceName = table.Bucket.BucketID.String()
 			bucket.DatabaseEnv = databaseEnv
 		}
 		bucket.Tables = append(bucket.Tables, *table)

@@ -16,29 +16,29 @@ func TestGetManyOp(t *testing.T) {
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
-	factory := func(ctx context.Context) (etcd.Op, error) {
+	factoryFn := func(ctx context.Context) (etcd.Op, error) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil
 	}
 
-	mapper := func(ctx context.Context, r etcd.OpResponse) ([]*KeyValue, error) {
-		return r.Get().Kvs, nil
+	mapper := func(ctx context.Context, raw RawResponse) ([]*KeyValue, error) {
+		return raw.Get().Kvs, nil
 	}
 
-	values, err := NewGetManyOp(factory, mapper).Do(ctx, client)
+	values, err := NewGetManyOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Empty(t, values)
 
 	_, err = client.Put(ctx, "test/0", "test0")
 	assert.NoError(t, err)
 
-	values, err = NewGetManyOp(factory, mapper).Do(ctx, client)
+	values, err = NewGetManyOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"test0"}, getStringValues(values))
 
 	_, err = client.Put(ctx, "test/1", "test1")
 	assert.NoError(t, err)
 
-	values, err = NewGetManyOp(factory, mapper).Do(ctx, client)
+	values, err = NewGetManyOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"test0", "test1"}, getStringValues(values))
 }
@@ -56,8 +56,8 @@ func TestGetManyTOp(t *testing.T) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil
 	}
 
-	mapper := func(ctx context.Context, r etcd.OpResponse) (KeyValuesT[Data], error) {
-		kvs := r.Get().Kvs
+	mapper := func(ctx context.Context, raw RawResponse) (KeyValuesT[Data], error) {
+		kvs := raw.Get().Kvs
 		data := make(KeyValuesT[Data], 0, len(kvs))
 		for _, kv := range kvs {
 			value := Data{}
@@ -66,7 +66,7 @@ func TestGetManyTOp(t *testing.T) {
 				return nil, err
 			}
 
-			data = append(data, KeyValueT[Data]{
+			data = append(data, &KeyValueT[Data]{
 				Value: value,
 				Kv:    kv,
 			})
@@ -74,21 +74,21 @@ func TestGetManyTOp(t *testing.T) {
 		return data, nil
 	}
 
-	values, err := NewGetManyTOp(factory, mapper).Do(ctx, client)
+	values, err := NewGetManyTOp(client, factory, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Empty(t, values)
 
 	_, err = client.Put(ctx, "test/0", json.MustEncodeString(Data{Field: "test0"}, false))
 	assert.NoError(t, err)
 
-	values, err = NewGetManyTOp(factory, mapper).Do(ctx, client)
+	values, err = NewGetManyTOp(client, factory, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, []Data{{Field: "test0"}}, values.Values())
 
 	_, err = client.Put(ctx, "test/1", json.MustEncodeString(Data{Field: "test1"}, false))
 	assert.NoError(t, err)
 
-	values, err = NewGetManyTOp(factory, mapper).Do(ctx, client)
+	values, err = NewGetManyTOp(client, factory, mapper).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, []Data{{Field: "test0"}, {Field: "test1"}}, values.Values())
 }

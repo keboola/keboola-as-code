@@ -2,7 +2,6 @@ package servicectx
 
 import (
 	"context"
-	"os"
 	"sync"
 	"testing"
 
@@ -16,9 +15,7 @@ func TestProcess_Add(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	logger.ConnectTo(os.Stdout)
-	proc, err := New(WithLogger(logger), WithUniqueID("<id>"))
-	assert.NoError(t, err)
+	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
 	opCtx, opCancel := context.WithCancel(context.Background())
@@ -87,7 +84,6 @@ func TestProcess_Add(t *testing.T) {
 
 	// Check logs
 	expected := `
-{"level":"info","message":"process unique id \"<id>\""}
 {"level":"info","message":"exiting (operation failed)"}
 {"level":"info","message":"end"}
 {"level":"info","message":"end"}
@@ -104,9 +100,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	logger.ConnectTo(os.Stdout)
-	proc, err := New(WithLogger(logger), WithUniqueID("<id>"))
-	assert.NoError(t, err)
+	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
 	opCtx, opCancel := context.WithCancel(context.Background())
@@ -159,7 +153,6 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	// Check logs
 	expected := `
-{"level":"info","message":"process unique id \"<id>\""}
 {"level":"info","message":"exiting (some error)"}
 {"level":"info","message":"end1"}
 {"level":"info","message":"end2"}

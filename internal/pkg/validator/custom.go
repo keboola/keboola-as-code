@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -11,12 +12,19 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 func (v *wrapper) registerCustomMessages() {
 	v.registerErrorMessage("required_if", "{0} is a required field")
+	v.registerErrorMessage("required_unless", "{0} is a required field")
+	v.registerErrorMessage("required_with", "{0} is a required field")
+	v.registerErrorMessage("excluded_if", "{0} should not be set")
+	v.registerErrorMessage("excluded_unless", "{0} should not be set")
+	v.registerErrorMessage("excluded_without", "{0} should not be set")
 }
 
 func (v *wrapper) registerCustomRules() {
@@ -134,17 +142,20 @@ func (v *wrapper) registerCustomRules() {
 		Rule{
 			Tag: "minDuration",
 			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
-				value, ok := fl.Field().Interface().(time.Duration)
-				if !ok {
+				var value time.Duration
+				if v, ok := fl.Field().Interface().(time.Duration); ok {
+					value = v
+				} else if v, ok := fl.Field().Interface().(duration.Duration); ok {
+					value = v.Duration()
+				} else {
 					panic(errors.Errorf(`unexpected type "%T"`, fl.Field().Interface()))
 				}
+
 				param, err := time.ParseDuration(fl.Param())
-				if !ok {
+				if err != nil {
 					panic(errors.Errorf(`param "%s" is not valid: %w`, fl.Param(), err))
 				}
-				if param == 0 {
-					panic(errors.Errorf(`param "%s" is not valid`, fl.Param()))
-				}
+
 				return value >= param
 			},
 			ErrorMsgFunc: func(fe validator.FieldError) string {
@@ -155,17 +166,20 @@ func (v *wrapper) registerCustomRules() {
 		Rule{
 			Tag: "maxDuration",
 			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
-				value, ok := fl.Field().Interface().(time.Duration)
-				if !ok {
+				var value time.Duration
+				if v, ok := fl.Field().Interface().(time.Duration); ok {
+					value = v
+				} else if v, ok := fl.Field().Interface().(duration.Duration); ok {
+					value = v.Duration()
+				} else {
 					panic(errors.Errorf(`unexpected type "%T"`, fl.Field().Interface()))
 				}
+
 				param, err := time.ParseDuration(fl.Param())
-				if !ok {
+				if err != nil {
 					panic(errors.Errorf(`param "%s" is not valid: %w`, fl.Param(), err))
 				}
-				if param == 0 {
-					panic(errors.Errorf(`param "%s" is not valid`, fl.Param()))
-				}
+
 				return value <= param
 			},
 			ErrorMsgFunc: func(fe validator.FieldError) string {
@@ -174,4 +188,14 @@ func (v *wrapper) registerCustomRules() {
 			},
 		},
 	)
+}
+
+func (v *wrapper) registerCustomTypes() {
+	// Convert value to string using String method
+	v.validator.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if v, ok := field.Interface().(fmt.Stringer); ok {
+			return v.String()
+		}
+		return field
+	}, model.SemVersion{})
 }

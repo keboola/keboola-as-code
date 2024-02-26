@@ -31,52 +31,207 @@ import (
 // - The DoWithoutRetry method returns false.
 //
 // Retries on network errors are always performed.
-type AtomicOp struct {
-	readPhase  []func() (Op, error)
-	writePhase []func() (Op, error)
+type AtomicOp[R any] struct {
+	client         etcd.KV
+	result         *R
+	locks          []mutex
+	readPhase      []HighLevelFactory
+	writePhase     []HighLevelFactory
+	processors     processors[R]
+	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
 }
 
-func Atomic() *AtomicOp {
-	return &AtomicOp{}
+// mutex abstracts concurrency.Mutex and etcdop.Mutex types.
+type mutex interface {
+	Key() string
+	IsOwner() etcd.Cmp
 }
 
-func (v *AtomicOp) AddFrom(ops ...*AtomicOp) *AtomicOp {
+type AtomicOpInterface interface {
+	ReadPhaseOps() []HighLevelFactory
+	WritePhaseOps() []HighLevelFactory
+}
+
+func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
+	return &AtomicOp[R]{client: client, result: result, checkPrefixKey: true}
+}
+
+// SkipPrefixKeysCheck disables the feature.
+//
+// By default, the feature is enabled and checks that each loaded key within the Read Phase, from a prefix, exists in Write Phase.
+// This can be potentially SLOW and generate a lot of IF conditions, if there are a large number of keys in the prefix.
+// Therefore, this feature can be turned off by the method.
+//
+// Modification of a key in the prefix is always detected,
+// this feature is used to detect the deletion of a key from the prefix.
+//
+// See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
+func (v *AtomicOp[R]) SkipPrefixKeysCheck() *AtomicOp[R] {
+	v.checkPrefixKey = false
+	return v
+}
+
+func (v *AtomicOp[R]) AddFrom(ops ...AtomicOpInterface) *AtomicOp[R] {
 	for _, op := range ops {
-		v.readPhase = append(v.readPhase, op.readPhase...)
-		v.writePhase = append(v.writePhase, op.writePhase...)
+		v.readPhase = append(v.readPhase, op.ReadPhaseOps()...)
+		v.writePhase = append(v.writePhase, op.WritePhaseOps()...)
 	}
 	return v
 }
 
-func (v *AtomicOp) Read(factories ...func() Op) *AtomicOp {
-	for _, fn := range factories {
-		v.ReadOrErr(func() (Op, error) {
-			return fn(), nil
+func (v *AtomicOp[R]) ReadPhaseOps() (out []HighLevelFactory) {
+	out = append(out, v.readPhase...)
+	return out
+}
+
+func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
+	if v.processors.len() == 0 {
+		// There is no processor callback, we can pass write phase as is
+		out = append(out, v.writePhase...)
+	} else {
+		out = append(out, func(ctx context.Context) (Op, error) { return v.writeTxn(ctx) })
+	}
+	return out
+}
+
+// RequireLock to run the operation. Internally, an IF condition is generated for each registered lock.
+//
+// The lock must be locked during the entire operation, otherwise the NotLockedError occurs.
+// This signals an error in the application logic.
+//
+// If the local state of the lock does not match the state in the database (edge case), then the LockedError occurs.
+// There are no automatic retries. Depending on the kind of the operation, you may retry or ignore the error.
+//
+// The method ensures that only the owner of the lock performs the database operation.
+func (v *AtomicOp[R]) RequireLock(lock mutex) *AtomicOp[R] {
+	v.locks = append(v.locks, lock)
+	return v
+}
+
+func (v *AtomicOp[R]) ReadOp(ops ...Op) *AtomicOp[R] {
+	for _, op := range ops {
+		v.Read(func(context.Context) Op {
+			return op
 		})
 	}
 	return v
 }
 
-func (v *AtomicOp) ReadOrErr(factories ...func() (Op, error)) *AtomicOp {
+func (v *AtomicOp[R]) Read(factories ...func(ctx context.Context) Op) *AtomicOp[R] {
+	for _, fn := range factories {
+		v.ReadOrErr(func(ctx context.Context) (Op, error) {
+			return fn(ctx), nil
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) OnRead(fns ...func(ctx context.Context)) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.ReadOrErr(func(ctx context.Context) (Op, error) {
+			fn(ctx)
+			return nil, nil
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) OnReadOrErr(fns ...func(ctx context.Context) error) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.ReadOrErr(func(ctx context.Context) (Op, error) {
+			return nil, fn(ctx)
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) ReadOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
 	v.readPhase = append(v.readPhase, factories...)
 	return v
 }
 
-func (v *AtomicOp) Write(factories ...func() Op) *AtomicOp {
+func (v *AtomicOp[R]) Write(factories ...func(ctx context.Context) Op) *AtomicOp[R] {
 	for _, fn := range factories {
-		v.WriteOrErr(func() (Op, error) {
-			return fn(), nil
+		v.WriteOrErr(func(ctx context.Context) (Op, error) {
+			return fn(ctx), nil
 		})
 	}
 	return v
 }
 
-func (v *AtomicOp) WriteOrErr(factories ...func() (Op, error)) *AtomicOp {
+func (v *AtomicOp[R]) BeforeWrite(fns ...func(ctx context.Context)) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.WriteOrErr(func(ctx context.Context) (Op, error) {
+			fn(ctx)
+			return nil, nil
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) BeforeWriteOrErr(fns ...func(ctx context.Context) error) *AtomicOp[R] {
+	for _, fn := range fns {
+		v.WriteOrErr(func(ctx context.Context) (Op, error) {
+			return nil, fn(ctx)
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) WriteOp(ops ...Op) *AtomicOp[R] {
+	for _, op := range ops {
+		v.Write(func(context.Context) Op {
+			return op
+		})
+	}
+	return v
+}
+
+func (v *AtomicOp[R]) WriteOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
 	v.writePhase = append(v.writePhase, factories...)
 	return v
 }
 
-func (v *AtomicOp) Do(ctx context.Context, client etcd.KV, opts ...Option) error {
+// AddProcessor registers a processor callback that can read and modify the result.
+// Processor IS NOT executed when the request to database fails.
+// Processor IS executed if a logical error occurs, for example, one generated by a previous processor.
+// Other Add* methods, shortcuts for AddProcessor, are not executed on logical errors (Result.Err() != nil).
+func (v *AtomicOp[R]) AddProcessor(fn func(ctx context.Context, result *Result[R])) *AtomicOp[R] {
+	v.processors = v.processors.WithProcessor(fn)
+	return v
+}
+
+// SetResultTo is a shortcut for the AddProcessor.
+// If no error occurred, the result of the operation is written to the target pointer,
+// otherwise an empty value is written.
+func (v *AtomicOp[R]) SetResultTo(ptr *R) *AtomicOp[R] {
+	v.processors = v.processors.WithResultTo(ptr)
+	return v
+}
+
+// AddResultValidator is a shortcut for the AddProcessor.
+// If no error occurred yet, then the callback can validate the result and return an error.
+func (v *AtomicOp[R]) AddResultValidator(fn func(R) error) *AtomicOp[R] {
+	v.processors = v.processors.WithResultValidator(fn)
+	return v
+}
+
+// OnResult is a shortcut for the AddProcessor.
+// If no error occurred yet, then the callback is executed with the result.
+func (v *AtomicOp[R]) OnResult(fn func(result R)) *AtomicOp[R] {
+	v.processors = v.processors.WithOnResult(fn)
+	return v
+}
+
+// EmptyResultAsError is a shortcut for the AddProcessor.
+// If no error occurred yet and the result is an empty value for the R type (nil if it is a pointer),
+// then the callback is executed and returned error is added to the Result.
+func (v *AtomicOp[R]) EmptyResultAsError(fn func() error) *AtomicOp[R] {
+	v.processors = v.processors.WithEmptyResultAsError(fn)
+	return v
+}
+
+func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	b := newBackoff(opts...)
 	attempt := 0
 
@@ -84,9 +239,10 @@ func (v *AtomicOp) Do(ctx context.Context, client etcd.KV, opts ...Option) error
 	var err error
 
 	for {
-		if ok, err = v.DoWithoutRetry(ctx, client, opts...); err != nil {
-			return err
-		} else if !ok {
+		txnResult := v.DoWithoutRetry(ctx, opts...)
+		ok = txnResult.Succeeded()
+		err = txnResult.Err()
+		if err == nil && !ok {
 			attempt++
 			if delay := b.NextBackOff(); delay == backoff.Stop {
 				break
@@ -98,93 +254,176 @@ func (v *AtomicOp) Do(ctx context.Context, client etcd.KV, opts ...Option) error
 		}
 	}
 
-	if !ok {
-		return errors.Errorf(
+	elapsedTime := b.GetElapsedTime()
+	if err == nil && !ok {
+		err = errors.Errorf(
 			`atomic update failed: revision has been modified between GET and UPDATE op, attempt %d, elapsed time %s`,
-			attempt, b.GetElapsedTime(),
+			attempt, elapsedTime,
 		)
 	}
 
-	return nil
+	return AtomicResult[R]{result: v.result, error: err, attempt: attempt, elapsedTime: elapsedTime}
 }
 
-func (v *AtomicOp) DoWithoutRetry(ctx context.Context, client etcd.KV, opts ...Option) (bool, error) {
-	// Create GET operations
-	var getOps []Op
-	for _, opFactory := range v.readPhase {
-		op, err := opFactory()
-		if err != nil {
-			return false, err
-		}
-		getOps = append(getOps, op)
-	}
+func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnResult[R] {
+	tracker := NewTracker(v.client)
 
-	// Run GET operation, track used keys/prefixes
-	tracker := NewTracker(client)
-	header, err := NewTxnOp().Then(getOps...).DoWithHeader(ctx, tracker, opts...)
+	// Create READ operations
+	readTxn, err := v.readTxn(ctx, tracker)
 	if err != nil {
-		return false, err
+		return newErrorTxnResult[R](err)
 	}
 
-	// Create UPDATE operation
-	var updateOps []Op
-	for _, opFactory := range v.writePhase {
-		op, err := opFactory()
-		if err != nil {
-			return false, err
+	// Run READ phase, track used keys/prefixes
+	readResult := readTxn.Do(ctx, opts...)
+	if err := readResult.Err(); err != nil {
+		return newErrorTxnResult[R](err)
+	}
+
+	// Create WRITE transaction
+	writeTxn, err := v.writeTxn(ctx)
+	if err != nil {
+		return newErrorTxnResult[R](err)
+	}
+
+	// Add IF conditions
+	writeTxn.If(v.writeIfConditions(tracker, readResult.Header().Revision)...)
+
+	// Do
+	return writeTxn.Do(ctx)
+}
+
+func (v *AtomicOp[R]) readTxn(ctx context.Context, tracker *TrackerKV) (*TxnOp[NoResult], error) {
+	// Create READ transaction
+	readTxn := Txn(tracker)
+	for _, opFactory := range v.readPhase {
+		if op, err := opFactory(ctx); err != nil {
+			return nil, err
+		} else if op != nil {
+			readTxn.Merge(op)
 		}
-		updateOps = append(updateOps, op)
 	}
 
-	// Create IF part of the transaction
-	var cmps []etcd.Cmp
-	for _, op := range removeOpsOverlaps(tracker.Operations()) {
-		switch op.Type {
-		case DeleteOp:
+	// Stop the READ phase, if a lock is not locked
+	lockIfs, err := v.locksIfs()
+	if err != nil {
+		return nil, errors.PrefixError(err, "read phase")
+	}
+	readTxn.Merge(Txn(v.client).
+		If(lockIfs...).
+		OnFailed(func(r *TxnResult[NoResult]) {
+			r.AddErr(errors.PrefixError(LockedError{}, "read phase"))
+		}),
+	)
+
+	return readTxn, nil
+}
+
+func (v *AtomicOp[R]) writeTxn(ctx context.Context) (*TxnOp[R], error) {
+	// Create WRITE transaction
+	writeTxn := TxnWithResult[R](v.client, v.result)
+	for _, opFactory := range v.writePhase {
+		if op, err := opFactory(ctx); err != nil {
+			return nil, err
+		} else if op != nil {
+			writeTxn.Merge(op)
+		}
+	}
+
+	// Processors are invoked if the transaction succeeded or there is an error.
+	// If the transaction failed, the atomic operation is retried, see Do method.
+	writeTxn.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
+		if r.Succeeded() || r.Err() != nil {
+			v.processors.invoke(ctx, r.result)
+		}
+	})
+
+	// Stop the WRITE phase, if a lock is not locked
+	lockIfs, err := v.locksIfs()
+	if err != nil {
+		return nil, errors.PrefixError(err, "write phase")
+	}
+	writeTxn.Merge(Txn(v.client).
+		If(lockIfs...).
+		OnFailed(func(r *TxnResult[NoResult]) {
+			r.AddErr(errors.PrefixError(LockedError{}, "write phase"))
+		}),
+	)
+
+	return writeTxn, nil
+}
+
+func (v *AtomicOp[R]) locksIfs() (cmps []etcd.Cmp, err error) {
+	for _, lock := range v.locks {
+		if key := lock.Key(); key == "" || key == "\x00" {
+			return nil, NotLockedError{}
+		}
+		cmps = append(cmps, lock.IsOwner())
+	}
+	return cmps, nil
+}
+
+// x Create IF part of the transaction.
+func (v *AtomicOp[R]) writeIfConditions(tracker *TrackerKV, readRev int64) (cmps []etcd.Cmp) {
+	for _, op := range tracker.Operations() {
+		mustExist := (op.Type == GetOp || op.Type == PutOp) && op.Count > 0
+		mustNotExist := op.Type == DeleteOp || op.Count == 0
+		switch {
+		case mustExist:
+			// IF: 0 < modification version <= Read Phase revision
+			// Key/range exists and has not been modified since the Read Phase.
+			//
+			// Note: we cannot check that nothing was deleted from the prefix.
+			// The condition IF count == n is needed, and it is not implemented in etcd.
+			// We can verify that an individual key was deleted, its MOD == 0.
 			cmps = append(cmps,
-				// The key/prefix must be missing, version must be equal to 0.
+				// The key/prefix must exist, version must be NOT equal to 0.
 				etcd.Cmp{
-					Result:      etcdserverpb.Compare_EQUAL,
-					Target:      etcdserverpb.Compare_VERSION,
-					TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_GREATER,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
+					Key:         op.Key,
+					RangeEnd:    op.RangeEnd, // may be empty
+				},
+				// The key/prefix cannot be modified between GET and UPDATE phase.
+				// Mod revision of the item must be less or equal to header.Revision.
+				etcd.Cmp{
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readRev + 1},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
 				},
 			)
-		case GetOp:
-			if op.Count > 0 {
-				cmps = append(cmps,
-					// The key/prefix must exist, version must be NOT equal to 0.
-					etcd.Cmp{
-						Result:      etcdserverpb.Compare_GREATER,
-						Target:      etcdserverpb.Compare_VERSION,
-						TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
-						Key:         op.Key,
-						RangeEnd:    op.RangeEnd, // may be empty
-					})
+
+			// See SkipPrefixKeysCheck method documentation, by default, the feature is enabled.
+			if v.checkPrefixKey {
+				if op.RangeEnd != nil {
+					for _, kv := range op.KVs {
+						cmps = append(cmps, etcd.Cmp{
+							Target:      etcdserverpb.Compare_MOD,
+							Result:      etcdserverpb.Compare_GREATER,
+							TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
+							Key:         kv.Key,
+						})
+					}
+				}
 			}
-			fallthrough
-		case PutOp:
+		case mustNotExist:
 			cmps = append(cmps,
-				// The key/prefix cannot be modified between GET and UPDATE phase.
-				// Mod revision of the item must be less or equal to header.Revision.
+				// IF: modification version == 0
+				// The key/range doesn't exist.
 				etcd.Cmp{
-					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
 					Target:      etcdserverpb.Compare_MOD,
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: header.Revision + 1},
+					Result:      etcdserverpb.Compare_EQUAL,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
-				})
+				},
+			)
 		default:
-			panic(errors.Errorf(`unexpected operation type "%v"`, op.Type))
+			panic(errors.Errorf(`unexpected state, operation type "%v"`, op.Type))
 		}
 	}
-
-	// Create transaction
-	// IF no key/prefix has been changed, THEN do updateOp
-	txnResp, err := NewTxnOp().If(cmps...).Then(updateOps...).Do(ctx, client)
-	if err != nil {
-		return false, err
-	}
-	return txnResp.Succeeded, nil
+	return cmps
 }

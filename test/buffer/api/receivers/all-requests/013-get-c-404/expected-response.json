@@ -1,5 +1,0 @@
-{
-  "statusCode": 404,
-  "error": "buffer.receiverNotFound",
-  "message": "Receiver \"receiver-c\" not found in the project."
-}

@@ -64,6 +64,17 @@ func TestTracker(t *testing.T) {
 		Commit()
 	assert.NoError(t, err)
 
+	// Get records
+	operations := tracker.Operations()
+	for i := range operations {
+		op := &operations[i]
+		// Clear complex KVs slice, assert count
+		if op.Type == GetOp {
+			assert.Len(t, op.KVs, int(op.Count))
+			op.KVs = nil
+		}
+	}
+
 	// Check tracked records, no duplicates
 	assert.Equal(t, []TrackedOp{
 		{Type: GetOp, Key: []byte("key1"), Count: 1},
@@ -73,5 +84,5 @@ func TestTracker(t *testing.T) {
 		{Type: GetOp, Key: []byte("key"), RangeEnd: []byte("kez"), Count: 6},
 		{Type: GetOp, Key: []byte("key10"), RangeEnd: []byte("key20"), Count: 0},
 		// all except key6 and key7, they are from unused transaction branches
-	}, tracker.Operations())
+	}, operations)
 }

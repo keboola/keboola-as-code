@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -32,6 +33,29 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
+
+type RootFlag struct {
+	Version bool `configKey:"version" configShorthand:"V" configUsage:"print version"`
+}
+
+type GlobalFlags struct {
+	Help            bool   `configKey:"help" configShorthand:"h" configUsage:"print help for command"`
+	LogFile         string `configKey:"log-file" configShorthand:"l" configUsage:"path to a log file for details"`
+	LogFormat       string `configKey:"log-format" configUsage:"format of stdout and stderr"`
+	NonInteractive  bool   `configKey:"non-interactive" configUsage:"disable interactive dialogs"`
+	WorkingDir      string `configKey:"working-dir" configShorthand:"d" configUsage:"use other working directory"`
+	StorageAPIToken string `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Verbose         bool   `configKey:"verbose" configShorthand:"v" configUsage:"print details"`
+	VerboseAPI      bool   `configKey:"verbose-api" configUsage:"log each API request and response"`
+	VersionCheck    bool   `configKey:"version-check" configUsage:"checks if there is a newer version of the CLI"`
+}
+
+func DefaultGlobalFlags() *GlobalFlags {
+	return &GlobalFlags{
+		VersionCheck: true,
+		LogFormat:    "console",
+	}
+}
 
 // nolint: gochecknoinits
 func init() {
@@ -119,21 +143,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 	root.SetUsageTemplate(helpmsg.Read(`usage`) + "\n")
 
 	// Persistent flags for all sub-commands
-	flags := root.PersistentFlags()
-	flags.SortFlags = true
-	flags.BoolP("help", "h", false, "print help for command")
-	flags.StringP("log-file", "l", "", "path to a log file for details")
-	flags.String("log-format", "console", "format of stdout and stderr")
-	flags.Bool("non-interactive", false, "disable interactive dialogs")
-	flags.StringP("working-dir", "d", "", "use other working directory")
-	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
-	flags.BoolP("verbose", "v", false, "print details")
-	flags.Bool("verbose-api", false, "log each API request and response")
-	flags.Bool("version-check", true, "checks if there is a newer version of the CLI")
+	configmap.MustGenerateFlags(root.PersistentFlags(), DefaultGlobalFlags())
 
 	// Root command flags
-	root.Flags().SortFlags = true
-	root.Flags().BoolP("version", "V", false, "print version")
+	configmap.MustGenerateFlags(root.Flags(), RootFlag{})
 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}
@@ -160,10 +173,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.options.GetBool(options.NonInteractiveOpt))
 
 		// Create process abstraction
-		proc, err := servicectx.New()
-		if err != nil {
-			return err
-		}
+		proc := servicectx.New()
 
 		// Create dependencies provider
 		p.Set(dependencies.NewProvider(

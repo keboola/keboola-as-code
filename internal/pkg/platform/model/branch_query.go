@@ -428,7 +428,7 @@ func (bq *BranchQuery) loadConfigurations(ctx context.Context, query *Configurat
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "configuration_parent" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "configuration_parent" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

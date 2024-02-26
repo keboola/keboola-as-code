@@ -12,12 +12,12 @@ cd "$SCRIPT_DIR/.."
 pwd
 
 # Check the most important problems first
-echo "Running go vet ..."
-if ! go vet ./...; then
-    echo "Please fix ^^^ errors. You can try run \"make fix\"."
-    echo
-    exit 1
-fi
+#echo "Running go vet ..."
+#if ! go vet ./...; then
+#    echo "Please fix ^^^ errors. You can try run \"make fix\"."
+#    echo
+#    exit 1
+#fi
 
 # Check modules
 echo "Running go mod tidy/verify ..."

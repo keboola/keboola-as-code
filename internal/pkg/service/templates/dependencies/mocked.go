@@ -26,9 +26,9 @@ func NewMockedAPIScope(t *testing.T, cfg config.Config, opts ...dependencies.Moc
 
 	var err error
 	cfg.StorageAPIHost = mocked.StorageAPIHost()
-	cfg.PublicAddress, err = url.Parse("https://templates.keboola.local")
+	cfg.API.PublicURL, err = url.Parse("https://templates.keboola.local")
 	require.NoError(t, err)
-	cfg.Etcd = mocked.TestEtcdCredentials()
+	cfg.Etcd = mocked.TestEtcdConfig()
 
 	// Prepare test repository with templates, instead of default repositories, to prevent loading of all production templates.
 	if reflect.DeepEqual(cfg.Repositories, config.DefaultRepositories()) {

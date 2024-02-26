@@ -4,12 +4,13 @@ on:
   # This workflow is also part of the release pipeline,
   # in that case, the actual version is deployed twice.
   workflow_call:
-  # In PR the previous version is deployed first and then the actual version.
-  pull_request:
-    paths:
-      - .github/workflows/test-k8s-service-buffer.yml
-      - provisioning/buffer/**
-      - provisioning/common/**
+# TMP DISABLED
+#  # In PR the previous version is deployed first and then the actual version.
+#  pull_request:
+#    paths:
+#      - .github/workflows/test-k8s-service-buffer.yml
+#      - provisioning/stream/**
+#      - provisioning/common/**
 
 env:
   MINIKUBE_PROFILE: buffer

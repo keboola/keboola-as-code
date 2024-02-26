@@ -247,7 +247,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 			}
 
 			// Checkout done
-			m.logger.Infof(ctx, `checked out repository "%s" | %s`, gitRepo, time.Since(startTime))
+			m.logger.WithDuration(time.Since(startTime)).Infof(ctx, `checked out repository "%s"`, gitRepo)
 		} else {
 			// Local directory
 			fs, err := aferofs.NewLocalFs(ref.URL, filesystem.WithLogger(m.deps.Logger()))

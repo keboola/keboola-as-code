@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -21,6 +22,7 @@ const (
 type orchestrator[T any] struct {
 	config Config[T]
 	node   *Node
+	dist   *distribution.GroupNode
 	logger log.Logger
 }
 
@@ -127,7 +129,7 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 	distributionKey := o.config.DistributionKey(event)
 
 	// Error is not expected, there is present always at least one node - self.
-	if !o.node.dist.MustCheckIsOwner(distributionKey) {
+	if !o.dist.MustCheckIsOwner(distributionKey) {
 		// Another node handles the resource.
 		o.logger.Debugf(ctx, `not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return

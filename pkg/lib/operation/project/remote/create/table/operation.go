@@ -12,14 +12,12 @@ import (
 )
 
 type Options struct {
-	BucketID   keboola.BucketID
-	Columns    []string
-	Name       string
-	PrimaryKey []string
+	CreateTableRequest keboola.CreateTableRequest
+	BucketKey          keboola.BucketKey
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
@@ -28,24 +26,21 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.create.table")
 	defer span.End(&err)
 
-	opts := make([]keboola.CreateTableOption, 0)
-	if len(o.PrimaryKey) > 0 {
-		opts = append(opts, keboola.WithPrimaryKey(o.PrimaryKey))
-	}
-
 	rb := rollback.New(d.Logger())
-	err = tableImport.EnsureBucketExists(ctx, d, rb, o.BucketID)
+	err = tableImport.EnsureBucketExists(ctx, d, rb, o.BucketKey)
 	if err != nil {
 		return err
 	}
 
-	tableID := keboola.TableID{BucketID: o.BucketID, TableName: o.Name}
-	_, err = d.KeboolaProjectAPI().CreateTableRequest(tableID, o.Columns, opts...).Send(ctx)
+	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.CreateTableRequest.Name}
+	tableKey := keboola.TableKey{BranchID: o.BucketKey.BranchID, TableID: tableID}
+
+	res, err := d.KeboolaProjectAPI().CreateTableDefinitionRequest(tableKey, &o.CreateTableRequest).Send(ctx)
 	if err != nil {
 		rb.Invoke(ctx)
 		return err
 	}
 
-	d.Logger().Infof(ctx, `Created table "%s".`, tableID.String())
+	d.Logger().Infof(ctx, `Created table "%s".`, res.TableID.String())
 	return nil
 }

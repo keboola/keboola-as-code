@@ -11,6 +11,7 @@ import (
 )
 
 type Options struct {
+	BranchKey   keboola.BranchKey
 	Description string
 	DisplayName string
 	Name        string
@@ -18,7 +19,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
@@ -33,9 +34,12 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		o.Name = "c-" + o.Name
 	}
 	b := &keboola.Bucket{
-		ID: keboola.BucketID{
-			Stage:      o.Stage,
-			BucketName: o.Name,
+		BucketKey: keboola.BucketKey{
+			BranchID: o.BranchKey.ID,
+			BucketID: keboola.BucketID{
+				Stage:      o.Stage,
+				BucketName: o.Name,
+			},
 		},
 		Description: o.Description,
 		DisplayName: o.DisplayName,
@@ -44,6 +48,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
-	logger.Infof(ctx, `Created bucket "%s".`, b.ID.String())
+	logger.Infof(ctx, `Created bucket "%s".`, b.BucketID.String())
 	return nil
 }

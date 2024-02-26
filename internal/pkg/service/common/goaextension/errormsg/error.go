@@ -22,7 +22,7 @@ func init() {
 
 func prepare(_ string, roots []eval.Root) error {
 	for _, root := range roots {
-		root.WalkSets(func(s eval.ExpressionSet) error {
+		root.WalkSets(func(s eval.ExpressionSet) {
 			for _, e := range s {
 				if v, ok := e.(*expr.HTTPServiceExpr); ok {
 					httpData := httpgen.HTTPServices.Get(v.Name())
@@ -40,7 +40,6 @@ func prepare(_ string, roots []eval.Root) error {
 					}
 				}
 			}
-			return nil
 		})
 	}
 	return nil

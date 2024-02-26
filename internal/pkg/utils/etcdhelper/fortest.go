@@ -29,13 +29,13 @@ type testOrBenchmark interface {
 }
 
 // TmpNamespace creates a temporary etcd namespace and registers cleanup after the test.
-func TmpNamespace(t testOrBenchmark) etcdclient.Credentials {
+func TmpNamespace(t testOrBenchmark) etcdclient.Config {
 	return TmpNamespaceFromEnv(t, "UNIT_ETCD_")
 }
 
 // TmpNamespaceFromEnv creates a temporary etcd namespace and registers cleanup after the test.
-// Credentials are read from the provided ENV prefix.
-func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Credentials {
+// Config are read from the provided ENV prefix.
+func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Config {
 	envs, err := env.FromOs()
 	if err != nil {
 		t.Fatalf("cannot get envs: %s", err)
@@ -45,20 +45,19 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Credent
 		t.Skipf(fmt.Sprintf("etcd test is disabled by %s_ENABLED=false", envPrefix))
 	}
 
-	credentials := etcdclient.Credentials{
-		Endpoint:  envs.Get(envPrefix + "ENDPOINT"),
-		Namespace: idgenerator.EtcdNamespaceForTest(),
-		Username:  envs.Get(envPrefix + "USERNAME"),
-		Password:  envs.Get(envPrefix + "PASSWORD"),
-	}
+	cfg := etcdclient.NewConfig()
+	cfg.Endpoint = envs.Get(envPrefix + "ENDPOINT")
+	cfg.Namespace = idgenerator.EtcdNamespaceForTest()
+	cfg.Username = envs.Get(envPrefix + "USERNAME")
+	cfg.Password = envs.Get(envPrefix + "PASSWORD")
 
-	if credentials.Endpoint == "" {
+	if cfg.Endpoint == "" {
 		t.Fatalf(`etcd endpoint is not set`)
 	}
 
 	t.Cleanup(func() {
 		ctx, cancel := context.WithCancel(context.Background())
-		client := clientForTest(t, ctx, credentials)
+		client := clientForTest(t, ctx, cfg)
 		_, err := client.Delete(ctx, "", etcd.WithFromKey())
 		cancel()
 		if err != nil {
@@ -66,20 +65,20 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Credent
 		}
 	})
 
-	return credentials
+	return cfg
 }
 
-func ClientForTest(t testOrBenchmark, credentials etcdclient.Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
+func ClientForTest(t testOrBenchmark, cfg etcdclient.Config, dialOpts ...grpc.DialOption) *etcd.Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(func() {
 		cancel()
 	})
-	return clientForTest(t, ctx, credentials, dialOpts...)
+	return clientForTest(t, ctx, cfg, dialOpts...)
 }
 
-func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclient.Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
+func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config, dialOpts ...grpc.DialOption) *etcd.Client {
 	// Normalize namespace
-	credentials.Namespace = strings.Trim(credentials.Namespace, " /") + "/"
+	cfg.Namespace = strings.Trim(cfg.Namespace, " /") + "/"
 
 	// Setup logger
 	var logger *zap.Logger
@@ -108,7 +107,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclien
 				BaseDelay:  100 * time.Millisecond,
 				Multiplier: 1.5,
 				Jitter:     0.2,
-				MaxDelay:   15 * time.Second,
+				MaxDelay:   5 * time.Second,
 			},
 		}),
 	)
@@ -116,12 +115,12 @@ func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclien
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              ctx,
-		Endpoints:            []string{credentials.Endpoint},
-		DialTimeout:          10 * time.Second,
+		Endpoints:            []string{cfg.Endpoint},
+		DialTimeout:          15 * time.Second,
 		DialKeepAliveTimeout: 5 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
-		Username:             credentials.Username, // optional
-		Password:             credentials.Password, // optional
+		Username:             cfg.Username, // optional
+		Password:             cfg.Password, // optional
 		Logger:               logger,
 		DialOptions:          dialOpts,
 	})
@@ -130,7 +129,7 @@ func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclien
 	}
 
 	// Use namespace
-	etcdclient.UseNamespace(etcdClient, credentials.Namespace)
+	etcdclient.UseNamespace(etcdClient, cfg.Namespace)
 
 	// Add operations logger
 	if verbose {

@@ -5,6 +5,6 @@ package runtime
 // The schema-stitching logic is generated in github.com/keboola/keboola-as-code/internal/pkg/platform/model/runtime.go
 
 const (
-	Version = "v0.12.1"                                         // Version of ent codegen.
-	Sum     = "h1:bqK+WMwfjpTsFiXx9tQSEZMNLyAADSx5Y1xySjT4Tm8=" // Sum of ent codegen.
+	Version = "v0.13.0"                                         // Version of ent codegen.
+	Sum     = "h1:DclxWczaCpyiKn6ZWVcJjq1zIKtJ11iNKy+08lNYsJE=" // Sum of ent codegen.
 )

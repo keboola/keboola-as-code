@@ -19,12 +19,12 @@ type executor struct {
 	ctx               context.Context
 	projectID         keboola.ProjectID
 	logger            log.Logger
-	keboolaProjectAPI *keboola.API
+	keboolaProjectAPI *keboola.AuthorizedAPI
 	uow               *local.UnitOfWork
 	errors            errors.MultiError
 }
 
-func newExecutor(ctx context.Context, projectID keboola.ProjectID, logger log.Logger, keboolaProjectAPI *keboola.API, state *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, projectID keboola.ProjectID, logger log.Logger, keboolaProjectAPI *keboola.AuthorizedAPI, state *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:              plan,
 		ctx:               ctx,

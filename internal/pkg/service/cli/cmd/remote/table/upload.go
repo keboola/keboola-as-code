@@ -1,6 +1,7 @@
 package table
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	fileUpload "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
@@ -25,25 +27,28 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Get default branch
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(cmd.Context())
+			if err != nil {
+				return errors.Errorf("cannot get default branch: %w", err)
+			}
+
 			// Ask options
-			var tableID keboola.TableID
+			tableKey := keboola.TableKey{BranchID: branch.ID}
 			var primaryKey []string
 			if len(args) < 1 {
-				id, createNew, err := askTable(cmd.Context(), d, true)
+				key, createNew, err := askTable(cmd.Context(), d, branch.ID, true)
 				if err != nil {
 					return err
 				}
-				tableID = id
-
+				tableKey = key
 				if createNew {
 					primaryKey = d.Dialogs().AskPrimaryKey()
 				}
+			} else if id, err := keboola.ParseTableID(args[0]); err == nil {
+				tableKey.TableID = id
 			} else {
-				id, err := keboola.ParseTableID(args[0])
-				if err != nil {
-					return err
-				}
-				tableID = id
+				return err
 			}
 
 			var inputFile string
@@ -51,7 +56,8 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				inputFile = args[1]
 			}
 
-			fileUploadOpts, err := d.Dialogs().AskUploadFile(inputFile, tableID.String())
+			fileName := fmt.Sprintf("table-upload-%s", tableKey.TableID.String())
+			fileUploadOpts, err := d.Dialogs().AskUploadFile(branch.BranchKey, inputFile, fileName)
 			if err != nil {
 				return err
 			}
@@ -62,8 +68,8 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			tableImportOpts := tableImport.Options{
-				FileID:          file.ID,
-				TableID:         tableID,
+				FileKey:         file.FileKey,
+				TableKey:        tableKey,
 				Columns:         d.Options().GetStringSlice("columns"),
 				Delimiter:       d.Options().GetString("file-delimiter"),
 				Enclosure:       d.Options().GetString("file-enclosure"),

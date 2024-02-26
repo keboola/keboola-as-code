@@ -9,8 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
 
-func (p *Dialogs) AskCreateBucket() (bucket.Options, error) {
-	opts := bucket.Options{}
+func (p *Dialogs) AskCreateBucket(branchKey keboola.BranchKey) (bucket.Options, error) {
+	opts := bucket.Options{BranchKey: branchKey}
 
 	if p.options.IsSet("stage") {
 		stage := p.options.GetString("stage")

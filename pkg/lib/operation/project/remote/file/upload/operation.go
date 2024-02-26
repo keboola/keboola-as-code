@@ -18,15 +18,16 @@ import (
 )
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.API
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
 
 type Options struct {
-	Input string
-	Name  string
-	Tags  []string
+	BranchKey keboola.BranchKey
+	Input     string
+	Name      string
+	Tags      []string
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadCredentials, err error) {
@@ -69,7 +70,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		}
 	}
 
-	file, err := d.KeboolaProjectAPI().CreateFileResourceRequest(o.Name, opts...).Send(ctx)
+	file, err := d.KeboolaProjectAPI().CreateFileResourceRequest(o.BranchKey.ID, o.Name, opts...).Send(ctx)
 	if err != nil {
 		return nil, errors.Errorf(`error creating file resource: %w`, err)
 	}
@@ -80,7 +81,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		if err != nil {
 			return nil, errors.Errorf(`error uploading file from stdin: %w`, err)
 		}
-		d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.ID)
+		d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
 		return file, nil
 	}
 
@@ -92,7 +93,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		if err != nil {
 			return nil, errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
 		}
-		d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.ID)
+		d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
 		return file, nil
 	}
 
@@ -117,7 +118,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		}
 	}
 
-	d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.ID)
+	d.Logger().Infof(ctx, `File "%s" uploaded with file id "%d".`, o.Name, file.FileID)
 	return file, nil
 }
 

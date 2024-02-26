@@ -1,0 +1,16 @@
+[
+    {
+      "name": "id",
+      "definition": {
+        "type": "VARCHAR"
+      },
+      "basetype": "STRING"
+    },
+    {
+      "name": "name",
+      "definition": {
+        "type": "VARCHAR"
+      },
+      "basetype": "STRING"
+    }
+]

@@ -22,25 +22,41 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [
-            "col1",
-            "col2"
+            "id"
           ],
+          "definition": {
+            "primaryKeysNames": [
+              "id"
+            ],
+            "columns": [
+              {
+                "name": "id",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216",
+                  "nullable": false,
+                  "default": ""
+                },
+                "basetype": "STRING"
+              },
+              {
+                "name": "name",
+                "definition": {
+                  "type": "VARCHAR",
+                  "length": "16777216",
+                  "nullable": false,
+                  "default": ""
+                },
+                "basetype": "STRING"
+              }
+            ]
+          },
           "columns": [
-            "col1",
-            "col2",
-            "col3"
+            "id",
+            "name"
           ]
         }
       ]
-    }
-  ],
-  "files": [
-    {
-      "name": "table1",
-      "tags": [],
-      "isSliced": false,
-      "isEncrypted": true,
-      "isPermanent": false
     }
   ]
 }

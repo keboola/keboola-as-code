@@ -35,6 +35,6 @@ func (p *Plan) Log(w io.Writer) {
 	}
 }
 
-func (p *Plan) Invoke(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.API, projectState *state.State) error {
+func (p *Plan) Invoke(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.AuthorizedAPI, projectState *state.State) error {
 	return newExecutor(ctx, logger, keboolaProjectAPI, projectState, p).invoke()
 }
