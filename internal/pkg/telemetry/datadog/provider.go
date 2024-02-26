@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/trace"
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
@@ -35,7 +34,7 @@ func NewTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...ddTr
 	})
 
 	// Register legacy OpenCensus tracing for go-cloud (https://github.com/google/go-cloud/issues/2877).
-	octrace.DefaultTracer = opencensus.NewTracer(tp.Tracer("opencensus-bridge"))
+	opencensus.InstallTraceBridge(opencensus.WithTracerProvider(tp))
 
 	return tp
 }

@@ -34,9 +34,25 @@ func (cu *ConfigurationUpdate) SetName(s string) *ConfigurationUpdate {
 	return cu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cu *ConfigurationUpdate) SetNillableName(s *string) *ConfigurationUpdate {
+	if s != nil {
+		cu.SetName(*s)
+	}
+	return cu
+}
+
 // SetDescription sets the "description" field.
 func (cu *ConfigurationUpdate) SetDescription(s string) *ConfigurationUpdate {
 	cu.mutation.SetDescription(s)
+	return cu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cu *ConfigurationUpdate) SetNillableDescription(s *string) *ConfigurationUpdate {
+	if s != nil {
+		cu.SetDescription(*s)
+	}
 	return cu
 }
 
@@ -67,7 +83,7 @@ func (cu *ConfigurationUpdate) Mutation() *ConfigurationMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cu *ConfigurationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, ConfigurationMutation](ctx, cu.sqlSave, cu.mutation, cu.hooks)
+	return withHooks(ctx, cu.sqlSave, cu.mutation, cu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -155,9 +171,25 @@ func (cuo *ConfigurationUpdateOne) SetName(s string) *ConfigurationUpdateOne {
 	return cuo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cuo *ConfigurationUpdateOne) SetNillableName(s *string) *ConfigurationUpdateOne {
+	if s != nil {
+		cuo.SetName(*s)
+	}
+	return cuo
+}
+
 // SetDescription sets the "description" field.
 func (cuo *ConfigurationUpdateOne) SetDescription(s string) *ConfigurationUpdateOne {
 	cuo.mutation.SetDescription(s)
+	return cuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cuo *ConfigurationUpdateOne) SetNillableDescription(s *string) *ConfigurationUpdateOne {
+	if s != nil {
+		cuo.SetDescription(*s)
+	}
 	return cuo
 }
 
@@ -201,7 +233,7 @@ func (cuo *ConfigurationUpdateOne) Select(field string, fields ...string) *Confi
 
 // Save executes the query and returns the updated Configuration entity.
 func (cuo *ConfigurationUpdateOne) Save(ctx context.Context) (*Configuration, error) {
-	return withHooks[*Configuration, ConfigurationMutation](ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
+	return withHooks(ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

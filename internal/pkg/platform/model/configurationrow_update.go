@@ -34,9 +34,25 @@ func (cru *ConfigurationRowUpdate) SetName(s string) *ConfigurationRowUpdate {
 	return cru
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cru *ConfigurationRowUpdate) SetNillableName(s *string) *ConfigurationRowUpdate {
+	if s != nil {
+		cru.SetName(*s)
+	}
+	return cru
+}
+
 // SetDescription sets the "description" field.
 func (cru *ConfigurationRowUpdate) SetDescription(s string) *ConfigurationRowUpdate {
 	cru.mutation.SetDescription(s)
+	return cru
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cru *ConfigurationRowUpdate) SetNillableDescription(s *string) *ConfigurationRowUpdate {
+	if s != nil {
+		cru.SetDescription(*s)
+	}
 	return cru
 }
 
@@ -67,7 +83,7 @@ func (cru *ConfigurationRowUpdate) Mutation() *ConfigurationRowMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cru *ConfigurationRowUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, ConfigurationRowMutation](ctx, cru.sqlSave, cru.mutation, cru.hooks)
+	return withHooks(ctx, cru.sqlSave, cru.mutation, cru.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -155,9 +171,25 @@ func (cruo *ConfigurationRowUpdateOne) SetName(s string) *ConfigurationRowUpdate
 	return cruo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (cruo *ConfigurationRowUpdateOne) SetNillableName(s *string) *ConfigurationRowUpdateOne {
+	if s != nil {
+		cruo.SetName(*s)
+	}
+	return cruo
+}
+
 // SetDescription sets the "description" field.
 func (cruo *ConfigurationRowUpdateOne) SetDescription(s string) *ConfigurationRowUpdateOne {
 	cruo.mutation.SetDescription(s)
+	return cruo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cruo *ConfigurationRowUpdateOne) SetNillableDescription(s *string) *ConfigurationRowUpdateOne {
+	if s != nil {
+		cruo.SetDescription(*s)
+	}
 	return cruo
 }
 
@@ -201,7 +233,7 @@ func (cruo *ConfigurationRowUpdateOne) Select(field string, fields ...string) *C
 
 // Save executes the query and returns the updated ConfigurationRow entity.
 func (cruo *ConfigurationRowUpdateOne) Save(ctx context.Context) (*ConfigurationRow, error) {
-	return withHooks[*ConfigurationRow, ConfigurationRowMutation](ctx, cruo.sqlSave, cruo.mutation, cruo.hooks)
+	return withHooks(ctx, cruo.sqlSave, cruo.mutation, cruo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

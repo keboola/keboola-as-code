@@ -74,7 +74,7 @@ func (bc *BranchCreate) Mutation() *BranchMutation {
 
 // Save creates the Branch in the database.
 func (bc *BranchCreate) Save(ctx context.Context) (*Branch, error) {
-	return withHooks[*Branch, BranchMutation](ctx, bc.sqlSave, bc.mutation, bc.hooks)
+	return withHooks(ctx, bc.sqlSave, bc.mutation, bc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -201,11 +201,15 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 // BranchCreateBulk is the builder for creating many Branch entities in bulk.
 type BranchCreateBulk struct {
 	config
+	err      error
 	builders []*BranchCreate
 }
 
 // Save creates the Branch entities in the database.
 func (bcb *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
+	if bcb.err != nil {
+		return nil, bcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(bcb.builders))
 	nodes := make([]*Branch, len(bcb.builders))
 	mutators := make([]Mutator, len(bcb.builders))

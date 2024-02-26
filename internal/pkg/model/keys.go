@@ -78,8 +78,8 @@ type PhaseKey struct {
 }
 
 type TaskKey struct {
-	PhaseKey `json:"-" validate:"dive" `
-	Index    int `json:"-" validate:"min=0" `
+	PhaseKey `json:"-"`
+	Index    int `json:"-" validate:"min=0"`
 }
 
 func (k BranchKey) Kind() Kind {

@@ -27,7 +27,7 @@ func (crd *ConfigurationRowDelete) Where(ps ...predicate.ConfigurationRow) *Conf
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (crd *ConfigurationRowDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, ConfigurationRowMutation](ctx, crd.sqlExec, crd.mutation, crd.hooks)
+	return withHooks(ctx, crd.sqlExec, crd.mutation, crd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
