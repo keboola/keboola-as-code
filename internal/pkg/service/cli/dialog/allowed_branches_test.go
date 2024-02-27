@@ -26,7 +26,7 @@ const (
 // TestAllowedBranchesByFlag use flag value if present.
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -50,7 +50,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -71,7 +71,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 // -> only main branch.
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -102,7 +102,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 // -> all branches.
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -133,7 +133,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 // -> select branches, and select 2/4 of the listed brances.
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -185,7 +185,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 // -> type IDs or names and type two custom definitions.
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),

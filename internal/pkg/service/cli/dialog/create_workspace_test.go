@@ -12,7 +12,7 @@ import (
 
 func TestAskCreateWorkspace(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// Interaction
 	wg := sync.WaitGroup{}

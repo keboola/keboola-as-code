@@ -73,7 +73,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Assert
 	ctx := context.Background()
 	proc := servicectx.NewForTest(t)
-	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts, env.Empty())
+	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New()), opts, env.Empty())
 	localScp, err := newLocalCommandScope(ctx, baseScp)
 	assert.NoError(t, err)
 	_, err = newRemoteCommandScope(ctx, localScp)

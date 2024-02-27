@@ -76,7 +76,7 @@ func TestParseJsonInput(t *testing.T) {
 
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -109,7 +109,7 @@ func TestAskCreateConfig(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMocked(t)
 	ctx := context.Background()
@@ -182,7 +182,7 @@ func TestAskCreateRow(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMocked(t)
 	ctx := context.Background()
@@ -280,7 +280,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from interactive", func(t *testing.T) {
 		t.Parallel()
 		// Test dependencies
-		dialog, _, console := createDialogs(t, true)
+		dialog, console := createDialogs(t, true)
 
 		// Set fake file editor
 		dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -365,7 +365,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name interactive", func(t *testing.T) {
 		t.Parallel()
 		// Test dependencies
-		dialog, _, console := createDialogs(t, true)
+		dialog, console := createDialogs(t, true)
 
 		// Set fake file editor
 		dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -452,7 +452,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from flag", func(t *testing.T) {
 		t.Parallel()
 		// Test dependencies
-		dialog, _, console := createDialogs(t, true)
+		dialog, console := createDialogs(t, true)
 
 		// Set fake file editor
 		dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -546,7 +546,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name from flag", func(t *testing.T) {
 		t.Parallel()
 		// Test dependencies
-		dialog, _, console := createDialogs(t, true)
+		dialog, console := createDialogs(t, true)
 
 		// Set fake file editor
 		dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)

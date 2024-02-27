@@ -27,7 +27,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -220,7 +220,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -346,7 +346,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -502,7 +502,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	f := use.Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
@@ -600,7 +600,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	f := use.Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},

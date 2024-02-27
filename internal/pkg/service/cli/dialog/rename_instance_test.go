@@ -20,7 +20,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)

@@ -25,7 +25,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
@@ -176,18 +176,9 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
-
-	// Flags
-	// o.Set(`storage-api-host`, `connection.keboola.com`)
-	// o.Set(`storage-api-token`, `my-secret`)
-	// o.Set(`name`, `My Super Template`)
-	// o.Set(`id`, `my-super-template`)
-	// o.Set(`branch`, `123`)
-	// o.Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
-	// o.Set(`all-inputs`, true)
 
 	// Flags
 	f := createTemp.Flags{
@@ -298,7 +289,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
