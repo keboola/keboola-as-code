@@ -9,10 +9,6 @@ podLabels:
   app: "{{ tpl (.Release.Name) . }}"
 nodeSelector:
   nodepool: main
-tolerations:
-  - key: app
-    operator: Exists
-    effect: NoSchedule
 
 # Locked/updated etcd image
 image:

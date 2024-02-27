@@ -24,7 +24,7 @@ type Config struct {
 	Datadog          datadog.Config    `configKey:"datadog"`
 	Metrics          prometheus.Config `configKey:"metrics"`
 	API              API               `configKey:"api"`
-	CookieSecretSalt string            `configKey:"cookie-secret-salt" configUsage:"Cookie secret needed by OAuth 2 Proxy"`
+	CookieSecretSalt string            `configKey:"cookie-secret-salt" configUsage:"Cookie secret needed by OAuth 2 Proxy" sensitive:"true"`
 }
 
 type API struct {

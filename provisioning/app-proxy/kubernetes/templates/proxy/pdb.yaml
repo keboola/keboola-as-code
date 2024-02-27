@@ -1,0 +1,13 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: app-proxy-pdb
+  namespace: $NAMESPACE
+  labels:
+    app: app-proxy
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: app-proxy

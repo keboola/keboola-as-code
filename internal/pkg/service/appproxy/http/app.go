@@ -37,10 +37,10 @@ func (v AppID) String() string {
 
 const attrAppID = "proxy.appid"
 
-func appIDMiddleware(publicAddress *url.URL) middleware.Middleware {
+func appIDMiddleware(publicURL *url.URL) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			appID, ok := parseAppID(publicAddress, req.Host)
+			appID, ok := parseAppID(publicURL, req.Host)
 
 			if ok {
 				ctx := req.Context()
@@ -53,12 +53,12 @@ func appIDMiddleware(publicAddress *url.URL) middleware.Middleware {
 	}
 }
 
-func parseAppID(publicAddress *url.URL, host string) (AppID, bool) {
-	if !strings.HasSuffix(host, "."+publicAddress.Host) {
+func parseAppID(publicURL *url.URL, host string) (AppID, bool) {
+	if !strings.HasSuffix(host, "."+publicURL.Host) {
 		return "", false
 	}
 
-	if strings.Count(host, ".") != strings.Count(publicAddress.Host, ".")+1 {
+	if strings.Count(host, ".") != strings.Count(publicURL.Host, ".")+1 {
 		return "", false
 	}
 

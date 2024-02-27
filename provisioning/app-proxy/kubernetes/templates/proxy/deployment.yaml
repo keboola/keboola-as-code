@@ -2,29 +2,28 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: templates-api
+  name: app-proxy
   namespace: $NAMESPACE
   labels:
-    app: templates-api
+    app: app-proxy
     releaseId: $RELEASE_ID
 spec:
-  replicas: $TEMPLATES_API_REPLICAS
+  replicas: $APP_PROXY_REPLICAS
   selector:
     matchLabels:
-      app: templates-api
+      app: app-proxy
   template:
     metadata:
       labels:
-        app: templates-api
+        app: app-proxy
         releaseId: $RELEASE_ID
-        templates-api-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
-        tags.datadoghq.com/service: "templates-api"
+        tags.datadoghq.com/service: "app-proxy"
         tags.datadoghq.com/version: "$RELEASE_ID"
       annotations:
         log: "true"
         ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "github.com/keboola/keboola-as-code"}'
-        ad.datadoghq.com/templates-api.checks: |
+        ad.datadoghq.com/app-proxy.checks: |
           {
             "openmetrics": {
               "instances": [
@@ -40,8 +39,8 @@ spec:
           }
     spec:
       containers:
-        - name: templates-api
-          image: $TEMPLATES_API_REPOSITORY:$TEMPLATES_API_IMAGE_TAG
+        - name: app-proxy
+          image: $APP_PROXY_REPOSITORY:$APP_PROXY_IMAGE_TAG
           resources:
             requests:
               cpu: "200m"
@@ -49,37 +48,27 @@ spec:
             limits:
               memory: "768Mi"
           ports:
-            - containerPort: 8000 # API
+            - containerPort: 8000 # Proxy
             - containerPort: 9000 # metrics
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
               value: "550MiB"
-            - name: TEMPLATES_NODE_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-            - name: TEMPLATES_STORAGE_API_HOST
+            - name: APP_PROXY_SANDBOXES_API_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: templates-api
-                  key: storageApiHost
-            - name: TEMPLATES_API_PUBLIC_URL
+                  name: app-proxy
+                  key: sandboxesApiHost
+            - name: APP_PROXY_API_PUBLIC_URL
               valueFrom:
                 configMapKeyRef:
-                  name: templates-api
-                  key: templatesApiHost
-            - name: TEMPLATES_ETCD_ENDPOINT
-              value: templates-api-etcd.templates-api.svc.cluster.local:2379
-            - name: TEMPLATES_ETCD_USERNAME
-              value: root
-            - name: TEMPLATES_ETCD_PASSWORD
+                  name: app-proxy
+                  key: appProxyApiHost
+            - name: APP_PROXY_COOKIE_SECRET_SALT
               valueFrom:
                 secretKeyRef:
-                  name: templates-api-etcd
-                  key: etcd-root-password
-            - name: TEMPLATES_ETCD_NAMESPACE
-              value: templates-api
+                  name: app-proxy
+                  key: cookieSecretSalt
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
