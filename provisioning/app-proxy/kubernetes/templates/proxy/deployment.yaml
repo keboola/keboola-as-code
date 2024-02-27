@@ -73,10 +73,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: DD_TRACE_ANALYTICS_ENABLED
-              value: "true"
-            - name: DD_PROFILING_ENABLED
-              value: "true"
             - name: DD_ENV
               valueFrom:
                 fieldRef:
@@ -117,9 +113,5 @@ spec:
                   value: KubernetesLivenessProbe
             periodSeconds: 10
             failureThreshold: 3
-      tolerations:
-        - key: app
-          operator: Exists
-          effect: NoSchedule
       nodeSelector:
         nodepool: main
