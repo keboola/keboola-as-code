@@ -9,6 +9,8 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -21,10 +23,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
@@ -50,8 +53,8 @@ type GlobalFlags struct {
 	VersionCheck    bool   `configKey:"version-check" configUsage:"checks if there is a newer version of the CLI"`
 }
 
-func DefaultGlobalFlags() *GlobalFlags {
-	return &GlobalFlags{
+func DefaultGlobalFlags() GlobalFlags {
+	return GlobalFlags{
 		VersionCheck: true,
 		LogFormat:    "console",
 	}
@@ -102,23 +105,23 @@ type Cmd = cobra.Command
 
 type RootCommand struct {
 	*Cmd
-	logger    log.Logger
-	options   *options.Options
-	fs        filesystem.Fs
-	logFile   *log.File
-	logFormat log.LogFormat
-	cmdByPath map[string]*cobra.Command
-	aliases   *orderedmap.OrderedMap
+	globalFlags GlobalFlags
+	logger      log.Logger
+	fs          filesystem.Fs
+	logFile     *log.File
+	logFormat   log.LogFormat
+	cmdByPath   map[string]*cobra.Command
+	aliases     *orderedmap.OrderedMap
 }
 
 // NewRootCommand creates parent of all sub-commands.
 func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
-		options:   options.New(),
-		logger:    log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
-		cmdByPath: make(map[string]*cobra.Command),
-		aliases:   orderedmap.New(),
+		logger:      log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
+		cmdByPath:   make(map[string]*cobra.Command),
+		aliases:     orderedmap.New(),
+		globalFlags: DefaultGlobalFlags(),
 	}
 	root.Cmd = &Cmd{
 		Use:               "kbc", // name of the binary
@@ -132,6 +135,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			return root.Help()
 		},
 	}
+	fmt.Println("dsadasdas ", root.Cmd)
 
 	// Setup in/out
 	root.SetIn(stdin)
@@ -160,7 +164,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		}
 
 		// Load values from flags and envs
-		if err = root.options.Load(cmd.Context(), root.logger, osEnvs, root.fs, cmd.Flags()); err != nil {
+		if err = Load(cmd.Context(), root.logger, osEnvs, root.fs, cmd.Flags()); err != nil {
 			return err
 		}
 
@@ -170,7 +174,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		root.logger.Debugf(cmd.Context(), `Working dir: %s`, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
-		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.options.GetBool(options.NonInteractiveOpt))
+		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.globalFlags.NonInteractive)
 
 		// Create process abstraction
 		proc := servicectx.New()
@@ -184,15 +188,14 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			root.logger,
 			proc,
 			root.fs,
-			dialog.New(prompt, root.options),
-			root.options,
+			dialog.New(prompt),
 			envs,
 			stdout,
 			stderr,
 		))
 
 		// Check version
-		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseScope()); err != nil {
+		if err := versionCheck.Run(cmd.Context(), root.globalFlags.VersionCheck, p.BaseScope()); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(cmd.Context(), `Version check: %s.`, err.Error())
 		} else {
@@ -359,9 +362,9 @@ func (root *RootCommand) printError(errRaw error) {
 			root.logger.Infof(root.Context(), `Or use the "template create" command.`)
 			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is template dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageAPIHost), errors.Is(err, dialog.ErrMissingStorageAPIHost):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageAPIHostOpt, root.options.GetEnvName(options.StorageAPIHostOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, cmdconfig.StorageAPIHostOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(cmdconfig.StorageAPIHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageAPIToken), errors.Is(err, dialog.ErrMissingStorageAPIToken):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageAPITokenOpt, root.options.GetEnvName(options.StorageAPITokenOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, cmdconfig.StorageAPITokenOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(cmdconfig.StorageAPITokenOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}
@@ -375,19 +378,19 @@ func (root *RootCommand) printError(errRaw error) {
 func (root *RootCommand) setupLogger() {
 	// Get log file
 	var logFileErr error
-	root.logFile, logFileErr = log.NewLogFile(root.options.LogFilePath)
+	root.logFile, logFileErr = log.NewLogFile(root.globalFlags.LogFile)
 
 	var logFormatErr error
-	root.logFormat, logFormatErr = log.NewLogFormat(root.options.LogFormat)
+	root.logFormat, logFormatErr = log.NewLogFormat(root.globalFlags.LogFormat)
 
 	// Get temporary logger
 	memoryLogger, _ := root.logger.(*log.MemoryLogger)
 
 	// Create logger
-	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.options.Verbose)
+	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.globalFlags.Verbose)
 
 	// Warn if user specified log file + it cannot be opened
-	if logFileErr != nil && root.options.LogFilePath != "" {
+	if logFileErr != nil && root.globalFlags.LogFile != "" {
 		root.logger.Warnf(root.Context(), "Cannot open log file: %s", logFileErr)
 	}
 
@@ -399,7 +402,7 @@ func (root *RootCommand) setupLogger() {
 	// Log info
 	root.logger.Debug(root.Context(), root.Version)
 	root.logger.Debugf(root.Context(), "Running command %v", os.Args)
-	root.logger.Debug(root.Context(), root.options.Dump())
+	// root.logger.Debug(root.Context(), root.options.Dump())
 	if root.logFile == nil {
 		root.logger.Debug(root.Context(), `Log file: -`)
 	} else {
@@ -456,4 +459,21 @@ func visitSubCommands(root *cobra.Command, callback func(cmd *cobra.Command) (go
 			visitSubCommands(cmd, callback)
 		}
 	}
+}
+
+func Load(ctx context.Context, _ log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
+	// Load ENVs from OS and files
+	envs := loadEnvFiles(ctx, log.NewNopLogger(), osEnvs, fs)
+
+	// Define mapping between flag and field path
+	flagToField := func(flag *pflag.Flag) (orderedmap.Path, bool) {
+		return orderedmap.PathFromStr(flag.Name), true
+	}
+
+	// Bind all flags and corresponding ENVs
+	if _, err := configmap.BindToViper(viper.New(), flagToField, configmap.BindConfig{Flags: flags, Envs: envs, EnvNaming: env.NewNamingConvention(cmdconfig.ENVPrefix)}); err != nil {
+		return err
+	}
+
+	return nil
 }
