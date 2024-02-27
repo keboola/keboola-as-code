@@ -187,9 +187,9 @@ func TestMutex_ParallelWork(t *testing.T) {
 					// Create client and session
 					client := etcdhelper.ClientForTest(t, etcdCfg)
 					session, errCh := NewSessionBuilder().Start(ctx, sessionWg, logger, client)
+					readyWg.Done()
 					require.NotNil(t, session)
 					require.NoError(t, <-errCh)
-					readyWg.Done()
 
 					// Create N unique locks in the session
 					locksWg := &sync.WaitGroup{}
@@ -205,7 +205,12 @@ func TestMutex_ParallelWork(t *testing.T) {
 								defer locksWg.Done()
 
 								// Start all work at the same time
-								<-start
+								select {
+								case <-ctx.Done():
+									require.Fail(t, "timeout when waiting for the start channel")
+								case <-start:
+									// continue
+								}
 
 								// Use each lock N time sequentially
 								for l := 0; l < tc.Serial; l++ {
