@@ -29,11 +29,11 @@ func TestRepository_Branch(t *testing.T) {
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
-	branchKey1 := key.BranchKey{ProjectID: 123, BranchID: 567}
+	branchKey1 := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	branchKey2 := key.BranchKey{ProjectID: 456, BranchID: 789}
 
 	// Get services
-	d, mocked := dependencies.NewMockedDefinitionScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedServiceScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()

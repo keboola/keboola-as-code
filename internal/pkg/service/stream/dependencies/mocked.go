@@ -103,16 +103,16 @@ func NewMockedTableSinkScope(t *testing.T, opts ...dependencies.MockedOption) (T
 
 func NewMockedTableSinkScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
 	t.Helper()
-	defScope, mocked := NewMockedDefinitionScopeWithConfig(t, modifyConfig, opts...)
-	cfg := mocked.TestConfig()
+	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
+	cfg := mock.TestConfig()
 	backoff := model.NoRandomizationBackoff()
 	d, err := newTableSinkScope(tableSinkParentScopesImpl{
-		DefinitionScope:      defScope,
-		DistributionScope:    mocked,
-		DistributedLockScope: mocked,
+		ServiceScope:         svcScp,
+		DistributionScope:    mock,
+		DistributedLockScope: mock,
 	}, cfg, backoff)
 	require.NoError(t, err)
-	return d, mocked
+	return d, mock
 }
 
 func testConfig(t *testing.T, d dependencies.Mocked) config.Config {

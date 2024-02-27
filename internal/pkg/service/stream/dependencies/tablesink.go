@@ -19,13 +19,13 @@ type tableSinkScope struct {
 }
 
 type tableSinkParentScopes interface {
-	DefinitionScope
+	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
 
 type tableSinkParentScopesImpl struct {
-	DefinitionScope
+	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
