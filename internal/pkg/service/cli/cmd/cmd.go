@@ -135,7 +135,6 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			return root.Help()
 		},
 	}
-	fmt.Println("dsadasdas ", root.Cmd)
 
 	// Setup in/out
 	root.SetIn(stdin)
@@ -192,6 +191,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			envs,
 			stdout,
 			stderr,
+			root.globalFlags.Verbose,
+			root.globalFlags.VerboseAPI,
 		))
 
 		// Check version

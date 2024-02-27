@@ -30,6 +30,8 @@ type provider struct {
 	envs       *env.Map
 	stdout     io.Writer
 	stderr     io.Writer
+	verbose    bool
+	verboseAPI bool
 
 	baseScp      dependencies.Lazy[*baseScope]
 	localCmdScp  dependencies.Lazy[*localCommandScope]
@@ -56,6 +58,8 @@ func NewProvider(
 	envs *env.Map,
 	stdout io.Writer,
 	stderr io.Writer,
+	verbose bool,
+	verboseAPI bool,
 ) Provider {
 	return &provider{
 		commandCtx: commandCtx,
@@ -66,6 +70,8 @@ func NewProvider(
 		envs:       envs,
 		stdout:     stdout,
 		stderr:     stderr,
+		verboseAPI: verboseAPI,
+		verbose:    verbose,
 	}
 }
 
@@ -75,10 +81,10 @@ func (v *provider) BaseScope() BaseScope {
 		httpClient := httpclient.New(
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
 			func(c *httpclient.Config) {
-				if v.options.Verbose {
+				if v.verbose {
 					httpclient.WithDebugOutput(v.stdout)(c)
 				}
-				if v.options.VerboseAPI {
+				if v.verboseAPI {
 					httpclient.WithDumpOutput(v.stdout)(c)
 				}
 			},
