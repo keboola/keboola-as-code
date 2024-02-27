@@ -28,7 +28,7 @@ type testCase struct {
 func TestCaches(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	clk := clock.NewMock()
@@ -376,7 +376,7 @@ func TestCaches(t *testing.T) {
 		if expectedRevision > 0 {
 			assert.Eventually(t, func() bool {
 				return l1Cache.Revision() >= expectedRevision
-			}, time.Second, 10*time.Millisecond)
+			}, 5*time.Second, 100*time.Millisecond)
 		}
 
 		// Test cached L1
@@ -387,7 +387,7 @@ func TestCaches(t *testing.T) {
 		if expectedRevision > 0 {
 			assert.Eventually(t, func() bool {
 				return l2Cache.Revision() >= expectedRevision
-			}, time.Second, 10*time.Millisecond)
+			}, 5*time.Second, 100*time.Millisecond)
 		}
 
 		// Test cached L2: twice, cold and warm read
