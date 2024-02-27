@@ -138,7 +138,7 @@ func GenerateAndBind(cfg GenerateAndBindConfig, targets ...any) error {
 	for _, target := range targets {
 		// Validate type
 		if v := reflect.ValueOf(target); v.Kind() != reflect.Pointer && v.Type().Elem().Kind() != reflect.Pointer {
-			return errors.Errorf(`cannot bind to type "%s": expected a pointer to a struct`, v.Type().String())
+			return errors.Errorf(`cannot bind configuration to the "%s": expected a pointer to a struct`, v.Type().String())
 		}
 
 		bindCfg := BindConfig{Flags: flags, Args: cfg.Args, ConfigFiles: configFiles, EnvNaming: cfg.EnvNaming, Envs: cfg.Envs}
@@ -253,7 +253,7 @@ func ValidateAndNormalize(target any) error {
 func bind(inputs BindConfig, target any, flagToFieldFn FlagToFieldFn) error {
 	values, err := collectValues(inputs, flagToFieldFn)
 	if err != nil {
-		return err
+		return errors.PrefixError(err, "value error")
 	}
 
 	// Decode
@@ -269,9 +269,9 @@ func bind(inputs BindConfig, target any, flagToFieldFn FlagToFieldFn) error {
 	)
 
 	if decoder, err := mapstructure.NewDecoder(decoderCfg); err != nil {
-		return errors.PrefixError(err, "cannot create configuration decoder")
+		return errors.PrefixError(err, "cannot create decoder")
 	} else if err := decoder.Decode(values); err != nil {
-		return errors.PrefixError(err, "cannot decode configuration")
+		return errors.PrefixError(err, "decode error")
 	}
 
 	return ValidateAndNormalize(target)

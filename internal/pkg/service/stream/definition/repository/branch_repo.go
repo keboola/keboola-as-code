@@ -54,6 +54,25 @@ func (r *BranchRepository) ExistsOrErr(k key.BranchKey) op.WithResult[bool] {
 		})
 }
 
+func (r *BranchRepository) GetDefault(k keboola.ProjectID) *op.TxnOp[definition.Branch] {
+	found := false
+	var result definition.Branch
+	return op.
+		TxnWithResult(r.client, &result).
+		Then(r.List(k).ForEach(func(branch definition.Branch, _ *iterator.Header) error {
+			if branch.IsDefault {
+				found = true
+				result = branch
+			}
+			return nil
+		})).
+		OnSucceeded(func(r *op.TxnResult[definition.Branch]) {
+			if !found {
+				r.AddErr(serviceError.NewResourceNotFoundError("branch", "default", "project"))
+			}
+		})
+}
+
 func (r *BranchRepository) Get(k key.BranchKey) op.WithResult[definition.Branch] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).

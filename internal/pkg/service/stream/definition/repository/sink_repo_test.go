@@ -36,7 +36,7 @@ func TestRepository_Sink(t *testing.T) {
 	sinkKey2 := key.SinkKey{SourceKey: key.SourceKey{BranchKey: branchKey, SourceID: "my-source-2"}, SinkID: "my-sink-2"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedDefinitionScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedServiceScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()

@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -80,20 +81,17 @@ func NewMockedPublicRequestScope(t *testing.T, opts ...dependencies.MockedOption
 
 func NewMockedProjectRequestScope(t *testing.T, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
 	t.Helper()
-	pubReqScp, mocked := NewMockedPublicRequestScope(t, opts...)
-	prjReqScp := newProjectRequestScope(pubReqScp, mocked)
-	return prjReqScp, mocked
+	pubReqScp, mock := NewMockedPublicRequestScope(t, opts...)
+	prjReqScp := newProjectRequestScope(pubReqScp, mock)
+	return prjReqScp, mock
 }
 
-func NewMockedDefinitionScope(t *testing.T, opts ...dependencies.MockedOption) (DefinitionScope, Mocked) {
+func NewMockedBranchRequestScope(t *testing.T, branchInput key.BranchIDOrDefault, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
 	t.Helper()
-	return NewMockedDefinitionScopeWithConfig(t, nil, opts...)
-}
-
-func NewMockedDefinitionScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (DefinitionScope, Mocked) {
-	t.Helper()
-	svcScope, mocked := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
-	return newDefinitionScope(svcScope), mocked
+	prjReqScp, mocked := NewMockedProjectRequestScope(t, opts...)
+	branchReqScp, err := newBranchRequestScope(mocked.TestContext(), prjReqScp, branchInput)
+	require.NoError(t, err)
+	return branchReqScp, mocked
 }
 
 func NewMockedTableSinkScope(t *testing.T, opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
@@ -103,16 +101,16 @@ func NewMockedTableSinkScope(t *testing.T, opts ...dependencies.MockedOption) (T
 
 func NewMockedTableSinkScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
 	t.Helper()
-	defScope, mocked := NewMockedDefinitionScopeWithConfig(t, modifyConfig, opts...)
-	cfg := mocked.TestConfig()
+	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
+	cfg := mock.TestConfig()
 	backoff := model.NoRandomizationBackoff()
 	d, err := newTableSinkScope(tableSinkParentScopesImpl{
-		DefinitionScope:      defScope,
-		DistributionScope:    mocked,
-		DistributedLockScope: mocked,
+		ServiceScope:         svcScp,
+		DistributionScope:    mock,
+		DistributedLockScope: mock,
 	}, cfg, backoff)
 	require.NoError(t, err)
-	return d, mocked
+	return d, mock
 }
 
 func testConfig(t *testing.T, d dependencies.Mocked) config.Config {

@@ -37,7 +37,7 @@ func TestRepository_Source(t *testing.T) {
 	sourceKey2 := key.SourceKey{BranchKey: key.BranchKey{ProjectID: 123, BranchID: 789}, SourceID: "my-source-2"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedDefinitionScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedServiceScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()

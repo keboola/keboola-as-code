@@ -35,6 +35,7 @@ package dependencies
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
@@ -46,6 +47,7 @@ type ServiceScope interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
+	DefinitionRepository() *definitionRepo.Repository
 }
 
 type APIScope interface {
@@ -62,13 +64,13 @@ type ProjectRequestScope interface {
 	dependencies.ProjectScope
 }
 
-type DefinitionScope interface {
-	ServiceScope
-	DefinitionRepository() *definitionRepo.Repository
+type BranchRequestScope interface {
+	ProjectRequestScope
+	Branch() definition.Branch
 }
 
 type TableSinkScope interface {
-	DefinitionScope
+	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 	StatisticsRepository() *statsRepo.Repository

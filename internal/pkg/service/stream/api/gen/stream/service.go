@@ -29,38 +29,38 @@ type Service interface {
 	// HealthCheck implements HealthCheck.
 	HealthCheck(context.Context, dependencies.PublicRequestScope) (res string, err error)
 	// Create a new source in the branch.
-	CreateSource(context.Context, dependencies.ProjectRequestScope, *CreateSourcePayload) (res *Task, err error)
+	CreateSource(context.Context, dependencies.BranchRequestScope, *CreateSourcePayload) (res *Task, err error)
 	// Update the source.
-	UpdateSource(context.Context, dependencies.ProjectRequestScope, *UpdateSourcePayload) (res *Source, err error)
+	UpdateSource(context.Context, dependencies.BranchRequestScope, *UpdateSourcePayload) (res *Source, err error)
 	// List all sources in the branch.
-	ListSources(context.Context, dependencies.ProjectRequestScope, *ListSourcesPayload) (res *SourcesList, err error)
+	ListSources(context.Context, dependencies.BranchRequestScope, *ListSourcesPayload) (res *SourcesList, err error)
 	// Get the source definition.
-	GetSource(context.Context, dependencies.ProjectRequestScope, *GetSourcePayload) (res *Source, err error)
+	GetSource(context.Context, dependencies.BranchRequestScope, *GetSourcePayload) (res *Source, err error)
 	// Delete the source.
-	DeleteSource(context.Context, dependencies.ProjectRequestScope, *DeleteSourcePayload) (err error)
+	DeleteSource(context.Context, dependencies.BranchRequestScope, *DeleteSourcePayload) (err error)
 	// Get source settings.
-	GetSourceSettings(context.Context, dependencies.ProjectRequestScope, *GetSourceSettingsPayload) (res SettingsResult, err error)
+	GetSourceSettings(context.Context, dependencies.BranchRequestScope, *GetSourceSettingsPayload) (res SettingsResult, err error)
 	// Update source settings.
-	UpdateSourceSettings(context.Context, dependencies.ProjectRequestScope, *UpdateSourceSettingsPayload) (res SettingsResult, err error)
+	UpdateSourceSettings(context.Context, dependencies.BranchRequestScope, *UpdateSourceSettingsPayload) (res SettingsResult, err error)
 	// Each sink uses its own token scoped to the target bucket, this endpoint
 	// refreshes all of those tokens.
-	RefreshSourceTokens(context.Context, dependencies.ProjectRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
+	RefreshSourceTokens(context.Context, dependencies.BranchRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
 	// Create a new sink in the source.
-	CreateSink(context.Context, dependencies.ProjectRequestScope, *CreateSinkPayload) (res *Task, err error)
+	CreateSink(context.Context, dependencies.BranchRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
-	GetSink(context.Context, dependencies.ProjectRequestScope, *GetSinkPayload) (res *Sink, err error)
+	GetSink(context.Context, dependencies.BranchRequestScope, *GetSinkPayload) (res *Sink, err error)
 	// Get the sink settings.
-	GetSinkSettings(context.Context, dependencies.ProjectRequestScope, *GetSinkSettingsPayload) (res SettingsResult, err error)
+	GetSinkSettings(context.Context, dependencies.BranchRequestScope, *GetSinkSettingsPayload) (res SettingsResult, err error)
 	// Update sink settings.
-	UpdateSinkSettings(context.Context, dependencies.ProjectRequestScope, *UpdateSinkSettingsPayload) (res SettingsResult, err error)
+	UpdateSinkSettings(context.Context, dependencies.BranchRequestScope, *UpdateSinkSettingsPayload) (res SettingsResult, err error)
 	// List all sinks in the source.
-	ListSinks(context.Context, dependencies.ProjectRequestScope, *ListSinksPayload) (res *SinksList, err error)
+	ListSinks(context.Context, dependencies.BranchRequestScope, *ListSinksPayload) (res *SinksList, err error)
 	// Update the sink.
-	UpdateSink(context.Context, dependencies.ProjectRequestScope, *UpdateSinkPayload) (res *Task, err error)
+	UpdateSink(context.Context, dependencies.BranchRequestScope, *UpdateSinkPayload) (res *Task, err error)
 	// Delete the sink.
-	DeleteSink(context.Context, dependencies.ProjectRequestScope, *DeleteSinkPayload) (err error)
+	DeleteSink(context.Context, dependencies.BranchRequestScope, *DeleteSinkPayload) (err error)
 	// Get details of a task.
-	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
+	GetTask(context.Context, dependencies.BranchRequestScope, *GetTaskPayload) (res *Task, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -89,7 +89,7 @@ var MethodNames = [19]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "
 type BranchID = keboola.BranchID
 
 // ID of the branch or "default".
-type BranchIDOrDefault string
+type BranchIDOrDefault = key.BranchIDOrDefault
 
 // Information about the operation actor.
 type By struct {
