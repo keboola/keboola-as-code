@@ -67,6 +67,13 @@ func TestRepository_Branch(t *testing.T) {
 		}
 	}
 	{
+		// GetDefault - not found
+		if err := branchRepo.GetDefault(projectID).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `branch "default" not found in the project`, err.Error())
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+		}
+	}
+	{
 		// GetDeleted - not found
 		if err := branchRepo.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
@@ -76,13 +83,15 @@ func TestRepository_Branch(t *testing.T) {
 
 	// Create
 	// -----------------------------------------------------------------------------------------------------------------
+	var branch1, branch2 definition.Branch
 	{
-		branch1 := test.NewBranch(branchKey1)
-		branch2 := test.NewBranch(branchKey2)
-
+		branch1 = test.NewBranch(branchKey1)
+		branch1.IsDefault = true
 		result1, err := branchRepo.Create(&branch1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch1, result1)
+
+		branch2 = test.NewBranch(branchKey2)
 		result2, err := branchRepo.Create(&branch2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch2, result2)
@@ -104,6 +113,12 @@ func TestRepository_Branch(t *testing.T) {
 		result2, err := branchRepo.Get(branchKey2).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, keboola.BranchID(789), result2.BranchID)
+	}
+	{
+		// GetDefault
+		result, err := branchRepo.GetDefault(projectID).Do(ctx).ResultOrErr()
+		assert.NoError(t, err)
+		assert.Equal(t, branch1, result)
 	}
 	{
 		// GetDeleted - not found
