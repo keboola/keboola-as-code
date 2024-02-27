@@ -53,7 +53,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.H
 	return nil
 }
 
-func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler, publicAddress *url.URL) http.Handler {
+func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler, publicURL *url.URL) http.Handler {
 	middlewareCfg := middleware.NewConfig(
 		middleware.WithPropagators(propagation.TraceContext{}),
 		// Ignore health checks
@@ -67,7 +67,7 @@ func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler,
 		middleware.ContextTimout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
-		appIDMiddleware(publicAddress),
+		appIDMiddleware(publicURL),
 		middleware.Logger(logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
 	)

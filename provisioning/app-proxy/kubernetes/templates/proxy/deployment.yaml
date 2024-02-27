@@ -59,7 +59,7 @@ spec:
                 configMapKeyRef:
                   name: app-proxy
                   key: sandboxesApiHost
-            - name: APP_PROXY_PUBLIC_ADDRESS
+            - name: APP_PROXY_API_PUBLIC_URL
               valueFrom:
                 configMapKeyRef:
                   name: app-proxy
