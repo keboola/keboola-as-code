@@ -35,24 +35,35 @@ linters-settings:
 
   # Forbidden constructions
   forbidigo:
+    # Instead of matching the literal source code, use real package name.
+    analyze-types: true
     forbid:
       # No debug statements
-      - ^(fmt\.Print.*|print|println)$(# Debug statements are forbidden, use a logger)?(# No debug statements)?
+      - p: ^(fmt\.Print.*|print|println)$
+        msg: Debug statements are forbidden, use a logger, not debug statements.
       # No "os" filesystem ops, use "internal/pkg/filesystem" package instead
-      - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$(# Use "internal/pkg/filesystem" package instead)?
-      - ^testhelper.(GetFileContent|Glob)$(# Use "internal/pkg/filesystem" package instead)?
+      - p: ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
+        msg: Use "internal/pkg/filesystem" package instead.
+      - p: ^testhelper.(GetFileContent|Glob)$
+        msg: Use "internal/pkg/filesystem" package instead.
       # No "filepath" package, use "internal/pkg/filesystem" package instead
-      - ^filepath\..*$(# Use "internal/pkg/filesystem" package instead)?
+      - p: ^filepath\..*$
+        msg: Use "internal/pkg/filesystem" package instead.
       # "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead
-      - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$(# "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client\.Transport = httpmock\.NewMockTransport() instead)?
+      - p: ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
+        msg: The httpmock singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead.
       # Os ENVs singleton is forbidden, use env.Map instead
-      - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$(# Os ENVs singleton is forbidden, use env\.Map instead)?
+      - p: ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
+        msg: Os ENVs singleton is forbidden, use env.Map instead.
       # Os Stdout and Stderr are forbidden, use dependencies instead
-      - ^os\.(Stdout|Stderr)$(# Use dependencies instead)?
+      - p: ^os\.(Stdout|Stderr)$
+        msg: Use dependencies instead.
       # No fmt.Errorf, use errors.Errorf instead to include stack trace
-      - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
+      - p: ^fmt\.Errorf$
+        msg: Use errors.Errorf instead to include stack trace.
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
-      - ^gonanoid\..*$(# Use "internal/pkg/idgenerator" package instead)?
+      - p: ^gonanoid\..*$
+        msg: Use "internal/pkg/idgenerator" package instead.
   depguard:
     rules:
       errors:
@@ -211,6 +222,14 @@ issues:
         - forbidigo
     # Allow direct printing to the console
     - path: internal/pkg/service/common/configmap/*
+      text: "fmt."
+      linters:
+        - forbidigo
+    - path: internal/pkg/service/common/entrypoint/*
+      text: "os."
+      linters:
+        - forbidigo
+    - path: internal/pkg/service/common/entrypoint/*
       text: "fmt."
       linters:
         - forbidigo
