@@ -509,3 +509,65 @@ stringSlice: a,b,c
 		AddrNullable:     Value[*netip.Addr]{Value: &expectedAddrValue, SetBy: SetByFlag},
 	}, target)
 }
+
+func TestGenerateAndBind_Dump_Yaml(t *testing.T) {
+	t.Parallel()
+
+	envs := env.Empty()
+	envs.Set("MY_APP_DURATION", "100s")
+	envs.Set("MY_APP_DURATION_NULLABLE", "100s")
+
+	cfg := GenerateAndBindConfig{
+		Args: []string{
+			"app",
+			"--dump-config=yaml",
+			"--sensitive-string", "abc",
+			"--string-with-usage", "invalid",
+			"--int", "1000",
+			"--float", "78.90",
+		},
+		EnvNaming:              env.NewNamingConvention("MY_APP_"),
+		Envs:                   envs,
+		GenerateHelpFlag:       true,
+		GenerateConfigFileFlag: true,
+		GenerateDumpConfigFlag: true,
+	}
+
+	target := TestConfig{
+		Embedded: Embedded{
+			EmbeddedField: "default",
+		},
+	}
+
+	expected := `
+embedded: default
+customString: ""
+customInt: 0
+sensitiveString: '*****'
+stringSlice: []
+int: 1000
+intSlice: []
+float: 78.9
+# An usage text. Validation rules: ne=invalid
+stringWithUsage: invalid
+duration: 1m40s
+durationNullable: 1m40s
+url: null
+address: ""
+addressNullable: null
+nested:
+    foo: ""
+    bar: 0
+`
+
+	err := GenerateAndBind(cfg, &target)
+	if assert.Error(t, err) {
+		dumpErr, ok := err.(DumpError)
+		require.True(t, ok)
+		assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(string(dumpErr.Dump)))
+		assert.Equal(t, "configuration dump requested", dumpErr.Error())
+		if err := dumpErr.ValidationError; assert.Error(t, err) {
+			assert.Equal(t, "configuration is not valid:\n- \"stringWithUsage\" should not be equal to invalid", err.Error())
+		}
+	}
+}
