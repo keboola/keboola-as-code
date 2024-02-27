@@ -2,20 +2,18 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/entrypoint"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -35,35 +33,17 @@ import (
 
 const (
 	ServiceName       = "stream"
+	ENVPrefix         = "STREAM_"
 	ErrorNamePrefix   = "stream."
 	ExceptionIDPrefix = "keboola-stream-"
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Println(errors.PrefixError(err, "fatal error").Error()) // nolint:forbidigo
-		os.Exit(1)
-	}
+	entrypoint.Run(run, config.New(), entrypoint.Config{ENVPrefix: ENVPrefix})
 }
 
-func run() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Load configuration.
-	envs, err := env.FromOs()
-	if err != nil {
-		return errors.Errorf("cannot load envs: %w", err)
-	}
-	cfg, err := config.GenerateAndBind(os.Args, envs)
-	if errors.Is(err, pflag.ErrHelp) {
-		// Stop on --help flag
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Create logger.
+func run(ctx context.Context, cfg config.Config) error {
+	// Create logger
 	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("bufferApi") // nolint:forbidigo
 
 	// Dump configuration, sensitive values are masked
@@ -74,7 +54,7 @@ func run() error {
 		return err
 	}
 
-	// Start CPU profiling, if enabled.
+	// Start CPU profiling, if enabled
 	if cfg.CPUProfFilePath != "" {
 		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
 		if err != nil {
@@ -83,7 +63,7 @@ func run() error {
 		defer stop()
 	}
 
-	// Create process abstraction.
+	// Create process abstraction
 	proc := servicectx.New(servicectx.WithLogger(logger))
 
 	// Setup telemetry
@@ -108,20 +88,20 @@ func run() error {
 		return err
 	}
 
-	// Create dependencies.
+	// Create dependencies
 	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
 
-	// Create service.
+	// Create service
 	svc := service.New(apiScp)
 
 	filterImportEndpoint := func(req *http.Request) bool {
 		return !strings.HasPrefix(req.URL.Path, "/v1/import/") || req.URL.RawQuery == "debug=true"
 	}
 
-	// Start HTTP server.
+	// Start HTTP server
 	logger.Infof(ctx, "starting Stream API HTTP server, listen-address=%s", cfg.API.Listen)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.API.Listen,
@@ -168,7 +148,7 @@ func run() error {
 		return err
 	}
 
-	// Wait for the service shutdown.
+	// Wait for the service shutdown
 	proc.WaitForShutdown()
 	return nil
 }
