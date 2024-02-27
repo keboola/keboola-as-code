@@ -262,7 +262,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	gocloud.dev v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/image v0.5.0 // indirect
+	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	google.golang.org/api v0.155.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
