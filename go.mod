@@ -4,6 +4,8 @@ go 1.22
 
 replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
+replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.5.1 => github.com/keboola/go-oauth2-proxy/v7 v7.5.2-0.20240130153840-fe9b3a0fa072
+
 require (
 	ariga.io/atlas v0.19.1-0.20240203083654-5948b60a8e43
 	entgo.io/ent v0.13.0
@@ -24,6 +26,7 @@ require (
 	github.com/go-playground/validator/v10 v10.18.0
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/gofrs/flock v0.8.1
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -39,6 +42,8 @@ require (
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/mitchellh/hashstructure/v2 v2.0.2
+	github.com/oauth2-proxy/mockoidc v0.0.0-20240214162133-caebfff84d25
+	github.com/oauth2-proxy/oauth2-proxy/v7 v7.5.1
 	github.com/prometheus/client_golang v1.18.0
 	github.com/relvacode/iso8601 v1.4.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
@@ -75,6 +80,7 @@ require (
 	google.golang.org/grpc v1.62.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.60.3
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
+	nhooyr.io/websocket v1.8.10
 	v.io/x/lib v0.1.18
 )
 
@@ -171,20 +177,27 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0 // indirect
 	github.com/aws/smithy-go v1.14.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bitly/go-simplejson v0.5.0 // indirect
+	github.com/bsm/redislock v0.9.1 // indirect
+	github.com/coreos/go-oidc/v3 v3.5.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/creack/pty v1.1.18 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/ebitengine/purego v0.5.2 // indirect
 	github.com/eliukblau/pixterm/pkg/ansimage v0.0.0-20191210081756-9fb6cf8c2f75 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
 	github.com/go-chi/chi/v5 v5.0.11 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -204,23 +217,28 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/justinas/alice v1.2.0 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.10 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
+	github.com/mbland/hmacauth v0.0.0-20170912233209-44256dfd4bfa // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/ohler55/ojg v1.14.5 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/redis/go-redis/v9 v9.1.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
@@ -228,6 +246,8 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.etcd.io/bbolt v1.3.8 // indirect
@@ -249,6 +269,8 @@ require (
 	google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	k8s.io/apimachinery v0.26.2 // indirect
 )

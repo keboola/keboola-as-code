@@ -27,7 +27,16 @@ Start an interactive console in a container, run:
 ```
 docker compose run --rm -u "$UID:$GID" --service-ports dev bash
 ```
+
+### Troubleshooting
+
+Strange issues are usually caused by incorrect permissions or file owner somewhere. Here are some tips:
+
 In case you're using Docker Desktop on Linux remove the `-u "$UID:$GID"`. It can cause some permission issues.
+
+Run `sudo chown -R <user>:<group> ./` to reset owner on all files.
+
+Run `docker volume ls` and `docker volume rm <volume>` to delete the named cache volume.
 
 ### Run Tests
 

@@ -45,11 +45,11 @@ the [prometheus.ServeMetrics](../internal/pkg/telemetry/metric/prometheus/promet
 
 ### Metrics
 
-| Span                                                   | Description               |
-|--------------------------------------------------------|---------------------------|
-| `keboola_go_http_server_duration`                      | Duration of HTTP request. |
-| `keboola_go_http_server_request_content_length.count`  | Request content length.   |
-| `keboola_go_http_server_response_content_length.count` | Response content length.  |
+| Span                                         | Description               |
+|----------------------------------------------|---------------------------|
+| `keboola.go.http.server.duration`            | Duration of HTTP request. |
+| `keboola.go.http.server.request.size.count`  | Request content length.   |
+| `keboola.go.http.server.response.size.count` | Response content length.  |
 
 #### Apdex
 
@@ -90,16 +90,16 @@ the [pkg/client/trace/otel](https://github.com/keboola/go-client/tree/main/pkg/c
 
 ### Metrics
 
-| Span                                            | Description                                                                                            |
-|-------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `keboola_go_client_request_in_flight`           | Number of active HTTP requests.<br>All request redirects and retries are tracked as one record.        |
-| `keboola_go_client_request_duration`            | Duration of a high-level HTTP request.<br>All request redirects and retries are tracked as one record. |
-| `keboola_go_client_request_parse_in_flight`     | Number of active response body parsing operations.                                                     |
-| `keboola_go_client_request_parse_duration`      | Duration of HTTP response body parsing.                                                                |
-| `keboola_go_http_request_in_flight`             | Number of active HTTP requests. Each redirect and retry is tracked separately.                         |
-| `keboola_go_http_request_duration`              | Duration of a low-level HTTP request. Each redirect and retry is tracked separately.                   |
-| `keboola_go_http_request_content_length.count`  | Request content length.                                                                                |
-| `keboola_go_http_response_content_length.count` | Response content length.                                                                               |
+| Span                                        | Description                                                                                            |
+|---------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `keboola_go_client_request_in_flight`       | Number of active HTTP requests.<br>All request redirects and retries are tracked as one record.        |
+| `keboola_go_client_request_duration`        | Duration of a high-level HTTP request.<br>All request redirects and retries are tracked as one record. |
+| `keboola_go_client_request_parse_in_flight` | Number of active response body parsing operations.                                                     |
+| `keboola_go_client_request_parse_duration`  | Duration of HTTP response body parsing.                                                                |
+| `keboola_go_http_request_in_flight`         | Number of active HTTP requests. Each redirect and retry is tracked separately.                         |
+| `keboola.go.http.request.duration`          | Duration of a low-level HTTP request. Each redirect and retry is tracked separately.                   |
+| `keboola.go.http.request.size.count`        | Request content length.                                                                                |
+| `keboola.go.http.response.size.count`       | Response content length.                                                                               |
 
 ## Background Tasks
 

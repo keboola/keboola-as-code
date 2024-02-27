@@ -40,6 +40,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		middleware.Filter(middlewareCfg),
 		middleware.Logger(logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
+		middleware.OpenTelemetryApdex(tel.MeterProvider()),
 	)
 	// Mount endpoints
 	cfg.Mount(com)
