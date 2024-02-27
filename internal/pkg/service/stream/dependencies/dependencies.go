@@ -64,9 +64,9 @@ type ProjectRequestScope interface {
 	dependencies.ProjectScope
 }
 
-type DefinitionScope interface {
-	ServiceScope
-	DefinitionRepository() *definitionRepo.Repository
+type BranchRequestScope interface {
+	ProjectRequestScope
+	Branch() definition.Branch
 }
 
 type TableSinkScope interface {
