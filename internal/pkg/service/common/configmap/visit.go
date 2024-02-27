@@ -113,7 +113,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 			field.StructField = typ.Field(i)
 			field.OriginalPath = append(field.OriginalPath, vc.OriginalPath...)
 			field.OriginalPath = append(field.OriginalPath, orderedmap.MapStep(field.StructField.Name))
-			field.MappedPath = vc.MappedPath
+			field.MappedPath = append(field.MappedPath, vc.MappedPath...)
 			field.Type = field.StructField.Type
 			field.Leaf = false
 
