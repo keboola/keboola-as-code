@@ -11,7 +11,7 @@ import (
 // Config configures for the staging storage.
 type Config struct {
 	MaxSlicesPerFile        int          `configKey:"maxSlicesPerFile" configUsage:"Maximum number of slices in a file, a new file is created after reaching it." validate:"required,min=1,max=50000"`
-	ParallelFileCreateLimit int          `configKey:"parallelFileCreateLimit" configUsage:"Maximum number of the Storage API file resources created in parallel within one operation. " validate:"required,min=1,max=500"`
+	ParallelFileCreateLimit int          `configKey:"parallelFileCreateLimit" configUsage:"Maximum number of the Storage API file resources created in parallel within one operation." validate:"required,min=1,max=500"`
 	Upload                  UploadConfig `configKey:"upload"`
 }
 
