@@ -4,8 +4,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
@@ -14,14 +12,13 @@ import (
 )
 
 const (
-	EnvPrefix              = "TEMPLATES_"
 	DefaultCleanupInterval = 1 * time.Hour
 )
 
 // Config of the Templates API.
 // See "configmap" package for more information.
 type Config struct {
-	DebugLog             bool              `configKey:"debug-log" configUsage:"Enable debug log level."`
+	DebugLog             bool              `configKey:"debugLog" configUsage:"Enable debug log level."`
 	DebugHTTPClient      bool              `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
 	CPUProfFilePath      string            `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
 	NodeID               string            `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
@@ -55,20 +52,6 @@ func New() Config {
 		TasksCleanup:         true,
 		TasksCleanupInterval: DefaultCleanupInterval,
 	}
-}
-
-// GenerateAndBind generates flags and then bind flags, ENVs and config files to target configuration structures.
-func GenerateAndBind(args []string, envs env.Provider) (Config, error) {
-	cfg := New()
-	err := configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-		Args:                   args,
-		EnvNaming:              env.NewNamingConvention(EnvPrefix),
-		Envs:                   envs,
-		GenerateHelpFlag:       true,
-		GenerateConfigFileFlag: true,
-		GenerateDumpConfigFlag: true,
-	}, &cfg)
-	return cfg, err
 }
 
 func (c *Config) Normalize() {
