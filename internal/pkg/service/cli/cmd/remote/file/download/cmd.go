@@ -20,6 +20,10 @@ type Flags struct {
 	AllowSliced    configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `download [file]`,
@@ -87,7 +91,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

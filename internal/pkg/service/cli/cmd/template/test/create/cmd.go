@@ -17,6 +17,10 @@ type Flags struct {
 	Verbose    configmap.Value[bool]   `configKey:"verbose" configUsage:"show details about creating test"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create [template] [version]",
@@ -76,7 +80,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

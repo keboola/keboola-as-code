@@ -18,6 +18,10 @@ type Flags struct {
 	Encrypt configmap.Value[bool] `configKey:"encrypt" configUsage:"encrypt unencrypted values before push"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
@@ -77,7 +81,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 	}
 
 	// Flags
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

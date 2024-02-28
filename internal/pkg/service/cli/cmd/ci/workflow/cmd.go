@@ -28,7 +28,7 @@ func DefaultFlags() Flags {
 	}
 }
 
-func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workflows",
 		Short: helpmsg.Read(`ci/workflows/short`),

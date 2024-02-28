@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 )
 
-func CreateCommand(p dependencies.Provider) *cobra.Command {
+func Command(p dependencies.Provider) *cobra.Command {
 	createConfigCmd := config.Command(p)
 	createRowCmd := row.Command(p)
 	cmd := &cobra.Command{

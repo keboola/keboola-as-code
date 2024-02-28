@@ -3,7 +3,6 @@ package local
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/fixpath"
@@ -14,17 +13,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 )
 
-func Commands(p dependencies.Provider, envs *env.Map) *cobra.Command {
+func Commands(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `local`,
 		Short: helpmsg.Read(`local/short`),
 		Long:  helpmsg.Read(`local/long`),
 	}
 	cmd.AddCommand(
-		create.CreateCommand(p),
+		create.Command(p),
 		persist.Command(p),
 		encrypt.Command(p),
-		validate.ValidateCommand(p),
+		validate.Command(p),
 		fixpath.Command(p),
 		template.Commands(p),
 	)

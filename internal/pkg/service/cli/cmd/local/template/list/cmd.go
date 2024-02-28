@@ -11,8 +11,12 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-type Flag struct {
+type Flags struct {
 	Branch configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+}
+
+func DefaultFlags() Flags {
+	return Flags{}
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -28,7 +32,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// flags
-			f := Flag{}
+			f := Flags{}
 			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
@@ -51,7 +55,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

@@ -22,6 +22,10 @@ type Flags struct {
 	ColumnsFrom    configmap.Value[string] `configKey:"columns-from" configUsage:"the path to the table definition file in json"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "table [table]",
@@ -68,7 +72,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

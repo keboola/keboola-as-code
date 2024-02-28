@@ -34,8 +34,12 @@ import (
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
 
-type RootFlag struct {
+type RootFlags struct {
 	Version bool `configKey:"version" configShorthand:"V" configUsage:"print version"`
+}
+
+func DefaultRootFlags() RootFlags {
+	return RootFlags{}
 }
 
 type GlobalFlags struct {
@@ -146,7 +150,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	configmap.MustGenerateFlags(root.PersistentFlags(), DefaultGlobalFlags())
 
 	// Root command flags
-	configmap.MustGenerateFlags(root.Flags(), RootFlag{})
+	configmap.MustGenerateFlags(root.Flags(), DefaultRootFlags())
 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}
@@ -207,8 +211,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		StatusCommand(p),
 		sync.Commands(p),
 		ci.Commands(p),
-		local.Commands(p, osEnvs),
-		remote.Commands(p, osEnvs),
+		local.Commands(p),
+		remote.Commands(p),
 		dbt.Commands(p),
 		template.Commands(p),
 	)
