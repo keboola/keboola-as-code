@@ -65,7 +65,7 @@ func NewMockedAPIScope(t *testing.T, opts ...dependencies.MockedOption) (APIScop
 	opts = append(opts, dependencies.WithEnabledTasks())
 	serviceScp, mock := NewMockedServiceScope(t, opts...)
 
-	apiScp := newAPIScope(serviceScp)
+	apiScp := newAPIScope(serviceScp, mock.TestConfig().API)
 
 	mock.DebugLogger().Truncate()
 	return apiScp, mock

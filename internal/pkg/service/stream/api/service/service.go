@@ -2,16 +2,24 @@ package service
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
-type service struct{}
+type service struct {
+	publicURL *url.URL
+	repo      *definitionRepo.Repository
+}
 
 func New(d dependencies.APIScope) stream.Service {
-	return &service{}
+	return &service{
+		publicURL: d.APIPublicURL(),
+		repo:      d.DefinitionRepository(),
+	}
 }
 
 func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope) (err error) {
@@ -21,8 +29,8 @@ func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope)
 
 func (s *service) APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *stream.ServiceDetail, err error) {
 	res = &stream.ServiceDetail{
-		API:           "buffer",
-		Documentation: "https://stream.keboola.com/v1/documentation",
+		API:           "stream",
+		Documentation: s.publicURL.JoinPath("v1", "documentation").String(),
 	}
 	return res, nil
 }

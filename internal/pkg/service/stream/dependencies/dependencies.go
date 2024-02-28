@@ -33,6 +33,8 @@
 package dependencies
 
 import (
+	"net/url"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -52,6 +54,7 @@ type ServiceScope interface {
 
 type APIScope interface {
 	ServiceScope
+	APIPublicURL() *url.URL
 }
 
 type PublicRequestScope interface {
