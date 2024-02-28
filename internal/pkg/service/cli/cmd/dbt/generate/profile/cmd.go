@@ -9,8 +9,12 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 )
 
-type Flag struct {
+type Flags struct {
 	TargetName configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+}
+
+func DefaultFlags() Flags {
+	return Flags{}
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -27,7 +31,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Get dependencies
 			d := p.BaseScope()
 
-			f := Flag{}
+			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
@@ -42,7 +46,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

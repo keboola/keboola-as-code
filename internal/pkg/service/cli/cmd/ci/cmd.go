@@ -15,7 +15,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`ci/long`),
 	}
 	cmd.AddCommand(
-		workflow.WorkflowsCommand(p),
+		workflow.Command(p),
 	)
 	return cmd
 }

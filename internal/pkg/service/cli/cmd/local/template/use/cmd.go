@@ -20,6 +20,10 @@ type Flags struct {
 	InputsFile   configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `use <repository>/<template>[/<version>]`,
@@ -85,7 +89,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

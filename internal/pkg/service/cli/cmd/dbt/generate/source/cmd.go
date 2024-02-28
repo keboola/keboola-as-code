@@ -15,7 +15,11 @@ type Flags struct {
 	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
 }
 
-func SourcesCommand(p dependencies.Provider) *cobra.Command {
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
+func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `sources`,
 		Short: helpmsg.Read(`dbt/generate/sources/short`),
@@ -53,7 +57,7 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

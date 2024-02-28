@@ -3,7 +3,7 @@ package template
 import (
 	"github.com/spf13/cobra"
 
-	delete2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/delete"
+	deleteTmpl "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/delete"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/list"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/rename"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/upgrade"
@@ -23,7 +23,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		use.Command(p),
 		upgrade.Command(p),
 		rename.Command(p),
-		delete2.Command(p),
+		deleteTmpl.Command(p),
 	)
 	return cmd
 }

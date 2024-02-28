@@ -16,6 +16,10 @@ type Flags struct {
 	Name        configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new config"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 // nolint: dupl
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,7 +56,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

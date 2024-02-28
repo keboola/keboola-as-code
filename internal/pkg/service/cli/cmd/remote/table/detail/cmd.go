@@ -14,8 +14,12 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/detail"
 )
 
-type Flag struct {
+type Flags struct {
 	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+}
+
+func DefaultFlags() Flags {
+	return Flags{}
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -32,7 +36,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// flags
-			f := Flag{}
+			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
@@ -63,7 +67,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flag{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

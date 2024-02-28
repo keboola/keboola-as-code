@@ -181,15 +181,6 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
-	// o.Set(`storage-api-host`, `connection.keboola.com`)
-	// o.Set(`storage-api-token`, `my-secret`)
-	// o.Set(`name`, `My Super Template`)
-	// o.Set(`id`, `my-super-template`)
-	// o.Set(`branch`, `123`)
-	// o.Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
-	// o.Set(`all-inputs`, true)
-
-	// Flags
 	f := createTemp.Flags{
 		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
 		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
@@ -198,8 +189,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
 		Configs:        configmap.Value[string]{Value: "keboola.my-component:1, keboola.my-component:3", SetBy: configmap.SetByFlag},
 		UsedComponents: configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault},
-		// AllConfigs:     configmap.Value[bool]{Value: "my-super-template", SetBy: configmap.SetByFlag},
-		AllInputs: configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
+		AllInputs:      configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
 	}
 
 	// Run

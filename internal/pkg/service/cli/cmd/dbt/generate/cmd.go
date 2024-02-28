@@ -18,7 +18,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 	}
 	cmd.AddCommand(
 		profile.Command(p),
-		source.SourcesCommand(p),
+		source.Command(p),
 		env.Command(p),
 	)
 	return cmd

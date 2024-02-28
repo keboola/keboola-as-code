@@ -17,6 +17,10 @@ type Flags struct {
 	WorkspaceID    configmap.Value[string] `configKey:"workspace-id" configShorthand:"W" configUsage:"id of the workspace to use"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `env`,
@@ -67,7 +71,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

@@ -16,6 +16,10 @@ type Flags struct {
 	NewName  configmap.Value[string] `configKey:"new-name" configShorthand:"n" configUsage:"new name of the template instance"`
 }
 
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `rename`,
@@ -51,7 +55,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	configmap.MustGenerateFlags(cmd.Flags(), Flags{})
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }
