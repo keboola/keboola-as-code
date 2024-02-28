@@ -3,8 +3,6 @@ package config
 import (
 	"net/url"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink"
@@ -14,10 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-)
-
-const (
-	EnvPrefix = "STREAM_"
 )
 
 // Config of the Stream services.
@@ -64,20 +58,6 @@ func New() Config {
 		Sink:            sink.NewConfig(),
 		Storage:         storage.NewConfig(),
 	}
-}
-
-// GenerateAndBind generates flags and then bind flags, ENVs and config files to target configuration structures.
-func GenerateAndBind(args []string, envs env.Provider) (Config, error) {
-	cfg := New()
-	err := configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-		Args:                   args,
-		EnvNaming:              env.NewNamingConvention(EnvPrefix),
-		Envs:                   envs,
-		GenerateHelpFlag:       true,
-		GenerateConfigFileFlag: true,
-		GenerateDumpConfigFlag: true,
-	}, &cfg)
-	return cfg, err
 }
 
 func (c *API) Normalize() {

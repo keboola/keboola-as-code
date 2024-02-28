@@ -3,22 +3,20 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
-	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/entrypoint"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
@@ -29,35 +27,17 @@ import (
 
 const (
 	ServiceName       = "app-proxy"
+	ENVPrefix         = "APP_PROXY_"
 	ErrorNamePrefix   = "appproxy."
 	ExceptionIDPrefix = "keboola-appproxy-"
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Println(errors.PrefixError(err, "fatal error").Error()) // nolint:forbidigo
-		os.Exit(1)
-	}
+	entrypoint.Run(run, config.New(), entrypoint.Config{ENVPrefix: ENVPrefix})
 }
 
-func run() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Load configuration.
-	envs, err := env.FromOs()
-	if err != nil {
-		return errors.Errorf("cannot load envs: %w", err)
-	}
-	cfg, err := config.GenerateAndBind(os.Args, envs)
-	if errors.Is(err, pflag.ErrHelp) {
-		// Stop on --help flag
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Create logger.
+func run(ctx context.Context, cfg config.Config) error {
+	// Create logger
 	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("appProxy") // nolint:forbidigo
 
 	// Dump configuration, sensitive values are masked
@@ -68,7 +48,7 @@ func run() error {
 		return err
 	}
 
-	// Start CPU profiling, if enabled.
+	// Start CPU profiling, if enabled
 	if cfg.CPUProfFilePath != "" {
 		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
 		if err != nil {
@@ -77,7 +57,7 @@ func run() error {
 		defer stop()
 	}
 
-	// Create process abstraction.
+	// Create process abstraction
 	proc := servicectx.New(servicectx.WithLogger(logger))
 	if err != nil {
 		return err
@@ -108,10 +88,10 @@ func run() error {
 	loggerWriter := logging.NewLoggerWriter(logger, "info")
 	oautproxylogger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because oauthproxy will override its error writer with either
-	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
+	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created
 	oautproxylogger.SetErrOutput(loggerWriter)
 
-	// Create dependencies.
+	// Create dependencies
 	scope, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
@@ -128,7 +108,7 @@ func run() error {
 		return err
 	}
 
-	// Wait for the service shutdown.
+	// Wait for the service shutdown
 	proc.WaitForShutdown()
 	return nil
 }

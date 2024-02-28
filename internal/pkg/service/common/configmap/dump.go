@@ -14,7 +14,8 @@ import (
 )
 
 type DumpError struct {
-	Dump []byte
+	Dump            []byte
+	ValidationError error
 }
 
 func (h DumpError) Error() string {

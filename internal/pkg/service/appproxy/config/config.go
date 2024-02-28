@@ -3,28 +3,22 @@ package config
 import (
 	"net/url"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-const (
-	EnvPrefix = "APP_PROXY_"
-)
-
 // Config of the App Proxy.
 // See "cliconfig" package for more information.
 type Config struct {
-	DebugLog         bool              `configKey:"debug-log" configUsage:"Enable debug log level."`
+	DebugLog         bool              `configKey:"debugLog" configUsage:"Enable debug log level."`
 	DebugHTTPClient  bool              `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
 	CPUProfFilePath  string            `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
 	Datadog          datadog.Config    `configKey:"datadog"`
 	Metrics          prometheus.Config `configKey:"metrics"`
 	API              API               `configKey:"api"`
-	CookieSecretSalt string            `configKey:"cookie-secret-salt" configUsage:"Cookie secret needed by OAuth 2 Proxy" sensitive:"true"`
+	CookieSecretSalt string            `configKey:"cookieSecretSalt" configUsage:"Cookie secret needed by OAuth 2 Proxy." sensitive:"true"`
 }
 
 type API struct {
@@ -47,20 +41,6 @@ func New() Config {
 			},
 		},
 	}
-}
-
-// GenerateAndBind generates flags and then bind flags, ENVs and config files to target configuration structures.
-func GenerateAndBind(args []string, envs env.Provider) (Config, error) {
-	cfg := New()
-	err := configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-		Args:                   args,
-		EnvNaming:              env.NewNamingConvention(EnvPrefix),
-		Envs:                   envs,
-		GenerateHelpFlag:       true,
-		GenerateConfigFileFlag: true,
-		GenerateDumpConfigFlag: true,
-	}, &cfg)
-	return cfg, err
 }
 
 func (c *Config) Normalize() {

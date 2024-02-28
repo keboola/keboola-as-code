@@ -68,6 +68,8 @@ type ValueWithValidation interface {
 type FlagToFieldFn func(flag *pflag.Flag) (orderedmap.Path, bool)
 
 // GenerateAndBind generates flags and then bind flags, ENVs and config files to target configuration structures.
+// This is an all-in-one solution.
+// If you want to use the Cobra CLI framework, you will need the GenerateFlags and Bind functions.
 func GenerateAndBind(cfg GenerateAndBindConfig, targets ...any) error {
 	if len(targets) == 0 {
 		return errors.Errorf(`at least one ConfigStruct must be provided`)
@@ -147,14 +149,26 @@ func GenerateAndBind(cfg GenerateAndBindConfig, targets ...any) error {
 		}
 	}
 
+	// Stop on bind errors
+	if errs.Len() > 0 {
+		return errs.ErrorOrNil()
+	}
+
+	// Validate
+	for _, target := range targets {
+		if err := ValidateAndNormalize(target); err != nil {
+			errs.Append(err)
+		}
+	}
+
 	// Dump config
-	if dumpConfigFlag != nil && *dumpConfigFlag != "" && errs.Len() == 0 {
+	if dumpConfigFlag != nil && *dumpConfigFlag != "" {
 		d := NewDumper()
 		for _, target := range targets {
 			d.Dump(target)
 		}
 		if bytes, err := d.As(*dumpConfigFlag); err == nil {
-			return DumpError{Dump: bytes}
+			return DumpError{Dump: bytes, ValidationError: errs.ErrorOrNil()}
 		} else {
 			return err
 		}
@@ -196,6 +210,13 @@ func Bind(inputs BindConfig, targets ...any) error {
 		}
 
 		if err := bind(inputs, target, flagToField); err != nil {
+			errs.Append(err)
+		}
+	}
+
+	// Validate
+	for _, target := range targets {
+		if err := ValidateAndNormalize(target); err != nil {
 			errs.Append(err)
 		}
 	}
@@ -274,7 +295,7 @@ func bind(inputs BindConfig, target any, flagToFieldFn FlagToFieldFn) error {
 		return errors.PrefixError(err, "decode error")
 	}
 
-	return ValidateAndNormalize(target)
+	return nil
 }
 
 // collectValues defined in the configuration structure from flags, ENVs and config files.
