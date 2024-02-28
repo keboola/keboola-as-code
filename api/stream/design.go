@@ -40,25 +40,31 @@ const (
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin(dependencies.Config{
-		Package: "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies",
-		DependenciesTypeFn: func(method *service.MethodData) string {
-			if dependencies.HasSecurityScheme("APIKey", method) {
-				if strings.Contains(method.PayloadDef, "\tBranchID") {
-					return "dependencies.BranchRequestScope"
-				}
+	dependenciesType := func(method *service.MethodData) string {
+		if dependencies.HasSecurityScheme("APIKey", method) {
+			// Note: SourceID/SinkID may be a pointer - optional field, these cases are ignored.
+			branch := regexpcache.MustCompile(`\tBranchID +BranchID`).MatchString(method.PayloadDef)
+			source := branch && regexpcache.MustCompile(`\tSourceID +SourceID`).MatchString(method.PayloadDef)
+			sink := source && regexpcache.MustCompile(`\tSinkID +SinkID`).MatchString(method.PayloadDef)
+			switch {
+			case sink:
+				return "dependencies.SinkRequestScope"
+			case source:
+				return "dependencies.SourceRequestScope"
+			case branch:
+				return "dependencies.BranchRequestScope"
+			default:
 				return "dependencies.ProjectRequestScope"
 			}
-			return "dependencies.PublicRequestScope"
-		},
+		}
+		return "dependencies.PublicRequestScope"
+	}
+	dependencies.RegisterPlugin(dependencies.Config{
+		Package:            "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies",
+		DependenciesTypeFn: dependenciesType,
 		DependenciesProviderFn: func(method *service.EndpointMethodData) string {
-			if dependencies.HasSecurityScheme("APIKey", method.MethodData) {
-				if strings.Contains(method.PayloadDef, "\tBranchID") {
-					return "ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)"
-				}
-				return "ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)"
-			}
-			return "ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)"
+			t := dependenciesType(method.MethodData)
+			return fmt.Sprintf(`ctx.Value(%sCtxKey).(%s)`, t, t)
 		},
 	})
 }
