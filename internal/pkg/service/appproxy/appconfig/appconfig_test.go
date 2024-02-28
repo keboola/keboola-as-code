@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -220,6 +221,24 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 500, map[string]any{}, "", ""),
 					},
+					expectedETag: `"etag-value"`,
+					expectedConfig: AppProxyConfig{
+						ID:              "7",
+						UpstreamAppHost: "app.local",
+						eTag:            `"etag-value"`,
+						maxAge:          60 * time.Second,
+					},
+				},
+				{
+					delay: time.Hour,
+					responses: []*http.Response{
+						newResponse(t, 500, map[string]any{}, "", ""),
+						newResponse(t, 500, map[string]any{}, "", ""),
+						newResponse(t, 500, map[string]any{}, "", ""),
+						newResponse(t, 500, map[string]any{}, "", ""),
+						newResponse(t, 500, map[string]any{}, "", ""),
+						newResponse(t, 500, map[string]any{}, "", ""),
+					},
 					expectedETag:      `"etag-value"`,
 					expectedErrorCode: 500,
 				},
@@ -238,7 +257,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			transport := httpmock.NewMockTransport()
 
 			url := "https://sandboxes.keboola.com"
-			loader := NewLoader(clk, url)
+			loader := NewLoader(log.NewDebugLogger(), clk, url)
 			loader.sender = loader.sender.(client.Client).WithTransport(transport)
 
 			for _, attempt := range tc.attempts {
