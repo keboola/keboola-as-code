@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"net/url"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/mapper"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
