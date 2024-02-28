@@ -29,7 +29,6 @@ func newAPIScope(svcScope ServiceScope, cfg config.Config) APIScope {
 	d.apiPublicURL = cfg.API.PublicURL
 
 	d.httpSourcePublicURL = cfg.Source.HTTP.PublicURL
-
 	return d
 }
 

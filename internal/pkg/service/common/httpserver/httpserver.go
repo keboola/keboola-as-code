@@ -26,6 +26,7 @@ type dependencies interface {
 // Start HTTP server.
 func Start(ctx context.Context, d dependencies, cfg Config) error {
 	logger, tel := d.Logger(), d.Telemetry()
+	logger.Infof(ctx, `starting HTTP server on %q`, cfg.ListenAddress)
 
 	// Create server components
 	com := newComponents(cfg, logger)
@@ -51,7 +52,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
-		logger.Infof(ctx, "HTTP server listening on %q", cfg.ListenAddress)
+		logger.Infof(ctx, "started HTTP server on %q", cfg.ListenAddress)
 		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
 		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
