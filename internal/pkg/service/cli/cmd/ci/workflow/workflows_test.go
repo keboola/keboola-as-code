@@ -1,22 +1,36 @@
-package dialog_test
+package workflow
 
 import (
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	t.Parallel()
 
-	dialog, _, console := createDialogs(t, true)
+	// options
+	o := options.New()
 
-	f := workflow.DefaultFlags()
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	f := DefaultFlags()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -44,7 +58,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out := workflow.AskWorkflowsOptions(f, dialog)
+	out := AskWorkflowsOptions(f, d)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
@@ -61,16 +75,26 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	t.Parallel()
 
-	dialog, _, _ := createDialogs(t, true)
+	// options
+	o := options.New()
 
-	f := workflow.DefaultFlags()
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	f := DefaultFlags()
 	f.CIValidate = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 	f.CIPull = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 	f.CIMainBranch = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
 	f.CIPush = configmap.NewValueWithOrigin(true, configmap.SetByFlag)
 
 	// Run
-	out := workflow.AskWorkflowsOptions(f, dialog)
+	out := AskWorkflowsOptions(f, d)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,

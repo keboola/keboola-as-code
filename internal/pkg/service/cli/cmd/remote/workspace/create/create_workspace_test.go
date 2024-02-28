@@ -1,18 +1,33 @@
-package dialog_test
+package create
 
 import (
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	createWorkspace "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/workspace/create"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
 func TestAskCreateWorkspace(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+
+	// options
+	o := options.New()
+
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -37,7 +52,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := createWorkspace.AskCreateWorkspace(dialog, createWorkspace.Flags{})
+	opts, err := AskCreateWorkspace(d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

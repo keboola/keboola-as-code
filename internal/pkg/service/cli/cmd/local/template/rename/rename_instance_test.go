@@ -1,4 +1,4 @@
-package dialog_test
+package rename
 
 import (
 	"sync"
@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/rename"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -19,10 +23,20 @@ import (
 func TestAskRenameInstance_Interactive(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	// options
+	o := options.New()
+
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	deps := dependencies.NewMocked(t)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
@@ -62,7 +76,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := rename.AskRenameInstance(projectState, dialog, rename.Flags{})
+	opts, err := AskRenameInstance(projectState, d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -78,10 +92,20 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	// options
+	o := options.New()
+
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	deps := dependencies.NewMocked(t)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
@@ -97,12 +121,12 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
-	f := rename.Flags{
+	f := Flags{
 		Branch:   configmap.Value[string]{Value: branch.Name, SetBy: configmap.SetByFlag},
 		Instance: configmap.Value[string]{Value: "inst1", SetBy: configmap.SetByFlag},
 		NewName:  configmap.Value[string]{Value: "New Name", SetBy: configmap.SetByFlag},
 	}
-	opts, err := rename.AskRenameInstance(projectState, dialog, f)
+	opts, err := AskRenameInstance(projectState, d, f)
 	assert.NoError(t, err)
 	assert.Equal(t, renameOp.Options{
 		Branch:   branchKey,
