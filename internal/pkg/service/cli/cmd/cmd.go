@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"io"
 	"os"
 	"strings"
@@ -157,24 +158,29 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	// Init when flags are parsed
 	p := &dependencies.ProviderRef{}
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// Bind flags - without ENVs from files
+		root.globalFlags = DefaultGlobalFlags()
+		err := cmdconfig.NewBinder(osEnvs).Bind(cmd.Flags(), args, &root.globalFlags)
+		if err != nil {
+			return err
+		}
+
 		// Create filesystem abstraction
-		var err error
 		workingDir := root.globalFlags.WorkingDir
 		root.fs, err = fsFactory(cmd.Context(), filesystem.WithLogger(root.logger), filesystem.WithWorkingDir(workingDir))
 		if err != nil {
 			return err
 		}
 
-		//// Load values from flags and envs
-		//if err = root.options.Load(cmd.Context(), root.logger, osEnvs, root.fs, cmd.Flags()); err != nil {
-		//	return err
-		//}
-		// flags
+		// Load ENVs
+		envs := loadEnvFiles(cmd.Context(), root.logger, osEnvs, root.fs)
 
-		//root.globalFlags = DefaultGlobalFlags()
-		//if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &root.globalFlags); err != nil {
-		//	return err
-		//}
+		// Bind flags - with ENVs from files
+		root.globalFlags = DefaultGlobalFlags()
+		err = cmdconfig.NewBinder(envs).Bind(cmd.Flags(), args, &root.globalFlags)
+		if err != nil {
+			return err
+		}
 
 		// Setup logger
 		root.setupLogger()
@@ -182,13 +188,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		root.logger.Debugf(cmd.Context(), `Working dir: %s`, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
-		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.options.GetBool(options.NonInteractiveOpt))
+		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.globalFlags.NonInteractive)
 
 		// Create process abstraction
 		proc := servicectx.New()
-
-		// Load ENVs
-		envs := loadEnvFiles(cmd.Context(), root.logger, osEnvs, root.fs)
 
 		// Create dependencies provider
 		p.Set(dependencies.NewProvider(
@@ -204,7 +207,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		))
 
 		// Check version
-		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseScope()); err != nil {
+		if err := versionCheck.Run(cmd.Context(), root.globalFlags.VersionCheck, p.BaseScope()); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(cmd.Context(), `Version check: %s.`, err.Error())
 		} else {
