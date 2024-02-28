@@ -38,7 +38,7 @@ func main() {
 
 func run(ctx context.Context, cfg config.Config) error {
 	// Create logger
-	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog).WithComponent("appProxy") // nolint:forbidigo
+	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog) // nolint:forbidigo
 
 	// Dump configuration, sensitive values are masked
 	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
