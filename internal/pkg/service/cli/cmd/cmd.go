@@ -54,8 +54,8 @@ type GlobalFlags struct {
 	VersionCheck    bool   `configKey:"version-check" configUsage:"checks if there is a newer version of the CLI"`
 }
 
-func DefaultGlobalFlags() *GlobalFlags {
-	return &GlobalFlags{
+func DefaultGlobalFlags() GlobalFlags {
+	return GlobalFlags{
 		VersionCheck: true,
 		LogFormat:    "console",
 	}
@@ -106,23 +106,25 @@ type Cmd = cobra.Command
 
 type RootCommand struct {
 	*Cmd
-	logger    log.Logger
-	options   *options.Options
-	fs        filesystem.Fs
-	logFile   *log.File
-	logFormat log.LogFormat
-	cmdByPath map[string]*cobra.Command
-	aliases   *orderedmap.OrderedMap
+	logger      log.Logger
+	options     *options.Options
+	globalFlags GlobalFlags
+	fs          filesystem.Fs
+	logFile     *log.File
+	logFormat   log.LogFormat
+	cmdByPath   map[string]*cobra.Command
+	aliases     *orderedmap.OrderedMap
 }
 
 // NewRootCommand creates parent of all sub-commands.
 func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
-		options:   options.New(),
-		logger:    log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
-		cmdByPath: make(map[string]*cobra.Command),
-		aliases:   orderedmap.New(),
+		options:     options.New(),
+		logger:      log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
+		cmdByPath:   make(map[string]*cobra.Command),
+		aliases:     orderedmap.New(),
+		globalFlags: DefaultGlobalFlags(),
 	}
 	root.Cmd = &Cmd{
 		Use:               "kbc", // name of the binary
@@ -157,16 +159,22 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Create filesystem abstraction
 		var err error
-		workingDir, _ := cmd.Flags().GetString(`working-dir`)
+		workingDir := root.globalFlags.WorkingDir
 		root.fs, err = fsFactory(cmd.Context(), filesystem.WithLogger(root.logger), filesystem.WithWorkingDir(workingDir))
 		if err != nil {
 			return err
 		}
 
-		// Load values from flags and envs
-		if err = root.options.Load(cmd.Context(), root.logger, osEnvs, root.fs, cmd.Flags()); err != nil {
-			return err
-		}
+		//// Load values from flags and envs
+		//if err = root.options.Load(cmd.Context(), root.logger, osEnvs, root.fs, cmd.Flags()); err != nil {
+		//	return err
+		//}
+		// flags
+
+		//root.globalFlags = DefaultGlobalFlags()
+		//if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &root.globalFlags); err != nil {
+		//	return err
+		//}
 
 		// Setup logger
 		root.setupLogger()
@@ -379,19 +387,19 @@ func (root *RootCommand) printError(errRaw error) {
 func (root *RootCommand) setupLogger() {
 	// Get log file
 	var logFileErr error
-	root.logFile, logFileErr = log.NewLogFile(root.options.LogFilePath)
+	root.logFile, logFileErr = log.NewLogFile(root.globalFlags.LogFile)
 
 	var logFormatErr error
-	root.logFormat, logFormatErr = log.NewLogFormat(root.options.LogFormat)
+	root.logFormat, logFormatErr = log.NewLogFormat(root.globalFlags.LogFormat)
 
 	// Get temporary logger
 	memoryLogger, _ := root.logger.(*log.MemoryLogger)
 
 	// Create logger
-	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.options.Verbose)
+	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.globalFlags.Verbose)
 
 	// Warn if user specified log file + it cannot be opened
-	if logFileErr != nil && root.options.LogFilePath != "" {
+	if logFileErr != nil && root.globalFlags.LogFile != "" {
 		root.logger.Warnf(root.Context(), "Cannot open log file: %s", logFileErr)
 	}
 
