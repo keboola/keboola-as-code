@@ -1,5 +1,5 @@
 {
   "statusCode": 404,
-  "error": "buffer.endpointNotFound",
+  "error": "stream.api.endpointNotFound",
   "message": "No endpoint found for path \"/foo/bar\"."
 }

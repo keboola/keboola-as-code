@@ -478,7 +478,9 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 		r.SetHeaders(request.Headers)
 
 		// Decorate the request
-		requestDecoratorFn(request)
+		if requestDecoratorFn != nil {
+			requestDecoratorFn(request)
+		}
 
 		// Find and replace references to other requests in the request path
 		reqPath, err := processPathReference(request.Path, requests)
