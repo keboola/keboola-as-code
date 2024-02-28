@@ -3,7 +3,7 @@ package repository
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template/repository/respositoryinit"
+	initOp "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template/repository/init"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 )
@@ -15,7 +15,7 @@ func Commands(d dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/repository/long`),
 	}
 	cmd.AddCommand(
-		respositoryinit.Command(d),
+		initOp.Command(d),
 	)
 	return cmd
 }
