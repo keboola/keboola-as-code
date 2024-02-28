@@ -11,14 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-type ctxKey string
-
-const (
-	PublicRequestScopeCtxKey  = ctxKey("PublicRequestScope")
-	ProjectRequestScopeCtxKey = ctxKey("ProjectRequestScope")
-	BranchRequestScopeCtxKey  = ctxKey("BranchRequestScope")
-)
-
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope

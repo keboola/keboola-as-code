@@ -38,10 +38,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+)
+
+type ctxKey string
+
+const (
+	PublicRequestScopeCtxKey  = ctxKey("PublicRequestScope")
+	ProjectRequestScopeCtxKey = ctxKey("ProjectRequestScope")
+	BranchRequestScopeCtxKey  = ctxKey("BranchRequestScope")
+	SourceRequestScopeCtxKey  = ctxKey("SourceRequestScope")
+	SinkRequestScopeCtxKey    = ctxKey("SinkRequestScope")
 )
 
 type ServiceScope interface {
@@ -70,6 +81,17 @@ type ProjectRequestScope interface {
 type BranchRequestScope interface {
 	ProjectRequestScope
 	Branch() definition.Branch
+	BranchKey() key.BranchKey
+}
+
+type SourceRequestScope interface {
+	BranchRequestScope
+	SourceKey() key.SourceKey
+}
+
+type SinkRequestScope interface {
+	SourceRequestScope
+	SinkKey() key.SinkKey
 }
 
 type TableSinkScope interface {
