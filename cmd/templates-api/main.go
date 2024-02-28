@@ -42,7 +42,7 @@ func main() {
 	entrypoint.Run(run, config.New(), entrypoint.Config{ENVPrefix: ENVPrefix})
 }
 
-func run(ctx context.Context, cfg config.Config) error {
+func run(ctx context.Context, cfg config.Config, _ []string) error {
 	// Create logger
 	logger := log.NewServiceLogger(os.Stdout, cfg.DebugLog) // nolint:forbidigo
 

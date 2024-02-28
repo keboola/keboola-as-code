@@ -21,7 +21,7 @@ type Config struct {
 //   - Validation and normalization of the appConfig, see configmap.ValueWithValidation and configmap.ValueWithNormalization interfaces.
 //   - Writing of the help message to STDOUT.
 //   - Dumping of the configuration in YAML or JSON format to STDERR.
-func Run[C any](runFn func(ctx context.Context, config C) error, appConfig C, runConfig Config) {
+func Run[C any](runFn func(ctx context.Context, config C, posArgs []string) error, appConfig C, runConfig Config) {
 	if err := runOrErr(runFn, appConfig, runConfig); err != nil {
 		errMsg := errors.Format(errors.PrefixError(err, "Error"), errors.FormatAsSentences())
 		_, _ = os.Stderr.WriteString(errMsg)
@@ -30,7 +30,7 @@ func Run[C any](runFn func(ctx context.Context, config C) error, appConfig C, ru
 	}
 }
 
-func runOrErr[C any](runFn func(ctx context.Context, config C) error, appConfig C, runConfig Config) error {
+func runOrErr[C any](runFn func(ctx context.Context, config C, posArgs []string) error, appConfig C, runConfig Config) error {
 	// Load ENVs
 	envs, err := env.FromOs()
 	if err != nil {
@@ -38,10 +38,12 @@ func runOrErr[C any](runFn func(ctx context.Context, config C) error, appConfig 
 	}
 
 	// Bind flags, ENVs and config files to configuration structure
+	var posArgs []string // store remaining positional arguments
 	err = configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
 		Args:                   os.Args,
 		EnvNaming:              env.NewNamingConvention(runConfig.ENVPrefix),
 		Envs:                   envs,
+		PositionalArgsTarget:   &posArgs,
 		GenerateHelpFlag:       true,
 		GenerateConfigFileFlag: true,
 		GenerateDumpConfigFlag: true,
@@ -71,5 +73,5 @@ func runOrErr[C any](runFn func(ctx context.Context, config C) error, appConfig 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	return runFn(ctx, appConfig)
+	return runFn(ctx, appConfig, posArgs)
 }
