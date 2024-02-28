@@ -1,4 +1,4 @@
-package dialog_test
+package init
 
 import (
 	"context"
@@ -6,41 +6,37 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
 
-const (
-	DownArrow = "\u001B[B"
-	Space     = " "
-	Enter     = "\n"
-	Backspace = "\b"
-)
-
 // TestAllowedBranchesByFlag use flag value if present.
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
-		d.MockedHTTPTransport(),
+		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 	// o.SetDefault(`branches`, `*`)
 	// o.Set(`branches`, `foo, bar`)
 
-	f := syncInit.Flags{
+	f := Flags{
 		Branches: configmap.NewValueWithOrigin("foo, bar", configmap.SetByFlag),
 	}
 
 	// No interaction expected
-	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, f)
+	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, f)
 	assert.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
 	assert.NoError(t, console.Tty().Close())
@@ -50,19 +46,22 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
-	dialog, _, _ := createDialogs(t, false)
-	d := dependencies.NewMocked(t)
+
+	d, _, _ := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
+
 	registerMockedBranchesResponse(
-		d.MockedHTTPTransport(),
+		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
-	f := syncInit.Flags{
+	f := Flags{
 		Branches: configmap.NewValueWithOrigin("*", configmap.SetByFlag),
 	}
 
 	// No interaction expected
-	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, f)
+	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, f)
 	assert.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
 }
@@ -71,10 +70,12 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 // -> only main branch.
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
-		d.MockedHTTPTransport(),
+		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
@@ -88,7 +89,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
+	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -102,10 +103,12 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 // -> all branches.
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
-		d.MockedHTTPTransport(),
+		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
@@ -119,7 +122,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
+	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -133,10 +136,12 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 // -> select branches, and select 2/4 of the listed brances.
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
-		d.MockedHTTPTransport(),
+		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{
 			{BranchKey: keboola.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
 			{BranchKey: keboola.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
@@ -171,7 +176,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
+	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -185,10 +190,12 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 // -> type IDs or names and type two custom definitions.
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
-		d.MockedHTTPTransport(),
+		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{
 			{BranchKey: keboola.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
 			{BranchKey: keboola.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
@@ -211,7 +218,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := syncInit.AskAllowedBranches(context.Background(), d, dialog, syncInit.Flags{})
+	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -226,12 +233,19 @@ func selectOption(t *testing.T, option int, c terminal.Console) {
 	t.Helper()
 
 	assert.NoError(t, c.ExpectString("Allowed project's branches:"))
-	assert.NoError(t, c.ExpectString(syncInit.ModeMainBranch))
-	assert.NoError(t, c.ExpectString(syncInit.ModeAllBranches))
-	assert.NoError(t, c.ExpectString(syncInit.ModeSelectSpecific))
-	assert.NoError(t, c.ExpectString(syncInit.ModeTypeList))
+	assert.NoError(t, c.ExpectString(ModeMainBranch))
+	assert.NoError(t, c.ExpectString(ModeAllBranches))
+	assert.NoError(t, c.ExpectString(ModeSelectSpecific))
+	assert.NoError(t, c.ExpectString(ModeTypeList))
 	for i := 1; i < option; i++ {
 		assert.NoError(t, c.SendDownArrow())
 	}
 	assert.NoError(t, c.SendEnter())
+}
+
+func registerMockedBranchesResponse(httpTransport *httpmock.MockTransport, branches []*keboola.Branch) {
+	httpTransport.RegisterResponder(
+		"GET", `=~/storage/dev-branches`,
+		httpmock.NewJsonResponderOrPanic(200, branches),
+	)
 }

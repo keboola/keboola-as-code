@@ -1,4 +1,4 @@
-package dialog_test
+package upgrade
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/upgrade"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -18,13 +18,19 @@ import (
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 )
 
+const (
+	DownArrow = "\u001B[B"
+	Space     = " "
+	Enter     = "\n"
+)
+
 func TestAskUpgradeTemplate(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
-	projectState := d.MockedState()
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
+	projectState := deps.MockedState()
 
 	// Project state
 	instance := model.TemplateInstance{InstanceID: "12345abc"}
@@ -116,7 +122,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	}
 
 	// Set fake file editor
-	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
+	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -180,7 +186,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := upgrade.AskUpgradeTemplateOptions(context.Background(), dialog, d, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
+	output, err := AskUpgradeTemplateOptions(context.Background(), d, deps, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())

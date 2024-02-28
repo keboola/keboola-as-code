@@ -1,4 +1,4 @@
-package respositoryinit
+package init
 
 import (
 	"github.com/spf13/cobra"

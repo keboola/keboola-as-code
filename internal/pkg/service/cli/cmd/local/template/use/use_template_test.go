@@ -1,4 +1,4 @@
-package dialog_test
+package use
 
 import (
 	"context"
@@ -9,31 +9,38 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/use"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
+	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+const Backspace = "\b"
 
 // If condition for restricted input is met by setting the age above the limit.
 func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
 	// Set fake file editor
-	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
+	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -188,12 +195,12 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		},
 	}
 
-	f := use.Flags{
+	f := Flags{
 		Branch:       configmap.NewValue("123"),
 		InstanceName: configmap.NewValue("My Instance"),
 	}
 
-	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -219,14 +226,24 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	// options
+	o := options.New()
+
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	deps := dependencies.NewMocked(t)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
 	// Set fake file editor
-	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
+	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -314,13 +331,13 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		},
 	}
 
-	f := use.Flags{
+	f := Flags{
 		Branch:       configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
 		InstanceName: configmap.Value[string]{},
 		InputsFile:   configmap.Value[string]{},
 	}
 
-	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -345,10 +362,21 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	// options
+	o := options.New()
+
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	deps := dependencies.NewMocked(t)
+
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
 	// Run
@@ -419,7 +447,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	}
 
 	// Set fake file editor
-	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
+	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -439,17 +467,17 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 		assert.NoError(t, console.ExpectString("Select steps:"))
 
-		assert.NoError(t, console.Send(DownArrow)) // skip step 1
+		assert.NoError(t, console.SendDownArrow()) // skip step 1
 
-		assert.NoError(t, console.Send(DownArrow)) // skip step 2
+		assert.NoError(t, console.SendDownArrow()) // skip step 2
 
-		assert.NoError(t, console.Send(Space)) // select step 3
+		assert.NoError(t, console.SendSpace()) // select step 3
 
-		assert.NoError(t, console.Send(DownArrow)) // move to step 4
+		assert.NoError(t, console.SendDownArrow()) // move to step 4
 
-		assert.NoError(t, console.Send(Space)) // select step 4
+		assert.NoError(t, console.SendSpace()) // select step 4
 
-		assert.NoError(t, console.Send(Enter)) // confirm the selection
+		assert.NoError(t, console.SendEnter()) // confirm the selection
 
 		assert.NoError(t, console.ExpectString("Step 3"))
 
@@ -466,13 +494,13 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	f := use.Flags{
+	f := Flags{
 		Branch:       configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},
 		InstanceName: configmap.Value[string]{},
 		InputsFile:   configmap.Value[string]{},
 	}
 
-	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -501,17 +529,26 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
-	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	// options
+	o := options.New()
 
-	f := use.Flags{
+	// terminal
+	console, err := terminal.New(t)
+	require.NoError(t, err)
+
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
+
+	// dialog
+	d := dialog.New(p, o)
+
+	f := Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
 		InstanceName: configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
 
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	deps := dependencies.NewMocked(t)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
 	// Run
@@ -574,7 +611,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		},
 	}
 
-	output, err := use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
 	assert.NoError(t, err)
 
 	// Assert
@@ -599,16 +636,19 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
-	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
+	// options
+	o := options.New()
 
-	f := use.Flags{
+	// dialog
+	d := dialog.New(nopPrompt.New(), o)
+
+	f := Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
 		InstanceName: configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
-	d := dependencies.NewMocked(t)
-	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	deps := dependencies.NewMocked(t)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
 	// Run
@@ -671,7 +711,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		},
 	}
 
-	_, err = use.AskUseTemplateOptions(context.Background(), dialog, projectState, stepsGroups, f)
+	_, err = AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
 	expectedErr := `
 steps group 1 "Please select which steps you want to fill." is invalid:
 - all steps (3) must be selected

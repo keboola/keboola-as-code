@@ -1,4 +1,4 @@
-package dialog_test
+package create
 
 import (
 	"sync"
@@ -6,13 +6,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	createWorkspace "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/workspace/create"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
 func TestAskCreateWorkspace(t *testing.T) {
 	t.Parallel()
-	dialog, _, console := createDialogs(t, true)
+
+	d, _, console := dialog.NewForTest(t, true)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -37,7 +38,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := createWorkspace.AskCreateWorkspace(dialog, createWorkspace.Flags{})
+	opts, err := AskCreateWorkspace(d, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

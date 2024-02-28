@@ -1,36 +1,105 @@
-package dialog_test
+package create
 
 import (
 	"context"
 	"sync"
 	"testing"
 
-	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	createTemp "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template/create"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog/templatehelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 )
+
+func TestTemplateIdsDialog_DefaultValue(t *testing.T) {
+	t.Parallel()
+
+	branch := &model.Branch{
+		BranchKey: model.BranchKey{ID: 1},
+		Name:      "Branch",
+	}
+	configs := []*model.ConfigWithRows{
+		{
+			Config: &model.Config{
+				ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "123"},
+				Name:      "My Config 1",
+			},
+		},
+		{
+			Config: &model.Config{
+				ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "456"},
+				Name:      "My Config 2",
+			},
+			Rows: []*model.ConfigRow{
+				{
+					ConfigRowKey: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "456", ID: "1"},
+					Name:         "My Row",
+				},
+				{
+					ConfigRowKey: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "456", ID: "2"},
+					Name:         "My Row",
+				},
+				{
+					ConfigRowKey: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "456", ID: "3"},
+					Name:         "#$%^_",
+				},
+			},
+		},
+	}
+
+	// Expected default value
+	expected := `
+<!--
+Please enter a human readable ID for each configuration. For example "L0-raw-data-ex".
+Allowed characters: a-z, A-Z, 0-9, "-".
+These IDs will be used in the template.
+
+Please edit each line below "## Config ..." and "### Row ...".
+Do not edit lines starting with "#"!
+-->
+
+
+## Config "My Config 1" foo.bar:123
+my-config-1
+
+## Config "My Config 2" foo.bar:456
+my-config-2
+
+### Row "My Row" foo.bar:456:1
+my-row
+
+### Row "My Row" foo.bar:456:2
+my-row-001
+
+### Row "#$%^_" foo.bar:456:3
+config-row
+
+`
+
+	// Check default value
+	d := templateIdsDialog{prompt: nopPrompt.New(), branch: branch, configs: configs}
+	assert.Equal(t, expected, d.defaultValue())
+}
 
 func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
-	addMockedObjectsResponses(d.MockedHTTPTransport())
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
+	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Set fake file editor
-	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
+	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -100,7 +169,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, createTemp.Flags{})
+	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -175,25 +244,24 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
-	d := dependencies.NewMocked(t)
-	addMockedObjectsResponses(d.MockedHTTPTransport())
+	d, _, _ := dialog.NewForTest(t, false)
+
+	deps := dependencies.NewMocked(t)
+	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Flags
-	f := createTemp.Flags{
-		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
-		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
-		Description:    configmap.Value[string]{Value: "Full workflow to ...", SetBy: configmap.SetByFlag},
-		StorageAPIHost: configmap.Value[string]{Value: "connection.keboola.com", SetBy: configmap.SetByFlag},
-		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
-		Configs:        configmap.Value[string]{Value: "keboola.my-component:1, keboola.my-component:3", SetBy: configmap.SetByFlag},
-		UsedComponents: configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault},
-		AllInputs:      configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
+	f := Flags{
+		ID:             configmap.NewValueWithOrigin("my-super-template", configmap.SetByFlag),
+		Name:           configmap.NewValueWithOrigin("My Super Template", configmap.SetByFlag),
+		Description:    configmap.NewValueWithOrigin("Full workflow to ...", configmap.SetByFlag),
+		StorageAPIHost: configmap.NewValueWithOrigin("connection.keboola.com", configmap.SetByFlag),
+		Branch:         configmap.NewValueWithOrigin("123", configmap.SetByFlag),
+		Configs:        configmap.NewValueWithOrigin("keboola.my-component:1, keboola.my-component:3", configmap.SetByFlag),
+		AllInputs:      configmap.NewValueWithOrigin(true, configmap.SetByFlag),
 	}
 
 	// Run
-	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, f)
+	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, f)
 	assert.NoError(t, err)
 
 	// Assert
@@ -287,23 +355,23 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
-	// Test dependencies
-	dialog, _, _ := createDialogs(t, false)
-	d := dependencies.NewMocked(t)
-	addMockedObjectsResponses(d.MockedHTTPTransport())
+	d, _, _ := dialog.NewForTest(t, false)
 
-	f := createTemp.Flags{
-		StorageAPIHost: configmap.Value[string]{Value: "connection.keboola.com", SetBy: configmap.SetByFlag},
-		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
-		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
-		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
-		AllConfigs:     configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
-		Description:    configmap.NewValue("Full workflow to ..."),
-		UsedComponents: configmap.NewValue(""),
+	deps := dependencies.NewMocked(t)
+	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
+
+	f := Flags{
+		StorageAPIHost: configmap.NewValueWithOrigin("connection.keboola.com", configmap.SetByFlag),
+		ID:             configmap.NewValueWithOrigin("my-super-template", configmap.SetByFlag),
+		Name:           configmap.NewValueWithOrigin("My Super Template", configmap.SetByFlag),
+		Branch:         configmap.NewValueWithOrigin("123", configmap.SetByFlag),
+		AllConfigs:     configmap.NewValueWithOrigin(true, configmap.SetByFlag),
+		Description:    configmap.NewValueWithOrigin("Full workflow to ...", configmap.SetByDefault),
+		UsedComponents: configmap.NewValueWithOrigin("", configmap.SetByDefault),
 	}
 
 	// Run
-	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, f)
+	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, f)
 	assert.NoError(t, err)
 
 	// Assert
@@ -378,55 +446,4 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 		},
 		Components: []string{},
 	}, opts)
-}
-
-func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
-	configJSON := `
-{
-  "storage": {
-    "foo": "bar"
-  },
-  "parameters": {
-    "string": "my string",
-    "#password": "my password",
-    "int": 123
-  }
-}
-`
-	configContent := orderedmap.New()
-	json.MustDecodeString(configJSON, configContent)
-
-	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
-	configs := []*keboola.ConfigWithRows{
-		{
-			Config: &keboola.Config{
-				ConfigKey: keboola.ConfigKey{ID: "1"},
-				Name:      `Config 1`,
-				Content:   configContent,
-			},
-			Rows: []*keboola.ConfigRow{
-				{
-					ConfigRowKey: keboola.ConfigRowKey{ID: "456"},
-					Name:         `My Row`,
-					Content:      orderedmap.New(),
-				},
-			},
-		},
-		{Config: &keboola.Config{ConfigKey: keboola.ConfigKey{ID: "2"}, Name: `Config 2`, Content: orderedmap.New()}},
-		{Config: &keboola.Config{ConfigKey: keboola.ConfigKey{ID: "3"}, Name: `Config 3`, Content: orderedmap.New()}},
-	}
-	components := []*keboola.ComponentWithConfigs{
-		{
-			Component: keboola.Component{ComponentKey: keboola.ComponentKey{ID: `keboola.my-component`}, Name: `Foo Bar`},
-			Configs:   configs,
-		},
-	}
-	httpTransport.RegisterResponder(
-		"GET", `=~/storage/dev-branches`,
-		httpmock.NewJsonResponderOrPanic(200, branches),
-	)
-	httpTransport.RegisterResponder(
-		"GET", `=~/storage/branch/123/components`,
-		httpmock.NewJsonResponderOrPanic(200, components),
-	)
 }

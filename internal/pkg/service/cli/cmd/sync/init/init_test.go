@@ -1,4 +1,4 @@
-package dialog_test
+package init
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
-	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
@@ -23,12 +23,12 @@ import (
 func TestDialogs_AskInitOptions(t *testing.T) {
 	t.Parallel()
 
-	// testDependencies
-	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+	d, _, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
-	d.MockedHTTPTransport().RegisterResponder(
+	deps.MockedHTTPTransport().RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)
@@ -67,7 +67,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, syncInit.DefaultFlags())
+	opts, err := AskInitOptions(context.Background(), d, deps, DefaultFlags())
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -92,12 +92,12 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	t.Parallel()
 
-	// testDependencies
-	dialog, o, console := createDialogs(t, true)
-	d := dependencies.NewMocked(t)
+	d, o, console := dialog.NewForTest(t, true)
+
+	deps := dependencies.NewMocked(t)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
-	d.MockedHTTPTransport().RegisterResponder(
+	deps.MockedHTTPTransport().RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)
@@ -109,12 +109,12 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	o.Set("ci", "false")
 	o.Set("branches", "main")
 
-	f := syncInit.DefaultFlags()
+	f := DefaultFlags()
 	f.Branches = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
 	f.CI = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 
 	// Run
-	opts, err := syncInit.AskInitOptions(context.Background(), dialog, d, f)
+	opts, err := AskInitOptions(context.Background(), d, deps, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	assert.NoError(t, console.Close())

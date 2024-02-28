@@ -1,4 +1,4 @@
-package dialog_test
+package workflow
 
 import (
 	"sync"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
@@ -14,9 +14,9 @@ import (
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	t.Parallel()
 
-	dialog, _, console := createDialogs(t, true)
+	d, _, console := dialog.NewForTest(t, true)
 
-	f := workflow.DefaultFlags()
+	f := DefaultFlags()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -44,7 +44,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out := workflow.AskWorkflowsOptions(f, dialog)
+	out := AskWorkflowsOptions(f, d)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
@@ -61,16 +61,16 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	t.Parallel()
 
-	dialog, _, _ := createDialogs(t, true)
+	d, _, _ := dialog.NewForTest(t, true)
 
-	f := workflow.DefaultFlags()
+	f := DefaultFlags()
 	f.CIValidate = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 	f.CIPull = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 	f.CIMainBranch = configmap.NewValueWithOrigin("main", configmap.SetByFlag)
 	f.CIPush = configmap.NewValueWithOrigin(true, configmap.SetByFlag)
 
 	// Run
-	out := workflow.AskWorkflowsOptions(f, dialog)
+	out := AskWorkflowsOptions(f, d)
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
