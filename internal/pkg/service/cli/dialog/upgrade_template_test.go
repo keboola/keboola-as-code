@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/template/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -178,7 +180,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := dialog.AskUpgradeTemplateOptions(context.Background(), d, projectState, branchKey, instance, stepsGroups)
+	output, err := upgrade.AskUpgradeTemplateOptions(context.Background(), dialog, d, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())

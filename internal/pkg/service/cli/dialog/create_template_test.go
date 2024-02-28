@@ -12,7 +12,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	createTemp "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -98,7 +100,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
+	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, createTemp.Flags{})
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -174,21 +176,34 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, false)
+	dialog, _, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
-	o.Set(`storage-api-host`, `connection.keboola.com`)
-	o.Set(`storage-api-token`, `my-secret`)
-	o.Set(`name`, `My Super Template`)
-	o.Set(`id`, `my-super-template`)
-	o.Set(`branch`, `123`)
-	o.Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
-	o.Set(`all-inputs`, true)
+	// o.Set(`storage-api-host`, `connection.keboola.com`)
+	// o.Set(`storage-api-token`, `my-secret`)
+	// o.Set(`name`, `My Super Template`)
+	// o.Set(`id`, `my-super-template`)
+	// o.Set(`branch`, `123`)
+	// o.Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
+	// o.Set(`all-inputs`, true)
+
+	// Flags
+	f := createTemp.Flags{
+		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
+		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
+		Description:    configmap.Value[string]{Value: "Full workflow to ...", SetBy: configmap.SetByFlag},
+		StorageAPIHost: configmap.Value[string]{Value: "connection.keboola.com", SetBy: configmap.SetByFlag},
+		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
+		Configs:        configmap.Value[string]{Value: "keboola.my-component:1, keboola.my-component:3", SetBy: configmap.SetByFlag},
+		UsedComponents: configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault},
+		// AllConfigs:     configmap.Value[bool]{Value: "my-super-template", SetBy: configmap.SetByFlag},
+		AllInputs: configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
+	}
 
 	// Run
-	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
+	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, f)
 	assert.NoError(t, err)
 
 	// Assert
@@ -283,20 +298,22 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, false)
+	dialog, _, _ := createDialogs(t, false)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
-	// Flags
-	o.Set(`storage-api-host`, `connection.keboola.com`)
-	o.Set(`storage-api-token`, `my-secret`)
-	o.Set(`name`, `My Super Template`)
-	o.Set(`id`, `my-super-template`)
-	o.Set(`branch`, `123`)
-	o.Set(`all-configs`, true) // <<<<<<<<<<<<<<<<
+	f := createTemp.Flags{
+		StorageAPIHost: configmap.Value[string]{Value: "connection.keboola.com", SetBy: configmap.SetByFlag},
+		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
+		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
+		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
+		AllConfigs:     configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
+		Description:    configmap.NewValue("Full workflow to ..."),
+		UsedComponents: configmap.NewValue(""),
+	}
 
 	// Run
-	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
+	opts, err := createTemp.AskCreateTemplateOpts(context.Background(), dialog, d, f)
 	assert.NoError(t, err)
 
 	// Assert

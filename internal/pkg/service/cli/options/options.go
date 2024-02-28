@@ -50,9 +50,9 @@ func New() *Options {
 	}
 }
 
-func (o *Options) Load(ctx context.Context, logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
+func (o *Options) Load(ctx context.Context, _ log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
 	// Load ENVs from OS and files
-	o.envs = o.loadEnvFiles(ctx, logger, osEnvs, fs)
+	o.envs = o.loadEnvFiles(ctx, log.NewNopLogger(), osEnvs, fs)
 
 	// Define mapping between flag and field path
 	flagToField := func(flag *pflag.Flag) (orderedmap.Path, bool) {

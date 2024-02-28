@@ -10,7 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template/test/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -23,7 +25,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
@@ -82,8 +84,10 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	}()
 
 	// Run
-	o.Set(`test-name`, `one`)
-	opts, warnings, err := dialog.AskCreateTemplateTestOptions(context.Background(), tmpl)
+	f := create.Flags{
+		TestName: configmap.NewValueWithOrigin("one", configmap.SetByFlag),
+	}
+	opts, warnings, err := create.AskCreateTemplateTestOptions(context.Background(), dialog, tmpl, f)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

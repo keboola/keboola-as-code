@@ -3,7 +3,6 @@ package source
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -34,7 +33,7 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			f := Flags{}
-			if err = configmap.Bind(utils.GetBindConfig(cmd.Flags(), args), &f); err != nil {
+			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 

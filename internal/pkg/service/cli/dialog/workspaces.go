@@ -6,12 +6,13 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) AskWorkspace(allWorkspaces []*keboola.WorkspaceWithConfig) (*keboola.WorkspaceWithConfig, error) {
-	if p.options.IsSet(`workspace-id`) {
-		workspaceID := p.options.GetString(`workspace-id`)
+func (p *Dialogs) AskWorkspace(allWorkspaces []*keboola.WorkspaceWithConfig, id configmap.Value[string]) (*keboola.WorkspaceWithConfig, error) {
+	if id.IsSet() {
+		workspaceID := id.Value
 		for _, w := range allWorkspaces {
 			if string(w.Config.ID) == workspaceID {
 				return w, nil
@@ -34,8 +35,8 @@ func (p *Dialogs) AskWorkspace(allWorkspaces []*keboola.WorkspaceWithConfig) (*k
 	return nil, errors.New(`please specify workspace`)
 }
 
-func (p *Dialogs) AskWorkspaceID() (string, error) {
-	if !p.options.IsSet(`workspace-id`) {
+func (p *Dialogs) AskWorkspaceID(id configmap.Value[string]) (string, error) {
+	if !id.IsSet() {
 		token, ok := p.Ask(&prompt.Question{
 			Label:       "Workspace ID",
 			Description: "Please enter the workspace ID",
@@ -46,6 +47,6 @@ func (p *Dialogs) AskWorkspaceID() (string, error) {
 		}
 		return token, nil
 	} else {
-		return p.options.GetString(`workspace-id`), nil
+		return id.Value, nil
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 func TestSelectBranchInteractive(t *testing.T) {
@@ -43,7 +45,7 @@ func TestSelectBranchInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectBranch(allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(branch2.String()))
 	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
 
@@ -67,7 +69,7 @@ func TestSelectBranchByFlag(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	out, err := dialog.SelectBranch(allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.Value[string]{Value: branch2.Name, SetBy: configmap.SetByFlag})
 	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
 }
@@ -86,7 +88,7 @@ func TestSelectBranchNonInteractive(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	_, err := dialog.SelectBranch(allBranches, `LABEL`)
+	_, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault})
 	assert.ErrorContains(t, err, "please specify branch")
 }
 
@@ -103,7 +105,7 @@ func TestSelectBranchMissing(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	out, err := dialog.SelectBranch(allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(""))
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify branch`, err.Error())
@@ -157,7 +159,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectBranches(allBranches, `LABEL`)
+	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, syncInit.Flags{})
 	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
 	assert.NoError(t, err)
 
@@ -171,8 +173,11 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, o, _ := createDialogs(t, false)
-	o.Set(`branches`, `2,4`)
+	dialog, _, _ := createDialogs(t, false)
+
+	f := syncInit.Flags{
+		Branches: configmap.NewValueWithOrigin("2,4", configmap.SetByFlag),
+	}
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -183,7 +188,7 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run
-	out, err := dialog.SelectBranches(allBranches, `LABEL`)
+	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, f)
 	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
 	assert.NoError(t, err)
 }
@@ -203,7 +208,7 @@ func TestSelectBranchesMissing(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run
-	out, err := dialog.SelectBranches(allBranches, `LABEL`)
+	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, syncInit.Flags{})
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify at least one branch`, err.Error())

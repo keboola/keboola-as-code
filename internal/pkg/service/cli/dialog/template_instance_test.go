@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -49,7 +50,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	}()
 
 	// Run
-	branchKey, instance, err := dialog.AskTemplateInstance(projectState)
+	branchKey, instance, err := dialog.AskTemplateInstance(projectState, configmap.NewValue(branch.String()), configmap.NewValue(instanceID))
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -63,7 +64,7 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, true)
+	dialog, _, _ := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -77,9 +78,7 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	tokenID := "1234"
 	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
-	o.Set("branch", 123)
-	o.Set("instance", "inst2")
-	_, _, err = dialog.AskTemplateInstance(projectState)
+	_, _, err = dialog.AskTemplateInstance(projectState, configmap.NewValueWithOrigin("123", configmap.SetByFlag), configmap.NewValueWithOrigin("inst2", configmap.SetByFlag))
 	assert.Error(t, err)
 	assert.Equal(t, `template instance "inst2" was not found in branch "Main"`, err.Error())
 }
@@ -88,7 +87,7 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, o, _ := createDialogs(t, true)
+	dialog, _, _ := createDialogs(t, true)
 	d := dependencies.NewMocked(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -102,8 +101,6 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	tokenID := "1234"
 	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
-	o.Set("branch", 123)
-	o.Set("instance", "inst1")
-	_, _, err = dialog.AskTemplateInstance(projectState)
+	_, _, err = dialog.AskTemplateInstance(projectState, configmap.NewValueWithOrigin("123", configmap.SetByFlag), configmap.NewValueWithOrigin(instanceID, configmap.SetByFlag))
 	assert.NoError(t, err)
 }
