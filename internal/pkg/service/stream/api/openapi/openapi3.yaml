@@ -67,6 +67,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/SourcesList'
                             example:
+                                projectId: 123
+                                branchId: 345
                                 sources:
                                     - projectId: 123
                                       branchId: 345
@@ -677,6 +679,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/SinksList'
                             example:
+                                projectId: 123
                                 branchId: 345
                                 sourceId: github-webhook-source
                                 sinks:
@@ -1549,8 +1552,8 @@ components:
                               language: jsonnet
                               content: body.foo + "-" + body.bar
             required:
+                - type
                 - name
-                - mapping
         CreateSourceRequestBody:
             type: object
             properties:
@@ -1861,6 +1864,10 @@ components:
                     type: integer
                     example: 345
                     format: int64
+                projectId:
+                    type: integer
+                    example: 123
+                    format: int64
                 sinks:
                     type: array
                     items:
@@ -1918,6 +1925,7 @@ components:
                     minLength: 1
                     maxLength: 48
             example:
+                projectId: 123
                 branchId: 345
                 sourceId: github-webhook-source
                 sinks:
@@ -1968,6 +1976,7 @@ components:
                             userDescription: user@company.com
                         reason: Disabled for recurring problems.
             required:
+                - projectId
                 - branchId
                 - sourceId
                 - sinks
@@ -2150,6 +2159,14 @@ components:
         SourcesList:
             type: object
             properties:
+                branchId:
+                    type: integer
+                    example: 345
+                    format: int64
+                projectId:
+                    type: integer
+                    example: 123
+                    format: int64
                 sources:
                     type: array
                     items:
@@ -2231,6 +2248,8 @@ components:
                                     userDescription: user@company.com
                                 reason: Disabled for recurring problems.
             example:
+                projectId: 123
+                branchId: 345
                 sources:
                     - projectId: 123
                       branchId: 345
@@ -2308,6 +2327,8 @@ components:
                                 userDescription: user@company.com
                             reason: Disabled for recurring problems.
             required:
+                - projectId
+                - branchId
                 - sources
         TableColumn:
             type: object

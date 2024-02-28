@@ -135,7 +135,9 @@ type UpdateSourceResponseBody struct {
 // ListSourcesResponseBody is the type of the "stream" service "ListSources"
 // endpoint HTTP response body.
 type ListSourcesResponseBody struct {
-	Sources []*SourceResponseBody `form:"sources" json:"sources" xml:"sources"`
+	ProjectID int                   `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                   `form:"branchId" json:"branchId" xml:"branchId"`
+	Sources   []*SourceResponseBody `form:"sources" json:"sources" xml:"sources"`
 }
 
 // GetSourceResponseBody is the type of the "stream" service "GetSource"
@@ -237,9 +239,10 @@ type UpdateSinkSettingsResponseBody []*SettingResultResponse
 // ListSinksResponseBody is the type of the "stream" service "ListSinks"
 // endpoint HTTP response body.
 type ListSinksResponseBody struct {
-	BranchID int                 `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID string              `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	Sinks    []*SinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
+	ProjectID int                 `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                 `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string              `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Sinks     []*SinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // UpdateSinkResponseBody is the type of the "stream" service "UpdateSink"
@@ -813,7 +816,10 @@ func NewUpdateSourceResponseBody(res *stream.Source) *UpdateSourceResponseBody {
 // NewListSourcesResponseBody builds the HTTP response body from the result of
 // the "ListSources" endpoint of the "stream" service.
 func NewListSourcesResponseBody(res *stream.SourcesList) *ListSourcesResponseBody {
-	body := &ListSourcesResponseBody{}
+	body := &ListSourcesResponseBody{
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+	}
 	if res.Sources != nil {
 		body.Sources = make([]*SourceResponseBody, len(res.Sources))
 		for i, val := range res.Sources {
@@ -988,8 +994,9 @@ func NewUpdateSinkSettingsResponseBody(res stream.SettingsResult) UpdateSinkSett
 // the "ListSinks" endpoint of the "stream" service.
 func NewListSinksResponseBody(res *stream.SinksList) *ListSinksResponseBody {
 	body := &ListSinksResponseBody{
-		BranchID: int(res.BranchID),
-		SourceID: string(res.SourceID),
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+		SourceID:  string(res.SourceID),
 	}
 	if res.Sinks != nil {
 		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
@@ -1411,16 +1418,13 @@ func NewRefreshSourceTokensPayload(branchID string, sourceID string, storageAPIT
 // NewCreateSinkPayload builds a stream service CreateSink endpoint payload.
 func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID string, storageAPIToken string) *stream.CreateSinkPayload {
 	v := &stream.CreateSinkPayload{
+		Type:        stream.SinkType(*body.Type),
 		Name:        *body.Name,
 		Description: body.Description,
 	}
 	if body.SinkID != nil {
 		sinkID := stream.SinkID(*body.SinkID)
 		v.SinkID = &sinkID
-	}
-	if body.Type != nil {
-		type_ := stream.SinkType(*body.Type)
-		v.Type = &type_
 	}
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkRequestBodyToStreamTableSink(body.Table)
@@ -1609,6 +1613,9 @@ func ValidateUpdateSourceSettingsRequestBody(body *UpdateSourceSettingsRequestBo
 // ValidateCreateSinkRequestBody runs the validations defined on
 // CreateSinkRequestBody
 func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []string) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
+	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}

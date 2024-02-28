@@ -107,18 +107,18 @@ type By struct {
 // method.
 type CreateSinkPayload struct {
 	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 	// Optional ID, if not filled in, it will be generated from name. Cannot be
 	// changed later.
 	SinkID *SinkID
-	Type   *SinkType
+	Type   SinkType
 	// Human readable name of the sink.
 	Name string
 	// Description of the source.
 	Description *string
 	// Table sink configuration for "type" = "table".
-	Table    *TableSink
-	BranchID BranchIDOrDefault
-	SourceID SourceID
+	Table *TableSink
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -319,9 +319,10 @@ type Sinks []*Sink
 
 // SinksList is the result type of the stream service ListSinks method.
 type SinksList struct {
-	BranchID BranchID
-	SourceID SourceID
-	Sinks    Sinks
+	ProjectID ProjectID
+	BranchID  BranchID
+	SourceID  SourceID
+	Sinks     Sinks
 }
 
 // Source is the result type of the stream service UpdateSource method.
@@ -352,7 +353,9 @@ type Sources []*Source
 
 // SourcesList is the result type of the stream service ListSources method.
 type SourcesList struct {
-	Sources Sources
+	ProjectID ProjectID
+	BranchID  BranchID
+	Sources   Sources
 }
 
 // An output mapping defined by a template.
@@ -433,48 +436,48 @@ type TaskOutputs struct {
 // method.
 type UpdateSinkPayload struct {
 	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
 	Type            *SinkType
 	// Human readable name of the sink.
 	Name *string
 	// Description of the source.
 	Description *string
 	// Table sink configuration for "type" = "table".
-	Table    *TableSink
-	BranchID BranchIDOrDefault
-	SourceID SourceID
-	SinkID   SinkID
+	Table *TableSink
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service
 // UpdateSinkSettings method.
 type UpdateSinkSettingsPayload struct {
 	StorageAPIToken string
-	Patch           SettingsPatch
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
+	Patch           SettingsPatch
 }
 
 // UpdateSourcePayload is the payload type of the stream service UpdateSource
 // method.
 type UpdateSourcePayload struct {
 	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 	Type            *SourceType
 	// Human readable name of the source.
 	Name *string
 	// Description of the source.
 	Description *string
-	BranchID    BranchIDOrDefault
-	SourceID    SourceID
 }
 
 // UpdateSourceSettingsPayload is the payload type of the stream service
 // UpdateSourceSettings method.
 type UpdateSourceSettingsPayload struct {
 	StorageAPIToken string
-	Patch           SettingsPatch
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
+	Patch           SettingsPatch
 }
 
 // Version of the entity.

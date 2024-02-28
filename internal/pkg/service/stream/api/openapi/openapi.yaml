@@ -57,6 +57,8 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamListSourcesResponseBody'
                         required:
+                            - projectId
+                            - branchId
                             - sources
             schemes:
                 - https
@@ -340,6 +342,7 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamListSinksResponseBody'
                         required:
+                            - projectId
                             - branchId
                             - sourceId
                             - sinks
@@ -378,8 +381,8 @@ paths:
                   schema:
                     $ref: '#/definitions/StreamCreateSinkRequestBody'
                     required:
+                        - type
                         - name
-                        - mapping
             responses:
                 "202":
                     description: Accepted response.
@@ -1296,8 +1299,8 @@ definitions:
                           language: jsonnet
                           content: body.foo + "-" + body.bar
         required:
+            - type
             - name
-            - mapping
     StreamCreateSinkResponseBody:
         title: StreamCreateSinkResponseBody
         type: object
@@ -2230,6 +2233,10 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            projectId:
+                type: integer
+                example: 123
+                format: int64
             sinks:
                 type: array
                 items:
@@ -2287,6 +2294,7 @@ definitions:
                 minLength: 1
                 maxLength: 48
         example:
+            projectId: 123
             branchId: 345
             sourceId: github-webhook-source
             sinks:
@@ -2337,6 +2345,7 @@ definitions:
                         userDescription: user@company.com
                     reason: Disabled for recurring problems.
         required:
+            - projectId
             - branchId
             - sourceId
             - sinks
@@ -2370,6 +2379,14 @@ definitions:
         title: StreamListSourcesResponseBody
         type: object
         properties:
+            branchId:
+                type: integer
+                example: 345
+                format: int64
+            projectId:
+                type: integer
+                example: 123
+                format: int64
             sources:
                 type: array
                 items:
@@ -2451,6 +2468,8 @@ definitions:
                                 userDescription: user@company.com
                             reason: Disabled for recurring problems.
         example:
+            projectId: 123
+            branchId: 345
             sources:
                 - projectId: 123
                   branchId: 345
@@ -2528,6 +2547,8 @@ definitions:
                             userDescription: user@company.com
                         reason: Disabled for recurring problems.
         required:
+            - projectId
+            - branchId
             - sources
     StreamRefreshSourceTokensResponseBody:
         title: StreamRefreshSourceTokensResponseBody
