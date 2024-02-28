@@ -8,17 +8,13 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
@@ -27,17 +23,7 @@ import (
 func TestDialogs_AskInitOptions(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -106,17 +92,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, o, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 

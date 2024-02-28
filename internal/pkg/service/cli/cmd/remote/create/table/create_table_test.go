@@ -12,12 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
@@ -79,17 +76,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from interactive", func(t *testing.T) {
 		t.Parallel()
 
-		// options
-		o := options.New()
-
-		// terminal
-		console, err := terminal.New(t)
-		require.NoError(t, err)
-
-		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-		// dialog
-		d := dialog.New(p, o)
+		d, _, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -174,17 +161,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name interactive", func(t *testing.T) {
 		t.Parallel()
 
-		// options
-		o := options.New()
-
-		// terminal
-		console, err := terminal.New(t)
-		require.NoError(t, err)
-
-		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-		// dialog
-		d := dialog.New(p, o)
+		d, _, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -272,17 +249,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from flag", func(t *testing.T) {
 		t.Parallel()
 
-		// options
-		o := options.New()
-
-		// terminal
-		console, err := terminal.New(t)
-		require.NoError(t, err)
-
-		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-		// dialog
-		d := dialog.New(p, o)
+		d, _, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -377,17 +344,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name from flag", func(t *testing.T) {
 		t.Parallel()
 
-		// options
-		o := options.New()
-
-		// terminal
-		console, err := terminal.New(t)
-		require.NoError(t, err)
-
-		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-		// dialog
-		d := dialog.New(p, o)
+		d, _, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)

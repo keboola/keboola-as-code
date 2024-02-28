@@ -6,19 +6,14 @@ import (
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog/templatehelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
-	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -98,17 +93,7 @@ config-row
 func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
@@ -259,25 +244,20 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// dialog
-	d := dialog.New(nopPrompt.New(), o)
+	d, _, _ := dialog.NewForTest(t, false)
 
 	deps := dependencies.NewMocked(t)
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Flags
 	f := Flags{
-		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
-		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
-		Description:    configmap.Value[string]{Value: "Full workflow to ...", SetBy: configmap.SetByFlag},
-		StorageAPIHost: configmap.Value[string]{Value: "connection.keboola.com", SetBy: configmap.SetByFlag},
-		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
-		Configs:        configmap.Value[string]{Value: "keboola.my-component:1, keboola.my-component:3", SetBy: configmap.SetByFlag},
-		UsedComponents: configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault},
-		AllInputs:      configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
+		ID:             configmap.NewValueWithOrigin("my-super-template", configmap.SetByFlag),
+		Name:           configmap.NewValueWithOrigin("My Super Template", configmap.SetByFlag),
+		Description:    configmap.NewValueWithOrigin("Full workflow to ...", configmap.SetByFlag),
+		StorageAPIHost: configmap.NewValueWithOrigin("connection.keboola.com", configmap.SetByFlag),
+		Branch:         configmap.NewValueWithOrigin("123", configmap.SetByFlag),
+		Configs:        configmap.NewValueWithOrigin("keboola.my-component:1, keboola.my-component:3", configmap.SetByFlag),
+		AllInputs:      configmap.NewValueWithOrigin(true, configmap.SetByFlag),
 	}
 
 	// Run
@@ -375,23 +355,19 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// dialog
-	d := dialog.New(nopPrompt.New(), o)
+	d, _, _ := dialog.NewForTest(t, false)
 
 	deps := dependencies.NewMocked(t)
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	f := Flags{
-		StorageAPIHost: configmap.Value[string]{Value: "connection.keboola.com", SetBy: configmap.SetByFlag},
-		ID:             configmap.Value[string]{Value: "my-super-template", SetBy: configmap.SetByFlag},
-		Name:           configmap.Value[string]{Value: "My Super Template", SetBy: configmap.SetByFlag},
-		Branch:         configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
-		AllConfigs:     configmap.Value[bool]{Value: true, SetBy: configmap.SetByFlag},
-		Description:    configmap.NewValue("Full workflow to ..."),
-		UsedComponents: configmap.NewValue(""),
+		StorageAPIHost: configmap.NewValueWithOrigin("connection.keboola.com", configmap.SetByFlag),
+		ID:             configmap.NewValueWithOrigin("my-super-template", configmap.SetByFlag),
+		Name:           configmap.NewValueWithOrigin("My Super Template", configmap.SetByFlag),
+		Branch:         configmap.NewValueWithOrigin("123", configmap.SetByFlag),
+		AllConfigs:     configmap.NewValueWithOrigin(true, configmap.SetByFlag),
+		Description:    configmap.NewValueWithOrigin("Full workflow to ...", configmap.SetByDefault),
+		UsedComponents: configmap.NewValueWithOrigin("", configmap.SetByDefault),
 	}
 
 	// Run

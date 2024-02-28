@@ -7,17 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -25,17 +21,7 @@ import (
 func TestAskCreateConfig(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	fs := aferofs.NewMemoryFs()
 	deps := dependencies.NewMocked(t)

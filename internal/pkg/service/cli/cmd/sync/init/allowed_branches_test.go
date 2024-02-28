@@ -9,12 +9,9 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
@@ -23,17 +20,8 @@ import (
 // TestAllowedBranchesByFlag use flag value if present.
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
-	// options
-	o := options.New()
 
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -58,17 +46,8 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
-	// options
-	o := options.New()
 
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, _ := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -91,17 +70,8 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 // -> only main branch.
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
-	// options
-	o := options.New()
 
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -133,17 +103,8 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 // -> all branches.
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
-	// options
-	o := options.New()
 
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -175,17 +136,8 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 // -> select branches, and select 2/4 of the listed brances.
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
-	// options
-	o := options.New()
 
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -238,17 +190,8 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 // -> type IDs or names and type two custom definitions.
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
-	// options
-	o := options.New()
 
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
