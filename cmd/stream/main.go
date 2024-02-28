@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"strings"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
@@ -97,10 +96,6 @@ func run(ctx context.Context, cfg config.Config) error {
 	// Create service
 	svc := service.New(apiScp)
 
-	filterImportEndpoint := func(req *http.Request) bool {
-		return !strings.HasPrefix(req.URL.Path, "/v1/import/") || req.URL.RawQuery == "debug=true"
-	}
-
 	// Start HTTP server
 	logger.Infof(ctx, "starting Stream API HTTP server, listen-address=%s", cfg.API.Listen)
 	err = httpserver.Start(ctx, apiScp, httpserver.Config{
@@ -115,9 +110,6 @@ func run(ctx context.Context, cfg config.Config) error {
 			middleware.WithFilter(func(req *http.Request) bool {
 				return req.URL.Path != "/health-check"
 			}),
-			// Filter out import endpoint traces and logs, but keep metrics
-			middleware.WithFilterTracing(filterImportEndpoint),
-			middleware.WithFilterAccessLog(filterImportEndpoint),
 		},
 		Mount: func(c httpserver.Components) {
 			// Create public request deps for each request
