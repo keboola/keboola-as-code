@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"net/url"
 
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -12,6 +13,7 @@ import (
 
 type service struct {
 	publicURL *url.URL
+	tasks     *task.Node
 	repo      *definitionRepo.Repository
 	mapper    *mapper.Mapper
 }
@@ -19,6 +21,7 @@ type service struct {
 func New(d dependencies.APIScope) api.Service {
 	return &service{
 		publicURL: d.APIPublicURL(),
+		tasks:     d.TaskNode(),
 		repo:      d.DefinitionRepository(),
 		mapper:    mapper.New(d),
 	}
