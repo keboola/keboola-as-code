@@ -688,48 +688,6 @@ paths:
                 - https
             security:
                 - storage-api-token: []
-    /v1/branches/{branchId}/tasks/{taskId}:
-        get:
-            tags:
-                - configuration
-            summary: Get task
-            description: Get details of a task.
-            operationId: GetTask
-            parameters:
-                - name: branchId
-                  in: path
-                  description: ID of the branch.
-                  required: true
-                  type: integer
-                - name: taskId
-                  in: path
-                  description: Unique ID of the task.
-                  required: true
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/StreamGetTaskResponseBody'
-                        required:
-                            - id
-                            - type
-                            - url
-                            - status
-                            - isFinished
-                            - createdAt
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/StreamGetTaskStreamTaskNotFoundResponseBody'
-                        required:
-                            - statusCode
-                            - error
-                            - message
-            schemes:
-                - https
-            security:
-                - storage-api-token: []
     /v1/documentation/openapi.json:
         get:
             tags:
@@ -786,6 +744,43 @@ paths:
             schemes:
                 - http
                 - https
+    /v1/tasks/{taskId}:
+        get:
+            tags:
+                - configuration
+            summary: Get task
+            description: Get details of a task.
+            operationId: GetTask
+            parameters:
+                - name: taskId
+                  in: path
+                  description: Unique ID of the task.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/StreamGetTaskResponseBody'
+                        required:
+                            - id
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamGetTaskStreamTaskNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
 definitions:
     ByResponseBody:
         title: ByResponseBody
@@ -1365,6 +1360,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -1548,6 +1546,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -2183,6 +2184,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -2835,6 +2839,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -3505,6 +3512,16 @@ definitions:
         title: TaskOutputsResponseBody
         type: object
         properties:
+            branchId:
+                type: integer
+                description: ID of the parent branch.
+                example: 345
+                format: int64
+            projectId:
+                type: integer
+                description: ID of the parent project.
+                example: 123
+                format: int64
             sinkId:
                 type: string
                 description: ID of the created/updated sink.
@@ -3517,8 +3534,15 @@ definitions:
                 example: github-webhook-source
                 minLength: 1
                 maxLength: 48
+            url:
+                type: string
+                description: Absolute URL of the entity.
+                example: abc123
         description: Outputs generated by the task.
         example:
+            url: abc123
+            projectId: 123
+            branchId: 345
             sinkId: github-pr-table-sink
             sourceId: github-webhook-source
     VersionResponseBody:

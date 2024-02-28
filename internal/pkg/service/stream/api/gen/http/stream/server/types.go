@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	stream "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	goa "goa.design/goa/v3/pkg"
 )
@@ -560,6 +561,12 @@ type GetTaskStreamTaskNotFoundResponseBody struct {
 
 // TaskOutputsResponseBody is used to define fields on response body types.
 type TaskOutputsResponseBody struct {
+	// Absolute URL of the entity.
+	URL *string `form:"url,omitempty" json:"url,omitempty" xml:"url,omitempty"`
+	// ID of the parent project.
+	ProjectID *int `form:"projectId,omitempty" json:"projectId,omitempty" xml:"projectId,omitempty"`
+	// ID of the parent branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
 	// ID of the created/updated sink.
 	SinkID *string `form:"sinkId,omitempty" json:"sinkId,omitempty" xml:"sinkId,omitempty"`
 	// ID of the created/updated source.
@@ -575,7 +582,7 @@ type HTTPSourceResponseBody struct {
 // VersionResponseBody is used to define fields on response body types.
 type VersionResponseBody struct {
 	// Version number counted from 1.
-	Number int `form:"number" json:"number" xml:"number"`
+	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
 	// Hash of the entity state.
 	Hash string `form:"hash" json:"hash" xml:"hash"`
 	// Date and time of the modification.
@@ -1509,10 +1516,8 @@ func NewDeleteSinkPayload(branchID string, sourceID string, sinkID string, stora
 }
 
 // NewGetTaskPayload builds a stream service GetTask endpoint payload.
-func NewGetTaskPayload(branchID int, taskID string, storageAPIToken string) *stream.GetTaskPayload {
+func NewGetTaskPayload(taskID string, storageAPIToken string) *stream.GetTaskPayload {
 	v := &stream.GetTaskPayload{}
-	tmpbranchID := stream.BranchID(branchID)
-	v.BranchID = &tmpbranchID
 	v.TaskID = stream.TaskID(taskID)
 	v.StorageAPIToken = storageAPIToken
 

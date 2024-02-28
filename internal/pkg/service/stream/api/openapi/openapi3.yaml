@@ -190,6 +190,9 @@ paths:
                                 result: abc123
                                 error: abc123
                                 outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
                                     sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
                 "409":
@@ -809,6 +812,9 @@ paths:
                                 result: abc123
                                 error: abc123
                                 outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
                                     sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
                 "404":
@@ -1078,6 +1084,9 @@ paths:
                                 result: abc123
                                 error: abc123
                                 outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
                                     sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
                 "404":
@@ -1368,64 +1377,6 @@ paths:
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
-    /v1/branches/{branchId}/tasks/{taskId}:
-        get:
-            tags:
-                - configuration
-            summary: Get task
-            description: Get details of a task.
-            operationId: GetTask
-            parameters:
-                - name: branchId
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    description: ID of the branch.
-                    example: 345
-                    format: int64
-                  example: 345
-                - name: taskId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                    description: Unique ID of the task.
-                    example: task_1234
-                  example: task_1234
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Task'
-                            example:
-                                id: task_1234
-                                type: abc123
-                                url: abc123
-                                status: success
-                                isFinished: false
-                                createdAt: "2022-04-28T14:20:04.000Z"
-                                finishedAt: "2022-04-28T14:20:04.000Z"
-                                duration: 123456789
-                                result: abc123
-                                error: abc123
-                                outputs:
-                                    sinkId: github-pr-table-sink
-                                    sourceId: github-webhook-source
-                "404":
-                    description: 'stream.taskNotFound: Task not found error.'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GenericError'
-                            example:
-                                statusCode: 404
-                                error: stream.taskNotFound
-                                message: Task "001" not found.
-            security:
-                - storage-api-token: []
     /v1/documentation/openapi.json:
         get:
             tags:
@@ -1462,6 +1413,58 @@ paths:
             responses:
                 "200":
                     description: File downloaded
+    /v1/tasks/{taskId}:
+        get:
+            tags:
+                - configuration
+            summary: Get task
+            description: Get details of a task.
+            operationId: GetTask
+            parameters:
+                - name: taskId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the task.
+                    example: task_1234
+                  example: task_1234
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                id: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sinkId: github-pr-table-sink
+                                    sourceId: github-webhook-source
+                "404":
+                    description: 'stream.taskNotFound: Task not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.taskNotFound
+                                message: Task "001" not found.
+            security:
+                - storage-api-token: []
 components:
     schemas:
         By:
@@ -2498,6 +2501,9 @@ components:
                 result: abc123
                 error: abc123
                 outputs:
+                    url: abc123
+                    projectId: 123
+                    branchId: 345
                     sinkId: github-pr-table-sink
                     sourceId: github-webhook-source
             required:
@@ -2510,6 +2516,16 @@ components:
         TaskOutputs:
             type: object
             properties:
+                branchId:
+                    type: integer
+                    description: ID of the parent branch.
+                    example: 345
+                    format: int64
+                projectId:
+                    type: integer
+                    description: ID of the parent project.
+                    example: 123
+                    format: int64
                 sinkId:
                     type: string
                     description: ID of the created/updated sink.
@@ -2522,8 +2538,15 @@ components:
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
+                url:
+                    type: string
+                    description: Absolute URL of the entity.
+                    example: abc123
             description: Outputs generated by the task.
             example:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         UpdateSinkRequestBody:

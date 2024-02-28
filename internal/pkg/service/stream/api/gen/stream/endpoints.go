@@ -431,7 +431,7 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.GetTask(ctx, deps, p)
 	}
 }
