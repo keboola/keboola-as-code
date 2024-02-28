@@ -49,7 +49,7 @@ func run(ctx context.Context, cfg config.Config) error {
 	// Dump configuration, sensitive values are masked
 	dump, err := configmap.NewDumper().Dump(cfg).AsJSON(false)
 	if err == nil {
-		logger.Infof(ctx, "Configuration: %s", string(dump))
+		logger.Infof(ctx, "configuration: %s", string(dump))
 	} else {
 		return err
 	}

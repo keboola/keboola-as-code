@@ -20,7 +20,7 @@ type Config struct {
 	DebugHTTPClient bool                `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
 	CPUProfFilePath string              `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
 	NodeID          string              `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
-	StorageAPIHost  string              `configKey:"storageAPIHost" configUsage:"Storage API host." validate:"required,hostname"`
+	StorageAPIHost  string              `configKey:"storageApiHost" configUsage:"Storage API host." validate:"required,hostname"`
 	Datadog         datadog.Config      `configKey:"datadog"`
 	Etcd            etcdclient.Config   `configKey:"etcd"`
 	Metrics         prometheus.Config   `configKey:"metrics"`
@@ -39,7 +39,7 @@ type Patch struct {
 
 type API struct {
 	Listen    string   `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
-	PublicURL *url.URL `configKey:"publicURL" configUsage:"Public URL of the configuration HTTP API for link generation."  validate:"required"`
+	PublicURL *url.URL `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation."  validate:"required"`
 }
 
 func New() Config {
