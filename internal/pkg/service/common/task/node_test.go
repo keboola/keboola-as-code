@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -134,7 +135,7 @@ task/123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, task.Config{
+	taskEntity, err := node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
@@ -152,6 +153,16 @@ task/123/my-receiver/my-export/some.task/%s
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
+
+	// Get task
+	{
+		result, err := node1.GetTask(taskEntity.Key).Do(ctx).ResultOrErr()
+		if assert.NoError(t, err) {
+			assert.Equal(t, keboola.ProjectID(123), result.ProjectID)
+			assert.True(t, strings.HasPrefix(result.TaskID.String(), "my-receiver/my-export/some.task/"), result.TaskID.String())
+			assert.Equal(t, "some.task", result.Type)
+		}
+	}
 
 	// Check etcd state after second task
 	etcdhelper.AssertKVsString(t, client, `

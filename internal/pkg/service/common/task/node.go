@@ -135,6 +135,10 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 	return n, nil
 }
 
+func (n *Node) GetTask(k Key) op.WithResult[Task] {
+	return n.taskEtcdPrefix.Key(k.String()).Get(n.client)
+}
+
 func (n *Node) TasksCount() int64 {
 	return n.tasksCount.Load()
 }
