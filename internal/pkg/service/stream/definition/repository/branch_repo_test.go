@@ -62,7 +62,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// Get - not found
 		if err := branchRepo.Get(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
+			assert.Equal(t, `branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -76,7 +76,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// GetDeleted - not found
 		if err := branchRepo.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
+			assert.Equal(t, `deleted branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -123,7 +123,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// GetDeleted - not found
 		if err := branchRepo.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
+			assert.Equal(t, `deleted branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -133,7 +133,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		branch1 := test.NewBranch(branchKey1)
 		if err := branchRepo.Create(&branch1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "123/567" already exists in the project`, err.Error())
+			assert.Equal(t, `branch "567" already exists in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
@@ -176,7 +176,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// Get - not found
 		if err := branchRepo.Get(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
+			assert.Equal(t, `branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -202,7 +202,7 @@ func TestRepository_Branch(t *testing.T) {
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := branchRepo.SoftDelete(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `branch "123/567" not found in the project`, err.Error())
+		assert.Equal(t, `branch "567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
@@ -228,7 +228,7 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// GetDeleted - not found
 		if err := branchRepo.GetDeleted(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
+			assert.Equal(t, `deleted branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -248,7 +248,7 @@ func TestRepository_Branch(t *testing.T) {
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := branchRepo.Undelete(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `deleted branch "123/567" not found in the project`, err.Error())
+		assert.Equal(t, `deleted branch "567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 

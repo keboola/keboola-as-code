@@ -51,7 +51,7 @@ func (r *SinkRepository) ExistsOrErr(k key.SinkKey) op.WithResult[bool] {
 	return r.schema.
 		Active().ByKey(k).Exists(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("sink", k.String(), "source")
+			return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
 		})
 }
 
@@ -59,7 +59,7 @@ func (r *SinkRepository) Get(k key.SinkKey) op.WithResult[definition.Sink] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("sink", k.String(), "source")
+			return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
 		})
 }
 
@@ -67,7 +67,7 @@ func (r *SinkRepository) GetDeleted(k key.SinkKey) op.WithResult[definition.Sink
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("deleted sink", k.String(), "source")
+			return serviceError.NewResourceNotFoundError("deleted sink", k.SinkID.String(), "source")
 		})
 }
 
@@ -88,7 +88,7 @@ func (r *SinkRepository) Create(versionDescription string, input *definition.Sin
 		// Object must not exists
 		BeforeWriteOrErr(func(context.Context) error {
 			if actual != nil {
-				return serviceError.NewResourceAlreadyExistsError("sink", k.String(), "source")
+				return serviceError.NewResourceAlreadyExistsError("sink", k.SinkID.String(), "source")
 			}
 			return nil
 		}).
@@ -237,7 +237,7 @@ func (r *SinkRepository) Version(k key.SinkKey, version definition.VersionNumber
 	return r.schema.
 		Versions().Of(k).Version(version).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("sink version", k.String()+"/"+version.String(), "source")
+			return serviceError.NewResourceNotFoundError("sink version", k.SinkID.String()+"/"+version.String(), "source")
 		})
 }
 
@@ -254,9 +254,9 @@ func (r *SinkRepository) Rollback(k key.SinkKey, to definition.VersionNumber) *o
 		// Return the most significant error
 		BeforeWriteOrErr(func(context.Context) error {
 			if latestVersion == nil {
-				return serviceError.NewResourceNotFoundError("sink", k.String(), "source")
+				return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
 			} else if targetVersion == nil {
-				return serviceError.NewResourceNotFoundError("sink version", k.String()+"/"+to.String(), "source")
+				return serviceError.NewResourceNotFoundError("sink version", k.SinkID.String()+"/"+to.String(), "source")
 			}
 			return nil
 		}).

@@ -56,7 +56,7 @@ func TestRepository_Token(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		if err := r.Put(sinkKey1, storageToken1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `sink "123/456/my-source/my-sink-1" not found in the source`, err.Error())
+			assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}

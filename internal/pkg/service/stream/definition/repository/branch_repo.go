@@ -50,7 +50,7 @@ func (r *BranchRepository) ExistsOrErr(k key.BranchKey) op.WithResult[bool] {
 	return r.schema.
 		Active().ByKey(k).Exists(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("branch", k.String(), "project")
+			return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
 		})
 }
 
@@ -77,7 +77,7 @@ func (r *BranchRepository) Get(k key.BranchKey) op.WithResult[definition.Branch]
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("branch", k.String(), "project")
+			return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
 		})
 }
 
@@ -85,7 +85,7 @@ func (r *BranchRepository) GetDeleted(k key.BranchKey) op.WithResult[definition.
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("deleted branch", k.String(), "project")
+			return serviceError.NewResourceNotFoundError("deleted branch", k.BranchID.String(), "project")
 		})
 }
 
@@ -104,7 +104,7 @@ func (r *BranchRepository) Create(input *definition.Branch) *op.AtomicOp[definit
 		// Object must not exists
 		BeforeWriteOrErr(func(context.Context) error {
 			if actual != nil {
-				return serviceError.NewResourceAlreadyExistsError("branch", k.String(), "project")
+				return serviceError.NewResourceAlreadyExistsError("branch", k.BranchID.String(), "project")
 			}
 			return nil
 		}).

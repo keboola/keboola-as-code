@@ -93,7 +93,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	// Entity exists only in memory
 	{
 		if err := fileRepo.Rotate(rb, clk.Now(), sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `sink "123/456/my-source/my-sink-1" not found in the source`, err.Error())
+			assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
