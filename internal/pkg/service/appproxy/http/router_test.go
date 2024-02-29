@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,8 @@ import (
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/logging"
@@ -221,11 +224,6 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-unauthorized",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
-				m[0].QueueError(&mockoidc.ServerError{
-					Code:  http.StatusUnauthorized,
-					Error: mockoidc.InvalidRequest,
-				})
-
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				require.NoError(t, err)
@@ -234,6 +232,12 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
 				cookies := response.Cookies()
+
+				// Make the next request to the provider fail
+				m[0].QueueError(&mockoidc.ServerError{
+					Code:  http.StatusUnauthorized,
+					Error: mockoidc.InvalidRequest,
+				})
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -399,8 +403,6 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-oidc-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer) {
-				m[0].Shutdown()
-
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.data-apps.keboola.local/", nil)
 				require.NoError(t, err)
@@ -425,6 +427,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
 				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+
+				// Shutdown provider server
+				m[0].Shutdown()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1320,11 +1325,15 @@ func TestAppProxyRouter(t *testing.T) {
 
 			apps := configureDataApps(tsURL, m)
 
-			handler := createProxyHandler(t, apps)
+			service := startSandboxesService(t, apps)
+			defer service.Close()
+
+			handler := createProxyHandler(t, service.URL)
 
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
 			proxy.StartTLS()
+			defer proxy.Close()
 
 			proxyURL, err := url.Parse(proxy.URL)
 			require.NoError(t, err)
@@ -1576,6 +1585,87 @@ func startAppServer(t *testing.T) *appServer {
 	return &appServer{ts, &requests}
 }
 
+type sandboxesService struct {
+	*httptest.Server
+	apps map[string]DataApp
+}
+
+func startSandboxesService(t *testing.T, apps []DataApp) *sandboxesService {
+	t.Helper()
+
+	service := &sandboxesService{
+		apps: make(map[string]DataApp),
+	}
+
+	for _, app := range apps {
+		service.apps[app.ID.String()] = app
+	}
+
+	r := regexp.MustCompile("apps/([a-zA-Z0-9]+)/proxy-config")
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		match := r.FindStringSubmatch(req.RequestURI)
+		if len(match) < 2 {
+			w.WriteHeader(http.StatusNotFound)
+			io.WriteString(w, "{}")
+			return
+		}
+
+		appID := match[1]
+		app, ok := service.apps[appID]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			io.WriteString(w, "{}")
+			return
+		}
+
+		providers := []appconfig.AuthProvider{}
+		for _, provider := range app.Providers {
+			providers = append(providers, appconfig.AuthProvider{
+				ID:           provider.ID,
+				Type:         string(provider.Type),
+				ClientID:     provider.ClientID,
+				ClientSecret: provider.ClientSecret,
+				IssuerURL:    provider.OIDCConfig.IssuerURL,
+				AllowedRoles: provider.AllowedGroups,
+			})
+		}
+
+		rules := []appconfig.AuthRule{}
+		for _, rule := range app.Rules {
+			rules = append(rules, appconfig.AuthRule{
+				Type:  string(rule.Type),
+				Value: rule.Value,
+				Auth:  rule.Providers,
+			})
+		}
+
+		config := appconfig.AppProxyConfig{
+			ID:              app.ID.String(),
+			UpstreamAppHost: app.UpstreamHost,
+			AuthProviders:   providers,
+			AuthRules:       rules,
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+		jsonData, err := json.Encode(config, true)
+		assert.NoError(t, err)
+
+		w.Write(jsonData)
+	})
+
+	ts := httptest.NewUnstartedServer(handler)
+	ts.EnableHTTP2 = true
+	ts.Start()
+
+	service.Server = ts
+
+	return service
+}
+
 func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
 	t.Helper()
 
@@ -1585,7 +1675,7 @@ func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
 	return m
 }
 
-func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
+func createProxyHandler(t *testing.T, sandboxesAPIURL string) http.Handler {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -1594,6 +1684,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 
 	cfg := config.New()
 	cfg.CookieSecretSalt = string(secret)
+	cfg.SandboxesAPIURL = sandboxesAPIURL
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
 
@@ -1603,7 +1694,7 @@ func createProxyHandler(t *testing.T, apps []DataApp) http.Handler {
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
 	logger.SetErrOutput(loggerWriter)
 
-	router, err := NewRouter(context.Background(), d, "proxy-", apps)
+	router, err := NewRouter(d, "proxy-")
 	require.NoError(t, err)
 
 	return middleware.Wrap(
