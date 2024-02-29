@@ -1,0 +1,13 @@
+{
+  "path": "/v1/branches/default/sources",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "sourceId": "my-source-custom-id",
+    "name": "My Source",
+    "type": "http"
+  }
+}
