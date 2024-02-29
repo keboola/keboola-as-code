@@ -14,6 +14,7 @@ fi
 : ${APP_PROXY_REPOSITORY?"Missing APP_PROXY_REPOSITORY"}
 : ${APP_PROXY_IMAGE_TAG?"Missing APP_PROXY_IMAGE_TAG"}
 : ${APP_PROXY_REPLICAS?"Missing APP_PROXY_REPLICAS"}
+: ${APP_PROXY_SANDBOXES_API_TOKEN?"Missing APP_PROXY_SANDBOXES_API_TOKEN"}
 
 # Constants
 export NAMESPACE="app-proxy"
@@ -24,14 +25,15 @@ export NAMESPACE="app-proxy"
 # Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
-if ! kubectl get secret app-proxy --namespace app-proxy > /dev/null 2>&1; then
+if ! kubectl get secret app-proxy-salt --namespace app-proxy > /dev/null 2>&1; then
   COOKIE_SECRET_SALT=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 128)
   export COOKIE_SECRET_SALT
-  envsubst < kubernetes/templates/proxy/secret.yaml > kubernetes/deploy/proxy/secret.yaml
-  kubectl apply -f ./kubernetes/deploy/proxy/secret.yaml
+  envsubst < kubernetes/templates/proxy/salt.yaml > kubernetes/deploy/proxy/salt.yaml
+  kubectl apply -f ./kubernetes/deploy/proxy/salt.yaml
 fi
 
 # Proxy
+kubectl apply -f ./kubernetes/deploy/proxy/secret.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/pdb.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/network-policy.yaml

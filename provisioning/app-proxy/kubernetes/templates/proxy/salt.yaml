@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: app-proxy
+  name: app-proxy-salt
   namespace: $NAMESPACE
   labels:
     app: app-proxy
 stringData:
-  sandboxesApiToken: "$APP_PROXY_SANDBOXES_API_TOKEN"
+  cookieSecretSalt: "$COOKIE_SECRET_SALT"
