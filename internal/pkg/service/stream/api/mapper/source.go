@@ -18,7 +18,7 @@ func (m *Mapper) NewSourceEntity(parent key.BranchKey, payload *api.CreateSource
 	if payload.SourceID == nil || len(*payload.SourceID) == 0 {
 		entity.SourceID = key.SourceID(strhelper.NormalizeName(payload.Name))
 	} else {
-		entity.SourceID = *payload.SourceID
+		entity.SourceID = key.SourceID(strhelper.NormalizeName(string(*payload.SourceID)))
 	}
 
 	// Name
