@@ -33,35 +33,35 @@ fi
 # gci
 if ! command -v gci &> /dev/null
 then
-  go install github.com/daixiang0/gci@latest
+  go install github.com/daixiang0/gci@v0.9.1
 fi
 
 # gofumpt
 if ! command -v gofumpt &> /dev/null
 then
-  go install mvdan.cc/gofumpt@latest
+  go install mvdan.cc/gofumpt@v0.5.0
 fi
 
-# air - code changes watcher
-if ! command -v air &> /dev/null
-then
-  go install github.com/cosmtrek/air@latest
-fi
-
-# godoc
-if ! command -v godoc &> /dev/null
-then
-  go install golang.org/x/tools/cmd/godoc@latest
-fi
-
-# go-mod-upgrade
-if ! command -v go-mod-upgrade &> /dev/null
-then
-  go install github.com/oligot/go-mod-upgrade@latest
-fi
-
-# goa - api by design library
-if ! command -v goa &> /dev/null
-then
-  go install goa.design/goa/v3/cmd/goa@v3.11.1
-fi
+## air - code changes watcher
+#if ! command -v air &> /dev/null
+#then
+#  go install github.com/cosmtrek/air@latest
+#fi
+#
+## godoc
+#if ! command -v godoc &> /dev/null
+#then
+#  go install golang.org/x/tools/cmd/godoc@latest
+#fi
+#
+## go-mod-upgrade
+#if ! command -v go-mod-upgrade &> /dev/null
+#then
+#  go install github.com/oligot/go-mod-upgrade@latest
+#fi
+#
+## goa - api by design library
+#if ! command -v goa &> /dev/null
+#then
+#  go install goa.design/goa/v3/cmd/goa@v3.11.1
+#fi

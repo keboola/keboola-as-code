@@ -17,20 +17,40 @@ func (m *AuthorizedManager) SwapFile(ctx context.Context, rb rollback.Builder, f
 
 	oldFile := export.OpenedFile
 	if oldFile.FileKey != fileKey {
-		return errors.Errorf(`cannot close file "%s": unexpected export opened file "%s"`, fileKey.String(), oldFile.FileKey)
+		if oldFile.FileKey.OpenedAt().After(fileKey.OpenedAt()) {
+			// There is an unexpected old file, close it
+			f, err := m.store.GetFile(ctx, fileKey)
+			if err != nil {
+				return err
+			}
+			if err := m.store.CloseFile(ctx, &f); err != nil {
+				return err
+			}
+		}
+		return errors.Errorf(`cannot switch file "%s": unexpected export opened file "%s"`, fileKey.String(), oldFile.FileKey)
 	}
 
 	oldSlice := export.OpenedSlice
 	if oldSlice.FileKey != fileKey {
-		return errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
+		if oldSlice.FileKey.OpenedAt().After(fileKey.OpenedAt()) {
+			// There is an unexpected old file, close it
+			f, err := m.store.GetFile(ctx, fileKey)
+			if err != nil {
+				return err
+			}
+			if err := m.store.CloseFile(ctx, &f); err != nil {
+				return err
+			}
+		}
+		return errors.Errorf(`cannot switch file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
 	}
 
 	if err := m.CreateFileForExport(ctx, rb, &export); err != nil {
-		return errors.Errorf(`cannot close file "%s": cannot create new file: %w`, fileKey.String(), err)
+		return errors.Errorf(`cannot switch file "%s": cannot create new file: %w`, fileKey.String(), err)
 	}
 
 	if err := m.store.SwapFile(ctx, &oldFile, &oldSlice, export.OpenedFile, export.OpenedSlice); err != nil {
-		return errors.Errorf(`cannot close file "%s": cannot swap old and new file: %w`, fileKey.String(), err)
+		return errors.Errorf(`cannot switch file "%s": cannot swap old and new file: %w`, fileKey.String(), err)
 	}
 	return nil
 }
