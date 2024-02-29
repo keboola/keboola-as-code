@@ -1,0 +1,73 @@
+<<<<<
+definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "isDefault": true
+}
+>>>>>
+
+<<<<<
+definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/weird-id
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "weird-id",
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "modifiedAt": "%s",
+    "description": "New source."
+  },
+  "type": "http",
+  "name": "My Source",
+  "http": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/weird-id/0000000001
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "weird-id",
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "modifiedAt": "%s",
+    "description": "New source."
+  },
+  "type": "http",
+  "name": "My Source",
+  "http": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/weird-id/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "taskId": "api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/weird-id/%s",
+  "type": "api.create.source",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "node": "test-node",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/weird-id",
+  "result": "Source has been created successfully.",
+  "outputs": {
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "sourceId": "weird-id",
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/weird-id"
+  },
+  "duration": %s
+}
+>>>>>
