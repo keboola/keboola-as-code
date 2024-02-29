@@ -21,6 +21,7 @@ const (
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope
+	logger log.Logger
 }
 
 func NewAPIScope(ctx context.Context, cfg config.Config, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, stdout, stderr io.Writer) (v APIScope, err error) {
@@ -35,5 +36,11 @@ func newAPIScope(svcScope ServiceScope) APIScope {
 
 	d.ServiceScope = svcScope
 
+	d.logger = svcScope.Logger().WithComponent("api")
+
 	return d
+}
+
+func (v *apiScope) Logger() log.Logger {
+	return v.logger
 }
