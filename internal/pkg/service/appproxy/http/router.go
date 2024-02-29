@@ -25,6 +25,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -37,6 +38,7 @@ type Router struct {
 	telemetry         telemetry.Telemetry
 	config            config.Config
 	clock             clock.Clock
+	loader            appconfig.Loader
 	handlers          map[AppID]http.Handler
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
@@ -49,7 +51,7 @@ const selectionPagePath = "/_proxy/selection"
 //go:embed template/*
 var templates embed.FS
 
-func NewRouter(ctx context.Context, d dependencies.ServiceScope, exceptionIDPrefix string, apps []DataApp) (*Router, error) {
+func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, error) {
 	html, err := templates.ReadFile("template/selection.html.tmpl")
 	if err != nil {
 		return nil, errors.PrefixError(err, "selection template file not found")
@@ -65,13 +67,10 @@ func NewRouter(ctx context.Context, d dependencies.ServiceScope, exceptionIDPref
 		telemetry:         d.Telemetry(),
 		config:            d.Config(),
 		clock:             d.Clock(),
+		loader:            d.Loader(),
 		handlers:          map[AppID]http.Handler{},
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
-	}
-
-	for _, app := range apps {
-		router.handlers[app.ID] = router.createDataAppHandler(ctx, app)
 	}
 
 	return router, nil
@@ -101,13 +100,66 @@ func (r *Router) CreateHandler() http.Handler {
 
 		appID := AppID(appIDString.Emit())
 
-		if handler, found := r.handlers[appID]; found {
-			handler.ServeHTTP(w, req)
-		} else {
-			r.logger.Infof(req.Context(), `application "%s" not found`, appID)
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(w, `Application "%s" not found.`, appID)
+		handler, ok := r.handlers[appID]
+		if !ok {
+			config, err := r.loader.LoadConfig(req.Context(), string(appID))
+			if err != nil {
+				var sandboxesError *appconfig.SandboxesError
+				errors.As(err, &sandboxesError)
+				if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
+					r.logger.Infof(req.Context(), `application "%s" not found`, appID)
+					w.WriteHeader(http.StatusNotFound)
+					fmt.Fprintf(w, `Application "%s" not found.`, appID)
+					return
+				}
+
+				w.WriteHeader(http.StatusServiceUnavailable)
+				fmt.Fprintf(w, `Unable to retrieve configuration for app "%s".`, appID)
+				return
+			}
+
+			proxyProviders := []options.Provider{}
+			for _, provider := range config.AuthProviders {
+				proxyProviders = append(proxyProviders, options.Provider{
+					ClientID:     provider.ClientID,
+					ClientSecret: provider.ClientSecret,
+					Type:         options.ProviderType(provider.Type),
+					OIDCConfig: options.OIDCOptions{
+						IssuerURL:      provider.IssuerURL,
+						EmailClaim:     options.OIDCEmailClaim,
+						GroupsClaim:    options.OIDCGroupsClaim,
+						AudienceClaims: options.OIDCAudienceClaims,
+						UserIDClaim:    options.OIDCEmailClaim,
+					},
+					ID:                  provider.ID,
+					Name:                provider.ID,
+					AllowedGroups:       provider.AllowedRoles,
+					CodeChallengeMethod: providers.CodeChallengeMethodS256,
+				})
+			}
+
+			rules := []Rule{}
+			for _, rule := range config.AuthRules {
+				rules = append(rules, Rule{
+					Type:      RuleType(rule.Type),
+					Value:     rule.Value,
+					Providers: rule.Auth,
+				})
+			}
+
+			app := DataApp{
+				ID:           AppID(config.ID),
+				Name:         config.ID,
+				UpstreamHost: config.UpstreamAppHost,
+				Providers:    proxyProviders,
+				Rules:        rules,
+			}
+
+			handler = r.createDataAppHandler(req.Context(), app)
+			r.handlers[appID] = handler
 		}
+
+		handler.ServeHTTP(w, req)
 	})
 }
 

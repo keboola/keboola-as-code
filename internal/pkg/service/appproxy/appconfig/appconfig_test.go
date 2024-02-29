@@ -269,7 +269,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 			transport := httpmock.NewMockTransport()
 
 			url := "https://sandboxes.keboola.com"
-			loader := NewLoader(log.NewDebugLogger(), clk, url)
+
+			loader := NewSandboxesAPILoader(log.NewDebugLogger(), clk, url).(*sandboxesAPILoader)
 			loader.sender = loader.sender.(client.Client).WithTransport(transport)
 
 			for _, attempt := range tc.attempts {
