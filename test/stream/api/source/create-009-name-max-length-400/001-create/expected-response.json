@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.invalidLength",
+  "message": "Length of body.name must be lesser or equal than 40 but got value \"123456789-123456789-123456789-123456789-1\" (len=41)"
+}
