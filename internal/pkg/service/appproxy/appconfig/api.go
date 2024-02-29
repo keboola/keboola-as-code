@@ -12,6 +12,7 @@ import (
 
 type AppProxyConfig struct {
 	ID              string         `json:"id"`
+	Name            string         `json:"name"`
 	UpstreamAppHost string         `json:"upstreamAppHost"`
 	AuthProviders   []AuthProvider `json:"authProviders"`
 	AuthRules       []AuthRule     `json:"authRules"`
@@ -21,6 +22,7 @@ type AppProxyConfig struct {
 
 type AuthProvider struct {
 	ID           string   `json:"id"`
+	Name         string   `json:"name"`
 	Type         string   `json:"type"`
 	ClientID     string   `json:"clientId"`
 	ClientSecret string   `json:"clientSecret"`
@@ -43,8 +45,20 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 		AndPathParam("appId", appID).
 		AndHeader("If-None-Match", eTag).
 		WithOnSuccess(func(ctx context.Context, response request.HTTPResponse) error {
+			// Use id as fallback until name is added to Sandboxes API
+			if result.Name == "" {
+				result.Name = result.ID
+			}
+			for i, provider := range result.AuthProviders {
+				if provider.Name == "" {
+					result.AuthProviders[i].Name = provider.ID
+				}
+			}
+
+			// Add ETag to result
 			result.eTag = response.ResponseHeader().Get("ETag")
 
+			// Process Cache-Control header
 			cacheControl := response.ResponseHeader().Get("Cache-Control")
 			if cacheControl == "" {
 				return nil

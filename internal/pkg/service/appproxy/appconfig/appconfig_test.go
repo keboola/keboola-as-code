@@ -73,6 +73,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "3",
+						Name:            "3",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -90,6 +91,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "4",
+						Name:            "4",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -98,6 +100,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					expectedConfig: AppProxyConfig{
 						ID:              "4",
+						Name:            "4",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -115,6 +118,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "5",
+						Name:            "5",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -129,6 +133,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
 						ID:              "5",
+						Name:            "5",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -138,6 +143,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
 						ID:              "5",
+						Name:            "5",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -151,6 +157,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
 						ID:              "5",
+						Name:            "5",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -168,6 +175,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "6",
+						Name:            "6",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -181,6 +189,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
 						ID:              "6",
+						Name:            "6",
 						UpstreamAppHost: "new-app.local",
 						eTag:            `"etag-new-value"`,
 						maxAge:          60 * time.Second,
@@ -189,6 +198,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					expectedConfig: AppProxyConfig{
 						ID:              "6",
+						Name:            "6",
 						UpstreamAppHost: "new-app.local",
 						eTag:            `"etag-new-value"`,
 						maxAge:          60 * time.Second,
@@ -206,6 +216,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "7",
+						Name:            "7",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
@@ -224,6 +235,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
 						ID:              "7",
+						Name:            "7",
 						UpstreamAppHost: "app.local",
 						eTag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
