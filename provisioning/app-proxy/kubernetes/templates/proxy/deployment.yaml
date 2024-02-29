@@ -54,7 +54,7 @@ spec:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
               value: "550MiB"
-            - name: APP_PROXY_SANDBOXES_API_HOST
+            - name: APP_PROXY_SANDBOXES_API_URL
               valueFrom:
                 configMapKeyRef:
                   name: app-proxy

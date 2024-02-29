@@ -1612,7 +1612,7 @@ func createProxyHandler(t *testing.T, sandboxesAPIURL string) http.Handler {
 
 	cfg := config.New()
 	cfg.CookieSecretSalt = string(secret)
-	cfg.SandboxesAPIURL = sandboxesAPIURL
+	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
 

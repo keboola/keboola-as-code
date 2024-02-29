@@ -111,7 +111,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d := &serviceScope{}
 	d.parentScopes = parentScp
 	d.config = cfg
-	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), cfg.SandboxesAPIURL)
+	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
 
 	return d, nil
 }
