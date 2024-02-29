@@ -42,3 +42,31 @@ func (m *Mapper) NewSourceEntity(parent key.BranchKey, payload *api.CreateSource
 
 	return entity, nil
 }
+
+func (m *Mapper) NewSourceResponse(entity definition.Source) *api.Source {
+	out := &api.Source{
+		ProjectID:   entity.ProjectID,
+		BranchID:    entity.BranchID,
+		SourceID:    entity.SourceID,
+		Type:        entity.Type,
+		Name:        entity.Name,
+		Description: entity.Description,
+		Version:     m.NewVersionResponse(entity.Version),
+		Deleted:     m.NewDeletedResponse(entity.SoftDeletable),
+		Disabled:    m.NewDisabledResponse(entity.Switchable),
+	}
+
+	if entity.Type == definition.SourceTypeHTTP {
+		out.HTTP = &api.HTTPSource{
+			URL: m.formatHTTPSourceURL(entity),
+		}
+	}
+
+	return out
+}
+
+func (m *Mapper) formatHTTPSourceURL(entity definition.Source) string {
+	return m.httpSourcePublicURL.
+		JoinPath("projects", entity.ProjectID.String(), "sources", entity.SourceID.String(), entity.HTTP.Secret).
+		String()
+}
