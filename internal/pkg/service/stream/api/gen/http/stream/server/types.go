@@ -93,7 +93,7 @@ type APIVersionIndexResponseBody struct {
 // CreateSourceResponseBody is the type of the "stream" service "CreateSource"
 // endpoint HTTP response body.
 type CreateSourceResponseBody struct {
-	ID string `form:"id" json:"id" xml:"id"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
 	// Task type.
 	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
@@ -189,7 +189,7 @@ type RefreshSourceTokensResponseBody struct {
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
 // endpoint HTTP response body.
 type CreateSinkResponseBody struct {
-	ID string `form:"id" json:"id" xml:"id"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
 	// Task type.
 	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
@@ -248,7 +248,7 @@ type ListSinksResponseBody struct {
 // UpdateSinkResponseBody is the type of the "stream" service "UpdateSink"
 // endpoint HTTP response body.
 type UpdateSinkResponseBody struct {
-	ID string `form:"id" json:"id" xml:"id"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
 	// Task type.
 	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
@@ -271,7 +271,7 @@ type UpdateSinkResponseBody struct {
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
-	ID string `form:"id" json:"id" xml:"id"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
 	// Task type.
 	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
@@ -762,7 +762,7 @@ func NewAPIVersionIndexResponseBody(res *stream.ServiceDetail) *APIVersionIndexR
 // the "CreateSource" endpoint of the "stream" service.
 func NewCreateSourceResponseBody(res *stream.Task) *CreateSourceResponseBody {
 	body := &CreateSourceResponseBody{
-		ID:         string(res.ID),
+		TaskID:     string(res.TaskID),
 		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
@@ -923,7 +923,7 @@ func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokens
 // the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkResponseBody(res *stream.Task) *CreateSinkResponseBody {
 	body := &CreateSinkResponseBody{
-		ID:         string(res.ID),
+		TaskID:     string(res.TaskID),
 		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
@@ -1013,7 +1013,7 @@ func NewListSinksResponseBody(res *stream.SinksList) *ListSinksResponseBody {
 // the "UpdateSink" endpoint of the "stream" service.
 func NewUpdateSinkResponseBody(res *stream.Task) *UpdateSinkResponseBody {
 	body := &UpdateSinkResponseBody{
-		ID:         string(res.ID),
+		TaskID:     string(res.TaskID),
 		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
@@ -1034,7 +1034,7 @@ func NewUpdateSinkResponseBody(res *stream.Task) *UpdateSinkResponseBody {
 // "GetTask" endpoint of the "stream" service.
 func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
 	body := &GetTaskResponseBody{
-		ID:         string(res.ID),
+		TaskID:     string(res.TaskID),
 		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,

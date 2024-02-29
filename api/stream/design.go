@@ -872,7 +872,7 @@ var SettingPatch = Type("SettingPatch", func() {
 
 var Task = Type("Task", func() {
 	Description("An asynchronous task.")
-	Attribute("id", TaskID)
+	Attribute("taskId", TaskID)
 	Attribute("type", String, "Task type.")
 	Attribute("url", String, func() {
 		Description("URL of the task.")
@@ -902,7 +902,7 @@ var Task = Type("Task", func() {
 	Attribute("result", String)
 	Attribute("error", String)
 	Attribute("outputs", TaskOutputs)
-	Required("id", "type", "url", "status", "isFinished", "createdAt")
+	Required("taskId", "type", "url", "status", "isFinished", "createdAt")
 })
 
 var TaskOutputs = Type("TaskOutputs", func() {
