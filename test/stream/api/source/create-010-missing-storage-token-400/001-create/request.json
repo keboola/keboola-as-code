@@ -1,0 +1,11 @@
+{
+  "path": "/v1/branches/default/sources",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "name": "My Source",
+    "type": "http"
+  }
+}
