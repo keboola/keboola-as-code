@@ -121,6 +121,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	cfg.NodeID = "test-node"
 	cfg.StorageAPIHost = strings.TrimPrefix(d.StorageAPIHost(), "https://")
 	cfg.API.PublicURL, _ = url.Parse("https://stream.keboola.local")
+	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd = d.TestEtcdConfig()
 
 	// There are some timers with a few seconds interval.
