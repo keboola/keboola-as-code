@@ -39,7 +39,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	handlers          map[AppID]http.Handler
+	handlers          map[string]http.Handler
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }
@@ -68,7 +68,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:            d.Config(),
 		clock:             d.Clock(),
 		loader:            d.Loader(),
-		handlers:          map[AppID]http.Handler{},
+		handlers:          make(map[string]http.Handler),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
@@ -98,11 +98,11 @@ func (r *Router) CreateHandler() http.Handler {
 			}
 		}
 
-		appID := AppID(appIDString.Emit())
+		appID := appIDString.Emit()
 
 		handler, ok := r.handlers[appID]
 		if !ok {
-			config, err := r.loader.LoadConfig(req.Context(), string(appID))
+			config, err := r.loader.LoadConfig(req.Context(), appID)
 			if err != nil {
 				var sandboxesError *appconfig.SandboxesError
 				errors.As(err, &sandboxesError)
@@ -118,44 +118,7 @@ func (r *Router) CreateHandler() http.Handler {
 				return
 			}
 
-			proxyProviders := []options.Provider{}
-			for _, provider := range config.AuthProviders {
-				proxyProviders = append(proxyProviders, options.Provider{
-					ClientID:     provider.ClientID,
-					ClientSecret: provider.ClientSecret,
-					Type:         options.ProviderType(provider.Type),
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      provider.IssuerURL,
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
-					ID:                  provider.ID,
-					Name:                provider.ID,
-					AllowedGroups:       provider.AllowedRoles,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-				})
-			}
-
-			rules := []Rule{}
-			for _, rule := range config.AuthRules {
-				rules = append(rules, Rule{
-					Type:      RuleType(rule.Type),
-					Value:     rule.Value,
-					Providers: rule.Auth,
-				})
-			}
-
-			app := DataApp{
-				ID:           AppID(config.ID),
-				Name:         config.ID,
-				UpstreamHost: config.UpstreamAppHost,
-				Providers:    proxyProviders,
-				Rules:        rules,
-			}
-
-			handler = r.createDataAppHandler(req.Context(), app)
+			handler = r.createDataAppHandler(req.Context(), config)
 			r.handlers[appID] = handler
 		}
 
@@ -172,15 +135,15 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	})
 }
 
-func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Handler {
-	if len(app.Rules) == 0 {
+func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProxyConfig) http.Handler {
+	if len(app.AuthRules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
 	oauthProviders := make(map[string]*oauthProvider)
-	for _, providerConfig := range app.Providers {
+	for _, providerConfig := range app.AuthProviders {
 		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
 	}
 
@@ -194,20 +157,20 @@ func (r *Router) createDataAppHandler(ctx context.Context, app DataApp) http.Han
 	// This is necessary for proxy callback url to work on an app with prefixed private parts.
 	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders))
 
-	for _, rule := range app.Rules {
-		if rule.Type != PathPrefix {
+	for _, rule := range app.AuthRules {
+		if rule.Type != appconfig.PathPrefix {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
 			return r.createConfigErrorHandler(exceptionID)
 		}
 
-		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, publicAppHandler, oauthProviders, rule.Providers))
+		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, publicAppHandler, oauthProviders, rule.Auth))
 	}
 
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers []string) http.Handler {
+func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers []string) http.Handler {
 	if len(providers) == 0 {
 		return publicAppHandler
 	}
@@ -227,10 +190,10 @@ func (r *Router) createRuleHandler(ctx context.Context, app DataApp, publicAppHa
 	return r.createMultiProviderHandler(selectedProviders)
 }
 
-func (r *Router) publicAppHandler(app DataApp) http.Handler {
+func (r *Router) publicAppHandler(app appconfig.AppProxyConfig) http.Handler {
 	target := &url.URL{
 		Scheme: "http",
-		Host:   app.UpstreamHost,
+		Host:   app.UpstreamAppHost,
 	}
 
 	return httputil.NewSingleHostReverseProxy(target)
@@ -243,13 +206,30 @@ type oauthProvider struct {
 	handler        http.Handler
 }
 
-func (r *Router) createProvider(ctx context.Context, providerConfig options.Provider, app DataApp) *oauthProvider {
+func (r *Router) createProvider(ctx context.Context, authProvider appconfig.AuthProvider, app appconfig.AppProxyConfig) *oauthProvider {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
 	}
 
 	exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+
+	providerConfig := options.Provider{
+		ID:                  authProvider.ID,
+		Type:                options.ProviderType(authProvider.Type),
+		Name:                authProvider.Name,
+		AllowedGroups:       authProvider.AllowedRoles,
+		CodeChallengeMethod: providers.CodeChallengeMethodS256,
+		ClientID:            authProvider.ClientID,
+		ClientSecret:        authProvider.ClientSecret,
+		OIDCConfig: options.OIDCOptions{
+			IssuerURL:      authProvider.IssuerURL,
+			EmailClaim:     options.OIDCEmailClaim,
+			GroupsClaim:    options.OIDCGroupsClaim,
+			AudienceClaims: options.OIDCAudienceClaims,
+			UserIDClaim:    options.OIDCEmailClaim,
+		},
+	}
 
 	provider := &oauthProvider{
 		providerConfig: providerConfig,
@@ -434,10 +414,10 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 	writer.WriteHeader(http.StatusFound)
 }
 
-func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*options.Options, error) {
+func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.Provider) (*options.Options, error) {
 	v := options.NewOptions()
 
-	domain := app.ID.String() + "." + r.config.API.PublicURL.Host
+	domain := app.ID + "." + r.config.API.PublicURL.Host
 
 	secret, err := r.generateCookieSecret(app, provider)
 	if err != nil {
@@ -462,9 +442,9 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 	v.UpstreamServers = options.UpstreamConfig{
 		Upstreams: []options.Upstream{
 			{
-				ID:   app.ID.String(),
+				ID:   app.ID,
 				Path: "/",
-				URI:  "http://" + app.UpstreamHost,
+				URI:  "http://" + app.UpstreamAppHost,
 			},
 		},
 	}
@@ -484,13 +464,13 @@ func (r *Router) authProxyConfig(app DataApp, provider options.Provider) (*optio
 // This is necessary because otherwise cookies created by provider A would also be valid in a section that requires provider B but not A.
 // To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
 // App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
-func (r *Router) generateCookieSecret(app DataApp, provider options.Provider) ([]byte, error) {
+func (r *Router) generateCookieSecret(app appconfig.AppProxyConfig, provider options.Provider) ([]byte, error) {
 	if r.config.CookieSecretSalt == "" {
 		return nil, errors.New("missing cookie secret salt")
 	}
 
 	h := sha256.New()
-	if _, err := io.WriteString(h, app.ID.String()+"/"+provider.ID+"/"+r.config.CookieSecretSalt); err != nil {
+	if _, err := io.WriteString(h, app.ID+"/"+provider.ID+"/"+r.config.CookieSecretSalt); err != nil {
 		return nil, err
 	}
 	seed := binary.BigEndian.Uint64(h.Sum(nil))
