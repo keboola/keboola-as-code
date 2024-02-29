@@ -28,9 +28,9 @@ jobs:
     uses: ./.github/workflows/test-e2e-cli.yml
 
   test-e2e-service-buffer:
-    name: "E2E: Buffer"
+    name: "E2E: Stream"
     secrets: inherit
-    uses: ./.github/workflows/test-e2e-service-buffer.yml
+    uses: ./.github/workflows/test-e2e-service-stream.yml
 
   test-e2e-service-templates:
     name: "E2E: Templates"
