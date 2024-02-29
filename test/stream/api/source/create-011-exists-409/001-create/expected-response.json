@@ -1,0 +1,5 @@
+{
+  "statusCode": 409,
+  "error": "stream.api.sourceAlreadyExists",
+  "message": "Source \"my-source\" already exists in the branch."
+}
