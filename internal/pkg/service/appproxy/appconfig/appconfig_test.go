@@ -270,7 +270,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 
 			url := "https://sandboxes.keboola.com"
 
-			loader := NewSandboxesAPILoader(log.NewDebugLogger(), clk, url).(*sandboxesAPILoader)
+			loader := NewSandboxesAPILoader(log.NewDebugLogger(), clk, url, "").(*sandboxesAPILoader)
 			loader.sender = loader.sender.(client.Client).WithTransport(transport)
 
 			for _, attempt := range tc.attempts {
