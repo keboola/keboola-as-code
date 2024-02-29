@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -25,6 +26,7 @@ type baseScope struct {
 	fs              filesystem.Fs
 	fsInfo          FsInfo
 	configBinder    *cmdconfig.Binder
+	globalsFlags    flag.GlobalFlags
 	dialogs         *dialog.Dialogs
 	options         *options.Options
 	emptyDir        dependencies.Lazy[filesystem.Fs]
@@ -46,6 +48,7 @@ func newBaseScope(
 	fs filesystem.Fs,
 	dialogs *dialog.Dialogs,
 	opts *options.Options,
+	flags flag.GlobalFlags,
 	osEnvs *env.Map,
 ) *baseScope {
 	return &baseScope{
@@ -55,6 +58,7 @@ func newBaseScope(
 		configBinder: cmdconfig.NewBinder(osEnvs),
 		dialogs:      dialogs,
 		options:      opts,
+		globalsFlags: flags,
 	}
 }
 
@@ -68,6 +72,10 @@ func (v *baseScope) FsInfo() FsInfo {
 
 func (v *baseScope) ConfigBinder() *cmdconfig.Binder {
 	return v.configBinder
+}
+
+func (v *baseScope) GlobalFlags() flag.GlobalFlags {
+	return v.globalsFlags
 }
 
 func (v *baseScope) Dialogs() *dialog.Dialogs {

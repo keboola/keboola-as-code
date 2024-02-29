@@ -160,7 +160,7 @@ func TestTearDown_RemoveLogFile(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
-	root.options.LogFilePath = ""
+	root.globalFlags.LogFile = ""
 	root.setupLogger()
 	assert.True(t, root.logFile.IsTemp())
 
@@ -174,14 +174,14 @@ func TestTearDown_KeepLogFile(t *testing.T) {
 	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 	tempDir := t.TempDir()
 
-	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
+	root.globalFlags.LogFile = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
 	root.setupLogger()
 	assert.False(t, root.logFile.IsTemp())
-	assert.Equal(t, root.logFile.Path(), root.options.LogFilePath)
+	assert.Equal(t, root.logFile.Path(), root.globalFlags.LogFile)
 
-	assert.FileExists(t, root.options.LogFilePath)
+	assert.FileExists(t, root.globalFlags.LogFile)
 	root.tearDown(0, nil)
-	assert.FileExists(t, root.options.LogFilePath)
+	assert.FileExists(t, root.globalFlags.LogFile)
 }
 
 func TestTearDown_Panic(t *testing.T) {
@@ -214,7 +214,7 @@ Thank you kindly!
 func TestGetLogFileTempFile(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
-	root.options.LogFilePath = ""
+	root.globalFlags.LogFile = ""
 	root.setupLogger()
 	assert.True(t, root.logFile.IsTemp())
 
@@ -232,9 +232,9 @@ func TestGetLogFileFromFlags(t *testing.T) {
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
 	tempDir := t.TempDir()
-	root.options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
+	root.globalFlags.LogFile = filesystem.Join(tempDir, "log-file.txt")
 	root.setupLogger()
-	assert.Equal(t, root.options.LogFilePath, root.options.LogFilePath)
+	assert.Equal(t, root.globalFlags.LogFile, root.globalFlags.LogFile)
 	assert.False(t, root.logFile.IsTemp())
 	assert.NoError(t, root.logFile.File().Close())
 }

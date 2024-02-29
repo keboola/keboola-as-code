@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -73,7 +74,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Assert
 	ctx := context.Background()
 	proc := servicectx.NewForTest(t)
-	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts, env.Empty())
+	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts, flag.DefaultGlobalFlags(), env.Empty())
 	localScp, err := newLocalCommandScope(ctx, baseScp)
 	assert.NoError(t, err)
 	_, err = newRemoteCommandScope(ctx, localScp)

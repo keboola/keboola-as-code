@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -21,7 +20,7 @@ import (
 // 3. ENV
 // 4. An env file, e.g., ".env.local".
 func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string) (string, error) {
-	fs, opts := baseScp.Fs(), baseScp.Options()
+	fs, opts := baseScp.Fs(), baseScp.GlobalFlags()
 
 	var host string
 	if fs.IsFile(ctx, projectManifest.Path()) {
@@ -34,8 +33,8 @@ func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string) (st
 		}
 	} else {
 		// Get host from options (ENV/flag)
-		host = opts.GetString(options.StorageAPIHostOpt)
-		if opts.KeySetBy(options.StorageAPIHostOpt) == configmap.SetByEnv {
+		host = opts.StorageAPIHost.Value
+		if opts.StorageAPIHost.SetBy == configmap.SetByEnv {
 			baseScp.Logger().Infof(ctx, `Storage API host "%s" set from ENV.`, host)
 		}
 	}

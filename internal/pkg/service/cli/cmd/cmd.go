@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"io"
 	"os"
 	"strings"
@@ -22,8 +21,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -35,6 +36,12 @@ import (
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
 
+const (
+	NonInteractiveOpt  = `non-interactive`
+	StorageAPIHostOpt  = `storage-api-host`
+	StorageAPITokenOpt = `storage-api-token`
+)
+
 type RootFlags struct {
 	Version bool `configKey:"version" configShorthand:"V" configUsage:"print version"`
 }
@@ -43,24 +50,24 @@ func DefaultRootFlags() RootFlags {
 	return RootFlags{}
 }
 
-type GlobalFlags struct {
-	Help            bool   `configKey:"help" configShorthand:"h" configUsage:"print help for command"`
-	LogFile         string `configKey:"log-file" configShorthand:"l" configUsage:"path to a log file for details"`
-	LogFormat       string `configKey:"log-format" configUsage:"format of stdout and stderr"`
-	NonInteractive  bool   `configKey:"non-interactive" configUsage:"disable interactive dialogs"`
-	WorkingDir      string `configKey:"working-dir" configShorthand:"d" configUsage:"use other working directory"`
-	StorageAPIToken string `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
-	Verbose         bool   `configKey:"verbose" configShorthand:"v" configUsage:"print details"`
-	VerboseAPI      bool   `configKey:"verbose-api" configUsage:"log each API request and response"`
-	VersionCheck    bool   `configKey:"version-check" configUsage:"checks if there is a newer version of the CLI"`
-}
-
-func DefaultGlobalFlags() GlobalFlags {
-	return GlobalFlags{
-		VersionCheck: true,
-		LogFormat:    "console",
-	}
-}
+// type GlobalFlags struct {
+//	Help            bool   `configKey:"help" configShorthand:"h" configUsage:"print help for command"`
+//	LogFile         string `configKey:"log-file" configShorthand:"l" configUsage:"path to a log file for details"`
+//	LogFormat       string `configKey:"log-format" configUsage:"format of stdout and stderr"`
+//	NonInteractive  bool   `configKey:"non-interactive" configUsage:"disable interactive dialogs"`
+//	WorkingDir      string `configKey:"working-dir" configShorthand:"d" configUsage:"use other working directory"`
+//	StorageAPIToken string `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+//	Verbose         bool   `configKey:"verbose" configShorthand:"v" configUsage:"print details"`
+//	VerboseAPI      bool   `configKey:"verbose-api" configUsage:"log each API request and response"`
+//	VersionCheck    bool   `configKey:"version-check" configUsage:"checks if there is a newer version of the CLI"`
+//}
+//
+// func DefaultGlobalFlags() GlobalFlags {
+//	return GlobalFlags{
+//		VersionCheck: true,
+//		LogFormat:    "console",
+//	}
+//}
 
 // nolint: gochecknoinits
 func init() {
@@ -109,7 +116,7 @@ type RootCommand struct {
 	*Cmd
 	logger      log.Logger
 	options     *options.Options
-	globalFlags GlobalFlags
+	globalFlags flag.GlobalFlags
 	fs          filesystem.Fs
 	logFile     *log.File
 	logFormat   log.LogFormat
@@ -121,11 +128,10 @@ type RootCommand struct {
 func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
-		options:     options.New(),
 		logger:      log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
 		cmdByPath:   make(map[string]*cobra.Command),
 		aliases:     orderedmap.New(),
-		globalFlags: DefaultGlobalFlags(),
+		globalFlags: flag.DefaultGlobalFlags(),
 	}
 	root.Cmd = &Cmd{
 		Use:               "kbc", // name of the binary
@@ -150,7 +156,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	root.SetUsageTemplate(helpmsg.Read(`usage`) + "\n")
 
 	// Persistent flags for all sub-commands
-	configmap.MustGenerateFlags(root.PersistentFlags(), DefaultGlobalFlags())
+	configmap.MustGenerateFlags(root.PersistentFlags(), flag.DefaultGlobalFlags())
 
 	// Root command flags
 	configmap.MustGenerateFlags(root.Flags(), DefaultRootFlags())
@@ -159,7 +165,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	p := &dependencies.ProviderRef{}
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Bind flags - without ENVs from files
-		root.globalFlags = DefaultGlobalFlags()
+		root.globalFlags = flag.DefaultGlobalFlags()
 		err := cmdconfig.NewBinder(osEnvs).Bind(cmd.Flags(), args, &root.globalFlags)
 		if err != nil {
 			return err
@@ -176,7 +182,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		envs := loadEnvFiles(cmd.Context(), root.logger, osEnvs, root.fs)
 
 		// Bind flags - with ENVs from files
-		root.globalFlags = DefaultGlobalFlags()
+		root.globalFlags = flag.DefaultGlobalFlags()
 		err = cmdconfig.NewBinder(envs).Bind(cmd.Flags(), args, &root.globalFlags)
 		if err != nil {
 			return err
@@ -201,6 +207,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			root.fs,
 			dialog.New(prompt, root.options),
 			root.options,
+			root.globalFlags,
 			envs,
 			stdout,
 			stderr,
@@ -374,9 +381,9 @@ func (root *RootCommand) printError(errRaw error) {
 			root.logger.Infof(root.Context(), `Or use the "template create" command.`)
 			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is template dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageAPIHost), errors.Is(err, dialog.ErrMissingStorageAPIHost):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageAPIHostOpt, root.options.GetEnvName(options.StorageAPIHostOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, StorageAPIHostOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(StorageAPIHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageAPIToken), errors.Is(err, dialog.ErrMissingStorageAPIToken):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageAPITokenOpt, root.options.GetEnvName(options.StorageAPITokenOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, StorageAPITokenOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(StorageAPIHostOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}
@@ -414,7 +421,7 @@ func (root *RootCommand) setupLogger() {
 	// Log info
 	root.logger.Debug(root.Context(), root.Version)
 	root.logger.Debugf(root.Context(), "Running command %v", os.Args)
-	root.logger.Debug(root.Context(), root.options.Dump())
+	// root.logger.Debug(root.Context(), root.options.Dump())
 	if root.logFile == nil {
 		root.logger.Debug(root.Context(), `Log file: -`)
 	} else {
