@@ -30,6 +30,11 @@ func TestStreamApiE2E(t *testing.T) {
 	runner.
 		NewRunner(t).
 		ForEachTest(func(test *runner.Test) {
+			// Get default branch
+			defaultBranch, err := test.TestProject().DefaultBranch()
+			require.NoError(t, err)
+			test.TestProject().Env().Set(`TEST_DEFAULT_BRANCH_ID`, defaultBranch.ID.String())
+
 			// Connect to the etcd
 			etcdCfg := etcdhelper.TmpNamespaceFromEnv(t, "STREAM_ETCD_")
 			etcdClient := etcdhelper.ClientForTest(t, etcdCfg)
@@ -41,10 +46,6 @@ func TestStreamApiE2E(t *testing.T) {
 				err := etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
 				assert.NoError(test.T(), err)
 			}
-
-			defaultBranch, err := test.TestProject().DefaultBranch()
-			require.NoError(t, err)
-			test.TestProject().Env().Set(`TEST_DEFAULT_BRANCH_ID`, defaultBranch.ID.String())
 
 			addEnvs := env.FromMap(map[string]string{
 				"STREAM_DATADOG_ENABLED":        "false",
