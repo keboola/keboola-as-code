@@ -35,7 +35,9 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 
 	// Set token
 	opts := options.New()
-	opts.Set(options.StorageAPITokenOpt, "my-secret")
+
+	f := flag.DefaultGlobalFlags()
+	f.StorageAPIToken = "my-secret"
 
 	// Create http client
 	logger := log.NewNopLogger()
@@ -74,7 +76,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Assert
 	ctx := context.Background()
 	proc := servicectx.NewForTest(t)
-	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts, flag.DefaultGlobalFlags(), env.Empty())
+	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts, f, env.Empty())
 	localScp, err := newLocalCommandScope(ctx, baseScp)
 	assert.NoError(t, err)
 	_, err = newRemoteCommandScope(ctx, localScp)
