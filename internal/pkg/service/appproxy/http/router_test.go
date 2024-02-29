@@ -18,9 +18,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/oauth2-proxy/mockoidc"
-	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
-	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"nhooyr.io/websocket"
@@ -1345,203 +1343,161 @@ func TestAppProxyRouter(t *testing.T) {
 	}
 }
 
-func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []DataApp {
-	return []DataApp{
+func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppProxyConfig {
+	return []appconfig.AppProxyConfig{
 		{
-			ID:           "norule",
-			Name:         "No rule app",
-			UpstreamHost: tsURL.Host,
+			ID:              "norule",
+			Name:            "No rule app",
+			UpstreamAppHost: tsURL.Host,
 		},
 		{
-			ID:           "public",
-			Name:         "Public app",
-			UpstreamHost: tsURL.Host,
-			Rules: []Rule{
+			ID:              "public",
+			Name:            "Public app",
+			UpstreamAppHost: tsURL.Host,
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      PathPrefix,
-					Value:     "/",
-					Providers: []string{},
+					Type:  appconfig.PathPrefix,
+					Value: "/",
+					Auth:  []string{},
 				},
 			},
 		},
 		{
-			ID:           "invalid",
-			Name:         "App with invalid rule type",
-			UpstreamHost: tsURL.Host,
-			Rules: []Rule{
+			ID:              "invalid",
+			Name:            "App with invalid rule type",
+			UpstreamAppHost: tsURL.Host,
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      "unknown",
-					Value:     "/",
-					Providers: []string{},
+					Type:  "unknown",
+					Value: "/",
+					Auth:  []string{},
 				},
 			},
 		},
 		{
-			ID:           "badprovider",
-			Name:         "App with invalid provider",
-			UpstreamHost: tsURL.Host,
-			Rules: []Rule{
+			ID:              "badprovider",
+			Name:            "App with invalid provider",
+			UpstreamAppHost: tsURL.Host,
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      PathPrefix,
-					Value:     "/",
-					Providers: []string{"unknown"},
+					Type:  appconfig.PathPrefix,
+					Value: "/",
+					Auth:  []string{"unknown"},
 				},
 			},
 		},
 		{
-			ID:           "oidc",
-			Name:         "OIDC Protected App",
-			UpstreamHost: tsURL.Host,
-			Providers: []options.Provider{
+			ID:              "oidc",
+			Name:            "OIDC Protected App",
+			UpstreamAppHost: tsURL.Host,
+			AuthProviders: []appconfig.AuthProvider{
 				{
-					ID:                  "oidc",
-					ClientID:            m[0].Config().ClientID,
-					ClientSecret:        m[0].Config().ClientSecret,
-					Type:                options.OIDCProvider,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-					AllowedGroups:       []string{"admin"},
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      m[0].Issuer(),
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
+					ID:           "oidc",
+					ClientID:     m[0].Config().ClientID,
+					ClientSecret: m[0].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: []string{"admin"},
+					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			Rules: []Rule{
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      PathPrefix,
-					Value:     "/",
-					Providers: []string{"oidc"},
+					Type:  appconfig.PathPrefix,
+					Value: "/",
+					Auth:  []string{"oidc"},
 				},
 			},
 		},
 		{
-			ID:           "multi",
-			Name:         "App with multiple OIDC providers",
-			UpstreamHost: tsURL.Host,
-			Providers: []options.Provider{
+			ID:              "multi",
+			Name:            "App with multiple OIDC providers",
+			UpstreamAppHost: tsURL.Host,
+			AuthProviders: []appconfig.AuthProvider{
 				{
-					ID:                  "oidc0",
-					ClientID:            m[0].Config().ClientID,
-					ClientSecret:        m[0].Config().ClientSecret,
-					Type:                options.OIDCProvider,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-					AllowedGroups:       []string{"manager"},
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      m[0].Issuer(),
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
+					ID:           "oidc0",
+					ClientID:     m[0].Config().ClientID,
+					ClientSecret: m[0].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: []string{"manager"},
+					IssuerURL:    m[0].Issuer(),
 				},
 				{
-					ID:                  "oidc1",
-					ClientID:            m[1].Config().ClientID,
-					ClientSecret:        m[1].Config().ClientSecret,
-					Type:                options.OIDCProvider,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-					AllowedGroups:       []string{"admin"},
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      m[1].Issuer(),
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
+					ID:           "oidc1",
+					ClientID:     m[1].Config().ClientID,
+					ClientSecret: m[1].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: []string{"admin"},
+					IssuerURL:    m[1].Issuer(),
 				},
 				{
 					ID: "oidc2",
 				},
 			},
-			Rules: []Rule{
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      PathPrefix,
-					Value:     "/",
-					Providers: []string{"oidc0", "oidc1", "oidc2"},
+					Type:  appconfig.PathPrefix,
+					Value: "/",
+					Auth:  []string{"oidc0", "oidc1", "oidc2"},
 				},
 			},
 		},
 		{
-			ID:           "broken",
-			Name:         "OIDC Misconfigured App",
-			UpstreamHost: tsURL.Host,
-			Providers: []options.Provider{
+			ID:              "broken",
+			Name:            "OIDC Misconfigured App",
+			UpstreamAppHost: tsURL.Host,
+			AuthProviders: []appconfig.AuthProvider{
 				{
-					ID:                  "oidc",
-					ClientID:            "",
-					ClientSecret:        m[0].Config().ClientSecret,
-					Type:                options.OIDCProvider,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-					AllowedGroups:       []string{"admin"},
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      m[0].Issuer(),
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
+					ID:           "oidc",
+					ClientID:     "",
+					ClientSecret: m[0].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: []string{"admin"},
+					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			Rules: []Rule{
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      PathPrefix,
-					Value:     "/",
-					Providers: []string{"oidc"},
+					Type:  appconfig.PathPrefix,
+					Value: "/",
+					Auth:  []string{"oidc"},
 				},
 			},
 		},
 		{
-			ID:           "prefix",
-			Name:         "App with different configuration depending on path prefix",
-			UpstreamHost: tsURL.Host,
-			Providers: []options.Provider{
+			ID:              "prefix",
+			Name:            "App with different configuration depending on path prefix",
+			UpstreamAppHost: tsURL.Host,
+			AuthProviders: []appconfig.AuthProvider{
 				{
-					ID:                  "oidc0",
-					ClientID:            m[0].Config().ClientID,
-					ClientSecret:        m[0].Config().ClientSecret,
-					Type:                options.OIDCProvider,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-					AllowedGroups:       []string{"admin"},
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      m[0].Issuer(),
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
+					ID:           "oidc0",
+					ClientID:     m[0].Config().ClientID,
+					ClientSecret: m[0].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: []string{"admin"},
+					IssuerURL:    m[0].Issuer(),
 				},
 				{
-					ID:                  "oidc1",
-					ClientID:            m[1].Config().ClientID,
-					ClientSecret:        m[1].Config().ClientSecret,
-					Type:                options.OIDCProvider,
-					CodeChallengeMethod: providers.CodeChallengeMethodS256,
-					AllowedGroups:       []string{"admin"},
-					OIDCConfig: options.OIDCOptions{
-						IssuerURL:      m[1].Issuer(),
-						EmailClaim:     options.OIDCEmailClaim,
-						GroupsClaim:    options.OIDCGroupsClaim,
-						AudienceClaims: options.OIDCAudienceClaims,
-						UserIDClaim:    options.OIDCEmailClaim,
-					},
+					ID:           "oidc1",
+					ClientID:     m[1].Config().ClientID,
+					ClientSecret: m[1].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: []string{"admin"},
+					IssuerURL:    m[1].Issuer(),
 				},
 			},
-			Rules: []Rule{
+			AuthRules: []appconfig.AuthRule{
 				{
-					Type:      PathPrefix,
-					Value:     "/api",
-					Providers: []string{"oidc0"},
+					Type:  appconfig.PathPrefix,
+					Value: "/api",
+					Auth:  []string{"oidc0"},
 				},
 				{
-					Type:      PathPrefix,
-					Value:     "/web",
-					Providers: []string{"oidc0", "oidc1"},
+					Type:  appconfig.PathPrefix,
+					Value: "/web",
+					Auth:  []string{"oidc0", "oidc1"},
 				},
 				{
-					Type:  PathPrefix,
+					Type:  appconfig.PathPrefix,
 					Value: "/",
 				},
 			},
@@ -1587,18 +1543,18 @@ func startAppServer(t *testing.T) *appServer {
 
 type sandboxesService struct {
 	*httptest.Server
-	apps map[string]DataApp
+	apps map[string]appconfig.AppProxyConfig
 }
 
-func startSandboxesService(t *testing.T, apps []DataApp) *sandboxesService {
+func startSandboxesService(t *testing.T, apps []appconfig.AppProxyConfig) *sandboxesService {
 	t.Helper()
 
 	service := &sandboxesService{
-		apps: make(map[string]DataApp),
+		apps: make(map[string]appconfig.AppProxyConfig),
 	}
 
 	for _, app := range apps {
-		service.apps[app.ID.String()] = app
+		service.apps[app.ID] = app
 	}
 
 	r := regexp.MustCompile("apps/([a-zA-Z0-9]+)/proxy-config")
@@ -1621,37 +1577,9 @@ func startSandboxesService(t *testing.T, apps []DataApp) *sandboxesService {
 			return
 		}
 
-		providers := []appconfig.AuthProvider{}
-		for _, provider := range app.Providers {
-			providers = append(providers, appconfig.AuthProvider{
-				ID:           provider.ID,
-				Type:         string(provider.Type),
-				ClientID:     provider.ClientID,
-				ClientSecret: provider.ClientSecret,
-				IssuerURL:    provider.OIDCConfig.IssuerURL,
-				AllowedRoles: provider.AllowedGroups,
-			})
-		}
-
-		rules := []appconfig.AuthRule{}
-		for _, rule := range app.Rules {
-			rules = append(rules, appconfig.AuthRule{
-				Type:  string(rule.Type),
-				Value: rule.Value,
-				Auth:  rule.Providers,
-			})
-		}
-
-		config := appconfig.AppProxyConfig{
-			ID:              app.ID.String(),
-			UpstreamAppHost: app.UpstreamHost,
-			AuthProviders:   providers,
-			AuthRules:       rules,
-		}
-
 		w.WriteHeader(http.StatusOK)
 
-		jsonData, err := json.Encode(config, true)
+		jsonData, err := json.Encode(app, true)
 		assert.NoError(t, err)
 
 		w.Write(jsonData)
