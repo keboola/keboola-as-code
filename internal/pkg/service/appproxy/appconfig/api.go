@@ -20,18 +20,26 @@ type AppProxyConfig struct {
 	maxAge          time.Duration
 }
 
+type ProviderType string
+
+const OIDCProvider = ProviderType("oidc")
+
 type AuthProvider struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Type         string   `json:"type"`
-	ClientID     string   `json:"clientId"`
-	ClientSecret string   `json:"clientSecret"`
-	IssuerURL    string   `json:"issuerUrl"`
-	AllowedRoles []string `json:"allowedRoles"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Type         ProviderType `json:"type"`
+	ClientID     string       `json:"clientId"`
+	ClientSecret string       `json:"clientSecret"`
+	IssuerURL    string       `json:"issuerUrl"`
+	AllowedRoles []string     `json:"allowedRoles"`
 }
 
+type RuleType string
+
+const PathPrefix = RuleType("pathPrefix")
+
 type AuthRule struct {
-	Type  string   `json:"type"`
+	Type  RuleType `json:"type"`
 	Value string   `json:"value"`
 	Auth  []string `json:"auth"`
 }
