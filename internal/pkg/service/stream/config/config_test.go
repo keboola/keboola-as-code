@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -39,7 +40,7 @@ cpuProfilePath: ""
 # Unique ID of the node in the cluster. Validation rules: required
 nodeID: ""
 # Storage API host. Validation rules: required,hostname
-storageAPIHost: ""
+storageApiHost: ""
 datadog:
     # Enable DataDog integration.
     enabled: true
@@ -69,7 +70,7 @@ api:
     # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
     listen: 0.0.0.0:8000
     # Public URL of the configuration HTTP API for link generation. Validation rules: required
-    publicURL: http://localhost:8000
+    publicUrl: http://localhost:8000
 distribution:
     # The maximum time to wait for creating a new session. Validation rules: required,minDuration=1s,maxDuration=1m
     grantTimeout: 5s
@@ -85,6 +86,8 @@ source:
     http:
         # Listen address of the HTTP source. Validation rules: required,hostname_port
         listen: 0.0.0.0:7000
+        # Public URL of the HTTP source for link generation.
+        publicUrl: null
 storage:
     statistics:
         sync:
@@ -191,6 +194,7 @@ storage:
 	// Add missing values, and validate it
 	cfg.NodeID = "test-node"
 	cfg.StorageAPIHost = "connection.keboola.local"
+	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
 	require.NoError(t, validator.New().Validate(context.Background(), cfg))

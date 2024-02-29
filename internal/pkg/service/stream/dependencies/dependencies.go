@@ -66,6 +66,7 @@ type ServiceScope interface {
 type APIScope interface {
 	ServiceScope
 	APIPublicURL() *url.URL
+	HTTPSourcePublicURL() *url.URL
 }
 
 type PublicRequestScope interface {

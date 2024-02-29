@@ -1,38 +1,34 @@
 package dependencies
 
 import (
-	"context"
-	"io"
 	"net/url"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope
-	logger    log.Logger
-	publicURL *url.URL
+	logger              log.Logger
+	apiPublicURL        *url.URL
+	httpSourcePublicURL *url.URL
 }
 
-func NewAPIScope(ctx context.Context, cfg config.Config, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, stdout, stderr io.Writer) (v APIScope, err error) {
-	ctx, span := tel.Tracer().Start(ctx, "keboola.go.stream.dependencies.NewAPIScope")
-	defer span.End(&err)
-	serviceScp, err := NewServiceScope(ctx, cfg, proc, logger, tel, stdout, stderr)
-	return newAPIScope(serviceScp, cfg.API), nil
+func NewAPIScope(serviceScp ServiceScope, cfg config.Config) (v APIScope, err error) {
+	return newAPIScope(serviceScp, cfg), nil
 }
 
-func newAPIScope(svcScope ServiceScope, cfg config.API) APIScope {
+func newAPIScope(svcScope ServiceScope, cfg config.Config) APIScope {
 	d := &apiScope{}
 
 	d.ServiceScope = svcScope
 
 	d.logger = svcScope.Logger().WithComponent("api")
 
-	d.publicURL = cfg.PublicURL
+	d.apiPublicURL = cfg.API.PublicURL
+
+	d.httpSourcePublicURL = cfg.Source.HTTP.PublicURL
 
 	return d
 }
@@ -42,6 +38,11 @@ func (v *apiScope) Logger() log.Logger {
 }
 
 func (v *apiScope) APIPublicURL() *url.URL {
-	out, _ := url.Parse(v.publicURL.String()) // clone
+	out, _ := url.Parse(v.apiPublicURL.String()) // clone
+	return out
+}
+
+func (v *apiScope) HTTPSourcePublicURL() *url.URL {
+	out, _ := url.Parse(v.httpSourcePublicURL.String()) // clone
 	return out
 }
