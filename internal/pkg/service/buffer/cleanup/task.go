@@ -58,12 +58,12 @@ func (t *Task) cleanReceiver(ctx context.Context) error {
 	return errs.ErrorOrNil()
 }
 
-// deleteExpiredFiles from the receiver, which are older than FileExpirationDays.
+// deleteExpiredFiles from the receiver, which are older than 6h.
 func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 	filesCount := int64(0)
 	slicesCount := int64(0)
 	recordsCount := int64(0)
-	rangeEnd := utctime.UTCTime(t.clock.Now().Add(-FileExpirationDays * 24 * time.Hour))
+	rangeEnd := utctime.UTCTime(t.clock.Now().Add(-6 * time.Hour))
 
 	// Iterate exports
 	errs := errors.NewMultiError()

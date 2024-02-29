@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	// FileExpirationDays defines how old files are to be deleted.
-	FileExpirationDays = 1
 	// MaxTasksPerNode limits number of parallel cleanup tasks per node.
 	MaxTasksPerNode         = 20
 	ReceiverCleanupTimeout  = 5 * time.Minute
