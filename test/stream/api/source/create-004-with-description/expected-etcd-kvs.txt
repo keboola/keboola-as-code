@@ -1,0 +1,75 @@
+<<<<<
+definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "isDefault": true
+}
+>>>>>
+
+<<<<<
+definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "modifiedAt": "%s",
+    "description": "New source."
+  },
+  "type": "http",
+  "name": "My Source",
+  "description": "Some description ....",
+  "http": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000001
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "modifiedAt": "%s",
+    "description": "New source."
+  },
+  "type": "http",
+  "name": "My Source",
+  "description": "Some description ....",
+  "http": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "taskId": "api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.create.source",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "node": "test-node",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source",
+  "result": "Source has been created successfully.",
+  "outputs": {
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "sourceId": "my-source",
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source"
+  },
+  "duration": %s
+}
+>>>>>
