@@ -87,7 +87,7 @@ func DecodeCreateSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		branchID = params["branchId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -196,7 +196,7 @@ func DecodeUpdateSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -268,7 +268,7 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		branchID = params["branchId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -318,7 +318,7 @@ func DecodeGetSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -395,7 +395,7 @@ func DecodeDeleteSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -475,7 +475,7 @@ func DecodeGetSourceSettingsRequest(mux goahttp.Muxer, decoder func(*http.Reques
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -570,7 +570,7 @@ func DecodeUpdateSourceSettingsRequest(mux goahttp.Muxer, decoder func(*http.Req
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -650,7 +650,7 @@ func DecodeRefreshSourceTokensRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -745,7 +745,7 @@ func DecodeCreateSinkRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -861,7 +861,7 @@ func DecodeGetSinkRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -963,7 +963,7 @@ func DecodeGetSinkSettingsRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1080,7 +1080,7 @@ func DecodeUpdateSinkSettingsRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1174,7 +1174,7 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1277,7 +1277,7 @@ func DecodeUpdateSinkRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1376,7 +1376,7 @@ func DecodeDeleteSinkRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1462,7 +1462,7 @@ func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 		taskID = params["taskId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err

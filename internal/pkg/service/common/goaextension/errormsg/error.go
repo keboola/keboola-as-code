@@ -1,4 +1,4 @@
-// Package errormsg adds context field path to UserType validation errors.
+// Package errormsg 1. adds context field path to UserType validation errors, 2. use header name if the header is missing.
 package errormsg
 
 import (
@@ -48,16 +48,29 @@ func prepare(_ string, roots []eval.Root) error {
 func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
 	for _, f := range files {
 		// nolint: forbidigo
-		if filepath.Base(f.Path) == "types.go" {
+		switch filepath.Base(f.Path) {
+		case "types.go":
 			for _, s := range f.SectionTemplates {
-				if s.Name == "source-header" {
+				switch s.Name {
+				case "source-header":
 					codegen.AddImport(s, &codegen.ImportSpec{Path: "fmt"}, &codegen.ImportSpec{Path: "strings"})
-				}
-				if s.Name == "server-validate" {
+				case "server-validate":
 					s.Source = strings.ReplaceAll(
 						s.Source,
 						"func Validate{{ .VarName }}(body {{ .Ref }}) (err error)",
 						"func Validate{{ .VarName }}(body {{ .Ref }}, errContext []string) (err error)",
+					)
+				}
+			}
+		case "encode_decode.go":
+			for _, s := range f.SectionTemplates {
+				switch s.Name { //nolint:gocritic // keep switch
+				case "request-decoder":
+					// Use header name in the error message, not attribute name
+					s.Source = strings.ReplaceAll(
+						s.Source,
+						`goa.MissingFieldError("{{ .Name }}", "header")`,
+						`goa.MissingFieldError("{{ .HTTPName }}", "header")`,
 					)
 				}
 			}
