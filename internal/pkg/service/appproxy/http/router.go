@@ -91,9 +91,9 @@ func (r *Router) CreateHandler() http.Handler {
 			return
 		}
 
-		// Delete all X-Kbc-* headers as they're used for internal information.
+		// Delete all X-KBC-* headers as they're used for internal information.
 		for name := range req.Header {
-			if strings.HasPrefix(name, "X-Kbc-") {
+			if strings.HasPrefix(strings.ToLower(name), "x-kbc-") {
 				req.Header.Del(name)
 			}
 		}
