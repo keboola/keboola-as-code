@@ -59,6 +59,11 @@ spec:
                 configMapKeyRef:
                   name: app-proxy
                   key: sandboxesApiHost
+            - name: APP_PROXY_SANDBOXES_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-proxy
+                  key: sandboxesApiToken
             - name: APP_PROXY_API_PUBLIC_URL
               valueFrom:
                 configMapKeyRef:
@@ -67,7 +72,7 @@ spec:
             - name: APP_PROXY_COOKIE_SECRET_SALT
               valueFrom:
                 secretKeyRef:
-                  name: app-proxy
+                  name: app-proxy-salt
                   key: cookieSecretSalt
             - name: DD_AGENT_HOST
               valueFrom:

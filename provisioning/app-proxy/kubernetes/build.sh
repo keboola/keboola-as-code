@@ -9,6 +9,7 @@ envsubst < templates/namespace.yaml > deploy/namespace.yaml
 
 # Proxy
 envsubst < templates/proxy/config-map.yaml     > deploy/proxy/config-map.yaml
+envsubst < templates/proxy/secret.yaml         > deploy/proxy/secret.yaml
 envsubst < templates/proxy/pdb.yaml            > deploy/proxy/pdb.yaml
 envsubst < templates/proxy/network-policy.yaml > deploy/proxy/network-policy.yaml
 envsubst < templates/proxy/deployment.yaml     > deploy/proxy/deployment.yaml
