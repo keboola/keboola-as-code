@@ -16,5 +16,6 @@ export HOSTNAME_SUFFIX="${HOSTNAME_SUFFIX:=keboola.com}"
 export APP_PROXY_REPOSITORY="${APP_PROXY_REPOSITORY:=docker.io/keboola/app-proxy}" # docker.io prefix is required
 export APP_PROXY_IMAGE_TAG="${APP_PROXY_IMAGE_TAG:=$(git rev-parse --short HEAD)}"
 export APP_PROXY_REPLICAS="${APP_PROXY_REPLICAS:=3}"
+export APP_PROXY_SANDBOXES_API_TOKEN="${APP_PROXY_SANDBOXES_API_TOKEN:=token}"
 
 ./deploy.sh
