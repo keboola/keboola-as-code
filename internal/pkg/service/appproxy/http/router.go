@@ -44,7 +44,7 @@ type Router struct {
 	exceptionIDPrefix string
 }
 
-const ProviderCookie = "_oauth2_provider"
+const providerCookie = "_oauth2_provider"
 
 const selectionPagePath = "/_proxy/selection"
 
@@ -304,7 +304,7 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProv
 			// Set cookie value to the selected provider
 			http.SetCookie(writer, cookies.MakeCookieFromOptions(
 				request,
-				ProviderCookie,
+				providerCookie,
 				selection,
 				&provider.proxyConfig.Cookie,
 				provider.proxyConfig.Cookie.Expire,
@@ -331,7 +331,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 		ok := false
 
 		// Identify the provider chosen by the user using a cookie
-		cookie, err := request.Cookie(ProviderCookie)
+		cookie, err := request.Cookie(providerCookie)
 		if err == nil {
 			provider, ok = oauthProviders[cookie.Value]
 		}
@@ -351,7 +351,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 				if provider.proxyConfig != nil {
 					http.SetCookie(writer, cookies.MakeCookieFromOptions(
 						request,
-						ProviderCookie,
+						providerCookie,
 						provider.providerConfig.ID,
 						&provider.proxyConfig.Cookie,
 						provider.proxyConfig.Cookie.Expire,
@@ -364,7 +364,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 				// Clear the provider cookie in case it existed with an invalid value
 				http.SetCookie(writer, cookies.MakeCookieFromOptions(
 					request,
-					ProviderCookie,
+					providerCookie,
 					"",
 					&options.NewOptions().Cookie,
 					time.Hour*-1,
