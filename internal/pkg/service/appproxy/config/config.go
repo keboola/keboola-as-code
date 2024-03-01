@@ -28,7 +28,7 @@ type API struct {
 }
 
 type SandboxesAPI struct {
-	URL   string `configKey:"url" configUsage:"Sandboxes API url." validate:"required,hostname"`
+	URL   string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
 	Token string `configKey:"token" configUsage:"Sandboxes API token." validate:"required" sensitive:"true"`
 }
 
