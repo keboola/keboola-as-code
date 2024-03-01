@@ -31,6 +31,7 @@ services:
       # Disable DataDog integration
       - TEMPLATES_DATADOG_ENABLED=false
       - STREAM_DATADOG_ENABLED=false
+      - APP_PROXY_DATADOG_ENABLED=false
       # Etcd for unit tests
       - UNIT_ETCD_ENABLED=true
       - UNIT_ETCD_ENDPOINT=etcd:2379
