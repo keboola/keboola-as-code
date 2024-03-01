@@ -60,7 +60,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 		}
 
 		// Update expiration and use the cached config if ETag is still the same
-		if config.eTag == item.eTag {
+		if config.ETag == item.eTag {
 			l.cache[appID] = cacheItem{
 				config:    item.config,
 				eTag:      item.eTag,
@@ -79,7 +79,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 	// Save result to cache
 	l.cache[appID] = cacheItem{
 		config:    *config,
-		eTag:      config.eTag,
+		eTag:      config.ETag,
 		expiresAt: now.Add(config.maxAge),
 	}
 	return *config, nil

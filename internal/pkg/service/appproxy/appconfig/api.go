@@ -16,7 +16,7 @@ type AppProxyConfig struct {
 	UpstreamAppHost string         `json:"upstreamAppHost"`
 	AuthProviders   []AuthProvider `json:"authProviders"`
 	AuthRules       []AuthRule     `json:"authRules"`
-	eTag            string
+	ETag            string         `json:"-"`
 	maxAge          time.Duration
 }
 
@@ -64,7 +64,7 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 			}
 
 			// Add ETag to result
-			result.eTag = response.ResponseHeader().Get("ETag")
+			result.ETag = response.ResponseHeader().Get("ETag")
 
 			// Process Cache-Control header
 			cacheControl := response.ResponseHeader().Get("Cache-Control")
