@@ -39,9 +39,14 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	handlers          map[string]http.Handler
+	appHandlers       map[string]appHandler
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
+}
+
+type appHandler struct {
+	http.Handler
+	Etag string
 }
 
 const providerCookie = "_oauth2_provider"
@@ -68,7 +73,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:            d.Config(),
 		clock:             d.Clock(),
 		loader:            d.Loader(),
-		handlers:          make(map[string]http.Handler),
+		appHandlers:       make(map[string]appHandler),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
@@ -100,26 +105,31 @@ func (r *Router) CreateHandler() http.Handler {
 
 		appID := appIDString.Emit()
 
-		handler, ok := r.handlers[appID]
-		if !ok {
-			config, err := r.loader.LoadConfig(req.Context(), appID)
-			if err != nil {
-				var sandboxesError *appconfig.SandboxesError
-				errors.As(err, &sandboxesError)
-				if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
-					r.logger.Infof(req.Context(), `application "%s" not found`, appID)
-					w.WriteHeader(http.StatusNotFound)
-					fmt.Fprintf(w, `Application "%s" not found.`, appID)
-					return
-				}
-
-				w.WriteHeader(http.StatusServiceUnavailable)
-				fmt.Fprintf(w, `Unable to retrieve configuration for app "%s".`, appID)
+		// Load configuration for given app.
+		config, err := r.loader.LoadConfig(req.Context(), appID)
+		if err != nil {
+			var sandboxesError *appconfig.SandboxesError
+			errors.As(err, &sandboxesError)
+			if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
+				r.logger.Infof(req.Context(), `application "%s" not found`, appID)
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprintf(w, `Application "%s" not found.`, appID)
 				return
 			}
 
-			handler = r.createDataAppHandler(req.Context(), config)
-			r.handlers[appID] = handler
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, `Unable to loading configuration for app "%s".`, appID)
+			return
+		}
+
+		// Recreate app handler if configuration changed.
+		handler, ok := r.appHandlers[appID]
+		if !ok || handler.Etag != config.ETag {
+			handler = appHandler{
+				Handler: r.createDataAppHandler(req.Context(), config),
+				Etag:    config.ETag,
+			}
+			r.appHandlers[appID] = handler
 		}
 
 		handler.ServeHTTP(w, req)

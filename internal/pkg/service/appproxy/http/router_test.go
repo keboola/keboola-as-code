@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net"
 	"net/http"
@@ -1175,6 +1176,40 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 		},
+		{
+			name: "configuration-change",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+				// Request to public app
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Change configuration to private
+				originalConfig := service.apps["public"]
+				newConfig := service.apps["oidc"]
+				newConfig.ID = "public"
+				service.apps["public"] = newConfig
+
+				// Request to the same app which is now private
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Revert configuration
+				service.apps["public"] = originalConfig
+
+				// Request to public app
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.data-apps.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
@@ -1577,6 +1612,12 @@ func startSandboxesService(t *testing.T, apps []appconfig.AppProxyConfig) *sandb
 			return
 		}
 
+		// Calculate ETag (in this test we simply hash the name)
+		h := fnv.New64a()
+		_, err := h.Write([]byte(app.Name))
+		assert.NoError(t, err)
+
+		w.Header().Set("ETag", fmt.Sprintf(`"%x"`, h.Sum64()))
 		w.WriteHeader(http.StatusOK)
 
 		jsonData, err := json.Encode(app, true)
