@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
@@ -58,7 +58,7 @@ jobs:
         run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
 
       - name: Checkout BASE branch (or HEAD if it is not a pull request)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
 
@@ -71,7 +71,7 @@ jobs:
         run: sleep 10 && /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.old.json
 
       - name: Checkout HEAD branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
