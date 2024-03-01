@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	stream "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	goa "goa.design/goa/v3/pkg"
 )
@@ -134,7 +135,9 @@ type UpdateSourceResponseBody struct {
 // ListSourcesResponseBody is the type of the "stream" service "ListSources"
 // endpoint HTTP response body.
 type ListSourcesResponseBody struct {
-	Sources []*SourceResponseBody `form:"sources" json:"sources" xml:"sources"`
+	ProjectID int                   `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                   `form:"branchId" json:"branchId" xml:"branchId"`
+	Sources   []*SourceResponseBody `form:"sources" json:"sources" xml:"sources"`
 }
 
 // GetSourceResponseBody is the type of the "stream" service "GetSource"
@@ -236,9 +239,10 @@ type UpdateSinkSettingsResponseBody []*SettingResultResponse
 // ListSinksResponseBody is the type of the "stream" service "ListSinks"
 // endpoint HTTP response body.
 type ListSinksResponseBody struct {
-	BranchID int                 `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID string              `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	Sinks    []*SinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
+	ProjectID int                 `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                 `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string              `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Sinks     []*SinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // UpdateSinkResponseBody is the type of the "stream" service "UpdateSink"
@@ -560,6 +564,12 @@ type GetTaskStreamTaskNotFoundResponseBody struct {
 
 // TaskOutputsResponseBody is used to define fields on response body types.
 type TaskOutputsResponseBody struct {
+	// Absolute URL of the entity.
+	URL *string `form:"url,omitempty" json:"url,omitempty" xml:"url,omitempty"`
+	// ID of the parent project.
+	ProjectID *int `form:"projectId,omitempty" json:"projectId,omitempty" xml:"projectId,omitempty"`
+	// ID of the parent branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
 	// ID of the created/updated sink.
 	SinkID *string `form:"sinkId,omitempty" json:"sinkId,omitempty" xml:"sinkId,omitempty"`
 	// ID of the created/updated source.
@@ -575,7 +585,7 @@ type HTTPSourceResponseBody struct {
 // VersionResponseBody is used to define fields on response body types.
 type VersionResponseBody struct {
 	// Version number counted from 1.
-	Number int `form:"number" json:"number" xml:"number"`
+	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
 	// Hash of the entity state.
 	Hash string `form:"hash" json:"hash" xml:"hash"`
 	// Date and time of the modification.
@@ -806,7 +816,10 @@ func NewUpdateSourceResponseBody(res *stream.Source) *UpdateSourceResponseBody {
 // NewListSourcesResponseBody builds the HTTP response body from the result of
 // the "ListSources" endpoint of the "stream" service.
 func NewListSourcesResponseBody(res *stream.SourcesList) *ListSourcesResponseBody {
-	body := &ListSourcesResponseBody{}
+	body := &ListSourcesResponseBody{
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+	}
 	if res.Sources != nil {
 		body.Sources = make([]*SourceResponseBody, len(res.Sources))
 		for i, val := range res.Sources {
@@ -981,8 +994,9 @@ func NewUpdateSinkSettingsResponseBody(res stream.SettingsResult) UpdateSinkSett
 // the "ListSinks" endpoint of the "stream" service.
 func NewListSinksResponseBody(res *stream.SinksList) *ListSinksResponseBody {
 	body := &ListSinksResponseBody{
-		BranchID: int(res.BranchID),
-		SourceID: string(res.SourceID),
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+		SourceID:  string(res.SourceID),
 	}
 	if res.Sinks != nil {
 		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
@@ -1404,16 +1418,13 @@ func NewRefreshSourceTokensPayload(branchID string, sourceID string, storageAPIT
 // NewCreateSinkPayload builds a stream service CreateSink endpoint payload.
 func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID string, storageAPIToken string) *stream.CreateSinkPayload {
 	v := &stream.CreateSinkPayload{
+		Type:        stream.SinkType(*body.Type),
 		Name:        *body.Name,
 		Description: body.Description,
 	}
 	if body.SinkID != nil {
 		sinkID := stream.SinkID(*body.SinkID)
 		v.SinkID = &sinkID
-	}
-	if body.Type != nil {
-		type_ := stream.SinkType(*body.Type)
-		v.Type = &type_
 	}
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkRequestBodyToStreamTableSink(body.Table)
@@ -1509,10 +1520,8 @@ func NewDeleteSinkPayload(branchID string, sourceID string, sinkID string, stora
 }
 
 // NewGetTaskPayload builds a stream service GetTask endpoint payload.
-func NewGetTaskPayload(branchID int, taskID string, storageAPIToken string) *stream.GetTaskPayload {
+func NewGetTaskPayload(taskID string, storageAPIToken string) *stream.GetTaskPayload {
 	v := &stream.GetTaskPayload{}
-	tmpbranchID := stream.BranchID(branchID)
-	v.BranchID = &tmpbranchID
 	v.TaskID = stream.TaskID(taskID)
 	v.StorageAPIToken = storageAPIToken
 
@@ -1604,6 +1613,9 @@ func ValidateUpdateSourceSettingsRequestBody(body *UpdateSourceSettingsRequestBo
 // ValidateCreateSinkRequestBody runs the validations defined on
 // CreateSinkRequestBody
 func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []string) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
+	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}

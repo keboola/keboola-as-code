@@ -135,6 +135,10 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 	return n, nil
 }
 
+func (n *Node) GetTask(k Key) op.WithResult[Task] {
+	return n.taskEtcdPrefix.Key(k.String()).Get(n.client)
+}
+
 func (n *Node) TasksCount() int64 {
 	return n.tasksCount.Load()
 }
@@ -146,7 +150,7 @@ func (n *Node) StartTaskOrErr(ctx context.Context, cfg Config) error {
 }
 
 // StartTask in background, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) StartTask(ctx context.Context, cfg Config) (t *Task, err error) {
+func (n *Node) StartTask(ctx context.Context, cfg Config) (t Task, err error) {
 	// Prepare task, acquire lock
 	task, fn, err := n.prepareTask(ctx, cfg)
 
@@ -168,16 +172,16 @@ func (n *Node) RunTaskOrErr(cfg Config) error {
 }
 
 // RunTask in foreground, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) RunTask(cfg Config) (t *Task, err error) {
+func (n *Node) RunTask(cfg Config) (t Task, err error) {
 	// Prepare task, acquire lock, handle error during prepare phase
 	task, fn, err := n.prepareTask(n.tasksCtx, cfg)
 	if err != nil {
-		return nil, err
+		return Task{}, err
 	}
 
 	// No-op, for example a task with the same lock is already running
 	if fn == nil {
-		return nil, nil
+		return Task{}, nil
 	}
 
 	// Run task in foreground, handle error during task execution
@@ -190,7 +194,7 @@ func (n *Node) RunTask(cfg Config) (t *Task, err error) {
 	return task, result.Error
 }
 
-func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTaskFn, err error) {
+func (n *Node) prepareTask(ctx context.Context, cfg Config) (t Task, fn runTaskFn, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -210,7 +214,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	// so locally can be determined that the task is already running.
 	ok, unlock := n.lockTaskLocally(lock.Key())
 	if !ok {
-		return nil, nil, nil
+		return Task{}, nil, nil
 	}
 
 	// Create task model
@@ -219,7 +223,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	// Get session
 	session, err := n.session.Session()
 	if err != nil {
-		return nil, nil, err
+		return Task{}, nil, err
 	}
 
 	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
@@ -234,11 +238,11 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 	)
 	if r := createTaskOp.Do(n.tasksCtx); r.Err() != nil { // nolint: contextcheck
 		unlock()
-		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, r.Err())
+		return Task{}, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, r.Err())
 	} else if !r.Succeeded() {
 		unlock()
 		n.logger.Infof(ctx, `task ignored, the lock "%s" is in use`, lock.Key())
-		return nil, nil, nil
+		return Task{}, nil, nil
 	}
 
 	// Run operation in the background
@@ -250,7 +254,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t *Task, fn runTask
 		defer unlock()
 		return n.runTask(n.logger, task, cfg)
 	}
-	return &task, fn, nil
+	return task, fn, nil
 }
 
 func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result, err error) {

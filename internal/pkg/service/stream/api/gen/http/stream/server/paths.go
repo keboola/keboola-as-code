@@ -103,6 +103,6 @@ func DeleteSinkStreamPath(branchID string, sourceID string, sinkID string) strin
 }
 
 // GetTaskStreamPath returns the URL path to the stream service GetTask HTTP endpoint.
-func GetTaskStreamPath(branchID int, taskID string) string {
-	return fmt.Sprintf("/v1/branches/%v/tasks/%v", branchID, taskID)
+func GetTaskStreamPath(taskID string) string {
+	return fmt.Sprintf("/v1/tasks/%v", taskID)
 }

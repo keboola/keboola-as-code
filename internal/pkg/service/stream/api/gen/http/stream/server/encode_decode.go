@@ -13,7 +13,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -1454,21 +1453,12 @@ func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) go
 func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			branchID        int
 			taskID          string
 			storageAPIToken string
 			err             error
 
 			params = mux.Vars(r)
 		)
-		{
-			branchIDRaw := params["branchId"]
-			v, err2 := strconv.ParseInt(branchIDRaw, 10, strconv.IntSize)
-			if err2 != nil {
-				err = goa.MergeErrors(err, goa.InvalidFieldTypeError("branchId", branchIDRaw, "integer"))
-			}
-			branchID = int(v)
-		}
 		taskID = params["taskId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
@@ -1477,7 +1467,7 @@ func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetTaskPayload(branchID, taskID, storageAPIToken)
+		payload := NewGetTaskPayload(taskID, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1524,7 +1514,17 @@ func marshalStreamTaskOutputsToTaskOutputsResponseBody(v *stream.TaskOutputs) *T
 	if v == nil {
 		return nil
 	}
-	res := &TaskOutputsResponseBody{}
+	res := &TaskOutputsResponseBody{
+		URL: v.URL,
+	}
+	if v.ProjectID != nil {
+		projectID := int(*v.ProjectID)
+		res.ProjectID = &projectID
+	}
+	if v.BranchID != nil {
+		branchID := int(*v.BranchID)
+		res.BranchID = &branchID
+	}
 	if v.SinkID != nil {
 		sinkID := string(*v.SinkID)
 		res.SinkID = &sinkID

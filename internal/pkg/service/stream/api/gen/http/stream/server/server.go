@@ -113,7 +113,7 @@ func New(
 			{"ListSinks", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"UpdateSink", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"DeleteSink", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
-			{"GetTask", "GET", "/v1/branches/{branchId}/tasks/{*taskId}"},
+			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/v1"},
 			{"CORS", "OPTIONS", "/health-check"},
@@ -124,7 +124,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
-			{"CORS", "OPTIONS", "/v1/branches/{branchId}/tasks/{*taskId}"},
+			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -1120,7 +1120,7 @@ func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/v1/branches/{branchId}/tasks/{*taskId}", f)
+	mux.Handle("GET", "/v1/tasks/{*taskId}", f)
 }
 
 // NewGetTaskHandler creates a HTTP handler which loads the HTTP request and
@@ -1207,7 +1207,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings", h.ServeHTTP)
-	mux.Handle("OPTIONS", "/v1/branches/{branchId}/tasks/{*taskId}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)

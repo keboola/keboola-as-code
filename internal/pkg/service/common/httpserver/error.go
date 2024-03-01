@@ -7,12 +7,10 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"go.opentelemetry.io/otel/attribute"
 	goaHTTP "goa.design/goa/v3/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -48,7 +46,6 @@ func (wr *ErrorWriter) Write(ctx context.Context, w http.ResponseWriter, err err
 
 func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, err error) error {
 	requestID, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
-	ctx = ctxattr.ContextWith(ctx, attribute.String("requestId", requestID))
 
 	// Default values
 	response := &UnexpectedError{

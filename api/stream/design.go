@@ -40,25 +40,31 @@ const (
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin(dependencies.Config{
-		Package: "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies",
-		DependenciesTypeFn: func(method *service.MethodData) string {
-			if dependencies.HasSecurityScheme("APIKey", method) {
-				if strings.Contains(method.PayloadDef, "\tBranchID") {
-					return "dependencies.BranchRequestScope"
-				}
+	dependenciesType := func(method *service.MethodData) string {
+		if dependencies.HasSecurityScheme("APIKey", method) {
+			// Note: SourceID/SinkID may be a pointer - optional field, these cases are ignored.
+			branch := regexpcache.MustCompile(`\tBranchID +BranchID`).MatchString(method.PayloadDef)
+			source := branch && regexpcache.MustCompile(`\tSourceID +SourceID`).MatchString(method.PayloadDef)
+			sink := source && regexpcache.MustCompile(`\tSinkID +SinkID`).MatchString(method.PayloadDef)
+			switch {
+			case sink:
+				return "dependencies.SinkRequestScope"
+			case source:
+				return "dependencies.SourceRequestScope"
+			case branch:
+				return "dependencies.BranchRequestScope"
+			default:
 				return "dependencies.ProjectRequestScope"
 			}
-			return "dependencies.PublicRequestScope"
-		},
+		}
+		return "dependencies.PublicRequestScope"
+	}
+	dependencies.RegisterPlugin(dependencies.Config{
+		Package:            "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies",
+		DependenciesTypeFn: dependenciesType,
 		DependenciesProviderFn: func(method *service.EndpointMethodData) string {
-			if dependencies.HasSecurityScheme("APIKey", method.MethodData) {
-				if strings.Contains(method.PayloadDef, "\tBranchID") {
-					return "ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)"
-				}
-				return "ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)"
-			}
-			return "ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)"
+			t := dependenciesType(method.MethodData)
+			return fmt.Sprintf(`ctx.Value(%sCtxKey).(%s)`, t, t)
 		},
 	})
 }
@@ -375,13 +381,100 @@ var _ = Service("stream", func() {
 		Result(Task)
 		Payload(GetTaskRequest)
 		HTTP(func() {
-			GET("/branches/{branchId}/tasks/{*taskId}")
+			GET("/tasks/{*taskId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			TaskNotFoundError()
 		})
 	})
 })
+
+// IDs -----------------------------------------------------------------------------------------------------------------
+
+var ProjectID = Type("ProjectID", Int, func() {
+	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
+	Description("ID of the project.")
+	Example(123)
+})
+
+var BranchID = Type("BranchID", Int, func() {
+	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/go-client/pkg/keboola")
+	Description("ID of the branch.")
+	Example(345)
+})
+
+var BranchIDOrDefault = Type("BranchIDOrDefault", String, func() {
+	Meta("struct:field:type", "= key.BranchIDOrDefault", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
+	Description(`ID of the branch or "default".`)
+	Example("default")
+})
+
+var SourceID = Type("SourceID", String, func() {
+	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
+	Description("Unique ID of the source.")
+	MinLength(cast.ToInt(fieldValidationRule(key.SourceKey{}, "SourceID", "min")))
+	MaxLength(cast.ToInt(fieldValidationRule(key.SourceKey{}, "SourceID", "max")))
+	Example("github-webhook-source")
+})
+
+var SinkID = Type("SinkID", String, func() {
+	Meta("struct:field:type", "= key.SinkID", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
+	Description("Unique ID of the sink.")
+	MinLength(cast.ToInt(fieldValidationRule(key.SinkKey{}, "SinkID", "min")))
+	MaxLength(cast.ToInt(fieldValidationRule(key.SinkKey{}, "SinkID", "max")))
+	Example("github-pr-table-sink")
+})
+
+var TaskID = Type("TaskID", String, func() {
+	Meta("struct:field:type", "= task.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task")
+	Description("Unique ID of the task.")
+	Example("task_1234")
+})
+
+// Keys for requests ---------------------------------------------------------------------------------------------------
+// Note: BranchIDOrDefault: in request URL, user can use "default", but responses always contain <int>
+
+var BranchKeyRequest = func() {
+	Attribute("branchId", BranchIDOrDefault)
+	Required("branchId")
+}
+
+var SourceKeyRequest = func() {
+	BranchKeyRequest()
+	Attribute("sourceId", SourceID)
+	Required("sourceId")
+}
+
+var SinkKeyRequest = func() {
+	SourceKeyRequest()
+	Attribute("sinkId", SinkID)
+	Required("sinkId")
+}
+
+// Keys for responses --------------------------------------------------------------------------------------------------
+
+var ProjectKeyResponse = func() {
+	Attribute("projectId", ProjectID)
+	Required("projectId")
+}
+
+var BranchKeyResponse = func() {
+	ProjectKeyResponse()
+	Attribute("branchId", BranchID)
+	Required("branchId")
+}
+
+var SourceKeyResponse = func() {
+	BranchKeyResponse()
+	Attribute("sourceId", SourceID)
+	Required("sourceId")
+}
+
+var SinkKeyResponse = func() {
+	SourceKeyResponse()
+	Attribute("sinkId", SinkID)
+	Required("sinkId")
+}
 
 // Common attributes
 
@@ -402,34 +495,12 @@ var ServiceDetail = Type("ServiceDetail", func() {
 	Required("api", "documentation")
 })
 
-// ProjectID ----------------------------------------------------------------------------------------------------------
-
-var ProjectID = Type("ProjectID", Int, func() {
-	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
-	Description("ID of the project.")
-	Example(123)
-})
-
-// Branch -------------------------------------------------------------------------------------------------------------
-
-var BranchID = Type("BranchID", Int, func() {
-	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/go-client/pkg/keboola")
-	Description("ID of the branch.")
-	Example(345)
-})
-
-var BranchIDOrDefault = Type("BranchIDOrDefault", String, func() {
-	Meta("struct:field:type", "= key.BranchIDOrDefault", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
-	Description(`ID of the branch or "default".`)
-	Example("default")
-})
-
 // Versioned trait ----------------------------------------------------------------------------------------------------
 
 var EntityVersion = Type("Version", func() {
-	Meta("struct:field:type", "= definition.Version", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
 	Description("Version of the entity.")
 	Attribute("number", Int, func() {
+		Meta("struct:field:type", "definition.VersionNumber", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
 		Description("Version number counted from 1.")
 		Minimum(1)
 		Example(3)
@@ -508,33 +579,18 @@ var DisabledEntity = Type("DisabledEntity", func() {
 
 // Source -------------------------------------------------------------------------------------------------------------
 
-var SourceID = Type("SourceID", String, func() {
-	Meta("struct:field:type", "= key.SourceID", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
-	Description("Unique ID of the source.")
-	MinLength(cast.ToInt(fieldValidationRule(key.SourceKey{}, "SourceID", "min")))
-	MaxLength(cast.ToInt(fieldValidationRule(key.SourceKey{}, "SourceID", "max")))
-	Example("github-webhook-source")
-})
-
 var Source = Type("Source", func() {
 	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
-
-	Attribute("projectId", ProjectID)
-	Attribute("branchId", BranchID)
-	Attribute("sourceId", SourceID)
-
+	SourceKeyResponse()
 	SourceFieldsRW()
 	Attribute("http", HTTPSource, func() {
 		Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
 	})
-
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-
 	Attribute("sinks", Sinks)
-
-	Required("projectId", "branchId", "sourceId", "version", "type", "name", "description", "type", "sinks")
+	Required("version", "type", "name", "description", "type", "sinks")
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
@@ -548,36 +604,34 @@ var SourceType = Type("SourceType", String, func() {
 })
 
 var CreateSourceRequest = Type("CreateSourceRequest", func() {
-	Attribute("branchId", BranchIDOrDefault)
+	BranchKeyRequest()
 	Attribute("sourceId", SourceID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
 	SourceFieldsRW()
-	Required("branchId", "type", "name")
+	Required("type", "name")
 })
 
 var GetSourceRequest = Type("GetSourceRequest", func() {
-	Attribute("branchId", BranchIDOrDefault)
-	Attribute("sourceId", SourceID)
-	Required("branchId", "sourceId")
+	SourceKeyRequest()
 })
 
 var ListSourcesRequest = Type("ListSourcesRequest", func() {
-	Attribute("branchId", BranchIDOrDefault)
-	Required("branchId", "branchId")
+	BranchKeyRequest()
 })
 
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
-	Extend(GetSourceRequest)
+	SourceKeyRequest()
 	SourceFieldsRW()
 })
 
 var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
-	Extend(GetSourceRequest)
+	SourceKeyRequest()
 	Attribute("patch", SettingsPatch)
 })
 
 var SourcesList = Type("SourcesList", func() {
+	BranchKeyResponse()
 	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
 	Attribute("sources", Sources)
 	Required("sources")
@@ -611,29 +665,14 @@ var HTTPSource = Type("HTTPSource", func() {
 
 // Sink ----------------------------------------------------------------------------------------------------------------
 
-var SinkID = Type("SinkID", String, func() {
-	Meta("struct:field:type", "= key.SinkID", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key")
-	Description("Unique ID of the sink.")
-	MinLength(cast.ToInt(fieldValidationRule(key.SinkKey{}, "SinkID", "min")))
-	MaxLength(cast.ToInt(fieldValidationRule(key.SinkKey{}, "SinkID", "max")))
-	Example("github-pr-table-sink")
-})
-
 var Sink = Type("Sink", func() {
 	Description("A mapping from imported data to a destination table.")
-
-	Attribute("projectId", ProjectID)
-	Attribute("branchId", BranchID)
-	Attribute("sourceId", SourceID)
-	Attribute("sinkId", SinkID)
-
+	SinkKeyResponse()
 	SinkFieldsRW()
-
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-
-	Required("projectId", "branchId", "sourceId", "sinkId", "version", "name", "description")
+	Required("version", "name", "description")
 })
 
 var Sinks = Type("Sinks", ArrayOf(Sink), func() {
@@ -648,42 +687,35 @@ var SinkType = Type("SinkType", String, func() {
 
 var SinksList = Type("SinksList", func() {
 	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", repository.MaxSourcesPerBranch))
-	Attribute("branchId", BranchID)
-	Attribute("sourceId", SourceID)
+	SourceKeyResponse()
 	Attribute("sinks", Sinks)
-	Required("branchId", "sourceId", "sinks")
+	Required("sinks")
 })
 
 var CreateSinkRequest = Type("CreateSinkRequest", func() {
-	Extend(GetSourceRequest)
+	SourceKeyRequest()
 	Attribute("sinkId", SinkID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
 	SinkFieldsRW()
-	// Field "conditions" is optional
-	Required("name", "mapping")
+	Required("type", "name")
 })
 
 var GetSinkRequest = Type("GetSinkRequest", func() {
-	Attribute("branchId", BranchIDOrDefault)
-	Attribute("sourceId", SourceID)
-	Attribute("sinkId", SinkID)
-	Required("branchId", "sourceId", "sinkId")
+	SinkKeyRequest()
 })
 
 var ListSinksRequest = Type("ListSinksRequest", func() {
-	Attribute("branchId", BranchIDOrDefault)
-	Attribute("sourceId", SourceID)
-	Required("branchId", "sourceId")
+	SourceKeyRequest()
 })
 
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
-	Extend(GetSinkRequest)
+	SinkKeyRequest()
 	SinkFieldsRW()
 })
 
 var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
-	Extend(GetSinkRequest)
+	SinkKeyRequest()
 	Attribute("patch", SettingsPatch)
 })
 
@@ -838,12 +870,6 @@ var SettingPatch = Type("SettingPatch", func() {
 
 // Task ----------------------------------------------------------------------------------------------------------------
 
-var TaskID = Type("TaskID", String, func() {
-	Meta("struct:field:type", "= task.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task")
-	Description("Unique ID of the task.")
-	Example("task_1234")
-})
-
 var Task = Type("Task", func() {
 	Description("An asynchronous task.")
 	Attribute("id", TaskID)
@@ -881,12 +907,14 @@ var Task = Type("Task", func() {
 
 var TaskOutputs = Type("TaskOutputs", func() {
 	Description("Outputs generated by the task.")
+	Attribute("url", String, "Absolute URL of the entity.")
+	Attribute("projectId", ProjectID, "ID of the parent project.")
+	Attribute("branchId", BranchID, "ID of the parent branch.")
 	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
 	Attribute("sourceId", SourceID, "ID of the created/updated source.")
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
-	Attribute("branchId", BranchIDOrDefault)
 	Attribute("taskId", TaskID)
 	Required("taskId")
 })

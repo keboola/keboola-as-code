@@ -11,6 +11,7 @@ import (
 
 type Components struct {
 	Muxer
+	Logger         log.Logger
 	Decoder        Decoder
 	Encoder        Encoder
 	ErrorHandler   ErrorHandler
@@ -27,6 +28,7 @@ func newComponents(cfg Config, logger log.Logger) Components {
 	}
 	return Components{
 		Muxer:          NewMuxer(errorWr),
+		Logger:         logger,
 		Decoder:        NewDecoder(),
 		Encoder:        NewEncoder(logger, errorWr),
 		ErrorHandler:   errorWr.WriteWithStatusCode,

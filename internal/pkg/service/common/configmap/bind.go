@@ -46,6 +46,7 @@ type BindConfig struct {
 
 type GenerateAndBindConfig struct {
 	Args                   []string              // optional
+	PositionalArgsTarget   *[]string             // optional
 	ConfigFiles            []string              // optional
 	EnvNaming              *env.NamingConvention // optional
 	Envs                   env.Provider          // optional
@@ -172,6 +173,11 @@ func GenerateAndBind(cfg GenerateAndBindConfig, targets ...any) error {
 		} else {
 			return err
 		}
+	}
+
+	// Save remaining - positional arguments
+	if cfg.PositionalArgsTarget != nil {
+		*cfg.PositionalArgsTarget = flags.Args()
 	}
 
 	return errs.ErrorOrNil()

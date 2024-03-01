@@ -4,13 +4,11 @@ package api
 import (
 	"context"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	etcd "go.etcd.io/etcd/client/v3"
+	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -18,28 +16,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
 )
 
-const (
-	receiverSecretPlaceholder = "<<RECEIVER_SECRET>>"
-)
-
-// TestBufferApiE2E runs one Buffer API functional test per each subdirectory.
-func TestBufferApiE2E(t *testing.T) {
+// TestStreamApiE2E runs one Stream API functional test per each subdirectory.
+func TestStreamApiE2E(t *testing.T) {
 	t.Parallel()
-
-	t.Skip("skipping buffer tests until refactoring is complete")
 
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping API E2E tests on Windows")
 	}
 
-	binaryPath := testhelper.CompileBinary(t, "buffer-api", "build-buffer-api")
+	binaryPath := testhelper.CompileBinary(t, "stream-service", "build-stream-service")
 	ctx := context.Background()
 
 	runner.
 		NewRunner(t).
 		ForEachTest(func(test *runner.Test) {
 			// Connect to the etcd
-			etcdCfg := etcdhelper.TmpNamespaceFromEnv(t, "BUFFER_API_ETCD_")
+			etcdCfg := etcdhelper.TmpNamespaceFromEnv(t, "STREAM_ETCD_")
 			etcdClient := etcdhelper.ClientForTest(t, etcdCfg)
 
 			// Init etcd state
@@ -50,36 +42,30 @@ func TestBufferApiE2E(t *testing.T) {
 				assert.NoError(test.T(), err)
 			}
 
-			addEnvs := env.FromMap(map[string]string{
-				"BUFFER_API_DATADOG_ENABLED":  "false",
-				"BUFFER_API_STORAGE_API_HOST": "https://" + test.TestProject().StorageAPIHost(),
-				"BUFFER_API_PUBLIC_ADDRESS":   "https://buffer.keboola.local",
-				"BUFFER_API_ETCD_NAMESPACE":   etcdCfg.Namespace,
-				"BUFFER_API_ETCD_ENDPOINT":    etcdCfg.Endpoint,
-				"BUFFER_API_ETCD_USERNAME":    etcdCfg.Username,
-				"BUFFER_API_ETCD_PASSWORD":    etcdCfg.Password,
-			})
+			defaultBranch, err := test.TestProject().DefaultBranch()
+			require.NoError(t, err)
+			test.TestProject().Env().Set(`TEST_DEFAULT_BRANCH_ID`, defaultBranch.ID.String())
 
-			requestDecoratorFn := func(request *runner.APIRequestDef) {
-				// Replace placeholder by secret loaded from the etcd.
-				if strings.Contains(request.Path, receiverSecretPlaceholder) {
-					resp, err := etcdClient.Get(ctx, "config/receiver/", etcd.WithPrefix())
-					if assert.NoError(t, err) && assert.Len(t, resp.Kvs, 1) {
-						receiver := make(map[string]any)
-						json.MustDecode(resp.Kvs[0].Value, &receiver)
-						request.Path = strings.ReplaceAll(request.Path, receiverSecretPlaceholder, receiver["secret"].(string))
-					}
-				}
-			}
+			addEnvs := env.FromMap(map[string]string{
+				"STREAM_DATADOG_ENABLED":        "false",
+				"STREAM_NODE_ID":                "test-node",
+				"STREAM_STORAGE_API_HOST":       test.TestProject().StorageAPIHost(),
+				"STREAM_API_PUBLIC_URL":         "https://stream.keboola.local",
+				"STREAM_SOURCE_HTTP_PUBLIC_URL": "https://stream-in.keboola.local",
+				"STREAM_ETCD_NAMESPACE":         etcdCfg.Namespace,
+				"STREAM_ETCD_ENDPOINT":          etcdCfg.Endpoint,
+				"STREAM_ETCD_USERNAME":          etcdCfg.Username,
+				"STREAM_ETCD_PASSWORD":          etcdCfg.Password,
+			})
 
 			// Run the test
 			test.Run(
 				runner.WithInitProjectState(),
 				runner.WithRunAPIServerAndRequests(
 					binaryPath,
-					[]string{},
+					[]string{"api"}, // start only the API component
 					addEnvs,
-					requestDecoratorFn,
+					nil,
 				),
 				runner.WithAssertProjectState(),
 			)

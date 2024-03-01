@@ -521,15 +521,11 @@ func (s *service) UpgradeInstanceValidateInputs(ctx context.Context, d dependenc
 }
 
 func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScope, payload *GetTaskPayload) (res *Task, err error) {
-	str := d.Store()
-
-	k := task.Key{ProjectID: d.ProjectID(), TaskID: payload.TaskID}
-	t, err := str.GetTask(k).Do(ctx).ResultOrErr()
+	t, err := s.tasks.GetTask(task.Key{ProjectID: d.ProjectID(), TaskID: payload.TaskID}).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}
-
-	return s.mapper.TaskPayload(&t.Value), nil
+	return s.mapper.TaskPayload(t), nil
 }
 
 func repositoryRef(d dependencies.ProjectRequestScope, name string) (model.TemplateRepository, error) {

@@ -107,6 +107,7 @@ func TestGenerateAndBind_DefaultValues(t *testing.T) {
 func TestGenerateAndBind_Flags(t *testing.T) {
 	t.Parallel()
 
+	var posArgs []string
 	cfg := GenerateAndBindConfig{
 		Args: []string{
 			"--embedded", "foo",
@@ -121,9 +122,11 @@ func TestGenerateAndBind_Flags(t *testing.T) {
 			"--url", "https://foo.bar",
 			"--address", "10.20.30.40",
 			"--address-nullable", "10.20.30.40",
+			"pos1", "pos2", "pos3",
 		},
 		EnvNaming:              env.NewNamingConvention("MY_APP_"),
 		Envs:                   env.Empty(),
+		PositionalArgsTarget:   &posArgs,
 		GenerateHelpFlag:       true,
 		GenerateConfigFileFlag: true,
 		GenerateDumpConfigFlag: true,
@@ -154,6 +157,7 @@ func TestGenerateAndBind_Flags(t *testing.T) {
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{10, 20, 30, 40})
 	assert.NoError(t, GenerateAndBind(cfg, &target))
+	assert.Equal(t, []string{"pos1", "pos2", "pos3"}, posArgs)
 	assert.Equal(t, TestConfig{
 		Embedded:        Embedded{EmbeddedField: "foo"},
 		SensitiveString: "abc",

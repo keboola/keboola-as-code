@@ -31,36 +31,36 @@ type Service interface {
 	// Create a new source in the branch.
 	CreateSource(context.Context, dependencies.BranchRequestScope, *CreateSourcePayload) (res *Task, err error)
 	// Update the source.
-	UpdateSource(context.Context, dependencies.BranchRequestScope, *UpdateSourcePayload) (res *Source, err error)
+	UpdateSource(context.Context, dependencies.SourceRequestScope, *UpdateSourcePayload) (res *Source, err error)
 	// List all sources in the branch.
 	ListSources(context.Context, dependencies.BranchRequestScope, *ListSourcesPayload) (res *SourcesList, err error)
 	// Get the source definition.
-	GetSource(context.Context, dependencies.BranchRequestScope, *GetSourcePayload) (res *Source, err error)
+	GetSource(context.Context, dependencies.SourceRequestScope, *GetSourcePayload) (res *Source, err error)
 	// Delete the source.
-	DeleteSource(context.Context, dependencies.BranchRequestScope, *DeleteSourcePayload) (err error)
+	DeleteSource(context.Context, dependencies.SourceRequestScope, *DeleteSourcePayload) (err error)
 	// Get source settings.
-	GetSourceSettings(context.Context, dependencies.BranchRequestScope, *GetSourceSettingsPayload) (res SettingsResult, err error)
+	GetSourceSettings(context.Context, dependencies.SourceRequestScope, *GetSourceSettingsPayload) (res SettingsResult, err error)
 	// Update source settings.
-	UpdateSourceSettings(context.Context, dependencies.BranchRequestScope, *UpdateSourceSettingsPayload) (res SettingsResult, err error)
+	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res SettingsResult, err error)
 	// Each sink uses its own token scoped to the target bucket, this endpoint
 	// refreshes all of those tokens.
-	RefreshSourceTokens(context.Context, dependencies.BranchRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
+	RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
 	// Create a new sink in the source.
-	CreateSink(context.Context, dependencies.BranchRequestScope, *CreateSinkPayload) (res *Task, err error)
+	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
-	GetSink(context.Context, dependencies.BranchRequestScope, *GetSinkPayload) (res *Sink, err error)
+	GetSink(context.Context, dependencies.SinkRequestScope, *GetSinkPayload) (res *Sink, err error)
 	// Get the sink settings.
-	GetSinkSettings(context.Context, dependencies.BranchRequestScope, *GetSinkSettingsPayload) (res SettingsResult, err error)
+	GetSinkSettings(context.Context, dependencies.SinkRequestScope, *GetSinkSettingsPayload) (res SettingsResult, err error)
 	// Update sink settings.
-	UpdateSinkSettings(context.Context, dependencies.BranchRequestScope, *UpdateSinkSettingsPayload) (res SettingsResult, err error)
+	UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *UpdateSinkSettingsPayload) (res SettingsResult, err error)
 	// List all sinks in the source.
-	ListSinks(context.Context, dependencies.BranchRequestScope, *ListSinksPayload) (res *SinksList, err error)
+	ListSinks(context.Context, dependencies.SourceRequestScope, *ListSinksPayload) (res *SinksList, err error)
 	// Update the sink.
-	UpdateSink(context.Context, dependencies.BranchRequestScope, *UpdateSinkPayload) (res *Task, err error)
+	UpdateSink(context.Context, dependencies.SinkRequestScope, *UpdateSinkPayload) (res *Task, err error)
 	// Delete the sink.
-	DeleteSink(context.Context, dependencies.BranchRequestScope, *DeleteSinkPayload) (err error)
+	DeleteSink(context.Context, dependencies.SinkRequestScope, *DeleteSinkPayload) (err error)
 	// Get details of a task.
-	GetTask(context.Context, dependencies.BranchRequestScope, *GetTaskPayload) (res *Task, err error)
+	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -107,18 +107,18 @@ type By struct {
 // method.
 type CreateSinkPayload struct {
 	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 	// Optional ID, if not filled in, it will be generated from name. Cannot be
 	// changed later.
 	SinkID *SinkID
-	Type   *SinkType
+	Type   SinkType
 	// Human readable name of the sink.
 	Name string
 	// Description of the source.
 	Description *string
 	// Table sink configuration for "type" = "table".
-	Table    *TableSink
-	BranchID BranchIDOrDefault
-	SourceID SourceID
+	Table *TableSink
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -216,7 +216,6 @@ type GetSourceSettingsPayload struct {
 // GetTaskPayload is the payload type of the stream service GetTask method.
 type GetTaskPayload struct {
 	StorageAPIToken string
-	BranchID        *BranchID
 	TaskID          TaskID
 }
 
@@ -320,9 +319,10 @@ type Sinks []*Sink
 
 // SinksList is the result type of the stream service ListSinks method.
 type SinksList struct {
-	BranchID BranchID
-	SourceID SourceID
-	Sinks    Sinks
+	ProjectID ProjectID
+	BranchID  BranchID
+	SourceID  SourceID
+	Sinks     Sinks
 }
 
 // Source is the result type of the stream service UpdateSource method.
@@ -353,7 +353,9 @@ type Sources []*Source
 
 // SourcesList is the result type of the stream service ListSources method.
 type SourcesList struct {
-	Sources Sources
+	ProjectID ProjectID
+	BranchID  BranchID
+	Sources   Sources
 }
 
 // An output mapping defined by a template.
@@ -418,6 +420,12 @@ type TaskID = task.ID
 
 // Outputs generated by the task.
 type TaskOutputs struct {
+	// Absolute URL of the entity.
+	URL *string
+	// ID of the parent project.
+	ProjectID *ProjectID
+	// ID of the parent branch.
+	BranchID *BranchID
 	// ID of the created/updated sink.
 	SinkID *SinkID
 	// ID of the created/updated source.
@@ -428,54 +436,54 @@ type TaskOutputs struct {
 // method.
 type UpdateSinkPayload struct {
 	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
 	Type            *SinkType
 	// Human readable name of the sink.
 	Name *string
 	// Description of the source.
 	Description *string
 	// Table sink configuration for "type" = "table".
-	Table    *TableSink
-	BranchID BranchIDOrDefault
-	SourceID SourceID
-	SinkID   SinkID
+	Table *TableSink
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service
 // UpdateSinkSettings method.
 type UpdateSinkSettingsPayload struct {
 	StorageAPIToken string
-	Patch           SettingsPatch
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
+	Patch           SettingsPatch
 }
 
 // UpdateSourcePayload is the payload type of the stream service UpdateSource
 // method.
 type UpdateSourcePayload struct {
 	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 	Type            *SourceType
 	// Human readable name of the source.
 	Name *string
 	// Description of the source.
 	Description *string
-	BranchID    BranchIDOrDefault
-	SourceID    SourceID
 }
 
 // UpdateSourceSettingsPayload is the payload type of the stream service
 // UpdateSourceSettings method.
 type UpdateSourceSettingsPayload struct {
 	StorageAPIToken string
-	Patch           SettingsPatch
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
+	Patch           SettingsPatch
 }
 
 // Version of the entity.
 type Version struct {
 	// Version number counted from 1.
-	Number int
+	Number definition.VersionNumber
 	// Hash of the entity state.
 	Hash string
 	// Date and time of the modification.

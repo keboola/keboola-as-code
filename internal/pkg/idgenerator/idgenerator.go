@@ -30,6 +30,6 @@ func EtcdNamespaceForTest() string {
 	return Random(EtcdNamespaceForE2ETestLength)
 }
 
-func ReceiverSecret() string {
+func StreamHTTPSourceSecret() string {
 	return Random(ReceiverSecretLength)
 }

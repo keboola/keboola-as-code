@@ -25,6 +25,7 @@ const (
 // apiScope implements APIScope interface.
 type apiScope struct {
 	parentScopes
+	logger            log.Logger
 	config            config.Config
 	schema            *schema.Schema
 	store             *store.Store
@@ -127,6 +128,8 @@ func newAPIScope(ctx context.Context, parentScp parentScopes, cfg config.Config)
 
 	d.parentScopes = parentScp
 
+	d.logger = parentScp.Logger().WithComponent("api")
+
 	d.config = cfg
 
 	d.schema = schema.New(d)
@@ -139,6 +142,10 @@ func newAPIScope(ctx context.Context, parentScp parentScopes, cfg config.Config)
 	}
 
 	return d, nil
+}
+
+func (v *apiScope) Logger() log.Logger {
+	return v.logger
 }
 
 func (v *apiScope) APIConfig() config.Config {

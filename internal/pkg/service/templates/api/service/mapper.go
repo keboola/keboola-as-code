@@ -38,7 +38,7 @@ func NewMapper(d mapperDependencies) *Mapper {
 	}
 }
 
-func (m Mapper) TaskPayload(model *task.Task) (r *Task) {
+func (m Mapper) TaskPayload(model task.Task) (r *Task) {
 	out := &Task{
 		ID:        model.TaskID,
 		Type:      model.Type,

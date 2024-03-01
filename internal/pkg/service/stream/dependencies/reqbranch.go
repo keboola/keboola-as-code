@@ -86,3 +86,7 @@ func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Br
 func (v *branchRequestScope) Branch() definition.Branch {
 	return v.branch
 }
+
+func (v *branchRequestScope) BranchKey() key.BranchKey {
+	return v.branch.BranchKey
+}

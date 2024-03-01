@@ -35,19 +35,18 @@ const (
 
 // nolint: gochecknoinits
 func init() {
+	dependenciesType := func(method *service.MethodData) string {
+		if dependencies.HasSecurityScheme("APIKey", method) {
+			return "dependencies.ProjectRequestScope"
+		}
+		return "dependencies.PublicRequestScope"
+	}
 	dependencies.RegisterPlugin(dependencies.Config{
-		Package: "github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies",
-		DependenciesTypeFn: func(method *service.MethodData) string {
-			if dependencies.HasSecurityScheme("APIKey", method) {
-				return "dependencies.ProjectRequestScope"
-			}
-			return "dependencies.PublicRequestScope"
-		},
+		Package:            "github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies",
+		DependenciesTypeFn: dependenciesType,
 		DependenciesProviderFn: func(method *service.EndpointMethodData) string {
-			if dependencies.HasSecurityScheme("APIKey", method.MethodData) {
-				return "ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)"
-			}
-			return "ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)"
+			t := dependenciesType(method.MethodData)
+			return fmt.Sprintf(`ctx.Value(%sCtxKey).(%s)`, t, t)
 		},
 	})
 }

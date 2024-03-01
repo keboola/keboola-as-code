@@ -1,4 +1,4 @@
 {
-  "api": "buffer",
-  "documentation": "https://buffer.keboola.com/v1/documentation"
+  "api": "stream",
+  "documentation": "https://stream.keboola.local/v1/documentation"
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func (s *service) cleanup(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	logger := s.deps.Logger().WithComponent("cleanup")
+	logger := s.deps.Logger().WithComponent("task.cleanup")
 
 	initDone := make(chan error)
 	wg.Add(1)

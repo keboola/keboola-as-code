@@ -151,7 +151,7 @@ func NewUpdateSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.UpdateSource(ctx, deps, p)
 	}
 }
@@ -191,7 +191,7 @@ func NewGetSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.E
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.GetSource(ctx, deps, p)
 	}
 }
@@ -211,7 +211,7 @@ func NewDeleteSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return nil, s.DeleteSource(ctx, deps, p)
 	}
 }
@@ -231,7 +231,7 @@ func NewGetSourceSettingsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFun
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.GetSourceSettings(ctx, deps, p)
 	}
 }
@@ -251,7 +251,7 @@ func NewUpdateSourceSettingsEndpoint(s Service, authAPIKeyFn security.AuthAPIKey
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.UpdateSourceSettings(ctx, deps, p)
 	}
 }
@@ -271,7 +271,7 @@ func NewRefreshSourceTokensEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyF
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.RefreshSourceTokens(ctx, deps, p)
 	}
 }
@@ -291,7 +291,7 @@ func NewCreateSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.CreateSink(ctx, deps, p)
 	}
 }
@@ -311,7 +311,7 @@ func NewGetSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.GetSink(ctx, deps, p)
 	}
 }
@@ -331,7 +331,7 @@ func NewGetSinkSettingsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.GetSinkSettings(ctx, deps, p)
 	}
 }
@@ -351,7 +351,7 @@ func NewUpdateSinkSettingsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFu
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.UpdateSinkSettings(ctx, deps, p)
 	}
 }
@@ -371,7 +371,7 @@ func NewListSinksEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.E
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.ListSinks(ctx, deps, p)
 	}
 }
@@ -391,7 +391,7 @@ func NewUpdateSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.UpdateSink(ctx, deps, p)
 	}
 }
@@ -411,7 +411,7 @@ func NewDeleteSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return nil, s.DeleteSink(ctx, deps, p)
 	}
 }
@@ -431,7 +431,7 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.GetTask(ctx, deps, p)
 	}
 }

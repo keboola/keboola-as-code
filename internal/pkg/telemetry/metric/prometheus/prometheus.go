@@ -51,6 +51,7 @@ func NewConfig() Config {
 // Inspired by: https://github.com/open-telemetry/opentelemetry-go/blob/main/example/prometheus/main.go
 func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *servicectx.Process, serviceName string) (*metric.MeterProvider, error) {
 	logger = logger.WithComponent("metrics")
+	logger.Infof(ctx, `starting HTTP server on %q`, cfg.Listen)
 
 	// Create resource
 	res, err := resource.New(
@@ -76,7 +77,7 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 	handler.Handle("/"+Endpoint, promhttp.HandlerFor(registry, opts))
 	srv := &http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
-		logger.Infof(ctx, `HTTP server listening on "%s/%s"`, cfg.Listen, Endpoint)
+		logger.Infof(ctx, `started HTTP server on %q, endpoint %q"`, cfg.Listen, Endpoint)
 		serverErr := srv.ListenAndServe()         // ListenAndServe blocks while the server is running
 		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
@@ -85,7 +86,7 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 		ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 		defer cancel()
 
-		logger.Infof(ctx, `shutting down HTTP server at "%s"`, cfg.Listen)
+		logger.Infof(ctx, `shutting down HTTP server at %q`, cfg.Listen)
 
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.Errorf(ctx, `HTTP server shutdown error: %s`, err)

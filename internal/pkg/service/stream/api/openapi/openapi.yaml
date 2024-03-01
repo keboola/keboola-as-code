@@ -57,6 +57,8 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamListSourcesResponseBody'
                         required:
+                            - projectId
+                            - branchId
                             - sources
             schemes:
                 - https
@@ -340,6 +342,7 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamListSinksResponseBody'
                         required:
+                            - projectId
                             - branchId
                             - sourceId
                             - sinks
@@ -378,8 +381,8 @@ paths:
                   schema:
                     $ref: '#/definitions/StreamCreateSinkRequestBody'
                     required:
+                        - type
                         - name
-                        - mapping
             responses:
                 "202":
                     description: Accepted response.
@@ -688,48 +691,6 @@ paths:
                 - https
             security:
                 - storage-api-token: []
-    /v1/branches/{branchId}/tasks/{taskId}:
-        get:
-            tags:
-                - configuration
-            summary: Get task
-            description: Get details of a task.
-            operationId: GetTask
-            parameters:
-                - name: branchId
-                  in: path
-                  description: ID of the branch.
-                  required: true
-                  type: integer
-                - name: taskId
-                  in: path
-                  description: Unique ID of the task.
-                  required: true
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/StreamGetTaskResponseBody'
-                        required:
-                            - id
-                            - type
-                            - url
-                            - status
-                            - isFinished
-                            - createdAt
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/StreamGetTaskStreamTaskNotFoundResponseBody'
-                        required:
-                            - statusCode
-                            - error
-                            - message
-            schemes:
-                - https
-            security:
-                - storage-api-token: []
     /v1/documentation/openapi.json:
         get:
             tags:
@@ -786,6 +747,43 @@ paths:
             schemes:
                 - http
                 - https
+    /v1/tasks/{taskId}:
+        get:
+            tags:
+                - configuration
+            summary: Get task
+            description: Get details of a task.
+            operationId: GetTask
+            parameters:
+                - name: taskId
+                  in: path
+                  description: Unique ID of the task.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/StreamGetTaskResponseBody'
+                        required:
+                            - id
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamGetTaskStreamTaskNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
 definitions:
     ByResponseBody:
         title: ByResponseBody
@@ -1301,8 +1299,8 @@ definitions:
                           language: jsonnet
                           content: body.foo + "-" + body.bar
         required:
+            - type
             - name
-            - mapping
     StreamCreateSinkResponseBody:
         title: StreamCreateSinkResponseBody
         type: object
@@ -1365,6 +1363,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -1548,6 +1549,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -2183,6 +2187,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -2225,6 +2232,10 @@ definitions:
             branchId:
                 type: integer
                 example: 345
+                format: int64
+            projectId:
+                type: integer
+                example: 123
                 format: int64
             sinks:
                 type: array
@@ -2283,6 +2294,7 @@ definitions:
                 minLength: 1
                 maxLength: 48
         example:
+            projectId: 123
             branchId: 345
             sourceId: github-webhook-source
             sinks:
@@ -2333,6 +2345,7 @@ definitions:
                         userDescription: user@company.com
                     reason: Disabled for recurring problems.
         required:
+            - projectId
             - branchId
             - sourceId
             - sinks
@@ -2366,6 +2379,14 @@ definitions:
         title: StreamListSourcesResponseBody
         type: object
         properties:
+            branchId:
+                type: integer
+                example: 345
+                format: int64
+            projectId:
+                type: integer
+                example: 123
+                format: int64
             sources:
                 type: array
                 items:
@@ -2447,6 +2468,8 @@ definitions:
                                 userDescription: user@company.com
                             reason: Disabled for recurring problems.
         example:
+            projectId: 123
+            branchId: 345
             sources:
                 - projectId: 123
                   branchId: 345
@@ -2524,6 +2547,8 @@ definitions:
                             userDescription: user@company.com
                         reason: Disabled for recurring problems.
         required:
+            - projectId
+            - branchId
             - sources
     StreamRefreshSourceTokensResponseBody:
         title: StreamRefreshSourceTokensResponseBody
@@ -2835,6 +2860,9 @@ definitions:
             result: abc123
             error: abc123
             outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
@@ -3505,6 +3533,16 @@ definitions:
         title: TaskOutputsResponseBody
         type: object
         properties:
+            branchId:
+                type: integer
+                description: ID of the parent branch.
+                example: 345
+                format: int64
+            projectId:
+                type: integer
+                description: ID of the parent project.
+                example: 123
+                format: int64
             sinkId:
                 type: string
                 description: ID of the created/updated sink.
@@ -3517,8 +3555,15 @@ definitions:
                 example: github-webhook-source
                 minLength: 1
                 maxLength: 48
+            url:
+                type: string
+                description: Absolute URL of the entity.
+                example: abc123
         description: Outputs generated by the task.
         example:
+            url: abc123
+            projectId: 123
+            branchId: 345
             sinkId: github-pr-table-sink
             sourceId: github-webhook-source
     VersionResponseBody:
