@@ -51,7 +51,7 @@ func (r *SourceRepository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] {
 	return r.schema.
 		Active().ByKey(k).Exists(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("source", k.String(), "branch")
+			return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
 		})
 }
 
@@ -59,7 +59,7 @@ func (r *SourceRepository) Get(k key.SourceKey) op.WithResult[definition.Source]
 	return r.schema.
 		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("source", k.String(), "branch")
+			return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
 		})
 }
 
@@ -67,7 +67,7 @@ func (r *SourceRepository) GetDeleted(k key.SourceKey) op.WithResult[definition.
 	return r.schema.
 		Deleted().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("deleted source", k.String(), "branch")
+			return serviceError.NewResourceNotFoundError("deleted source", k.SourceID.String(), "branch")
 		})
 }
 
@@ -88,7 +88,7 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 		// Object must not exists
 		BeforeWriteOrErr(func(context.Context) error {
 			if actual != nil {
-				return serviceError.NewResourceAlreadyExistsError("source", k.String(), "branch")
+				return serviceError.NewResourceAlreadyExistsError("source", k.SourceID.String(), "branch")
 			}
 			return nil
 		}).
@@ -246,7 +246,7 @@ func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNu
 	return r.schema.
 		Versions().Of(k).Version(version).Get(r.client).
 		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("source version", k.String()+"/"+version.String(), "branch")
+			return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+version.String(), "branch")
 		})
 }
 
@@ -263,9 +263,9 @@ func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber
 		// Return the most significant error
 		BeforeWriteOrErr(func(context.Context) error {
 			if latest == nil {
-				return serviceError.NewResourceNotFoundError("source", k.String(), "branch")
+				return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
 			} else if target == nil {
-				return serviceError.NewResourceNotFoundError("source version", k.String()+"/"+to.String(), "branch")
+				return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+to.String(), "branch")
 			}
 			return nil
 		}).

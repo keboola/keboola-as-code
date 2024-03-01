@@ -1,5 +1,5 @@
 {
-  "id": "api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "taskId": "api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
   "type": "api.create.source",
   "url": "https://stream.keboola.local/v1/tasks/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
   "status": "success",

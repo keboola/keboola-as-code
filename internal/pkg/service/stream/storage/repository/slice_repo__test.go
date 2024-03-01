@@ -98,7 +98,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 		fileVolumeKey := model.FileVolumeKey{FileKey: fileKey, VolumeID: "my-volume"}
 		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, strings.TrimSpace(`
-- sink "123/456/my-source/my-sink" not found in the source
+- sink "my-sink" not found in the source
 - file "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" not found in the sink
 `), err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)

@@ -66,14 +66,14 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Get - not found
 		if err := sourceRepo.Get(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
+			assert.Equal(t, `source "my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
 	{
 		// GetDeleted - not found
 		if err := sourceRepo.GetDeleted(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
+			assert.Equal(t, `deleted source "my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -83,7 +83,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		source1 := test.NewSource(sourceKey1)
 		if err := sourceRepo.Create("Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "123/456" not found in the project`, err.Error())
+			assert.Equal(t, `branch "456" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -143,7 +143,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// GetDeleted - not found
 		if err := sourceRepo.GetDeleted(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
+			assert.Equal(t, `deleted source "my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -159,7 +159,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		source1 := test.NewSource(sourceKey1)
 		if err := sourceRepo.Create("Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `source "123/456/my-source-1" already exists in the branch`, err.Error())
+			assert.Equal(t, `source "my-source-1" already exists in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
@@ -203,7 +203,7 @@ func TestRepository_Source(t *testing.T) {
 			return v
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
-			assert.Equal(t, `source "123/456/non-existent" not found in the branch`, err.Error())
+			assert.Equal(t, `source "non-existent" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -223,7 +223,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		if err := sourceRepo.Version(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `source version "123/456/my-source-1/0000000010" not found in the branch`, err.Error())
+			assert.Equal(t, `source version "my-source-1/0000000010" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -253,7 +253,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Get - not found
 		if err := sourceRepo.Get(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
+			assert.Equal(t, `source "my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -287,7 +287,7 @@ func TestRepository_Source(t *testing.T) {
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sourceRepo.SoftDelete(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `source "123/456/my-source-1" not found in the branch`, err.Error())
+		assert.Equal(t, `source "my-source-1" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
@@ -315,7 +315,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// GetDeleted - not found
 		if err := sourceRepo.GetDeleted(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
+			assert.Equal(t, `deleted source "my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -335,7 +335,7 @@ func TestRepository_Source(t *testing.T) {
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sourceRepo.Undelete(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `deleted source "123/456/my-source-1" not found in the branch`, err.Error())
+		assert.Equal(t, `deleted source "my-source-1" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
 
@@ -390,13 +390,13 @@ func TestRepository_Source(t *testing.T) {
 	// Rollback version - object not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sourceRepo.Rollback(nonExistentSourceKey, 1).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `source "123/456/non-existent" not found in the branch`, err.Error())
+		assert.Equal(t, `source "non-existent" not found in the branch`, err.Error())
 	}
 
 	// Rollback version - version not found
 	// -----------------------------------------------------------------------------------------------------------------
 	if err := sourceRepo.Rollback(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `source version "123/456/my-source-1/0000000010" not found in the branch`, err.Error())
+		assert.Equal(t, `source version "my-source-1/0000000010" not found in the branch`, err.Error())
 	}
 
 	// Check etcd final state

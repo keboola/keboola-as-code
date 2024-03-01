@@ -13,9 +13,9 @@ import (
 
 func (m *Mapper) NewTaskResponse(entity task.Task) *api.Task {
 	response := &api.Task{
-		ID:   entity.TaskID,
-		Type: entity.Type,
-		URL:  m.formatTaskURL(entity.Key),
+		TaskID: entity.TaskID,
+		Type:   entity.Type,
+		URL:    m.formatTaskURL(entity.Key),
 	}
 
 	// Timestamps

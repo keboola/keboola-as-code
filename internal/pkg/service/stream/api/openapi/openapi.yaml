@@ -90,7 +90,7 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamCreateSourceResponseBody'
                         required:
-                            - id
+                            - taskId
                             - type
                             - url
                             - status
@@ -389,7 +389,7 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamCreateSinkResponseBody'
                         required:
-                            - id
+                            - taskId
                             - type
                             - url
                             - status
@@ -541,7 +541,7 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamUpdateSinkResponseBody'
                         required:
-                            - id
+                            - taskId
                             - type
                             - url
                             - status
@@ -766,7 +766,7 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamGetTaskResponseBody'
                         required:
-                            - id
+                            - taskId
                             - type
                             - url
                             - status
@@ -1323,9 +1323,6 @@ definitions:
                 description: Date and time of the task end.
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
-            id:
-                type: string
-                example: task_1234
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -1343,6 +1340,9 @@ definitions:
                     - processing
                     - success
                     - error
+            taskId:
+                type: string
+                example: task_1234
             type:
                 type: string
                 description: Task type.
@@ -1352,7 +1352,7 @@ definitions:
                 description: URL of the task.
                 example: abc123
         example:
-            id: task_1234
+            taskId: task_1234
             type: abc123
             url: abc123
             status: success
@@ -1369,7 +1369,7 @@ definitions:
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
-            - id
+            - taskId
             - type
             - url
             - status
@@ -1509,9 +1509,6 @@ definitions:
                 description: Date and time of the task end.
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
-            id:
-                type: string
-                example: task_1234
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -1529,6 +1526,9 @@ definitions:
                     - processing
                     - success
                     - error
+            taskId:
+                type: string
+                example: task_1234
             type:
                 type: string
                 description: Task type.
@@ -1538,7 +1538,7 @@ definitions:
                 description: URL of the task.
                 example: abc123
         example:
-            id: task_1234
+            taskId: task_1234
             type: abc123
             url: abc123
             status: success
@@ -1555,7 +1555,7 @@ definitions:
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
-            - id
+            - taskId
             - type
             - url
             - status
@@ -2147,9 +2147,6 @@ definitions:
                 description: Date and time of the task end.
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
-            id:
-                type: string
-                example: task_1234
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -2167,6 +2164,9 @@ definitions:
                     - processing
                     - success
                     - error
+            taskId:
+                type: string
+                example: task_1234
             type:
                 type: string
                 description: Task type.
@@ -2176,7 +2176,7 @@ definitions:
                 description: URL of the task.
                 example: abc123
         example:
-            id: task_1234
+            taskId: task_1234
             type: abc123
             url: abc123
             status: success
@@ -2193,7 +2193,7 @@ definitions:
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
-            - id
+            - taskId
             - type
             - url
             - status
@@ -2820,9 +2820,6 @@ definitions:
                 description: Date and time of the task end.
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
-            id:
-                type: string
-                example: task_1234
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
@@ -2840,6 +2837,9 @@ definitions:
                     - processing
                     - success
                     - error
+            taskId:
+                type: string
+                example: task_1234
             type:
                 type: string
                 description: Task type.
@@ -2849,7 +2849,7 @@ definitions:
                 description: URL of the task.
                 example: abc123
         example:
-            id: task_1234
+            taskId: task_1234
             type: abc123
             url: abc123
             status: success
@@ -2866,7 +2866,7 @@ definitions:
                 sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
         required:
-            - id
+            - taskId
             - type
             - url
             - status

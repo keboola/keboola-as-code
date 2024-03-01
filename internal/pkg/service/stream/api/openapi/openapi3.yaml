@@ -181,7 +181,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task_1234
+                                taskId: task_1234
                                 type: abc123
                                 url: abc123
                                 status: success
@@ -804,7 +804,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task_1234
+                                taskId: task_1234
                                 type: abc123
                                 url: abc123
                                 status: success
@@ -1076,7 +1076,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task_1234
+                                taskId: task_1234
                                 type: abc123
                                 url: abc123
                                 status: success
@@ -1440,7 +1440,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task_1234
+                                taskId: task_1234
                                 type: abc123
                                 url: abc123
                                 status: success
@@ -2482,9 +2482,6 @@ components:
                     description: Date and time of the task end.
                     example: "2022-04-28T14:20:04.000Z"
                     format: date-time
-                id:
-                    type: string
-                    example: task_1234
                 isFinished:
                     type: boolean
                     description: Shortcut for status != "processing".
@@ -2502,6 +2499,9 @@ components:
                         - processing
                         - success
                         - error
+                taskId:
+                    type: string
+                    example: task_1234
                 type:
                     type: string
                     description: Task type.
@@ -2511,7 +2511,7 @@ components:
                     description: URL of the task.
                     example: abc123
             example:
-                id: task_1234
+                taskId: task_1234
                 type: abc123
                 url: abc123
                 status: success
@@ -2528,7 +2528,7 @@ components:
                     sinkId: github-pr-table-sink
                     sourceId: github-webhook-source
             required:
-                - id
+                - taskId
                 - type
                 - url
                 - status

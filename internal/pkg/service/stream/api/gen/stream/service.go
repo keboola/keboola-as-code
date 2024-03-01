@@ -395,7 +395,7 @@ type TableSink struct {
 
 // Task is the result type of the stream service CreateSource method.
 type Task struct {
-	ID TaskID
+	TaskID TaskID
 	// Task type.
 	Type string
 	// URL of the task.
