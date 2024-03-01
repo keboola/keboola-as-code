@@ -11,7 +11,7 @@ import (
 )
 
 type AppProxyConfig struct {
-	ID              string         `json:"id"`
+	ID              string         `json:"-"`
 	Name            string         `json:"name"`
 	UpstreamAppHost string         `json:"upstreamAppHost"`
 	AuthProviders   []AuthProvider `json:"authProviders"`
@@ -53,6 +53,9 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 		AndPathParam("appId", appID).
 		AndHeader("If-None-Match", eTag).
 		WithOnSuccess(func(ctx context.Context, response request.HTTPResponse) error {
+			// Add app id to the result
+			result.ID = appID
+
 			// Use id as fallback until name is added to Sandboxes API
 			if result.Name == "" {
 				result.Name = result.ID

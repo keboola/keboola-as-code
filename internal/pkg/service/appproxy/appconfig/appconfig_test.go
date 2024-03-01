@@ -69,7 +69,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					responses: []*http.Response{
 						newResponse(t, 500, map[string]any{}, "", ""),
-						newResponse(t, 200, map[string]any{"id": "3", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "3",
@@ -87,7 +87,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "4", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "4",
@@ -114,7 +114,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "5", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "5",
@@ -171,7 +171,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "6", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "6",
@@ -184,7 +184,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					delay: 10 * time.Minute,
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "6", "upstreamAppHost": "new-app.local"}, `"etag-new-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "new-app.local"}, `"etag-new-value"`, "max-age=60"),
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
@@ -212,7 +212,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "7", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "7",
