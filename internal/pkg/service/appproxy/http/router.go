@@ -138,7 +138,7 @@ func (r *Router) CreateHandler() http.Handler {
 
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		r.logger.Warn(req.Context(), `application has misconfigured OAuth2 provider`)
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, "Application has misconfigured OAuth2 provider.")
 		fmt.Fprintln(w, "Exception ID: ", exceptionID)
