@@ -53,8 +53,8 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 	return s.mapper.NewSourceResponse(source), nil
 }
 
-func (s *service) DeleteSource(context.Context, dependencies.SourceRequestScope, *api.DeleteSourcePayload) (err error) {
-	return errors.NewNotImplementedError()
+func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (err error) {
+	return s.repo.Source().SoftDelete(d.SourceKey()).Do(ctx).Err()
 }
 
 func (s *service) GetSourceSettings(context.Context, dependencies.SourceRequestScope, *api.GetSourceSettingsPayload) (res api.SettingsResult, err error) {
