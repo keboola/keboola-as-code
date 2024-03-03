@@ -206,6 +206,8 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/sources")
 			Meta("openapi:tag:configuration")
+			Param("sinceId")
+			Param("limit")
 			Response(StatusOK)
 		})
 	})
@@ -341,6 +343,8 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
+			Param("sinceId")
+			Param("limit")
 			Response(StatusOK)
 			SourceNotFoundError()
 		})
@@ -432,7 +436,7 @@ var TaskID = Type("TaskID", String, func() {
 })
 
 // Keys for requests ---------------------------------------------------------------------------------------------------
-// Note: BranchIDOrDefault: in request URL, user can use "default", but responses always contain <int>
+// Note: BranchIDOrDefault: in request URL, user can use "default", but responses always contain <int>.
 
 var BranchKeyRequest = func() {
 	Attribute("branchId", BranchIDOrDefault)
@@ -476,10 +480,29 @@ var SinkKeyResponse = func() {
 	Required("sinkId")
 }
 
-// Common attributes
+// Common attributes --------------------------------------------------------------------------------------------------
 
 var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 	Description("Storage Api Token Authentication.")
+})
+
+// Pagination ---------------------------------------------------------------------------------------------------------
+
+var PaginatedRequest = func() {
+	Attribute("sinceId", String, "Request records after the ID.", func() {
+		Default("")
+	})
+	Attribute("limit", Int, "Maximum number of returned records.", func() {
+		Default(100)
+	})
+}
+
+var PaginatedResponse = Type("PaginatedResponse", func() {
+	Attribute("limit", Int, "Current limit.")
+	Attribute("totalCount", Int, "Total count of all records.")
+	Attribute("sinceId", String, "Current offset.")
+	Attribute("lastId", String, "ID of the last record in the response.")
+	Required("sinceId", "limit", "lastId", "totalCount")
 })
 
 // Types --------------------------------------------------------------------------------------------------------------
@@ -521,7 +544,7 @@ var EntityVersion = Type("Version", func() {
 	Required("number", "hash", "modifiedAt", "description")
 })
 
-// DeletedEntity info --------------------------------------------------------------------------------------------------
+// DeletedEntity trait -------------------------------------------------------------------------------------------------
 
 var By = Type("By", func() {
 	Description("Information about the operation actor.")
@@ -558,7 +581,7 @@ var DeletedEntity = Type("DeletedEntity", func() {
 	Required("at", "by")
 })
 
-// DisabledEntity info -------------------------------------------------------------------------------------------------
+// DisabledEntity trait ------------------------------------------------------------------------------------------------
 
 var DisabledEntity = Type("DisabledEntity", func() {
 	Description("Information about the disabled entity.")
@@ -618,6 +641,7 @@ var GetSourceRequest = Type("GetSourceRequest", func() {
 
 var ListSourcesRequest = Type("ListSourcesRequest", func() {
 	BranchKeyRequest()
+	PaginatedRequest()
 })
 
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
@@ -631,10 +655,11 @@ var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
 })
 
 var SourcesList = Type("SourcesList", func() {
-	BranchKeyResponse()
 	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	BranchKeyResponse()
+	Attribute("page", PaginatedResponse)
 	Attribute("sources", Sources)
-	Required("sources")
+	Required("page", "sources")
 })
 
 var SourceFieldsRW = func() {
@@ -688,8 +713,9 @@ var SinkType = Type("SinkType", String, func() {
 var SinksList = Type("SinksList", func() {
 	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", repository.MaxSourcesPerBranch))
 	SourceKeyResponse()
+	Attribute("page", PaginatedResponse)
 	Attribute("sinks", Sinks)
-	Required("sinks")
+	Required("page", "sinks")
 })
 
 var CreateSinkRequest = Type("CreateSinkRequest", func() {
@@ -707,6 +733,7 @@ var GetSinkRequest = Type("GetSinkRequest", func() {
 
 var ListSinksRequest = Type("ListSinksRequest", func() {
 	SourceKeyRequest()
+	PaginatedRequest()
 })
 
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
