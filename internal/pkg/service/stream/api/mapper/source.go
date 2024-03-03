@@ -1,8 +1,13 @@
 package mapper
 
 import (
+	"context"
+
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -63,6 +68,26 @@ func (m *Mapper) NewSourceResponse(entity definition.Source) *api.Source {
 	}
 
 	return out
+}
+
+func (m *Mapper) NewSourcesResponse(
+	ctx context.Context,
+	k key.BranchKey,
+	sinceId string,
+	limit int,
+	list func(...iterator.Option) iterator.DefinitionT[definition.Source],
+) (*api.SourcesList, error) {
+	sources, page, err := loadPage(ctx, sinceId, limit, etcd.SortAscend, list, m.NewSourceResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.SourcesList{
+		ProjectID: k.ProjectID,
+		BranchID:  k.BranchID,
+		Page:      page,
+		Sources:   sources,
+	}, nil
 }
 
 func (m *Mapper) formatHTTPSourceURL(entity definition.Source) string {
