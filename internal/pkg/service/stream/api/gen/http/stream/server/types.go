@@ -135,9 +135,10 @@ type UpdateSourceResponseBody struct {
 // ListSourcesResponseBody is the type of the "stream" service "ListSources"
 // endpoint HTTP response body.
 type ListSourcesResponseBody struct {
-	ProjectID int                   `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int                   `form:"branchId" json:"branchId" xml:"branchId"`
-	Sources   []*SourceResponseBody `form:"sources" json:"sources" xml:"sources"`
+	ProjectID int                            `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                            `form:"branchId" json:"branchId" xml:"branchId"`
+	Page      *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
+	Sources   []*SourceResponseBody          `form:"sources" json:"sources" xml:"sources"`
 }
 
 // GetSourceResponseBody is the type of the "stream" service "GetSource"
@@ -239,10 +240,11 @@ type UpdateSinkSettingsResponseBody []*SettingResultResponse
 // ListSinksResponseBody is the type of the "stream" service "ListSinks"
 // endpoint HTTP response body.
 type ListSinksResponseBody struct {
-	ProjectID int                 `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int                 `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string              `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	Sinks     []*SinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
+	ProjectID int                            `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                            `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string                         `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Page      *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
+	Sinks     []*SinkResponseBody            `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // UpdateSinkResponseBody is the type of the "stream" service "UpdateSink"
@@ -673,6 +675,19 @@ type TableColumnTemplateResponseBody struct {
 	Content  string `form:"content" json:"content" xml:"content"`
 }
 
+// PaginatedResponseResponseBody is used to define fields on response body
+// types.
+type PaginatedResponseResponseBody struct {
+	// Current limit.
+	Limit int `form:"limit" json:"limit" xml:"limit"`
+	// Total count of all records.
+	TotalCount int `form:"totalCount" json:"totalCount" xml:"totalCount"`
+	// Current offset.
+	SinceID string `form:"sinceId" json:"sinceId" xml:"sinceId"`
+	// ID of the last record in the response.
+	LastID string `form:"lastId" json:"lastId" xml:"lastId"`
+}
+
 // SourceResponseBody is used to define fields on response body types.
 type SourceResponseBody struct {
 	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
@@ -819,6 +834,9 @@ func NewListSourcesResponseBody(res *stream.SourcesList) *ListSourcesResponseBod
 	body := &ListSourcesResponseBody{
 		ProjectID: int(res.ProjectID),
 		BranchID:  int(res.BranchID),
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
 	}
 	if res.Sources != nil {
 		body.Sources = make([]*SourceResponseBody, len(res.Sources))
@@ -997,6 +1015,9 @@ func NewListSinksResponseBody(res *stream.SinksList) *ListSinksResponseBody {
 		ProjectID: int(res.ProjectID),
 		BranchID:  int(res.BranchID),
 		SourceID:  string(res.SourceID),
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
 	}
 	if res.Sinks != nil {
 		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
@@ -1348,9 +1369,11 @@ func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sour
 }
 
 // NewListSourcesPayload builds a stream service ListSources endpoint payload.
-func NewListSourcesPayload(branchID string, storageAPIToken string) *stream.ListSourcesPayload {
+func NewListSourcesPayload(branchID string, sinceID string, limit int, storageAPIToken string) *stream.ListSourcesPayload {
 	v := &stream.ListSourcesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SinceID = sinceID
+	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
 	return v
@@ -1478,10 +1501,12 @@ func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID 
 }
 
 // NewListSinksPayload builds a stream service ListSinks endpoint payload.
-func NewListSinksPayload(branchID string, sourceID string, storageAPIToken string) *stream.ListSinksPayload {
+func NewListSinksPayload(branchID string, sourceID string, sinceID string, limit int, storageAPIToken string) *stream.ListSinksPayload {
 	v := &stream.ListSinksPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
+	v.SinceID = sinceID
+	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
 	return v

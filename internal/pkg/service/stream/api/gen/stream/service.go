@@ -230,6 +230,10 @@ type ListSinksPayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
+	// Request records after the ID.
+	SinceID string
+	// Maximum number of returned records.
+	Limit int
 }
 
 // ListSourcesPayload is the payload type of the stream service ListSources
@@ -237,6 +241,21 @@ type ListSinksPayload struct {
 type ListSourcesPayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
+	// Request records after the ID.
+	SinceID string
+	// Maximum number of returned records.
+	Limit int
+}
+
+type PaginatedResponse struct {
+	// Current limit.
+	Limit int
+	// Total count of all records.
+	TotalCount int
+	// Current offset.
+	SinceID string
+	// ID of the last record in the response.
+	LastID string
 }
 
 // ID of the project.
@@ -322,6 +341,7 @@ type SinksList struct {
 	ProjectID ProjectID
 	BranchID  BranchID
 	SourceID  SourceID
+	Page      *PaginatedResponse
 	Sinks     Sinks
 }
 
@@ -355,6 +375,7 @@ type Sources []*Source
 type SourcesList struct {
 	ProjectID ProjectID
 	BranchID  BranchID
+	Page      *PaginatedResponse
 	Sources   Sources
 }
 
