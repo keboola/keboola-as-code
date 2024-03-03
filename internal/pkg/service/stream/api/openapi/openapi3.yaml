@@ -59,8 +59,8 @@ paths:
                     type: string
                     description: Request records after the ID.
                     default: ""
-                    example: abc123
-                  example: abc123
+                    example: my-object-123
+                  example: my-object-123
                 - name: limit
                   in: query
                   description: Maximum number of returned records.
@@ -69,9 +69,11 @@ paths:
                     type: integer
                     description: Maximum number of returned records.
                     default: 100
-                    example: 1
+                    example: 100
                     format: int64
-                  example: 1
+                    minimum: 1
+                    maximum: 100
+                  example: 100
                 - name: branchId
                   in: path
                   required: true
@@ -91,10 +93,10 @@ paths:
                                 projectId: 123
                                 branchId: 345
                                 page:
-                                    limit: 1
-                                    totalCount: 1
-                                    sinceId: abc123
-                                    lastId: abc123
+                                    limit: 100
+                                    totalCount: 1000
+                                    sinceId: my-object-123
+                                    lastId: my-object-456
                                 sources:
                                     - projectId: 123
                                       branchId: 345
@@ -687,8 +689,8 @@ paths:
                     type: string
                     description: Request records after the ID.
                     default: ""
-                    example: abc123
-                  example: abc123
+                    example: my-object-123
+                  example: my-object-123
                 - name: limit
                   in: query
                   description: Maximum number of returned records.
@@ -697,9 +699,11 @@ paths:
                     type: integer
                     description: Maximum number of returned records.
                     default: 100
-                    example: 1
+                    example: 100
                     format: int64
-                  example: 1
+                    minimum: 1
+                    maximum: 100
+                  example: 100
                 - name: branchId
                   in: path
                   required: true
@@ -730,10 +734,10 @@ paths:
                                 branchId: 345
                                 sourceId: github-webhook-source
                                 page:
-                                    limit: 1
-                                    totalCount: 1
-                                    sinceId: abc123
-                                    lastId: abc123
+                                    limit: 100
+                                    totalCount: 1000
+                                    sinceId: my-object-123
+                                    lastId: my-object-456
                                 sinks:
                                     - projectId: 123
                                       branchId: 345
@@ -1730,26 +1734,26 @@ components:
                 lastId:
                     type: string
                     description: ID of the last record in the response.
-                    example: abc123
+                    example: my-object-456
                 limit:
                     type: integer
                     description: Current limit.
-                    example: 1
+                    example: 100
                     format: int64
                 sinceId:
                     type: string
                     description: Current offset.
-                    example: abc123
+                    example: my-object-123
                 totalCount:
                     type: integer
                     description: Total count of all records.
-                    example: 1
+                    example: 1000
                     format: int64
             example:
-                limit: 1
-                totalCount: 1
-                sinceId: abc123
-                lastId: abc123
+                limit: 100
+                totalCount: 1000
+                sinceId: my-object-123
+                lastId: my-object-456
             required:
                 - sinceId
                 - limit
@@ -2014,10 +2018,10 @@ components:
                 branchId: 345
                 sourceId: github-webhook-source
                 page:
-                    limit: 1
-                    totalCount: 1
-                    sinceId: abc123
-                    lastId: abc123
+                    limit: 100
+                    totalCount: 1000
+                    sinceId: my-object-123
+                    lastId: my-object-456
                 sinks:
                     - projectId: 123
                       branchId: 345
@@ -2344,10 +2348,10 @@ components:
                 projectId: 123
                 branchId: 345
                 page:
-                    limit: 1
-                    totalCount: 1
-                    sinceId: abc123
-                    lastId: abc123
+                    limit: 100
+                    totalCount: 1000
+                    sinceId: my-object-123
+                    lastId: my-object-456
                 sources:
                     - projectId: 123
                       branchId: 345

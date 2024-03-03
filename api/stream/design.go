@@ -31,9 +31,12 @@ import (
 )
 
 const (
-	TaskStatusProcessing = "processing"
-	TaskStatusSuccess    = "success"
-	TaskStatusError      = "error"
+	TaskStatusProcessing   = "processing"
+	TaskStatusSuccess      = "success"
+	TaskStatusError        = "error"
+	MinPaginationLimit     = 1
+	DefaultPaginationLimit = 100
+	MaxPaginationLimit     = 100
 )
 
 // API definition
@@ -491,17 +494,29 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 var PaginatedRequest = func() {
 	Attribute("sinceId", String, "Request records after the ID.", func() {
 		Default("")
+		Example("my-object-123")
 	})
 	Attribute("limit", Int, "Maximum number of returned records.", func() {
-		Default(100)
+		Default(DefaultPaginationLimit)
+		Example(DefaultPaginationLimit)
+		Minimum(MinPaginationLimit)
+		Maximum(MaxPaginationLimit)
 	})
 }
 
 var PaginatedResponse = Type("PaginatedResponse", func() {
-	Attribute("limit", Int, "Current limit.")
-	Attribute("totalCount", Int, "Total count of all records.")
-	Attribute("sinceId", String, "Current offset.")
-	Attribute("lastId", String, "ID of the last record in the response.")
+	Attribute("limit", Int, "Current limit.", func() {
+		Example(DefaultPaginationLimit)
+	})
+	Attribute("totalCount", Int, "Total count of all records.", func() {
+		Example(DefaultPaginationLimit * 10)
+	})
+	Attribute("sinceId", String, "Current offset.", func() {
+		Example("my-object-123")
+	})
+	Attribute("lastId", String, "ID of the last record in the response.", func() {
+		Example("my-object-456")
+	})
 	Required("sinceId", "limit", "lastId", "totalCount")
 })
 

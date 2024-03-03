@@ -6,6 +6,8 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
+	streamDesign "github.com/keboola/keboola-as-code/api/stream"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -23,6 +25,21 @@ func loadPage[E, R any](
 	list func(...iterator.Option) iterator.DefinitionT[E],
 	mapper func(E) R,
 ) (out []R, page *stream.PaginatedResponse, err error) {
+	// Check limits
+	if sort != etcd.SortAscend && sort != etcd.SortDescend {
+		return nil, nil, errors.New(`sort must be etcd.SortAscend os etcd.SortDescend`)
+	}
+	if limit < streamDesign.MinPaginationLimit {
+		return nil, nil, svcerrors.NewBadRequestError(
+			errors.Errorf(`min pagination limit is "%d", found "%d"`, streamDesign.MinPaginationLimit, limit),
+		)
+	}
+	if limit > streamDesign.MaxPaginationLimit {
+		return nil, nil, svcerrors.NewBadRequestError(
+			errors.Errorf(`max pagination limit is "%d", found "%d"`, streamDesign.MaxPaginationLimit, limit),
+		)
+	}
+
 	// Fill in inputs
 	page = &stream.PaginatedResponse{
 		SinceID: sinceID,

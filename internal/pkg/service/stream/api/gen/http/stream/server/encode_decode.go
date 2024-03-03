@@ -285,6 +285,12 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 				limit = int(v)
 			}
 		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 100, false))
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -1208,6 +1214,12 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 				}
 				limit = int(v)
 			}
+		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 100, false))
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
