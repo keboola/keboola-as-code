@@ -6,8 +6,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
@@ -41,11 +43,14 @@ func (s *service) UpdateSource(context.Context, dependencies.SourceRequestScope,
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) ListSources(context.Context, dependencies.BranchRequestScope, *api.ListSourcesPayload) (res *api.SourcesList, err error) {
-	return nil, errors.NewNotImplementedError()
+func (s *service) ListSources(ctx context.Context, d dependencies.BranchRequestScope, payload *api.ListSourcesPayload) (res *api.SourcesList, err error) {
+	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+		return s.repo.Source().List(d.BranchKey(), opts...)
+	}
+	return s.mapper.NewSourcesResponse(ctx, d.BranchKey(), payload.SinceID, payload.Limit, list)
 }
 
-func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.GetSourcePayload) (res *api.Source, err error) {
+func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourcePayload) (res *api.Source, err error) {
 	source, err := s.repo.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
