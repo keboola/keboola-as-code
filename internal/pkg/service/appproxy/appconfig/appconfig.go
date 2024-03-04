@@ -14,6 +14,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// staleCacheFallbackDuration is the maximum duration for which the old configuration of an application is used if loading new configuration is not possible.
+const staleCacheFallbackDuration = time.Hour
+
 type Loader interface {
 	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, error)
 }
@@ -39,8 +42,6 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, baseURL string,
 		cache:  make(map[string]cacheItem),
 	}
 }
-
-const staleCacheFallbackDuration = time.Hour
 
 func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppProxyConfig, error) {
 	var config *AppProxyConfig
