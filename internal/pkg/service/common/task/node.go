@@ -2,18 +2,20 @@ package task
 
 import (
 	"context"
+	"reflect"
 	"runtime/debug"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/spf13/cast"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -299,20 +301,40 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	task.FinishedAt = &finishedAt
 	task.Duration = &duration
 	task.Outputs = result.Outputs
+
+	// Use task outputs in log message and telemetry
+	var attrs []attribute.KeyValue
+	for k, v := range task.Outputs {
+		// Skip nil values
+		if v := reflect.ValueOf(v); !v.IsValid() || (v.Kind() == reflect.Pointer && v.IsZero()) {
+			continue
+		}
+		// Convert value to a string if possible
+		if str, err := cast.ToStringE(v); err == nil {
+			attrs = append(attrs, attribute.String("result_outputs."+k, str))
+		}
+	}
+	sort.SliceStable(attrs, func(i, j int) bool {
+		return attrs[i].Key < attrs[j].Key
+	})
+
+	// Set task entity result
 	if result.Error == nil {
 		task.Result = result.Result
-		if len(task.Outputs) > 0 {
-			logger.Infof(ctx, `task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
-		} else {
-			logger.Infof(ctx, `task succeeded (%s): %s`, duration, task.Result)
-		}
 	} else {
 		task.Error = result.Error.Error()
-		if len(task.Outputs) > 0 {
-			logger.Warnf(ctx, `task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
-		} else {
-			logger.Warnf(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
-		}
+	}
+
+	// Update telemetry
+	span.SetAttributes(spanEndAttrs(&task, result)...)
+	span.SetAttributes(attrs...)
+
+	// Log task result
+	logger = logger.With(attrs...)
+	if result.Error == nil {
+		logger.Infof(ctx, `task succeeded (%s): %s`, duration, task.Result)
+	} else {
+		logger.Warnf(ctx, `task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
 	}
 
 	// Create context for task finalization, the original context could have timed out.
@@ -321,7 +343,6 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	defer finalizationCancel()
 
 	// Update telemetry
-	span.SetAttributes(spanEndAttrs(&task, result)...)
 	n.meters.running.Add(finalizationCtx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
 	n.meters.duration.Record(finalizationCtx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 

@@ -66,8 +66,11 @@ func TestSuccessfulTask(t *testing.T) {
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
+
 			logger.Info(ctx, "some message from the task (1)")
-			return task.OkResult("some result (1)").WithOutput("key", "value")
+			return task.OkResult("some result (1)").
+				WithOutput("key", "value").
+				WithOutputsFrom(map[string]int{"int1": 1, "int2": 2})
 		},
 	})
 	assert.NoError(t, err)
@@ -125,6 +128,8 @@ task/123/my-receiver/my-export/some.task/%s
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (1)",
   "outputs": {
+    "int1": 1,
+    "int2": 2,
     "key": "value"
   },
   "duration": %d
@@ -179,6 +184,8 @@ task/123/my-receiver/my-export/some.task/%s
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (1)",
   "outputs": {
+    "int1": 1,
+    "int2": 2,
     "key": "value"
   },
   "duration": %d
@@ -208,7 +215,7 @@ task/123/my-receiver/my-export/some.task/%s
 {"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"info","message":"some message from the task (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
-{"level":"info","message":"task succeeded (%s): some result (1) outputs: {\"key\":\"value\"}","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"info","message":"task succeeded (%s): some result (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
@@ -241,6 +248,8 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", true),
 					attribute.String("result", "some result (1)"),
+					attribute.String("result_outputs.int1", "1"),
+					attribute.String("result_outputs.int2", "2"),
 					attribute.String("result_outputs.key", "value"),
 				},
 			},
@@ -488,7 +497,7 @@ task/123/my-receiver/my-export/some.task/%s
 {"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"info","message":"task ignored, the lock \"runtime/lock/task/my-lock\" is in use","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"info","message":"some message from the task (1)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
-{"level":"warn","message":"task failed (%s): some error (1) - expected [%s] (*task.UserError):\n- some error (1) - expected [%s] outputs: {\"key\":\"value\"}","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
+{"level":"warn","message":"task failed (%s): some error (1) - expected [%s] (*task.UserError):\n- some error (1) - expected [%s]","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node1"}
 {"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}

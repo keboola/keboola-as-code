@@ -1,7 +1,10 @@
 package task
 
 import (
+	"reflect"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -56,7 +59,7 @@ func (r Result) WithError(err error) Result {
 	return r.withError(err)
 }
 
-// WithOutput adds some task operation output.
+// WithOutput adds an operation output the task.
 func (r Result) WithOutput(k string, v any) Result {
 	if r.Error == nil && r.Result == "" {
 		panic(errors.New(`result struct is empty, use task.OkResult(msg) or task.ErrResult(err) function first`))
@@ -71,6 +74,31 @@ func (r Result) WithOutput(k string, v any) Result {
 
 	// Add new key
 	r.Outputs[k] = v
+	return r
+}
+
+// WithOutputsFrom adds operation outputs the task from a struct.
+func (r Result) WithOutputsFrom(v any) Result {
+	// Clone map
+	original := r.Outputs
+	r.Outputs = make(map[string]any)
+	for key, value := range original {
+		r.Outputs[key] = value
+	}
+
+	// Convert value to map
+	m := make(map[string]any)
+	if err := mapstructure.Decode(v, &m); err != nil {
+		panic(err)
+	}
+	for key, value := range m {
+		// Skip nil values
+		if v := reflect.ValueOf(value); !v.IsValid() || (v.Kind() == reflect.Pointer && v.IsZero()) {
+			continue
+		}
+		r.Outputs[key] = value
+	}
+
 	return r
 }
 
