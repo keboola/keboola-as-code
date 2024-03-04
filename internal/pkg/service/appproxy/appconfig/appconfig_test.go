@@ -318,6 +318,15 @@ func TestLoader_LoadConfig(t *testing.T) {
 							return responder(req)
 						},
 					)
+				} else {
+					transport.RegisterResponder(
+						http.MethodGet,
+						fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
+						func(req *http.Request) (*http.Response, error) {
+							require.Fail(t, "A call to sandboxes API is not expected.")
+							return nil, nil
+						},
+					)
 				}
 
 				config, err := loader.LoadConfig(context.Background(), tc.appID)
