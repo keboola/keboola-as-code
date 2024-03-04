@@ -11,13 +11,13 @@ import (
 )
 
 type AppProxyConfig struct {
-	ID              string         `json:"-"`
-	Name            string         `json:"name"`
-	UpstreamAppHost string         `json:"upstreamAppHost"`
-	AuthProviders   []AuthProvider `json:"authProviders"`
-	AuthRules       []AuthRule     `json:"authRules"`
-	ETag            string         `json:"-"`
-	maxAge          time.Duration
+	ID             string         `json:"-"`
+	Name           string         `json:"name"`
+	UpstreamAppURL string         `json:"upstreamAppUrl"`
+	AuthProviders  []AuthProvider `json:"authProviders"`
+	AuthRules      []AuthRule     `json:"authRules"`
+	ETag           string         `json:"-"`
+	maxAge         time.Duration
 }
 
 type ProviderType string

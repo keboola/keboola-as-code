@@ -1381,14 +1381,14 @@ func TestAppProxyRouter(t *testing.T) {
 func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppProxyConfig {
 	return []appconfig.AppProxyConfig{
 		{
-			ID:              "norule",
-			Name:            "No rule app",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "norule",
+			Name:           "No rule app",
+			UpstreamAppURL: tsURL.String(),
 		},
 		{
-			ID:              "public",
-			Name:            "Public app",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "public",
+			Name:           "Public app",
+			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
 					Type:  appconfig.PathPrefix,
@@ -1398,9 +1398,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			},
 		},
 		{
-			ID:              "invalid",
-			Name:            "App with invalid rule type",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "invalid",
+			Name:           "App with invalid rule type",
+			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
 					Type:  "unknown",
@@ -1410,9 +1410,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			},
 		},
 		{
-			ID:              "badprovider",
-			Name:            "App with invalid provider",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "badprovider",
+			Name:           "App with invalid provider",
+			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
 					Type:  appconfig.PathPrefix,
@@ -1422,9 +1422,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			},
 		},
 		{
-			ID:              "oidc",
-			Name:            "OIDC Protected App",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "oidc",
+			Name:           "OIDC Protected App",
+			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
 					ID:           "oidc",
@@ -1444,9 +1444,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			},
 		},
 		{
-			ID:              "multi",
-			Name:            "App with multiple OIDC providers",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "multi",
+			Name:           "App with multiple OIDC providers",
+			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
 					ID:           "oidc0",
@@ -1477,9 +1477,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			},
 		},
 		{
-			ID:              "broken",
-			Name:            "OIDC Misconfigured App",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "broken",
+			Name:           "OIDC Misconfigured App",
+			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
 					ID:           "oidc",
@@ -1499,9 +1499,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			},
 		},
 		{
-			ID:              "prefix",
-			Name:            "App with different configuration depending on path prefix",
-			UpstreamAppHost: tsURL.Host,
+			ID:             "prefix",
+			Name:           "App with different configuration depending on path prefix",
+			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
 					ID:           "oidc0",

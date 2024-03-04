@@ -157,7 +157,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
 	}
 
-	publicAppHandler := r.publicAppHandler(app)
+	publicAppHandler := r.publicAppHandler(ctx, app)
 
 	mux := http.NewServeMux()
 
@@ -200,10 +200,12 @@ func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyCo
 	return r.createMultiProviderHandler(selectedProviders)
 }
 
-func (r *Router) publicAppHandler(app appconfig.AppProxyConfig) http.Handler {
-	target := &url.URL{
-		Scheme: "http",
-		Host:   app.UpstreamAppHost,
+func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyConfig) http.Handler {
+	target, err := url.Parse(app.UpstreamAppURL)
+	if err != nil {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
+		r.createConfigErrorHandler(exceptionID)
 	}
 
 	return httputil.NewSingleHostReverseProxy(target)
@@ -454,7 +456,7 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 			{
 				ID:   app.ID,
 				Path: "/",
-				URI:  "http://" + app.UpstreamAppHost,
+				URI:  app.UpstreamAppURL,
 			},
 		},
 	}
