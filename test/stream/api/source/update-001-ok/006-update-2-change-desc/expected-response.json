@@ -1,0 +1,8 @@
+{
+  "taskId": "api.update.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.update.source",
+  "url": "https://stream.keboola.local/v1/tasks/api.update.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}
