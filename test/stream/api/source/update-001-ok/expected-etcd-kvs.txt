@@ -16,10 +16,10 @@ definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-s
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
   "sourceId": "my-source",
   "version": {
-    "number": 3,
+    "number": 4,
     "hash": "%s",
     "modifiedAt": "%s",
-    "description": "Super cool modification."
+    "description": "Super cool modification 2."
   },
   "type": "http",
   "name": "My Source Updated 2",
@@ -49,7 +49,19 @@ definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-
 >>>>>
 
 <<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000004
+-----
+%A
+>>>>>
+
+<<<<<
 task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.update.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
 -----
 %A
 >>>>>
