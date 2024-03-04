@@ -34,11 +34,11 @@ type cacheItem struct {
 	expiresAt time.Time
 }
 
-func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, baseURL string, token string) Loader {
+func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Loader {
 	return &sandboxesAPILoader{
 		logger: logger,
 		clock:  clock,
-		sender: client.New().WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
+		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
 		cache:  make(map[string]cacheItem),
 	}
 }
