@@ -39,14 +39,9 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       map[string]appHandler
+	appHandlers       map[string]http.Handler
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
-}
-
-type appHandler struct {
-	http.Handler
-	Etag string
 }
 
 const providerCookie = "_oauth2_provider"
@@ -73,7 +68,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:            d.Config(),
 		clock:             d.Clock(),
 		loader:            d.Loader(),
-		appHandlers:       make(map[string]appHandler),
+		appHandlers:       make(map[string]http.Handler),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
@@ -106,7 +101,7 @@ func (r *Router) CreateHandler() http.Handler {
 		appID := appIDString.Emit()
 
 		// Load configuration for given app.
-		config, err := r.loader.LoadConfig(req.Context(), appID)
+		config, modified, err := r.loader.LoadConfig(req.Context(), appID)
 		if err != nil {
 			var sandboxesError *appconfig.SandboxesError
 			errors.As(err, &sandboxesError)
@@ -124,11 +119,8 @@ func (r *Router) CreateHandler() http.Handler {
 
 		// Recreate app handler if configuration changed.
 		handler, ok := r.appHandlers[appID]
-		if !ok || handler.Etag != config.ETag {
-			handler = appHandler{
-				Handler: r.createDataAppHandler(req.Context(), config),
-				Etag:    config.ETag,
-			}
+		if !ok || modified {
+			handler = r.createDataAppHandler(req.Context(), config)
 			r.appHandlers[appID] = handler
 		}
 
