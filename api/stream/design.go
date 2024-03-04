@@ -191,7 +191,7 @@ var _ = Service("stream", func() {
 	Method("UpdateSource", func() {
 		Meta("openapi:summary", "Update source")
 		Description("Update the source.")
-		Result(Source)
+		Result(Task)
 		Payload(UpdateSourceRequest)
 		HTTP(func() {
 			PATCH("/branches/{branchId}/sources/{sourceId}")
@@ -960,8 +960,8 @@ var TaskOutputs = Type("TaskOutputs", func() {
 	Attribute("url", String, "Absolute URL of the entity.")
 	Attribute("projectId", ProjectID, "ID of the parent project.")
 	Attribute("branchId", BranchID, "ID of the parent branch.")
-	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
 	Attribute("sourceId", SourceID, "ID of the created/updated source.")
+	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {

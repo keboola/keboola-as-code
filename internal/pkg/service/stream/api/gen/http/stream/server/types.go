@@ -120,20 +120,24 @@ type CreateSourceResponseBody struct {
 // UpdateSourceResponseBody is the type of the "stream" service "UpdateSource"
 // endpoint HTTP response body.
 type UpdateSourceResponseBody struct {
-	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	Type      string `form:"type" json:"type" xml:"type"`
-	// Human readable name of the source.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // ListSourcesResponseBody is the type of the "stream" service "ListSources"
@@ -576,10 +580,41 @@ type TaskOutputsResponseBody struct {
 	ProjectID *int `form:"projectId,omitempty" json:"projectId,omitempty" xml:"projectId,omitempty"`
 	// ID of the parent branch.
 	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
-	// ID of the created/updated sink.
-	SinkID *string `form:"sinkId,omitempty" json:"sinkId,omitempty" xml:"sinkId,omitempty"`
 	// ID of the created/updated source.
 	SourceID *string `form:"sourceId,omitempty" json:"sourceId,omitempty" xml:"sourceId,omitempty"`
+	// ID of the created/updated sink.
+	SinkID *string `form:"sinkId,omitempty" json:"sinkId,omitempty" xml:"sinkId,omitempty"`
+}
+
+// PaginatedResponseResponseBody is used to define fields on response body
+// types.
+type PaginatedResponseResponseBody struct {
+	// Current limit.
+	Limit int `form:"limit" json:"limit" xml:"limit"`
+	// Total count of all records.
+	TotalCount int `form:"totalCount" json:"totalCount" xml:"totalCount"`
+	// Current offset.
+	SinceID string `form:"sinceId" json:"sinceId" xml:"sinceId"`
+	// ID of the last record in the response.
+	LastID string `form:"lastId" json:"lastId" xml:"lastId"`
+}
+
+// SourceResponseBody is used to define fields on response body types.
+type SourceResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Type      string `form:"type" json:"type" xml:"type"`
+	// Human readable name of the source.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
+	Description string `form:"description" json:"description" xml:"description"`
+	// HTTP source details for "type" = "http".
+	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // HTTPSourceResponseBody is used to define fields on response body types.
@@ -679,37 +714,6 @@ type TableColumnTemplateResponseBody struct {
 	Content  string `form:"content" json:"content" xml:"content"`
 }
 
-// PaginatedResponseResponseBody is used to define fields on response body
-// types.
-type PaginatedResponseResponseBody struct {
-	// Current limit.
-	Limit int `form:"limit" json:"limit" xml:"limit"`
-	// Total count of all records.
-	TotalCount int `form:"totalCount" json:"totalCount" xml:"totalCount"`
-	// Current offset.
-	SinceID string `form:"sinceId" json:"sinceId" xml:"sinceId"`
-	// ID of the last record in the response.
-	LastID string `form:"lastId" json:"lastId" xml:"lastId"`
-}
-
-// SourceResponseBody is used to define fields on response body types.
-type SourceResponseBody struct {
-	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	Type      string `form:"type" json:"type" xml:"type"`
-	// Human readable name of the source.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
-}
-
 // SettingResultResponse is used to define fields on response body types.
 type SettingResultResponse struct {
 	// Key path.
@@ -800,34 +804,21 @@ func NewCreateSourceResponseBody(res *stream.Task) *CreateSourceResponseBody {
 
 // NewUpdateSourceResponseBody builds the HTTP response body from the result of
 // the "UpdateSource" endpoint of the "stream" service.
-func NewUpdateSourceResponseBody(res *stream.Source) *UpdateSourceResponseBody {
+func NewUpdateSourceResponseBody(res *stream.Task) *UpdateSourceResponseBody {
 	body := &UpdateSourceResponseBody{
-		ProjectID:   int(res.ProjectID),
-		BranchID:    int(res.BranchID),
-		SourceID:    string(res.SourceID),
-		Type:        string(res.Type),
-		Name:        res.Name,
-		Description: res.Description,
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
 	}
-	if res.HTTP != nil {
-		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
-	}
-	if res.Version != nil {
-		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
-	}
-	if res.Deleted != nil {
-		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
-	}
-	if res.Disabled != nil {
-		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
-	}
-	if res.Sinks != nil {
-		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
-		for i, val := range res.Sinks {
-			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
-	} else {
-		body.Sinks = []*SinkResponseBody{}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }

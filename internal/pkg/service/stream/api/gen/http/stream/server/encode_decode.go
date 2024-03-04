@@ -152,7 +152,7 @@ func EncodeCreateSourceError(encoder func(context.Context, http.ResponseWriter) 
 // stream UpdateSource endpoint.
 func EncodeUpdateSourceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*stream.Source)
+		res, _ := v.(*stream.Task)
 		enc := encoder(ctx, w)
 		body := NewUpdateSourceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -1574,13 +1574,62 @@ func marshalStreamTaskOutputsToTaskOutputsResponseBody(v *stream.TaskOutputs) *T
 		branchID := int(*v.BranchID)
 		res.BranchID = &branchID
 	}
+	if v.SourceID != nil {
+		sourceID := string(*v.SourceID)
+		res.SourceID = &sourceID
+	}
 	if v.SinkID != nil {
 		sinkID := string(*v.SinkID)
 		res.SinkID = &sinkID
 	}
-	if v.SourceID != nil {
-		sourceID := string(*v.SourceID)
-		res.SourceID = &sourceID
+
+	return res
+}
+
+// marshalStreamPaginatedResponseToPaginatedResponseResponseBody builds a value
+// of type *PaginatedResponseResponseBody from a value of type
+// *stream.PaginatedResponse.
+func marshalStreamPaginatedResponseToPaginatedResponseResponseBody(v *stream.PaginatedResponse) *PaginatedResponseResponseBody {
+	res := &PaginatedResponseResponseBody{
+		Limit:      v.Limit,
+		TotalCount: v.TotalCount,
+		SinceID:    v.SinceID,
+		LastID:     v.LastID,
+	}
+
+	return res
+}
+
+// marshalStreamSourceToSourceResponseBody builds a value of type
+// *SourceResponseBody from a value of type *stream.Source.
+func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBody {
+	res := &SourceResponseBody{
+		ProjectID:   int(v.ProjectID),
+		BranchID:    int(v.BranchID),
+		SourceID:    string(v.SourceID),
+		Type:        string(v.Type),
+		Name:        v.Name,
+		Description: v.Description,
+	}
+	if v.HTTP != nil {
+		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
+	}
+	if v.Version != nil {
+		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Deleted != nil {
+		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
+	}
+	if v.Disabled != nil {
+		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
+	}
+	if v.Sinks != nil {
+		res.Sinks = make([]*SinkResponseBody, len(v.Sinks))
+		for i, val := range v.Sinks {
+			res.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
+		}
+	} else {
+		res.Sinks = []*SinkResponseBody{}
 	}
 
 	return res
@@ -1755,55 +1804,6 @@ func marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v *stream
 	res := &TableColumnTemplateResponseBody{
 		Language: v.Language,
 		Content:  v.Content,
-	}
-
-	return res
-}
-
-// marshalStreamPaginatedResponseToPaginatedResponseResponseBody builds a value
-// of type *PaginatedResponseResponseBody from a value of type
-// *stream.PaginatedResponse.
-func marshalStreamPaginatedResponseToPaginatedResponseResponseBody(v *stream.PaginatedResponse) *PaginatedResponseResponseBody {
-	res := &PaginatedResponseResponseBody{
-		Limit:      v.Limit,
-		TotalCount: v.TotalCount,
-		SinceID:    v.SinceID,
-		LastID:     v.LastID,
-	}
-
-	return res
-}
-
-// marshalStreamSourceToSourceResponseBody builds a value of type
-// *SourceResponseBody from a value of type *stream.Source.
-func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBody {
-	res := &SourceResponseBody{
-		ProjectID:   int(v.ProjectID),
-		BranchID:    int(v.BranchID),
-		SourceID:    string(v.SourceID),
-		Type:        string(v.Type),
-		Name:        v.Name,
-		Description: v.Description,
-	}
-	if v.HTTP != nil {
-		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
-	}
-	if v.Version != nil {
-		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
-	}
-	if v.Deleted != nil {
-		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
-	}
-	if v.Disabled != nil {
-		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
-	}
-	if v.Sinks != nil {
-		res.Sinks = make([]*SinkResponseBody, len(v.Sinks))
-		for i, val := range v.Sinks {
-			res.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
-	} else {
-		res.Sinks = []*SinkResponseBody{}
 	}
 
 	return res

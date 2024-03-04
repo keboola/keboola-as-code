@@ -235,14 +235,12 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamUpdateSourceResponseBody'
                         required:
-                            - projectId
-                            - branchId
-                            - sourceId
-                            - version
+                            - taskId
                             - type
-                            - name
-                            - description
-                            - sinks
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -1428,8 +1426,8 @@ definitions:
                 url: abc123
                 projectId: 123
                 branchId: 345
-                sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
         required:
             - taskId
             - type
@@ -1614,8 +1612,8 @@ definitions:
                 url: abc123
                 projectId: 123
                 branchId: 345
-                sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
         required:
             - taskId
             - type
@@ -2252,8 +2250,8 @@ definitions:
                 url: abc123
                 projectId: 123
                 branchId: 345
-                sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
         required:
             - taskId
             - type
@@ -2946,8 +2944,8 @@ definitions:
                 url: abc123
                 projectId: 123
                 branchId: 345
-                sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
         required:
             - taskId
             - type
@@ -3107,179 +3105,76 @@ definitions:
         title: StreamUpdateSourceResponseBody
         type: object
         properties:
-            branchId:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
                 type: integer
-                example: 345
+                description: Duration of the task in milliseconds.
+                example: 123456789
                 format: int64
-            deleted:
-                $ref: '#/definitions/DeletedEntityResponseBody'
-            description:
+            error:
                 type: string
-                description: Description of the source.
-                example: The source receives events from Github.
-                maxLength: 4096
-            disabled:
-                $ref: '#/definitions/DisabledEntityResponseBody'
-            http:
-                $ref: '#/definitions/HTTPSourceResponseBody'
-            name:
+                example: abc123
+            finishedAt:
                 type: string
-                description: Human readable name of the source.
-                example: Github Webhook Source
-                minLength: 1
-                maxLength: 40
-            projectId:
-                type: integer
-                example: 123
-                format: int64
-            sinks:
-                type: array
-                items:
-                    $ref: '#/definitions/SinkResponseBody'
-                example:
-                    - projectId: 123
-                      branchId: 345
-                      sourceId: github-webhook-source
-                      sinkId: github-pr-table-sink
-                      type: table
-                      name: Raw Data Sink
-                      description: The sink stores records to a table.
-                      table:
-                        mapping:
-                            tableId: in.c-bucket.table
-                            columns:
-                                - type: id
-                                  name: id-col
-                                  primaryKey: true
-                                - type: datetime
-                                  name: datetime-col
-                                - type: ip
-                                  name: ip-col
-                                - type: headers
-                                  name: headers-col
-                                - type: body
-                                  name: body-col
-                                - type: template
-                                  name: template-col
-                                  language: jsonnet
-                                  content: body.foo + "-" + body.bar
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        modifiedAt: "2022-04-28T14:20:04.000Z"
-                        description: The reason for the last change was...
-                      deleted:
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            userId: "578621"
-                            userDescription: user@company.com
-                      disabled:
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            userId: "578621"
-                            userDescription: user@company.com
-                        reason: Disabled for recurring problems.
-            sourceId:
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
                 type: string
-                example: github-webhook-source
-                minLength: 1
-                maxLength: 48
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
             type:
                 type: string
-                example: http
-                enum:
-                    - http
-            version:
-                $ref: '#/definitions/VersionResponseBody'
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
         example:
-            projectId: 123
-            branchId: 345
-            sourceId: github-webhook-source
-            type: http
-            name: Github Webhook Source
-            description: The source receives events from Github.
-            http:
-                url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
-                description: The reason for the last change was...
-            deleted:
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    userId: "578621"
-                    userDescription: user@company.com
-            disabled:
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    userId: "578621"
-                    userDescription: user@company.com
-                reason: Disabled for recurring problems.
-            sinks:
-                - projectId: 123
-                  branchId: 345
-                  sourceId: github-webhook-source
-                  sinkId: github-pr-table-sink
-                  type: table
-                  name: Raw Data Sink
-                  description: The sink stores records to a table.
-                  table:
-                    mapping:
-                        tableId: in.c-bucket.table
-                        columns:
-                            - type: id
-                              name: id-col
-                              primaryKey: true
-                            - type: datetime
-                              name: datetime-col
-                            - type: ip
-                              name: ip-col
-                            - type: headers
-                              name: headers-col
-                            - type: body
-                              name: body-col
-                            - type: template
-                              name: template-col
-                              language: jsonnet
-                              content: body.foo + "-" + body.bar
-                  version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    modifiedAt: "2022-04-28T14:20:04.000Z"
-                    description: The reason for the last change was...
-                  deleted:
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        userId: "578621"
-                        userDescription: user@company.com
-                  disabled:
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        userId: "578621"
-                        userDescription: user@company.com
-                    reason: Disabled for recurring problems.
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
         required:
-            - projectId
-            - branchId
-            - sourceId
-            - version
+            - taskId
             - type
-            - name
-            - description
-            - sinks
+            - url
+            - status
+            - isFinished
+            - createdAt
     StreamUpdateSourceSettingsRequestBody:
         title: StreamUpdateSourceSettingsRequestBody
         type: object
@@ -3652,8 +3547,8 @@ definitions:
             url: abc123
             projectId: 123
             branchId: 345
-            sinkId: github-pr-table-sink
             sourceId: github-webhook-source
+            sinkId: github-pr-table-sink
     VersionResponseBody:
         title: VersionResponseBody
         type: object
