@@ -2,7 +2,7 @@ package mapper
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/spf13/cast"
+	"github.com/mitchellh/mapstructure"
 
 	streamDesign "github.com/keboola/keboola-as-code/api/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -11,7 +11,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *Mapper) NewTaskResponse(entity task.Task) *api.Task {
+type taskOutputs struct {
+	URL       *string            `mapstructure:"url,omitempty"`
+	ProjectID *keboola.ProjectID `mapstructure:"projectId,omitempty"`
+	BranchID  *keboola.BranchID  `mapstructure:"branchId,omitempty"`
+	SourceID  *key.SourceID      `mapstructure:"sourceId,omitempty"`
+	SinkID    *key.SinkID        `mapstructure:"sinkId,omitempty"`
+}
+
+func (m *Mapper) NewTaskResponse(entity task.Task) (*api.Task, error) {
 	response := &api.Task{
 		TaskID: entity.TaskID,
 		Type:   entity.Type,
@@ -48,54 +56,40 @@ func (m *Mapper) NewTaskResponse(entity task.Task) *api.Task {
 	// Outputs
 	if entity.Outputs != nil {
 		response.Outputs = &api.TaskOutputs{}
-		if v, ok := entity.Outputs["url"]; ok {
-			url := cast.ToString(v)
-			response.Outputs.URL = &url
-		}
-		if v, ok := entity.Outputs["projectId"]; ok {
-			id := keboola.ProjectID(cast.ToInt(v))
-			response.Outputs.ProjectID = &id
-		}
-		if v, ok := entity.Outputs["branchId"]; ok {
-			id := keboola.BranchID(cast.ToInt(v))
-			response.Outputs.BranchID = &id
-		}
-		if v, ok := entity.Outputs["sourceId"]; ok {
-			id := key.SourceID(cast.ToString(v))
-			response.Outputs.SourceID = &id
-		}
-		if v, ok := entity.Outputs["sinkId"]; ok {
-			id := key.SinkID(cast.ToString(v))
-			response.Outputs.SinkID = &id
+		err := mapstructure.Decode(entity.Outputs, response.Outputs)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return response
+	return response, nil
 }
 
 func (m *Mapper) WithTaskOutputs(result task.Result, v any) task.Result {
+	outputs := taskOutputs{}
+
 	switch v := v.(type) {
 	case key.BranchKey:
-		return result.
-			WithOutput("url", m.apiPublicURL.JoinPath("v1", "branches", v.BranchID.String()).String()).
-			WithOutput("projectId", int(v.ProjectID)).
-			WithOutput("branchId", int(v.BranchID))
+		url := m.apiPublicURL.JoinPath("v1", "branches", v.BranchID.String()).String()
+		outputs.URL = &url
+		outputs.ProjectID = &v.ProjectID
+		outputs.BranchID = &v.BranchID
 	case key.SourceKey:
-		return result.
-			WithOutput("url", m.apiPublicURL.JoinPath("v1", "branches", v.BranchID.String(), "sources", v.SourceID.String()).String()).
-			WithOutput("projectId", int(v.ProjectID)).
-			WithOutput("branchId", int(v.BranchID)).
-			WithOutput("sourceId", v.SourceID.String())
+		url := m.apiPublicURL.JoinPath("v1", "branches", v.BranchID.String(), "sources", v.SourceID.String()).String()
+		outputs.URL = &url
+		outputs.ProjectID = &v.ProjectID
+		outputs.BranchID = &v.BranchID
+		outputs.SourceID = &v.SourceID
 	case key.SinkKey:
-		return result.
-			WithOutput("url", m.apiPublicURL.JoinPath("v1", "branches", v.BranchID.String(), "sources", v.SourceID.String(), "sinks", v.SinkID.String()).String()).
-			WithOutput("projectId", int(v.ProjectID)).
-			WithOutput("branchId", int(v.BranchID)).
-			WithOutput("sourceId", v.SourceID.String()).
-			WithOutput("sinkId", v.SinkID.String())
+		url := m.apiPublicURL.JoinPath("v1", "branches", v.BranchID.String(), "sources", v.SourceID.String(), "sinks", v.SinkID.String()).String()
+		outputs.URL = &url
+		outputs.ProjectID = &v.ProjectID
+		outputs.BranchID = &v.BranchID
+		outputs.SourceID = &v.SourceID
+		outputs.SinkID = &v.SinkID
 	}
 
-	return result
+	return result.WithOutputsFrom(outputs)
 }
 
 func (m *Mapper) formatTaskURL(k task.Key) string {

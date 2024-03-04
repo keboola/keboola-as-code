@@ -28,7 +28,7 @@ func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScop
 		return nil, err
 	}
 
-	return s.mapper.NewTaskResponse(t), nil
+	return s.mapper.NewTaskResponse(t)
 }
 
 func (s *service) startTask(cfg taskConfig) (task.Task, error) {

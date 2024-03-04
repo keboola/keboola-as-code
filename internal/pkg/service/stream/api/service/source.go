@@ -19,6 +19,7 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		return nil, err
 	}
 
+	// Create source in a task
 	t, err := s.startTask(taskConfig{
 		Type:      "create.source",
 		Timeout:   5 * time.Minute,
@@ -26,7 +27,9 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			if err := s.repo.Source().Create("New source.", &source).Do(ctx).Err(); err == nil {
-				return s.mapper.WithTaskOutputs(task.OkResult("Source has been created successfully."), source.SourceKey)
+				result := task.OkResult("Source has been created successfully.")
+				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
+				return result
 			} else {
 				return task.ErrResult(err)
 			}
@@ -36,7 +39,7 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		return nil, err
 	}
 
-	return s.mapper.NewTaskResponse(t), nil
+	return s.mapper.NewTaskResponse(t)
 }
 
 func (s *service) UpdateSource(context.Context, dependencies.SourceRequestScope, *api.UpdateSourcePayload) (res *api.Source, err error) {
