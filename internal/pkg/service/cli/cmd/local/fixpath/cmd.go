@@ -26,7 +26,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/fix-paths/short`),
 		Long:  helpmsg.Read(`local/fix-paths/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {

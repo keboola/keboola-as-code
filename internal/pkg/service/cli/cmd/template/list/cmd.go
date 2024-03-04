@@ -1,11 +1,11 @@
 package list
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	listOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/list"
 )
 
@@ -16,6 +16,7 @@ type Flags struct {
 func DefaultFlags() Flags {
 	return Flags{}
 }
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",

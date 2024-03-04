@@ -1,13 +1,13 @@
 package create
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/row"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 type Flags struct {
@@ -27,7 +27,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/create/short`),
 		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err

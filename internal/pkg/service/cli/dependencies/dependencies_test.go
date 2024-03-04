@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
@@ -37,7 +38,6 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	opts := options.New()
 
 	f := flag.DefaultGlobalFlags()
-	f.StorageAPIToken = "my-secret"
 
 	// Create http client
 	logger := log.NewNopLogger()
@@ -77,9 +77,9 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	ctx := context.Background()
 	proc := servicectx.NewForTest(t)
 	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts, f, env.Empty())
-	localScp, err := newLocalCommandScope(ctx, baseScp)
+	localScp, err := newLocalCommandScope(ctx, baseScp, configmap.NewValueWithOrigin("mocked.transport.http", configmap.SetByFlag))
 	assert.NoError(t, err)
-	_, err = newRemoteCommandScope(ctx, localScp)
+	_, err = newRemoteCommandScope(ctx, localScp, configmap.NewValueWithOrigin("my-secret", configmap.SetByFlag))
 	expected := `given token is from the project "12345", but in manifest is defined project "789"`
 	assert.Error(t, err)
 	assert.Equal(t, expected, err.Error())

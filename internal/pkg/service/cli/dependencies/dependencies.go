@@ -14,7 +14,6 @@ package dependencies
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -25,6 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"

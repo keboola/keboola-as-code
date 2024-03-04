@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/status"
 )
 
@@ -16,13 +16,13 @@ type Flags struct {
 func DefaultFlags() Flags {
 	return Flags{}
 }
+
 func StatusCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
 		Short: helpmsg.Read(`status/short`),
 		Long:  helpmsg.Read(`status/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err

@@ -2,11 +2,11 @@ package validate
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	validateConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate/config"
@@ -30,7 +30,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/validate/short`),
 		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
@@ -85,6 +84,7 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
+			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
@@ -116,7 +116,8 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			f := Flags{}
-			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f)
+			if err != nil {
 				return err
 			}
 

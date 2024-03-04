@@ -2,11 +2,11 @@ package dependencies
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
