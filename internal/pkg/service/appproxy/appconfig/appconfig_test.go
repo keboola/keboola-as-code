@@ -27,9 +27,9 @@ type testCase struct {
 type attempt struct {
 	delay             time.Duration
 	responses         []*http.Response
-	expectedETag      string
 	expectedErrorCode int
 	expectedConfig    appconfig.AppProxyConfig
+	expectedModified  bool
 }
 
 func TestLoader_LoadConfig(t *testing.T) {
@@ -76,8 +76,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:             "3",
 						Name:           "3",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
+					expectedModified: true,
 				},
 			},
 		},
@@ -93,15 +93,14 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:             "4",
 						Name:           "4",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
+					expectedModified: true,
 				},
 				{
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "4",
 						Name:           "4",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -118,8 +117,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:             "5",
 						Name:           "5",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
+					expectedModified: true,
 				},
 				{
 					delay: 10 * time.Minute,
@@ -127,21 +126,17 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
-					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
 						Name:           "5",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 				{
-					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
 						Name:           "5",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -149,12 +144,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 					responses: []*http.Response{
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
-					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
 						Name:           "5",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -171,28 +164,26 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:             "6",
 						Name:           "6",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
+					expectedModified: true,
 				},
 				{
 					delay: 10 * time.Minute,
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://new-app.local"}, `"etag-new-value"`, "max-age=60"),
 					},
-					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "6",
 						Name:           "6",
 						UpstreamAppURL: "http://new-app.local",
-						ETag:           `"etag-new-value"`,
 					},
+					expectedModified: true,
 				},
 				{
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "6",
 						Name:           "6",
 						UpstreamAppURL: "http://new-app.local",
-						ETag:           `"etag-new-value"`,
 					},
 				},
 			},
@@ -209,8 +200,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:             "7",
 						Name:           "7",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
+					expectedModified: true,
 				},
 				{
 					delay: 10 * time.Minute,
@@ -222,12 +213,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 500, map[string]any{}, "", ""),
 					},
-					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "7",
 						Name:           "7",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -240,7 +229,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 500, map[string]any{}, "", ""),
 					},
-					expectedETag:      `"etag-value"`,
 					expectedErrorCode: 500,
 				},
 			},
@@ -257,17 +245,15 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:             "8",
 						Name:           "8",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
+					expectedModified: true,
 				},
 				{
-					delay:        59 * time.Minute,
-					expectedETag: `"etag-value"`,
+					delay: 59 * time.Minute,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "8",
 						Name:           "8",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -275,12 +261,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 					responses: []*http.Response{
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
-					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "8",
 						Name:           "8",
 						UpstreamAppURL: "http://app.local",
-						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -307,16 +291,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 				clk.Add(attempt.delay)
 
 				if len(attempt.responses) > 0 {
-					responder := httpmock.ResponderFromMultipleResponses(attempt.responses)
-
 					transport.RegisterResponder(
 						http.MethodGet,
 						fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
-						func(req *http.Request) (*http.Response, error) {
-							assert.Equal(t, attempt.expectedETag, req.Header.Get("If-None-Match"))
-
-							return responder(req)
-						},
+						httpmock.ResponderFromMultipleResponses(attempt.responses),
 					)
 				} else {
 					transport.RegisterResponder(
@@ -329,7 +307,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					)
 				}
 
-				config, err := loader.LoadConfig(context.Background(), tc.appID)
+				config, modified, err := loader.LoadConfig(context.Background(), tc.appID)
 				if attempt.expectedErrorCode != 0 {
 					require.Error(t, err)
 					var sandboxesError *appconfig.SandboxesError
@@ -342,8 +320,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 					assert.Equal(t, attempt.expectedConfig.UpstreamAppURL, config.UpstreamAppURL)
 					assert.Equal(t, attempt.expectedConfig.AuthProviders, config.AuthProviders)
 					assert.Equal(t, attempt.expectedConfig.AuthRules, config.AuthRules)
-					assert.Equal(t, attempt.expectedConfig.ETag, config.ETag)
 				}
+				assert.Equal(t, attempt.expectedModified, modified)
 
 				assert.Equal(t, len(attempt.responses), transport.GetTotalCallCount())
 			}
