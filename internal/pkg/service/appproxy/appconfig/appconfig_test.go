@@ -70,13 +70,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					responses: []*http.Response{
 						newResponse(t, 500, map[string]any{}, "", ""),
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "3",
-						Name:            "3",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "3",
+						Name:           "3",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -87,21 +87,21 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "4",
-						Name:            "4",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "4",
+						Name:           "4",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "4",
-						Name:            "4",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "4",
+						Name:           "4",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -112,13 +112,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "5",
-						Name:            "5",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "5",
+						Name:           "5",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -129,19 +129,19 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "5",
-						Name:            "5",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "5",
+						Name:           "5",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "5",
-						Name:            "5",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "5",
+						Name:           "5",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -151,10 +151,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "5",
-						Name:            "5",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "5",
+						Name:           "5",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -165,34 +165,34 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "6",
-						Name:            "6",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "6",
+						Name:           "6",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
 					delay: 10 * time.Minute,
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "new-app.local"}, `"etag-new-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://new-app.local"}, `"etag-new-value"`, "max-age=60"),
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "6",
-						Name:            "6",
-						UpstreamAppHost: "new-app.local",
-						ETag:            `"etag-new-value"`,
+						ID:             "6",
+						Name:           "6",
+						UpstreamAppURL: "http://new-app.local",
+						ETag:           `"etag-new-value"`,
 					},
 				},
 				{
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "6",
-						Name:            "6",
-						UpstreamAppHost: "new-app.local",
-						ETag:            `"etag-new-value"`,
+						ID:             "6",
+						Name:           "6",
+						UpstreamAppURL: "http://new-app.local",
+						ETag:           `"etag-new-value"`,
 					},
 				},
 			},
@@ -203,13 +203,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "7",
-						Name:            "7",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "7",
+						Name:           "7",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -224,10 +224,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "7",
-						Name:            "7",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "7",
+						Name:           "7",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -251,23 +251,23 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=7200"),
+						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=7200"),
 					},
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "8",
-						Name:            "8",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "8",
+						Name:           "8",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
 					delay:        59 * time.Minute,
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "8",
-						Name:            "8",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "8",
+						Name:           "8",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 				{
@@ -277,10 +277,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: appconfig.AppProxyConfig{
-						ID:              "8",
-						Name:            "8",
-						UpstreamAppHost: "app.local",
-						ETag:            `"etag-value"`,
+						ID:             "8",
+						Name:           "8",
+						UpstreamAppURL: "http://app.local",
+						ETag:           `"etag-value"`,
 					},
 				},
 			},
@@ -339,7 +339,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					require.NoError(t, err)
 					assert.Equal(t, attempt.expectedConfig.ID, config.ID)
 					assert.Equal(t, attempt.expectedConfig.Name, config.Name)
-					assert.Equal(t, attempt.expectedConfig.UpstreamAppHost, config.UpstreamAppHost)
+					assert.Equal(t, attempt.expectedConfig.UpstreamAppURL, config.UpstreamAppURL)
 					assert.Equal(t, attempt.expectedConfig.AuthProviders, config.AuthProviders)
 					assert.Equal(t, attempt.expectedConfig.AuthRules, config.AuthRules)
 					assert.Equal(t, attempt.expectedConfig.ETag, config.ETag)
