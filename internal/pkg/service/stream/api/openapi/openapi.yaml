@@ -2835,6 +2835,10 @@ definitions:
         title: StreamUpdateSinkRequestBody
         type: object
         properties:
+            changeDescription:
+                type: string
+                description: Description of the modification, description of the version.
+                example: Renamed.
             description:
                 type: string
                 description: Description of the source.
@@ -2876,6 +2880,7 @@ definitions:
                           name: template-col
                           language: jsonnet
                           content: body.foo + "-" + body.bar
+            changeDescription: Renamed.
     StreamUpdateSinkResponseBody:
         title: StreamUpdateSinkResponseBody
         type: object
@@ -3073,6 +3078,10 @@ definitions:
         title: StreamUpdateSourceRequestBody
         type: object
         properties:
+            changeDescription:
+                type: string
+                description: Description of the modification, description of the version.
+                example: Renamed.
             description:
                 type: string
                 description: Description of the source.
@@ -3093,6 +3102,7 @@ definitions:
             type: http
             name: Github Webhook Source
             description: The source receives events from Github.
+            changeDescription: Renamed.
     StreamUpdateSourceResponseBody:
         title: StreamUpdateSourceResponseBody
         type: object

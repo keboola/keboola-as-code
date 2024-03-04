@@ -40,6 +40,8 @@ type UpdateSourceRequestBody struct {
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
 }
 
 // UpdateSourceSettingsRequestBody is the type of the "stream" service
@@ -79,6 +81,8 @@ type UpdateSinkRequestBody struct {
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Table sink configuration for "type" = "table".
 	Table *TableSinkRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
 }
 
 // APIVersionIndexResponseBody is the type of the "stream" service
@@ -1354,8 +1358,9 @@ func NewCreateSourcePayload(body *CreateSourceRequestBody, branchID string, stor
 // NewUpdateSourcePayload builds a stream service UpdateSource endpoint payload.
 func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sourceID string, storageAPIToken string) *stream.UpdateSourcePayload {
 	v := &stream.UpdateSourcePayload{
-		Name:        body.Name,
-		Description: body.Description,
+		Name:              body.Name,
+		Description:       body.Description,
+		ChangeDescription: body.ChangeDescription,
 	}
 	if body.Type != nil {
 		type_ := stream.SourceType(*body.Type)
@@ -1515,8 +1520,9 @@ func NewListSinksPayload(branchID string, sourceID string, sinceID string, limit
 // NewUpdateSinkPayload builds a stream service UpdateSink endpoint payload.
 func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UpdateSinkPayload {
 	v := &stream.UpdateSinkPayload{
-		Name:        body.Name,
-		Description: body.Description,
+		Name:              body.Name,
+		Description:       body.Description,
+		ChangeDescription: body.ChangeDescription,
 	}
 	if body.Type != nil {
 		type_ := stream.SinkType(*body.Type)

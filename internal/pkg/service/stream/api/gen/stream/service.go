@@ -467,6 +467,8 @@ type UpdateSinkPayload struct {
 	Description *string
 	// Table sink configuration for "type" = "table".
 	Table *TableSink
+	// Description of the modification, description of the version.
+	ChangeDescription *string
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service
@@ -490,6 +492,8 @@ type UpdateSourcePayload struct {
 	Name *string
 	// Description of the source.
 	Description *string
+	// Description of the modification, description of the version.
+	ChangeDescription *string
 }
 
 // UpdateSourceSettingsPayload is the payload type of the stream service

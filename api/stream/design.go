@@ -662,6 +662,10 @@ var ListSourcesRequest = Type("ListSourcesRequest", func() {
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 	SourceKeyRequest()
 	SourceFieldsRW()
+	Attribute("changeDescription", String, func() {
+		Description("Description of the modification, description of the version.")
+		Example("Renamed.")
+	})
 })
 
 var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
@@ -754,6 +758,10 @@ var ListSinksRequest = Type("ListSinksRequest", func() {
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
 	SinkKeyRequest()
 	SinkFieldsRW()
+	Attribute("changeDescription", String, func() {
+		Description("Description of the modification, description of the version.")
+		Example("Renamed.")
+	})
 })
 
 var SinkSettingsPatch = Type("SinkSettingsPatch", func() {

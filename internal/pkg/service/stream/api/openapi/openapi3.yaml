@@ -443,6 +443,7 @@ paths:
                             type: http
                             name: Github Webhook Source
                             description: The source receives events from Github.
+                            changeDescription: Renamed.
             responses:
                 "200":
                     description: OK response.
@@ -1124,6 +1125,7 @@ paths:
                                           name: template-col
                                           language: jsonnet
                                           content: body.foo + "-" + body.bar
+                            changeDescription: Renamed.
             responses:
                 "200":
                     description: OK response.
@@ -2676,6 +2678,10 @@ components:
         UpdateSinkRequestBody:
             type: object
             properties:
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Renamed.
                 description:
                     type: string
                     description: Description of the source.
@@ -2717,9 +2723,14 @@ components:
                               name: template-col
                               language: jsonnet
                               content: body.foo + "-" + body.bar
+                changeDescription: Renamed.
         UpdateSourceRequestBody:
             type: object
             properties:
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Renamed.
                 description:
                     type: string
                     description: Description of the source.
@@ -2740,6 +2751,7 @@ components:
                 type: http
                 name: Github Webhook Source
                 description: The source receives events from Github.
+                changeDescription: Renamed.
         UpdateSourceSettingsRequestBody:
             type: object
             properties:
