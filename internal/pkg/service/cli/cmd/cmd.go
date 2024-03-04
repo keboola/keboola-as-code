@@ -153,7 +153,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		}
 
 		// Create filesystem abstraction
-		workingDir := root.globalFlags.WorkingDir
+		workingDir := root.globalFlags.WorkingDir.Value
 		root.fs, err = fsFactory(cmd.Context(), filesystem.WithLogger(root.logger), filesystem.WithWorkingDir(workingDir))
 		if err != nil {
 			return err
@@ -175,7 +175,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		root.logger.Debugf(cmd.Context(), `Working dir: %s`, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
 		// Interactive prompt
-		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.globalFlags.NonInteractive)
+		prompt := cli.NewPrompt(os.Stdin, stdout, stderr, root.globalFlags.NonInteractive.Value)
 
 		// Create process abstraction
 		proc := servicectx.New()
@@ -195,7 +195,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		))
 
 		// Check version
-		if err := versionCheck.Run(cmd.Context(), root.globalFlags.VersionCheck, p.BaseScope()); err != nil {
+		if err := versionCheck.Run(cmd.Context(), root.globalFlags.VersionCheck.Value, p.BaseScope()); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(cmd.Context(), `Version check: %s.`, err.Error())
 		} else {
@@ -378,19 +378,19 @@ func (root *RootCommand) printError(errRaw error) {
 func (root *RootCommand) setupLogger() {
 	// Get log file
 	var logFileErr error
-	root.logFile, logFileErr = log.NewLogFile(root.globalFlags.LogFile)
+	root.logFile, logFileErr = log.NewLogFile(root.globalFlags.LogFile.Value)
 
 	var logFormatErr error
-	root.logFormat, logFormatErr = log.NewLogFormat(root.globalFlags.LogFormat)
+	root.logFormat, logFormatErr = log.NewLogFormat(root.globalFlags.LogFormat.Value)
 
 	// Get temporary logger
 	memoryLogger, _ := root.logger.(*log.MemoryLogger)
 
 	// Create logger
-	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.globalFlags.Verbose)
+	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.logFormat, root.globalFlags.Verbose.Value)
 
 	// Warn if user specified log file + it cannot be opened
-	if logFileErr != nil && root.globalFlags.LogFile != "" {
+	if logFileErr != nil && root.globalFlags.LogFile.Value != "" {
 		root.logger.Warnf(root.Context(), "Cannot open log file: %s", logFileErr)
 	}
 

@@ -98,7 +98,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			opts := tableImport.Options{
 				FileKey:         fileKey,
 				TableKey:        tableKey,
-				Columns:         d.Options().GetStringSlice("columns"),
+				Columns:         []string{f.Columns.Value},
 				IncrementalLoad: f.IncrementalLoad.Value,
 				WithoutHeaders:  f.FileWithoutHeaders.Value,
 				PrimaryKey:      primaryKey,

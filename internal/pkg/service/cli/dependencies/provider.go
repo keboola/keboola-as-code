@@ -83,10 +83,10 @@ func (v *provider) BaseScope() BaseScope {
 		httpClient := httpclient.New(
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
 			func(c *httpclient.Config) {
-				if v.globalFlags.Verbose {
+				if v.globalFlags.Verbose.Value {
 					httpclient.WithDebugOutput(v.stdout)(c)
 				}
-				if v.globalFlags.VerboseAPI {
+				if v.globalFlags.VerboseAPI.Value {
 					httpclient.WithDumpOutput(v.stdout)(c)
 				}
 			},
