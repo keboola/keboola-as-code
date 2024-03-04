@@ -9,9 +9,11 @@ Usage:
   %s local template delete [flags]
 
 Flags:
-  -b, --branch string     branch ID or name
-      --dry-run           print what needs to be done
-  -i, --instance string   instance ID of the template to delete
+  -b, --branch string              branch ID or name
+      --dry-run                    print what needs to be done
+  -i, --instance string            instance ID of the template to delete
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
 
 Global Flags:
 %A

@@ -4,9 +4,10 @@ Usage:
   kbc dbt init [flags]
 
 Flags:
-  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-  -T, --target-name string        target name of the profile
-  -W, --workspace-name string     name of workspace to create
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+  -T, --target-name string         target name of the profile
+  -W, --workspace-name string      name of workspace to create
 
 Global Flags:
 %A

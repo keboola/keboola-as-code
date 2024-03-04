@@ -10,16 +10,17 @@ Usage:
   kbc remote table preview [table] [flags]
 
 Flags:
-      --changed-since string      only export rows imported after this date
-      --changed-until string      only export rows imported before this date
-      --columns strings           comma-separated list of columns to export
-      --force                     overwrite the output file if it already exists
-      --format string             output format (json/csv/pretty) (default "pretty")
-      --limit uint                limit the number of exported rows (default 100)
-      --order string              order by one or more columns
-  -o, --out string                export table to a file
-  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-      --where string              filter columns by value
+      --changed-since string       only export rows imported after this date
+      --changed-until string       only export rows imported before this date
+      --columns strings            comma-separated list of columns to export
+      --force                      overwrite the output file if it already exists
+      --format string              output format (json/csv/pretty) (default "pretty")
+      --limit uint                 limit the number of exported rows (default 100)
+      --order string               order by one or more columns
+  -o, --out string                 export table to a file
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+      --where string               filter columns by value
 
 Global Flags:
 %A

@@ -15,9 +15,11 @@ Usage:
   %s create config [flags]
 
 Flags:
-  -b, --branch string         branch ID or name
-  -c, --component-id string   component ID
-  -n, --name string           name of the new config
+  -b, --branch string              branch ID or name
+  -c, --component-id string        component ID
+  -n, --name string                name of the new config
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
 
 Global Flags:
 %A

@@ -9,9 +9,11 @@ Usage:
   %s local template use <repository>/<template>[/<version>] [flags]
 
 Flags:
-  -b, --branch string          target branch ID or name
-  -f, --inputs-file string     JSON file with inputs values
-  -n, --instance-name string   name of new template instance
+  -b, --branch string              target branch ID or name
+  -f, --inputs-file string         JSON file with inputs values
+  -n, --instance-name string       name of new template instance
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
 
 Global Flags:
 %A
