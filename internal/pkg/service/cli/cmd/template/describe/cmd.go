@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -9,6 +10,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	describeOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/describe"
 )
+
+type Flags struct {
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+}
+
+func DefaultFlags() Flags {
+	return Flags{}
+}
 
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
@@ -20,8 +29,13 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.New(`please enter argument with the template ID you want to use and optionally its version`)
 			}
 
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Command must be used in template repository
-			repo, d, err := p.LocalRepository(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
+			repo, d, err := p.LocalRepository(cmd.Context(), f.StorageAPIHost, dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -42,6 +56,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 			return describeOp.Run(cmd.Context(), template, d)
 		},
 	}
+
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

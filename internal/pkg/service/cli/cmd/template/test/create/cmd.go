@@ -12,9 +12,11 @@ import (
 )
 
 type Flags struct {
-	TestName   configmap.Value[string] `configKey:"test-name" configUsage:"name of the test to be created"`
-	InputsFile configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
-	Verbose    configmap.Value[bool]   `configKey:"verbose" configUsage:"show details about creating test"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	TestName        configmap.Value[string] `configKey:"test-name" configUsage:"name of the test to be created"`
+	InputsFile      configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+	Verbose         configmap.Value[bool]   `configKey:"verbose" configUsage:"show details about creating test"`
 }
 
 func DefaultFlags() Flags {
@@ -27,7 +29,13 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/test/create/short`),
 		Long:  helpmsg.Read(`template/test/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
+
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
+			d, err := p.LocalCommandScope(cmd.Context(), f.StorageAPIToken, dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -36,12 +44,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.New(`please enter argument with the template ID you want to use and optionally its version`)
 			}
 			templateID := args[0]
-
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
-				return err
-			}
 
 			// Get template repository
 			repo, _, err := d.LocalTemplateRepository(cmd.Context())

@@ -15,9 +15,10 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	Output         configmap.Value[string] `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
-	AllowSliced    configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Output          configmap.Value[string] `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
+	AllowSliced     configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
 }
 
 func DefaultFlags() Flags {
@@ -31,15 +32,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/file/download/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken, dependencies.WithoutMasterToken())
+			if err != nil {
 				return err
 			}
 

@@ -16,8 +16,9 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
-	Name           configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Name            configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
 }
 
 func DefaultFlags() Flags {
@@ -30,17 +31,17 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/branch/short`),
 		Long:  helpmsg.Read(`remote/create/branch/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d, err := p.RemoteCommandScope(cmd.Context())
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
 
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
-				return err
-			}
-
-			// Options
+			// Optionss
 			options, err := AskCreateBranch(d.Dialogs(), f.Name)
 			if err != nil {
 				return err

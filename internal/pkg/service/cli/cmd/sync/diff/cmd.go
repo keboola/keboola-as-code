@@ -11,7 +11,9 @@ import (
 )
 
 type Flags struct {
-	Details configmap.Value[bool] `configKey:"details" configUsage:"print changed fields"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Details         configmap.Value[bool]   `configKey:"details" configUsage:"print changed fields"`
 }
 
 func DefaultFlags() Flags {
@@ -24,6 +26,11 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/diff/short`),
 		Long:  helpmsg.Read(`sync/diff/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Command must be used in project directory
 			_, _, err := p.BaseScope().FsInfo().ProjectDir(cmd.Context())
 			if err != nil {
@@ -31,7 +38,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context())
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
@@ -45,11 +52,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Load project state
 			projectState, err := prj.LoadState(loadState.DiffOptions(), d)
 			if err != nil {
-				return err
-			}
-
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 

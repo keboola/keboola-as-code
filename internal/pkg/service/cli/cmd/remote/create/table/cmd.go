@@ -14,12 +14,13 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
-	Bucket         configmap.Value[string] `configKey:"bucket" configUsage:"bucket ID (required if the tableId argument is empty)"`
-	Name           configmap.Value[string] `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
-	Columns        configmap.Value[string] `configKey:"columns" configUsage:"comma-separated list of column names"`
-	PrimaryKey     configmap.Value[string] `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
-	ColumnsFrom    configmap.Value[string] `configKey:"columns-from" configUsage:"the path to the table definition file in json"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Bucket          configmap.Value[string] `configKey:"bucket" configUsage:"bucket ID (required if the tableId argument is empty)"`
+	Name            configmap.Value[string] `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
+	Columns         configmap.Value[string] `configKey:"columns" configUsage:"comma-separated list of column names"`
+	PrimaryKey      configmap.Value[string] `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
+	ColumnsFrom     configmap.Value[string] `configKey:"columns-from" configUsage:"the path to the table definition file in json"`
 }
 
 func DefaultFlags() Flags {
@@ -33,15 +34,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/create/table/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken, dependencies.WithoutMasterToken())
+			if err != nil {
 				return err
 			}
 

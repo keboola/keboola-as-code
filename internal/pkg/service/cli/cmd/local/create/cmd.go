@@ -1,6 +1,7 @@
 package create
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local/create/config"
@@ -8,6 +9,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 )
+
+type Flags struct {
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+}
+
+func DefaultFlags() Flags {
+	return Flags{}
+}
 
 func Command(p dependencies.Provider) *cobra.Command {
 	createConfigCmd := config.Command(p)
@@ -17,8 +27,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/create/short`),
 		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Command must be used in project directory
-			_, d, err := p.LocalProject(cmd.Context(), false)
+			_, d, err := p.LocalProject(cmd.Context(), false, f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
@@ -35,6 +51,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 		},
 	}
+
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	cmd.AddCommand(createConfigCmd, createRowCmd)
 	return cmd

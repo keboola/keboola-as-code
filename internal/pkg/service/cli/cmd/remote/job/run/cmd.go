@@ -16,9 +16,10 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	Async          configmap.Value[bool]   `configKey:"async" configUsage:"do not wait for job to finish"`
-	Timeout        configmap.Value[string] `configKey:"timeout" configUsage:"how long to wait for job to finish"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Async           configmap.Value[bool]   `configKey:"async" configUsage:"do not wait for job to finish"`
+	Timeout         configmap.Value[string] `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }
 
 func DefaultFlags() Flags {
@@ -34,15 +35,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/job/run/long`),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken, dependencies.WithoutMasterToken())
+			if err != nil {
 				return err
 			}
 

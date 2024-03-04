@@ -14,10 +14,11 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	Data           configmap.Value[string] `configKey:"data" configUsage:"path to the file to be uploaded"`
-	FileName       configmap.Value[string] `configKey:"file-name" configUsage:"name of the file to be created"`
-	FileTags       configmap.Value[string] `configKey:"file-tags" configUsage:"comma-separated list of tags"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Data            configmap.Value[string] `configKey:"data" configUsage:"path to the file to be uploaded"`
+	FileName        configmap.Value[string] `configKey:"file-name" configUsage:"name of the file to be created"`
+	FileTags        configmap.Value[string] `configKey:"file-tags" configUsage:"comma-separated list of tags"`
 }
 
 func DefaultFlags() Flags {
@@ -30,15 +31,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/file/upload/short`),
 		Long:  helpmsg.Read(`remote/file/upload/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken, dependencies.WithoutMasterToken())
+			if err != nil {
 				return err
 			}
 

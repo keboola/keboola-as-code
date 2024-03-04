@@ -19,6 +19,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost    configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken   configmap.Value[string]   `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Columns           configmap.Value[string]   `configKey:"columns" configUsage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
 	IncrementalLoad   configmap.Value[bool]     `configKey:"incremental-load" configUsage:"data are either added to existing data in the table or replace the existing data"`
 	FileWithoutHeader configmap.Value[bool]     `configKey:"file-without-headers" configUsage:"states if the CSV file contains headers on the first row or not"`
@@ -44,15 +45,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/upload/long`),
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken, dependencies.WithoutMasterToken())
+			if err != nil {
 				return err
 			}
 

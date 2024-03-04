@@ -13,10 +13,11 @@ import (
 )
 
 type Flags struct {
-	TestName   string `configKey:"test-name" configUsage:"name of a single test to be run"`
-	LocalOnly  bool   `configKey:"local-only" configUsage:"run a local test only"`
-	RemoteOnly bool   `configKey:"remote-only" configUsage:"run a remote test only"`
-	Verbose    bool   `configKey:"verbose" configUsage:"show details about running tests"`
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TestName       string                  `configKey:"test-name" configUsage:"name of a single test to be run"`
+	LocalOnly      bool                    `configKey:"local-only" configUsage:"run a local test only"`
+	RemoteOnly     bool                    `configKey:"remote-only" configUsage:"run a remote test only"`
+	Verbose        bool                    `configKey:"verbose" configUsage:"show details about running tests"`
 }
 
 func DefaultFlags() Flags {
@@ -43,7 +44,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(cmd.Context(), f.StorageAPIHost, dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

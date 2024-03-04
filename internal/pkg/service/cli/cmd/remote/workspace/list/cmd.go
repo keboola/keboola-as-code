@@ -12,7 +12,8 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost string `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 }
 
 func DefaultFlags() Flags {
@@ -25,8 +26,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/list/short`),
 		Long:  helpmsg.Read(`remote/workspace/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context())
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}

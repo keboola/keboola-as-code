@@ -2,6 +2,7 @@ package validate
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -14,14 +15,29 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+type Flags struct {
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+}
+
+func DefaultFlags() Flags {
+	return Flags{}
+}
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: helpmsg.Read(`local/validate/short`),
 		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(cmd.Context(), false)
+			prj, d, err := p.LocalProject(cmd.Context(), false, f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
@@ -48,6 +64,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
+
 	cmd.AddCommand(
 		ValidateConfigCommand(p),
 		ValidateRowCommand(p),
@@ -67,7 +85,12 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
-			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
+			d, err := p.LocalCommandScope(cmd.Context(), f.StorageAPIHost, dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -76,6 +99,8 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 			return validateConfig.Run(cmd.Context(), o, d)
 		},
 	}
+
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }
@@ -90,7 +115,12 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
-			d, err := p.LocalCommandScope(cmd.Context(), dependencies.WithDefaultStorageAPIHost())
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
+			d, err := p.LocalCommandScope(cmd.Context(), f.StorageAPIHost, dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -99,6 +129,8 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 			return validateRow.Run(cmd.Context(), o, d)
 		},
 	}
+
+	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
 }

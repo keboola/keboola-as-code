@@ -13,11 +13,13 @@ import (
 )
 
 type Flags struct {
-	Branch     configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
-	Instance   configmap.Value[string] `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to upgrade"`
-	Version    configmap.Value[string] `configKey:"version" configShorthand:"V" configUsage:"target version, default latest stable version"`
-	DryRun     configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
-	InputsFile configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Branch          configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Instance        configmap.Value[string] `configKey:"instance" configShorthand:"i" configUsage:"instance ID of the template to upgrade"`
+	Version         configmap.Value[string] `configKey:"version" configShorthand:"V" configUsage:"target version, default latest stable version"`
+	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	InputsFile      configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
 }
 
 func DefaultFlags() Flags {
@@ -30,15 +32,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/template/upgrade/short`),
 		Long:  helpmsg.Read(`local/template/upgrade/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Command must be used in project directory
-			prj, d, err := p.LocalProject(cmd.Context(), false)
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(cmd.Context(), false, f.StorageAPIHost, f.StorageAPIToken)
+			if err != nil {
 				return err
 			}
 
