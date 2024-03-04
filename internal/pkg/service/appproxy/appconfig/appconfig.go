@@ -65,7 +65,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 			l.cache[appID] = cacheItem{
 				config:    item.config,
 				eTag:      item.eTag,
-				expiresAt: now.Add(config.maxAge),
+				expiresAt: now.Add(minDuration(config.maxAge, time.Hour)),
 			}
 			return item.config, nil
 		}
@@ -81,7 +81,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 	l.cache[appID] = cacheItem{
 		config:    *config,
 		eTag:      config.ETag,
-		expiresAt: now.Add(config.maxAge),
+		expiresAt: now.Add(minDuration(config.maxAge, time.Hour)),
 	}
 	return *config, nil
 }
@@ -108,4 +108,11 @@ func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now 
 	logger.Errorf(ctx, `Failed loading config for app "%s": %s`, appID, err.Error())
 
 	return AppProxyConfig{}, err
+}
+
+func minDuration(durationA time.Duration, durationB time.Duration) time.Duration {
+	if durationA <= durationB {
+		return durationA
+	}
+	return durationB
 }

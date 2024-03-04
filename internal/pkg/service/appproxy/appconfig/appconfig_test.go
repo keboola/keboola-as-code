@@ -245,6 +245,46 @@ func TestLoader_LoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "max-expiration",
+			appID: "8",
+			attempts: []attempt{
+				{
+					responses: []*http.Response{
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=7200"),
+					},
+					expectedConfig: appconfig.AppProxyConfig{
+						ID:              "8",
+						Name:            "8",
+						UpstreamAppHost: "app.local",
+						ETag:            `"etag-value"`,
+					},
+				},
+				{
+					delay:        59 * time.Minute,
+					expectedETag: `"etag-value"`,
+					expectedConfig: appconfig.AppProxyConfig{
+						ID:              "8",
+						Name:            "8",
+						UpstreamAppHost: "app.local",
+						ETag:            `"etag-value"`,
+					},
+				},
+				{
+					delay: 2 * time.Minute,
+					responses: []*http.Response{
+						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+					},
+					expectedETag: `"etag-value"`,
+					expectedConfig: appconfig.AppProxyConfig{
+						ID:              "8",
+						Name:            "8",
+						UpstreamAppHost: "app.local",
+						ETag:            `"etag-value"`,
+					},
+				},
+			},
+		},
 	}
 
 	t.Parallel()
