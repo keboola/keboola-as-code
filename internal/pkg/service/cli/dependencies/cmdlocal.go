@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"path/filepath"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -42,11 +43,11 @@ type localTemplateValue struct {
 	value *template.Template
 }
 
-func newLocalCommandScope(ctx context.Context, baseScp BaseScope, opts ...Option) (*localCommandScope, error) {
+func newLocalCommandScope(ctx context.Context, baseScp BaseScope, hostByFlag configmap.Value[string], opts ...Option) (*localCommandScope, error) {
 	cfg := newConfig(opts)
 
 	// Get Storage API host
-	host, err := storageAPIHost(ctx, baseScp, cfg.defaultStorageAPIHost)
+	host, err := storageAPIHost(ctx, baseScp, cfg.defaultStorageAPIHost, hostByFlag)
 	if err != nil {
 		return nil, err
 	}

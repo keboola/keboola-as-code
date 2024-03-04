@@ -19,8 +19,8 @@ import (
 // 2. Flag.
 // 3. ENV
 // 4. An env file, e.g., ".env.local".
-func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string) (string, error) {
-	fs, opts := baseScp.Fs(), baseScp.GlobalFlags()
+func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string, hostByFlag configmap.Value[string]) (string, error) {
+	fs := baseScp.Fs()
 
 	var host string
 	if fs.IsFile(ctx, projectManifest.Path()) {
@@ -33,8 +33,8 @@ func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string) (st
 		}
 	} else {
 		// Get host from options (ENV/flag)
-		host = opts.StorageAPIHost.Value
-		if opts.StorageAPIHost.SetBy == configmap.SetByEnv {
+		host = hostByFlag.Value
+		if hostByFlag.SetBy == configmap.SetByEnv {
 			baseScp.Logger().Infof(ctx, `Storage API host "%s" set from ENV.`, host)
 		}
 	}

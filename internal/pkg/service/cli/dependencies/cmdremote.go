@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -17,11 +18,11 @@ type remoteCommandScope struct {
 	eventSender event.Sender
 }
 
-func newRemoteCommandScope(ctx context.Context, localCmdScp LocalCommandScope, opts ...Option) (*remoteCommandScope, error) {
+func newRemoteCommandScope(ctx context.Context, localCmdScp LocalCommandScope, tokenByFlags configmap.Value[string], opts ...Option) (*remoteCommandScope, error) {
 	cfg := newConfig(opts)
 
 	// Get Storage API token
-	token, err := storageAPIToken(localCmdScp)
+	token, err := storageAPIToken(localCmdScp, tokenByFlags)
 	if err != nil {
 		return nil, err
 	}

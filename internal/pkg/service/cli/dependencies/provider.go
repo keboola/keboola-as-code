@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
@@ -94,20 +95,20 @@ func (v *provider) BaseScope() BaseScope {
 	})
 }
 
-func (v *provider) LocalCommandScope(ctx context.Context, opts ...Option) (LocalCommandScope, error) {
+func (v *provider) LocalCommandScope(ctx context.Context, hostByFlags configmap.Value[string], opts ...Option) (LocalCommandScope, error) {
 	return v.localCmdScp.InitAndGet(func() (*localCommandScope, error) {
-		return newLocalCommandScope(ctx, v.BaseScope(), opts...)
+		return newLocalCommandScope(ctx, v.BaseScope(), hostByFlags, opts...)
 	})
 }
 
-func (v *provider) RemoteCommandScope(ctx context.Context, opts ...Option) (RemoteCommandScope, error) {
+func (v *provider) RemoteCommandScope(ctx context.Context, hostByFlags, tokenByFlags configmap.Value[string], opts ...Option) (RemoteCommandScope, error) {
 	return v.remoteCmdScp.InitAndGet(func() (*remoteCommandScope, error) {
-		localScope, err := v.LocalCommandScope(ctx)
+		localScope, err := v.LocalCommandScope(ctx, hostByFlags)
 		if err != nil {
 			return nil, err
 		}
 
-		remoteScope, err := newRemoteCommandScope(ctx, localScope, opts...)
+		remoteScope, err := newRemoteCommandScope(ctx, localScope, tokenByFlags, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -116,9 +117,9 @@ func (v *provider) RemoteCommandScope(ctx context.Context, opts ...Option) (Remo
 	})
 }
 
-func (v *provider) LocalProject(ctx context.Context, ignoreErrors bool, ops ...Option) (*project.Project, RemoteCommandScope, error) {
+func (v *provider) LocalProject(ctx context.Context, ignoreErrors bool, hostByFlags, tokenByFlags configmap.Value[string], ops ...Option) (*project.Project, RemoteCommandScope, error) {
 	// Get local scope
-	localCmdScp, err := v.LocalCommandScope(ctx, ops...)
+	localCmdScp, err := v.LocalCommandScope(ctx, hostByFlags, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,7 +130,7 @@ func (v *provider) LocalProject(ctx context.Context, ignoreErrors bool, ops ...O
 	}
 
 	// Authentication
-	remoteCmdScp, err := v.RemoteCommandScope(ctx)
+	remoteCmdScp, err := v.RemoteCommandScope(ctx, hostByFlags, tokenByFlags)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -137,9 +138,9 @@ func (v *provider) LocalProject(ctx context.Context, ignoreErrors bool, ops ...O
 	return prj, remoteCmdScp, nil
 }
 
-func (v *provider) LocalRepository(ctx context.Context, ops ...Option) (*repository.Repository, LocalCommandScope, error) {
+func (v *provider) LocalRepository(ctx context.Context, hostByFlags configmap.Value[string], ops ...Option) (*repository.Repository, LocalCommandScope, error) {
 	// Get local repository
-	localCmdScp, err := v.LocalCommandScope(ctx, ops...)
+	localCmdScp, err := v.LocalCommandScope(ctx, hostByFlags, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
