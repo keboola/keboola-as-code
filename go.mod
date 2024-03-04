@@ -23,7 +23,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.18.0
+	github.com/go-playground/validator/v10 v10.19.0
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/gofrs/flock v0.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
