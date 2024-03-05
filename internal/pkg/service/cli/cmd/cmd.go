@@ -26,7 +26,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
@@ -96,7 +95,6 @@ type Cmd = cobra.Command
 type RootCommand struct {
 	*Cmd
 	logger      log.Logger
-	options     *options.Options
 	globalFlags flag.GlobalFlags
 	fs          filesystem.Fs
 	logFile     *log.File
@@ -186,8 +184,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			root.logger,
 			proc,
 			root.fs,
-			dialog.New(prompt, root.options),
-			root.options,
+			dialog.New(prompt),
 			root.globalFlags,
 			envs,
 			stdout,

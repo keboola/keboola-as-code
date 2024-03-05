@@ -28,7 +28,7 @@ const Backspace = "\b"
 func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
@@ -221,7 +221,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
@@ -347,7 +347,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -504,7 +504,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
-	d, _, _ := dialog.NewForTest(t, false)
+	d, _ := dialog.NewForTest(t, false)
 
 	f := Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
@@ -601,7 +601,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
-	d, _, _ := dialog.NewForTest(t, false)
+	d, _ := dialog.NewForTest(t, false)
 
 	f := Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},

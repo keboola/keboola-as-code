@@ -76,7 +76,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from interactive", func(t *testing.T) {
 		t.Parallel()
 
-		d, _, console := dialog.NewForTest(t, true)
+		d, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -161,7 +161,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name interactive", func(t *testing.T) {
 		t.Parallel()
 
-		d, _, console := dialog.NewForTest(t, true)
+		d, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -249,7 +249,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns-from flag", func(t *testing.T) {
 		t.Parallel()
 
-		d, _, console := dialog.NewForTest(t, true)
+		d, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -344,7 +344,7 @@ func TestAskCreate(t *testing.T) {
 	t.Run("columns name from flag", func(t *testing.T) {
 		t.Parallel()
 
-		d, _, console := dialog.NewForTest(t, true)
+		d, console := dialog.NewForTest(t, true)
 
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)

@@ -14,7 +14,7 @@ func TestSelectConfigInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -58,7 +58,7 @@ func TestSelectConfigByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -76,8 +76,7 @@ func TestSelectConfigNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, o, _ := createDialogs(t, false)
-	o.Set(`non-interactive`, `true`)
+	dialog, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -94,7 +93,7 @@ func TestSelectConfigMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -113,7 +112,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -171,7 +170,7 @@ func TestSelectConfigsByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -191,7 +190,7 @@ func TestSelectConfigsMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}

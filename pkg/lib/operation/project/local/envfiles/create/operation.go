@@ -8,13 +8,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type dependencies interface {
 	Logger() log.Logger
-	Options() *options.Options
 	Telemetry() telemetry.Telemetry
 	StorageAPIToken() keboola.Token
 }

@@ -93,7 +93,7 @@ config-row
 func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
@@ -244,7 +244,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
-	d, _, _ := dialog.NewForTest(t, false)
+	d, _ := dialog.NewForTest(t, false)
 
 	deps := dependencies.NewMocked(t)
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
@@ -355,7 +355,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
-	d, _, _ := dialog.NewForTest(t, false)
+	d, _ := dialog.NewForTest(t, false)
 
 	deps := dependencies.NewMocked(t)
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())

@@ -14,7 +14,7 @@ import (
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	f := DefaultFlags()
 
@@ -61,7 +61,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	t.Parallel()
 
-	d, _, _ := dialog.NewForTest(t, true)
+	d, _ := dialog.NewForTest(t, true)
 
 	f := DefaultFlags()
 	f.CIValidate = configmap.NewValueWithOrigin(false, configmap.SetByFlag)

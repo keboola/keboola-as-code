@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
@@ -32,7 +31,6 @@ type dependencies interface {
 	EmptyDir(ctx context.Context) (filesystem.Fs, error)
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
-	Options() *options.Options
 	ProjectID() keboola.ProjectID
 	StorageAPIHost() string
 	StorageAPIToken() keboola.Token

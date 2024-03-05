@@ -11,7 +11,6 @@ import (
 	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
@@ -78,7 +77,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			o, err := ParseUnloadOptions(d.Options(), tableKey, f)
+			o, err := ParseUnloadOptions(tableKey, f)
 			if err != nil {
 				return err
 			}
@@ -96,7 +95,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
-func ParseUnloadOptions(options *options.Options, tableKey keboola.TableKey, f Flags) (unload.Options, error) {
+func ParseUnloadOptions(tableKey keboola.TableKey, f Flags) (unload.Options, error) {
 	o := unload.Options{TableKey: tableKey}
 
 	o.ChangedSince = f.ChangedSince.Value

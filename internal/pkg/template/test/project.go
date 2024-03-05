@@ -13,7 +13,6 @@ import (
 	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -87,10 +86,6 @@ func PrepareProject(
 		unlockFn()
 		return nil, nil, nil, nil, err
 	}
-
-	opts := options.New()
-	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
-	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
 
 	// Load project state
 	prj, err := project.New(ctx, prjFS, true)

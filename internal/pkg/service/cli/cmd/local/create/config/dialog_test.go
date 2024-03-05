@@ -21,7 +21,7 @@ import (
 func TestAskCreateConfig(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	fs := aferofs.NewMemoryFs()
 	deps := dependencies.NewMocked(t)

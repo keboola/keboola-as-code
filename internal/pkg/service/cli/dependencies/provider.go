@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
@@ -28,7 +27,6 @@ type provider struct {
 	proc        *servicectx.Process
 	fs          filesystem.Fs
 	dialogs     *dialog.Dialogs
-	options     *options.Options
 	envs        *env.Map
 	stdout      io.Writer
 	stderr      io.Writer
@@ -56,7 +54,6 @@ func NewProvider(
 	proc *servicectx.Process,
 	fs filesystem.Fs,
 	dialogs *dialog.Dialogs,
-	opts *options.Options,
 	globalFlags flag.GlobalFlags,
 	envs *env.Map,
 	stdout io.Writer,
@@ -68,7 +65,6 @@ func NewProvider(
 		proc:        proc,
 		fs:          fs,
 		dialogs:     dialogs,
-		options:     opts,
 		globalFlags: globalFlags,
 
 		envs:   envs,
@@ -91,7 +87,7 @@ func (v *provider) BaseScope() BaseScope {
 				}
 			},
 		)
-		return newBaseScope(v.commandCtx, v.logger, v.stdout, v.stderr, v.proc, httpClient, v.fs, v.dialogs, v.options, v.globalFlags, v.envs)
+		return newBaseScope(v.commandCtx, v.logger, v.stdout, v.stderr, v.proc, httpClient, v.fs, v.dialogs, v.globalFlags, v.envs)
 	})
 }
 

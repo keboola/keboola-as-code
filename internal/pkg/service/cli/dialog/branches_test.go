@@ -15,7 +15,7 @@ func TestSelectBranchInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -59,8 +59,7 @@ func TestSelectBranchByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, o, _ := createDialogs(t, false)
-	o.Set(`branch`, 2)
+	dialog, _ := createDialogs(t, false)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -78,8 +77,7 @@ func TestSelectBranchNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, o, _ := createDialogs(t, false)
-	o.Set(`non-interactive`, true)
+	dialog, _ := createDialogs(t, false)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -96,7 +94,7 @@ func TestSelectBranchMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -115,7 +113,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -173,7 +171,7 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	f := syncInit.Flags{
 		Branches: configmap.NewValueWithOrigin("2,4", configmap.SetByFlag),
@@ -197,7 +195,7 @@ func TestSelectBranchesMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _, _ := createDialogs(t, false)
+	dialog, _ := createDialogs(t, false)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}

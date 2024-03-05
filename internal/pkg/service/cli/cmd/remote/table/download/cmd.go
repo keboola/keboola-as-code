@@ -83,7 +83,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			unloadOpts, err := u.ParseUnloadOptions(d.Options(), tableKey, u.Flags{
+			unloadOpts, err := u.ParseUnloadOptions(tableKey, u.Flags{
 				StorageAPIHost: f.StorageAPIHost,
 				ChangedSince:   f.ChangeSince,
 				ChangedUntil:   f.ChangedUntil,

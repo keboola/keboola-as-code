@@ -41,7 +41,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Optionss
+			// Options
 			options, err := AskCreateBranch(d.Dialogs(), f.Name)
 			if err != nil {
 				return err

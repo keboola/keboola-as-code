@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -28,7 +27,6 @@ type baseScope struct {
 	configBinder    *cmdconfig.Binder
 	globalsFlags    flag.GlobalFlags
 	dialogs         *dialog.Dialogs
-	options         *options.Options
 	emptyDir        dependencies.Lazy[filesystem.Fs]
 	localDbtProject dependencies.Lazy[dbtProjectValue]
 }
@@ -47,7 +45,6 @@ func newBaseScope(
 	httpClient client.Client,
 	fs filesystem.Fs,
 	dialogs *dialog.Dialogs,
-	opts *options.Options,
 	flags flag.GlobalFlags,
 	osEnvs *env.Map,
 ) *baseScope {
@@ -57,7 +54,6 @@ func newBaseScope(
 		fsInfo:       FsInfo{fs: fs},
 		configBinder: cmdconfig.NewBinder(osEnvs, logger),
 		dialogs:      dialogs,
-		options:      opts,
 		globalsFlags: flags,
 	}
 }
@@ -80,10 +76,6 @@ func (v *baseScope) GlobalFlags() flag.GlobalFlags {
 
 func (v *baseScope) Dialogs() *dialog.Dialogs {
 	return v.dialogs
-}
-
-func (v *baseScope) Options() *options.Options {
-	return v.options
 }
 
 func (v *baseScope) EmptyDir(ctx context.Context) (filesystem.Fs, error) {

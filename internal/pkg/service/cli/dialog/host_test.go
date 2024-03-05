@@ -12,7 +12,7 @@ import (
 func TestAskStorageAPIHost_HTTPS(t *testing.T) {
 	t.Parallel()
 
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -40,7 +40,7 @@ func TestAskStorageAPIHost_HTTPS(t *testing.T) {
 func TestAskStorageAPIHost_HTTP(t *testing.T) {
 	t.Parallel()
 
-	dialog, _, console := createDialogs(t, true)
+	dialog, console := createDialogs(t, true)
 
 	// Interaction
 	wg := sync.WaitGroup{}
