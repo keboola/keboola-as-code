@@ -35,7 +35,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// flags
 			f := Flags{}
-			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 

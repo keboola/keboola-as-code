@@ -55,7 +55,7 @@ func newBaseScope(
 		BaseScope:    dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clock.New(), proc, httpClient),
 		fs:           fs,
 		fsInfo:       FsInfo{fs: fs},
-		configBinder: cmdconfig.NewBinder(osEnvs),
+		configBinder: cmdconfig.NewBinder(osEnvs, logger),
 		dialogs:      dialogs,
 		options:      opts,
 		globalsFlags: flags,

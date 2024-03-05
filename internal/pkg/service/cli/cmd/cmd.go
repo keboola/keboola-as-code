@@ -147,7 +147,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Bind flags - without ENVs from files
 		root.globalFlags = flag.DefaultGlobalFlags()
-		err := cmdconfig.NewBinder(osEnvs).Bind(cmd.Flags(), args, &root.globalFlags)
+		err := cmdconfig.NewBinder(osEnvs, log.NewNopLogger()).Bind(cmd.Context(), cmd.Flags(), args, &root.globalFlags)
 		if err != nil {
 			return err
 		}
@@ -164,7 +164,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 
 		// Bind flags - with ENVs from files
 		root.globalFlags = flag.DefaultGlobalFlags()
-		err = cmdconfig.NewBinder(envs).Bind(cmd.Flags(), args, &root.globalFlags)
+		err = cmdconfig.NewBinder(envs, root.logger).Bind(cmd.Context(), cmd.Flags(), args, &root.globalFlags)
 		if err != nil {
 			return err
 		}
@@ -402,7 +402,7 @@ func (root *RootCommand) setupLogger() {
 	// Log info
 	root.logger.Debug(root.Context(), root.Version)
 	root.logger.Debugf(root.Context(), "Running command %v", os.Args)
-	// root.logger.Debug(root.Context(), root.options.Dump())
+
 	if root.logFile == nil {
 		root.logger.Debug(root.Context(), `Log file: -`)
 	} else {

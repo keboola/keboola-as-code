@@ -31,7 +31,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			f := Flags{}
-			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
@@ -86,7 +86,7 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 
 			// flags
 			f := Flags{}
-			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
@@ -116,7 +116,7 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			f := Flags{}
-			err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f)
+			err = p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f)
 			if err != nil {
 				return err
 			}

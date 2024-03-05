@@ -6,7 +6,7 @@ Usage:
   kbc remote table import [table] [file] [flags]
 
 Flags:
-      --columns string             comma separated list of column names. If present, the first row in the CSV file is not treated as a header
+      --columns strings            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
       --file-delimiter string      field delimiter used in the CSV file (default ",")
       --file-enclosure string      field enclosure used in the CSV file (default "\"")
       --file-escaped-by string     escape character used in the CSV file
