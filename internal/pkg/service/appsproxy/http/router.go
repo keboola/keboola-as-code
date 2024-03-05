@@ -39,7 +39,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       appconfig.SafeMap[string, http.Handler]
+	appHandlers       *appconfig.SafeMap[string, http.Handler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }

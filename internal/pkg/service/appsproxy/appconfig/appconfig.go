@@ -25,7 +25,7 @@ type sandboxesAPILoader struct {
 	logger log.Logger
 	clock  clock.Clock
 	sender request.Sender
-	cache  SafeMap[string, cacheItem]
+	cache  *SafeMap[string, cacheItem]
 }
 
 type cacheItem struct {
