@@ -39,7 +39,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       map[string]http.Handler
+	appHandlers       appconfig.SafeMap[string, http.Handler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }
@@ -68,7 +68,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:            d.Config(),
 		clock:             d.Clock(),
 		loader:            d.Loader(),
-		appHandlers:       make(map[string]http.Handler),
+		appHandlers:       appconfig.NewSafeMap[string, http.Handler](),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
@@ -118,10 +118,10 @@ func (r *Router) CreateHandler() http.Handler {
 		}
 
 		// Recreate app handler if configuration changed.
-		handler, ok := r.appHandlers[appID]
+		handler, ok := r.appHandlers.Get(appID)
 		if !ok || modified {
 			handler = r.createDataAppHandler(req.Context(), config)
-			r.appHandlers[appID] = handler
+			r.appHandlers.Set(appID, handler)
 		}
 
 		handler.ServeHTTP(w, req)

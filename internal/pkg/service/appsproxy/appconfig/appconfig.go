@@ -25,7 +25,7 @@ type sandboxesAPILoader struct {
 	logger log.Logger
 	clock  clock.Clock
 	sender request.Sender
-	cache  map[string]cacheItem
+	cache  SafeMap[string, cacheItem]
 }
 
 type cacheItem struct {
@@ -39,7 +39,7 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
-		cache:  make(map[string]cacheItem),
+		cache:  NewSafeMap[string, cacheItem](),
 	}
 }
 
@@ -48,7 +48,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 	var err error
 	now := l.clock.Now()
 
-	if item, ok := l.cache[appID]; ok {
+	if item, ok := l.cache.Get(appID); ok {
 		// Return config from cache if still valid
 		if now.Before(item.expiresAt) {
 			return item.config, false, nil
@@ -62,11 +62,11 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 
 		// Update expiration and use the cached config if eTag is still the same
 		if config.eTag == item.eTag {
-			l.cache[appID] = cacheItem{
+			l.cache.Set(appID, cacheItem{
 				config:    item.config,
 				eTag:      item.eTag,
 				expiresAt: now.Add(minDuration(config.maxAge, time.Hour)),
-			}
+			})
 			return item.config, false, nil
 		}
 	} else {
@@ -78,11 +78,11 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppP
 	}
 
 	// Save result to cache
-	l.cache[appID] = cacheItem{
+	l.cache.Set(appID, cacheItem{
 		config:    *config,
 		eTag:      config.eTag,
 		expiresAt: now.Add(minDuration(config.maxAge, time.Hour)),
-	}
+	})
 	return *config, true, nil
 }
 
