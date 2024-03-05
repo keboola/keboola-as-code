@@ -28,7 +28,6 @@ import (
 const (
 	ServiceName       = "app-proxy"
 	ENVPrefix         = "APP_PROXY_"
-	ErrorNamePrefix   = "appproxy."
 	ExceptionIDPrefix = "keboola-appproxy-"
 )
 
