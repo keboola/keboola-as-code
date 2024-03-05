@@ -6,26 +6,31 @@ import (
 
 // SafeMap is a map wrapper with RWMutex for safe concurrent access.
 type SafeMap[K comparable, V any] struct {
-	lock sync.RWMutex
-	m    map[K]V
+	init func() *V
+	lock *sync.Mutex
+	kvs  map[K]*V
 }
 
-func NewSafeMap[K comparable, V any]() *SafeMap[K, V] {
+func NewSafeMap[K comparable, V any](init func() *V) *SafeMap[K, V] {
 	return &SafeMap[K, V]{
-		lock: sync.RWMutex{},
-		m:       make(map[K]V),
+		init: init,
+		lock: &sync.Mutex{},
+		kvs:  make(map[K]*V),
 	}
 }
 
-func (m *SafeMap[K, V]) Get(key K) (V, bool) {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-	item, ok := m.m[key]
-	return item, ok
-}
-
-func (m *SafeMap[K, V]) Set(key K, val V) {
+func (m *SafeMap[K, V]) GetOrInit(key K) *V {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.m[key] = val
+
+	// Get
+	item, ok := m.kvs[key]
+
+	// Or init
+	if !ok {
+		item = m.init()
+		m.kvs[key] = item
+	}
+
+	return item
 }

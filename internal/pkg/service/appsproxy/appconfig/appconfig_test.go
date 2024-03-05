@@ -268,29 +268,21 @@ func TestLoader_LoadConfig(t *testing.T) {
 
 			url := "https://sandboxes.keboola.com"
 
-			loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, client.New().WithTransport(transport), url, "")
+			httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
 
-			for _, attempt := range tc.attempts {
+			loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, httpClient, url, "")
+
+			for i, attempt := range tc.attempts {
+				t.Logf("attempt %d/%d", i+1, len(tc.attempts))
 				transport.Reset()
 
 				clk.Add(attempt.delay)
 
-				if len(attempt.responses) > 0 {
-					transport.RegisterResponder(
-						http.MethodGet,
-						fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
-						httpmock.ResponderFromMultipleResponses(attempt.responses),
-					)
-				} else {
-					transport.RegisterResponder(
-						http.MethodGet,
-						fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
-						func(req *http.Request) (*http.Response, error) {
-							require.Fail(t, "A call to sandboxes API is not expected.")
-							return nil, nil
-						},
-					)
-				}
+				transport.RegisterResponder(
+					http.MethodGet,
+					fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
+					httpmock.ResponderFromMultipleResponses(attempt.responses),
+				)
 
 				config, modified, err := loader.LoadConfig(context.Background(), tc.appID)
 				if attempt.expectedErrorCode != 0 {

@@ -3,6 +3,7 @@ package appconfig
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -29,9 +30,10 @@ type sandboxesAPILoader struct {
 }
 
 type cacheItem struct {
-	config    AppProxyConfig
-	eTag      string
-	expiresAt time.Time
+	config     AppProxyConfig
+	eTag       string
+	expiresAt  time.Time
+	updateLock *sync.Mutex
 }
 
 func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Loader {
@@ -39,51 +41,46 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
-		cache:  NewSafeMap[string, cacheItem](),
+		cache: NewSafeMap[string, cacheItem](func() *cacheItem {
+			return &cacheItem{
+				updateLock: &sync.Mutex{},
+			}
+		}),
 	}
 }
 
-func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppProxyConfig, bool, error) {
-	var config *AppProxyConfig
-	var err error
+func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
+	// Get cache item or init an empty item
+	item := l.cache.GetOrInit(appID)
+
+	// Only one update runs in parallel.
+	// If there is an in-flight update, we are waiting for its results.
+	item.updateLock.Lock()
+	defer item.updateLock.Unlock()
+
+	// Return config from cache if still valid
 	now := l.clock.Now()
-
-	if item, ok := l.cache.Get(appID); ok {
-		// Return config from cache if still valid
-		if now.Before(item.expiresAt) {
-			return item.config, false, nil
-		}
-
-		// API request with cached eTag
-		config, err = GetAppProxyConfig(l.sender, appID, item.eTag).Send(ctx)
-		if err != nil {
-			return l.handleError(ctx, appID, now, err, &item)
-		}
-
-		// Update expiration and use the cached config if eTag is still the same
-		if config.eTag == item.eTag {
-			l.cache.Set(appID, cacheItem{
-				config:    item.config,
-				eTag:      item.eTag,
-				expiresAt: now.Add(minDuration(config.maxAge, time.Hour)),
-			})
-			return item.config, false, nil
-		}
-	} else {
-		// API request without eTag because cache is empty
-		config, err = GetAppProxyConfig(l.sender, appID, "").Send(ctx)
-		if err != nil {
-			return l.handleError(ctx, appID, now, err, nil)
-		}
+	if now.Before(item.expiresAt) {
+		return item.config, false, nil
 	}
 
-	// Save result to cache
-	l.cache.Set(appID, cacheItem{
-		config:    *config,
-		eTag:      config.eTag,
-		expiresAt: now.Add(minDuration(config.maxAge, time.Hour)),
-	})
-	return *config, true, nil
+	// API request with cached eTag
+	config, err := GetAppProxyConfig(l.sender, appID, item.eTag).Send(ctx)
+	if err != nil {
+		return l.handleError(ctx, appID, now, err, item)
+	}
+
+	// Update expiration
+	item.expiresAt = now.Add(minDuration(config.maxAge, time.Hour))
+
+	// Update item if needed
+	modified = config.eTag == "" || config.eTag != item.eTag
+	if modified {
+		item.config = *config
+		item.eTag = config.eTag
+	}
+
+	return item.config, modified, nil
 }
 
 func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, bool, error) {
@@ -99,7 +96,7 @@ func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now 
 	}
 
 	// An error other than 404 is considered a temporary failure. Keep using the stale cache for staleCacheFallbackDuration as fallback.
-	if fallbackItem != nil && now.Before(fallbackItem.expiresAt.Add(staleCacheFallbackDuration)) {
+	if !fallbackItem.expiresAt.IsZero() && now.Before(fallbackItem.expiresAt.Add(staleCacheFallbackDuration)) {
 		logger.Warnf(ctx, `Using stale cache for app "%s": %s`, appID, err.Error())
 
 		return fallbackItem.config, false, nil
