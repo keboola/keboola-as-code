@@ -99,12 +99,10 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 	return s.repo.Source().SoftDelete(d.SourceKey()).Do(ctx).Err()
 }
 
-func (s *service) GetSourceSettings(context.Context, dependencies.SourceRequestScope, *api.GetSourceSettingsPayload) (res api.SettingsResult, err error) {
-	return nil, errors.NewNotImplementedError()
+func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (res *api.SettingsResult, err error) {
 }
 
-func (s *service) UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *api.UpdateSourceSettingsPayload) (res api.SettingsResult, err error) {
-	return nil, errors.NewNotImplementedError()
+func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (res *api.SettingsResult, err error) {
 }
 
 func (s *service) RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *api.RefreshSourceTokensPayload) (res *api.Source, err error) {

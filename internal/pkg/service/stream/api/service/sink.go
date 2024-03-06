@@ -28,10 +28,10 @@ func (s *service) DeleteSink(context.Context, dependencies.SinkRequestScope, *st
 	return errors.NewNotImplementedError()
 }
 
-func (s *service) GetSinkSettings(context.Context, dependencies.SinkRequestScope, *stream.GetSinkSettingsPayload) (res stream.SettingsResult, err error) {
+func (s *service) GetSinkSettings(context.Context, dependencies.SinkRequestScope, *stream.GetSinkSettingsPayload) (res *stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *stream.UpdateSinkSettingsPayload) (res stream.SettingsResult, err error) {
+func (s *service) UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *stream.UpdateSinkSettingsPayload) (res *stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
