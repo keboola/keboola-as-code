@@ -5,5 +5,8 @@ Print info about current project or template repository directory.
 Usage:
   %s status [flags]
 
+Flags:
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+
 Global Flags:
 %A

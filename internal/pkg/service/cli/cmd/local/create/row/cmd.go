@@ -11,9 +11,11 @@ import (
 )
 
 type Flags struct {
-	Branch configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
-	Config configmap.Value[string] `configKey:"config" configShorthand:"c" configUsage:"config name or ID"`
-	Name   configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new config row"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Branch          configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	Config          configmap.Value[string] `configKey:"config" configShorthand:"c" configUsage:"config name or ID"`
+	Name            configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new config row"`
 }
 
 func DefaultFlags() Flags {
@@ -27,8 +29,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/create/row/short`),
 		Long:  helpmsg.Read(`local/create/row/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(cmd.Context(), false)
+			prj, d, err := p.LocalProject(cmd.Context(), false, f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
@@ -36,12 +44,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Load project state
 			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
-				return err
-			}
-
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 

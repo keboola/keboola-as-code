@@ -11,11 +11,13 @@ Usage:
   kbc local template upgrade [flags]
 
 Flags:
-  -b, --branch string        branch ID or name
-      --dry-run              print what needs to be done
-  -f, --inputs-file string   JSON file with inputs values
-  -i, --instance string      instance ID of the template to upgrade
-  -V, --version string       target version, default latest stable version
+  -b, --branch string              branch ID or name
+      --dry-run                    print what needs to be done
+  -f, --inputs-file string         JSON file with inputs values
+  -i, --instance string            instance ID of the template to upgrade
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+  -V, --version string             target version, default latest stable version
 
 Global Flags:
 %A

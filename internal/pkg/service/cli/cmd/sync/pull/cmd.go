@@ -15,8 +15,10 @@ import (
 )
 
 type Flags struct {
-	Force  configmap.Value[bool] `configKey:"force" configUsage:"ignore invalid local state"`
-	DryRun configmap.Value[bool] `configKey:"dry-run" configUsage:"print what needs to be done"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Force           configmap.Value[bool]   `configKey:"force" configUsage:"ignore invalid local state"`
+	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
 }
 
 func DefaultFlags() Flags {
@@ -35,14 +37,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Authentication
-			d, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
+			f := Flags{}
+			if err = p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Authentication
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
+			if err != nil {
 				return err
 			}
 

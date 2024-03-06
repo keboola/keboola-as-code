@@ -13,9 +13,11 @@ import (
 )
 
 type Flags struct {
-	Force   configmap.Value[bool] `configKey:"force" configUsage:"enable deleting of remote objects"`
-	DryRun  configmap.Value[bool] `configKey:"dry-run" configUsage:"print what needs to be done"`
-	Encrypt configmap.Value[bool] `configKey:"encrypt" configUsage:"encrypt unencrypted values before push"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Force           configmap.Value[bool]   `configKey:"force" configUsage:"enable deleting of remote objects"`
+	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	Encrypt         configmap.Value[bool]   `configKey:"encrypt" configUsage:"encrypt unencrypted values before push"`
 }
 
 func DefaultFlags() Flags {
@@ -34,8 +36,13 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			f := Flags{}
+			if err = p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
+				return err
+			}
+
 			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context())
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
@@ -56,11 +63,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 			changeDescription := "Updated from #KeboolaCLI"
 			if len(args) > 0 {
 				changeDescription = args[0]
-			}
-
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
-				return err
 			}
 
 			// Options

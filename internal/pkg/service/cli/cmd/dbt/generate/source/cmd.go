@@ -11,8 +11,9 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	TargetName     configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	TargetName      configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
 }
 
 func DefaultFlags() Flags {
@@ -30,14 +31,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
+			if err != nil {
 				return err
 			}
 

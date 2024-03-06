@@ -27,7 +27,7 @@ const (
 func TestAskUpgradeTemplate(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	projectState := deps.MockedState()

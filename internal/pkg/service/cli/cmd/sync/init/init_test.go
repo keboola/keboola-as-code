@@ -6,12 +6,10 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci/workflow"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -23,7 +21,7 @@ import (
 func TestDialogs_AskInitOptions(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -92,7 +90,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	t.Parallel()
 
-	d, o, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -101,13 +99,6 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)
-
-	// Default values are defined by options
-	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	workflow.WorkflowsCmdFlags(flags)
-	assert.NoError(t, o.BindPFlags(flags))
-	o.Set("ci", "false")
-	o.Set("branches", "main")
 
 	f := DefaultFlags()
 	f.Branches = configmap.NewValueWithOrigin("main", configmap.SetByFlag)

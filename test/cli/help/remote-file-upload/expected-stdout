@@ -6,10 +6,11 @@ Usage:
   kbc remote file upload [file] [flags]
 
 Flags:
-      --data string               path to the file to be uploaded
-      --file-name string          name of the file to be created
-      --file-tags string          comma-separated list of tags
-  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --data string                path to the file to be uploaded
+      --file-name string           name of the file to be created
+      --file-tags string           comma-separated list of tags
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
 
 Global Flags:
 %A

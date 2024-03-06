@@ -6,14 +6,15 @@ Usage:
   kbc remote table import [table] [file] [flags]
 
 Flags:
-      --columns string            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
-      --file-delimiter string     field delimiter used in the CSV file (default ",")
-      --file-enclosure string     field enclosure used in the CSV file (default "\"")
-      --file-escaped-by string    escape character used in the CSV file
-      --file-without-headers      states if the CSV file contains headers on the first row or not
-      --incremental-load          data are either added to existing data in the table or replace the existing data
-      --primary-key strings       primary key for the newly created table if the table doesn't exist
-  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --columns strings            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
+      --file-delimiter string      field delimiter used in the CSV file (default ",")
+      --file-enclosure string      field enclosure used in the CSV file (default "\"")
+      --file-escaped-by string     escape character used in the CSV file
+      --file-without-headers       states if the CSV file contains headers on the first row or not
+      --incremental-load           data are either added to existing data in the table or replace the existing data
+      --primary-key strings        primary key for the newly created table if the table doesn't exist
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
 
 Global Flags:
 %A

@@ -9,20 +9,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
-	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -33,7 +28,7 @@ const Backspace = "\b"
 func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
@@ -226,17 +221,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
@@ -362,17 +347,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -529,17 +504,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _ := dialog.NewForTest(t, false)
 
 	f := Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},
@@ -636,11 +601,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
-	// options
-	o := options.New()
-
-	// dialog
-	d := dialog.New(nopPrompt.New(), o)
+	d, _ := dialog.NewForTest(t, false)
 
 	f := Flags{
 		Branch:       configmap.Value[string]{Value: "123", SetBy: configmap.SetByFlag},

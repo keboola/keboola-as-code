@@ -10,5 +10,9 @@ in a project local directory and also separately.
 Usage:
   %s local validate row component.id row.json [flags]
 
+Flags:
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+
 Global Flags:
 %A

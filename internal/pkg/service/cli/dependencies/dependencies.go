@@ -22,7 +22,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmdconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -45,8 +46,8 @@ type BaseScope interface {
 	Fs() filesystem.Fs
 	FsInfo() FsInfo
 	ConfigBinder() *cmdconfig.Binder
+	GlobalFlags() flag.GlobalFlags
 	Dialogs() *dialog.Dialogs
-	Options() *options.Options
 	EmptyDir(ctx context.Context) (filesystem.Fs, error)
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
@@ -73,14 +74,14 @@ type RemoteCommandScope interface {
 // Provider of CLI dependencies.
 type Provider interface {
 	BaseScope() BaseScope
-	LocalCommandScope(ctx context.Context, opts ...Option) (LocalCommandScope, error)
-	RemoteCommandScope(ctx context.Context, opts ...Option) (RemoteCommandScope, error)
+	LocalCommandScope(ctx context.Context, hostByFlags configmap.Value[string], opts ...Option) (LocalCommandScope, error)
+	RemoteCommandScope(ctx context.Context, hostByFlags, tokenByFlags configmap.Value[string], opts ...Option) (RemoteCommandScope, error)
 	// LocalProject method can be used by a CLI command that must be run in the local project directory.
 	// First, the local project is loaded, and then the authentication is performed,
 	// so the error that we are not in a project directory takes precedence over an invalid/missing token.
-	LocalProject(ctx context.Context, ignoreErrors bool, ops ...Option) (*projectPkg.Project, RemoteCommandScope, error)
+	LocalProject(ctx context.Context, ignoreErrors bool, hostByFlags, tokenByFlags configmap.Value[string], ops ...Option) (*projectPkg.Project, RemoteCommandScope, error)
 	// LocalRepository method can be used by a CLI command that must be run in the local repository directory.
-	LocalRepository(ctx context.Context, ops ...Option) (*repository.Repository, LocalCommandScope, error)
+	LocalRepository(ctx context.Context, hostByFlags configmap.Value[string], ops ...Option) (*repository.Repository, LocalCommandScope, error)
 	// LocalDbtProject method can be used by a CLI command that must be run in the dbt project directory.
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }

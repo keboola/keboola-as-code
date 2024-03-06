@@ -12,7 +12,9 @@ import (
 )
 
 type Flags struct {
-	Branch configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Branch          configmap.Value[string] `configKey:"branch" configShorthand:"b" configUsage:"branch ID or name"`
 }
 
 func DefaultFlags() Flags {
@@ -25,15 +27,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/template/list/short`),
 		Long:  helpmsg.Read(`local/template/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Command must be used in project directory
-			prj, d, err := p.LocalProject(cmd.Context(), false)
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(cmd.Context(), false, f.StorageAPIHost, f.StorageAPIToken)
+			if err != nil {
 				return err
 			}
 

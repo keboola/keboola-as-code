@@ -6,17 +6,18 @@ Usage:
   kbc remote table download [table] [flags]
 
 Flags:
-      --allow-sliced              output sliced files as a directory containing slices as individual files
-      --changed-since string      only export rows imported after this date
-      --changed-until string      only export rows imported before this date
-      --columns strings           comma-separated list of columns to export
-      --format string             output format (json/csv) (default "csv")
-      --limit uint                limit the number of exported rows
-      --order string              order by one or more columns
-  -o, --output string             path to the destination file or directory
-  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-      --timeout string            how long to wait for the unload job to finish (default "2m")
-      --where string              filter columns by value
+      --allow-sliced               output sliced files as a directory containing slices as individual files
+      --changed-since string       only export rows imported after this date
+      --changed-until string       only export rows imported before this date
+      --columns strings            comma-separated list of columns to export
+      --format string              output format (json/csv) (default "csv")
+      --limit uint                 limit the number of exported rows
+      --order string               order by one or more columns
+  -o, --output string              path to the destination file or directory
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+      --timeout string             how long to wait for the unload job to finish (default "2m")
+      --where string               filter columns by value
 
 Global Flags:
 %A

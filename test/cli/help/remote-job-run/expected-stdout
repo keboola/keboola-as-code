@@ -10,9 +10,10 @@ Usage:
   kbc remote job run [branch1/]component1/config1[@tag] [branch2/]component2/config2[@tag] ... [flags]
 
 Flags:
-      --async                     do not wait for job to finish
-  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-      --timeout string            how long to wait for job to finish (default "5m")
+      --async                      do not wait for job to finish
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+      --timeout string             how long to wait for job to finish (default "5m")
 
 Global Flags:
 %A

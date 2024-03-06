@@ -11,23 +11,23 @@ import (
 	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	ChangedSince   configmap.Value[string]   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
-	ChangedUntil   configmap.Value[string]   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
-	Columns        configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of columns to export"`
-	Limit          configmap.Value[uint]     `configKey:"limit" configUsage:"limit the number of exported rows"`
-	Where          configmap.Value[string]   `configKey:"where" configUsage:"filter columns by value"`
-	Order          configmap.Value[string]   `configKey:"order" configUsage:"order by one or more columns"`
-	Format         configmap.Value[string]   `configKey:"format" configUsage:"output format (json/csv)"`
-	Async          configmap.Value[bool]     `configKey:"async" configUsage:"do not wait for unload to finish"`
-	Timeout        configmap.Value[string]   `configKey:"timeout" configUsage:"how long to wait for job to finish"`
+	StorageAPIHost  configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string]   `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	ChangedSince    configmap.Value[string]   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
+	ChangedUntil    configmap.Value[string]   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
+	Columns         configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of columns to export"`
+	Limit           configmap.Value[uint]     `configKey:"limit" configUsage:"limit the number of exported rows"`
+	Where           configmap.Value[string]   `configKey:"where" configUsage:"filter columns by value"`
+	Order           configmap.Value[string]   `configKey:"order" configUsage:"order by one or more columns"`
+	Format          configmap.Value[string]   `configKey:"format" configUsage:"output format (json/csv)"`
+	Async           configmap.Value[bool]     `configKey:"async" configUsage:"do not wait for unload to finish"`
+	Timeout         configmap.Value[string]   `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }
 
 func DefaultFlags() Flags {
@@ -46,15 +46,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/unload/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Get dependencies
-			d, err := p.RemoteCommandScope(cmd.Context(), dependencies.WithoutMasterToken())
-			if err != nil {
+			// flags
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			// flags
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken, dependencies.WithoutMasterToken())
+			if err != nil {
 				return err
 			}
 
@@ -77,7 +77,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			o, err := ParseUnloadOptions(d.Options(), tableKey, f)
+			o, err := ParseUnloadOptions(tableKey, f)
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
-func ParseUnloadOptions(options *options.Options, tableKey keboola.TableKey, f Flags) (unload.Options, error) {
+func ParseUnloadOptions(tableKey keboola.TableKey, f Flags) (unload.Options, error) {
 	o := unload.Options{TableKey: tableKey}
 
 	o.ChangedSince = f.ChangedSince.Value

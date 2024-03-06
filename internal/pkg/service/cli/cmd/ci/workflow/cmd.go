@@ -11,11 +11,12 @@ import (
 )
 
 type Flags struct {
-	CI           configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflows"`
-	CIValidate   configmap.Value[bool]   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
-	CIPull       configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
-	CIMainBranch configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
-	CIPush       configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
+	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	CI             configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflows"`
+	CIValidate     configmap.Value[bool]   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
+	CIPull         configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
+	CIMainBranch   configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
+	CIPush         configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
 }
 
 func DefaultFlags() Flags {
@@ -36,12 +37,12 @@ func Command(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Bind flags to struct
 			f := Flags{}
-			if err := p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d, err := p.LocalCommandScope(cmd.Context())
+			d, err := p.LocalCommandScope(cmd.Context(), f.StorageAPIHost)
 			if err != nil {
 				return err
 			}

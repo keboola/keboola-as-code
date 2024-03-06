@@ -6,16 +6,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -23,7 +19,7 @@ import (
 func TestAskRenameInstance_Interactive(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
@@ -82,17 +78,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
-	// options
-	o := options.New()
-
-	// terminal
-	console, err := terminal.New(t)
-	require.NoError(t, err)
-
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
-
-	// dialog
-	d := dialog.New(p, o)
+	d, _ := dialog.NewForTest(t, false)
 
 	deps := dependencies.NewMocked(t)
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)

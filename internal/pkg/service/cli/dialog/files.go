@@ -81,7 +81,6 @@ func (p *Dialogs) askFileInput(data configmap.Value[string]) string {
 	}
 
 	input = strings.TrimSpace(input)
-	p.options.Set(`input`, input)
 	return input
 }
 

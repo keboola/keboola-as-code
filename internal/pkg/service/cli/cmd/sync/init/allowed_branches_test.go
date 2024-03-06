@@ -21,7 +21,7 @@ import (
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -47,7 +47,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 
-	d, _, _ := dialog.NewForTest(t, true)
+	d, _ := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 
@@ -71,7 +71,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -104,7 +104,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -137,7 +137,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(
@@ -191,7 +191,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
 
-	d, _, console := dialog.NewForTest(t, true)
+	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t)
 	registerMockedBranchesResponse(

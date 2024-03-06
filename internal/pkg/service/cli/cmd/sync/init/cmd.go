@@ -12,13 +12,14 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	Branches       configmap.Value[string] `configKey:"branches" configShorthand:"b" configUsage:"comma separated IDs or name globs, use \"*\" for all"`
-	CI             configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflows"`
-	CIValidate     configmap.Value[bool]   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
-	CIPush         configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
-	CIPull         configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
-	CIMainBranch   configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
+	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Branches        configmap.Value[string] `configKey:"branches" configShorthand:"b" configUsage:"comma separated IDs or name globs, use \"*\" for all"`
+	CI              configmap.Value[bool]   `configKey:"ci" configUsage:"generate workflows"`
+	CIValidate      configmap.Value[bool]   `configKey:"ci-validate" configUsage:"create workflow to validate all branches on change"`
+	CIPush          configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
+	CIPull          configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
+	CIMainBranch    configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
 }
 
 func DefaultFlags() Flags {
@@ -43,14 +44,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Get dependencies
-			projectDeps, err := p.RemoteCommandScope(cmd.Context())
-			if err != nil {
+			f := Flags{}
+			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
-			f := Flags{}
-			if err = p.BaseScope().ConfigBinder().Bind(cmd.Flags(), args, &f); err != nil {
+			// Get dependencies
+			projectDeps, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
+			if err != nil {
 				return err
 			}
 
