@@ -396,7 +396,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 				}
 
 				// Redirect to OAuth2 provider is instead redirected to selection page
-				if locationURL.Host == loginURL.Host && locationURL.Path == loginURL.Path {
+				if locationURL.Host == loginURL.Host && locationURL.Path == loginURL.Path && len(oauthProviders) > 1 {
 					r.redirectToProviderSelection(writer, request)
 				}
 			})
