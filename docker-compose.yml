@@ -23,15 +23,15 @@ services:
       - STREAM_LISTEN_ADDRESS=0.0.0.0:8001
       - STREAM_METRICS_LISTEN_ADDRESS=0.0.0.0:9001
       - STREAM_PUBLIC_ADDRESS=http://localhost:8001
-      # App Proxy
-      - APP_PROXY_LISTEN_ADDRESS=0.0.0.0:8002
-      - APP_PROXY_METRICS_LISTEN_ADDRESS=0.0.0.0:9002
-      - APP_PROXY_API_PUBLIC_URL=https://hub.keboola.local
-      - APP_PROXY_COOKIE_SECRET_SALT=secret
+      # Apps Proxy
+      - APPS_PROXY_LISTEN_ADDRESS=0.0.0.0:8002
+      - APPS_PROXY_METRICS_LISTEN_ADDRESS=0.0.0.0:9002
+      - APPS_PROXY_API_PUBLIC_URL=https://hub.keboola.local
+      - APPS_PROXY_COOKIE_SECRET_SALT=secret
       # Disable DataDog integration
       - TEMPLATES_DATADOG_ENABLED=false
       - STREAM_DATADOG_ENABLED=false
-      - APP_PROXY_DATADOG_ENABLED=false
+      - APPS_PROXY_DATADOG_ENABLED=false
       # Etcd for unit tests
       - UNIT_ETCD_ENABLED=true
       - UNIT_ETCD_ENDPOINT=etcd:2379
@@ -55,7 +55,7 @@ services:
       # Stream Service
       - "8001:8001" # API
       - "9001:9001" # metrics
-      # App Proxy
+      # Apps Proxy
       - "8002:8002" # Proxy
       - "9002:9002" # metrics
       # Go docs
