@@ -129,7 +129,7 @@ storage:
                     mode: disk
                     # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
                     wait: true
-                    # Minimal interval between syncs. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+                    # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     checkInterval: 5ms
                     # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
                     countTrigger: 500
@@ -172,22 +172,22 @@ storage:
                 # Minimal interval between uploads. Validation rules: required,minDuration=1s,maxDuration=5m
                 minInterval: 5s
                 trigger:
-                    # Records count. Validation rules: required,min=1,max=10000000
+                    # Records count to trigger slice upload. Validation rules: required,min=1,max=10000000
                     count: 10000
-                    # Records size. Validation rules: required,minBytes=100B,maxBytes=50MB
+                    # Records size to trigger slice upload. Validation rules: required,minBytes=100B,maxBytes=50MB
                     size: 1MB
-                    # Duration from the last upload. Validation rules: required,minDuration=1s,maxDuration=30m
+                    # Duration from the last slice upload to trigger the next upload. Validation rules: required,minDuration=1s,maxDuration=30m
                     interval: 1m0s
         target:
             import:
                 # Minimal interval between imports. Validation rules: required,minDuration=30s,maxDuration=30m
                 minInterval: 1m0s
                 trigger:
-                    # Records count. Validation rules: required,min=1,max=10000000
+                    # Records count to trigger file import. Validation rules: required,min=1,max=10000000
                     count: 50000
-                    # Records size. Validation rules: required,minBytes=100B,maxBytes=500MB
+                    # Records size to trigger file import. Validation rules: required,minBytes=100B,maxBytes=500MB
                     size: 5MB
-                    # Duration from the last import. Validation rules: required,minDuration=60s,maxDuration=24h
+                    # Duration from the last import to trigger the next import. Validation rules: required,minDuration=60s,maxDuration=24h
                     interval: 5m0s
 `), strings.TrimSpace(string(bytes)))
 
@@ -218,6 +218,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 				},
 			},
 		},
+		configpatch.WithModifyProtected(),
 	)
 	require.NoError(t, err)
 
@@ -225,99 +226,125 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 [
   {
     "key": "storage.level.local.compression.gzip.blockSize",
+    "type": "string",
+    "description": "GZIP parallel block size.",
     "value": "256KB",
     "defaultValue": "256KB",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,minBytes=16kB,maxBytes=100MB"
   },
   {
     "key": "storage.level.local.compression.gzip.concurrency",
+    "type": "int",
+    "description": "GZIP parallel concurrency, 0 = auto.",
     "value": 0,
     "defaultValue": 0,
     "overwritten": false,
-    "protected": false
+    "protected": true
   },
   {
     "key": "storage.level.local.compression.gzip.implementation",
+    "type": "string",
+    "description": "GZIP implementation: standard, fast, parallel.",
     "value": "parallel",
     "defaultValue": "parallel",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,oneof=standard fast parallel"
   },
   {
     "key": "storage.level.local.compression.gzip.level",
+    "type": "int",
+    "description": "GZIP compression level: 1-9.",
     "value": 1,
     "defaultValue": 1,
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "min=1,max=9"
   },
   {
     "key": "storage.level.local.compression.type",
+    "type": "string",
+    "description": "Compression type.",
     "value": "gzip",
     "defaultValue": "gzip",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,oneof=none gzip zstd"
   },
   {
     "key": "storage.level.local.compression.zstd.concurrency",
+    "type": "int",
+    "description": "ZSTD concurrency, 0 = auto",
     "value": 0,
     "defaultValue": 0,
     "overwritten": false,
-    "protected": false
+    "protected": true
   },
   {
     "key": "storage.level.local.compression.zstd.level",
+    "type": "int",
+    "description": "ZSTD compression level: fastest, default, better, best.",
     "value": 1,
     "defaultValue": 1,
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "min=1,max=4"
   },
   {
     "key": "storage.level.local.compression.zstd.windowSize",
+    "type": "string",
+    "description": "ZSTD window size.",
     "value": "1MB",
     "defaultValue": "1MB",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,minBytes=1kB,maxBytes=512MB"
   },
   {
     "key": "storage.level.local.volume.allocation.enabled",
+    "type": "bool",
+    "description": "Allocate disk space for each slice.",
     "value": true,
     "defaultValue": true,
     "overwritten": false,
-    "protected": false
+    "protected": true
   },
   {
     "key": "storage.level.local.volume.allocation.relative",
+    "type": "int",
+    "description": "Allocate disk space as % from the previous slice size.",
     "value": 110,
     "defaultValue": 110,
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "min=100,max=500"
   },
   {
     "key": "storage.level.local.volume.allocation.static",
+    "type": "string",
+    "description": "Size of allocated disk space for a slice.",
     "value": "456MB",
     "defaultValue": "100MB",
     "overwritten": true,
-    "protected": false,
+    "protected": true,
     "validation": "required"
   },
   {
     "key": "storage.level.local.volume.assignment.count",
+    "type": "int",
+    "description": "Volumes count simultaneously utilized per sink.",
     "value": 1,
     "defaultValue": 1,
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,min=1,max=100"
   },
   {
     "key": "storage.level.local.volume.assignment.preferredTypes",
+    "type": "[]string",
+    "description": "List of preferred volume types, start with the most preferred.",
     "value": [
       "default"
     ],
@@ -325,66 +352,82 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
       "default"
     ],
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,min=1"
   },
   {
     "key": "storage.level.local.volume.sync.bytesTrigger",
+    "type": "string",
+    "description": "Written size to trigger sync.",
     "value": "1MB",
     "defaultValue": "1MB",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
   },
   {
     "key": "storage.level.local.volume.sync.checkInterval",
+    "type": "string",
+    "description": "Minimal interval between syncs to disk.",
     "value": "5ms",
     "defaultValue": "5ms",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
   },
   {
     "key": "storage.level.local.volume.sync.countTrigger",
+    "type": "uint",
+    "description": "Written records count to trigger sync.",
     "value": 500,
     "defaultValue": 500,
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
   },
   {
     "key": "storage.level.local.volume.sync.intervalTrigger",
+    "type": "string",
+    "description": "Interval from the last sync to trigger sync.",
     "value": "50ms",
     "defaultValue": "50ms",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
   },
   {
     "key": "storage.level.local.volume.sync.mode",
+    "type": "string",
+    "description": "Sync mode: \"disabled\", \"cache\" or \"disk\".",
     "value": "disk",
     "defaultValue": "disk",
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,oneof=disabled disk cache"
   },
   {
     "key": "storage.level.local.volume.sync.wait",
+    "type": "bool",
+    "description": "Wait for sync to disk OS cache or to disk hardware, depending on the mode.",
     "value": true,
     "defaultValue": true,
     "overwritten": false,
-    "protected": false
+    "protected": true
   },
   {
     "key": "storage.level.staging.maxSlicesPerFile",
+    "type": "int",
+    "description": "Maximum number of slices in a file, a new file is created after reaching it.",
     "value": 100,
     "defaultValue": 100,
     "overwritten": false,
-    "protected": false,
+    "protected": true,
     "validation": "required,min=1,max=50000"
   },
   {
     "key": "storage.level.staging.upload.trigger.count",
+    "type": "uint64",
+    "description": "Records count to trigger slice upload.",
     "value": 10000,
     "defaultValue": 10000,
     "overwritten": false,
@@ -393,6 +436,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
   },
   {
     "key": "storage.level.staging.upload.trigger.interval",
+    "type": "string",
+    "description": "Duration from the last slice upload to trigger the next upload.",
     "value": "1m0s",
     "defaultValue": "1m0s",
     "overwritten": false,
@@ -401,6 +446,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
   },
   {
     "key": "storage.level.staging.upload.trigger.size",
+    "type": "string",
+    "description": "Records size to trigger slice upload.",
     "value": "1MB",
     "defaultValue": "1MB",
     "overwritten": false,
@@ -409,6 +456,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
   },
   {
     "key": "storage.level.target.import.trigger.count",
+    "type": "uint64",
+    "description": "Records count to trigger file import.",
     "value": 50000,
     "defaultValue": 50000,
     "overwritten": false,
@@ -417,6 +466,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
   },
   {
     "key": "storage.level.target.import.trigger.interval",
+    "type": "string",
+    "description": "Duration from the last import to trigger the next import.",
     "value": "5m0s",
     "defaultValue": "5m0s",
     "overwritten": false,
@@ -425,6 +476,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
   },
   {
     "key": "storage.level.target.import.trigger.size",
+    "type": "string",
+    "description": "Records size to trigger file import.",
     "value": "5MB",
     "defaultValue": "5MB",
     "overwritten": false,

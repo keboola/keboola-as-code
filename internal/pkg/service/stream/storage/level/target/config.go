@@ -50,9 +50,9 @@ type ImportConfigPatch struct {
 
 // ImportTrigger configures file import conditions, at least one must be met.
 type ImportTrigger struct {
-	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count." validate:"required,min=1,max=10000000"`
-	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size." validate:"required,minBytes=100B,maxBytes=500MB"`
-	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import." validate:"required,minDuration=60s,maxDuration=24h"`
+	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger file import." modAllowed:"true" validate:"required,min=1,max=10000000"`
+	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger file import." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=500MB"`
+	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import to trigger the next import." modAllowed:"true" validate:"required,minDuration=60s,maxDuration=24h"`
 }
 
 // ImportTriggerPatch is same as the ImportTrigger, but with optional/nullable fields.

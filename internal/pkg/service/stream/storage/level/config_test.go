@@ -81,7 +81,7 @@ func TestConfig_With(t *testing.T) {
 	require.NoError(t, configpatch.Apply(&patchedConfig2, level.ConfigPatch{
 		Local:   localConfigPatch,
 		Staging: stagingConfigPatch,
-	}))
+	}, configpatch.WithModifyProtected()))
 	assert.Equal(t, expectedCfg, patchedConfig2)
 
 	// Second patch
@@ -135,6 +135,6 @@ func TestConfig_With(t *testing.T) {
 	require.NoError(t, configpatch.Apply(&patchedConfig3, level.ConfigPatch{
 		Local:  localConfigPatch2,
 		Target: targetConfigPatch,
-	}))
+	}, configpatch.WithModifyProtected()))
 	assert.Equal(t, expectedCfg, patchedConfig3)
 }

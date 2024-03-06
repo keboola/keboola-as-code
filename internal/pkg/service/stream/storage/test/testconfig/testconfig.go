@@ -40,7 +40,9 @@ func StorageConfigPatch() configpatch.PatchKVs {
 					},
 				},
 			},
-		})
+		},
+		configpatch.WithModifyProtected(),
+	)
 }
 
 func LocalVolumeConfig(count int, preferred []string) configpatch.PatchKVs {
@@ -60,6 +62,7 @@ func LocalVolumeConfig(count int, preferred []string) configpatch.PatchKVs {
 				},
 			},
 		},
+		configpatch.WithModifyProtected(),
 	)
 }
 

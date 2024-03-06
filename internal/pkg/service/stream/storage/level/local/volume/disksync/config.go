@@ -44,7 +44,7 @@ type Config struct {
 	Wait bool `json:"wait" configKey:"wait" configUsage:"Wait for sync to disk OS cache or to disk hardware, depending on the mode."`
 	// CheckInterval defines how often BytesTrigger and IntervalTrigger will be checked.
 	// It is minimal interval between two syncs.
-	CheckInterval duration.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs."`
+	CheckInterval duration.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs to disk."`
 	// CountTrigger defines the writes count after the sync will be triggered.
 	// The number is count of the high-level writers, e.g., one table row = one write operation.
 	CountTrigger uint `json:"countTrigger,omitempty" configKey:"countTrigger" validate:"min=0,max=1000000,required_if=Mode disk,required_if=Mode cache" configUsage:"Written records count to trigger sync."`
