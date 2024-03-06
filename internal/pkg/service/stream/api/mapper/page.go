@@ -27,7 +27,7 @@ func loadPage[E, R any](
 ) (out []R, page *stream.PaginatedResponse, err error) {
 	// Check limits
 	if sort != etcd.SortAscend && sort != etcd.SortDescend {
-		return nil, nil, errors.New(`sort must be etcd.SortAscend os etcd.SortDescend`)
+		return nil, nil, errors.New(`sort must be etcd.SortAscend or etcd.SortDescend`)
 	}
 	if limit < streamDesign.MinPaginationLimit {
 		return nil, nil, svcerrors.NewBadRequestError(
