@@ -90,8 +90,8 @@ func (c *Client) HealthCheck(ctx context.Context) (res string, err error) {
 
 // CreateSource calls the "CreateSource" endpoint of the "stream" service.
 // CreateSource may return the following errors:
-//   - "stream.sourceAlreadyExists" (type *GenericError): Source already exists in the branch.
-//   - "stream.resourceLimitReached" (type *GenericError): Resource limit reached.
+//   - "stream.api.sourceAlreadyExists" (type *GenericError): Source already exists in the branch.
+//   - "stream.api.resourceLimitReached" (type *GenericError): Resource limit reached.
 //   - error: internal error
 func (c *Client) CreateSource(ctx context.Context, p *CreateSourcePayload) (res *Task, err error) {
 	var ires any
@@ -104,7 +104,7 @@ func (c *Client) CreateSource(ctx context.Context, p *CreateSourcePayload) (res 
 
 // UpdateSource calls the "UpdateSource" endpoint of the "stream" service.
 // UpdateSource may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
 func (c *Client) UpdateSource(ctx context.Context, p *UpdateSourcePayload) (res *Task, err error) {
 	var ires any
@@ -127,7 +127,7 @@ func (c *Client) ListSources(ctx context.Context, p *ListSourcesPayload) (res *S
 
 // GetSource calls the "GetSource" endpoint of the "stream" service.
 // GetSource may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
 func (c *Client) GetSource(ctx context.Context, p *GetSourcePayload) (res *Source, err error) {
 	var ires any
@@ -140,7 +140,7 @@ func (c *Client) GetSource(ctx context.Context, p *GetSourcePayload) (res *Sourc
 
 // DeleteSource calls the "DeleteSource" endpoint of the "stream" service.
 // DeleteSource may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
 func (c *Client) DeleteSource(ctx context.Context, p *DeleteSourcePayload) (err error) {
 	_, err = c.DeleteSourceEndpoint(ctx, p)
@@ -150,35 +150,36 @@ func (c *Client) DeleteSource(ctx context.Context, p *DeleteSourcePayload) (err 
 // GetSourceSettings calls the "GetSourceSettings" endpoint of the "stream"
 // service.
 // GetSourceSettings may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
-func (c *Client) GetSourceSettings(ctx context.Context, p *GetSourceSettingsPayload) (res SettingsResult, err error) {
+func (c *Client) GetSourceSettings(ctx context.Context, p *GetSourceSettingsPayload) (res *SettingsResult, err error) {
 	var ires any
 	ires, err = c.GetSourceSettingsEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(SettingsResult), nil
+	return ires.(*SettingsResult), nil
 }
 
 // UpdateSourceSettings calls the "UpdateSourceSettings" endpoint of the
 // "stream" service.
 // UpdateSourceSettings may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.forbidden" (type *GenericError): Modification of protected settings is forbidden.
 //   - error: internal error
-func (c *Client) UpdateSourceSettings(ctx context.Context, p *UpdateSourceSettingsPayload) (res SettingsResult, err error) {
+func (c *Client) UpdateSourceSettings(ctx context.Context, p *UpdateSourceSettingsPayload) (res *SettingsResult, err error) {
 	var ires any
 	ires, err = c.UpdateSourceSettingsEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(SettingsResult), nil
+	return ires.(*SettingsResult), nil
 }
 
 // RefreshSourceTokens calls the "RefreshSourceTokens" endpoint of the "stream"
 // service.
 // RefreshSourceTokens may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
 func (c *Client) RefreshSourceTokens(ctx context.Context, p *RefreshSourceTokensPayload) (res *Source, err error) {
 	var ires any
@@ -191,9 +192,9 @@ func (c *Client) RefreshSourceTokens(ctx context.Context, p *RefreshSourceTokens
 
 // CreateSink calls the "CreateSink" endpoint of the "stream" service.
 // CreateSink may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
-//   - "stream.sinkAlreadyExists" (type *GenericError): Sink already exists in the source.
-//   - "stream.resourceLimitReached" (type *GenericError): Resource limit reached.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkAlreadyExists" (type *GenericError): Sink already exists in the source.
+//   - "stream.api.resourceLimitReached" (type *GenericError): Resource limit reached.
 //   - error: internal error
 func (c *Client) CreateSink(ctx context.Context, p *CreateSinkPayload) (res *Task, err error) {
 	var ires any
@@ -206,8 +207,8 @@ func (c *Client) CreateSink(ctx context.Context, p *CreateSinkPayload) (res *Tas
 
 // GetSink calls the "GetSink" endpoint of the "stream" service.
 // GetSink may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
-//   - "stream.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
 //   - error: internal error
 func (c *Client) GetSink(ctx context.Context, p *GetSinkPayload) (res *Sink, err error) {
 	var ires any
@@ -220,36 +221,37 @@ func (c *Client) GetSink(ctx context.Context, p *GetSinkPayload) (res *Sink, err
 
 // GetSinkSettings calls the "GetSinkSettings" endpoint of the "stream" service.
 // GetSinkSettings may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
-//   - "stream.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
 //   - error: internal error
-func (c *Client) GetSinkSettings(ctx context.Context, p *GetSinkSettingsPayload) (res SettingsResult, err error) {
+func (c *Client) GetSinkSettings(ctx context.Context, p *GetSinkSettingsPayload) (res *SettingsResult, err error) {
 	var ires any
 	ires, err = c.GetSinkSettingsEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(SettingsResult), nil
+	return ires.(*SettingsResult), nil
 }
 
 // UpdateSinkSettings calls the "UpdateSinkSettings" endpoint of the "stream"
 // service.
 // UpdateSinkSettings may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
-//   - "stream.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.forbidden" (type *GenericError): Modification of protected settings is forbidden.
 //   - error: internal error
-func (c *Client) UpdateSinkSettings(ctx context.Context, p *UpdateSinkSettingsPayload) (res SettingsResult, err error) {
+func (c *Client) UpdateSinkSettings(ctx context.Context, p *UpdateSinkSettingsPayload) (res *SettingsResult, err error) {
 	var ires any
 	ires, err = c.UpdateSinkSettingsEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(SettingsResult), nil
+	return ires.(*SettingsResult), nil
 }
 
 // ListSinks calls the "ListSinks" endpoint of the "stream" service.
 // ListSinks may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
 func (c *Client) ListSinks(ctx context.Context, p *ListSinksPayload) (res *SinksList, err error) {
 	var ires any
@@ -262,8 +264,8 @@ func (c *Client) ListSinks(ctx context.Context, p *ListSinksPayload) (res *Sinks
 
 // UpdateSink calls the "UpdateSink" endpoint of the "stream" service.
 // UpdateSink may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
-//   - "stream.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
 //   - error: internal error
 func (c *Client) UpdateSink(ctx context.Context, p *UpdateSinkPayload) (res *Task, err error) {
 	var ires any
@@ -276,8 +278,8 @@ func (c *Client) UpdateSink(ctx context.Context, p *UpdateSinkPayload) (res *Tas
 
 // DeleteSink calls the "DeleteSink" endpoint of the "stream" service.
 // DeleteSink may return the following errors:
-//   - "stream.sourceNotFound" (type *GenericError): Source not found error.
-//   - "stream.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
 //   - error: internal error
 func (c *Client) DeleteSink(ctx context.Context, p *DeleteSinkPayload) (err error) {
 	_, err = c.DeleteSinkEndpoint(ctx, p)
@@ -286,7 +288,7 @@ func (c *Client) DeleteSink(ctx context.Context, p *DeleteSinkPayload) (err erro
 
 // GetTask calls the "GetTask" endpoint of the "stream" service.
 // GetTask may return the following errors:
-//   - "stream.taskNotFound" (type *GenericError): Task not found error.
+//   - "stream.api.taskNotFound" (type *GenericError): Task not found error.
 //   - error: internal error
 func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
 	var ires any

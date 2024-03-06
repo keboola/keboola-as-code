@@ -226,24 +226,24 @@ paths:
                                     sourceId: github-webhook-source
                                     sinkId: github-pr-table-sink
                 "409":
-                    description: 'stream.sourceAlreadyExists: Source already exists in the branch.'
+                    description: 'stream.api.sourceAlreadyExists: Source already exists in the branch.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 409
-                                error: stream.sourceAlreadyExists
+                                error: stream.api.sourceAlreadyExists
                                 message: Source already exists in the branch.
                 "422":
-                    description: 'stream.resourceLimitReached: Resource limit reached.'
+                    description: 'stream.api.resourceLimitReached: Resource limit reached.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 422
-                                error: stream.resourceLimitReached
+                                error: stream.api.resourceLimitReached
                                 message: Maximum number of sources per project is 100.
             security:
                 - storage-api-token: []
@@ -277,14 +277,14 @@ paths:
                 "200":
                     description: OK response.
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
@@ -397,14 +397,14 @@ paths:
                                             userDescription: user@company.com
                                         reason: Disabled for recurring problems.
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
@@ -469,14 +469,14 @@ paths:
                                     sourceId: github-webhook-source
                                     sinkId: github-pr-table-sink
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
@@ -512,34 +512,26 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/SettingResult'
-                                example:
+                                $ref: '#/components/schemas/SettingsResult'
+                            example:
+                                settings:
                                     - key: some.service.limit
                                       type: string
+                                      description: Minimal interval between uploads.
                                       value: 1m20s
                                       defaultValue: 30s
                                       overwritten: true
                                       protected: false
                                       validation: minDuration=15s
-                            example:
-                                - key: some.service.limit
-                                  type: string
-                                  value: 1m20s
-                                  defaultValue: 30s
-                                  overwritten: true
-                                  protected: false
-                                  validation: minDuration=15s
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
@@ -575,7 +567,8 @@ paths:
                         schema:
                             $ref: '#/components/schemas/UpdateSourceSettingsRequestBody'
                         example:
-                            patch:
+                            changeDescription: Updated settings.
+                            settings:
                                 - key: some.service.limit
                                   value: 1m20s
             responses:
@@ -584,35 +577,27 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/SettingResult'
-                                example:
+                                $ref: '#/components/schemas/SettingsResult'
+                            example:
+                                settings:
                                     - key: some.service.limit
                                       type: string
+                                      description: Minimal interval between uploads.
                                       value: 1m20s
                                       defaultValue: 30s
                                       overwritten: true
                                       protected: false
                                       validation: minDuration=15s
-                            example:
-                                - key: some.service.limit
-                                  type: string
-                                  value: 1m20s
-                                  defaultValue: 30s
-                                  overwritten: true
-                                  protected: false
-                                  validation: minDuration=15s
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.forbidden: Modification of protected settings is forbidden.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
-                                message: Source "github-pull-requests" not found.
+                                error: stream.api.forbidden
+                                message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks:
@@ -728,14 +713,14 @@ paths:
                                             userDescription: user@company.com
                                         reason: Disabled for recurring problems.
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
@@ -819,34 +804,34 @@ paths:
                                     sourceId: github-webhook-source
                                     sinkId: github-pr-table-sink
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
                 "409":
-                    description: 'stream.sinkAlreadyExists: Sink already exists in the source.'
+                    description: 'stream.api.sinkAlreadyExists: Sink already exists in the source.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 409
-                                error: stream.sinkAlreadyExists
+                                error: stream.api.sinkAlreadyExists
                                 message: Sink already exists in the source.
                 "422":
-                    description: 'stream.resourceLimitReached: Resource limit reached.'
+                    description: 'stream.api.resourceLimitReached: Resource limit reached.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 422
-                                error: stream.resourceLimitReached
+                                error: stream.api.resourceLimitReached
                                 message: Maximum number of sources per project is 100.
             security:
                 - storage-api-token: []
@@ -890,14 +875,14 @@ paths:
                 "200":
                     description: OK response.
                 "404":
-                    description: 'stream.sinkNotFound: Sink not found error.'
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sinkNotFound
+                                error: stream.api.sinkNotFound
                                 message: Sink "github-changed-files" not found.
             security:
                 - storage-api-token: []
@@ -991,14 +976,14 @@ paths:
                                         userDescription: user@company.com
                                     reason: Disabled for recurring problems.
                 "404":
-                    description: 'stream.sinkNotFound: Sink not found error.'
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sinkNotFound
+                                error: stream.api.sinkNotFound
                                 message: Sink "github-changed-files" not found.
             security:
                 - storage-api-token: []
@@ -1092,14 +1077,14 @@ paths:
                                     sourceId: github-webhook-source
                                     sinkId: github-pr-table-sink
                 "404":
-                    description: 'stream.sinkNotFound: Sink not found error.'
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sinkNotFound
+                                error: stream.api.sinkNotFound
                                 message: Sink "github-changed-files" not found.
             security:
                 - storage-api-token: []
@@ -1145,34 +1130,26 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/SettingResult'
-                                example:
+                                $ref: '#/components/schemas/SettingsResult'
+                            example:
+                                settings:
                                     - key: some.service.limit
                                       type: string
+                                      description: Minimal interval between uploads.
                                       value: 1m20s
                                       defaultValue: 30s
                                       overwritten: true
                                       protected: false
                                       validation: minDuration=15s
-                            example:
-                                - key: some.service.limit
-                                  type: string
-                                  value: 1m20s
-                                  defaultValue: 30s
-                                  overwritten: true
-                                  protected: false
-                                  validation: minDuration=15s
                 "404":
-                    description: 'stream.sinkNotFound: Sink not found error.'
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sinkNotFound
+                                error: stream.api.sinkNotFound
                                 message: Sink "github-changed-files" not found.
             security:
                 - storage-api-token: []
@@ -1216,9 +1193,9 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UpdateSourceSettingsRequestBody'
+                            $ref: '#/components/schemas/UpdateSinkSettingsRequestBody'
                         example:
-                            patch:
+                            settings:
                                 - key: some.service.limit
                                   value: 1m20s
             responses:
@@ -1227,35 +1204,27 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/SettingResult'
-                                example:
+                                $ref: '#/components/schemas/SettingsResult'
+                            example:
+                                settings:
                                     - key: some.service.limit
                                       type: string
+                                      description: Minimal interval between uploads.
                                       value: 1m20s
                                       defaultValue: 30s
                                       overwritten: true
                                       protected: false
                                       validation: minDuration=15s
-                            example:
-                                - key: some.service.limit
-                                  type: string
-                                  value: 1m20s
-                                  defaultValue: 30s
-                                  overwritten: true
-                                  protected: false
-                                  validation: minDuration=15s
                 "404":
-                    description: 'stream.sinkNotFound: Sink not found error.'
+                    description: 'stream.api.forbidden: Modification of protected settings is forbidden.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sinkNotFound
-                                message: Sink "github-changed-files" not found.
+                                error: stream.api.forbidden
+                                message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
@@ -1368,14 +1337,14 @@ paths:
                                             userDescription: user@company.com
                                         reason: Disabled for recurring problems.
                 "404":
-                    description: 'stream.sourceNotFound: Source not found error.'
+                    description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.sourceNotFound
+                                error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
@@ -1456,14 +1425,14 @@ paths:
                                     sourceId: github-webhook-source
                                     sinkId: github-pr-table-sink
                 "404":
-                    description: 'stream.taskNotFound: Task not found error.'
+                    description: 'stream.api.taskNotFound: Task not found error.'
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GenericError'
                             example:
                                 statusCode: 404
-                                error: stream.taskNotFound
+                                error: stream.api.taskNotFound
                                 message: Task "001" not found.
             security:
                 - storage-api-token: []
@@ -1653,7 +1622,7 @@ components:
             description: Source already exists in the branch.
             example:
                 statusCode: 409
-                error: stream.sourceAlreadyExists
+                error: stream.api.sourceAlreadyExists
                 message: Source already exists in the branch.
             required:
                 - statusCode
@@ -1742,6 +1711,10 @@ components:
                 defaultValue:
                     description: Default value.
                     example: 30s
+                description:
+                    type: string
+                    description: Key description.
+                    example: Minimal interval between uploads.
                 key:
                     type: string
                     description: Key path.
@@ -1762,7 +1735,10 @@ components:
                         - string
                         - int
                         - float
-                        - boolean
+                        - bool
+                        - '[]string'
+                        - '[]int'
+                        - '[]float'
                 validation:
                     type: string
                     description: Validation rules as a string definition.
@@ -1774,6 +1750,7 @@ components:
             example:
                 key: some.service.limit
                 type: string
+                description: Minimal interval between uploads.
                 value: 1m20s
                 defaultValue: 30s
                 overwritten: true
@@ -1782,10 +1759,37 @@ components:
             required:
                 - key
                 - type
+                - description
                 - value
                 - defaultValue
                 - overwritten
                 - protected
+        SettingsResult:
+            type: object
+            properties:
+                settings:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SettingResult'
+                    example:
+                        - key: some.service.limit
+                          type: string
+                          description: Minimal interval between uploads.
+                          value: 1m20s
+                          defaultValue: 30s
+                          overwritten: true
+                          protected: false
+                          validation: minDuration=15s
+            example:
+                settings:
+                    - key: some.service.limit
+                      type: string
+                      description: Minimal interval between uploads.
+                      value: 1m20s
+                      defaultValue: 30s
+                      overwritten: true
+                      protected: false
+                      validation: minDuration=15s
         Sink:
             type: object
             properties:
@@ -2666,6 +2670,20 @@ components:
                               language: jsonnet
                               content: body.foo + "-" + body.bar
                 changeDescription: Renamed.
+        UpdateSinkSettingsRequestBody:
+            type: object
+            properties:
+                settings:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SettingPatch'
+                    example:
+                        - key: some.service.limit
+                          value: 1m20s
+            example:
+                settings:
+                    - key: some.service.limit
+                      value: 1m20s
         UpdateSourceRequestBody:
             type: object
             properties:
@@ -2697,7 +2715,11 @@ components:
         UpdateSourceSettingsRequestBody:
             type: object
             properties:
-                patch:
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Updated settings.
+                settings:
                     type: array
                     items:
                         $ref: '#/components/schemas/SettingPatch'
@@ -2705,7 +2727,8 @@ components:
                         - key: some.service.limit
                           value: 1m20s
             example:
-                patch:
+                changeDescription: Updated settings.
+                settings:
                     - key: some.service.limit
                       value: 1m20s
         Version:

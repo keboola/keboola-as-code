@@ -114,7 +114,7 @@ func EncodeCreateSourceError(encoder func(context.Context, http.ResponseWriter) 
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceAlreadyExists":
+		case "stream.api.sourceAlreadyExists":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusConflict
@@ -123,12 +123,12 @@ func EncodeCreateSourceError(encoder func(context.Context, http.ResponseWriter) 
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateSourceStreamSourceAlreadyExistsResponseBody(res)
+				body = NewCreateSourceStreamAPISourceAlreadyExistsResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "stream.resourceLimitReached":
+		case "stream.api.resourceLimitReached":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusUnprocessableEntity
@@ -137,7 +137,7 @@ func EncodeCreateSourceError(encoder func(context.Context, http.ResponseWriter) 
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateSourceStreamResourceLimitReachedResponseBody(res)
+				body = NewCreateSourceStreamAPIResourceLimitReachedResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusUnprocessableEntity)
@@ -223,7 +223,7 @@ func EncodeUpdateSourceError(encoder func(context.Context, http.ResponseWriter) 
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -232,7 +232,7 @@ func EncodeUpdateSourceError(encoder func(context.Context, http.ResponseWriter) 
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateSourceStreamSourceNotFoundResponseBody(res)
+				body = NewUpdateSourceStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -369,7 +369,7 @@ func EncodeGetSourceError(encoder func(context.Context, http.ResponseWriter) goa
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -378,7 +378,7 @@ func EncodeGetSourceError(encoder func(context.Context, http.ResponseWriter) goa
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetSourceStreamSourceNotFoundResponseBody(res)
+				body = NewGetSourceStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -446,7 +446,7 @@ func EncodeDeleteSourceError(encoder func(context.Context, http.ResponseWriter) 
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -455,7 +455,7 @@ func EncodeDeleteSourceError(encoder func(context.Context, http.ResponseWriter) 
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteSourceStreamSourceNotFoundResponseBody(res)
+				body = NewDeleteSourceStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -470,7 +470,7 @@ func EncodeDeleteSourceError(encoder func(context.Context, http.ResponseWriter) 
 // the stream GetSourceSettings endpoint.
 func EncodeGetSourceSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(stream.SettingsResult)
+		res, _ := v.(*stream.SettingsResult)
 		enc := encoder(ctx, w)
 		body := NewGetSourceSettingsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -526,7 +526,7 @@ func EncodeGetSourceSettingsError(encoder func(context.Context, http.ResponseWri
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -535,7 +535,7 @@ func EncodeGetSourceSettingsError(encoder func(context.Context, http.ResponseWri
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetSourceSettingsStreamSourceNotFoundResponseBody(res)
+				body = NewGetSourceSettingsStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -550,7 +550,7 @@ func EncodeGetSourceSettingsError(encoder func(context.Context, http.ResponseWri
 // by the stream UpdateSourceSettings endpoint.
 func EncodeUpdateSourceSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(stream.SettingsResult)
+		res, _ := v.(*stream.SettingsResult)
 		enc := encoder(ctx, w)
 		body := NewUpdateSourceSettingsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -621,7 +621,7 @@ func EncodeUpdateSourceSettingsError(encoder func(context.Context, http.Response
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -630,7 +630,21 @@ func EncodeUpdateSourceSettingsError(encoder func(context.Context, http.Response
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateSourceSettingsStreamSourceNotFoundResponseBody(res)
+				body = NewUpdateSourceSettingsStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "stream.api.forbidden":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateSourceSettingsStreamAPIForbiddenResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -701,7 +715,7 @@ func EncodeRefreshSourceTokensError(encoder func(context.Context, http.ResponseW
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -710,7 +724,7 @@ func EncodeRefreshSourceTokensError(encoder func(context.Context, http.ResponseW
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewRefreshSourceTokensStreamSourceNotFoundResponseBody(res)
+				body = NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -796,7 +810,7 @@ func EncodeCreateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -805,12 +819,12 @@ func EncodeCreateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateSinkStreamSourceNotFoundResponseBody(res)
+				body = NewCreateSinkStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "stream.sinkAlreadyExists":
+		case "stream.api.sinkAlreadyExists":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusConflict
@@ -819,12 +833,12 @@ func EncodeCreateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateSinkStreamSinkAlreadyExistsResponseBody(res)
+				body = NewCreateSinkStreamAPISinkAlreadyExistsResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "stream.resourceLimitReached":
+		case "stream.api.resourceLimitReached":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusUnprocessableEntity
@@ -833,7 +847,7 @@ func EncodeCreateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateSinkStreamResourceLimitReachedResponseBody(res)
+				body = NewCreateSinkStreamAPIResourceLimitReachedResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusUnprocessableEntity)
@@ -912,7 +926,7 @@ func EncodeGetSinkError(encoder func(context.Context, http.ResponseWriter) goaht
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -921,12 +935,12 @@ func EncodeGetSinkError(encoder func(context.Context, http.ResponseWriter) goaht
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetSinkStreamSourceNotFoundResponseBody(res)
+				body = NewGetSinkStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "stream.sinkNotFound":
+		case "stream.api.sinkNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -935,7 +949,7 @@ func EncodeGetSinkError(encoder func(context.Context, http.ResponseWriter) goaht
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetSinkStreamSinkNotFoundResponseBody(res)
+				body = NewGetSinkStreamAPISinkNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -950,7 +964,7 @@ func EncodeGetSinkError(encoder func(context.Context, http.ResponseWriter) goaht
 // the stream GetSinkSettings endpoint.
 func EncodeGetSinkSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(stream.SettingsResult)
+		res, _ := v.(*stream.SettingsResult)
 		enc := encoder(ctx, w)
 		body := NewGetSinkSettingsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -1014,7 +1028,7 @@ func EncodeGetSinkSettingsError(encoder func(context.Context, http.ResponseWrite
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1023,12 +1037,12 @@ func EncodeGetSinkSettingsError(encoder func(context.Context, http.ResponseWrite
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetSinkSettingsStreamSourceNotFoundResponseBody(res)
+				body = NewGetSinkSettingsStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "stream.sinkNotFound":
+		case "stream.api.sinkNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1037,7 +1051,7 @@ func EncodeGetSinkSettingsError(encoder func(context.Context, http.ResponseWrite
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetSinkSettingsStreamSinkNotFoundResponseBody(res)
+				body = NewGetSinkSettingsStreamAPISinkNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1052,7 +1066,7 @@ func EncodeGetSinkSettingsError(encoder func(context.Context, http.ResponseWrite
 // by the stream UpdateSinkSettings endpoint.
 func EncodeUpdateSinkSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(stream.SettingsResult)
+		res, _ := v.(*stream.SettingsResult)
 		enc := encoder(ctx, w)
 		body := NewUpdateSinkSettingsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -1131,7 +1145,7 @@ func EncodeUpdateSinkSettingsError(encoder func(context.Context, http.ResponseWr
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1140,12 +1154,12 @@ func EncodeUpdateSinkSettingsError(encoder func(context.Context, http.ResponseWr
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateSinkSettingsStreamSourceNotFoundResponseBody(res)
+				body = NewUpdateSinkSettingsStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "stream.sinkNotFound":
+		case "stream.api.sinkNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1154,7 +1168,21 @@ func EncodeUpdateSinkSettingsError(encoder func(context.Context, http.ResponseWr
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateSinkSettingsStreamSinkNotFoundResponseBody(res)
+				body = NewUpdateSinkSettingsStreamAPISinkNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "stream.api.forbidden":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateSinkSettingsStreamAPIForbiddenResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1249,7 +1277,7 @@ func EncodeListSinksError(encoder func(context.Context, http.ResponseWriter) goa
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1258,7 +1286,7 @@ func EncodeListSinksError(encoder func(context.Context, http.ResponseWriter) goa
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewListSinksStreamSourceNotFoundResponseBody(res)
+				body = NewListSinksStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1352,7 +1380,7 @@ func EncodeUpdateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1361,12 +1389,12 @@ func EncodeUpdateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateSinkStreamSourceNotFoundResponseBody(res)
+				body = NewUpdateSinkStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "stream.sinkNotFound":
+		case "stream.api.sinkNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1375,7 +1403,7 @@ func EncodeUpdateSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateSinkStreamSinkNotFoundResponseBody(res)
+				body = NewUpdateSinkStreamAPISinkNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1451,7 +1479,7 @@ func EncodeDeleteSinkError(encoder func(context.Context, http.ResponseWriter) go
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.sourceNotFound":
+		case "stream.api.sourceNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1460,12 +1488,12 @@ func EncodeDeleteSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteSinkStreamSourceNotFoundResponseBody(res)
+				body = NewDeleteSinkStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "stream.sinkNotFound":
+		case "stream.api.sinkNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1474,7 +1502,7 @@ func EncodeDeleteSinkError(encoder func(context.Context, http.ResponseWriter) go
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteSinkStreamSinkNotFoundResponseBody(res)
+				body = NewDeleteSinkStreamAPISinkNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1537,7 +1565,7 @@ func EncodeGetTaskError(encoder func(context.Context, http.ResponseWriter) goaht
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "stream.taskNotFound":
+		case "stream.api.taskNotFound":
 			var res *stream.GenericError
 			errors.As(v, &res)
 			res.StatusCode = http.StatusNotFound
@@ -1546,7 +1574,7 @@ func EncodeGetTaskError(encoder func(context.Context, http.ResponseWriter) goaht
 			if false { // formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetTaskStreamTaskNotFoundResponseBody(res)
+				body = NewGetTaskStreamAPITaskNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1809,12 +1837,16 @@ func marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v *stream
 	return res
 }
 
-// marshalStreamSettingResultToSettingResultResponse builds a value of type
-// *SettingResultResponse from a value of type *stream.SettingResult.
-func marshalStreamSettingResultToSettingResultResponse(v *stream.SettingResult) *SettingResultResponse {
-	res := &SettingResultResponse{
+// marshalStreamSettingResultToSettingResultResponseBody builds a value of type
+// *SettingResultResponseBody from a value of type *stream.SettingResult.
+func marshalStreamSettingResultToSettingResultResponseBody(v *stream.SettingResult) *SettingResultResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &SettingResultResponseBody{
 		Key:          v.Key,
 		Type:         v.Type,
+		Description:  v.Description,
 		Value:        v.Value,
 		DefaultValue: v.DefaultValue,
 		Overwritten:  v.Overwritten,
