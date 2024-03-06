@@ -113,6 +113,42 @@ func TestStateSearchForConfigsInTemplate(t *testing.T) {
 	assert.Equal(t, "Config 1", res[0].Name)
 }
 
+func TestConfigsByTemplateInstance(t *testing.T) {
+	t.Parallel()
+
+	all := []*model.ConfigWithRows{
+		{
+			Config: &model.Config{Name: "Config 1", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
+		},
+		{
+			Config: &model.Config{Name: "Config 2", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
+		},
+		{
+			Config: &model.Config{Name: "Config 3"},
+		},
+		{
+			Config: &model.Config{Name: "Config 4", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst2"}},
+		},
+	}
+
+	res := ConfigsByTemplateInstance(all)
+	assert.Equal(t, map[string][]*model.ConfigWithRows{
+		"inst1": {
+			{
+				Config: &model.Config{Name: "Config 1", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
+			},
+			{
+				Config: &model.Config{Name: "Config 2", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
+			},
+		},
+		"inst2": {
+			{
+				Config: &model.Config{Name: "Config 4", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst2"}},
+			},
+		},
+	}, res)
+}
+
 func TestMatchObjectIdOrName(t *testing.T) {
 	t.Parallel()
 
