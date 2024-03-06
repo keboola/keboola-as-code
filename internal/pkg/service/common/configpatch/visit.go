@@ -25,11 +25,19 @@ type visitContext struct {
 	PatchValue *reflect.Value
 	// Overwritten is true, if the value is set in the patch and is valid.
 	Overwritten bool
-	// Protected configuration key can be modified only by a super-admin.
+	// Protected configuration key can be modified only by a super-admin user.
 	Protected bool
 }
 
 type onValue func(vc *visitContext)
+
+type ProtectedKeyError struct {
+	error
+}
+
+func (e ProtectedKeyError) Unwrap() error {
+	return e.error
+}
 
 // visitConfigAndPatch visits all common nested field defined in config and patch structures.
 // The onValue callback is called for each found field, with actual visitContext.
@@ -120,9 +128,10 @@ func visitConfigAndPatch(configStruct, patchStruct reflect.Value, opts []Option,
 					value = *patchValue
 				}
 
-				// Note overwritten protected field
-				protected := configVc.StructField.Tag.Get(cfg.protectedTag) == cfg.protectedTagValue
-				if patchValue != nil && protected && !cfg.modifyProtected {
+				// Note overwritten modAllowed field
+				modAllowed := configVc.StructField.Tag.Get(cfg.modAllowedTag) == cfg.modAllowedValue
+				protected := !modAllowed
+				if patchValue != nil && protected && !cfg.modProtected {
 					patchedProtected = append(patchedProtected, keyPath)
 				}
 
@@ -156,7 +165,8 @@ func visitConfigAndPatch(configStruct, patchStruct reflect.Value, opts []Option,
 
 	// Check overwritten protected keys
 	if len(patchedProtected) > 0 {
-		errs.Append(errors.Errorf(`cannot modify protected fields: "%s"`, strings.Join(patchedProtected, `", "`)))
+		err := errors.Errorf(`cannot modify protected keys: "%s"`, strings.Join(patchedProtected, `", "`))
+		errs.Append(ProtectedKeyError{error: err})
 	}
 
 	// Check errors

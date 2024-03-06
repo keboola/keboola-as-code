@@ -3,21 +3,21 @@ package configpatch
 type Option func(*config)
 
 type config struct {
-	// modifyProtected enables modification of configuration fields tagged as protected from a patch.
-	modifyProtected bool
+	// modProtected enables modification of configuration fields without modAllowedTag.
+	modProtected bool
 	// nameTags field provides tags which may contain the field name.
 	nameTags []string
-	// protectedTag is a tag that marks the field on which it is defined as protected.
-	protectedTag      string
-	protectedTagValue string
+	// modAllowedTag is a tag that marks the field on which it is defined as protected.
+	modAllowedTag   string
+	modAllowedValue string
 }
 
 func newConfig(opts []Option) config {
 	cfg := config{
-		modifyProtected:   false,
-		nameTags:          []string{"configKey", "json"},
-		protectedTag:      "protected",
-		protectedTagValue: "true",
+		modProtected:    false,
+		nameTags:        []string{"configKey", "json"},
+		modAllowedTag:   "modAllowed",
+		modAllowedValue: "true",
 	}
 	for _, o := range opts {
 		o(&cfg)
@@ -25,10 +25,11 @@ func newConfig(opts []Option) config {
 	return cfg
 }
 
-// WithModifyProtected enables modification of configuration fields tagged as protected from a patch.
+// WithModifyProtected enables modification of configuration fields without modAllowedTag.
+// Use this option if the user is super-admin, or it is used by an internal operation.
 func WithModifyProtected() Option {
 	return func(c *config) {
-		c.modifyProtected = true
+		c.modProtected = true
 	}
 }
 
@@ -39,9 +40,9 @@ func WithNameTag(v ...string) Option {
 	}
 }
 
-// WithProtectedTag sets the tag that marks the field on which it is defined as protected.
-func WithProtectedTag(v string) Option {
+// WithModificationAllowedTag sets the tag that marks the key on which it is defined can be modified by a normal user.
+func WithModificationAllowedTag(v string) Option {
 	return func(c *config) {
-		c.protectedTag = v
+		c.modAllowedTag = v
 	}
 }

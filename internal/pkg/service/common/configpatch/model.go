@@ -9,13 +9,17 @@ import (
 type ConfigKV struct {
 	// KeyPath is a configuration key, parts are joined with a dot "." separator.
 	KeyPath string `json:"key"`
+	// Type is primitive type of the serialized value.
+	Type string `json:"type"`
+	// Description of the key.
+	Description string `json:"description"`
 	// Value is an actual value of the configuration key.
 	Value any `json:"value"`
 	// DefaultValue of the configuration key.
 	DefaultValue any `json:"defaultValue"`
 	// Overwritten is true, if the DefaultValue was replaced by a value from the path.
 	Overwritten bool `json:"overwritten"`
-	// Protected configuration key can be modified only by a super-admin.
+	// Protected configuration key can be modified only by a super-admin user.
 	Protected bool `json:"protected"`
 	// Validation contains validation rules of the field, if any.
 	Validation string `json:"validation,omitempty"`

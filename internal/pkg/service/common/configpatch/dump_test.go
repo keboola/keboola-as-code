@@ -11,20 +11,20 @@ import (
 )
 
 type Config struct {
-	Key1 []string      `json:"foo1"`
-	Key2 int           `json:"foo2" alternative:"baz2" protected:"true"`
-	Key3 ConfigNested1 `json:"foo3,omitempty" alternative:"baz3"`
+	Key1 []string      `json:"foo1" modAllowed:"true"`
+	Key2 int           `json:"foo2" alternative:"baz2" modAllowedAlternative:"true"`
+	Key3 ConfigNested1 `json:"foo3,omitempty" alternative:"baz3" modAllowed:"true"`
 }
 
 type ConfigNested1 struct {
-	Key4 string        `json:"foo4"`
-	Key5 int           `json:"foo5" alternative:"baz5"`
-	Key6 ConfigNested2 `json:"foo6,omitempty"`
+	Key4 string        `json:"foo4" modAllowed:"true"`
+	Key5 int           `json:"foo5" alternative:"baz5" modAllowed:"true" modAllowedAlternative:"true"`
+	Key6 ConfigNested2 `json:"foo6,omitempty" modAllowed:"true"`
 }
 
 type ConfigNested2 struct {
-	Key7 []string `json:"foo7"`
-	Key8 bool     `json:"foo8" protected:"true"`
+	Key7 []string `json:"foo7" modAllowed:"true"`
+	Key8 bool     `json:"foo8"`
 }
 
 type ConfigPatch struct {
@@ -39,15 +39,15 @@ type ConfigNested1Patch struct {
 }
 
 type ConfigNested2Patch struct {
-	Key7 *[]string `json:"foo7"`
-	Key8 *bool     `json:"foo8"`
+	Key7 *[]string `json:"foo7" modAllowed:"true"`
+	Key8 *bool     `json:"foo8" modAllowed:"true"`
 }
 
 type ConfigPatchInvalid struct {
-	Key1 string  `json:"foo1"`
-	Key2 *string `json:"foo2"`
-	Key8 *string `json:"foo8"`
-	Key9 *int    `json:"foo9"`
+	Key1 string  `json:"foo1" modAllowed:"true"`
+	Key2 *string `json:"foo2" modAllowed:"true"`
+	Key8 *string `json:"foo8" modAllowed:"true"`
+	Key9 *int    `json:"foo9" modAllowed:"true"`
 }
 
 func TestDumpAll_EmptyPatch(t *testing.T) {
@@ -62,27 +62,35 @@ func TestDumpAll_EmptyPatch(t *testing.T) {
 	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
+			Type:         "[]string",
 			Value:        []string{"bar1"},
 			DefaultValue: []string{"bar1"},
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo2",
+			Type:         "int",
 			Value:        123,
 			DefaultValue: 123,
 			Protected:    true,
 		},
 		{
 			KeyPath:      "foo3.foo5",
+			Type:         "int",
 			Value:        234,
 			DefaultValue: 234,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo7",
+			Type:         "[]string",
 			Value:        []string{"bar7"},
 			DefaultValue: []string{"bar7"},
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo8",
+			Type:         "bool",
 			Value:        true,
 			DefaultValue: true,
 			Protected:    true,
@@ -102,30 +110,38 @@ func TestDumpAll_Ok(t *testing.T) {
 	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
+			Type:         "[]string",
 			Value:        []string{"patch1"},
 			DefaultValue: []string{"bar1"},
 			Overwritten:  true,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo2",
+			Type:         "int",
 			Value:        123,
 			DefaultValue: 123,
 			Protected:    true,
 		},
 		{
 			KeyPath:      "foo3.foo5",
+			Type:         "int",
 			Value:        789,
 			DefaultValue: 234,
 			Overwritten:  true,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo7",
+			Type:         "[]string",
 			Value:        []string{"patch7"},
 			DefaultValue: []string{"bar7"},
 			Overwritten:  true,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo8",
+			Type:         "bool",
 			Value:        true,
 			DefaultValue: true,
 			Protected:    true,
@@ -145,27 +161,35 @@ func TestDumpAll_EmptyPatchPointer(t *testing.T) {
 	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
+			Type:         "[]string",
 			Value:        []string{"bar1"},
 			DefaultValue: []string{"bar1"},
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo2",
+			Type:         "int",
 			Value:        123,
 			DefaultValue: 123,
 			Protected:    true,
 		},
 		{
 			KeyPath:      "foo3.foo5",
+			Type:         "int",
 			Value:        234,
 			DefaultValue: 234,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo7",
+			Type:         "[]string",
 			Value:        []string{"bar7"},
 			DefaultValue: []string{"bar7"},
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo8",
+			Type:         "bool",
 			Value:        true,
 			DefaultValue: true,
 			Protected:    true,
@@ -184,23 +208,27 @@ func TestDumpAll_CustomTags(t *testing.T) {
 				Key5: ptr(345),
 			},
 		},
-		configpatch.WithNameTag("alternative"),   // <<<<<
-		configpatch.WithProtectedTag("notfound"), // <<<<<
+		configpatch.WithNameTag("alternative"),                          // <<<<<
+		configpatch.WithModificationAllowedTag("modAllowedAlternative"), // <<<<<
 	)
 
 	require.NoError(t, err)
 	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "baz2",
+			Type:         "int",
 			Value:        234,
 			DefaultValue: 123,
 			Overwritten:  true,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "baz3.baz5",
+			Type:         "int",
 			Value:        345,
 			DefaultValue: 234,
 			Overwritten:  true,
+			Protected:    false,
 		},
 	}, kvs)
 }
@@ -235,11 +263,14 @@ func TestDumpAll_Protected_Ok(t *testing.T) {
 	assert.Equal(t, []configpatch.ConfigKV{
 		{
 			KeyPath:      "foo1",
+			Type:         "[]string",
 			Value:        []string{"bar1"},
 			DefaultValue: []string{"bar1"},
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo2",
+			Type:         "int",
 			Value:        567,
 			DefaultValue: 123,
 			Overwritten:  true,
@@ -247,18 +278,23 @@ func TestDumpAll_Protected_Ok(t *testing.T) {
 		},
 		{
 			KeyPath:      "foo3.foo5",
+			Type:         "int",
 			Value:        789,
 			DefaultValue: 234,
 			Overwritten:  true,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo7",
+			Type:         "[]string",
 			Value:        []string{"bar7"},
 			DefaultValue: []string{"bar7"},
 			Overwritten:  false,
+			Protected:    false,
 		},
 		{
 			KeyPath:      "foo3.foo6.foo8",
+			Type:         "bool",
 			Value:        true,
 			DefaultValue: true,
 			Overwritten:  true,
@@ -271,7 +307,7 @@ func TestDumpAll_Protected_Error(t *testing.T) {
 	t.Parallel()
 	_, err := configpatch.DumpAll(newConfig(), newConfigPatchProtected())
 	if assert.Error(t, err) {
-		assert.Equal(t, `cannot modify protected fields: "foo2", "foo3.foo6.foo8"`, err.Error())
+		assert.Equal(t, `cannot modify protected keys: "foo2", "foo3.foo6.foo8"`, err.Error())
 	}
 }
 
