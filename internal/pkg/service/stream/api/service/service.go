@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
@@ -18,12 +19,12 @@ type service struct {
 	mapper    *mapper.Mapper
 }
 
-func New(d dependencies.APIScope) api.Service {
+func New(d dependencies.APIScope, cfg config.Config) api.Service {
 	return &service{
 		publicURL: d.APIPublicURL(),
 		tasks:     d.TaskNode(),
 		repo:      d.DefinitionRepository(),
-		mapper:    mapper.New(d),
+		mapper:    mapper.New(d, cfg),
 	}
 }
 
