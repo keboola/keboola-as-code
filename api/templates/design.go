@@ -1110,7 +1110,8 @@ var Instance = Type("Instance", func() {
 	Attribute("created")
 	Attribute("updated")
 	Attribute("mainConfig", MainConfig)
-	Required("instanceId", "templateId", "version", "repositoryName", "branch", "name", "created", "updated")
+	Attribute("configurations", ArrayOf(Config), "All configurations from the instance.")
+	Required("instanceId", "templateId", "version", "repositoryName", "branch", "name", "created", "updated", "configurations")
 })
 
 var InstanceDetail = Type("InstanceDetail", func() {
