@@ -1,0 +1,64 @@
+<<<<<
+definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "isDefault": true
+}
+>>>>>
+
+<<<<<
+definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "version": {
+    "number": 3,
+    "hash": "%s",
+    "modifiedAt": "%s",
+    "description": "Updated settings."
+  },
+  "type": "http",
+  "name": "My Source",
+  "config": [
+    {
+      "key": "storage.level.staging.upload.trigger.interval",
+      "value": "45s"
+    },
+    {
+      "key": "storage.level.staging.upload.trigger.size",
+      "value": "12MB"
+    }
+  ],
+  "http": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000001
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000002
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000003
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>

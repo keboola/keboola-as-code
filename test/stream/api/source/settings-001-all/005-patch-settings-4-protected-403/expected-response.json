@@ -1,0 +1,5 @@
+{
+  "statusCode": 403,
+  "error": "stream.api.forbidden",
+  "message": "Cannot modify protected keys: \"storage.level.local.compression.gzip.blockSize\"."
+}
