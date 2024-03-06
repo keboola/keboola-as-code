@@ -13,6 +13,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -39,7 +40,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       *appconfig.SafeMap[string, http.Handler]
+	appHandlers       *appconfig.SafeMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }
@@ -63,17 +64,26 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 	}
 
 	router := &Router{
-		logger:            d.Logger(),
-		telemetry:         d.Telemetry(),
-		config:            d.Config(),
-		clock:             d.Clock(),
-		loader:            d.Loader(),
-		appHandlers:       appconfig.NewSafeMap[string, http.Handler](),
+		logger:    d.Logger(),
+		telemetry: d.Telemetry(),
+		config:    d.Config(),
+		clock:     d.Clock(),
+		loader:    d.Loader(),
+		appHandlers: appconfig.NewSafeMap[string, appHandler](func() *appHandler {
+			return &appHandler{
+				updateLock: &sync.Mutex{},
+			}
+		}),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
 
 	return router, nil
+}
+
+type appHandler struct {
+	http.Handler
+	updateLock *sync.Mutex
 }
 
 func (r *Router) CreateHandler() http.Handler {
@@ -118,10 +128,11 @@ func (r *Router) CreateHandler() http.Handler {
 		}
 
 		// Recreate app handler if configuration changed.
-		handler, ok := r.appHandlers.Get(appID)
-		if !ok || modified {
-			handler = r.createDataAppHandler(req.Context(), config)
-			r.appHandlers.Set(appID, handler)
+		handler := r.appHandlers.GetOrInit(appID)
+		if modified {
+			handler.updateLock.Lock()
+			handler.Handler = r.createDataAppHandler(req.Context(), config)
+			handler.updateLock.Unlock()
 		}
 
 		handler.ServeHTTP(w, req)
