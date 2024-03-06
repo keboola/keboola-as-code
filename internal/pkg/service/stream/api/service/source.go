@@ -100,9 +100,41 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 }
 
 func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (res *api.SettingsResult, err error) {
+	source, err := s.repo.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.NewSettingsResponse(source.Config)
 }
 
 func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (res *api.SettingsResult, err error) {
+	// Get the change description
+	var changeDesc string
+	if payload.ChangeDescription == nil {
+		changeDesc = "Updated settings."
+	} else {
+		changeDesc = *payload.ChangeDescription
+	}
+
+	// Prepare patch KVs
+	patch, err := s.mapper.NewSettingsPatch(payload.Settings, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// Define update function
+	update := func(source definition.Source) (definition.Source, error) {
+		source.Config = source.Config.With(patch)
+		return source, err
+	}
+
+	// Save changes
+	source, err := s.repo.Source().Update(d.SourceKey(), changeDesc, update).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewSettingsResponse(source.Config)
 }
 
 func (s *service) RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *api.RefreshSourceTokensPayload) (res *api.Source, err error) {
