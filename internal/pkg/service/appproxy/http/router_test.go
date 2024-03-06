@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"log"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -1687,11 +1689,17 @@ func createHTTPClient(proxyURL *url.URL) *http.Client {
 		return dialer.DialContext(ctx, network, addr)
 	}
 
+	jar, err := cookiejar.New(&cookiejar.Options{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+		//CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		//	return http.ErrUseLastResponse
+		//},
 		Transport: transport,
+		Jar:       jar,
 	}
 }
 
