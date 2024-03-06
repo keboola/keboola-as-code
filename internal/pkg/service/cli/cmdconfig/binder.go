@@ -39,7 +39,7 @@ func (b *Binder) Bind(ctx context.Context, flags *pflag.FlagSet, args []string, 
 	for _, v := range targets {
 		dump, err := configmap.NewDumper().Dump(v).AsJSON(false)
 		if err == nil {
-			b.logger.Debugf(ctx, "Global flags: %s %s", reflect.ValueOf(v).Type().String(), string(dump))
+			b.logger.Debugf(ctx, "Flags: %s %s", reflect.ValueOf(v).Type().String(), string(dump))
 		} else {
 			return err
 		}
