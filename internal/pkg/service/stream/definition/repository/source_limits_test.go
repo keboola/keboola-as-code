@@ -123,9 +123,9 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	assert.Len(t, sources, MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sourceRepo.Update(sourceKey, "Some update", func(v definition.Source) definition.Source {
+	err = sourceRepo.Update(sourceKey, "Some update", func(v definition.Source) (definition.Source, error) {
 		v.Description = "foo"
-		return v
+		return v, nil
 	}).Do(ctx).Err()
 	if assert.Error(t, err) {
 		assert.Equal(t, "version count limit reached in the source, the maximum is 1000", err.Error())

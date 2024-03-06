@@ -106,13 +106,13 @@ func (c *Client) CreateSource(ctx context.Context, p *CreateSourcePayload) (res 
 // UpdateSource may return the following errors:
 //   - "stream.sourceNotFound" (type *GenericError): Source not found error.
 //   - error: internal error
-func (c *Client) UpdateSource(ctx context.Context, p *UpdateSourcePayload) (res *Source, err error) {
+func (c *Client) UpdateSource(ctx context.Context, p *UpdateSourcePayload) (res *Task, err error) {
 	var ires any
 	ires, err = c.UpdateSourceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*Source), nil
+	return ires.(*Task), nil
 }
 
 // ListSources calls the "ListSources" endpoint of the "stream" service.

@@ -19,6 +19,7 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		return nil, err
 	}
 
+	// Create source in a task
 	t, err := s.startTask(taskConfig{
 		Type:      "create.source",
 		Timeout:   5 * time.Minute,
@@ -26,7 +27,9 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			if err := s.repo.Source().Create("New source.", &source).Do(ctx).Err(); err == nil {
-				return s.mapper.WithTaskOutputs(task.OkResult("Source has been created successfully."), source.SourceKey)
+				result := task.OkResult("Source has been created successfully.")
+				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
+				return result
 			} else {
 				return task.ErrResult(err)
 			}
@@ -36,11 +39,45 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		return nil, err
 	}
 
-	return s.mapper.NewTaskResponse(t), nil
+	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) UpdateSource(context.Context, dependencies.SourceRequestScope, *api.UpdateSourcePayload) (res *api.Source, err error) {
-	return nil, errors.NewNotImplementedError()
+func (s *service) UpdateSource(_ context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (res *api.Task, err error) {
+	// Get the change description
+	var changeDesc string
+	if payload.ChangeDescription == nil {
+		changeDesc = "Updated."
+	} else {
+		changeDesc = *payload.ChangeDescription
+	}
+
+	// Define update function
+	update := func(source definition.Source) (definition.Source, error) {
+		return s.mapper.UpdateSourceEntity(source, payload)
+	}
+
+	// Update source in a task
+	t, err := s.startTask(taskConfig{
+		Type:      "update.source",
+		Timeout:   5 * time.Minute,
+		ProjectID: d.ProjectID(),
+		ObjectKey: d.SourceKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			// Update the source, with retries on a collision
+			if err := s.repo.Source().Update(d.SourceKey(), changeDesc, update).Do(ctx).Err(); err == nil {
+				result := task.OkResult("Source has been updated successfully.")
+				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+				return result
+			} else {
+				return task.ErrResult(err)
+			}
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
 }
 
 func (s *service) ListSources(ctx context.Context, d dependencies.BranchRequestScope, payload *api.ListSourcesPayload) (res *api.SourcesList, err error) {

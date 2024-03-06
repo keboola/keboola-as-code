@@ -1,9 +1,6 @@
 package task
 
 import (
-	"sort"
-
-	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -79,18 +76,6 @@ func spanEndAttrs(task *Task, r Result) []attribute.KeyValue {
 			attribute.String("error", task.Error),
 			attribute.String("error_type", telemetry.ErrorType(r.Error)),
 		)
-	}
-
-	// Add task outputs
-	{
-		var attrs []attribute.KeyValue
-		for k, v := range task.Outputs {
-			attrs = append(attrs, attribute.String("result_outputs."+k, cast.ToString(v)))
-		}
-		sort.SliceStable(attrs, func(i, j int) bool {
-			return attrs[i].Key < attrs[j].Key
-		})
-		out = append(out, attrs...)
 	}
 
 	return out

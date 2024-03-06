@@ -168,9 +168,9 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		result, err := sourceRepo.Update(sourceKey1, "Update description", func(v definition.Source) definition.Source {
+		result, err := sourceRepo.Update(sourceKey1, "Update description", func(v definition.Source) (definition.Source, error) {
 			v.Name = "Modified Name"
-			return v
+			return v, nil
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
@@ -182,9 +182,9 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// Modify description
-		result, err := sourceRepo.Update(sourceKey1, "Update description", func(v definition.Source) definition.Source {
+		result, err := sourceRepo.Update(sourceKey1, "Update description", func(v definition.Source) (definition.Source, error) {
 			v.Description = "Modified Description"
-			return v
+			return v, nil
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Description", result.Description)
@@ -198,9 +198,9 @@ func TestRepository_Source(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sourceRepo.Update(nonExistentSourceKey, "Update description", func(v definition.Source) definition.Source {
+		err := sourceRepo.Update(nonExistentSourceKey, "Update description", func(v definition.Source) (definition.Source, error) {
 			v.Name = "Modified Name"
-			return v
+			return v, nil
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `source "non-existent" not found in the branch`, err.Error())

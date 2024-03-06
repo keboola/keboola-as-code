@@ -31,7 +31,7 @@ type Service interface {
 	// Create a new source in the branch.
 	CreateSource(context.Context, dependencies.BranchRequestScope, *CreateSourcePayload) (res *Task, err error)
 	// Update the source.
-	UpdateSource(context.Context, dependencies.SourceRequestScope, *UpdateSourcePayload) (res *Source, err error)
+	UpdateSource(context.Context, dependencies.SourceRequestScope, *UpdateSourcePayload) (res *Task, err error)
 	// List all sources in the branch.
 	ListSources(context.Context, dependencies.BranchRequestScope, *ListSourcesPayload) (res *SourcesList, err error)
 	// Get the source definition.
@@ -345,7 +345,7 @@ type SinksList struct {
 	Sinks     Sinks
 }
 
-// Source is the result type of the stream service UpdateSource method.
+// Source is the result type of the stream service GetSource method.
 type Source struct {
 	ProjectID ProjectID
 	BranchID  BranchID
@@ -447,10 +447,10 @@ type TaskOutputs struct {
 	ProjectID *ProjectID
 	// ID of the parent branch.
 	BranchID *BranchID
-	// ID of the created/updated sink.
-	SinkID *SinkID
 	// ID of the created/updated source.
 	SourceID *SourceID
+	// ID of the created/updated sink.
+	SinkID *SinkID
 }
 
 // UpdateSinkPayload is the payload type of the stream service UpdateSink
@@ -467,6 +467,8 @@ type UpdateSinkPayload struct {
 	Description *string
 	// Table sink configuration for "type" = "table".
 	Table *TableSink
+	// Description of the modification, description of the version.
+	ChangeDescription *string
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service
@@ -490,6 +492,8 @@ type UpdateSourcePayload struct {
 	Name *string
 	// Description of the source.
 	Description *string
+	// Description of the modification, description of the version.
+	ChangeDescription *string
 }
 
 // UpdateSourceSettingsPayload is the payload type of the stream service

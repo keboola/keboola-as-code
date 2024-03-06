@@ -223,8 +223,8 @@ paths:
                                     url: abc123
                                     projectId: 123
                                     branchId: 345
-                                    sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
                 "409":
                     description: 'stream.sourceAlreadyExists: Source already exists in the branch.'
                     content:
@@ -443,89 +443,31 @@ paths:
                             type: http
                             name: Github Webhook Source
                             description: The source receives events from Github.
+                            changeDescription: Renamed.
             responses:
                 "200":
                     description: OK response.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Source'
+                                $ref: '#/components/schemas/Task'
                             example:
-                                projectId: 123
-                                branchId: 345
-                                sourceId: github-webhook-source
-                                type: http
-                                name: Github Webhook Source
-                                description: The source receives events from Github.
-                                http:
-                                    url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                                version:
-                                    number: 3
-                                    hash: f43e93acd97eceb3
-                                    modifiedAt: "2022-04-28T14:20:04.000Z"
-                                    description: The reason for the last change was...
-                                deleted:
-                                    at: "2022-04-28T14:20:04.000Z"
-                                    by:
-                                        type: user
-                                        tokenId: "896455"
-                                        userId: "578621"
-                                        userDescription: user@company.com
-                                disabled:
-                                    at: "2022-04-28T14:20:04.000Z"
-                                    by:
-                                        type: user
-                                        tokenId: "896455"
-                                        userId: "578621"
-                                        userDescription: user@company.com
-                                    reason: Disabled for recurring problems.
-                                sinks:
-                                    - projectId: 123
-                                      branchId: 345
-                                      sourceId: github-webhook-source
-                                      sinkId: github-pr-table-sink
-                                      type: table
-                                      name: Raw Data Sink
-                                      description: The sink stores records to a table.
-                                      table:
-                                        mapping:
-                                            tableId: in.c-bucket.table
-                                            columns:
-                                                - type: id
-                                                  name: id-col
-                                                  primaryKey: true
-                                                - type: datetime
-                                                  name: datetime-col
-                                                - type: ip
-                                                  name: ip-col
-                                                - type: headers
-                                                  name: headers-col
-                                                - type: body
-                                                  name: body-col
-                                                - type: template
-                                                  name: template-col
-                                                  language: jsonnet
-                                                  content: body.foo + "-" + body.bar
-                                      version:
-                                        number: 3
-                                        hash: f43e93acd97eceb3
-                                        modifiedAt: "2022-04-28T14:20:04.000Z"
-                                        description: The reason for the last change was...
-                                      deleted:
-                                        at: "2022-04-28T14:20:04.000Z"
-                                        by:
-                                            type: user
-                                            tokenId: "896455"
-                                            userId: "578621"
-                                            userDescription: user@company.com
-                                      disabled:
-                                        at: "2022-04-28T14:20:04.000Z"
-                                        by:
-                                            type: user
-                                            tokenId: "896455"
-                                            userId: "578621"
-                                            userDescription: user@company.com
-                                        reason: Disabled for recurring problems.
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
                 "404":
                     description: 'stream.sourceNotFound: Source not found error.'
                     content:
@@ -874,8 +816,8 @@ paths:
                                     url: abc123
                                     projectId: 123
                                     branchId: 345
-                                    sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
                 "404":
                     description: 'stream.sourceNotFound: Source not found error.'
                     content:
@@ -1124,6 +1066,7 @@ paths:
                                           name: template-col
                                           language: jsonnet
                                           content: body.foo + "-" + body.bar
+                            changeDescription: Renamed.
             responses:
                 "200":
                     description: OK response.
@@ -1146,8 +1089,8 @@ paths:
                                     url: abc123
                                     projectId: 123
                                     branchId: 345
-                                    sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
                 "404":
                     description: 'stream.sinkNotFound: Sink not found error.'
                     content:
@@ -1510,8 +1453,8 @@ paths:
                                     url: abc123
                                     projectId: 123
                                     branchId: 345
-                                    sinkId: github-pr-table-sink
                                     sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
                 "404":
                     description: 'stream.taskNotFound: Task not found error.'
                     content:
@@ -2166,6 +2109,7 @@ components:
                         - http
                 version:
                     $ref: '#/components/schemas/Version'
+            description: Source of data for further processing, start of the stream, max 100 sources per a branch.
             example:
                 projectId: 123
                 branchId: 345
@@ -2628,8 +2572,8 @@ components:
                     url: abc123
                     projectId: 123
                     branchId: 345
-                    sinkId: github-pr-table-sink
                     sourceId: github-webhook-source
+                    sinkId: github-pr-table-sink
             required:
                 - taskId
                 - type
@@ -2671,11 +2615,15 @@ components:
                 url: abc123
                 projectId: 123
                 branchId: 345
-                sinkId: github-pr-table-sink
                 sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
         UpdateSinkRequestBody:
             type: object
             properties:
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Renamed.
                 description:
                     type: string
                     description: Description of the source.
@@ -2717,9 +2665,14 @@ components:
                               name: template-col
                               language: jsonnet
                               content: body.foo + "-" + body.bar
+                changeDescription: Renamed.
         UpdateSourceRequestBody:
             type: object
             properties:
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Renamed.
                 description:
                     type: string
                     description: Description of the source.
@@ -2740,6 +2693,7 @@ components:
                 type: http
                 name: Github Webhook Source
                 description: The source receives events from Github.
+                changeDescription: Renamed.
         UpdateSourceSettingsRequestBody:
             type: object
             properties:

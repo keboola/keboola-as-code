@@ -126,16 +126,20 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 }
 
 //nolint:dupl // similar code is in SinkRepository
-func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, updateFn func(definition.Source) definition.Source) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	return op.Atomic(r.client, &result).
 		ReadOp(r.checkMaxSourcesVersionsPerSource(k, 1)).
 		// Read and modify the object
 		ReadOp(r.Get(k).WithResultTo(&result)).
 		// Prepare the new value
-		BeforeWrite(func(context.Context) {
-			result = updateFn(result)
+		BeforeWriteOrErr(func(context.Context) (err error) {
+			if result, err = updateFn(result); err != nil {
+				return err
+			}
+
 			result.IncrementVersion(result, r.clock.Now(), versionDescription)
+			return nil
 		}).
 		// Save the update object
 		Write(func(context.Context) op.Op {

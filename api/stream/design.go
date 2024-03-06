@@ -191,7 +191,7 @@ var _ = Service("stream", func() {
 	Method("UpdateSource", func() {
 		Meta("openapi:summary", "Update source")
 		Description("Update the source.")
-		Result(Source)
+		Result(Task)
 		Payload(UpdateSourceRequest)
 		HTTP(func() {
 			PATCH("/branches/{branchId}/sources/{sourceId}")
@@ -662,6 +662,10 @@ var ListSourcesRequest = Type("ListSourcesRequest", func() {
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 	SourceKeyRequest()
 	SourceFieldsRW()
+	Attribute("changeDescription", String, func() {
+		Description("Description of the modification, description of the version.")
+		Example("Renamed.")
+	})
 })
 
 var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
@@ -754,6 +758,10 @@ var ListSinksRequest = Type("ListSinksRequest", func() {
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
 	SinkKeyRequest()
 	SinkFieldsRW()
+	Attribute("changeDescription", String, func() {
+		Description("Description of the modification, description of the version.")
+		Example("Renamed.")
+	})
 })
 
 var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
@@ -952,8 +960,8 @@ var TaskOutputs = Type("TaskOutputs", func() {
 	Attribute("url", String, "Absolute URL of the entity.")
 	Attribute("projectId", ProjectID, "ID of the parent project.")
 	Attribute("branchId", BranchID, "ID of the parent branch.")
-	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
 	Attribute("sourceId", SourceID, "ID of the created/updated source.")
+	Attribute("sinkId", SinkID, "ID of the created/updated sink.")
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
