@@ -14,7 +14,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type Loader struct {
+type Loader interface {
+	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, error)
+}
+
+type sandboxesAPILoader struct {
 	logger log.Logger
 	clock  clock.Clock
 	sender request.Sender
@@ -27,18 +31,18 @@ type cacheItem struct {
 	expiresAt time.Time
 }
 
-func NewLoader(logger log.Logger, clock clock.Clock, baseURL string) *Loader {
-	return &Loader{
+func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, baseURL string, token string) Loader {
+	return &sandboxesAPILoader{
 		logger: logger,
 		clock:  clock,
-		sender: client.New().WithBaseURL(baseURL),
+		sender: client.New().WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
 		cache:  make(map[string]cacheItem),
 	}
 }
 
 const staleCacheFallbackDuration = time.Hour
 
-func (l *Loader) LoadConfig(ctx context.Context, appID string) (AppProxyConfig, error) {
+func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (AppProxyConfig, error) {
 	var config *AppProxyConfig
 	var err error
 	now := l.clock.Now()
@@ -56,7 +60,7 @@ func (l *Loader) LoadConfig(ctx context.Context, appID string) (AppProxyConfig, 
 		}
 
 		// Update expiration and use the cached config if ETag is still the same
-		if config.eTag == item.eTag {
+		if config.ETag == item.eTag {
 			l.cache[appID] = cacheItem{
 				config:    item.config,
 				eTag:      item.eTag,
@@ -75,13 +79,13 @@ func (l *Loader) LoadConfig(ctx context.Context, appID string) (AppProxyConfig, 
 	// Save result to cache
 	l.cache[appID] = cacheItem{
 		config:    *config,
-		eTag:      config.eTag,
+		eTag:      config.ETag,
 		expiresAt: now.Add(config.maxAge),
 	}
 	return *config, nil
 }
 
-func (l *Loader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
+func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
 	var sandboxesError *SandboxesError
 	errors.As(err, &sandboxesError)
 	if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {

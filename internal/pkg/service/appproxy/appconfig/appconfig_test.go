@@ -69,13 +69,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					responses: []*http.Response{
 						newResponse(t, 500, map[string]any{}, "", ""),
-						newResponse(t, 200, map[string]any{"id": "3", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "3",
 						Name:            "3",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -87,13 +87,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "4", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "4",
 						Name:            "4",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -102,7 +102,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:              "4",
 						Name:            "4",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -114,13 +114,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "5", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "5",
 						Name:            "5",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -135,7 +135,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:              "5",
 						Name:            "5",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -145,7 +145,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:              "5",
 						Name:            "5",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -159,7 +159,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:              "5",
 						Name:            "5",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -171,27 +171,27 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "6", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "6",
 						Name:            "6",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
 				{
 					delay: 10 * time.Minute,
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "6", "upstreamAppHost": "new-app.local"}, `"etag-new-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "new-app.local"}, `"etag-new-value"`, "max-age=60"),
 					},
 					expectedETag: `"etag-value"`,
 					expectedConfig: AppProxyConfig{
 						ID:              "6",
 						Name:            "6",
 						UpstreamAppHost: "new-app.local",
-						eTag:            `"etag-new-value"`,
+						ETag:            `"etag-new-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -200,7 +200,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:              "6",
 						Name:            "6",
 						UpstreamAppHost: "new-app.local",
-						eTag:            `"etag-new-value"`,
+						ETag:            `"etag-new-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -212,13 +212,13 @@ func TestLoader_LoadConfig(t *testing.T) {
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
-						newResponse(t, 200, map[string]any{"id": "7", "upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
+						newResponse(t, 200, map[string]any{"upstreamAppHost": "app.local"}, `"etag-value"`, "max-age=60"),
 					},
 					expectedConfig: AppProxyConfig{
 						ID:              "7",
 						Name:            "7",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -237,7 +237,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 						ID:              "7",
 						Name:            "7",
 						UpstreamAppHost: "app.local",
-						eTag:            `"etag-value"`,
+						ETag:            `"etag-value"`,
 						maxAge:          60 * time.Second,
 					},
 				},
@@ -269,7 +269,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 			transport := httpmock.NewMockTransport()
 
 			url := "https://sandboxes.keboola.com"
-			loader := NewLoader(log.NewDebugLogger(), clk, url)
+
+			loader := NewSandboxesAPILoader(log.NewDebugLogger(), clk, url, "").(*sandboxesAPILoader)
 			loader.sender = loader.sender.(client.Client).WithTransport(transport)
 
 			for _, attempt := range tc.attempts {

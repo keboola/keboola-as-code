@@ -18,12 +18,18 @@ type Config struct {
 	Datadog          datadog.Config    `configKey:"datadog"`
 	Metrics          prometheus.Config `configKey:"metrics"`
 	API              API               `configKey:"api"`
-	CookieSecretSalt string            `configKey:"cookieSecretSalt" configUsage:"Cookie secret needed by OAuth 2 Proxy." sensitive:"true"`
+	CookieSecretSalt string            `configKey:"cookieSecretSalt" configUsage:"Cookie secret needed by OAuth 2 Proxy." validate:"required" sensitive:"true"`
+	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 }
 
 type API struct {
 	Listen    string   `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
-	PublicURL *url.URL `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation."  validate:"required"`
+	PublicURL *url.URL `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation." validate:"required"`
+}
+
+type SandboxesAPI struct {
+	URL   string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
+	Token string `configKey:"token" configUsage:"Sandboxes API token." validate:"required" sensitive:"true"`
 }
 
 func New() Config {

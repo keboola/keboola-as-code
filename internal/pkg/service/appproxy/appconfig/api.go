@@ -11,27 +11,35 @@ import (
 )
 
 type AppProxyConfig struct {
-	ID              string         `json:"id"`
+	ID              string         `json:"-"`
 	Name            string         `json:"name"`
 	UpstreamAppHost string         `json:"upstreamAppHost"`
 	AuthProviders   []AuthProvider `json:"authProviders"`
 	AuthRules       []AuthRule     `json:"authRules"`
-	eTag            string
+	ETag            string         `json:"-"`
 	maxAge          time.Duration
 }
 
+type ProviderType string
+
+const OIDCProvider = ProviderType("oidc")
+
 type AuthProvider struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Type         string   `json:"type"`
-	ClientID     string   `json:"clientId"`
-	ClientSecret string   `json:"clientSecret"`
-	IssuerURL    string   `json:"issuerUrl"`
-	AllowedRoles []string `json:"allowedRoles"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Type         ProviderType `json:"type"`
+	ClientID     string       `json:"clientId"`
+	ClientSecret string       `json:"clientSecret"`
+	IssuerURL    string       `json:"issuerUrl"`
+	AllowedRoles []string     `json:"allowedRoles"`
 }
 
+type RuleType string
+
+const PathPrefix = RuleType("pathPrefix")
+
 type AuthRule struct {
-	Type  string   `json:"type"`
+	Type  RuleType `json:"type"`
 	Value string   `json:"value"`
 	Auth  []string `json:"auth"`
 }
@@ -45,6 +53,9 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 		AndPathParam("appId", appID).
 		AndHeader("If-None-Match", eTag).
 		WithOnSuccess(func(ctx context.Context, response request.HTTPResponse) error {
+			// Add app id to the result
+			result.ID = appID
+
 			// Use id as fallback until name is added to Sandboxes API
 			if result.Name == "" {
 				result.Name = result.ID
@@ -56,7 +67,7 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 			}
 
 			// Add ETag to result
-			result.eTag = response.ResponseHeader().Get("ETag")
+			result.ETag = response.ResponseHeader().Get("ETag")
 
 			// Process Cache-Control header
 			cacheControl := response.ResponseHeader().Get("Cache-Control")

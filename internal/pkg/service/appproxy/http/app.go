@@ -5,35 +5,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 )
-
-type DataApp struct {
-	ID           AppID              `json:"id" validator:"required"`
-	Name         string             `json:"name" validator:"required"`
-	UpstreamHost string             `json:"upstreamUrl" validator:"required"`
-	Providers    []options.Provider `json:"providers"`
-	Rules        []Rule             `json:"rules"`
-}
-
-type Rule struct {
-	Type      RuleType `json:"type"`
-	Value     string   `json:"value"`
-	Providers []string `json:"providers"`
-}
-type RuleType string
-
-const PathPrefix = RuleType("pathPrefix")
-
-type AppID string
-
-func (v AppID) String() string {
-	return string(v)
-}
 
 const attrAppID = "proxy.appid"
 
@@ -44,7 +20,7 @@ func appIDMiddleware(publicURL *url.URL) middleware.Middleware {
 
 			if ok {
 				ctx := req.Context()
-				ctx = ctxattr.ContextWith(ctx, attribute.String(attrAppID, string(appID)))
+				ctx = ctxattr.ContextWith(ctx, attribute.String(attrAppID, appID))
 				req = req.WithContext(ctx)
 			}
 
@@ -53,7 +29,7 @@ func appIDMiddleware(publicURL *url.URL) middleware.Middleware {
 	}
 }
 
-func parseAppID(publicURL *url.URL, host string) (AppID, bool) {
+func parseAppID(publicURL *url.URL, host string) (string, bool) {
 	if !strings.HasSuffix(host, "."+publicURL.Host) {
 		return "", false
 	}
@@ -70,8 +46,8 @@ func parseAppID(publicURL *url.URL, host string) (AppID, bool) {
 	subdomain := host[:idx]
 	idx = strings.LastIndexByte(subdomain, '-')
 	if idx < 0 {
-		return AppID(subdomain), true
+		return subdomain, true
 	}
 
-	return AppID(subdomain[idx+1:]), true
+	return subdomain[idx+1:], true
 }
