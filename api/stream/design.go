@@ -263,6 +263,7 @@ var _ = Service("stream", func() {
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
+			ForbiddenProtectedSettingError()
 		})
 	})
 
@@ -335,6 +336,7 @@ var _ = Service("stream", func() {
 			Response(StatusOK)
 			SourceNotFoundError()
 			SinkNotFoundError()
+			ForbiddenProtectedSettingError()
 		})
 	})
 
@@ -670,7 +672,11 @@ var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 
 var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
 	SourceKeyRequest()
-	Attribute("patch", SettingsPatch)
+	Attribute("changeDescription", String, func() {
+		Description("Description of the modification, description of the version.")
+		Example("Updated settings.")
+	})
+	Attribute("settings", SettingsPatch)
 })
 
 var SourcesList = Type("SourcesList", func() {
@@ -766,7 +772,7 @@ var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
 
 var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
 	SinkKeyRequest()
-	Attribute("patch", SettingsPatch)
+	Attribute("settings", SettingsPatch)
 })
 
 var SinkFieldsRW = func() {
@@ -860,9 +866,11 @@ var TableColumnTemplate = Type("TableColumnTemplate", func() {
 
 // Settings ------------------------------------------------------------------------------------------------------------
 
-var SettingsResult = Type("SettingsResult", ArrayOf(SettingResult, func() {
-	Description("List of settings key-value pairs.")
-}))
+var SettingsResult = Type("SettingsResult", func() {
+	Attribute("settings", ArrayOf(SettingResult, func() {
+		Description("List of settings key-value pairs.")
+	}))
+})
 
 var SettingResult = Type("SettingResult", func() {
 	Meta("struct:field:type", "= configpatch.DumpKV", "github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch")
@@ -873,8 +881,12 @@ var SettingResult = Type("SettingResult", func() {
 	})
 	Attribute("type", String, func() {
 		Description("Value type.")
-		Enum("string", "int", "float", "boolean")
+		Enum("string", "int", "float", "bool", "[]string", "[]int", "[]float")
 		Example("string")
+	})
+	Attribute("description", String, func() {
+		Description("Key description.")
+		Example("Minimal interval between uploads.")
 	})
 	Attribute("value", Any, func() {
 		Description("Actual value.")
@@ -896,7 +908,7 @@ var SettingResult = Type("SettingResult", func() {
 		Description("Validation rules as a string definition.")
 		Example("minDuration=15s")
 	})
-	Required("key", "type", "value", "defaultValue", "overwritten", "protected")
+	Required("key", "type", "description", "value", "defaultValue", "overwritten", "protected")
 })
 
 var SettingsPatch = Type("SettingsPatch", ArrayOf(SettingPatch, func() {
@@ -993,6 +1005,8 @@ type ExampleError struct {
 }
 
 func GenericError(statusCode int, name, description, example string) {
+	name = "stream.api." + name
+
 	// Must be called inside HTTP definition
 	endpoint, ok := eval.Current().(*expr.HTTPEndpointExpr)
 	if !ok {
@@ -1016,27 +1030,31 @@ func GenericError(statusCode int, name, description, example string) {
 }
 
 func SourceNotFoundError() {
-	GenericError(StatusNotFound, "stream.sourceNotFound", "Source not found error.", `Source "github-pull-requests" not found.`)
+	GenericError(StatusNotFound, "sourceNotFound", "Source not found error.", `Source "github-pull-requests" not found.`)
 }
 
 func SinkNotFoundError() {
-	GenericError(StatusNotFound, "stream.sinkNotFound", "Sink not found error.", `Sink "github-changed-files" not found.`)
+	GenericError(StatusNotFound, "sinkNotFound", "Sink not found error.", `Sink "github-changed-files" not found.`)
 }
 
 func SourceAlreadyExistsError() {
-	GenericError(StatusConflict, "stream.sourceAlreadyExists", "Source already exists in the branch.", `Source already exists in the branch.`)
+	GenericError(StatusConflict, "sourceAlreadyExists", "Source already exists in the branch.", `Source already exists in the branch.`)
 }
 
 func SinkAlreadyExistsError() {
-	GenericError(StatusConflict, "stream.sinkAlreadyExists", "Sink already exists in the source.", `Sink already exists in the source.`)
+	GenericError(StatusConflict, "sinkAlreadyExists", "Sink already exists in the source.", `Sink already exists in the source.`)
 }
 
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "stream.resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, repository.MaxSourcesPerBranch))
+	GenericError(StatusUnprocessableEntity, "resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, repository.MaxSourcesPerBranch))
 }
 
 func TaskNotFoundError() {
-	GenericError(StatusNotFound, "stream.taskNotFound", "Task not found error.", `Task "001" not found.`)
+	GenericError(StatusNotFound, "taskNotFound", "Task not found error.", `Task "001" not found.`)
+}
+
+func ForbiddenProtectedSettingError() {
+	GenericError(StatusNotFound, "forbidden", "Modification of protected settings is forbidden.", `Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".`)
 }
 
 func fieldValidationRule(targetStruct any, fieldName string, ruleName string) string {
