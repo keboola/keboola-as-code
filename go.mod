@@ -7,7 +7,7 @@ replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0
 replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240229085219-7f92bd34a7f8
 
 require (
-	ariga.io/atlas v0.19.1
+	ariga.io/atlas v0.19.2
 	entgo.io/ent v0.13.1
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -23,17 +23,17 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.18.0
+	github.com/go-playground/validator/v10 v10.19.0
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/gofrs/flock v0.8.1
-	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v1.20.3
+	github.com/keboola/go-client v1.20.4
 	github.com/keboola/go-utils v0.8.6
 	github.com/klauspost/compress v1.17.7
 	github.com/klauspost/pgzip v1.2.6
@@ -44,8 +44,8 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/oauth2-proxy/mockoidc v0.0.0-20240214162133-caebfff84d25
 	github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0
-	github.com/pquerna/cachecontrol v0.0.0-20171018203845-0dec1b30a021
-	github.com/prometheus/client_golang v1.18.0
+	github.com/pquerna/cachecontrol v0.2.0
+	github.com/prometheus/client_golang v1.19.0
 	github.com/relvacode/iso8601 v1.4.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/schollz/progressbar/v3 v3.14.2
@@ -56,7 +56,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/urfave/negroni v1.0.0
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
@@ -78,8 +78,8 @@ require (
 	goa.design/goa/v3 v3.15.0
 	goa.design/plugins/v3 v3.15.0
 	golang.org/x/sync v0.6.0
-	google.golang.org/grpc v1.62.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.60.3
+	google.golang.org/grpc v1.62.1
+	gopkg.in/DataDog/dd-trace-go.v1 v1.61.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	nhooyr.io/websocket v1.8.10
 	v.io/x/lib v0.1.18
@@ -117,14 +117,14 @@ require (
 	github.com/tinylib/msgp v1.1.8 // indirect
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0
-	golang.org/x/term v0.17.0
+	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0
+	golang.org/x/term v0.18.0
 	golang.org/x/text v0.14.0
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.18.0
+	golang.org/x/tools v0.19.0
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -149,7 +149,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.8.1 // indirect
 	github.com/DataDog/appsec-internal-go v1.4.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
-	github.com/DataDog/go-libddwaf/v2 v2.2.3 // indirect
+	github.com/DataDog/go-libddwaf/v2 v2.3.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
 	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
@@ -188,7 +188,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
-	github.com/ebitengine/purego v0.5.2 // indirect
+	github.com/ebitengine/purego v0.6.0-alpha.5 // indirect
 	github.com/eliukblau/pixterm/pkg/ansimage v0.0.0-20191210081756-9fb6cf8c2f75 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
@@ -223,7 +223,6 @@ require (
 	github.com/kyokomi/emoji/v2 v2.2.10 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mbland/hmacauth v0.0.0-20170912233209-44256dfd4bfa // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
@@ -238,7 +237,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/redis/go-redis/v9 v9.4.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
