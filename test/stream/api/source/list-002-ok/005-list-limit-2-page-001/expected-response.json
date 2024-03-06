@@ -1,0 +1,36 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "page": {
+    "limit": 2,
+    "totalCount": 5,
+    "sinceId": "",
+    "lastId": "my-source-2"
+  },
+  "sources": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-1",
+      "type": "http",
+      "name": "My Source 1",
+      "description": "",
+      "http": {
+        "url": "https://stream-in.keboola.local/projects/%%TEST_KBC_PROJECT_ID%%/sources/my-source-1/%s"
+      },
+      "version": {
+        "number": 1,
+        "hash": "%s",
+        "modifiedAt": "%s",
+        "description": "New source."
+      },
+      "sinks": []
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-2",
+      %A
+    }
+  ]
+}

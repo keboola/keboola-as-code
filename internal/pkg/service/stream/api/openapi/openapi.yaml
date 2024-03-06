@@ -46,6 +46,20 @@ paths:
             description: List all sources in the branch.
             operationId: ListSources
             parameters:
+                - name: sinceId
+                  in: query
+                  description: Request records after the ID.
+                  required: false
+                  type: string
+                  default: ""
+                - name: limit
+                  in: query
+                  description: Maximum number of returned records.
+                  required: false
+                  type: integer
+                  default: 100
+                  maximum: 100
+                  minimum: 1
                 - name: branchId
                   in: path
                   description: ID of the branch or "default".
@@ -59,6 +73,7 @@ paths:
                         required:
                             - projectId
                             - branchId
+                            - page
                             - sources
             schemes:
                 - https
@@ -326,6 +341,20 @@ paths:
             description: List all sinks in the source.
             operationId: ListSinks
             parameters:
+                - name: sinceId
+                  in: query
+                  description: Request records after the ID.
+                  required: false
+                  type: string
+                  default: ""
+                - name: limit
+                  in: query
+                  description: Maximum number of returned records.
+                  required: false
+                  type: integer
+                  default: 100
+                  maximum: 100
+                  minimum: 1
                 - name: branchId
                   in: path
                   description: ID of the branch or "default".
@@ -345,6 +374,7 @@ paths:
                             - projectId
                             - branchId
                             - sourceId
+                            - page
                             - sinks
                 "404":
                     description: Not Found response.
@@ -879,6 +909,38 @@ definitions:
             url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
         required:
             - url
+    PaginatedResponseResponseBody:
+        title: PaginatedResponseResponseBody
+        type: object
+        properties:
+            lastId:
+                type: string
+                description: ID of the last record in the response.
+                example: my-object-456
+            limit:
+                type: integer
+                description: Current limit.
+                example: 100
+                format: int64
+            sinceId:
+                type: string
+                description: Current offset.
+                example: my-object-123
+            totalCount:
+                type: integer
+                description: Total count of all records.
+                example: 1000
+                format: int64
+        example:
+            limit: 100
+            totalCount: 1000
+            sinceId: my-object-123
+            lastId: my-object-456
+        required:
+            - sinceId
+            - limit
+            - lastId
+            - totalCount
     SettingPatchRequestBody:
         title: SettingPatchRequestBody
         type: object
@@ -2233,6 +2295,8 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            page:
+                $ref: '#/definitions/PaginatedResponseResponseBody'
             projectId:
                 type: integer
                 example: 123
@@ -2297,6 +2361,11 @@ definitions:
             projectId: 123
             branchId: 345
             sourceId: github-webhook-source
+            page:
+                limit: 100
+                totalCount: 1000
+                sinceId: my-object-123
+                lastId: my-object-456
             sinks:
                 - projectId: 123
                   branchId: 345
@@ -2348,6 +2417,7 @@ definitions:
             - projectId
             - branchId
             - sourceId
+            - page
             - sinks
     StreamListSinksStreamSourceNotFoundResponseBody:
         title: StreamListSinksStreamSourceNotFoundResponseBody
@@ -2383,6 +2453,8 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            page:
+                $ref: '#/definitions/PaginatedResponseResponseBody'
             projectId:
                 type: integer
                 example: 123
@@ -2470,6 +2542,11 @@ definitions:
         example:
             projectId: 123
             branchId: 345
+            page:
+                limit: 100
+                totalCount: 1000
+                sinceId: my-object-123
+                lastId: my-object-456
             sources:
                 - projectId: 123
                   branchId: 345
@@ -2549,6 +2626,7 @@ definitions:
         required:
             - projectId
             - branchId
+            - page
             - sources
     StreamRefreshSourceTokensResponseBody:
         title: StreamRefreshSourceTokensResponseBody

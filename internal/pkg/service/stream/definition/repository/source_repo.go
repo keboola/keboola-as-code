@@ -35,16 +35,16 @@ func newSourceRepository(d dependencies, all *Repository) *SourceRepository {
 	}
 }
 
-func (r *SourceRepository) List(parentKey any) iterator.DefinitionT[definition.Source] {
-	return r.list(r.schema.Active(), parentKey)
+func (r *SourceRepository) List(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+	return r.list(r.schema.Active(), parentKey, opts...)
 }
 
-func (r *SourceRepository) ListDeleted(parentKey any) iterator.DefinitionT[definition.Source] {
-	return r.list(r.schema.Deleted(), parentKey)
+func (r *SourceRepository) ListDeleted(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+	return r.list(r.schema.Deleted(), parentKey, opts...)
 }
 
-func (r *SourceRepository) list(pfx sourceSchemaInState, parentKey any) iterator.DefinitionT[definition.Source] {
-	return pfx.In(parentKey).GetAll(r.client)
+func (r *SourceRepository) list(pfx sourceSchemaInState, parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+	return pfx.In(parentKey).GetAll(r.client, opts...)
 }
 
 func (r *SourceRepository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] {

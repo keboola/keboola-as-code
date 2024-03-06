@@ -20,13 +20,14 @@ import (
 )
 
 type testCase struct {
-	name         string
-	inTxn        bool
-	kvCount      int
-	pageSize     int
-	options      []iterator.Option
-	expected     []result
-	expectedLogs string
+	name             string
+	inTxn            bool
+	kvCount          int
+	pageSize         int
+	options          []iterator.Option
+	expectedCountAll int
+	expectedResults  []result
+	expectedLogs     string
 }
 
 type result struct {
@@ -39,11 +40,12 @@ func TestIterator(t *testing.T) {
 
 	cases := []testCase{
 		{
-			name:     "txn: empty",
-			inTxn:    true,
-			kvCount:  0,
-			pageSize: 3,
-			expected: []result{},
+			name:             "txn: empty",
+			inTxn:            true,
+			kvCount:          0,
+			pageSize:         3,
+			expectedCountAll: 0,
+			expectedResults:  []result{},
 			expectedLogs: `
 ➡️  TXN
   ➡️  THEN:
@@ -52,11 +54,12 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "txn: count 1, under page size",
-			inTxn:    true,
-			kvCount:  1,
-			pageSize: 3,
-			expected: []result{
+			name:             "txn: count 1, under page size",
+			inTxn:            true,
+			kvCount:          1,
+			pageSize:         3,
+			expectedCountAll: 1,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 			},
 			expectedLogs: `
@@ -67,11 +70,12 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "txn: two on the second page",
-			inTxn:    true,
-			kvCount:  5,
-			pageSize: 3,
-			expected: []result{
+			name:             "txn: two on the second page",
+			inTxn:            true,
+			kvCount:          5,
+			pageSize:         3,
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -88,20 +92,22 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "empty",
-			kvCount:  0,
-			pageSize: 3,
-			expected: []result{},
+			name:             "empty",
+			kvCount:          0,
+			pageSize:         3,
+			expectedCountAll: 0,
+			expectedResults:  []result{},
 			expectedLogs: `
 ➡️  GET ["some/prefix/", "some/prefix0")
 ✔️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 0
 `,
 		},
 		{
-			name:     "count 1, under page size",
-			kvCount:  1,
-			pageSize: 3,
-			expected: []result{
+			name:             "count 1, under page size",
+			kvCount:          1,
+			pageSize:         3,
+			expectedCountAll: 1,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 			},
 			expectedLogs: `
@@ -110,10 +116,11 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "count 1, equal to page size",
-			kvCount:  1,
-			pageSize: 1,
-			expected: []result{
+			name:             "count 1, equal to page size",
+			kvCount:          1,
+			pageSize:         1,
+			expectedCountAll: 1,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 			},
 			expectedLogs: `
@@ -122,10 +129,11 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "count 2, under page size",
-			kvCount:  2,
-			pageSize: 3,
-			expected: []result{
+			name:             "count 2, under page size",
+			kvCount:          2,
+			pageSize:         3,
+			expectedCountAll: 2,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 			},
@@ -135,10 +143,11 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "count 3, equal to page size",
-			kvCount:  3,
-			pageSize: 3,
-			expected: []result{
+			name:             "count 3, equal to page size",
+			kvCount:          3,
+			pageSize:         3,
+			expectedCountAll: 3,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -149,10 +158,11 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "one on the second page",
-			kvCount:  4,
-			pageSize: 3,
-			expected: []result{
+			name:             "one on the second page",
+			kvCount:          4,
+			pageSize:         3,
+			expectedCountAll: 4,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -166,10 +176,11 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "two on the second page",
-			kvCount:  5,
-			pageSize: 3,
-			expected: []result{
+			name:             "two on the second page",
+			kvCount:          5,
+			pageSize:         3,
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -184,10 +195,11 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "page size = 1",
-			kvCount:  5,
-			pageSize: 1,
-			expected: []result{
+			name:             "pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -208,11 +220,12 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "WithFromSameRev = false",
-			kvCount:  5,
-			pageSize: 1,
-			options:  []iterator.Option{iterator.WithFromSameRev(false)},
-			expected: []result{
+			name:             "WithFromSameRev = false",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithFromSameRev(false)},
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -233,11 +246,12 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "limit=3",
-			kvCount:  5,
-			pageSize: 3,
-			options:  []iterator.Option{iterator.WithLimit(3)},
-			expected: []result{
+			name:             "limit=3",
+			kvCount:          5,
+			pageSize:         3,
+			options:          []iterator.Option{iterator.WithLimit(3)},
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -248,11 +262,12 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "sort=SortDescend",
-			kvCount:  5,
-			pageSize: 3,
-			options:  []iterator.Option{iterator.WithSort(etcd.SortDescend)},
-			expected: []result{
+			name:             "sort=SortDescend",
+			kvCount:          5,
+			pageSize:         3,
+			options:          []iterator.Option{iterator.WithSort(etcd.SortDescend)},
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo005", value: "bar005"},
 				{key: "some/prefix/foo004", value: "bar004"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -267,11 +282,12 @@ func TestIterator(t *testing.T) {
 `,
 		},
 		{
-			name:     "sort=SortDescend + limit=3",
-			kvCount:  5,
-			pageSize: 2,
-			options:  []iterator.Option{iterator.WithSort(etcd.SortDescend), iterator.WithLimit(3)},
-			expected: []result{
+			name:             "sort=SortDescend, limit=3",
+			kvCount:          5,
+			pageSize:         2,
+			options:          []iterator.Option{iterator.WithSort(etcd.SortDescend), iterator.WithLimit(3)},
+			expectedCountAll: 5,
+			expectedResults: []result{
 				{key: "some/prefix/foo005", value: "bar005"},
 				{key: "some/prefix/foo004", value: "bar004"},
 				{key: "some/prefix/foo003", value: "bar003"},
@@ -281,6 +297,160 @@ func TestIterator(t *testing.T) {
 ✔️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | loaded: 2
 ➡️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
 ✔️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | count: 3 | loaded: 2
+`,
+		},
+		{
+			name:             "startOffset, pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002")},
+			expectedCountAll: 3,
+			expectedResults: []result{
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo005", value: "bar005"},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo003", "some/prefix0")
+✔️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | loaded: 1
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+✔️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset, pageSize=1, txn",
+			kvCount:          5,
+			pageSize:         1,
+			inTxn:            true,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002")},
+			expectedCountAll: 3,
+			expectedResults: []result{
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo005", value: "bar005"},
+			},
+			expectedLogs: `
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["some/prefix/foo003", "some/prefix0")
+✔️  TXN | succeeded: true | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+✔️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset, endOffset, pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithEndOffset("foo005")},
+			expectedCountAll: 2,
+			expectedResults: []result{
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo004", value: "bar004"},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo003", "some/prefix/foo005")
+✔️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d
+✔️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset, pageSize=2",
+			kvCount:          5,
+			pageSize:         2,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002")},
+			expectedCountAll: 3,
+			expectedResults: []result{
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo005", value: "bar005"},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo003", "some/prefix0")
+✔️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | loaded: 2
+➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+✔️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "endOffset, sort=SortDescend, pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithEndOffset("foo004"), iterator.WithSort(etcd.SortDescend)},
+			expectedCountAll: 3,
+			expectedResults: []result{
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo002", value: "bar002"},
+				{key: "some/prefix/foo001", value: "bar001"},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/", "some/prefix/foo004")
+✔️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | count: 3 | loaded: 1
+➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d
+✔️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/", "some/prefix/foo002") | rev: %d
+✔️  GET ["some/prefix/", "some/prefix/foo002") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset, endOffset, sort=SortDescend, pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithEndOffset("foo005"), iterator.WithSort(etcd.SortDescend)},
+			expectedCountAll: 2,
+			expectedResults: []result{
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo003", value: "bar003"},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo003", "some/prefix/foo005")
+✔️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d
+✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset, sort=SortDescend, pageSize=2",
+			kvCount:          5,
+			pageSize:         2,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithSort(etcd.SortDescend)},
+			expectedCountAll: 3,
+			expectedResults: []result{
+				{key: "some/prefix/foo005", value: "bar005"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo003", value: "bar003"},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo003", "some/prefix0")
+✔️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | loaded: 2
+➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d
+✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset, sort=SortDescend, pageSize=2, txn",
+			kvCount:          5,
+			pageSize:         2,
+			inTxn:            true,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithSort(etcd.SortDescend)},
+			expectedCountAll: 3,
+			expectedResults: []result{
+				{key: "some/prefix/foo005", value: "bar005"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo003", value: "bar003"},
+			},
+			expectedLogs: `
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["some/prefix/foo003", "some/prefix0")
+✔️  TXN | succeeded: true | rev: %d
+➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d
+✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
 `,
 		},
 	}
@@ -306,7 +476,7 @@ func TestIterator(t *testing.T) {
 				return nil
 			}))
 			require.NoError(t, txn.Do(ctx).Err())
-			assert.Equal(t, tc.expected, actual, tc.name)
+			assert.Equal(t, tc.expectedResults, actual, tc.name)
 			wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 			continue
 		}
@@ -314,7 +484,7 @@ func TestIterator(t *testing.T) {
 		// Test iteration methods
 		logs.Reset()
 		actual := iterateAll(t, prefix.GetAll(client, ops...), ctx)
-		assert.Equal(t, tc.expected, actual, tc.name)
+		assert.Equal(t, tc.expectedResults, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
 		// Test All method
@@ -325,7 +495,7 @@ func TestIterator(t *testing.T) {
 		for _, kv := range actualKvs {
 			actual = append(actual, result{key: string(kv.Key), value: string(kv.Value)})
 		}
-		assert.Equal(t, tc.expected, actual, tc.name)
+		assert.Equal(t, tc.expectedResults, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
 		// Test ForEach method
@@ -337,8 +507,17 @@ func TestIterator(t *testing.T) {
 			actual = append(actual, result{key: string(kv.Key), value: string(kv.Value)})
 			return nil
 		}))
-		assert.Equal(t, tc.expected, actual, tc.name)
+		assert.Equal(t, tc.expectedResults, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Next method is stable
+		assert.False(t, itr.Next(), tc.name)
+		assert.False(t, itr.Next(), tc.name)
+
+		// Test CountAll method
+		count, err := prefix.GetAll(client, ops...).CountAll().Do(ctx).ResultOrErr()
+		assert.Equal(t, tc.expectedCountAll, int(count), tc.name)
+		assert.NoError(t, err, tc.name)
 	}
 }
 
@@ -438,12 +617,12 @@ func TestIterator_End(t *testing.T) {
 	assert.NoError(t, prefix.Key("foo004").Put(client, "bar004").Do(ctx).Err())
 	assert.NoError(t, prefix.Key("foo005").Put(client, "bar005").Do(ctx).Err())
 
-	// Get all WithEnd, so only the first 3 keys are loaded
+	// Get all WithEndOffset, so only the first 3 keys are loaded
 	var actual []result
 	assert.NoError(
 		t,
 		prefix.
-			GetAll(client, iterator.WithEnd("foo004")).Do(ctx).
+			GetAll(client, iterator.WithEndOffset("foo004")).Do(ctx).
 			ForEach(func(kv *op.KeyValue, _ *iterator.Header) error {
 				actual = append(actual, result{key: string(kv.Key), value: string(kv.Value)})
 				return nil

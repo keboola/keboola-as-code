@@ -23,12 +23,16 @@ type Definition struct {
 }
 
 type Iterator struct {
-	config          config
 	ctx             context.Context
 	opts            []op.Option
+	client          etcd.KV
+	sort            etcd.SortOrder
+	pageSize        int
+	revision        int64
+	fromSameRev     bool
 	err             error
-	start           string         // page start prefix
-	end             string         // page start prefix
+	start           string         // page start key
+	end             string         // page end key
 	page            int            // page number, start from 1
 	lastIndexOnPage int            // lastIndexOnPage in the page, 0 means empty
 	indexOnPage     int            // indexOnPage in the page, start from 0
@@ -55,8 +59,8 @@ type Result struct {
 
 type onPageFn func(pageIndex int, response *etcd.GetResponse) error
 
-func New(client etcd.KV, start string, opts ...Option) Definition {
-	return newIterator(newConfig(client, nil, start, opts))
+func New(client etcd.KV, prefix string, opts ...Option) Definition {
+	return newIterator(newConfig(client, prefix, opts))
 }
 
 func newIterator(config config) Definition {
@@ -68,13 +72,35 @@ func (v Definition) Do(ctx context.Context, opts ...op.Option) *Iterator {
 	return &Iterator{
 		ctx:            ctx,
 		opts:           opts,
-		config:         v.config,
-		start:          v.config.prefix,
-		end:            v.config.end,
+		client:         v.config.client,
+		sort:           v.config.sort,
+		pageSize:       v.config.pageSize,
+		revision:       v.config.revision,
+		fromSameRev:    v.config.fromSameRev,
+		start:          v.config.start(),
+		end:            v.config.end(),
 		lastIndexTotal: v.config.limit - 1, // -1 means no limit
 		indexOnPage:    -1,                 // Next method must be called at first
 		indexTotal:     -1,                 // Next method must be called at first
 	}
+}
+
+func (v Definition) Prefix() string {
+	return v.config.prefix
+}
+
+// CountAll records in the iterator range, WithLimit option is ignored.
+func (v Definition) CountAll(opts ...etcd.OpOption) op.CountOp {
+	return op.NewCountOp(
+		v.client,
+		func(ctx context.Context) (etcd.Op, error) {
+			opts = append([]etcd.OpOption{etcd.WithRange(v.config.end()), etcd.WithCountOnly()}, opts...)
+			return etcd.OpGet(v.config.start(), opts...), nil
+		},
+		func(ctx context.Context, raw op.RawResponse) (int64, error) {
+			return raw.Get().Count, nil
+		},
+	)
 }
 
 // ForEach method converts iterator to for each operation definition, so it can be part of a transaction.
@@ -98,7 +124,7 @@ func (v *ForEach) Op(ctx context.Context) (op.LowLevelOp, error) {
 		MapResponse: func(ctx context.Context, response op.RawResponse) (result any, err error) {
 			// Create iterator, see comment above.
 			itr := v.def.Do(ctx, response.Options...).OnPage(v.onPage...)
-			itr.config.client = response.Client
+			itr.client = response.Client
 
 			// Inject the first page, from the response
 			itr.moveToPage(response.Get())
@@ -242,14 +268,14 @@ func (v *Iterator) nextPage() bool {
 	// If these keys can change, we will ensure that all pages are from the same revision.
 	// Enabled by default, see WithFromSameRev.
 	revision := int64(0)
-	if v.header != nil && v.config.fromSameRev {
+	if v.header != nil && v.fromSameRev {
 		revision = v.header.Revision
-	} else if v.config.revision > 0 {
-		revision = v.config.revision
+	} else if v.revision > 0 {
+		revision = v.revision
 	}
 
 	// Do with retry
-	r := nextPageOp(v.config.client, v.start, v.end, v.config.sort, v.config.pageSize, revision).Do(v.ctx, v.opts...)
+	r := nextPageOp(v.client, v.start, v.end, v.sort, v.pageSize, revision).Do(v.ctx, v.opts...)
 	if err := r.Err(); err != nil {
 		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d, revision=%d: %w`, v.start, v.page, revision, err)
 		return false
@@ -281,7 +307,7 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 	if more {
 		// Start of the next page is one key after the last key
 		lastKey := string(v.values[v.lastIndexOnPage].Key)
-		if v.config.sort == etcd.SortAscend {
+		if v.sort == etcd.SortAscend {
 			v.start = etcd.GetPrefixRangeEnd(lastKey)
 		} else {
 			v.end = lastKey
@@ -303,14 +329,14 @@ func (v Result) Err() error {
 }
 
 func newFirstPageOp(cfg config) op.GetManyOp {
-	return nextPageOp(cfg.client, cfg.prefix, cfg.end, cfg.sort, cfg.pageSize, cfg.revision)
+	return nextPageOp(cfg.client, cfg.start(), cfg.end(), cfg.sort, cfg.pageSize, cfg.revision)
 }
 
 func nextPageOp(client etcd.KV, start, end string, sort etcd.SortOrder, pageSize int, revision int64) op.GetManyOp {
 	// Range options
 	opts := []etcd.OpOption{
 		etcd.WithFromKey(),
-		etcd.WithRange(end), // iterate to the end of the prefix
+		etcd.WithRange(end), // iterate to the end, the end is excluded
 		etcd.WithLimit(int64(pageSize)),
 		etcd.WithSort(etcd.SortByKey, sort),
 	}

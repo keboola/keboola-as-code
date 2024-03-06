@@ -11,14 +11,22 @@ import (
 )
 
 type DefinitionT[T any] struct {
-	config
-	filters []func(*op.KeyValueT[T]) bool // true means accepting the value
+	Definition
+	// serde is serialization/deserialization implementation, it is empty for not-typed iterator
+	serde *serde.Serde
+	// filters - true means accepting the value
+	filters []func(*op.KeyValueT[T]) bool
 }
 
 type IteratorT[T any] struct {
-	*Iterator                                  // raw iterator, without T
-	filters      []func(*op.KeyValueT[T]) bool // true means accepting the value
-	currentValue *op.KeyValueT[T]              // currentValue in the page, match indexOnPage
+	// Iterator is underlying iterator, without T
+	*Iterator
+	// serde is serialization/deserialization implementation, it is empty for not-typed iterator
+	serde *serde.Serde
+	// filters - true means accepting the value
+	filters []func(*op.KeyValueT[T]) bool
+	// currentValue in the page, match indexOnPage
+	currentValue *op.KeyValueT[T]
 }
 
 // ForEachT definition, it can be part of a transaction.
@@ -29,14 +37,13 @@ type ForEachT[T any] struct {
 	onKV    func(value *op.KeyValueT[T], header *Header) error
 }
 
-func NewTyped[R any](client etcd.KV, serde *serde.Serde, start string, opts ...Option) DefinitionT[R] {
-	return DefinitionT[R]{config: newConfig(client, serde, start, opts)}
+func NewTyped[R any](client etcd.KV, serde *serde.Serde, prefix string, opts ...Option) DefinitionT[R] {
+	return DefinitionT[R]{Definition: New(client, prefix, opts...), serde: serde}
 }
 
 // Do converts iterator definition to the iterator.
 func (v DefinitionT[T]) Do(ctx context.Context, opts ...op.Option) *IteratorT[T] {
-	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, opts...), filters: v.filters}
-	out.config.serde = v.serde
+	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, opts...), serde: v.serde, filters: v.filters}
 	return out
 }
 
@@ -131,7 +138,7 @@ func (v *ForEachT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 		MapResponse: func(ctx context.Context, response op.RawResponse) (result any, err error) {
 			// Create iterator, see comment above.
 			itr := v.def.Do(ctx, response.Options...).OnPage(v.onPage...)
-			itr.config.client = response.Client
+			itr.client = response.Client
 
 			// Inject the first page, from the response
 			itr.moveToPage(response.Get())
@@ -188,7 +195,7 @@ Loop:
 
 		// Decode item
 		v.currentValue = &op.KeyValueT[T]{Kv: v.values[v.indexOnPage]}
-		if err := v.config.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
+		if err := v.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
 			v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.indexOnPage, err)
 			return false
 		}

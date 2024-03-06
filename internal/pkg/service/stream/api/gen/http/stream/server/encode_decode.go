@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -260,12 +261,36 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	return func(r *http.Request) (any, error) {
 		var (
 			branchID        string
+			sinceID         string
+			limit           int
 			storageAPIToken string
 			err             error
 
 			params = mux.Vars(r)
 		)
 		branchID = params["branchId"]
+		sinceIDRaw := r.URL.Query().Get("sinceId")
+		if sinceIDRaw != "" {
+			sinceID = sinceIDRaw
+		}
+		{
+			limitRaw := r.URL.Query().Get("limit")
+			if limitRaw == "" {
+				limit = 100
+			} else {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				limit = int(v)
+			}
+		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 100, false))
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -273,7 +298,7 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListSourcesPayload(branchID, storageAPIToken)
+		payload := NewListSourcesPayload(branchID, sinceID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1159,6 +1184,8 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		var (
 			branchID        string
 			sourceID        string
+			sinceID         string
+			limit           int
 			storageAPIToken string
 			err             error
 
@@ -1172,6 +1199,28 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		if utf8.RuneCountInString(sourceID) > 48 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
 		}
+		sinceIDRaw := r.URL.Query().Get("sinceId")
+		if sinceIDRaw != "" {
+			sinceID = sinceIDRaw
+		}
+		{
+			limitRaw := r.URL.Query().Get("limit")
+			if limitRaw == "" {
+				limit = 100
+			} else {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				limit = int(v)
+			}
+		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 100, false))
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -1179,7 +1228,7 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListSinksPayload(branchID, sourceID, storageAPIToken)
+		payload := NewListSinksPayload(branchID, sourceID, sinceID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1706,6 +1755,20 @@ func marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v *stream
 	res := &TableColumnTemplateResponseBody{
 		Language: v.Language,
 		Content:  v.Content,
+	}
+
+	return res
+}
+
+// marshalStreamPaginatedResponseToPaginatedResponseResponseBody builds a value
+// of type *PaginatedResponseResponseBody from a value of type
+// *stream.PaginatedResponse.
+func marshalStreamPaginatedResponseToPaginatedResponseResponseBody(v *stream.PaginatedResponse) *PaginatedResponseResponseBody {
+	res := &PaginatedResponseResponseBody{
+		Limit:      v.Limit,
+		TotalCount: v.TotalCount,
+		SinceID:    v.SinceID,
+		LastID:     v.LastID,
 	}
 
 	return res

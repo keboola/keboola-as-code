@@ -51,6 +51,29 @@ paths:
             description: List all sources in the branch.
             operationId: ListSources
             parameters:
+                - name: sinceId
+                  in: query
+                  description: Request records after the ID.
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Request records after the ID.
+                    default: ""
+                    example: my-object-123
+                  example: my-object-123
+                - name: limit
+                  in: query
+                  description: Maximum number of returned records.
+                  allowEmptyValue: true
+                  schema:
+                    type: integer
+                    description: Maximum number of returned records.
+                    default: 100
+                    example: 100
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+                  example: 100
                 - name: branchId
                   in: path
                   required: true
@@ -69,6 +92,11 @@ paths:
                             example:
                                 projectId: 123
                                 branchId: 345
+                                page:
+                                    limit: 100
+                                    totalCount: 1000
+                                    sinceId: my-object-123
+                                    lastId: my-object-456
                                 sources:
                                     - projectId: 123
                                       branchId: 345
@@ -653,6 +681,29 @@ paths:
             description: List all sinks in the source.
             operationId: ListSinks
             parameters:
+                - name: sinceId
+                  in: query
+                  description: Request records after the ID.
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Request records after the ID.
+                    default: ""
+                    example: my-object-123
+                  example: my-object-123
+                - name: limit
+                  in: query
+                  description: Maximum number of returned records.
+                  allowEmptyValue: true
+                  schema:
+                    type: integer
+                    description: Maximum number of returned records.
+                    default: 100
+                    example: 100
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+                  example: 100
                 - name: branchId
                   in: path
                   required: true
@@ -682,6 +733,11 @@ paths:
                                 projectId: 123
                                 branchId: 345
                                 sourceId: github-webhook-source
+                                page:
+                                    limit: 100
+                                    totalCount: 1000
+                                    sinceId: my-object-123
+                                    lastId: my-object-456
                                 sinks:
                                     - projectId: 123
                                       branchId: 345
@@ -1672,6 +1728,37 @@ components:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             required:
                 - url
+        PaginatedResponse:
+            type: object
+            properties:
+                lastId:
+                    type: string
+                    description: ID of the last record in the response.
+                    example: my-object-456
+                limit:
+                    type: integer
+                    description: Current limit.
+                    example: 100
+                    format: int64
+                sinceId:
+                    type: string
+                    description: Current offset.
+                    example: my-object-123
+                totalCount:
+                    type: integer
+                    description: Total count of all records.
+                    example: 1000
+                    format: int64
+            example:
+                limit: 100
+                totalCount: 1000
+                sinceId: my-object-123
+                lastId: my-object-456
+            required:
+                - sinceId
+                - limit
+                - lastId
+                - totalCount
         ServiceDetail:
             type: object
             properties:
@@ -1864,6 +1951,8 @@ components:
                     type: integer
                     example: 345
                     format: int64
+                page:
+                    $ref: '#/components/schemas/PaginatedResponse'
                 projectId:
                     type: integer
                     example: 123
@@ -1928,6 +2017,11 @@ components:
                 projectId: 123
                 branchId: 345
                 sourceId: github-webhook-source
+                page:
+                    limit: 100
+                    totalCount: 1000
+                    sinceId: my-object-123
+                    lastId: my-object-456
                 sinks:
                     - projectId: 123
                       branchId: 345
@@ -1979,6 +2073,7 @@ components:
                 - projectId
                 - branchId
                 - sourceId
+                - page
                 - sinks
         Source:
             type: object
@@ -2163,6 +2258,8 @@ components:
                     type: integer
                     example: 345
                     format: int64
+                page:
+                    $ref: '#/components/schemas/PaginatedResponse'
                 projectId:
                     type: integer
                     example: 123
@@ -2250,6 +2347,11 @@ components:
             example:
                 projectId: 123
                 branchId: 345
+                page:
+                    limit: 100
+                    totalCount: 1000
+                    sinceId: my-object-123
+                    lastId: my-object-456
                 sources:
                     - projectId: 123
                       branchId: 345
@@ -2329,6 +2431,7 @@ components:
             required:
                 - projectId
                 - branchId
+                - page
                 - sources
         TableColumn:
             type: object
