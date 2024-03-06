@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -103,6 +104,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		source1 := test.NewSource(sourceKey1)
 		source1.Name = "My Source 1"
+		source1.Config = source1.Config.With(testconfig.StorageConfigPatch())
 		result1, err := sourceRepo.Create("Create description", &source1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, result1, source1)
@@ -423,13 +425,49 @@ definition/source/active/123/456/my-source-1
   "sourceId": "my-source-1",
   "version": {
     "number": 5,
-    "hash": "217862c1da330b9b",
+    "hash": "d2148eaa0d6d0191",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
     "description": "Rollback to version 2"
   },
   "type": "http",
   "name": "Modified Name",
   "description": "My Description",
+  "config": [
+    {
+      "key": "storage.level.local.volume.assignment.count",
+      "value": 1
+    },
+    {
+      "key": "storage.level.local.volume.assignment.preferredTypes",
+      "value": [
+        "default"
+      ]
+    },
+    {
+      "key": "storage.level.local.volume.sync.bytesTrigger",
+      "value": "100KB"
+    },
+    {
+      "key": "storage.level.local.volume.sync.checkInterval",
+      "value": "1ms"
+    },
+    {
+      "key": "storage.level.local.volume.sync.countTrigger",
+      "value": 100
+    },
+    {
+      "key": "storage.level.local.volume.sync.intervalTrigger",
+      "value": "100ms"
+    },
+    {
+      "key": "storage.level.local.volume.sync.mode",
+      "value": "disk"
+    },
+    {
+      "key": "storage.level.local.volume.sync.wait",
+      "value": false
+    }
+  ],
   "http": {
     "secret": "012345678901234567890123456789012345678912345678"
   }

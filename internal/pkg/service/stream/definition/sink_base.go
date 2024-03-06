@@ -15,7 +15,7 @@ type Sink struct {
 	Type        SinkType             `json:"type" validate:"required,oneof=table"`
 	Name        string               `json:"name" validate:"required,min=1,max=40"`
 	Description string               `json:"description,omitempty" validate:"max=4096"`
-	Config      configpatch.PatchKVs `json:"config"` // see stream/config/config.Patch
+	Config      configpatch.PatchKVs `json:"config,omitempty"` // see stream/config/config.Patch
 
 	// Sink type specific fields
 
