@@ -959,6 +959,15 @@ definitions:
                 type: string
                 description: ID of the branch.
                 example: "5876"
+            configurations:
+                type: array
+                items:
+                    $ref: '#/definitions/ConfigResponseBody'
+                description: All configurations from the instance.
+                example:
+                    - componentId: keboola.ex-db-mysql
+                      configId: "7954825835"
+                      name: My Extractor
             created:
                 $ref: '#/definitions/ChangeInfoResponseBody'
             instanceId:
@@ -988,6 +997,10 @@ definitions:
         description: Template instance.
         example:
             branch: "5876"
+            configurations:
+                - componentId: keboola.ex-db-mysql
+                  configId: "7954825835"
+                  name: My Extractor
             created:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
@@ -1011,6 +1024,7 @@ definitions:
             - name
             - created
             - updated
+            - configurations
     MainConfigResponseBody:
         title: MainConfigResponseBody
         type: object
@@ -2280,6 +2294,10 @@ definitions:
                 description: All instances found in branch.
                 example:
                     - branch: "5876"
+                      configurations:
+                        - componentId: keboola.ex-db-mysql
+                          configId: "7954825835"
+                          name: My Extractor
                       created:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
@@ -2297,6 +2315,10 @@ definitions:
         example:
             instances:
                 - branch: "5876"
+                  configurations:
+                    - componentId: keboola.ex-db-mysql
+                      configId: "7954825835"
+                      name: My Extractor
                   created:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"

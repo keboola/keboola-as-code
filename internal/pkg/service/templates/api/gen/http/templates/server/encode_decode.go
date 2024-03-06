@@ -68,7 +68,7 @@ func DecodeRepositoriesIndexRequest(mux goahttp.Muxer, decoder func(*http.Reques
 		)
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -110,7 +110,7 @@ func DecodeRepositoryIndexRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		repository = params["repository"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -182,7 +182,7 @@ func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		repository = params["repository"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -262,7 +262,7 @@ func DecodeTemplateIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) g
 		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -358,7 +358,7 @@ func DecodeVersionIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -468,7 +468,7 @@ func DecodeInputsIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -593,7 +593,7 @@ func DecodeValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -718,7 +718,7 @@ func DecodeUseTemplateVersionRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -847,7 +847,7 @@ func DecodeInstancesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		branch = params["branch"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -921,7 +921,7 @@ func DecodeInstanceIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) g
 		instanceID = params["instanceId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1038,7 +1038,7 @@ func DecodeUpdateInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		instanceID = params["instanceId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1141,7 +1141,7 @@ func DecodeDeleteInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		instanceID = params["instanceId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1261,7 +1261,7 @@ func DecodeUpgradeInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1408,7 +1408,7 @@ func DecodeUpgradeInstanceInputsIndexRequest(mux goahttp.Muxer, decoder func(*ht
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1541,7 +1541,7 @@ func DecodeUpgradeInstanceValidateInputsRequest(mux goahttp.Muxer, decoder func(
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1655,7 +1655,7 @@ func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 		taskID = params["taskId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("storageApiToken", "header"))
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
 		}
 		if err != nil {
 			return nil, err
@@ -1994,6 +1994,14 @@ func marshalTemplatesInstanceToInstanceResponseBody(v *templates.Instance) *Inst
 	if v.MainConfig != nil {
 		res.MainConfig = marshalTemplatesMainConfigToMainConfigResponseBody(v.MainConfig)
 	}
+	if v.Configurations != nil {
+		res.Configurations = make([]*ConfigResponseBody, len(v.Configurations))
+		for i, val := range v.Configurations {
+			res.Configurations[i] = marshalTemplatesConfigToConfigResponseBody(val)
+		}
+	} else {
+		res.Configurations = []*ConfigResponseBody{}
+	}
 
 	return res
 }
@@ -2018,6 +2026,18 @@ func marshalTemplatesMainConfigToMainConfigResponseBody(v *templates.MainConfig)
 	res := &MainConfigResponseBody{
 		ComponentID: v.ComponentID,
 		ConfigID:    v.ConfigID,
+	}
+
+	return res
+}
+
+// marshalTemplatesConfigToConfigResponseBody builds a value of type
+// *ConfigResponseBody from a value of type *templates.Config.
+func marshalTemplatesConfigToConfigResponseBody(v *templates.Config) *ConfigResponseBody {
+	res := &ConfigResponseBody{
+		ComponentID: v.ComponentID,
+		ConfigID:    v.ConfigID,
+		Name:        v.Name,
 	}
 
 	return res
@@ -2058,18 +2078,6 @@ func marshalTemplatesVersionDetailToVersionDetailResponseBody(v *templates.Versi
 		}
 	} else {
 		res.Components = []string{}
-	}
-
-	return res
-}
-
-// marshalTemplatesConfigToConfigResponseBody builds a value of type
-// *ConfigResponseBody from a value of type *templates.Config.
-func marshalTemplatesConfigToConfigResponseBody(v *templates.Config) *ConfigResponseBody {
-	res := &ConfigResponseBody{
-		ComponentID: v.ComponentID,
-		ConfigID:    v.ConfigID,
-		Name:        v.Name,
 	}
 
 	return res
