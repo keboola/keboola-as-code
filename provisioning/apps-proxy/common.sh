@@ -33,7 +33,7 @@ if ! kubectl get secret apps-proxy-salt --namespace apps-proxy > /dev/null 2>&1;
 fi
 
 # Proxy
-kubectl apply -f ./kubernetes/deploy/proxy/secret.yaml
+kubectl apply -f ./kubernetes/deploy/proxy/token.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/pdb.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/network-policy.yaml

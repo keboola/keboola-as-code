@@ -62,7 +62,7 @@ spec:
             - name: APPS_PROXY_SANDBOXES_API_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: apps-proxy
+                  name: apps-proxy-token
                   key: sandboxesApiToken
             - name: APPS_PROXY_API_PUBLIC_URL
               valueFrom:
