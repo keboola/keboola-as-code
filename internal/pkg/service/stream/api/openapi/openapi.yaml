@@ -114,7 +114,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/StreamCreateSourceStreamSourceAlreadyExistsResponseBody'
+                        $ref: '#/definitions/StreamCreateSourceStreamAPISourceAlreadyExistsResponseBody'
                         required:
                             - statusCode
                             - error
@@ -122,7 +122,7 @@ paths:
                 "422":
                     description: Unprocessable Entity response.
                     schema:
-                        $ref: '#/definitions/StreamCreateSourceStreamResourceLimitReachedResponseBody'
+                        $ref: '#/definitions/StreamCreateSourceStreamAPIResourceLimitReachedResponseBody'
                         required:
                             - statusCode
                             - error
@@ -166,7 +166,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamGetSourceStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamGetSourceStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -198,7 +198,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamDeleteSourceStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamDeleteSourceStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -244,7 +244,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamUpdateSourceStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamUpdateSourceStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -275,13 +275,11 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        type: array
-                        items:
-                            $ref: '#/definitions/SettingResultResponse'
+                        $ref: '#/definitions/StreamGetSourceSettingsResponseBody'
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamGetSourceSettingsStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamGetSourceSettingsStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -316,13 +314,11 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        type: array
-                        items:
-                            $ref: '#/definitions/SettingResultResponse'
+                        $ref: '#/definitions/StreamUpdateSourceSettingsResponseBody'
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamUpdateSourceSettingsStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamUpdateSourceSettingsStreamAPIForbiddenResponseBody'
                         required:
                             - statusCode
                             - error
@@ -377,7 +373,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamListSinksStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamListSinksStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -426,7 +422,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamCreateSinkStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamCreateSinkStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -434,7 +430,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/StreamCreateSinkStreamSinkAlreadyExistsResponseBody'
+                        $ref: '#/definitions/StreamCreateSinkStreamAPISinkAlreadyExistsResponseBody'
                         required:
                             - statusCode
                             - error
@@ -442,7 +438,7 @@ paths:
                 "422":
                     description: Unprocessable Entity response.
                     schema:
-                        $ref: '#/definitions/StreamCreateSinkStreamResourceLimitReachedResponseBody'
+                        $ref: '#/definitions/StreamCreateSinkStreamAPIResourceLimitReachedResponseBody'
                         required:
                             - statusCode
                             - error
@@ -490,7 +486,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamGetSinkStreamSinkNotFoundResponseBody'
+                        $ref: '#/definitions/StreamGetSinkStreamAPISinkNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -527,7 +523,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamDeleteSinkStreamSinkNotFoundResponseBody'
+                        $ref: '#/definitions/StreamDeleteSinkStreamAPISinkNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -578,7 +574,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamUpdateSinkStreamSinkNotFoundResponseBody'
+                        $ref: '#/definitions/StreamUpdateSinkStreamAPISinkNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -614,13 +610,11 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        type: array
-                        items:
-                            $ref: '#/definitions/SettingResultResponse'
+                        $ref: '#/definitions/StreamGetSinkSettingsResponseBody'
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamGetSinkSettingsStreamSinkNotFoundResponseBody'
+                        $ref: '#/definitions/StreamGetSinkSettingsStreamAPISinkNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -660,13 +654,11 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        type: array
-                        items:
-                            $ref: '#/definitions/SettingResultResponse'
+                        $ref: '#/definitions/StreamUpdateSinkSettingsResponseBody'
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamUpdateSinkSettingsStreamSinkNotFoundResponseBody'
+                        $ref: '#/definitions/StreamUpdateSinkSettingsStreamAPIForbiddenResponseBody'
                         required:
                             - statusCode
                             - error
@@ -710,7 +702,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamRefreshSourceTokensStreamSourceNotFoundResponseBody'
+                        $ref: '#/definitions/StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -803,7 +795,7 @@ paths:
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamGetTaskStreamTaskNotFoundResponseBody'
+                        $ref: '#/definitions/StreamGetTaskStreamAPITaskNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -957,13 +949,17 @@ definitions:
             value: 1m20s
         required:
             - key
-    SettingResultResponse:
-        title: SettingResultResponse
+    SettingResultResponseBody:
+        title: SettingResultResponseBody
         type: object
         properties:
             defaultValue:
                 description: Default value.
                 example: 30s
+            description:
+                type: string
+                description: Key description.
+                example: Minimal interval between uploads.
             key:
                 type: string
                 description: Key path.
@@ -984,7 +980,10 @@ definitions:
                     - string
                     - int
                     - float
-                    - boolean
+                    - bool
+                    - '[]string'
+                    - '[]int'
+                    - '[]float'
             validation:
                 type: string
                 description: Validation rules as a string definition.
@@ -996,6 +995,7 @@ definitions:
         example:
             key: some.service.limit
             type: string
+            description: Minimal interval between uploads.
             value: 1m20s
             defaultValue: 30s
             overwritten: true
@@ -1004,6 +1004,7 @@ definitions:
         required:
             - key
             - type
+            - description
             - value
             - defaultValue
             - overwritten
@@ -1435,8 +1436,8 @@ definitions:
             - status
             - isFinished
             - createdAt
-    StreamCreateSinkStreamResourceLimitReachedResponseBody:
-        title: StreamCreateSinkStreamResourceLimitReachedResponseBody
+    StreamCreateSinkStreamAPIResourceLimitReachedResponseBody:
+        title: StreamCreateSinkStreamAPIResourceLimitReachedResponseBody
         type: object
         properties:
             error:
@@ -1455,14 +1456,14 @@ definitions:
         description: Resource limit reached.
         example:
             statusCode: 422
-            error: stream.resourceLimitReached
+            error: stream.api.resourceLimitReached
             message: Maximum number of sources per project is 100.
         required:
             - statusCode
             - error
             - message
-    StreamCreateSinkStreamSinkAlreadyExistsResponseBody:
-        title: StreamCreateSinkStreamSinkAlreadyExistsResponseBody
+    StreamCreateSinkStreamAPISinkAlreadyExistsResponseBody:
+        title: StreamCreateSinkStreamAPISinkAlreadyExistsResponseBody
         type: object
         properties:
             error:
@@ -1481,14 +1482,14 @@ definitions:
         description: Sink already exists in the source.
         example:
             statusCode: 409
-            error: stream.sinkAlreadyExists
+            error: stream.api.sinkAlreadyExists
             message: Sink already exists in the source.
         required:
             - statusCode
             - error
             - message
-    StreamCreateSinkStreamSourceNotFoundResponseBody:
-        title: StreamCreateSinkStreamSourceNotFoundResponseBody
+    StreamCreateSinkStreamAPISourceNotFoundResponseBody:
+        title: StreamCreateSinkStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1507,7 +1508,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -1621,8 +1622,8 @@ definitions:
             - status
             - isFinished
             - createdAt
-    StreamCreateSourceStreamResourceLimitReachedResponseBody:
-        title: StreamCreateSourceStreamResourceLimitReachedResponseBody
+    StreamCreateSourceStreamAPIResourceLimitReachedResponseBody:
+        title: StreamCreateSourceStreamAPIResourceLimitReachedResponseBody
         type: object
         properties:
             error:
@@ -1641,14 +1642,14 @@ definitions:
         description: Resource limit reached.
         example:
             statusCode: 422
-            error: stream.resourceLimitReached
+            error: stream.api.resourceLimitReached
             message: Maximum number of sources per project is 100.
         required:
             - statusCode
             - error
             - message
-    StreamCreateSourceStreamSourceAlreadyExistsResponseBody:
-        title: StreamCreateSourceStreamSourceAlreadyExistsResponseBody
+    StreamCreateSourceStreamAPISourceAlreadyExistsResponseBody:
+        title: StreamCreateSourceStreamAPISourceAlreadyExistsResponseBody
         type: object
         properties:
             error:
@@ -1667,14 +1668,14 @@ definitions:
         description: Source already exists in the branch.
         example:
             statusCode: 409
-            error: stream.sourceAlreadyExists
+            error: stream.api.sourceAlreadyExists
             message: Source already exists in the branch.
         required:
             - statusCode
             - error
             - message
-    StreamDeleteSinkStreamSinkNotFoundResponseBody:
-        title: StreamDeleteSinkStreamSinkNotFoundResponseBody
+    StreamDeleteSinkStreamAPISinkNotFoundResponseBody:
+        title: StreamDeleteSinkStreamAPISinkNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1693,14 +1694,14 @@ definitions:
         description: Sink not found error.
         example:
             statusCode: 404
-            error: stream.sinkNotFound
+            error: stream.api.sinkNotFound
             message: Sink "github-changed-files" not found.
         required:
             - statusCode
             - error
             - message
-    StreamDeleteSinkStreamSourceNotFoundResponseBody:
-        title: StreamDeleteSinkStreamSourceNotFoundResponseBody
+    StreamDeleteSinkStreamAPISourceNotFoundResponseBody:
+        title: StreamDeleteSinkStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1719,14 +1720,14 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
             - error
             - message
-    StreamDeleteSourceStreamSourceNotFoundResponseBody:
-        title: StreamDeleteSourceStreamSourceNotFoundResponseBody
+    StreamDeleteSourceStreamAPISourceNotFoundResponseBody:
+        title: StreamDeleteSourceStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1745,7 +1746,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -1852,8 +1853,35 @@ definitions:
             - version
             - name
             - description
-    StreamGetSinkSettingsStreamSinkNotFoundResponseBody:
-        title: StreamGetSinkSettingsStreamSinkNotFoundResponseBody
+    StreamGetSinkSettingsResponseBody:
+        title: StreamGetSinkSettingsResponseBody
+        type: object
+        properties:
+            settings:
+                type: array
+                items:
+                    $ref: '#/definitions/SettingResultResponseBody'
+                example:
+                    - key: some.service.limit
+                      type: string
+                      description: Minimal interval between uploads.
+                      value: 1m20s
+                      defaultValue: 30s
+                      overwritten: true
+                      protected: false
+                      validation: minDuration=15s
+        example:
+            settings:
+                - key: some.service.limit
+                  type: string
+                  description: Minimal interval between uploads.
+                  value: 1m20s
+                  defaultValue: 30s
+                  overwritten: true
+                  protected: false
+                  validation: minDuration=15s
+    StreamGetSinkSettingsStreamAPISinkNotFoundResponseBody:
+        title: StreamGetSinkSettingsStreamAPISinkNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1872,14 +1900,14 @@ definitions:
         description: Sink not found error.
         example:
             statusCode: 404
-            error: stream.sinkNotFound
+            error: stream.api.sinkNotFound
             message: Sink "github-changed-files" not found.
         required:
             - statusCode
             - error
             - message
-    StreamGetSinkSettingsStreamSourceNotFoundResponseBody:
-        title: StreamGetSinkSettingsStreamSourceNotFoundResponseBody
+    StreamGetSinkSettingsStreamAPISourceNotFoundResponseBody:
+        title: StreamGetSinkSettingsStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1898,14 +1926,14 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
             - error
             - message
-    StreamGetSinkStreamSinkNotFoundResponseBody:
-        title: StreamGetSinkStreamSinkNotFoundResponseBody
+    StreamGetSinkStreamAPISinkNotFoundResponseBody:
+        title: StreamGetSinkStreamAPISinkNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1924,14 +1952,14 @@ definitions:
         description: Sink not found error.
         example:
             statusCode: 404
-            error: stream.sinkNotFound
+            error: stream.api.sinkNotFound
             message: Sink "github-changed-files" not found.
         required:
             - statusCode
             - error
             - message
-    StreamGetSinkStreamSourceNotFoundResponseBody:
-        title: StreamGetSinkStreamSourceNotFoundResponseBody
+    StreamGetSinkStreamAPISourceNotFoundResponseBody:
+        title: StreamGetSinkStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -1950,7 +1978,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -2133,8 +2161,35 @@ definitions:
             - name
             - description
             - sinks
-    StreamGetSourceSettingsStreamSourceNotFoundResponseBody:
-        title: StreamGetSourceSettingsStreamSourceNotFoundResponseBody
+    StreamGetSourceSettingsResponseBody:
+        title: StreamGetSourceSettingsResponseBody
+        type: object
+        properties:
+            settings:
+                type: array
+                items:
+                    $ref: '#/definitions/SettingResultResponseBody'
+                example:
+                    - key: some.service.limit
+                      type: string
+                      description: Minimal interval between uploads.
+                      value: 1m20s
+                      defaultValue: 30s
+                      overwritten: true
+                      protected: false
+                      validation: minDuration=15s
+        example:
+            settings:
+                - key: some.service.limit
+                  type: string
+                  description: Minimal interval between uploads.
+                  value: 1m20s
+                  defaultValue: 30s
+                  overwritten: true
+                  protected: false
+                  validation: minDuration=15s
+    StreamGetSourceSettingsStreamAPISourceNotFoundResponseBody:
+        title: StreamGetSourceSettingsStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -2153,14 +2208,14 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
             - error
             - message
-    StreamGetSourceStreamSourceNotFoundResponseBody:
-        title: StreamGetSourceStreamSourceNotFoundResponseBody
+    StreamGetSourceStreamAPISourceNotFoundResponseBody:
+        title: StreamGetSourceStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -2179,7 +2234,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -2259,8 +2314,8 @@ definitions:
             - status
             - isFinished
             - createdAt
-    StreamGetTaskStreamTaskNotFoundResponseBody:
-        title: StreamGetTaskStreamTaskNotFoundResponseBody
+    StreamGetTaskStreamAPITaskNotFoundResponseBody:
+        title: StreamGetTaskStreamAPITaskNotFoundResponseBody
         type: object
         properties:
             error:
@@ -2279,7 +2334,7 @@ definitions:
         description: Task not found error.
         example:
             statusCode: 404
-            error: stream.taskNotFound
+            error: stream.api.taskNotFound
             message: Task "001" not found.
         required:
             - statusCode
@@ -2417,8 +2472,8 @@ definitions:
             - sourceId
             - page
             - sinks
-    StreamListSinksStreamSourceNotFoundResponseBody:
-        title: StreamListSinksStreamSourceNotFoundResponseBody
+    StreamListSinksStreamAPISourceNotFoundResponseBody:
+        title: StreamListSinksStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -2437,7 +2492,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -2803,8 +2858,8 @@ definitions:
             - name
             - description
             - sinks
-    StreamRefreshSourceTokensStreamSourceNotFoundResponseBody:
-        title: StreamRefreshSourceTokensStreamSourceNotFoundResponseBody
+    StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody:
+        title: StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -2823,7 +2878,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -2957,7 +3012,7 @@ definitions:
         title: StreamUpdateSinkSettingsRequestBody
         type: object
         properties:
-            patch:
+            settings:
                 type: array
                 items:
                     $ref: '#/definitions/SettingPatchRequestBody'
@@ -2965,11 +3020,64 @@ definitions:
                     - key: some.service.limit
                       value: 1m20s
         example:
-            patch:
+            settings:
                 - key: some.service.limit
                   value: 1m20s
-    StreamUpdateSinkSettingsStreamSinkNotFoundResponseBody:
-        title: StreamUpdateSinkSettingsStreamSinkNotFoundResponseBody
+    StreamUpdateSinkSettingsResponseBody:
+        title: StreamUpdateSinkSettingsResponseBody
+        type: object
+        properties:
+            settings:
+                type: array
+                items:
+                    $ref: '#/definitions/SettingResultResponseBody'
+                example:
+                    - key: some.service.limit
+                      type: string
+                      description: Minimal interval between uploads.
+                      value: 1m20s
+                      defaultValue: 30s
+                      overwritten: true
+                      protected: false
+                      validation: minDuration=15s
+        example:
+            settings:
+                - key: some.service.limit
+                  type: string
+                  description: Minimal interval between uploads.
+                  value: 1m20s
+                  defaultValue: 30s
+                  overwritten: true
+                  protected: false
+                  validation: minDuration=15s
+    StreamUpdateSinkSettingsStreamAPIForbiddenResponseBody:
+        title: StreamUpdateSinkSettingsStreamAPIForbiddenResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Modification of protected settings is forbidden.
+        example:
+            statusCode: 404
+            error: stream.api.forbidden
+            message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
+        required:
+            - statusCode
+            - error
+            - message
+    StreamUpdateSinkSettingsStreamAPISinkNotFoundResponseBody:
+        title: StreamUpdateSinkSettingsStreamAPISinkNotFoundResponseBody
         type: object
         properties:
             error:
@@ -2988,14 +3096,14 @@ definitions:
         description: Sink not found error.
         example:
             statusCode: 404
-            error: stream.sinkNotFound
+            error: stream.api.sinkNotFound
             message: Sink "github-changed-files" not found.
         required:
             - statusCode
             - error
             - message
-    StreamUpdateSinkSettingsStreamSourceNotFoundResponseBody:
-        title: StreamUpdateSinkSettingsStreamSourceNotFoundResponseBody
+    StreamUpdateSinkSettingsStreamAPISourceNotFoundResponseBody:
+        title: StreamUpdateSinkSettingsStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -3014,14 +3122,14 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
             - error
             - message
-    StreamUpdateSinkStreamSinkNotFoundResponseBody:
-        title: StreamUpdateSinkStreamSinkNotFoundResponseBody
+    StreamUpdateSinkStreamAPISinkNotFoundResponseBody:
+        title: StreamUpdateSinkStreamAPISinkNotFoundResponseBody
         type: object
         properties:
             error:
@@ -3040,14 +3148,14 @@ definitions:
         description: Sink not found error.
         example:
             statusCode: 404
-            error: stream.sinkNotFound
+            error: stream.api.sinkNotFound
             message: Sink "github-changed-files" not found.
         required:
             - statusCode
             - error
             - message
-    StreamUpdateSinkStreamSourceNotFoundResponseBody:
-        title: StreamUpdateSinkStreamSourceNotFoundResponseBody
+    StreamUpdateSinkStreamAPISourceNotFoundResponseBody:
+        title: StreamUpdateSinkStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -3066,7 +3174,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
@@ -3179,7 +3287,11 @@ definitions:
         title: StreamUpdateSourceSettingsRequestBody
         type: object
         properties:
-            patch:
+            changeDescription:
+                type: string
+                description: Description of the modification, description of the version.
+                example: Updated settings.
+            settings:
                 type: array
                 items:
                     $ref: '#/definitions/SettingPatchRequestBody'
@@ -3187,11 +3299,65 @@ definitions:
                     - key: some.service.limit
                       value: 1m20s
         example:
-            patch:
+            changeDescription: Updated settings.
+            settings:
                 - key: some.service.limit
                   value: 1m20s
-    StreamUpdateSourceSettingsStreamSourceNotFoundResponseBody:
-        title: StreamUpdateSourceSettingsStreamSourceNotFoundResponseBody
+    StreamUpdateSourceSettingsResponseBody:
+        title: StreamUpdateSourceSettingsResponseBody
+        type: object
+        properties:
+            settings:
+                type: array
+                items:
+                    $ref: '#/definitions/SettingResultResponseBody'
+                example:
+                    - key: some.service.limit
+                      type: string
+                      description: Minimal interval between uploads.
+                      value: 1m20s
+                      defaultValue: 30s
+                      overwritten: true
+                      protected: false
+                      validation: minDuration=15s
+        example:
+            settings:
+                - key: some.service.limit
+                  type: string
+                  description: Minimal interval between uploads.
+                  value: 1m20s
+                  defaultValue: 30s
+                  overwritten: true
+                  protected: false
+                  validation: minDuration=15s
+    StreamUpdateSourceSettingsStreamAPIForbiddenResponseBody:
+        title: StreamUpdateSourceSettingsStreamAPIForbiddenResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Modification of protected settings is forbidden.
+        example:
+            statusCode: 404
+            error: stream.api.forbidden
+            message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
+        required:
+            - statusCode
+            - error
+            - message
+    StreamUpdateSourceSettingsStreamAPISourceNotFoundResponseBody:
+        title: StreamUpdateSourceSettingsStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -3210,14 +3376,14 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode
             - error
             - message
-    StreamUpdateSourceStreamSourceNotFoundResponseBody:
-        title: StreamUpdateSourceStreamSourceNotFoundResponseBody
+    StreamUpdateSourceStreamAPISourceNotFoundResponseBody:
+        title: StreamUpdateSourceStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -3236,7 +3402,7 @@ definitions:
         description: Source not found error.
         example:
             statusCode: 404
-            error: stream.sourceNotFound
+            error: stream.api.sourceNotFound
             message: Source "github-pull-requests" not found.
         required:
             - statusCode

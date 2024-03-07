@@ -30,7 +30,7 @@ func Start(ctx context.Context, d dependencies.ServiceScope, cfg config.Config) 
 	}
 
 	// Create service
-	svc := service.New(apiScp)
+	svc := service.New(apiScp, cfg)
 
 	// Start HTTP server
 	return httpserver.Start(ctx, apiScp, httpserver.Config{

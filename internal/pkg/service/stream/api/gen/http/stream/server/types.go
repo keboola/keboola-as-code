@@ -47,7 +47,9 @@ type UpdateSourceRequestBody struct {
 // UpdateSourceSettingsRequestBody is the type of the "stream" service
 // "UpdateSourceSettings" endpoint HTTP request body.
 type UpdateSourceSettingsRequestBody struct {
-	Patch []*SettingPatchRequestBody `form:"patch,omitempty" json:"patch,omitempty" xml:"patch,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string                    `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Settings          []*SettingPatchRequestBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
 }
 
 // CreateSinkRequestBody is the type of the "stream" service "CreateSink"
@@ -68,7 +70,7 @@ type CreateSinkRequestBody struct {
 // UpdateSinkSettingsRequestBody is the type of the "stream" service
 // "UpdateSinkSettings" endpoint HTTP request body.
 type UpdateSinkSettingsRequestBody struct {
-	Patch []*SettingPatchRequestBody `form:"patch,omitempty" json:"patch,omitempty" xml:"patch,omitempty"`
+	Settings []*SettingPatchRequestBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
 }
 
 // UpdateSinkRequestBody is the type of the "stream" service "UpdateSink"
@@ -170,11 +172,15 @@ type GetSourceResponseBody struct {
 
 // GetSourceSettingsResponseBody is the type of the "stream" service
 // "GetSourceSettings" endpoint HTTP response body.
-type GetSourceSettingsResponseBody []*SettingResultResponse
+type GetSourceSettingsResponseBody struct {
+	Settings []*SettingResultResponseBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+}
 
 // UpdateSourceSettingsResponseBody is the type of the "stream" service
 // "UpdateSourceSettings" endpoint HTTP response body.
-type UpdateSourceSettingsResponseBody []*SettingResultResponse
+type UpdateSourceSettingsResponseBody struct {
+	Settings []*SettingResultResponseBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+}
 
 // RefreshSourceTokensResponseBody is the type of the "stream" service
 // "RefreshSourceTokens" endpoint HTTP response body.
@@ -239,11 +245,15 @@ type GetSinkResponseBody struct {
 
 // GetSinkSettingsResponseBody is the type of the "stream" service
 // "GetSinkSettings" endpoint HTTP response body.
-type GetSinkSettingsResponseBody []*SettingResultResponse
+type GetSinkSettingsResponseBody struct {
+	Settings []*SettingResultResponseBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+}
 
 // UpdateSinkSettingsResponseBody is the type of the "stream" service
 // "UpdateSinkSettings" endpoint HTTP response body.
-type UpdateSinkSettingsResponseBody []*SettingResultResponse
+type UpdateSinkSettingsResponseBody struct {
+	Settings []*SettingResultResponseBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+}
 
 // ListSinksResponseBody is the type of the "stream" service "ListSinks"
 // endpoint HTTP response body.
@@ -301,10 +311,10 @@ type GetTaskResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
-// CreateSourceStreamSourceAlreadyExistsResponseBody is the type of the
+// CreateSourceStreamAPISourceAlreadyExistsResponseBody is the type of the
 // "stream" service "CreateSource" endpoint HTTP response body for the
-// "stream.sourceAlreadyExists" error.
-type CreateSourceStreamSourceAlreadyExistsResponseBody struct {
+// "stream.api.sourceAlreadyExists" error.
+type CreateSourceStreamAPISourceAlreadyExistsResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -313,10 +323,10 @@ type CreateSourceStreamSourceAlreadyExistsResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// CreateSourceStreamResourceLimitReachedResponseBody is the type of the
+// CreateSourceStreamAPIResourceLimitReachedResponseBody is the type of the
 // "stream" service "CreateSource" endpoint HTTP response body for the
-// "stream.resourceLimitReached" error.
-type CreateSourceStreamResourceLimitReachedResponseBody struct {
+// "stream.api.resourceLimitReached" error.
+type CreateSourceStreamAPIResourceLimitReachedResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -325,10 +335,10 @@ type CreateSourceStreamResourceLimitReachedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// UpdateSourceStreamSourceNotFoundResponseBody is the type of the "stream"
+// UpdateSourceStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "UpdateSource" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type UpdateSourceStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type UpdateSourceStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -337,10 +347,10 @@ type UpdateSourceStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetSourceStreamSourceNotFoundResponseBody is the type of the "stream"
+// GetSourceStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "GetSource" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type GetSourceStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type GetSourceStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -349,10 +359,10 @@ type GetSourceStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// DeleteSourceStreamSourceNotFoundResponseBody is the type of the "stream"
+// DeleteSourceStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "DeleteSource" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type DeleteSourceStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type DeleteSourceStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -361,10 +371,10 @@ type DeleteSourceStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetSourceSettingsStreamSourceNotFoundResponseBody is the type of the
+// GetSourceSettingsStreamAPISourceNotFoundResponseBody is the type of the
 // "stream" service "GetSourceSettings" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type GetSourceSettingsStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type GetSourceSettingsStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -373,10 +383,10 @@ type GetSourceSettingsStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// UpdateSourceSettingsStreamSourceNotFoundResponseBody is the type of the
+// UpdateSourceSettingsStreamAPISourceNotFoundResponseBody is the type of the
 // "stream" service "UpdateSourceSettings" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type UpdateSourceSettingsStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type UpdateSourceSettingsStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -385,10 +395,22 @@ type UpdateSourceSettingsStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// RefreshSourceTokensStreamSourceNotFoundResponseBody is the type of the
+// UpdateSourceSettingsStreamAPIForbiddenResponseBody is the type of the
+// "stream" service "UpdateSourceSettings" endpoint HTTP response body for the
+// "stream.api.forbidden" error.
+type UpdateSourceSettingsStreamAPIForbiddenResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RefreshSourceTokensStreamAPISourceNotFoundResponseBody is the type of the
 // "stream" service "RefreshSourceTokens" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type RefreshSourceTokensStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type RefreshSourceTokensStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -397,10 +419,10 @@ type RefreshSourceTokensStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// CreateSinkStreamSourceNotFoundResponseBody is the type of the "stream"
+// CreateSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "CreateSink" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type CreateSinkStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type CreateSinkStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -409,10 +431,10 @@ type CreateSinkStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// CreateSinkStreamSinkAlreadyExistsResponseBody is the type of the "stream"
+// CreateSinkStreamAPISinkAlreadyExistsResponseBody is the type of the "stream"
 // service "CreateSink" endpoint HTTP response body for the
-// "stream.sinkAlreadyExists" error.
-type CreateSinkStreamSinkAlreadyExistsResponseBody struct {
+// "stream.api.sinkAlreadyExists" error.
+type CreateSinkStreamAPISinkAlreadyExistsResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -421,10 +443,10 @@ type CreateSinkStreamSinkAlreadyExistsResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// CreateSinkStreamResourceLimitReachedResponseBody is the type of the "stream"
-// service "CreateSink" endpoint HTTP response body for the
-// "stream.resourceLimitReached" error.
-type CreateSinkStreamResourceLimitReachedResponseBody struct {
+// CreateSinkStreamAPIResourceLimitReachedResponseBody is the type of the
+// "stream" service "CreateSink" endpoint HTTP response body for the
+// "stream.api.resourceLimitReached" error.
+type CreateSinkStreamAPIResourceLimitReachedResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -433,9 +455,10 @@ type CreateSinkStreamResourceLimitReachedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetSinkStreamSourceNotFoundResponseBody is the type of the "stream" service
-// "GetSink" endpoint HTTP response body for the "stream.sourceNotFound" error.
-type GetSinkStreamSourceNotFoundResponseBody struct {
+// GetSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "GetSink" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type GetSinkStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -444,9 +467,10 @@ type GetSinkStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetSinkStreamSinkNotFoundResponseBody is the type of the "stream" service
-// "GetSink" endpoint HTTP response body for the "stream.sinkNotFound" error.
-type GetSinkStreamSinkNotFoundResponseBody struct {
+// GetSinkStreamAPISinkNotFoundResponseBody is the type of the "stream" service
+// "GetSink" endpoint HTTP response body for the "stream.api.sinkNotFound"
+// error.
+type GetSinkStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -455,10 +479,22 @@ type GetSinkStreamSinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetSinkSettingsStreamSourceNotFoundResponseBody is the type of the "stream"
+// GetSinkSettingsStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "GetSinkSettings" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type GetSinkSettingsStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetSinkSettingsStreamAPISinkNotFoundResponseBody is the type of the "stream"
 // service "GetSinkSettings" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type GetSinkSettingsStreamSourceNotFoundResponseBody struct {
+// "stream.api.sinkNotFound" error.
+type GetSinkSettingsStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -467,22 +503,10 @@ type GetSinkSettingsStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetSinkSettingsStreamSinkNotFoundResponseBody is the type of the "stream"
-// service "GetSinkSettings" endpoint HTTP response body for the
-// "stream.sinkNotFound" error.
-type GetSinkSettingsStreamSinkNotFoundResponseBody struct {
-	// HTTP status code.
-	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
-	// Name of error.
-	Name string `form:"error" json:"error" xml:"error"`
-	// Error message.
-	Message string `form:"message" json:"message" xml:"message"`
-}
-
-// UpdateSinkSettingsStreamSourceNotFoundResponseBody is the type of the
+// UpdateSinkSettingsStreamAPISourceNotFoundResponseBody is the type of the
 // "stream" service "UpdateSinkSettings" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type UpdateSinkSettingsStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type UpdateSinkSettingsStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -491,10 +515,22 @@ type UpdateSinkSettingsStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// UpdateSinkSettingsStreamSinkNotFoundResponseBody is the type of the "stream"
+// UpdateSinkSettingsStreamAPISinkNotFoundResponseBody is the type of the
+// "stream" service "UpdateSinkSettings" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type UpdateSinkSettingsStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateSinkSettingsStreamAPIForbiddenResponseBody is the type of the "stream"
 // service "UpdateSinkSettings" endpoint HTTP response body for the
-// "stream.sinkNotFound" error.
-type UpdateSinkSettingsStreamSinkNotFoundResponseBody struct {
+// "stream.api.forbidden" error.
+type UpdateSinkSettingsStreamAPIForbiddenResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -503,10 +539,10 @@ type UpdateSinkSettingsStreamSinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// ListSinksStreamSourceNotFoundResponseBody is the type of the "stream"
+// ListSinksStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "ListSinks" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type ListSinksStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type ListSinksStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -515,10 +551,10 @@ type ListSinksStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// UpdateSinkStreamSourceNotFoundResponseBody is the type of the "stream"
+// UpdateSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "UpdateSink" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type UpdateSinkStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type UpdateSinkStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -527,9 +563,10 @@ type UpdateSinkStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// UpdateSinkStreamSinkNotFoundResponseBody is the type of the "stream" service
-// "UpdateSink" endpoint HTTP response body for the "stream.sinkNotFound" error.
-type UpdateSinkStreamSinkNotFoundResponseBody struct {
+// UpdateSinkStreamAPISinkNotFoundResponseBody is the type of the "stream"
+// service "UpdateSink" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type UpdateSinkStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -538,10 +575,10 @@ type UpdateSinkStreamSinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// DeleteSinkStreamSourceNotFoundResponseBody is the type of the "stream"
+// DeleteSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "DeleteSink" endpoint HTTP response body for the
-// "stream.sourceNotFound" error.
-type DeleteSinkStreamSourceNotFoundResponseBody struct {
+// "stream.api.sourceNotFound" error.
+type DeleteSinkStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -550,9 +587,10 @@ type DeleteSinkStreamSourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// DeleteSinkStreamSinkNotFoundResponseBody is the type of the "stream" service
-// "DeleteSink" endpoint HTTP response body for the "stream.sinkNotFound" error.
-type DeleteSinkStreamSinkNotFoundResponseBody struct {
+// DeleteSinkStreamAPISinkNotFoundResponseBody is the type of the "stream"
+// service "DeleteSink" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type DeleteSinkStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -561,9 +599,10 @@ type DeleteSinkStreamSinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// GetTaskStreamTaskNotFoundResponseBody is the type of the "stream" service
-// "GetTask" endpoint HTTP response body for the "stream.taskNotFound" error.
-type GetTaskStreamTaskNotFoundResponseBody struct {
+// GetTaskStreamAPITaskNotFoundResponseBody is the type of the "stream" service
+// "GetTask" endpoint HTTP response body for the "stream.api.taskNotFound"
+// error.
+type GetTaskStreamAPITaskNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -714,12 +753,14 @@ type TableColumnTemplateResponseBody struct {
 	Content  string `form:"content" json:"content" xml:"content"`
 }
 
-// SettingResultResponse is used to define fields on response body types.
-type SettingResultResponse struct {
+// SettingResultResponseBody is used to define fields on response body types.
+type SettingResultResponseBody struct {
 	// Key path.
 	Key string `form:"key" json:"key" xml:"key"`
 	// Value type.
 	Type string `form:"type" json:"type" xml:"type"`
+	// Key description.
+	Description string `form:"description" json:"description" xml:"description"`
 	// Actual value.
 	Value any `form:"value" json:"value" xml:"value"`
 	// Default value.
@@ -880,20 +921,26 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 
 // NewGetSourceSettingsResponseBody builds the HTTP response body from the
 // result of the "GetSourceSettings" endpoint of the "stream" service.
-func NewGetSourceSettingsResponseBody(res stream.SettingsResult) GetSourceSettingsResponseBody {
-	body := make([]*SettingResultResponse, len(res))
-	for i, val := range res {
-		body[i] = marshalStreamSettingResultToSettingResultResponse(val)
+func NewGetSourceSettingsResponseBody(res *stream.SettingsResult) *GetSourceSettingsResponseBody {
+	body := &GetSourceSettingsResponseBody{}
+	if res.Settings != nil {
+		body.Settings = make([]*SettingResultResponseBody, len(res.Settings))
+		for i, val := range res.Settings {
+			body.Settings[i] = marshalStreamSettingResultToSettingResultResponseBody(val)
+		}
 	}
 	return body
 }
 
 // NewUpdateSourceSettingsResponseBody builds the HTTP response body from the
 // result of the "UpdateSourceSettings" endpoint of the "stream" service.
-func NewUpdateSourceSettingsResponseBody(res stream.SettingsResult) UpdateSourceSettingsResponseBody {
-	body := make([]*SettingResultResponse, len(res))
-	for i, val := range res {
-		body[i] = marshalStreamSettingResultToSettingResultResponse(val)
+func NewUpdateSourceSettingsResponseBody(res *stream.SettingsResult) *UpdateSourceSettingsResponseBody {
+	body := &UpdateSourceSettingsResponseBody{}
+	if res.Settings != nil {
+		body.Settings = make([]*SettingResultResponseBody, len(res.Settings))
+		for i, val := range res.Settings {
+			body.Settings[i] = marshalStreamSettingResultToSettingResultResponseBody(val)
+		}
 	}
 	return body
 }
@@ -985,20 +1032,26 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 
 // NewGetSinkSettingsResponseBody builds the HTTP response body from the result
 // of the "GetSinkSettings" endpoint of the "stream" service.
-func NewGetSinkSettingsResponseBody(res stream.SettingsResult) GetSinkSettingsResponseBody {
-	body := make([]*SettingResultResponse, len(res))
-	for i, val := range res {
-		body[i] = marshalStreamSettingResultToSettingResultResponse(val)
+func NewGetSinkSettingsResponseBody(res *stream.SettingsResult) *GetSinkSettingsResponseBody {
+	body := &GetSinkSettingsResponseBody{}
+	if res.Settings != nil {
+		body.Settings = make([]*SettingResultResponseBody, len(res.Settings))
+		for i, val := range res.Settings {
+			body.Settings[i] = marshalStreamSettingResultToSettingResultResponseBody(val)
+		}
 	}
 	return body
 }
 
 // NewUpdateSinkSettingsResponseBody builds the HTTP response body from the
 // result of the "UpdateSinkSettings" endpoint of the "stream" service.
-func NewUpdateSinkSettingsResponseBody(res stream.SettingsResult) UpdateSinkSettingsResponseBody {
-	body := make([]*SettingResultResponse, len(res))
-	for i, val := range res {
-		body[i] = marshalStreamSettingResultToSettingResultResponse(val)
+func NewUpdateSinkSettingsResponseBody(res *stream.SettingsResult) *UpdateSinkSettingsResponseBody {
+	body := &UpdateSinkSettingsResponseBody{}
+	if res.Settings != nil {
+		body.Settings = make([]*SettingResultResponseBody, len(res.Settings))
+		for i, val := range res.Settings {
+			body.Settings[i] = marshalStreamSettingResultToSettingResultResponseBody(val)
+		}
 	}
 	return body
 }
@@ -1067,11 +1120,11 @@ func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
 	return body
 }
 
-// NewCreateSourceStreamSourceAlreadyExistsResponseBody builds the HTTP
+// NewCreateSourceStreamAPISourceAlreadyExistsResponseBody builds the HTTP
 // response body from the result of the "CreateSource" endpoint of the "stream"
 // service.
-func NewCreateSourceStreamSourceAlreadyExistsResponseBody(res *stream.GenericError) *CreateSourceStreamSourceAlreadyExistsResponseBody {
-	body := &CreateSourceStreamSourceAlreadyExistsResponseBody{
+func NewCreateSourceStreamAPISourceAlreadyExistsResponseBody(res *stream.GenericError) *CreateSourceStreamAPISourceAlreadyExistsResponseBody {
+	body := &CreateSourceStreamAPISourceAlreadyExistsResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1079,11 +1132,11 @@ func NewCreateSourceStreamSourceAlreadyExistsResponseBody(res *stream.GenericErr
 	return body
 }
 
-// NewCreateSourceStreamResourceLimitReachedResponseBody builds the HTTP
+// NewCreateSourceStreamAPIResourceLimitReachedResponseBody builds the HTTP
 // response body from the result of the "CreateSource" endpoint of the "stream"
 // service.
-func NewCreateSourceStreamResourceLimitReachedResponseBody(res *stream.GenericError) *CreateSourceStreamResourceLimitReachedResponseBody {
-	body := &CreateSourceStreamResourceLimitReachedResponseBody{
+func NewCreateSourceStreamAPIResourceLimitReachedResponseBody(res *stream.GenericError) *CreateSourceStreamAPIResourceLimitReachedResponseBody {
+	body := &CreateSourceStreamAPIResourceLimitReachedResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1091,10 +1144,10 @@ func NewCreateSourceStreamResourceLimitReachedResponseBody(res *stream.GenericEr
 	return body
 }
 
-// NewUpdateSourceStreamSourceNotFoundResponseBody builds the HTTP response
+// NewUpdateSourceStreamAPISourceNotFoundResponseBody builds the HTTP response
 // body from the result of the "UpdateSource" endpoint of the "stream" service.
-func NewUpdateSourceStreamSourceNotFoundResponseBody(res *stream.GenericError) *UpdateSourceStreamSourceNotFoundResponseBody {
-	body := &UpdateSourceStreamSourceNotFoundResponseBody{
+func NewUpdateSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UpdateSourceStreamAPISourceNotFoundResponseBody {
+	body := &UpdateSourceStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1102,10 +1155,10 @@ func NewUpdateSourceStreamSourceNotFoundResponseBody(res *stream.GenericError) *
 	return body
 }
 
-// NewGetSourceStreamSourceNotFoundResponseBody builds the HTTP response body
-// from the result of the "GetSource" endpoint of the "stream" service.
-func NewGetSourceStreamSourceNotFoundResponseBody(res *stream.GenericError) *GetSourceStreamSourceNotFoundResponseBody {
-	body := &GetSourceStreamSourceNotFoundResponseBody{
+// NewGetSourceStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "GetSource" endpoint of the "stream" service.
+func NewGetSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *GetSourceStreamAPISourceNotFoundResponseBody {
+	body := &GetSourceStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1113,10 +1166,10 @@ func NewGetSourceStreamSourceNotFoundResponseBody(res *stream.GenericError) *Get
 	return body
 }
 
-// NewDeleteSourceStreamSourceNotFoundResponseBody builds the HTTP response
+// NewDeleteSourceStreamAPISourceNotFoundResponseBody builds the HTTP response
 // body from the result of the "DeleteSource" endpoint of the "stream" service.
-func NewDeleteSourceStreamSourceNotFoundResponseBody(res *stream.GenericError) *DeleteSourceStreamSourceNotFoundResponseBody {
-	body := &DeleteSourceStreamSourceNotFoundResponseBody{
+func NewDeleteSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *DeleteSourceStreamAPISourceNotFoundResponseBody {
+	body := &DeleteSourceStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1124,11 +1177,11 @@ func NewDeleteSourceStreamSourceNotFoundResponseBody(res *stream.GenericError) *
 	return body
 }
 
-// NewGetSourceSettingsStreamSourceNotFoundResponseBody builds the HTTP
+// NewGetSourceSettingsStreamAPISourceNotFoundResponseBody builds the HTTP
 // response body from the result of the "GetSourceSettings" endpoint of the
 // "stream" service.
-func NewGetSourceSettingsStreamSourceNotFoundResponseBody(res *stream.GenericError) *GetSourceSettingsStreamSourceNotFoundResponseBody {
-	body := &GetSourceSettingsStreamSourceNotFoundResponseBody{
+func NewGetSourceSettingsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *GetSourceSettingsStreamAPISourceNotFoundResponseBody {
+	body := &GetSourceSettingsStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1136,11 +1189,11 @@ func NewGetSourceSettingsStreamSourceNotFoundResponseBody(res *stream.GenericErr
 	return body
 }
 
-// NewUpdateSourceSettingsStreamSourceNotFoundResponseBody builds the HTTP
+// NewUpdateSourceSettingsStreamAPISourceNotFoundResponseBody builds the HTTP
 // response body from the result of the "UpdateSourceSettings" endpoint of the
 // "stream" service.
-func NewUpdateSourceSettingsStreamSourceNotFoundResponseBody(res *stream.GenericError) *UpdateSourceSettingsStreamSourceNotFoundResponseBody {
-	body := &UpdateSourceSettingsStreamSourceNotFoundResponseBody{
+func NewUpdateSourceSettingsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UpdateSourceSettingsStreamAPISourceNotFoundResponseBody {
+	body := &UpdateSourceSettingsStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1148,11 +1201,23 @@ func NewUpdateSourceSettingsStreamSourceNotFoundResponseBody(res *stream.Generic
 	return body
 }
 
-// NewRefreshSourceTokensStreamSourceNotFoundResponseBody builds the HTTP
+// NewUpdateSourceSettingsStreamAPIForbiddenResponseBody builds the HTTP
+// response body from the result of the "UpdateSourceSettings" endpoint of the
+// "stream" service.
+func NewUpdateSourceSettingsStreamAPIForbiddenResponseBody(res *stream.GenericError) *UpdateSourceSettingsStreamAPIForbiddenResponseBody {
+	body := &UpdateSourceSettingsStreamAPIForbiddenResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody builds the HTTP
 // response body from the result of the "RefreshSourceTokens" endpoint of the
 // "stream" service.
-func NewRefreshSourceTokensStreamSourceNotFoundResponseBody(res *stream.GenericError) *RefreshSourceTokensStreamSourceNotFoundResponseBody {
-	body := &RefreshSourceTokensStreamSourceNotFoundResponseBody{
+func NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *RefreshSourceTokensStreamAPISourceNotFoundResponseBody {
+	body := &RefreshSourceTokensStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1160,21 +1225,10 @@ func NewRefreshSourceTokensStreamSourceNotFoundResponseBody(res *stream.GenericE
 	return body
 }
 
-// NewCreateSinkStreamSourceNotFoundResponseBody builds the HTTP response body
-// from the result of the "CreateSink" endpoint of the "stream" service.
-func NewCreateSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *CreateSinkStreamSourceNotFoundResponseBody {
-	body := &CreateSinkStreamSourceNotFoundResponseBody{
-		StatusCode: res.StatusCode,
-		Name:       res.Name,
-		Message:    res.Message,
-	}
-	return body
-}
-
-// NewCreateSinkStreamSinkAlreadyExistsResponseBody builds the HTTP response
+// NewCreateSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
 // body from the result of the "CreateSink" endpoint of the "stream" service.
-func NewCreateSinkStreamSinkAlreadyExistsResponseBody(res *stream.GenericError) *CreateSinkStreamSinkAlreadyExistsResponseBody {
-	body := &CreateSinkStreamSinkAlreadyExistsResponseBody{
+func NewCreateSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *CreateSinkStreamAPISourceNotFoundResponseBody {
+	body := &CreateSinkStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1182,10 +1236,10 @@ func NewCreateSinkStreamSinkAlreadyExistsResponseBody(res *stream.GenericError) 
 	return body
 }
 
-// NewCreateSinkStreamResourceLimitReachedResponseBody builds the HTTP response
+// NewCreateSinkStreamAPISinkAlreadyExistsResponseBody builds the HTTP response
 // body from the result of the "CreateSink" endpoint of the "stream" service.
-func NewCreateSinkStreamResourceLimitReachedResponseBody(res *stream.GenericError) *CreateSinkStreamResourceLimitReachedResponseBody {
-	body := &CreateSinkStreamResourceLimitReachedResponseBody{
+func NewCreateSinkStreamAPISinkAlreadyExistsResponseBody(res *stream.GenericError) *CreateSinkStreamAPISinkAlreadyExistsResponseBody {
+	body := &CreateSinkStreamAPISinkAlreadyExistsResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1193,10 +1247,22 @@ func NewCreateSinkStreamResourceLimitReachedResponseBody(res *stream.GenericErro
 	return body
 }
 
-// NewGetSinkStreamSourceNotFoundResponseBody builds the HTTP response body
+// NewCreateSinkStreamAPIResourceLimitReachedResponseBody builds the HTTP
+// response body from the result of the "CreateSink" endpoint of the "stream"
+// service.
+func NewCreateSinkStreamAPIResourceLimitReachedResponseBody(res *stream.GenericError) *CreateSinkStreamAPIResourceLimitReachedResponseBody {
+	body := &CreateSinkStreamAPIResourceLimitReachedResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewGetSinkStreamAPISourceNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetSink" endpoint of the "stream" service.
-func NewGetSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *GetSinkStreamSourceNotFoundResponseBody {
-	body := &GetSinkStreamSourceNotFoundResponseBody{
+func NewGetSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *GetSinkStreamAPISourceNotFoundResponseBody {
+	body := &GetSinkStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1204,10 +1270,10 @@ func NewGetSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *GetSi
 	return body
 }
 
-// NewGetSinkStreamSinkNotFoundResponseBody builds the HTTP response body from
-// the result of the "GetSink" endpoint of the "stream" service.
-func NewGetSinkStreamSinkNotFoundResponseBody(res *stream.GenericError) *GetSinkStreamSinkNotFoundResponseBody {
-	body := &GetSinkStreamSinkNotFoundResponseBody{
+// NewGetSinkStreamAPISinkNotFoundResponseBody builds the HTTP response body
+// from the result of the "GetSink" endpoint of the "stream" service.
+func NewGetSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *GetSinkStreamAPISinkNotFoundResponseBody {
+	body := &GetSinkStreamAPISinkNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1215,11 +1281,23 @@ func NewGetSinkStreamSinkNotFoundResponseBody(res *stream.GenericError) *GetSink
 	return body
 }
 
-// NewGetSinkSettingsStreamSourceNotFoundResponseBody builds the HTTP response
+// NewGetSinkSettingsStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "GetSinkSettings" endpoint of the
+// "stream" service.
+func NewGetSinkSettingsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *GetSinkSettingsStreamAPISourceNotFoundResponseBody {
+	body := &GetSinkSettingsStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewGetSinkSettingsStreamAPISinkNotFoundResponseBody builds the HTTP response
 // body from the result of the "GetSinkSettings" endpoint of the "stream"
 // service.
-func NewGetSinkSettingsStreamSourceNotFoundResponseBody(res *stream.GenericError) *GetSinkSettingsStreamSourceNotFoundResponseBody {
-	body := &GetSinkSettingsStreamSourceNotFoundResponseBody{
+func NewGetSinkSettingsStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *GetSinkSettingsStreamAPISinkNotFoundResponseBody {
+	body := &GetSinkSettingsStreamAPISinkNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1227,23 +1305,11 @@ func NewGetSinkSettingsStreamSourceNotFoundResponseBody(res *stream.GenericError
 	return body
 }
 
-// NewGetSinkSettingsStreamSinkNotFoundResponseBody builds the HTTP response
-// body from the result of the "GetSinkSettings" endpoint of the "stream"
-// service.
-func NewGetSinkSettingsStreamSinkNotFoundResponseBody(res *stream.GenericError) *GetSinkSettingsStreamSinkNotFoundResponseBody {
-	body := &GetSinkSettingsStreamSinkNotFoundResponseBody{
-		StatusCode: res.StatusCode,
-		Name:       res.Name,
-		Message:    res.Message,
-	}
-	return body
-}
-
-// NewUpdateSinkSettingsStreamSourceNotFoundResponseBody builds the HTTP
+// NewUpdateSinkSettingsStreamAPISourceNotFoundResponseBody builds the HTTP
 // response body from the result of the "UpdateSinkSettings" endpoint of the
 // "stream" service.
-func NewUpdateSinkSettingsStreamSourceNotFoundResponseBody(res *stream.GenericError) *UpdateSinkSettingsStreamSourceNotFoundResponseBody {
-	body := &UpdateSinkSettingsStreamSourceNotFoundResponseBody{
+func NewUpdateSinkSettingsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UpdateSinkSettingsStreamAPISourceNotFoundResponseBody {
+	body := &UpdateSinkSettingsStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1251,11 +1317,23 @@ func NewUpdateSinkSettingsStreamSourceNotFoundResponseBody(res *stream.GenericEr
 	return body
 }
 
-// NewUpdateSinkSettingsStreamSinkNotFoundResponseBody builds the HTTP response
+// NewUpdateSinkSettingsStreamAPISinkNotFoundResponseBody builds the HTTP
+// response body from the result of the "UpdateSinkSettings" endpoint of the
+// "stream" service.
+func NewUpdateSinkSettingsStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *UpdateSinkSettingsStreamAPISinkNotFoundResponseBody {
+	body := &UpdateSinkSettingsStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewUpdateSinkSettingsStreamAPIForbiddenResponseBody builds the HTTP response
 // body from the result of the "UpdateSinkSettings" endpoint of the "stream"
 // service.
-func NewUpdateSinkSettingsStreamSinkNotFoundResponseBody(res *stream.GenericError) *UpdateSinkSettingsStreamSinkNotFoundResponseBody {
-	body := &UpdateSinkSettingsStreamSinkNotFoundResponseBody{
+func NewUpdateSinkSettingsStreamAPIForbiddenResponseBody(res *stream.GenericError) *UpdateSinkSettingsStreamAPIForbiddenResponseBody {
+	body := &UpdateSinkSettingsStreamAPIForbiddenResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1263,10 +1341,10 @@ func NewUpdateSinkSettingsStreamSinkNotFoundResponseBody(res *stream.GenericErro
 	return body
 }
 
-// NewListSinksStreamSourceNotFoundResponseBody builds the HTTP response body
-// from the result of the "ListSinks" endpoint of the "stream" service.
-func NewListSinksStreamSourceNotFoundResponseBody(res *stream.GenericError) *ListSinksStreamSourceNotFoundResponseBody {
-	body := &ListSinksStreamSourceNotFoundResponseBody{
+// NewListSinksStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "ListSinks" endpoint of the "stream" service.
+func NewListSinksStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *ListSinksStreamAPISourceNotFoundResponseBody {
+	body := &ListSinksStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1274,10 +1352,21 @@ func NewListSinksStreamSourceNotFoundResponseBody(res *stream.GenericError) *Lis
 	return body
 }
 
-// NewUpdateSinkStreamSourceNotFoundResponseBody builds the HTTP response body
+// NewUpdateSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "UpdateSink" endpoint of the "stream" service.
+func NewUpdateSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UpdateSinkStreamAPISourceNotFoundResponseBody {
+	body := &UpdateSinkStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewUpdateSinkStreamAPISinkNotFoundResponseBody builds the HTTP response body
 // from the result of the "UpdateSink" endpoint of the "stream" service.
-func NewUpdateSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *UpdateSinkStreamSourceNotFoundResponseBody {
-	body := &UpdateSinkStreamSourceNotFoundResponseBody{
+func NewUpdateSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *UpdateSinkStreamAPISinkNotFoundResponseBody {
+	body := &UpdateSinkStreamAPISinkNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1285,10 +1374,10 @@ func NewUpdateSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *Up
 	return body
 }
 
-// NewUpdateSinkStreamSinkNotFoundResponseBody builds the HTTP response body
-// from the result of the "UpdateSink" endpoint of the "stream" service.
-func NewUpdateSinkStreamSinkNotFoundResponseBody(res *stream.GenericError) *UpdateSinkStreamSinkNotFoundResponseBody {
-	body := &UpdateSinkStreamSinkNotFoundResponseBody{
+// NewDeleteSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "DeleteSink" endpoint of the "stream" service.
+func NewDeleteSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *DeleteSinkStreamAPISourceNotFoundResponseBody {
+	body := &DeleteSinkStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1296,10 +1385,10 @@ func NewUpdateSinkStreamSinkNotFoundResponseBody(res *stream.GenericError) *Upda
 	return body
 }
 
-// NewDeleteSinkStreamSourceNotFoundResponseBody builds the HTTP response body
+// NewDeleteSinkStreamAPISinkNotFoundResponseBody builds the HTTP response body
 // from the result of the "DeleteSink" endpoint of the "stream" service.
-func NewDeleteSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *DeleteSinkStreamSourceNotFoundResponseBody {
-	body := &DeleteSinkStreamSourceNotFoundResponseBody{
+func NewDeleteSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *DeleteSinkStreamAPISinkNotFoundResponseBody {
+	body := &DeleteSinkStreamAPISinkNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1307,21 +1396,10 @@ func NewDeleteSinkStreamSourceNotFoundResponseBody(res *stream.GenericError) *De
 	return body
 }
 
-// NewDeleteSinkStreamSinkNotFoundResponseBody builds the HTTP response body
-// from the result of the "DeleteSink" endpoint of the "stream" service.
-func NewDeleteSinkStreamSinkNotFoundResponseBody(res *stream.GenericError) *DeleteSinkStreamSinkNotFoundResponseBody {
-	body := &DeleteSinkStreamSinkNotFoundResponseBody{
-		StatusCode: res.StatusCode,
-		Name:       res.Name,
-		Message:    res.Message,
-	}
-	return body
-}
-
-// NewGetTaskStreamTaskNotFoundResponseBody builds the HTTP response body from
-// the result of the "GetTask" endpoint of the "stream" service.
-func NewGetTaskStreamTaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamTaskNotFoundResponseBody {
-	body := &GetTaskStreamTaskNotFoundResponseBody{
+// NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
+// from the result of the "GetTask" endpoint of the "stream" service.
+func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
+	body := &GetTaskStreamAPITaskNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1409,11 +1487,13 @@ func NewGetSourceSettingsPayload(branchID string, sourceID string, storageAPITok
 // NewUpdateSourceSettingsPayload builds a stream service UpdateSourceSettings
 // endpoint payload.
 func NewUpdateSourceSettingsPayload(body *UpdateSourceSettingsRequestBody, branchID string, sourceID string, storageAPIToken string) *stream.UpdateSourceSettingsPayload {
-	v := &stream.UpdateSourceSettingsPayload{}
-	if body.Patch != nil {
-		v.Patch = make([]*stream.SettingPatch, len(body.Patch))
-		for i, val := range body.Patch {
-			v.Patch[i] = unmarshalSettingPatchRequestBodyToStreamSettingPatch(val)
+	v := &stream.UpdateSourceSettingsPayload{
+		ChangeDescription: body.ChangeDescription,
+	}
+	if body.Settings != nil {
+		v.Settings = make([]*stream.SettingPatch, len(body.Settings))
+		for i, val := range body.Settings {
+			v.Settings[i] = unmarshalSettingPatchRequestBodyToStreamSettingPatch(val)
 		}
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
@@ -1482,10 +1562,10 @@ func NewGetSinkSettingsPayload(branchID string, sourceID string, sinkID string, 
 // endpoint payload.
 func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UpdateSinkSettingsPayload {
 	v := &stream.UpdateSinkSettingsPayload{}
-	if body.Patch != nil {
-		v.Patch = make([]*stream.SettingPatch, len(body.Patch))
-		for i, val := range body.Patch {
-			v.Patch[i] = unmarshalSettingPatchRequestBodyToStreamSettingPatch(val)
+	if body.Settings != nil {
+		v.Settings = make([]*stream.SettingPatch, len(body.Settings))
+		for i, val := range body.Settings {
+			v.Settings[i] = unmarshalSettingPatchRequestBodyToStreamSettingPatch(val)
 		}
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
@@ -1621,8 +1701,8 @@ func ValidateUpdateSourceRequestBody(body *UpdateSourceRequestBody, errContext [
 // ValidateUpdateSourceSettingsRequestBody runs the validations defined on
 // UpdateSourceSettingsRequestBody
 func ValidateUpdateSourceSettingsRequestBody(body *UpdateSourceSettingsRequestBody, errContext []string) (err error) {
-	for i, e := range body.Patch {
-		errContext := append(errContext, fmt.Sprintf(`patch[%d]`, i))
+	for i, e := range body.Settings {
+		errContext := append(errContext, fmt.Sprintf(`settings[%d]`, i))
 		if e != nil {
 			if err2 := ValidateSettingPatchRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
@@ -1682,8 +1762,8 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 // ValidateUpdateSinkSettingsRequestBody runs the validations defined on
 // UpdateSinkSettingsRequestBody
 func ValidateUpdateSinkSettingsRequestBody(body *UpdateSinkSettingsRequestBody, errContext []string) (err error) {
-	for i, e := range body.Patch {
-		errContext := append(errContext, fmt.Sprintf(`patch[%d]`, i))
+	for i, e := range body.Settings {
+		errContext := append(errContext, fmt.Sprintf(`settings[%d]`, i))
 		if e != nil {
 			if err2 := ValidateSettingPatchRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)

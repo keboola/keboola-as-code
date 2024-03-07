@@ -1,15 +1,16 @@
 // Package configpatch provides tools to replace part of a configuration structure from a patch structure.
 //
-// Fields are matched by a name tag value, see the WithNameTag option.
+// Fields are matched by a name tag value, see the WithNameTag option, default values are "configKey" and "json".
 //
-// Fields marked with a protected tag can only be modified if the WithModifyProtected option is used.
-// Name of the protected tag can be modified with the WithProtectedTag option.
+// All fields are by default marked as protected.
+// Protected fields can only be modified if the WithModifyProtected option is used in the Apply method.
+// Individual field can be marked as modifiable by a normal user with the WithModificationAllowedTag option, default value is "modAllowed".
 //
 // # Example structures
 //
 //	type Config struct {
-//	  Foo string `configKey:"foo"`
-//	  Bar int    `configKey:"bar" protected:"true" validation:"required"`
+//	  Foo string `configKey:"foo" configUsage:"usage" modAllowed:"true"`
+//	  Bar int    `configKey:"bar" validation:"required"`
 //	}
 //
 //	type ConfigPatch struct {

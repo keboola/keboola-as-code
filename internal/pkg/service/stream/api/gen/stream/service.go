@@ -39,9 +39,9 @@ type Service interface {
 	// Delete the source.
 	DeleteSource(context.Context, dependencies.SourceRequestScope, *DeleteSourcePayload) (err error)
 	// Get source settings.
-	GetSourceSettings(context.Context, dependencies.SourceRequestScope, *GetSourceSettingsPayload) (res SettingsResult, err error)
+	GetSourceSettings(context.Context, dependencies.SourceRequestScope, *GetSourceSettingsPayload) (res *SettingsResult, err error)
 	// Update source settings.
-	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res SettingsResult, err error)
+	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res *SettingsResult, err error)
 	// Each sink uses its own token scoped to the target bucket, this endpoint
 	// refreshes all of those tokens.
 	RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
@@ -50,9 +50,9 @@ type Service interface {
 	// Get the sink definition.
 	GetSink(context.Context, dependencies.SinkRequestScope, *GetSinkPayload) (res *Sink, err error)
 	// Get the sink settings.
-	GetSinkSettings(context.Context, dependencies.SinkRequestScope, *GetSinkSettingsPayload) (res SettingsResult, err error)
+	GetSinkSettings(context.Context, dependencies.SinkRequestScope, *GetSinkSettingsPayload) (res *SettingsResult, err error)
 	// Update sink settings.
-	UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *UpdateSinkSettingsPayload) (res SettingsResult, err error)
+	UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *UpdateSinkSettingsPayload) (res *SettingsResult, err error)
 	// List all sinks in the source.
 	ListSinks(context.Context, dependencies.SourceRequestScope, *ListSinksPayload) (res *SinksList, err error)
 	// Update the sink.
@@ -292,6 +292,8 @@ type SettingResult struct {
 	Key string
 	// Value type.
 	Type string
+	// Key description.
+	Description string
 	// Actual value.
 	Value any
 	// Default value.
@@ -308,7 +310,9 @@ type SettingsPatch []*SettingPatch
 
 // SettingsResult is the result type of the stream service GetSourceSettings
 // method.
-type SettingsResult []*SettingResult
+type SettingsResult struct {
+	Settings []*SettingResult
+}
 
 // Sink is the result type of the stream service GetSink method.
 type Sink struct {
@@ -478,7 +482,7 @@ type UpdateSinkSettingsPayload struct {
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
-	Patch           SettingsPatch
+	Settings        SettingsPatch
 }
 
 // UpdateSourcePayload is the payload type of the stream service UpdateSource
@@ -502,7 +506,9 @@ type UpdateSourceSettingsPayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
-	Patch           SettingsPatch
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Settings          SettingsPatch
 }
 
 // Version of the entity.

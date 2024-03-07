@@ -23,6 +23,8 @@ func DumpAll(configStruct, patchStruct any, opts ...Option) (kvs []ConfigKV, err
 
 		kvs = append(kvs, ConfigKV{
 			KeyPath:      vc.Config.MappedPath.String(),
+			Type:         vc.Config.PrimitiveValue.Type().String(),
+			Description:  vc.Config.Usage,
 			Value:        value,
 			DefaultValue: defaultValue,
 			Overwritten:  vc.Overwritten,

@@ -55,9 +55,9 @@ type UploadConfigPatch struct {
 
 // UploadTrigger configures slice upload conditions, at least one must be met.
 type UploadTrigger struct {
-	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count." validate:"required,min=1,max=10000000"`
-	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size." validate:"required,minBytes=100B,maxBytes=50MB"`
-	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last upload." validate:"required,minDuration=1s,maxDuration=30m"`
+	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger slice upload." modAllowed:"true" validate:"required,min=1,max=10000000"`
+	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger slice upload." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=50MB"`
+	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last slice upload to trigger the next upload." modAllowed:"true" validate:"required,minDuration=1s,maxDuration=30m"`
 }
 
 // UploadTriggerPatch is same as the UploadTrigger, but with optional/nullable fields.

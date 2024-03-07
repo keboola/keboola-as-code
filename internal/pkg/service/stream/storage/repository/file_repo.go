@@ -454,7 +454,13 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 	if c.NewFileResource != nil {
 		// Apply configuration patch from the sink to the global config
 		cfg := r.config
-		if err := configpatch.ApplyKVs(&cfg, &level.ConfigPatch{}, c.Sink.Config.In("storage.level")); err != nil {
+		err := configpatch.ApplyKVs(
+			&cfg,
+			&level.ConfigPatch{},
+			c.Sink.Config.In("storage.level"),
+			configpatch.WithModifyProtected(), // this validation is performed of the config patch saving
+		)
+		if err != nil {
 			return nil, err
 		}
 
