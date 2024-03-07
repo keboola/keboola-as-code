@@ -54,10 +54,7 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 			// Add app id to the result
 			result.ID = appID
 
-			// Use id as fallback until name is added to Sandboxes API
-			if result.Name == "" {
-				result.Name = result.ID
-			}
+			// Use provider id as fallback until name is added to Sandboxes API
 			for i, provider := range result.AuthProviders {
 				if provider.Name == "" {
 					result.AuthProviders[i].Name = provider.ID

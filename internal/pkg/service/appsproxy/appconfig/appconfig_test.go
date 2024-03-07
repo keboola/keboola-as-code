@@ -74,7 +74,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "3",
-						Name:           "3",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -91,7 +90,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "4",
-						Name:           "4",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -99,7 +97,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "4",
-						Name:           "4",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -115,7 +112,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
-						Name:           "5",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -128,14 +124,12 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
-						Name:           "5",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
 				{
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
-						Name:           "5",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -146,7 +140,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "5",
-						Name:           "5",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -162,7 +155,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "6",
-						Name:           "6",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -174,7 +166,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "6",
-						Name:           "6",
 						UpstreamAppURL: "http://new-app.local",
 					},
 					expectedModified: true,
@@ -182,7 +173,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 				{
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "6",
-						Name:           "6",
 						UpstreamAppURL: "http://new-app.local",
 					},
 				},
@@ -198,7 +188,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "7",
-						Name:           "7",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -215,7 +204,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "7",
-						Name:           "7",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -243,7 +231,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "8",
-						Name:           "8",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -252,7 +239,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					delay: 59 * time.Minute,
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "8",
-						Name:           "8",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -263,7 +249,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					},
 					expectedConfig: appconfig.AppProxyConfig{
 						ID:             "8",
-						Name:           "8",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
