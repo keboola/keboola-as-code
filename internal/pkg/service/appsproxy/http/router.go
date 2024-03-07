@@ -157,7 +157,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 
 	// Always send /_proxy/ requests to the correct provider.
 	// This is necessary for proxy callback url to work on an app with prefixed private parts.
-	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders))
+	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders, app))
 
 	for _, rule := range app.AuthRules {
 		if rule.Type != appconfig.PathPrefix {
@@ -189,7 +189,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyCo
 		selectedProviders[id] = provider
 	}
 
-	return r.createMultiProviderHandler(selectedProviders)
+	return r.createMultiProviderHandler(selectedProviders, app)
 }
 
 func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyConfig) http.Handler {
@@ -329,7 +329,7 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProv
 // OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
 // So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
 // See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
-func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider) http.Handler {
+func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider, app appconfig.AppProxyConfig) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var provider *oauthProvider
 		ok := false
@@ -366,11 +366,13 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 				provider.handler.ServeHTTP(writer, request)
 			} else {
 				// Clear the provider cookie in case it existed with an invalid value
+				opts := &options.NewOptions().Cookie
+				opts.Domains = []string{r.formatAppDomain(app)}
 				http.SetCookie(writer, cookies.MakeCookieFromOptions(
 					request,
 					providerCookie,
 					"",
-					&options.NewOptions().Cookie,
+					opts,
 					time.Hour*-1,
 					r.clock.Now(),
 				))
@@ -424,10 +426,7 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.Provider) (*options.Options, error) {
 	v := options.NewOptions()
 
-	domain := app.ID + "." + r.config.API.PublicURL.Host
-	if app.Name != "" {
-		domain = app.Name + "-" + domain
-	}
+	domain := r.formatAppDomain(app)
 
 	secret, err := r.generateCookieSecret(app, provider)
 	if err != nil {
@@ -468,6 +467,14 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 	}
 
 	return v, nil
+}
+
+func (r *Router) formatAppDomain(app appconfig.AppProxyConfig) string {
+	domain := app.ID + "." + r.config.API.PublicURL.Host
+	if app.Name != "" {
+		domain = app.Name + "-" + domain
+	}
+	return domain
 }
 
 // generateCookieSecret creates a unique cookie secret for each app and provider.
