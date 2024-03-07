@@ -19,6 +19,7 @@ import (
 const (
 	SnowflakeWriterIDAws   = keboola.ComponentID("keboola.wr-db-snowflake")
 	SnowflakeWriterIDAzure = keboola.ComponentID("keboola.wr-snowflake-blob-storage")
+	SnowflakeWriterIDGCP   = keboola.ComponentID("keboola.wr-db-snowflake-gcs")
 )
 
 // ConfigID Jsonnet function maps configuration ID used in the template
@@ -150,6 +151,8 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 				return SnowflakeWriterIDAws.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {
 				return SnowflakeWriterIDAzure.String(), nil
+			} else if _, found := components.Get(SnowflakeWriterIDGCP); found {
+				return SnowflakeWriterIDGCP.String(), nil
 			} else {
 				return nil, errors.New("no Snowflake Writer component found")
 			}
