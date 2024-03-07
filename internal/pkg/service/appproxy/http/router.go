@@ -39,14 +39,9 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       map[string]appHandler
+	appHandlers       map[string]http.Handler
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
-}
-
-type appHandler struct {
-	http.Handler
-	Etag string
 }
 
 const providerCookie = "_oauth2_provider"
@@ -73,7 +68,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:            d.Config(),
 		clock:             d.Clock(),
 		loader:            d.Loader(),
-		appHandlers:       make(map[string]appHandler),
+		appHandlers:       make(map[string]http.Handler),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
@@ -106,7 +101,7 @@ func (r *Router) CreateHandler() http.Handler {
 		appID := appIDString.Emit()
 
 		// Load configuration for given app.
-		config, err := r.loader.LoadConfig(req.Context(), appID)
+		config, modified, err := r.loader.LoadConfig(req.Context(), appID)
 		if err != nil {
 			var sandboxesError *appconfig.SandboxesError
 			errors.As(err, &sandboxesError)
@@ -124,11 +119,8 @@ func (r *Router) CreateHandler() http.Handler {
 
 		// Recreate app handler if configuration changed.
 		handler, ok := r.appHandlers[appID]
-		if !ok || handler.Etag != config.ETag {
-			handler = appHandler{
-				Handler: r.createDataAppHandler(req.Context(), config),
-				Etag:    config.ETag,
-			}
+		if !ok || modified {
+			handler = r.createDataAppHandler(req.Context(), config)
 			r.appHandlers[appID] = handler
 		}
 
@@ -157,7 +149,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
 	}
 
-	publicAppHandler := r.publicAppHandler(app)
+	publicAppHandler := r.publicAppHandler(ctx, app)
 
 	mux := http.NewServeMux()
 
@@ -200,10 +192,12 @@ func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyCo
 	return r.createMultiProviderHandler(selectedProviders)
 }
 
-func (r *Router) publicAppHandler(app appconfig.AppProxyConfig) http.Handler {
-	target := &url.URL{
-		Scheme: "http",
-		Host:   app.UpstreamAppHost,
+func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyConfig) http.Handler {
+	target, err := url.Parse(app.UpstreamAppURL)
+	if err != nil {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
+		r.createConfigErrorHandler(exceptionID)
 	}
 
 	return httputil.NewSingleHostReverseProxy(target)
@@ -454,7 +448,7 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 			{
 				ID:   app.ID,
 				Path: "/",
-				URI:  "http://" + app.UpstreamAppHost,
+				URI:  app.UpstreamAppURL,
 			},
 		},
 	}

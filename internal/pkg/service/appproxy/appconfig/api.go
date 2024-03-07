@@ -2,8 +2,6 @@ package appconfig
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/keboola/go-client/pkg/request"
@@ -11,13 +9,13 @@ import (
 )
 
 type AppProxyConfig struct {
-	ID              string         `json:"-"`
-	Name            string         `json:"name"`
-	UpstreamAppHost string         `json:"upstreamAppHost"`
-	AuthProviders   []AuthProvider `json:"authProviders"`
-	AuthRules       []AuthRule     `json:"authRules"`
-	ETag            string         `json:"-"`
-	maxAge          time.Duration
+	ID             string         `json:"-"`
+	Name           string         `json:"name"`
+	UpstreamAppURL string         `json:"upstreamAppUrl"`
+	AuthProviders  []AuthProvider `json:"authProviders"`
+	AuthRules      []AuthRule     `json:"authRules"`
+	eTag           string
+	maxAge         time.Duration
 }
 
 type ProviderType string
@@ -67,7 +65,7 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 			}
 
 			// Add ETag to result
-			result.ETag = response.ResponseHeader().Get("ETag")
+			result.eTag = response.ResponseHeader().Get("ETag")
 
 			// Process Cache-Control header
 			cacheControl := response.ResponseHeader().Get("Cache-Control")
@@ -88,46 +86,4 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 			return nil
 		})
 	return request.NewAPIRequest(result, req)
-}
-
-// SandboxesError represents the structure of API error.
-type SandboxesError struct {
-	Message     string `json:"error"`
-	ExceptionID string `json:"exceptionId"`
-	request     *http.Request
-	response    *http.Response
-}
-
-func (e *SandboxesError) Error() string {
-	return fmt.Sprintf("sandboxes api error[%d]: %s", e.StatusCode(), e.Message)
-}
-
-// ErrorName returns a human-readable name of the error.
-func (e *SandboxesError) ErrorName() string {
-	return http.StatusText(e.StatusCode())
-}
-
-// ErrorUserMessage returns error message for end user.
-func (e *SandboxesError) ErrorUserMessage() string {
-	return e.Message
-}
-
-// ErrorExceptionID returns exception ID to find details in logs.
-func (e *SandboxesError) ErrorExceptionID() string {
-	return e.ExceptionID
-}
-
-// StatusCode returns HTTP status code.
-func (e *SandboxesError) StatusCode() int {
-	return e.response.StatusCode
-}
-
-// SetRequest method allows injection of HTTP request to the error, it implements client.errorWithRequest.
-func (e *SandboxesError) SetRequest(request *http.Request) {
-	e.request = request
-}
-
-// SetResponse method allows injection of HTTP response to the error, it implements client.errorWithResponse.
-func (e *SandboxesError) SetResponse(response *http.Response) {
-	e.response = response
 }
