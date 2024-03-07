@@ -425,6 +425,9 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 	v := options.NewOptions()
 
 	domain := app.ID + "." + r.config.API.PublicURL.Host
+	if app.Name != "" {
+		domain = app.Name + "-" + domain
+	}
 
 	secret, err := r.generateCookieSecret(app, provider)
 	if err != nil {

@@ -138,7 +138,7 @@ func TestAppProxyRouter(t *testing.T) {
 				appServer.Close()
 
 				// Request to public app
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.hub.keboola.local/", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "public-app-sub-url",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				// Request to public app
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.hub.keboola.local/some/data/app/url?foo=bar", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				request.Header.Set("User-Agent", "Internet Exploder")
 				request.Header.Set("Content-Type", "application/json")
 				request.Header.Set("x-kbc-Test", "something")
@@ -804,7 +804,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				c, _, err := websocket.Dial(
 					ctx,
-					"wss://public.hub.keboola.local/ws",
+					"wss://public-123.hub.keboola.local/ws",
 					&websocket.DialOptions{
 						HTTPClient: client,
 					},
@@ -1190,30 +1190,30 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "configuration-change",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				// Request to public app
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.hub.keboola.local/", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
 
 				// Change configuration to private
-				originalConfig := service.apps["public"]
+				originalConfig := service.apps["123"]
 				newConfig := service.apps["oidc"]
-				newConfig.ID = "public"
-				service.apps["public"] = newConfig
+				newConfig.ID = "public-123"
+				service.apps["123"] = newConfig
 
 				// Request to the same app which is now private
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.hub.keboola.local/", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Revert configuration
-				service.apps["public"] = originalConfig
+				service.apps["123"] = originalConfig
 
 				// Request to public app
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public.hub.keboola.local/", nil)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -1227,7 +1227,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "public-app-" + method,
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				// Request to public app
-				request, err := http.NewRequestWithContext(context.Background(), method, "https://public.hub.keboola.local/", nil)
+				request, err := http.NewRequestWithContext(context.Background(), method, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -1395,7 +1395,8 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			UpstreamAppURL: tsURL.String(),
 		},
 		{
-			ID:             "public",
+			ID:             "123",
+			Name:           "public",
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
