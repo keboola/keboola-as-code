@@ -218,6 +218,7 @@ func TestComponentsFunctions(t *testing.T) {
 	code := `
 {
 "keboola.wr-db-snowflake": ComponentIsAvailable("keboola.wr-db-snowflake"),
+"keboola.wr-db-snowflake-gcs": ComponentIsAvailable("keboola.wr-db-snowflake-gcs"),
 "keboola.wr-snowflake-blob-storage": ComponentIsAvailable("keboola.wr-snowflake-blob-storage"),
 "wr-snowflake": SnowflakeWriterComponentId(),
 }
@@ -237,6 +238,7 @@ func TestComponentsFunctions(t *testing.T) {
 	expected = `
 {
   "keboola.wr-db-snowflake": true,
+  "keboola.wr-db-snowflake-gcs": false,
   "keboola.wr-snowflake-blob-storage": false,
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
@@ -252,6 +254,7 @@ func TestComponentsFunctions(t *testing.T) {
 	expected = `
 {
   "keboola.wr-db-snowflake": false,
+  "keboola.wr-db-snowflake-gcs": false,
   "keboola.wr-snowflake-blob-storage": true,
   "wr-snowflake": "keboola.wr-snowflake-blob-storage"
 }
@@ -260,7 +263,23 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
-	// Case 4: Both AWS and Azure Snowflake Writer
+	// Case 4: Only Google Snowflake Writer
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}},
+	})
+	expected = `
+{
+  "keboola.wr-db-snowflake": false,
+  "keboola.wr-db-snowflake-gcs": true,
+  "keboola.wr-snowflake-blob-storage": false,
+  "wr-snowflake": "keboola.wr-db-snowflake-gcs"
+}
+`
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+
+	// Case 5: Both AWS and Azure Snowflake Writer
 	components = model.NewComponentsMap(keboola.Components{
 		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}},
 		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
@@ -268,6 +287,7 @@ func TestComponentsFunctions(t *testing.T) {
 	expected = `
 {
   "keboola.wr-db-snowflake": true,
+  "keboola.wr-db-snowflake-gcs": false,
   "keboola.wr-snowflake-blob-storage": true,
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
