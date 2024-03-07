@@ -376,6 +376,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 				))
 
 				r.redirectToProviderSelection(writer, request)
+				writer.WriteHeader(http.StatusFound)
 			}
 
 			return
@@ -385,20 +386,23 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 			loginURL := provider.proxyProvider.Data().LoginURL
 
 			// If oauthproxy returns a redirect to login page, we instead redirect to provider selection page
-			writer = NewCallbackResponseWriter(writer, func(writer http.ResponseWriter, statusCode int) {
+			writer = NewCallbackResponseWriter(writer, func(writer http.ResponseWriter, statusCode int) int {
 				if statusCode != http.StatusFound {
-					return
+					return statusCode
 				}
 
 				locationURL, err := url.Parse(writer.Header().Get("Location"))
 				if err != nil {
-					return
+					return statusCode
 				}
 
 				// Redirect to OAuth2 provider is instead redirected to selection page
 				if locationURL.Host == loginURL.Host && locationURL.Path == loginURL.Path && len(oauthProviders) > 1 {
 					r.redirectToProviderSelection(writer, request)
+					return http.StatusFound
 				}
+
+				return statusCode
 			})
 		}
 
@@ -415,7 +419,6 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 	}
 
 	writer.Header().Set("Location", selectionPageURL.String())
-	writer.WriteHeader(http.StatusFound)
 }
 
 func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.Provider) (*options.Options, error) {
