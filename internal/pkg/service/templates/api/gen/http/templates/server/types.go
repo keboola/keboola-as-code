@@ -1019,6 +1019,8 @@ type InstanceResponseBody struct {
 	// Instance update date and token.
 	Updated    *ChangeInfoResponseBody `form:"updated" json:"updated" xml:"updated"`
 	MainConfig *MainConfigResponseBody `form:"mainConfig,omitempty" json:"mainConfig,omitempty" xml:"mainConfig,omitempty"`
+	// All configurations from the instance.
+	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
 }
 
 // ChangeInfoResponseBody is used to define fields on response body types.
@@ -1035,6 +1037,16 @@ type MainConfigResponseBody struct {
 	ComponentID string `form:"componentId" json:"componentId" xml:"componentId"`
 	// Configuration ID.
 	ConfigID string `form:"configId" json:"configId" xml:"configId"`
+}
+
+// ConfigResponseBody is used to define fields on response body types.
+type ConfigResponseBody struct {
+	// Component ID.
+	ComponentID string `form:"componentId" json:"componentId" xml:"componentId"`
+	// Configuration ID.
+	ConfigID string `form:"configId" json:"configId" xml:"configId"`
+	// Name of the configuration.
+	Name string `form:"name" json:"name" xml:"name"`
 }
 
 // TemplateBaseResponseBody is used to define fields on response body types.
@@ -1065,16 +1077,6 @@ type VersionDetailResponseBody struct {
 	LongDescription string `form:"longDescription" json:"longDescription" xml:"longDescription"`
 	// Readme of the template version in Markdown format.
 	Readme string `form:"readme" json:"readme" xml:"readme"`
-}
-
-// ConfigResponseBody is used to define fields on response body types.
-type ConfigResponseBody struct {
-	// Component ID.
-	ComponentID string `form:"componentId" json:"componentId" xml:"componentId"`
-	// Configuration ID.
-	ConfigID string `form:"configId" json:"configId" xml:"configId"`
-	// Name of the configuration.
-	Name string `form:"name" json:"name" xml:"name"`
 }
 
 // StepPayloadRequestBody is used to define fields on request body types.

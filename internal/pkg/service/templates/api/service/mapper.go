@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/spf13/cast"
@@ -385,6 +386,9 @@ func InstancesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		return nil, err
 	}
 
+	// Group configurations by instance
+	configs := configurationsByInstance(prjState, branchKey)
+
 	// Map response
 	out = &Instances{Instances: make([]*Instance, 0)}
 	for _, instance := range instances {
@@ -408,6 +412,7 @@ func InstancesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 				Date:    instance.Updated.Date.Format(time.RFC3339),
 				TokenID: instance.Updated.TokenID,
 			},
+			Configurations: configs[instance.InstanceID],
 		}
 
 		if instance.MainConfig != nil {
@@ -458,17 +463,6 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 		}
 	}
 
-	// Map configurations
-	outConfigs := make([]*Config, 0)
-	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
-	for _, cfg := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
-		outConfigs = append(outConfigs, &Config{
-			Name:        cfg.Name,
-			ConfigID:    string(cfg.ID),
-			ComponentID: string(cfg.ComponentID),
-		})
-	}
-
 	// Map response
 	tmplResponse, versionResponse := instanceDetails(ctx, d, instance)
 	out = &InstanceDetail{
@@ -488,7 +482,7 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 		},
 		TemplateDetail: tmplResponse,
 		VersionDetail:  versionResponse,
-		Configurations: outConfigs,
+		Configurations: instanceConfigurations(prjState, branchKey, instanceId),
 	}
 
 	// Main config
@@ -503,6 +497,38 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 	}
 
 	return out, nil
+}
+
+func instanceConfigurations(prjState *project.State, branchKey model.BranchKey, instanceId string) []*Config {
+	out := make([]*Config, 0)
+	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
+	for _, cfg := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
+		out = append(out, &Config{
+			Name:        cfg.Name,
+			ConfigID:    string(cfg.ID),
+			ComponentID: string(cfg.ComponentID),
+		})
+	}
+	return out
+}
+
+func configurationsByInstance(prjState *project.State, branchKey model.BranchKey) map[string][]*Config {
+	out := make(map[string][]*Config, 0)
+	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
+	for instanceID, configs := range search.ConfigsByTemplateInstance(branchConfigs) {
+		for _, cfg := range configs {
+			out[instanceID] = append(out[instanceID], &Config{
+				Name:        cfg.Name,
+				ConfigID:    string(cfg.ID),
+				ComponentID: string(cfg.ComponentID),
+			})
+		}
+		results := out[instanceID]
+		sort.SliceStable(results, func(i, j int) bool {
+			return results[i].Name < results[j].Name
+		})
+	}
+	return out
 }
 
 func templateBaseResponse(ctx context.Context, d dependencies.ProjectRequestScope, tmpl *repository.TemplateRecord, author *Author) (out *TemplateBase, err error) {

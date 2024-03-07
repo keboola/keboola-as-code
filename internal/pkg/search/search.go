@@ -56,6 +56,17 @@ func ConfigsForTemplateInstance(all []*model.ConfigWithRows, instanceID string) 
 	return matches
 }
 
+// ConfigsByTemplateInstance group configurations by the instance ID.
+func ConfigsByTemplateInstance(all []*model.ConfigWithRows) map[string][]*model.ConfigWithRows {
+	out := make(map[string][]*model.ConfigWithRows)
+	for _, object := range all {
+		if instanceID := object.Metadata.InstanceID(); instanceID != "" {
+			out[instanceID] = append(out[instanceID], object)
+		}
+	}
+	return out
+}
+
 // Config searches for config by ID and name.
 func Config(all []*model.ConfigWithRows, str string) (*model.ConfigWithRows, error) {
 	configs := Configs(all, str)

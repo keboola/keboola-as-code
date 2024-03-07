@@ -14,7 +14,14 @@
       "updated": {
         "date": "2022-01-01T07:00:00Z",
         "tokenId": "123"
-      }
+      },
+      "configurations": [
+        {
+          "componentId": "keboola.ex-instagram",
+          "configId": "%s",
+          "name": "instagram"
+        }
+      ]
     }
   ]
 }

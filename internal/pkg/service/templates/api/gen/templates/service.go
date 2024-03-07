@@ -219,6 +219,8 @@ type Instance struct {
 	// Instance update date and token.
 	Updated    *ChangeInfo
 	MainConfig *MainConfig
+	// All configurations from the instance.
+	Configurations []*Config
 }
 
 // InstanceDetail is the result type of the templates service InstanceIndex
