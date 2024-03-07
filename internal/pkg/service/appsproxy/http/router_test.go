@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"net"
 	"net/http"
@@ -1393,12 +1392,10 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 	return []appconfig.AppProxyConfig{
 		{
 			ID:             "norule",
-			Name:           "No rule app",
 			UpstreamAppURL: tsURL.String(),
 		},
 		{
 			ID:             "public",
-			Name:           "Public app",
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
@@ -1410,7 +1407,6 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		},
 		{
 			ID:             "invalid",
-			Name:           "App with invalid rule type",
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
@@ -1422,7 +1418,6 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		},
 		{
 			ID:             "badprovider",
-			Name:           "App with invalid provider",
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
@@ -1434,7 +1429,6 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		},
 		{
 			ID:             "oidc",
-			Name:           "OIDC Protected App",
 			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
@@ -1456,7 +1450,6 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		},
 		{
 			ID:             "multi",
-			Name:           "App with multiple OIDC providers",
 			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
@@ -1489,7 +1482,6 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		},
 		{
 			ID:             "broken",
-			Name:           "OIDC Misconfigured App",
 			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
@@ -1511,7 +1503,6 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		},
 		{
 			ID:             "prefix",
-			Name:           "App with different configuration depending on path prefix",
 			UpstreamAppURL: tsURL.String(),
 			AuthProviders: []appconfig.AuthProvider{
 				{
@@ -1623,12 +1614,8 @@ func startSandboxesService(t *testing.T, apps []appconfig.AppProxyConfig) *sandb
 			return
 		}
 
-		// Calculate ETag (in this test we simply hash the name)
-		h := fnv.New64a()
-		_, err := h.Write([]byte(app.Name))
-		assert.NoError(t, err)
-
-		w.Header().Set("ETag", fmt.Sprintf(`"%x"`, h.Sum64()))
+		// Calculate ETag (in this test we simply use provider count)
+		w.Header().Set("ETag", fmt.Sprintf(`"%d"`, len(app.AuthProviders)))
 		w.WriteHeader(http.StatusOK)
 
 		jsonData, err := json.Encode(app, true)
