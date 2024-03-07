@@ -81,7 +81,7 @@ func newParentScopes(
 	stdout io.Writer,
 	stderr io.Writer,
 ) (v parentScopes, err error) {
-	ctx, span := tel.Tracer().Start(ctx, "keboola.go.appproxy.dependencies.newParentScopes")
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.appsproxy.dependencies.newParentScopes")
 	defer span.End(&err)
 
 	httpClient := httpclient.New(
@@ -105,7 +105,7 @@ func newParentScopes(
 }
 
 func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Config) (v *serviceScope, err error) {
-	ctx, span := parentScp.Telemetry().Tracer().Start(ctx, "keboola.go.appproxy.dependencies.newServiceScope")
+	ctx, span := parentScp.Telemetry().Tracer().Start(ctx, "keboola.go.appsproxy.dependencies.newServiceScope")
 	defer span.End(&err)
 
 	d := &serviceScope{}

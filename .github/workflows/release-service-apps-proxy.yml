@@ -15,7 +15,7 @@ env:
   IMAGE_TAG: ${{ github.ref_name }}
   ECR_REGION: "us-east-1"
   ECR_REPOSITORY: "keboola/apps-proxy"
-  ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-AppProxyPushRole-WMMj2ouLfIQn"
+  ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-AppsProxyPushRole-Lpj0s3ixYUiN"
   GCP_REGISTRY: "us-central1-docker.pkg.dev"
   GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/apps-proxy"
   GCP_IDENTITY_PROVIDER: "projects/388088979044/locations/global/workloadIdentityPools/github/providers/github"

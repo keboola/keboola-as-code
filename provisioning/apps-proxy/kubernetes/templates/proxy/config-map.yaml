@@ -8,6 +8,6 @@ metadata:
     app: apps-proxy
 data:
   sandboxesApiHost: "http://sandboxes-service-api.default.svc.cluster.local"
-  appProxyApiHost: "https://hub.$HOSTNAME_SUFFIX"
+  appsProxyApiHost: "https://hub.$HOSTNAME_SUFFIX"
   keboolaStack: "$KEBOOLA_STACK"
   keboolaRevision: "$RELEASE_ID"

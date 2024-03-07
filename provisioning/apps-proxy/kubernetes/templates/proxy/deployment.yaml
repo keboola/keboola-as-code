@@ -68,7 +68,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: apps-proxy
-                  key: appProxyApiHost
+                  key: appsProxyApiHost
             - name: APPS_PROXY_COOKIE_SECRET_SALT
               valueFrom:
                 secretKeyRef:
