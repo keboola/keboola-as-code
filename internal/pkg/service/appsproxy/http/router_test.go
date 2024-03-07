@@ -30,6 +30,7 @@ import (
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
 	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/mockoidc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -1654,7 +1655,7 @@ func createProxyHandler(t *testing.T, sandboxesAPIURL string) http.Handler {
 	cfg.CookieSecretSalt = string(secret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
-	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg)
+	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
 
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)

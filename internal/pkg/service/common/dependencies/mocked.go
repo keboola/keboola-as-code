@@ -84,6 +84,7 @@ type MockedConfig struct {
 	multipleTokenVerification bool
 
 	useRealAPIs       bool
+	useRealHTTPClient bool
 	keboolaProjectAPI *keboola.AuthorizedAPI
 }
 
@@ -245,6 +246,12 @@ func WithMultipleTokenVerification(v bool) MockedOption {
 	}
 }
 
+func WithRealHTTPClient() MockedOption {
+	return func(c *MockedConfig) {
+		c.useRealHTTPClient = true
+	}
+}
+
 func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 	t.Helper()
 
@@ -341,6 +348,10 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 		d.publicScope.keboolaPublicAPI = cfg.keboolaProjectAPI.PublicAPI
 		d.projectScope.keboolaProjectAPI = cfg.keboolaProjectAPI
 		d.mockedHTTPTransport = nil
+	}
+
+	if cfg.useRealHTTPClient {
+		d.baseScope.httpClient = client.NewTestClient()
 	}
 
 	if cfg.enableEtcdClient {

@@ -19,7 +19,6 @@ import (
 	"io"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
@@ -112,7 +111,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d := &serviceScope{}
 	d.parentScopes = parentScp
 	d.config = cfg
-	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), client.New(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
+	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), parentScp.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
 
 	return d, nil
 }
