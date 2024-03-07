@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: apps-proxy-salt
+  namespace: $NAMESPACE
+  labels:
+    app: apps-proxy
+stringData:
+  cookieSecretSalt: "$COOKIE_SECRET_SALT"
