@@ -436,7 +436,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Shutdown provider server
 				m[0].Shutdown()
@@ -495,7 +495,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -612,7 +612,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "multi.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/some/data/app/url?foo=bar", nil)
@@ -1281,7 +1281,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
