@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type StatusCodeCallback func(writer http.ResponseWriter, statusCode int)
+type StatusCodeCallback func(writer http.ResponseWriter, statusCode int) int
 
 // callbackResponseWriter implements http.ResponseWriter and allows adjusting the response right before the status code is written.
 type callbackResponseWriter struct {
@@ -27,7 +27,7 @@ func (w *callbackResponseWriter) WriteHeader(statusCode int) {
 	if w.callback != nil {
 		callback := *w.callback
 		w.callback = nil
-		callback(w, statusCode)
+		statusCode = callback(w, statusCode)
 	}
 	w.ResponseWriter.WriteHeader(statusCode)
 }

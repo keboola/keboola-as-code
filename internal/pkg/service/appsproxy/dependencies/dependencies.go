@@ -19,7 +19,6 @@ import (
 	"io"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
@@ -82,7 +81,7 @@ func newParentScopes(
 	stdout io.Writer,
 	stderr io.Writer,
 ) (v parentScopes, err error) {
-	ctx, span := tel.Tracer().Start(ctx, "keboola.go.appproxy.dependencies.newParentScopes")
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.appsproxy.dependencies.newParentScopes")
 	defer span.End(&err)
 
 	httpClient := httpclient.New(
@@ -106,13 +105,13 @@ func newParentScopes(
 }
 
 func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Config) (v *serviceScope, err error) {
-	ctx, span := parentScp.Telemetry().Tracer().Start(ctx, "keboola.go.appproxy.dependencies.newServiceScope")
+	ctx, span := parentScp.Telemetry().Tracer().Start(ctx, "keboola.go.appsproxy.dependencies.newServiceScope")
 	defer span.End(&err)
 
 	d := &serviceScope{}
 	d.parentScopes = parentScp
 	d.config = cfg
-	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), client.New(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
+	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), parentScp.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
 
 	return d, nil
 }

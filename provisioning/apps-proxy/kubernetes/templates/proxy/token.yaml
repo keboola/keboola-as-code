@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: apps-proxy
+  name: apps-proxy-token
   namespace: $NAMESPACE
   labels:
     app: apps-proxy

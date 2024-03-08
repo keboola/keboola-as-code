@@ -62,13 +62,13 @@ spec:
             - name: APPS_PROXY_SANDBOXES_API_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: apps-proxy
+                  name: apps-proxy-token
                   key: sandboxesApiToken
             - name: APPS_PROXY_API_PUBLIC_URL
               valueFrom:
                 configMapKeyRef:
                   name: apps-proxy
-                  key: appProxyApiHost
+                  key: appsProxyApiHost
             - name: APPS_PROXY_COOKIE_SECRET_SALT
               valueFrom:
                 secretKeyRef:

@@ -29,7 +29,7 @@ func TestAppProxyHandler(t *testing.T) {
 			fmt.Fprint(w, "OK")
 		}),
 		&url.URL{
-			Host: "data-apps.keboola.local",
+			Host: "hub.keboola.local",
 		},
 	)
 

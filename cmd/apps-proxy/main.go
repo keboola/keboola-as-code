@@ -28,7 +28,7 @@ import (
 const (
 	ServiceName       = "apps-proxy"
 	ENVPrefix         = "APPS_PROXY_"
-	ExceptionIDPrefix = "keboola-appproxy-"
+	ExceptionIDPrefix = "keboola-appsproxy-"
 )
 
 func main() {
