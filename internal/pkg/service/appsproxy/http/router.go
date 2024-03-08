@@ -435,7 +435,7 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 
 	v.Cookie.Secret = string(secret)
 	v.Cookie.Domains = []string{domain}
-	v.Cookie.SameSite = "strict"
+	v.Cookie.SameSite = "lax"
 	v.ProxyPrefix = "/_proxy"
 	v.RawRedirectURL = r.config.API.PublicURL.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
