@@ -17,6 +17,7 @@ type Config struct {
 	telemetry   telemetry.Telemetry
 	debugWriter io.Writer
 	dumpWriter  io.Writer
+	forcedHTTP2 bool
 }
 
 type Option func(c *Config)
@@ -45,20 +46,28 @@ func WithDumpOutput(w io.Writer) Option {
 	}
 }
 
+func WithoutForcedHTTP2() Option {
+	return func(c *Config) {
+		c.forcedHTTP2 = false
+	}
+}
+
 func New(opts ...Option) client.Client {
 	// Apply options
-	conf := Config{userAgent: "keboola-go-client"}
+	conf := Config{userAgent: "keboola-go-client", forcedHTTP2: true}
 	for _, o := range opts {
 		o(&conf)
 	}
 
-	// Force HTTP2 transport
-	transport := client.HTTP2Transport()
-
 	// Create client
 	cl := client.New().
-		WithTransport(transport).
 		WithUserAgent(conf.userAgent)
+
+	if conf.forcedHTTP2 {
+		cl = cl.WithTransport(client.HTTP2Transport())
+	} else {
+		cl = cl.WithTransport(client.DefaultTransport())
+	}
 
 	// Enable telemetry
 	if conf.telemetry != nil {

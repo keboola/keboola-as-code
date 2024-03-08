@@ -85,6 +85,7 @@ func newParentScopes(
 	defer span.End(&err)
 
 	httpClient := httpclient.New(
+		httpclient.WithoutForcedHTTP2(), // We're currently unable to connect to Sandboxes Service using HTTP2.
 		httpclient.WithTelemetry(tel),
 		httpclient.WithUserAgent(userAgent),
 		func(c *httpclient.Config) {

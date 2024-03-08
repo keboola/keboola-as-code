@@ -113,7 +113,7 @@ func (r *Router) CreateHandler() http.Handler {
 			}
 
 			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprintf(w, `Unable to loading configuration for app "%s".`, appID)
+			fmt.Fprintf(w, `Unable to load configuration for app "%s".`, appID)
 			return
 		}
 

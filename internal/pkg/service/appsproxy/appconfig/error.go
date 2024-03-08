@@ -14,7 +14,7 @@ type SandboxesError struct {
 }
 
 func (e *SandboxesError) Error() string {
-	return fmt.Sprintf("sandboxes api error[%d]: %s", e.StatusCode(), e.Message)
+	return fmt.Sprintf("sandboxes service error[%d]: %s", e.StatusCode(), e.Message)
 }
 
 // ErrorName returns a human-readable name of the error.
