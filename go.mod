@@ -75,8 +75,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/zap v1.27.0
-	goa.design/goa/v3 v3.15.0
-	goa.design/plugins/v3 v3.15.0
+	goa.design/goa/v3 v3.15.1
+	goa.design/plugins/v3 v3.15.1
 	golang.org/x/sync v0.6.0
 	google.golang.org/grpc v1.62.1
 	gopkg.in/DataDog/dd-trace-go.v1 v1.61.0
@@ -193,7 +193,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
-	github.com/go-chi/chi/v5 v5.0.11 // indirect
+	github.com/go-chi/chi/v5 v5.0.12 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
