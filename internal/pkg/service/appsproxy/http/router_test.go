@@ -88,7 +88,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 		},
 		{
@@ -102,7 +102,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 		},
 		{
@@ -116,7 +116,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 		},
 		{
@@ -130,7 +130,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 		},
 		{
@@ -429,14 +429,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Shutdown provider server
 				m[0].Shutdown()
@@ -488,14 +488,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -523,14 +523,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
 
 				// Request to private app (authorized but down)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
@@ -586,7 +586,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "multi.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -612,7 +612,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "multi.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/some/data/app/url?foo=bar", nil)
@@ -794,7 +794,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Empty(t, response.Cookies())
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has misconfigured OAuth2 provider.`)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 		},
 		{
@@ -1274,14 +1274,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1309,14 +1309,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), method, "https://oidc.hub.keboola.local/some/data/app/url?foo=bar", nil)
