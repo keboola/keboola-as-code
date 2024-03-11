@@ -10,7 +10,7 @@
 //
 //	type Config struct {
 //	  Foo string `configKey:"foo" configUsage:"usage" modAllowed:"true"`
-//	  Bar int    `configKey:"bar" validation:"required"`
+//	  Bar int    `configKey:"bar" validate:"required"`
 //	}
 //
 //	type ConfigPatch struct {
