@@ -2,9 +2,9 @@
 package mapper
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/jsonnet"
 	"net/url"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 )
 
