@@ -87,12 +87,12 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		branch1 = test.NewBranch(branchKey1)
 		branch1.IsDefault = true
-		result1, err := branchRepo.Create(&branch1).Do(ctx).ResultOrErr()
+		result1, err := branchRepo.Create(clk.Now(), &branch1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch1, result1)
 
 		branch2 = test.NewBranch(branchKey2)
-		result2, err := branchRepo.Create(&branch2).Do(ctx).ResultOrErr()
+		result2, err := branchRepo.Create(clk.Now(), &branch2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch2, result2)
 	}
@@ -132,7 +132,7 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch1 := test.NewBranch(branchKey1)
-		if err := branchRepo.Create(&branch1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := branchRepo.Create(clk.Now(), &branch1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "567" already exists in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -145,33 +145,33 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// Create 3 sources
 		source1 = test.NewSource(key.SourceKey{BranchKey: branchKey1, SourceID: "source-1"})
-		require.NoError(t, sourceRepo.Create("Create source", &source1).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Create(clk.Now(), "Create source", &source1).Do(ctx).Err())
 		source2 = test.NewSource(key.SourceKey{BranchKey: branchKey1, SourceID: "source-2"})
-		require.NoError(t, sourceRepo.Create("Create source", &source2).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Create(clk.Now(), "Create source", &source2).Do(ctx).Err())
 		source3 = test.NewSource(key.SourceKey{BranchKey: branchKey1, SourceID: "source-3"})
-		require.NoError(t, sourceRepo.Create("Create source", &source3).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Create(clk.Now(), "Create source", &source3).Do(ctx).Err())
 	}
 	{
 		// Create 3 sinks
 		sink1 = test.NewSink(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-1"})
-		require.NoError(t, sinkRepo.Create("Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Create sink", &sink1).Do(ctx).Err())
 		sink2 = test.NewSink(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-2"})
-		require.NoError(t, sinkRepo.Create("Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Create sink", &sink2).Do(ctx).Err())
 		sink3 = test.NewSink(key.SinkKey{SourceKey: source1.SourceKey, SinkID: "sink-3"})
-		require.NoError(t, sinkRepo.Create("Create sink", &sink3).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Create sink", &sink3).Do(ctx).Err())
 	}
 	{
 		// Delete source3 manually, so it should not be undeleted with the branch1 later
-		require.NoError(t, sourceRepo.SoftDelete(source3.SourceKey).Do(ctx).Err())
+		require.NoError(t, sourceRepo.SoftDelete(clk.Now(), source3.SourceKey).Do(ctx).Err())
 
 		// Delete sink3 manually, so it should not be undeleted with the branch1/source1 later
-		require.NoError(t, sinkRepo.SoftDelete(sink3.SinkKey).Do(ctx).Err())
+		require.NoError(t, sinkRepo.SoftDelete(clk.Now(), sink3.SinkKey).Do(ctx).Err())
 	}
 
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, branchRepo.SoftDelete(branchKey1).Do(ctx).Err())
+		assert.NoError(t, branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -201,7 +201,7 @@ func TestRepository_Branch(t *testing.T) {
 
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := branchRepo.SoftDelete(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `branch "567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -210,7 +210,7 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		result, err := branchRepo.Undelete(branchKey1).Do(ctx).ResultOrErr()
+		result, err := branchRepo.Undelete(clk.Now(), branchKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, keboola.BranchID(567), result.BranchID)
 	}
@@ -247,7 +247,7 @@ func TestRepository_Branch(t *testing.T) {
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := branchRepo.Undelete(branchKey1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := branchRepo.Undelete(clk.Now(), branchKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted branch "567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -256,12 +256,12 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// SoftDelete
-		assert.NoError(t, branchRepo.SoftDelete(branchKey1).Do(ctx).Err())
+		assert.NoError(t, branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		branch1 := test.NewBranch(branchKey1)
-		assert.NoError(t, branchRepo.Create(&branch1).Do(ctx).Err())
+		assert.NoError(t, branchRepo.Create(clk.Now(), &branch1).Do(ctx).Err())
 		assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
 		assert.False(t, branch1.Deleted)
 		assert.Nil(t, branch1.DeletedAt)

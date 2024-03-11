@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
+	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -19,7 +19,6 @@ const (
 )
 
 type BranchRepository struct {
-	clock  clock.Clock
 	client etcd.KV
 	schema branchSchema
 	all    *Repository
@@ -27,7 +26,6 @@ type BranchRepository struct {
 
 func newBranchRepository(d dependencies, all *Repository) *BranchRepository {
 	return &BranchRepository{
-		clock:  d.Clock(),
 		client: d.EtcdClient(),
 		schema: newBranchSchema(d.EtcdSerde()),
 		all:    all,
@@ -89,7 +87,7 @@ func (r *BranchRepository) GetDeleted(k key.BranchKey) op.WithResult[definition.
 		})
 }
 
-func (r *BranchRepository) Create(input *definition.Branch) *op.AtomicOp[definition.Branch] {
+func (r *BranchRepository) Create(now time.Time, input *definition.Branch) *op.AtomicOp[definition.Branch] {
 	k := input.BranchKey
 	result := *input
 
@@ -130,22 +128,22 @@ func (r *BranchRepository) Create(input *definition.Branch) *op.AtomicOp[definit
 
 			return txn
 		}).
-		AddFrom(r.all.source.undeleteAllFrom(k))
+		AddFrom(r.all.source.undeleteAllFrom(now, k))
 }
 
-func (r *BranchRepository) SoftDelete(k key.BranchKey) *op.AtomicOp[op.NoResult] {
+func (r *BranchRepository) SoftDelete(now time.Time, k key.BranchKey) *op.AtomicOp[op.NoResult] {
 	// Move object from the active to the deleted prefix
 	var value definition.Branch
 	return op.Atomic(r.client, &op.NoResult{}).
 		// Move object from the active prefix to the deleted prefix
 		ReadOp(r.Get(k).WithResultTo(&value)).
-		Write(func(context.Context) op.Op { return r.softDeleteValue(value) }).
+		Write(func(context.Context) op.Op { return r.softDeleteValue(now, value) }).
 		// Delete children
-		AddFrom(r.all.source.softDeleteAllFrom(k))
+		AddFrom(r.all.source.softDeleteAllFrom(now, k))
 }
 
-func (r *BranchRepository) softDeleteValue(v definition.Branch) *op.TxnOp[op.NoResult] {
-	v.Delete(r.clock.Now(), false)
+func (r *BranchRepository) softDeleteValue(now time.Time, v definition.Branch) *op.TxnOp[op.NoResult] {
+	v.Delete(now, false)
 	return op.MergeToTxn(
 		r.client,
 		// Delete object from the active prefix
@@ -155,7 +153,7 @@ func (r *BranchRepository) softDeleteValue(v definition.Branch) *op.TxnOp[op.NoR
 	)
 }
 
-func (r *BranchRepository) Undelete(k key.BranchKey) *op.AtomicOp[definition.Branch] {
+func (r *BranchRepository) Undelete(now time.Time, k key.BranchKey) *op.AtomicOp[definition.Branch] {
 	// Move object from the deleted to the active prefix
 	var result definition.Branch
 	return op.Atomic(r.client, &result).
@@ -165,7 +163,7 @@ func (r *BranchRepository) Undelete(k key.BranchKey) *op.AtomicOp[definition.Bra
 		// Undelete
 		Write(func(context.Context) op.Op { return r.undeleteValue(result) }).
 		// Undelete children
-		AddFrom(r.all.source.undeleteAllFrom(k))
+		AddFrom(r.all.source.undeleteAllFrom(now, k))
 }
 
 func (r *BranchRepository) undeleteValue(v definition.Branch) *op.TxnOp[op.NoResult] {

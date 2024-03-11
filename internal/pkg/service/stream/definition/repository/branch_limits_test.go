@@ -57,7 +57,7 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 
 	// Exceed the limit
 	branch := test.NewBranch(key.BranchKey{ProjectID: 123, BranchID: 111111})
-	if err := branchRepo.Create(&branch).Do(ctx).Err(); assert.Error(t, err) {
+	if err := branchRepo.Create(clk.Now(), &branch).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "branch count limit reached in the project, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}

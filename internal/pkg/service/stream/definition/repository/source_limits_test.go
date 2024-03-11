@@ -39,7 +39,7 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 
 	// Create sources up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -66,7 +66,7 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 
 	// Exceed the limit
 	source := test.NewSource(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "over-maximum-count"})
-	if err := sourceRepo.Create("Create description", &source).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.Create(clk.Now(), "Create description", &source).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "source count limit reached in the branch, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
@@ -92,11 +92,11 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 
 	// Create source
 	source := test.NewSource(sourceKey)
-	require.NoError(t, sourceRepo.Create("Create", &source).Do(ctx).Err())
+	require.NoError(t, sourceRepo.Create(clk.Now(), "Create", &source).Do(ctx).Err())
 
 	// Create versions up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -123,7 +123,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	assert.Len(t, sources, MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sourceRepo.Update(sourceKey, "Some update", func(v definition.Source) (definition.Source, error) {
+	err = sourceRepo.Update(clk.Now(), sourceKey, "Some update", func(v definition.Source) (definition.Source, error) {
 		v.Description = "foo"
 		return v, nil
 	}).Do(ctx).Err()

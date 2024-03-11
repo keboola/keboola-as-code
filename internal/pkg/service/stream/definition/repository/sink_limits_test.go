@@ -40,9 +40,9 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, repo.Source().Create("Create", &source).Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(clk.Now(), "Create", &source).Do(ctx).Err())
 
 	// Create sinks up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -69,7 +69,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 
 	// Exceed the limit
 	sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "over-maximum-count"})
-	if err := sinkRepo.Create("Create description", &sink).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.Create(clk.Now(), "Create description", &sink).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "sink count limit reached in the source, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
@@ -96,13 +96,13 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, repo.Source().Create("Create", &source).Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(clk.Now(), "Create", &source).Do(ctx).Err())
 
 	// Create sink
 	sink := test.NewSink(sinkKey)
-	require.NoError(t, sinkRepo.Create("create", &sink).Do(ctx).Err())
+	require.NoError(t, sinkRepo.Create(clk.Now(), "create", &sink).Do(ctx).Err())
 
 	// Create versions up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -129,7 +129,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	assert.Len(t, sinks, MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sinkRepo.Update(sinkKey, "Some update", func(v definition.Sink) definition.Sink {
+	err = sinkRepo.Update(clk.Now(), sinkKey, "Some update", func(v definition.Sink) definition.Sink {
 		v.Description = "foo"
 		return v
 	}).Do(ctx).Err()

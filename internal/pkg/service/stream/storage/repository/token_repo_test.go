@@ -65,13 +65,13 @@ func TestRepository_Token(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink2).Do(ctx).Err())
 	}
 
 	// Create

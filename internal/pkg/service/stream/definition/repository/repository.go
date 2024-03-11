@@ -1,14 +1,12 @@
 package repository
 
 import (
-	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 )
 
 type dependencies interface {
-	Clock() clock.Clock
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 }

@@ -26,7 +26,7 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		ProjectID: d.ProjectID(),
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.repo.Source().Create("New source.", &source).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Create(s.clock.Now(), "New source.", &source).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been created successfully.")
 				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
 				return result
@@ -64,7 +64,7 @@ func (s *service) UpdateSource(_ context.Context, d dependencies.SourceRequestSc
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.repo.Source().Update(d.SourceKey(), changeDesc, update).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Update(s.clock.Now(), d.SourceKey(), changeDesc, update).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been updated successfully.")
 				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
 				return result
@@ -96,7 +96,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (err error) {
-	return s.repo.Source().SoftDelete(d.SourceKey()).Do(ctx).Err()
+	return s.repo.Source().SoftDelete(s.clock.Now(), d.SourceKey()).Do(ctx).Err()
 }
 
 func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (res *api.SettingsResult, err error) {
@@ -129,7 +129,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	}
 
 	// Save changes
-	source, err := s.repo.Source().Update(d.SourceKey(), changeDesc, update).Do(ctx).ResultOrErr()
+	source, err := s.repo.Source().Update(s.clock.Now(), d.SourceKey(), changeDesc, update).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}

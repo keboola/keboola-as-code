@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/benbjohnson/clock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/mapper"
@@ -13,6 +15,7 @@ import (
 )
 
 type service struct {
+	clock     clock.Clock
 	publicURL *url.URL
 	tasks     *task.Node
 	repo      *definitionRepo.Repository
@@ -21,6 +24,7 @@ type service struct {
 
 func New(d dependencies.APIScope, cfg config.Config) api.Service {
 	return &service{
+		clock:     d.Clock(),
 		publicURL: d.APIPublicURL(),
 		tasks:     d.TaskNode(),
 		repo:      d.DefinitionRepository(),
