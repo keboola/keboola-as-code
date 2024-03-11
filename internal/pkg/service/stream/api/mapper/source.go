@@ -79,7 +79,7 @@ func (m *Mapper) UpdateSourceEntity(entity definition.Source, payload *api.Updat
 	return entity, nil
 }
 
-func (m *Mapper) NewSourceResponse(entity definition.Source) *api.Source {
+func (m *Mapper) NewSourceResponse(entity definition.Source) (*api.Source, error) {
 	out := &api.Source{
 		ProjectID:   entity.ProjectID,
 		BranchID:    entity.BranchID,
@@ -92,13 +92,17 @@ func (m *Mapper) NewSourceResponse(entity definition.Source) *api.Source {
 		Disabled:    m.NewDisabledResponse(entity.Switchable),
 	}
 
-	if entity.Type == definition.SourceTypeHTTP {
+	// Type
+	switch out.Type {
+	case definition.SourceTypeHTTP:
 		out.HTTP = &api.HTTPSource{
 			URL: m.formatHTTPSourceURL(entity),
 		}
+	default:
+		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
 	}
 
-	return out
+	return out, nil
 }
 
 func (m *Mapper) NewSourcesResponse(

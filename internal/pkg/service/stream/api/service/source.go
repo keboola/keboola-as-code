@@ -92,7 +92,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.NewSourceResponse(source), nil
+	return s.mapper.NewSourceResponse(source)
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (err error) {
