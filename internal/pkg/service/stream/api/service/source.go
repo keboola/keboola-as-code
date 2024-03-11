@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
+//nolint:dupl // CreateSink method is similar
 func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (res *api.Task, err error) {
 	source, err := s.mapper.NewSourceEntity(d.BranchKey(), payload)
 	if err != nil {
