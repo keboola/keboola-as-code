@@ -34,7 +34,8 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 		SinkKey: sinkKey,
 		Type:    definition.SinkTypeTable,
 		Table: &definition.TableSink{
-			Keboola: definition.TableSinkKeboola{
+			Type: definition.TableTypeKeboola,
+			Keboola: &definition.KeboolaTable{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 			},
 			Mapping: table.Mapping{

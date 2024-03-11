@@ -71,7 +71,7 @@ func TestTableSink_Validation(t *testing.T) {
 		{
 			Name: "empty table section",
 			ExpectedError: `
-- "table.keboola.tableId" is a required field
+- "table.type" must be one of [keboola]
 - "table.mapping.columns" is a required field
 `,
 			Value: Sink{
@@ -95,7 +95,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
 				Table: &TableSink{
-					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Type:    TableTypeKeboola,
+					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
@@ -117,7 +118,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   strings.Repeat("a", 4096+1),
 				Table: &TableSink{
-					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Type:    TableTypeKeboola,
+					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
@@ -138,7 +140,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Type:    TableTypeKeboola,
+					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
@@ -159,7 +162,8 @@ func TestTableSink_Validation(t *testing.T) {
 				Name:          "My Source",
 				Description:   "My Description",
 				Table: &TableSink{
-					Keboola: TableSinkKeboola{TableID: keboola.MustParseTableID("in.bucket.table")},
+					Type:    TableTypeKeboola,
+					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{

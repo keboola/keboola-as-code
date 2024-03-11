@@ -29,7 +29,8 @@ func NewSink(k key.SinkKey) definition.Sink {
 		Name:        "My Sink",
 		Description: "My Description",
 		Table: &definition.TableSink{
-			Keboola: definition.TableSinkKeboola{
+			Type: definition.TableTypeKeboola,
+			Keboola: &definition.KeboolaTable{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 			},
 			Mapping: table.Mapping{
