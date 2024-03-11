@@ -630,7 +630,7 @@ var Source = Type("Source", func() {
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
 	Attribute("sinks", Sinks)
-	Required("version", "type", "name", "description", "type", "sinks")
+	Required("type", "name", "description", "version", "sinks")
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
@@ -722,7 +722,7 @@ var Sink = Type("Sink", func() {
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Required("version", "name", "description")
+	Required("type", "name", "description", "version")
 })
 
 var Sinks = Type("Sinks", ArrayOf(Sink), func() {
@@ -797,18 +797,26 @@ var SinkFieldsRW = func() {
 
 var TableSink = Type("TableSink", func() {
 	Description("Table sink definition.")
+	Attribute("type", TableType)
+	Attribute("tableId", TableID)
 	Attribute("mapping", TableMapping)
+	Required("type", "tableId", "mapping")
 })
 
-var TableMapping = Type("TableMapping", func() {
-	Description("Table mapping definition.")
-	Attribute("tableId", TableID)
-	Attribute("columns", TableColumns)
-	Required("tableId", "columns")
+var TableType = Type("TableType", String, func() {
+	Meta("struct:field:type", "= definition.TableType", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
+	Enum(definition.TableTypeKeboola.String())
+	Example(definition.TableTypeKeboola.String())
 })
 
 var TableID = Type("TableID", String, func() {
 	Example("in.c-bucket.table")
+})
+
+var TableMapping = Type("TableMapping", func() {
+	Description("Table mapping definition.")
+	Attribute("columns", TableColumns)
+	Required("columns")
 })
 
 var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
