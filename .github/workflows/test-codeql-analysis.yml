@@ -20,6 +20,9 @@ on:
   schedule:
     - cron: '40 21 * * 1'
 
+env:
+  GO_VERSION: 1.22.0
+
 jobs:
   analyze:
     name: Analyze
@@ -43,7 +46,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22.0'
+        go-version: ${{ env.GO_VERSION }}
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
