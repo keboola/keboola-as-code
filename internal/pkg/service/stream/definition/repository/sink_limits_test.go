@@ -134,9 +134,9 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	assert.Len(t, sinks, repository.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sinkRepo.Update(clk.Now(), sinkKey, "Some update", func(v definition.Sink) definition.Sink {
+	err = sinkRepo.Update(clk.Now(), sinkKey, "Some update", func(v definition.Sink) (definition.Sink, error) {
 		v.Description = "foo"
-		return v
+		return v, nil
 	}).Do(ctx).Err()
 	if assert.Error(t, err) {
 		assert.Equal(t, "version count limit reached in the sink, the maximum is 1000", err.Error())

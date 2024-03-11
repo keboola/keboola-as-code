@@ -183,9 +183,9 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		result, err := sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
+		result, err := sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) (definition.Sink, error) {
 			v.Name = "Modified Name"
-			return v
+			return v, nil
 		}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
@@ -197,9 +197,9 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// Modify description
-		assert.NoError(t, sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
+		assert.NoError(t, sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) (definition.Sink, error) {
 			v.Description = "Modified Description"
-			return v
+			return v, nil
 		}).Do(ctx).Err())
 
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
@@ -211,9 +211,9 @@ func TestRepository_Sink(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sinkRepo.Update(clk.Now(), nonExistentSinkKey, "Update description", func(v definition.Sink) definition.Sink {
+		err := sinkRepo.Update(clk.Now(), nonExistentSinkKey, "Update description", func(v definition.Sink) (definition.Sink, error) {
 			v.Name = "Modified Name"
-			return v
+			return v, nil
 		}).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `sink "non-existent" not found in the source`, err.Error())

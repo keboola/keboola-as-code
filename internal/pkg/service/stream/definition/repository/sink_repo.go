@@ -124,7 +124,7 @@ func (r *SinkRepository) Create(now time.Time, versionDescription string, input 
 }
 
 //nolint:dupl // similar code is in the SourceRepository
-func (r *SinkRepository) Update(now time.Time, k key.SinkKey, updateVersion string, updateFn func(definition.Sink) definition.Sink) *op.AtomicOp[definition.Sink] {
+func (r *SinkRepository) Update(now time.Time, k key.SinkKey, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] {
 	var result definition.Sink
 	return op.Atomic(r.client, &result).
 		ReadOp(r.checkMaxSinksVersionsPerSink(k, 1)).
