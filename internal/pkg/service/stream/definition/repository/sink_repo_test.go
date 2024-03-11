@@ -301,7 +301,8 @@ func TestRepository_Sink(t *testing.T) {
 		result, err := sinkRepo.Undelete(clk.Now(), sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
-		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
+		assert.Equal(t, definition.VersionNumber(4), result.VersionNumber())
+		assert.Equal(t, `Undeleted to version "3".`, result.Version.Description)
 	}
 	{
 		// ExistsOrErr
@@ -312,7 +313,7 @@ func TestRepository_Sink(t *testing.T) {
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Modified Name", sink1.Name)
-			assert.Equal(t, definition.VersionNumber(3), sink1.VersionNumber())
+			assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
 		}
 	}
 	{
@@ -348,14 +349,14 @@ func TestRepository_Sink(t *testing.T) {
 		// SoftDelete
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, definition.VersionNumber(3), sink1.VersionNumber())
+		assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
 		assert.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		sink1 := test.NewSink(sinkKey1)
 		assert.NoError(t, sinkRepo.Create(clk.Now(), "Re-create", &sink1).Do(ctx).Err())
-		assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
+		assert.Equal(t, definition.VersionNumber(5), sink1.VersionNumber())
 		assert.Equal(t, "My Sink", sink1.Name)
 		assert.Equal(t, "My Description", sink1.Description)
 		assert.False(t, sink1.Deleted)
@@ -369,7 +370,7 @@ func TestRepository_Sink(t *testing.T) {
 		// Get
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
-			assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
+			assert.Equal(t, definition.VersionNumber(5), sink1.VersionNumber())
 			assert.Equal(t, "My Sink", sink1.Name)
 			assert.Equal(t, "My Description", sink1.Description)
 		}
@@ -378,7 +379,7 @@ func TestRepository_Sink(t *testing.T) {
 		// Versions
 		versions, err := sinkRepo.Versions(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
-		assert.Len(t, versions, 4)
+		assert.Len(t, versions, 5)
 	}
 
 	// Rollback version
@@ -392,8 +393,8 @@ func TestRepository_Sink(t *testing.T) {
 		result1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "My Description", result1.Description)
-		assert.Equal(t, definition.VersionNumber(5), result1.VersionNumber())
-		assert.Equal(t, "Rollback to version 2", result1.VersionDescription())
+		assert.Equal(t, definition.VersionNumber(6), result1.VersionNumber())
+		assert.Equal(t, `Rollback to version "2".`, result1.VersionDescription())
 	}
 
 	// Rollback version - object not found
@@ -450,10 +451,10 @@ definition/sink/active/123/456/my-source-1/my-sink-1
   "sourceId": "my-source-1",
   "sinkId": "my-sink-1",
   "version": {
-    "number": 5,
+    "number": 6,
     "hash": "482251bb3368c3e2",
     "modifiedAt": "2006-01-02T15:04:05.123Z",
-    "description": "Rollback to version 2"
+    "description": "Rollback to version \"2\"."
   },
   "type": "table",
   "name": "Modified Name",
@@ -547,6 +548,12 @@ definition/sink/version/123/456/my-source-1/my-sink-1/0000000004
 
 <<<<<
 definition/sink/version/123/456/my-source-1/my-sink-1/0000000005
+-----
+%A
+>>>>>
+
+<<<<<
+definition/sink/version/123/456/my-source-1/my-sink-1/0000000006
 -----
 %A
 >>>>>
