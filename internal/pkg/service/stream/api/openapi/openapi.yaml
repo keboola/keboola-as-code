@@ -158,10 +158,10 @@ paths:
                             - projectId
                             - branchId
                             - sourceId
-                            - version
                             - type
                             - name
                             - description
+                            - version
                             - sinks
                 "404":
                     description: Not Found response.
@@ -480,9 +480,10 @@ paths:
                             - branchId
                             - sourceId
                             - sinkId
-                            - version
+                            - type
                             - name
                             - description
+                            - version
                 "404":
                     description: Not Found response.
                     schema:
@@ -694,10 +695,10 @@ paths:
                             - projectId
                             - branchId
                             - sourceId
-                            - version
                             - type
                             - name
                             - description
+                            - version
                             - sinks
                 "404":
                     description: Not Found response.
@@ -1065,8 +1066,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: id
                           name: id-col
@@ -1108,9 +1110,10 @@ definitions:
             - branchId
             - sourceId
             - sinkId
-            - version
+            - type
             - name
             - description
+            - version
     SourceResponseBody:
         title: SourceResponseBody
         type: object
@@ -1153,8 +1156,9 @@ definitions:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: id
                                   name: id-col
@@ -1242,8 +1246,9 @@ definitions:
                   name: Raw Data Sink
                   description: The sink stores records to a table.
                   table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col
@@ -1284,10 +1289,10 @@ definitions:
             - projectId
             - branchId
             - sourceId
-            - version
             - type
             - name
             - description
+            - version
             - sinks
     StreamAPIVersionIndexResponseBody:
         title: StreamAPIVersionIndexResponseBody
@@ -1341,8 +1346,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: id
                           name: id-col
@@ -1807,8 +1813,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: id
                           name: id-col
@@ -1850,9 +1857,10 @@ definitions:
             - branchId
             - sourceId
             - sinkId
-            - version
+            - type
             - name
             - description
+            - version
     StreamGetSinkSettingsResponseBody:
         title: StreamGetSinkSettingsResponseBody
         type: object
@@ -2026,8 +2034,9 @@ definitions:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: id
                                   name: id-col
@@ -2114,8 +2123,9 @@ definitions:
                   name: Raw Data Sink
                   description: The sink stores records to a table.
                   table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col
@@ -2156,10 +2166,10 @@ definitions:
             - projectId
             - branchId
             - sourceId
-            - version
             - type
             - name
             - description
+            - version
             - sinks
     StreamGetSourceSettingsResponseBody:
         title: StreamGetSourceSettingsResponseBody
@@ -2367,8 +2377,9 @@ definitions:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: id
                                   name: id-col
@@ -2428,8 +2439,9 @@ definitions:
                   name: Raw Data Sink
                   description: The sink stores records to a table.
                   table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col
@@ -2554,8 +2566,9 @@ definitions:
                           name: Raw Data Sink
                           description: The sink stores records to a table.
                           table:
+                            type: keboola
+                            tableId: in.c-bucket.table
                             mapping:
-                                tableId: in.c-bucket.table
                                 columns:
                                     - type: id
                                       name: id-col
@@ -2638,8 +2651,9 @@ definitions:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: id
                                   name: id-col
@@ -2723,8 +2737,9 @@ definitions:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: id
                                   name: id-col
@@ -2811,8 +2826,9 @@ definitions:
                   name: Raw Data Sink
                   description: The sink stores records to a table.
                   table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col
@@ -2853,10 +2869,10 @@ definitions:
             - projectId
             - branchId
             - sourceId
-            - version
             - type
             - name
             - description
+            - version
             - sinks
     StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody:
         title: StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody
@@ -2915,8 +2931,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: id
                           name: id-col
@@ -3550,12 +3567,8 @@ definitions:
                       content: body.foo + "-" + body.bar
                 minItems: 1
                 maxItems: 100
-            tableId:
-                type: string
-                example: in.c-bucket.table
         description: Table mapping definition.
         example:
-            tableId: in.c-bucket.table
             columns:
                 - type: id
                   name: id-col
@@ -3573,7 +3586,6 @@ definitions:
                   language: jsonnet
                   content: body.foo + "-" + body.bar
         required:
-            - tableId
             - columns
     TableMappingResponseBody:
         title: TableMappingResponseBody
@@ -3601,12 +3613,8 @@ definitions:
                       content: body.foo + "-" + body.bar
                 minItems: 1
                 maxItems: 100
-            tableId:
-                type: string
-                example: in.c-bucket.table
         description: Table mapping definition.
         example:
-            tableId: in.c-bucket.table
             columns:
                 - type: id
                   name: id-col
@@ -3624,7 +3632,6 @@ definitions:
                   language: jsonnet
                   content: body.foo + "-" + body.bar
         required:
-            - tableId
             - columns
     TableSinkRequestBody:
         title: TableSinkRequestBody
@@ -3632,10 +3639,19 @@ definitions:
         properties:
             mapping:
                 $ref: '#/definitions/TableMappingRequestBody'
+            tableId:
+                type: string
+                example: in.c-bucket.table
+            type:
+                type: string
+                example: keboola
+                enum:
+                    - keboola
         description: Table sink definition.
         example:
+            type: keboola
+            tableId: in.c-bucket.table
             mapping:
-                tableId: in.c-bucket.table
                 columns:
                     - type: id
                       name: id-col
@@ -3652,16 +3668,29 @@ definitions:
                       name: template-col
                       language: jsonnet
                       content: body.foo + "-" + body.bar
+        required:
+            - type
+            - tableId
+            - mapping
     TableSinkResponseBody:
         title: TableSinkResponseBody
         type: object
         properties:
             mapping:
                 $ref: '#/definitions/TableMappingResponseBody'
+            tableId:
+                type: string
+                example: in.c-bucket.table
+            type:
+                type: string
+                example: keboola
+                enum:
+                    - keboola
         description: Table sink definition.
         example:
+            type: keboola
+            tableId: in.c-bucket.table
             mapping:
-                tableId: in.c-bucket.table
                 columns:
                     - type: id
                       name: id-col
@@ -3678,6 +3707,10 @@ definitions:
                       name: template-col
                       language: jsonnet
                       content: body.foo + "-" + body.bar
+        required:
+            - type
+            - tableId
+            - mapping
     TaskOutputsResponseBody:
         title: TaskOutputsResponseBody
         type: object

@@ -1745,12 +1745,9 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 		BranchID:    int(v.BranchID),
 		SourceID:    string(v.SourceID),
 		SinkID:      string(v.SinkID),
+		Type:        string(v.Type),
 		Name:        v.Name,
 		Description: v.Description,
-	}
-	if v.Type != nil {
-		type_ := string(*v.Type)
-		res.Type = &type_
 	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
@@ -1774,7 +1771,10 @@ func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSi
 	if v == nil {
 		return nil
 	}
-	res := &TableSinkResponseBody{}
+	res := &TableSinkResponseBody{
+		Type:    string(v.Type),
+		TableID: string(v.TableID),
+	}
 	if v.Mapping != nil {
 		res.Mapping = marshalStreamTableMappingToTableMappingResponseBody(v.Mapping)
 	}
@@ -1785,12 +1785,7 @@ func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSi
 // marshalStreamTableMappingToTableMappingResponseBody builds a value of type
 // *TableMappingResponseBody from a value of type *stream.TableMapping.
 func marshalStreamTableMappingToTableMappingResponseBody(v *stream.TableMapping) *TableMappingResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &TableMappingResponseBody{
-		TableID: string(v.TableID),
-	}
+	res := &TableMappingResponseBody{}
 	if v.Columns != nil {
 		res.Columns = make([]*TableColumnResponseBody, len(v.Columns))
 		for i, val := range v.Columns {
@@ -1879,10 +1874,11 @@ func unmarshalTableSinkRequestBodyToStreamTableSink(v *TableSinkRequestBody) *st
 	if v == nil {
 		return nil
 	}
-	res := &stream.TableSink{}
-	if v.Mapping != nil {
-		res.Mapping = unmarshalTableMappingRequestBodyToStreamTableMapping(v.Mapping)
+	res := &stream.TableSink{
+		Type:    stream.TableType(*v.Type),
+		TableID: stream.TableID(*v.TableID),
 	}
+	res.Mapping = unmarshalTableMappingRequestBodyToStreamTableMapping(v.Mapping)
 
 	return res
 }
@@ -1890,12 +1886,7 @@ func unmarshalTableSinkRequestBodyToStreamTableSink(v *TableSinkRequestBody) *st
 // unmarshalTableMappingRequestBodyToStreamTableMapping builds a value of type
 // *stream.TableMapping from a value of type *TableMappingRequestBody.
 func unmarshalTableMappingRequestBodyToStreamTableMapping(v *TableMappingRequestBody) *stream.TableMapping {
-	if v == nil {
-		return nil
-	}
-	res := &stream.TableMapping{
-		TableID: stream.TableID(*v.TableID),
-	}
+	res := &stream.TableMapping{}
 	res.Columns = make([]*stream.TableColumn, len(v.Columns))
 	for i, val := range v.Columns {
 		res.Columns[i] = unmarshalTableColumnRequestBodyToStreamTableColumn(val)

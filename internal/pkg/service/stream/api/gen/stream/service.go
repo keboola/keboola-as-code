@@ -320,7 +320,7 @@ type Sink struct {
 	BranchID  BranchID
 	SourceID  SourceID
 	SinkID    SinkID
-	Type      *SinkType
+	Type      SinkType
 	// Human readable name of the sink.
 	Name string
 	// Description of the source.
@@ -409,14 +409,17 @@ type TableID string
 
 // Table mapping definition.
 type TableMapping struct {
-	TableID TableID
 	Columns TableColumns
 }
 
 // Table sink definition.
 type TableSink struct {
+	Type    TableType
+	TableID TableID
 	Mapping *TableMapping
 }
+
+type TableType = definition.TableType
 
 // Task is the result type of the stream service CreateSource method.
 type Task struct {

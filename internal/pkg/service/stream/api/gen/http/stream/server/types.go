@@ -227,11 +227,11 @@ type CreateSinkResponseBody struct {
 // GetSinkResponseBody is the type of the "stream" service "GetSink" endpoint
 // HTTP response body.
 type GetSinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
@@ -706,11 +706,11 @@ type DisabledEntityResponseBody struct {
 
 // SinkResponseBody is used to define fields on response body types.
 type SinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
@@ -724,12 +724,13 @@ type SinkResponseBody struct {
 
 // TableSinkResponseBody is used to define fields on response body types.
 type TableSinkResponseBody struct {
-	Mapping *TableMappingResponseBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
+	Type    string                    `form:"type" json:"type" xml:"type"`
+	TableID string                    `form:"tableId" json:"tableId" xml:"tableId"`
+	Mapping *TableMappingResponseBody `form:"mapping" json:"mapping" xml:"mapping"`
 }
 
 // TableMappingResponseBody is used to define fields on response body types.
 type TableMappingResponseBody struct {
-	TableID string                     `form:"tableId" json:"tableId" xml:"tableId"`
 	Columns []*TableColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
 }
 
@@ -783,12 +784,13 @@ type SettingPatchRequestBody struct {
 
 // TableSinkRequestBody is used to define fields on request body types.
 type TableSinkRequestBody struct {
+	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
 }
 
 // TableMappingRequestBody is used to define fields on request body types.
 type TableMappingRequestBody struct {
-	TableID *string                   `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Columns []*TableColumnRequestBody `form:"columns,omitempty" json:"columns,omitempty" xml:"columns,omitempty"`
 }
 
@@ -1008,12 +1010,9 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 		BranchID:    int(res.BranchID),
 		SourceID:    string(res.SourceID),
 		SinkID:      string(res.SinkID),
+		Type:        string(res.Type),
 		Name:        res.Name,
 		Description: res.Description,
-	}
-	if res.Type != nil {
-		type_ := string(*res.Type)
-		body.Type = &type_
 	}
 	if res.Table != nil {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
@@ -1821,6 +1820,20 @@ func ValidateSettingPatchRequestBody(body *SettingPatchRequestBody, errContext [
 // ValidateTableSinkRequestBody runs the validations defined on
 // TableSinkRequestBody
 func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []string) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
+	}
+	if body.TableID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
+	}
+	if body.Mapping == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", strings.Join(errContext, ".")))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "keboola") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"keboola"}))
+		}
+	}
 	if body.Mapping != nil {
 		if err2 := ValidateTableMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -1832,9 +1845,6 @@ func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []strin
 // ValidateTableMappingRequestBody runs the validations defined on
 // TableMappingRequestBody
 func ValidateTableMappingRequestBody(body *TableMappingRequestBody, errContext []string) (err error) {
-	if body.TableID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
-	}
 	if body.Columns == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("columns", strings.Join(errContext, ".")))
 	}
