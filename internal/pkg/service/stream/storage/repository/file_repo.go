@@ -102,20 +102,13 @@ func (r *FileRepository) Get(fileKey model.FileKey) op.WithResult[model.File] {
 //   - Files rotation is done atomically.
 //   - This method is used to rotate files when the import conditions are met.
 func (r *FileRepository) Rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey) *op.AtomicOp[model.File] {
-	return r.rotate(rb, now, sinkKey, nil, true)
-}
-
-// RotateOnSinkMod it similar to Rotate method, but the Sink value is provided directly, not read from the database.
-//   - The method should be used only on a Sink create/update, to create the first file with the new Sink mapping.
-//   - Otherwise, use the Rotate method.
-func (r *FileRepository) RotateOnSinkMod(rb rollback.Builder, now time.Time, sink definition.Sink) *op.AtomicOp[model.File] {
-	return r.rotate(rb, now, sink.SinkKey, &sink, true)
+	return r.rotate(rb, now, sinkKey, true)
 }
 
 // RotateAllIn is same as Rotate method, but it is applied for each table sink within the parentKey.
 // - This method is used on Sink/Source undelete or enable operation.
 func (r *FileRepository) RotateAllIn(rb rollback.Builder, now time.Time, parentKey fmt.Stringer) *op.AtomicOp[[]model.File] {
-	return r.rotateAllIn(rb, now, parentKey, nil, true)
+	return r.rotateAllIn(rb, now, parentKey, true)
 }
 
 // CloseAllIn closes opened file in each table sink within the parentKey.
@@ -127,7 +120,7 @@ func (r *FileRepository) CloseAllIn(now time.Time, parentKey fmt.Stringer) *op.A
 	// There is no result of the operation, no new file is opened.
 	return op.
 		Atomic(r.client, &op.NoResult{}).
-		AddFrom(r.rotateAllIn(nil, now, parentKey, nil, false))
+		AddFrom(r.rotateAllIn(nil, now, parentKey, false))
 }
 
 // IncrementRetry increments retry attempt and backoff delay on an error.
@@ -235,18 +228,11 @@ func (r *FileRepository) Delete(k model.FileKey) *op.AtomicOp[op.NoResult] {
 }
 
 // rotate one file, it is a special case of the rotateAllIn.
-func (r *FileRepository) rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey, sink *definition.Sink, openNewFile bool) *op.AtomicOp[model.File] {
-	// Create sinks slice, if the sink is not provided,
-	// then it will be loaded in the AtomicOp Read Phase, see rotateAllIn method
-	var sinksPtr *[]definition.Sink
-	if sink != nil {
-		sinksPtr = &[]definition.Sink{*sink}
-	}
-
+func (r *FileRepository) rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey, openNewFile bool) *op.AtomicOp[model.File] {
 	var file model.File
 	return op.Atomic(r.client, &file).
 		AddFrom(r.
-			rotateAllIn(rb, now, sinkKey, sinksPtr, openNewFile).
+			rotateAllIn(rb, now, sinkKey, openNewFile).
 			AddProcessor(func(_ context.Context, result *op.Result[[]model.File]) {
 				// Unwrap results, there in only one file
 				if result.Err() == nil {
@@ -275,7 +261,7 @@ func (r *FileRepository) rotate(rb rollback.Builder, now time.Time, sinkKey key.
 // If the pointer is nil, the loading of sinks is handled automatically.
 //
 // If openNew is set to true, the operation will open new files and slices; if false, it will only close the existing ones.
-func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sinksPtr *[]definition.Sink, openNew bool) *op.AtomicOp[[]model.File] {
+func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, openNew bool) *op.AtomicOp[[]model.File] {
 	// Validate arguments
 	if openNew && rb == nil {
 		panic(errors.New("rollback.Builder must be set if the creation of new file resources is allowed"))
@@ -285,24 +271,16 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 	var newFiles []model.File
 	atomicOp := op.Atomic(r.client, &newFiles)
 
-	// Get sinks
+	// Load sinks
 	var sinks []definition.Sink
-	if sinksPtr == nil {
-		// Load sinks, if the slice is not provided externally
-		if sinkKey, ok := parentKey.(key.SinkKey); ok {
-			// Get
-			atomicOp.ReadOp(r.all.sink.Get(sinkKey).WithOnResult(func(sink definition.Sink) {
-				sinks = []definition.Sink{sink}
-			}))
-		} else {
-			// List
-			atomicOp.ReadOp(r.all.sink.List(parentKey).WithAllTo(&sinks))
-		}
+	if sinkKey, ok := parentKey.(key.SinkKey); ok {
+		// Get
+		atomicOp.ReadOp(r.all.sink.Get(sinkKey).WithOnResult(func(sink definition.Sink) {
+			sinks = []definition.Sink{sink}
+		}))
 	} else {
-		// Load sinks from the pointer, before write
-		atomicOp.BeforeWrite(func(ctx context.Context) {
-			sinks = *sinksPtr
-		})
+		// List
+		atomicOp.ReadOp(r.all.sink.List(parentKey).WithAllTo(&sinks))
 	}
 
 	// Get sink keys
