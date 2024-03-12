@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -17,6 +17,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -33,10 +36,11 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-1"}
 
 	// Get services
-	d := commonDeps.NewMocked(t, commonDeps.WithEnabledEtcdClient(), commonDeps.WithClock(clk))
-	client := d.TestEtcdClient()
-	repo := New(d)
+	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
+	repo := repository.New(d)
 	sinkRepo := repo.Sink()
+	sinkSchema := schema.ForSink(d.EtcdSerde())
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
@@ -48,14 +52,14 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := 1; i <= MaxSinksPerSource; i++ {
+	for i := 1; i <= repository.MaxSinksPerSource; i++ {
 		sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", i))})
 		sink.IncrementVersion(sink, clk.Now(), "Create")
-		txn.Then(sinkRepo.schema.Active().ByKey(sink.SinkKey).Put(client, sink))
+		txn.Then(sinkSchema.Active().ByKey(sink.SinkKey).Put(client, sink))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == MaxSinksPerSource {
+		if ops == 100 || i == repository.MaxSinksPerSource {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -65,7 +69,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	}
 	sinks, err := sinkRepo.List(sourceKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sinks, MaxSinksPerSource)
+	assert.Len(t, sinks, repository.MaxSinksPerSource)
 
 	// Exceed the limit
 	sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "over-maximum-count"})
@@ -89,10 +93,11 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 
 	// Get services
-	d := commonDeps.NewMocked(t, commonDeps.WithEnabledEtcdClient(), commonDeps.WithClock(clk))
-	client := d.TestEtcdClient()
-	repo := New(d)
+	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
+	repo := repository.New(d)
 	sinkRepo := repo.Sink()
+	sinkSchema := schema.ForSink(d.EtcdSerde())
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
@@ -108,14 +113,14 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := sink.VersionNumber() + 1; i <= MaxSourceVersionsPerSource; i++ {
+	for i := sink.VersionNumber() + 1; i <= repository.MaxSourceVersionsPerSource; i++ {
 		sink.Description = fmt.Sprintf("Description %04d", i)
 		sink.IncrementVersion(sink, clk.Now(), "Some Update")
-		txn.Then(sinkRepo.schema.Versions().Of(sinkKey).Version(sink.VersionNumber()).Put(client, sink))
+		txn.Then(sinkSchema.Versions().Of(sinkKey).Version(sink.VersionNumber()).Put(client, sink))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == MaxSourceVersionsPerSource {
+		if ops == 100 || i == repository.MaxSourceVersionsPerSource {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -126,7 +131,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	// Check that the maximum count is reached
 	sinks, err := sinkRepo.Versions(sinkKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sinks, MaxSourceVersionsPerSource)
+	assert.Len(t, sinks, repository.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
 	err = sinkRepo.Update(clk.Now(), sinkKey, "Some update", func(v definition.Sink) definition.Sink {

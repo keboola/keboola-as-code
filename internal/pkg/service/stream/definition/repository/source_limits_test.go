@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -17,6 +17,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -32,10 +35,11 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 
 	// Get services
-	d := commonDeps.NewMocked(t, commonDeps.WithEnabledEtcdClient(), commonDeps.WithClock(clk))
-	client := d.TestEtcdClient()
-	repo := New(d)
+	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
+	repo := repository.New(d)
 	sourceRepo := repo.Source()
+	sourceSchema := schema.ForSource(d.EtcdSerde())
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
@@ -45,14 +49,14 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := 1; i <= MaxSourcesPerBranch; i++ {
+	for i := 1; i <= repository.MaxSourcesPerBranch; i++ {
 		source := test.NewSource(key.SourceKey{BranchKey: branchKey, SourceID: key.SourceID(fmt.Sprintf("my-source-%d", i))})
 		source.IncrementVersion(source, clk.Now(), "Create")
-		txn.Then(sourceRepo.schema.Active().ByKey(source.SourceKey).Put(client, source))
+		txn.Then(sourceSchema.Active().ByKey(source.SourceKey).Put(client, source))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == MaxSourcesPerBranch {
+		if ops == 100 || i == repository.MaxSourcesPerBranch {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -62,7 +66,7 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	}
 	sources, err := sourceRepo.List(branchKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sources, MaxSourcesPerBranch)
+	assert.Len(t, sources, repository.MaxSourcesPerBranch)
 
 	// Exceed the limit
 	source := test.NewSource(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "over-maximum-count"})
@@ -85,10 +89,11 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-1"}
 
 	// Get services
-	d := commonDeps.NewMocked(t, commonDeps.WithEnabledEtcdClient(), commonDeps.WithClock(clk))
-	client := d.TestEtcdClient()
-	repo := New(d)
+	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
+	repo := repository.New(d)
 	sourceRepo := repo.Source()
+	sourceSchema := schema.ForSource(d.EtcdSerde())
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
@@ -102,14 +107,14 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := source.VersionNumber() + 1; i <= MaxSourceVersionsPerSource; i++ {
+	for i := source.VersionNumber() + 1; i <= repository.MaxSourceVersionsPerSource; i++ {
 		source.Description = fmt.Sprintf("Description %04d", i)
 		source.IncrementVersion(source, clk.Now(), "Some Update")
-		txn.Then(sourceRepo.schema.Versions().Of(sourceKey).Version(source.VersionNumber()).Put(client, source))
+		txn.Then(sourceSchema.Versions().Of(sourceKey).Version(source.VersionNumber()).Put(client, source))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == MaxSourceVersionsPerSource {
+		if ops == 100 || i == repository.MaxSourceVersionsPerSource {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -120,7 +125,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	// Check that the maximum count is reached
 	sources, err := sourceRepo.Versions(sourceKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sources, MaxSourceVersionsPerSource)
+	assert.Len(t, sources, repository.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
 	err = sourceRepo.Update(clk.Now(), sourceKey, "Some update", func(v definition.Source) (definition.Source, error) {

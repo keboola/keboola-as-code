@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -14,6 +14,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -29,21 +32,22 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 
 	// Get services
-	d := commonDeps.NewMocked(t, commonDeps.WithEnabledEtcdClient(), commonDeps.WithClock(clk))
-	client := d.TestEtcdClient()
-	branchRepo := New(d).Branch()
+	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
+	branchRepo := repository.New(d).Branch()
+	branchSchema := schema.ForBranch(d.EtcdSerde())
 
 	// Create branches up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := 1; i <= MaxBranchesPerProject; i++ {
+	for i := 1; i <= repository.MaxBranchesPerProject; i++ {
 		branch := test.NewBranch(key.BranchKey{ProjectID: branchKey.ProjectID, BranchID: keboola.BranchID(1000 + i)})
-		txn.Then(branchRepo.schema.Active().ByKey(branch.BranchKey).Put(client, branch))
+		txn.Then(branchSchema.Active().ByKey(branch.BranchKey).Put(client, branch))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == MaxBranchesPerProject {
+		if ops == 100 || i == repository.MaxBranchesPerProject {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -53,7 +57,7 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	}
 	branches, err := branchRepo.List(branchKey.ProjectID).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, branches, MaxBranchesPerProject)
+	assert.Len(t, branches, repository.MaxBranchesPerProject)
 
 	// Exceed the limit
 	branch := test.NewBranch(key.BranchKey{ProjectID: 123, BranchID: 111111})
