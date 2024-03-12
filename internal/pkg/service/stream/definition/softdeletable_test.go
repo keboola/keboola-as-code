@@ -24,10 +24,11 @@ func TestSoftDeletable(t *testing.T) {
 	assert.False(t, v.WasDeletedWithParent())
 	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.GetDeletedAt().String())
 
-	v.Undelete()
+	v.Undelete(now)
 	assert.False(t, v.IsDeleted())
 	assert.False(t, v.WasDeletedWithParent())
 	assert.Nil(t, v.GetDeletedAt())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.GetUndeletedAt().String())
 
 	v.Delete(now, true)
 	assert.True(t, v.IsDeleted())

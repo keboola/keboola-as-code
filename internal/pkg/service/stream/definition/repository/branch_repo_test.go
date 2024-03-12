@@ -283,6 +283,7 @@ definition/branch/active/123/567
 {
   "projectId": 123,
   "branchId": 567,
+  "undeletedAt": "2006-01-02T15:04:05.123Z",
   "isDefault": false
 }
 >>>>>
