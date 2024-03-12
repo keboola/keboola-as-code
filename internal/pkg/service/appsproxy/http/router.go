@@ -233,6 +233,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 			AudienceClaims: options.OIDCAudienceClaims,
 			UserIDClaim:    options.OIDCEmailClaim,
 		},
+		BackendLogoutURL: authProvider.LogoutURL,
 	}
 
 	provider := &oauthProvider{
@@ -406,6 +407,20 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 
 				return statusCode
 			})
+		}
+
+		if request.URL.Path == "/_proxy/sign_out" {
+			// Clear the provider cookie on sign out
+			opts := &options.NewOptions().Cookie
+			opts.Domains = []string{r.formatAppDomain(app)}
+			http.SetCookie(writer, cookies.MakeCookieFromOptions(
+				request,
+				providerCookie,
+				"",
+				opts,
+				time.Hour*-1,
+				r.clock.Now(),
+			))
 		}
 
 		// Authenticate the request by the provider selected in the cookie
