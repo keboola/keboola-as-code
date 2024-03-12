@@ -30,7 +30,7 @@ type AuthProvider struct {
 	ClientSecret string       `json:"clientSecret"`
 	IssuerURL    string       `json:"issuerUrl"`
 	LogoutURL    string       `json:"logoutUrl"`
-	AllowedRoles []string     `json:"allowedRoles"`
+	AllowedRoles *[]string    `json:"allowedRoles"`
 }
 
 type RuleType string

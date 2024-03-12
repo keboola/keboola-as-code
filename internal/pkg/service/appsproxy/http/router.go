@@ -250,11 +250,16 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 
 	exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 
+	allowedRoles := []string{}
+	if authProvider.AllowedRoles != nil {
+		allowedRoles = *authProvider.AllowedRoles
+	}
+
 	providerConfig := options.Provider{
 		ID:                  authProvider.ID,
 		Type:                options.ProviderType(authProvider.Type),
 		Name:                authProvider.Name,
-		AllowedGroups:       authProvider.AllowedRoles,
+		AllowedGroups:       allowedRoles,
 		CodeChallengeMethod: providers.CodeChallengeMethodS256,
 		ClientID:            authProvider.ClientID,
 		ClientSecret:        authProvider.ClientSecret,
@@ -279,6 +284,11 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 		return provider
 	}
 	provider.proxyConfig = proxyConfig
+
+	if authProvider.AllowedRoles != nil && len(allowedRoles) == 0 {
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty array of allowed roles for app "%s" "%s"`, app.ID, app.Name)
+		return provider
+	}
 
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
