@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -43,8 +42,8 @@ type FileResourcesProvider func(ctx context.Context, now time.Time, sinkKeys []k
 // The result is used to pre-allocate disk space for a new slice.
 type UsedDiskSpaceProvider func(ctx context.Context, sinkKeys []key.SinkKey) (map[key.SinkKey]datasize.ByteSize, error)
 
-// hook provide bridge to other parts of the system that are not part of the repository, but are needed for repository operations.
-type hook struct {
+// external provide bridge to other parts of the system that are not part of the repository, but are needed for repository operations.
+type external struct {
 	client    *etcd.Client
 	publicAPI *keboola.PublicAPI
 	config    level.Config
@@ -52,8 +51,8 @@ type hook struct {
 	storage   *Repository
 }
 
-func newHook(cfg level.Config, d dependencies, repo *Repository) *hook {
-	return &hook{
+func newExternal(cfg level.Config, d dependencies, repo *Repository) *external {
+	return &external{
 		client:    d.EtcdClient(),
 		publicAPI: d.KeboolaPublicAPI(),
 		config:    cfg,
@@ -63,22 +62,22 @@ func newHook(cfg level.Config, d dependencies, repo *Repository) *hook {
 }
 
 // AssignVolumes assigns volumes to a new file.
-func (h *hook) AssignVolumes(_ context.Context, allVolumes []volume.Metadata, cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
+func (e *external) AssignVolumes(_ context.Context, allVolumes []volume.Metadata, cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
 	return assignment.VolumesFor(allVolumes, cfg, fileOpenedAt.UnixNano())
 }
 
-func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {
+func (e *external) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {
 	result := make(map[key.SinkKey]*FileResource)
 	rb = rb.AddParallel()
 	lock := &sync.Mutex{}
 	return func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]*FileResource, error) {
 		// Get sinks tokens
 		tokens := make(map[key.SinkKey]string)
-		txn := op.Txn(h.client)
+		txn := op.Txn(e.client)
 		for _, sinkKey := range sinkKeys {
 			// Get token only once, the provider can be reused within op.AtomicOp retries.
 			if _, ok := tokens[sinkKey]; !ok {
-				txn.Then(h.storage.Token().Get(sinkKey).WithOnResult(func(result model.Token) {
+				txn.Then(e.storage.Token().Get(sinkKey).WithOnResult(func(result model.Token) {
 					tokens[sinkKey] = result.Token.Token
 				}))
 			}
@@ -89,7 +88,7 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 
 		// Create file resources
 		grp, ctx := errgroup.WithContext(ctx)
-		grp.SetLimit(h.config.Staging.ParallelFileCreateLimit)
+		grp.SetLimit(e.config.Staging.ParallelFileCreateLimit)
 		for _, sinkKey := range sinkKeys {
 			sinkKey := sinkKey
 
@@ -102,7 +101,7 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 			}
 
 			// Authorize API
-			api := h.publicAPI.WithToken(tokens[sinkKey])
+			api := e.publicAPI.WithToken(tokens[sinkKey])
 
 			// Create file resource in parallel
 			grp.Go(func() error {
@@ -147,14 +146,14 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 	}
 }
 
-func (h *hook) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
+func (e *external) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
 	result := make(map[key.SinkKey]datasize.ByteSize)
 	return func(ctx context.Context, sinkKeys []key.SinkKey) (map[key.SinkKey]datasize.ByteSize, error) {
-		txn := op.Txn(h.client)
+		txn := op.Txn(e.client)
 		for _, sinkKey := range sinkKeys {
 			// Load statistics only once, the provider can be reused within op.AtomicOp retries.
 			if _, ok := result[sinkKey]; !ok {
-				txn.Merge(h.stats.
+				txn.Merge(e.stats.
 					MaxUsedDiskSizeBySliceIn(sinkKey, recordsForSliceDiskSizeCalc).
 					OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
 						result[sinkKey] = r.Result()
@@ -172,46 +171,4 @@ func (h *hook) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
 
 		return result, nil
 	}
-}
-
-func (h *hook) DecorateFileStateTransition(atomicOp *op.AtomicOp[model.File], fileKey model.FileKey, from, to model.FileState) *op.AtomicOp[model.File] {
-	// Move statistics to the target storage level, if needed
-	fromLevel := from.Level()
-	toLevel := to.Level()
-	if fromLevel != toLevel {
-		atomicOp.AddFrom(h.stats.MoveAll(fileKey, fromLevel, toLevel, func(value *statistics.Value) {
-			// There is actually no additional compression, when uploading slice to the staging storage
-			if toLevel == level.Staging {
-				value.StagingSize = value.CompressedSize
-			}
-		}))
-	}
-	return atomicOp
-}
-
-func (h *hook) DecorateSliceStateTransition(atomicOp *op.AtomicOp[model.Slice], sliceKey model.SliceKey, from, to model.SliceState) *op.AtomicOp[model.Slice] {
-	// Move statistics to the target storage level, if needed
-	fromLevel := from.Level()
-	toLevel := to.Level()
-	if fromLevel != toLevel {
-		atomicOp.AddFrom(h.stats.Move(sliceKey, fromLevel, toLevel, func(value *statistics.Value) {
-			// There is actually no additional compression, when uploading slice to the staging storage
-			if toLevel == level.Staging {
-				value.StagingSize = value.CompressedSize
-			}
-		}))
-	}
-	return atomicOp
-}
-
-func (h *hook) DecorateFileDelete(atomicOp *op.AtomicOp[op.NoResult], fileKey model.FileKey) *op.AtomicOp[op.NoResult] {
-	// Delete/rollup statistics
-	atomicOp.AddFrom(h.stats.Delete(fileKey))
-	return atomicOp
-}
-
-func (h *hook) DecorateSliceDelete(atomicOp *op.AtomicOp[op.NoResult], sliceKey model.SliceKey) *op.AtomicOp[op.NoResult] {
-	// Delete/rollup statistics
-	atomicOp.AddFrom(h.stats.Delete(sliceKey))
-	return atomicOp
 }
