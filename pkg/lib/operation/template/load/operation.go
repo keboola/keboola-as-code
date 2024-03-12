@@ -75,7 +75,5 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateID(), versionRecord.Version.String())
 
 	// Load template
-
-	// TODO how to get project backends !!!!!
 	return template.New(ctx, reference, templateRecord, versionRecord, templateDir, repository.CommonDir(), d.Components(), []string{"snowflake"})
 }
