@@ -37,7 +37,7 @@ func TestRepository_Token(t *testing.T) {
 	storageToken2 := keboola.Token{Token: "5678"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	r := d.StorageRepository().Token()

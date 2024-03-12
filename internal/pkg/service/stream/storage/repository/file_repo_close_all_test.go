@@ -35,7 +35,7 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()

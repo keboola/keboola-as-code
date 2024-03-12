@@ -9,8 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
@@ -32,7 +33,7 @@ func TestCaches(t *testing.T) {
 	defer cancel()
 
 	clk := clock.NewMock()
-	d := dependencies.NewMocked(t, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
+	d, _ := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk), commonDeps.WithEnabledEtcdClient())
 	client := d.EtcdClient()
 	repo := repository.New(d)
 

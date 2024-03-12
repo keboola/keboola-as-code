@@ -35,7 +35,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()

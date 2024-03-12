@@ -19,7 +19,7 @@ import (
 func TestRepository_Move_SameLevels_Panic(t *testing.T) {
 	t.Parallel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t)
+	d, _ := dependencies.NewMockedLocalStorageScope(t)
 	repo := d.StatisticsRepository()
 
 	assert.PanicsWithError(t, `"from" and "to" storage levels are same and equal to "staging"`, func() {
@@ -33,7 +33,7 @@ func TestRepository_Move(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t)
+	d, mocked := dependencies.NewMockedLocalStorageScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 
@@ -129,7 +129,7 @@ func TestRepository_MoveAll(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t)
+	d, mocked := dependencies.NewMockedLocalStorageScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 

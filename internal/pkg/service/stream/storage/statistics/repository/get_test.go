@@ -23,7 +23,7 @@ func TestProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t)
+	d, _ := dependencies.NewMockedLocalStorageScope(t)
 	repo := d.StatisticsRepository()
 
 	// Fixtures
@@ -319,7 +319,7 @@ func TestRepository_MaxUsedDiskSizeBySliceIn(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedTableSinkScope(t)
+	d, _ := dependencies.NewMockedLocalStorageScope(t)
 	repo := d.StatisticsRepository()
 
 	// Fixtures

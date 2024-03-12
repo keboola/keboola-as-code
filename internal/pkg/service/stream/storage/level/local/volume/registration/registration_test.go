@@ -20,7 +20,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedTableSinkScope(t, commonDeps.WithCtx(ctx))
+	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithCtx(ctx))
 	client := mock.TestEtcdClient()
 	repo := d.StorageRepository().Volume()
 

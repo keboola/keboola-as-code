@@ -26,7 +26,7 @@ func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t)
+	d, mocked := dependencies.NewMockedLocalStorageScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 
@@ -137,7 +137,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mocked := dependencies.NewMockedTableSinkScope(t)
+	d, mocked := dependencies.NewMockedLocalStorageScope(t)
 	client := mocked.EtcdClient()
 	repo := d.StatisticsRepository()
 

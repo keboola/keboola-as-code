@@ -43,7 +43,7 @@ func TestFileRepository_RotateAllIn(t *testing.T) {
 	sinkKey5 := key.SinkKey{SourceKey: sourceKey2, SinkID: "my-sink-5"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()

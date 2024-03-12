@@ -45,7 +45,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	}
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
