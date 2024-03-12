@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 	"reflect"
 	"time"
 
@@ -199,7 +200,12 @@ func (r *FileRepository) StateTransition(now time.Time, fileKey model.FileKey, f
 			return nil, nil
 		})
 
-	return r.all.hook.DecorateFileStateTransition(atomicOp, fileKey, from, to)
+	// Call related hook
+	if r.all.hooks != nil {
+		r.all.hooks.OnFileStateTransition(fileKey, from, to, atomicOp)
+	}
+
+	return atomicOp
 }
 
 // Delete file a file slices.
@@ -224,7 +230,12 @@ func (r *FileRepository) Delete(k model.FileKey) *op.AtomicOp[op.NoResult] {
 	// Delete all slices
 	atomicOp.WriteOp(r.all.slice.deleteAll(k))
 
-	return r.all.hook.DecorateFileDelete(atomicOp, k)
+	// Call related hook
+	if r.all.hooks != nil {
+		r.all.hooks.OnFileDelete(k, atomicOp)
+	}
+
+	return atomicOp
 }
 
 // rotate one file, it is a special case of the rotateAllIn.
@@ -300,7 +311,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 	// Create file resources
 	var fileResources map[key.SinkKey]*FileResource
 	if openNew {
-		provider := r.all.hook.NewFileResourcesProvider(rb)
+		provider := r.all.external.NewFileResourcesProvider(rb)
 		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
 			fileResources, err = provider(ctx, now, sinkKeys)
 			return err
@@ -310,7 +321,7 @@ func (r *FileRepository) rotateAllIn(rb rollback.Builder, now time.Time, parentK
 	// Get disk space statistics to calculate pre-allocated disk space for a new slice
 	var maxUsedDiskSpace map[key.SinkKey]datasize.ByteSize
 	if openNew {
-		provider := r.all.hook.NewUsedDiskSpaceProvider()
+		provider := r.all.external.NewUsedDiskSpaceProvider()
 		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
 			maxUsedDiskSpace, err = provider(ctx, sinkKeys)
 			return err
@@ -450,7 +461,7 @@ func (r *FileRepository) rotateSink(ctx context.Context, c rotateSinkContext) (*
 		}
 
 		// Assign volumes
-		file.Assignment = r.all.hook.AssignVolumes(ctx, c.Volumes, cfg.Local.Volume.Assignment, file.OpenedAt().Time())
+		file.Assignment = r.all.external.AssignVolumes(ctx, c.Volumes, cfg.Local.Volume.Assignment, file.OpenedAt().Time())
 
 		// At least one volume must be assigned
 		if len(file.Assignment.Volumes) == 0 {
