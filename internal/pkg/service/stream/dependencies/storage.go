@@ -9,51 +9,51 @@ import (
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 )
 
-// serviceScope implements ServiceScope interface.
-type tableSinkScope struct {
-	tableSinkParentScopes
+// localStorageScope implements LocalStorageScope interface.
+type localStorageScope struct {
+	localStorageParentScopes
 	storageRepository    *storageRepo.Repository
 	statisticsL1Cache    *cache.L1
 	statisticsL2Cache    *cache.L2
 	statisticsRepository *statsRepo.Repository
 }
 
-type tableSinkParentScopes interface {
+type localStorageParentScopes interface {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
 
-type tableSinkParentScopesImpl struct {
+type localStorageParentScopesImpl struct {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
 
-func (v *tableSinkScope) StatisticsRepository() *statsRepo.Repository {
+func (v *localStorageScope) StatisticsRepository() *statsRepo.Repository {
 	return v.statisticsRepository
 }
 
-func (v *tableSinkScope) StatisticsL1Cache() *cache.L1 {
+func (v *localStorageScope) StatisticsL1Cache() *cache.L1 {
 	return v.statisticsL1Cache
 }
 
-func (v *tableSinkScope) StatisticsL2Cache() *cache.L2 {
+func (v *localStorageScope) StatisticsL2Cache() *cache.L2 {
 	return v.statisticsL2Cache
 }
 
-func (v *tableSinkScope) StorageRepository() *storageRepo.Repository {
+func (v *localStorageScope) StorageRepository() *storageRepo.Repository {
 	return v.storageRepository
 }
 
-func NewTableSinkScope(d tableSinkParentScopes, cfg config.Config) (v TableSinkScope, err error) {
-	return newTableSinkScope(d, cfg, model.DefaultBackoff())
+func NewLocalStorageScope(d localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
+	return newLocalStorageScope(d, cfg, model.DefaultBackoff())
 }
 
-func newTableSinkScope(parentScp tableSinkParentScopes, cfg config.Config, backoff model.RetryBackoff) (v TableSinkScope, err error) {
-	d := &tableSinkScope{}
+func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config, backoff model.RetryBackoff) (v LocalStorageScope, err error) {
+	d := &localStorageScope{}
 
-	d.tableSinkParentScopes = parentScp
+	d.localStorageParentScopes = parentScp
 
 	d.statisticsRepository = statsRepo.New(d)
 

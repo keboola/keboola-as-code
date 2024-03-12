@@ -9,21 +9,21 @@
 //   - [APIScope] contains long-lived dependencies that exist during the entire run of an API node.
 //   - [PublicRequestScope] contains short-lived dependencies for a public request without authentication.
 //   - [ProjectRequestScope] contains short-lived dependencies for a request with authentication.
-//   - [TableSinkScope] contains long-lived dependencies for table sink code.
+//   - [LocalStorageScope] contains long-lived dependencies for table sink code.
 //
 // Dependency containers creation:
-//   - [ServiceScope] is created during the creation of [APIScope] or [TableSinkScope].
+//   - [ServiceScope] is created during the creation of [APIScope] or [LocalStorageScope].
 //   - [APIScope] is created at startup in the API main.go.
 //   - [PublicRequestScope] is created for each HTTP request by Muxer.Use callback in main.go.
 //   - [ProjectRequestScope] is created for each authenticated HTTP request in the service.APIKeyAuth method.
-//   - [TableSinkScope] .....
+//   - [LocalStorageScope] .....
 //
 // The package also provides mocked dependency implementations for tests:
 //   - [NewMockedServiceScope]
 //   - [NewMockedAPIScope]
 //   - [NewMockedPublicRequestScope]
 //   - [NewMockedProjectRequestScope]
-//   - [NewMockedTableSinkScope]
+//   - [NewMockedLocalStorageScope]
 //
 // Dependencies injection to service endpoints:
 //   - Each service endpoint method gets [PublicRequestScope] as a parameter.
@@ -40,6 +40,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/hook"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -97,7 +98,7 @@ type SinkRequestScope interface {
 	SinkKey() key.SinkKey
 }
 
-type TableSinkScope interface {
+type LocalStorageScope interface {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope

@@ -95,17 +95,17 @@ func NewMockedBranchRequestScope(t *testing.T, branchInput key.BranchIDOrDefault
 	return branchReqScp, mocked
 }
 
-func NewMockedTableSinkScope(t *testing.T, opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
+func NewMockedLocalStorageScope(t *testing.T, opts ...dependencies.MockedOption) (LocalStorageScope, Mocked) {
 	t.Helper()
-	return NewMockedTableSinkScopeWithConfig(t, nil, opts...)
+	return NewMockedLocalStorageScopeWithConfig(t, nil, opts...)
 }
 
-func NewMockedTableSinkScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (TableSinkScope, Mocked) {
+func NewMockedLocalStorageScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (LocalStorageScope, Mocked) {
 	t.Helper()
 	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
 	cfg := mock.TestConfig()
 	backoff := model.NoRandomizationBackoff()
-	d, err := newTableSinkScope(tableSinkParentScopesImpl{
+	d, err := newLocalStorageScope(localStorageParentScopesImpl{
 		ServiceScope:         svcScp,
 		DistributionScope:    mock,
 		DistributedLockScope: mock,
