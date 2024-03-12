@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -12,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 )
 
 // TokenRepository provides database operations with the storage.Token entity.

@@ -1,4 +1,4 @@
-package repository
+package schema
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 
 func TestTokenSchema(t *testing.T) {
 	t.Parallel()
-	s := newTokenSchema(serde.NewJSON(serde.NoValidation))
+	s := ForToken(serde.NewJSON(serde.NoValidation))
 
 	sinkKey := test.NewSinkKey()
 
