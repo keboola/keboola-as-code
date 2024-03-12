@@ -109,6 +109,7 @@ type ProjectScope interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
+	ProjectBackends() []string
 	ProjectName() string
 	ProjectFeatures() keboola.FeaturesMap
 	StorageAPIToken() keboola.Token

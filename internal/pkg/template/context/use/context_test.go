@@ -94,7 +94,7 @@ func TestContext(t *testing.T) {
 	// Create template use context
 	d := dependenciesPkg.NewMocked(t)
 	projectState := d.MockedState()
-	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
+	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
 
 	// Check Jsonnet functions
 	code := `
@@ -211,7 +211,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
-		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState)
+		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState, d.ProjectBackends())
 	}
 
 	// Jsonnet template
