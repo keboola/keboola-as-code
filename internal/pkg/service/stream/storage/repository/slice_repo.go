@@ -119,7 +119,12 @@ func (r *SliceRepository) StateTransition(now time.Time, sliceKey model.SliceKey
 		}).
 		ReadOp(r.all.file.Get(sliceKey.FileKey).WithResultTo(&file))
 
-	return r.all.hook.DecorateSliceStateTransition(atomicOp, sliceKey, from, to)
+	// Call related hook
+	if r.all.hooks != nil {
+		r.all.hooks.OnSliceStateTransition(sliceKey, from, to, atomicOp)
+	}
+
+	return atomicOp
 }
 
 // Delete slice.
@@ -141,7 +146,12 @@ func (r *SliceRepository) Delete(k model.SliceKey) *op.AtomicOp[op.NoResult] {
 		atomicOp.WriteOp(r.schema.InLevel(l).ByKey(k).Delete(r.client))
 	}
 
-	return r.all.hook.DecorateSliceDelete(atomicOp, k)
+	// Call related hook
+	if r.all.hooks != nil {
+		r.all.hooks.OnSliceDelete(k, atomicOp)
+	}
+
+	return atomicOp
 }
 
 // rotate is a common code for rotate and close operations.
@@ -153,7 +163,7 @@ func (r *SliceRepository) rotate(now time.Time, fileVolumeKey model.FileVolumeKe
 	// Get disk space statistics to calculate pre-allocated disk space for a new slice
 	var maxUsedDiskSpace map[key.SinkKey]datasize.ByteSize
 	if openNew {
-		provider := r.all.hook.NewUsedDiskSpaceProvider()
+		provider := r.all.external.NewUsedDiskSpaceProvider()
 		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
 			maxUsedDiskSpace, err = provider(ctx, []key.SinkKey{fileVolumeKey.SinkKey})
 			return err
