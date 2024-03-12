@@ -955,6 +955,13 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to web (no matching prefix)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/unknown", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNotFound, response.StatusCode)
 			},
 		},
 		{
@@ -1503,7 +1510,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				},
 				{
 					Type:  appconfig.PathPrefix,
-					Value: "/",
+					Value: "/public",
 				},
 			},
 		},
