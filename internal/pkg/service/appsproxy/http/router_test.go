@@ -229,6 +229,33 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				// Request to sign out url
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/_proxy/sign_out", nil)
+				require.NoError(t, err)
+				for _, cookie := range cookies {
+					request.AddCookie(cookie)
+				}
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				cookies = response.Cookies()
+				assert.Len(t, cookies, 2)
+
+				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
+				assert.Equal(t, "", cookies[0].Value)
+				assert.Equal(t, "/", cookies[0].Path)
+				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
+				assert.True(t, cookies[0].HttpOnly)
+				assert.True(t, cookies[0].Secure)
+
+				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
+				assert.Equal(t, "", cookies[1].Value)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
 			},
 		},
 		{
