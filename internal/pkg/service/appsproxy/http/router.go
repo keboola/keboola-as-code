@@ -198,13 +198,19 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers []string) http.Handler {
-	if len(providers) == 0 {
+func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers *[]string) http.Handler {
+	if providers == nil {
 		return publicAppHandler
 	}
 
+	if len(*providers) == 0 {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty providers array for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID)
+	}
+
 	selectedProviders := make(map[string]*oauthProvider)
-	for _, id := range providers {
+	for _, id := range *providers {
 		provider, found := oauthProviders[id]
 		if !found {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()

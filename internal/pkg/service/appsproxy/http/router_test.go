@@ -1376,7 +1376,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  []string{},
+					Auth:  nil,
 				},
 			},
 		},
@@ -1385,9 +1385,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
-					Type:  "unknown",
+					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  []string{},
+					Auth:  pointer([]string{}),
 				},
 			},
 		},
@@ -1398,7 +1398,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  []string{"unknown"},
+					Auth:  pointer([]string{"unknown"}),
 				},
 			},
 		},
@@ -1419,7 +1419,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc"},
+					Auth:  pointer([]string{"oidc"}),
 				},
 			},
 		},
@@ -1451,7 +1451,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc0", "oidc1", "oidc2"},
+					Auth:  pointer([]string{"oidc0", "oidc1", "oidc2"}),
 				},
 			},
 		},
@@ -1472,7 +1472,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc"},
+					Auth:  pointer([]string{"oidc"}),
 				},
 			},
 		},
@@ -1501,12 +1501,12 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/api",
-					Auth:  []string{"oidc0"},
+					Auth:  pointer([]string{"oidc0"}),
 				},
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/web",
-					Auth:  []string{"oidc0", "oidc1"},
+					Auth:  pointer([]string{"oidc0", "oidc1"}),
 				},
 				{
 					Type:  appconfig.PathPrefix,
