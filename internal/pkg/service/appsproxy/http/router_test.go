@@ -1608,7 +1608,8 @@ func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig.InsecureSkipVerify = true
+
+	// URLs sent to hub.keboola.local:443 are sent to the proxy server. This is necessary for subdomain matching.
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if strings.HasSuffix(addr, "hub.keboola.local:443") {
 			addr = proxyURL.Host
@@ -1616,15 +1617,22 @@ func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
 		return dialer.DialContext(ctx, network, addr)
 	}
 
+	// Disabled TLS verification since the certificate won't match due to the above change.
+	transport.TLSClientConfig.InsecureSkipVerify = true
+
+	// Create a cookie jar so that the client is aware of cookies.
 	jar, err := cookiejar.New(nil)
 	require.NoError(t, err)
 
+	// Disable redirect following so that we can assert the target urls.
+	checkRedirect := func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
 	return &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Transport: transport,
-		Jar:       jar,
+		CheckRedirect: checkRedirect,
+		Transport:     transport,
+		Jar:           jar,
 	}
 }
 
