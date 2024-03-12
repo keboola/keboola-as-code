@@ -29,9 +29,9 @@ type Context struct {
 	*use.Context
 }
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefs map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefs map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State, backends []string) *Context {
 	c := &Context{
-		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceID, targetBranch, inputsValues, inputsDefs, tickets, components, projectState),
+		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceID, targetBranch, inputsValues, inputsDefs, tickets, components, projectState, backends),
 	}
 
 	// Register existing IDs, so they will be reused
