@@ -121,6 +121,18 @@ func (v *projectScope) check() {
 	}
 }
 
+func (v *projectScope) ProjectBackends() []string {
+	var backends []string
+
+	if v.token.Owner.HasSnowflake {
+		backends = append(backends, "snowflake")
+	}
+	if v.token.Owner.HasBigquery {
+		backends = append(backends, "bigquery")
+	}
+	return backends
+}
+
 func (v *projectScope) ProjectID() keboola.ProjectID {
 	v.check()
 	return keboola.ProjectID(v.token.ProjectID())

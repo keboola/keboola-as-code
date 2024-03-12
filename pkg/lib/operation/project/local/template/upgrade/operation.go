@@ -29,6 +29,7 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
+	ProjectBackends() []string
 	StorageAPIHost() string
 	StorageAPITokenID() string
 	Telemetry() telemetry.Telemetry
@@ -43,7 +44,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
 	// Prepare template
-	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceID, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State())
+	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceID, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State(), d.ProjectBackends())
 	plan, err := use.PrepareTemplate(ctx, d, use.ExtendedOptions{
 		TargetBranch:          o.Branch,
 		Inputs:                o.Inputs,
