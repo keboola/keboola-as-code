@@ -280,8 +280,10 @@ func (tc atomicOpTestCase) RunOk(t *testing.T) {
 	// Run AtomicOp
 	atomicOp := op.
 		Atomic(client, &op.NoResult{}).
-		ReadOp(tc.ReadPhase(t, client)...).
-		WriteOp(etcdop.Key("foo").Put(client, "bar"))
+		ReadOp(tc.ReadPhase(t, client)...)
+
+	// Test core method
+	atomicOp.Core().WriteOp(etcdop.Key("foo").Put(client, "bar"))
 
 	if tc.SkipPrefixKeysCheck {
 		atomicOp.SkipPrefixKeysCheck()
@@ -310,8 +312,10 @@ func (tc atomicOpTestCase) RunBreakingChange(t *testing.T) {
 			// Modify a key loaded by the Read Phase
 			require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
 			logs.Reset()
-		}).
-		WriteOp(etcdop.Key("foo").Put(client, "bar"))
+		})
+
+	// Test Core method
+	atomicOp.Core().WriteOp(etcdop.Key("foo").Put(client, "bar"))
 
 	if tc.SkipPrefixKeysCheck {
 		atomicOp.SkipPrefixKeysCheck()
