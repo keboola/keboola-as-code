@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/hook"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -22,6 +23,8 @@ const (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
+	hookRegistry         *hook.Registry
+	hookExecutor         *hook.Executor
 	definitionRepository *definitionRepo.Repository
 }
 
@@ -111,9 +114,19 @@ func newServiceScope(parentScp parentScopes) ServiceScope {
 
 	d.parentScopes = parentScp
 
+	d.hookRegistry, d.hookExecutor = hook.New()
+
 	d.definitionRepository = definitionRepo.New(d)
 
 	return d
+}
+
+func (v *serviceScope) HookRegistry() *hook.Registry {
+	return v.hookRegistry
+}
+
+func (v *serviceScope) HookExecutor() *hook.Executor {
+	return v.hookExecutor
 }
 
 func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {

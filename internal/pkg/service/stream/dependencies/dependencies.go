@@ -60,6 +60,8 @@ type ServiceScope interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
+	HookRegistry() *hook.Registry
+	HookExecutor() *hook.Executor
 	DefinitionRepository() *definitionRepo.Repository
 }
 
