@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
@@ -12,13 +13,13 @@ import (
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type VolumeRepository struct {
 	client etcd.KV
-	schema volumeSchema
+	schema schema.Volume
 }
 
 func newVolumeRepository(d dependencies) *VolumeRepository {
 	return &VolumeRepository{
 		client: d.EtcdClient(),
-		schema: newVolumeSchema(d.EtcdSerde()),
+		schema: schema.ForVolume(d.EtcdSerde()),
 	}
 }
 

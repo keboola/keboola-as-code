@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -18,7 +19,7 @@ import (
 type TokenRepository struct {
 	clock  clock.Clock
 	client etcd.KV
-	schema tokenSchema
+	schema schema.Token
 	all    *Repository
 }
 
@@ -26,7 +27,7 @@ func newTokenRepository(d dependencies, all *Repository) *TokenRepository {
 	return &TokenRepository{
 		clock:  d.Clock(),
 		client: d.EtcdClient(),
-		schema: newTokenSchema(d.EtcdSerde()),
+		schema: schema.ForToken(d.EtcdSerde()),
 		all:    all,
 	}
 }

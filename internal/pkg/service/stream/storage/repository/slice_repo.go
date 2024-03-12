@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -21,7 +22,7 @@ import (
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type SliceRepository struct {
 	client  etcd.KV
-	schema  sliceSchema
+	schema  schema.Slice
 	backoff model.RetryBackoff
 	all     *Repository
 }
@@ -29,7 +30,7 @@ type SliceRepository struct {
 func newSliceRepository(d dependencies, backoff model.RetryBackoff, all *Repository) *SliceRepository {
 	return &SliceRepository{
 		client:  d.EtcdClient(),
-		schema:  newSliceSchema(d.EtcdSerde()),
+		schema:  schema.ForSlice(d.EtcdSerde()),
 		backoff: backoff,
 		all:     all,
 	}

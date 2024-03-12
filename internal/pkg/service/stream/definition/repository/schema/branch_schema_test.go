@@ -1,4 +1,4 @@
-package repository
+package schema
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 func TestBranchSchema(t *testing.T) {
 	t.Parallel()
-	s := newBranchSchema(serde.NewJSON(serde.NoValidation))
+	s := ForBranch(serde.NewJSON(serde.NoValidation))
 
 	branchKey := key.BranchKey{
 		ProjectID: 123,
