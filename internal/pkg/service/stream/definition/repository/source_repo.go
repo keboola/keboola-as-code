@@ -77,164 +77,96 @@ func (r *SourceRepository) Create(now time.Time, versionDescription string, inpu
 
 	var actual, deleted *op.KeyValueT[definition.Source]
 
-	return op.Atomic(r.client, &result).
+	atomicOp := op.Atomic(r.client, &result).
+		// Check prerequisites
 		ReadOp(r.all.branch.ExistsOrErr(result.BranchKey)).
 		ReadOp(r.checkMaxSourcesPerBranch(result.BranchKey, 1)).
-		// Get gets actual version to check if the object already exists
+		// Get gets actual version to check if the entity already exists
 		ReadOp(r.schema.Active().ByKey(k).GetKV(r.client).WithResultTo(&actual)).
 		// GetDelete gets deleted version to check if we have to do undelete
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
-		// Object must not exists
+		// Entity must not exist
 		BeforeWriteOrErr(func(context.Context) error {
 			if actual != nil {
 				return serviceError.NewResourceAlreadyExistsError("source", k.SourceID.String(), "branch")
 			}
 			return nil
 		}).
-		// Create or Undelete
-		Write(func(context.Context) op.Op {
-			txn := op.Txn(r.client)
-
-			// Was the object previously deleted?
+		// Set version/state from the deleted value, if any
+		BeforeWrite(func(context.Context) {
 			if deleted != nil {
-				// Set version from the deleted value
 				result.Version = deleted.Value.Version
-				// Delete key from the "deleted" prefix, if any
-				txn.Then(r.schema.Deleted().ByKey(k).Delete(r.client))
+				result.SoftDeletable = deleted.Value.SoftDeletable
+				result.Undelete(now)
 			}
-
-			// Increment version and save
-			result.IncrementVersion(result, now, versionDescription)
-
-			// Create the object
-			txn.Then(r.schema.Active().ByKey(k).Put(r.client, result))
-
-			// Save record to the versions history
-			txn.Then(r.schema.Versions().Of(k).Version(result.VersionNumber()).Put(r.client, result))
-
-			// Update the input entity after a successful operation
-			txn.OnResult(func(r *op.TxnResult[op.NoResult]) {
-				if r.Succeeded() {
-					*input = result
-				}
-			})
-
-			return txn
 		}).
-		AddFrom(r.all.sink.undeleteAllFrom(now, k))
+		// Increment version
+		BeforeWrite(func(context.Context) {
+			result.IncrementVersion(result, now, versionDescription)
+		}).
+		// Undelete nested sinks
+		AddFrom(r.all.sink.undeleteAllFrom(now, k, true)).
+		// Update the input entity after a successful operation
+		OnResult(func(result definition.Source) {
+			*input = result
+		})
+
+	// Save
+	r.saveOne(now, &result, atomicOp.Core())
+
+	return atomicOp
 }
 
 //nolint:dupl // similar code is in SinkRepository
 func (r *SourceRepository) Update(now time.Time, k key.SourceKey, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
 	var result definition.Source
-	return op.Atomic(r.client, &result).
+	atomicOp := op.Atomic(r.client, &result).
+		// Check prerequisites
 		ReadOp(r.checkMaxSourcesVersionsPerSource(k, 1)).
-		// Read and modify the object
+		// Read the entity
 		ReadOp(r.Get(k).WithResultTo(&result)).
-		// Prepare the new value
-		BeforeWriteOrErr(func(context.Context) (err error) {
-			if result, err = updateFn(result); err != nil {
+		// Update the entity
+		BeforeWriteOrErr(func(context.Context) error {
+			if updated, err := updateFn(result); err == nil {
+				updated.IncrementVersion(result, now, versionDescription)
+				result = updated
+				return nil
+			} else {
 				return err
 			}
-
-			result.IncrementVersion(result, now, versionDescription)
-			return nil
-		}).
-		// Save the update object
-		Write(func(context.Context) op.Op {
-			return r.schema.Active().ByKey(k).Put(r.client, result)
-		}).
-		// Save record to the versions history
-		Write(func(context.Context) op.Op {
-			return r.schema.Versions().Of(k).Version(result.VersionNumber()).Put(r.client, result)
 		})
+
+	// Save
+	r.saveOne(now, &result, atomicOp.Core())
+
+	return atomicOp
 }
 
-func (r *SourceRepository) SoftDelete(now time.Time, k key.SourceKey) *op.AtomicOp[op.NoResult] {
-	return r.softDelete(now, k, false)
-}
-
-func (r *SourceRepository) softDelete(now time.Time, k key.SourceKey, deletedWithParent bool) *op.AtomicOp[op.NoResult] {
-	// Move object from the active to the deleted prefix
-	var value definition.Source
-	return op.Atomic(r.client, &op.NoResult{}).
-		// Move object from the active prefix to the deleted prefix
-		ReadOp(r.Get(k).WithResultTo(&value)).
-		Write(func(context.Context) op.Op { return r.softDeleteValue(now, value, deletedWithParent) }).
-		// Delete children
-		AddFrom(r.all.sink.softDeleteAllFrom(now, k))
-}
-
-// softDeleteAllFrom the parent key.
-// All objects are marked with DeletedWithParent=true.
-func (r *SourceRepository) softDeleteAllFrom(now time.Time, parentKey any) *op.AtomicOp[op.NoResult] {
-	var writeOps []op.Op
-	return op.Atomic(r.client, &op.NoResult{}).
-		Read(func(context.Context) op.Op {
-			writeOps = nil // reset after retry
-			return r.List(parentKey).ForEach(func(v definition.Source, _ *iterator.Header) error {
-				writeOps = append(writeOps, r.softDeleteValue(now, v, true))
-				return nil
-			})
-		}).
-		Write(func(ctx context.Context) op.Op { return op.MergeToTxn(r.client, writeOps...) }).
-		// Delete children
-		AddFrom(r.all.sink.softDeleteAllFrom(now, parentKey))
-}
-
-func (r *SourceRepository) softDeleteValue(now time.Time, v definition.Source, deletedWithParent bool) *op.TxnOp[op.NoResult] {
-	v.Delete(now, deletedWithParent)
-	return op.MergeToTxn(
-		r.client,
-		// Delete object from the active prefix
-		r.schema.Active().ByKey(v.SourceKey).Delete(r.client),
-		// Save object to the deleted prefix
-		r.schema.Deleted().ByKey(v.SourceKey).Put(r.client, v),
-	)
+func (r *SourceRepository) SoftDelete(now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
+	var result definition.Source
+	return op.Atomic(r.client, &result).
+		AddFrom(r.
+			softDeleteAllFrom(now, k, false).
+			OnResult(func(r []definition.Source) {
+				if len(r) == 1 {
+					result = r[0]
+				}
+			}))
 }
 
 func (r *SourceRepository) Undelete(now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
-	// Move object from the deleted to the active prefix
 	var result definition.Source
 	return op.Atomic(r.client, &result).
+		// Check prerequisites
 		ReadOp(r.all.branch.ExistsOrErr(k.BranchKey)).
 		ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
-		// Move object from the deleted prefix to the active prefix
-		ReadOp(r.GetDeleted(k).WithResultTo(&result)).
-		// Undelete
-		Write(func(context.Context) op.Op { return r.undeleteValue(result) }).
-		// Undelete children
-		AddFrom(r.all.sink.undeleteAllFrom(now, k))
-}
-
-// undeleteAllFrom the parent key.
-// Only object with DeletedWithParent=true are undeleted.
-func (r *SourceRepository) undeleteAllFrom(now time.Time, parentKey any) *op.AtomicOp[op.NoResult] {
-	var writeOps []op.Op
-	return op.Atomic(r.client, &op.NoResult{}).
-		Read(func(context.Context) op.Op {
-			writeOps = nil // reset after retry
-			return r.ListDeleted(parentKey).ForEach(func(v definition.Source, _ *iterator.Header) error {
-				if v.DeletedWithParent {
-					writeOps = append(writeOps, r.undeleteValue(v))
+		AddFrom(r.
+			undeleteAllFrom(now, k, false).
+			OnResult(func(r []definition.Source) {
+				if len(r) == 1 {
+					result = r[0]
 				}
-				return nil
-			})
-		}).
-		Write(func(context.Context) op.Op { return op.MergeToTxn(r.client, writeOps...) }).
-		// Undelete children
-		AddFrom(r.all.sink.undeleteAllFrom(now, parentKey))
-}
-
-func (r *SourceRepository) undeleteValue(v definition.Source) *op.TxnOp[op.NoResult] {
-	v.Undelete()
-	return op.MergeToTxn(
-		r.client,
-		// Delete object from the deleted prefix
-		r.schema.Deleted().ByKey(v.SourceKey).Delete(r.client),
-		// Save object to the active prefix
-		r.schema.Active().ByKey(v.SourceKey).Put(r.client, v),
-	)
+			}))
 }
 
 // Versions fetches all versions records for the object.
@@ -243,7 +175,7 @@ func (r *SourceRepository) Versions(k key.SourceKey) iterator.DefinitionT[defini
 	return r.schema.Versions().Of(k).GetAll(r.client)
 }
 
-// Version fetch object version.
+// Version fetch entity version.
 // The method can be used also for deleted objects.
 func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNumber) op.WithResult[definition.Source] {
 	return r.schema.
@@ -256,36 +188,158 @@ func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNu
 //nolint:dupl // similar code is in the SinkRepository
 func (r *SourceRepository) Rollback(now time.Time, k key.SourceKey, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
 	var result definition.Source
-	var latest, target *op.KeyValueT[definition.Source]
+	var latest, targetVersion *op.KeyValueT[definition.Source]
 
-	return op.Atomic(r.client, &result).
+	atomicOp := op.Atomic(r.client, &result).
 		// Get latest version to calculate next version number
 		ReadOp(r.schema.Versions().Of(k).GetOne(r.client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).WithResultTo(&latest)).
 		// Get target version
-		ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&target)).
+		ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&targetVersion)).
 		// Return the most significant error
 		BeforeWriteOrErr(func(context.Context) error {
 			if latest == nil {
 				return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
-			} else if target == nil {
+			} else if targetVersion == nil {
 				return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+to.String(), "branch")
 			}
 			return nil
 		}).
 		// Prepare the new value
 		BeforeWrite(func(context.Context) {
-			result = target.Value
+			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
+			result = targetVersion.Value
 			result.Version = latest.Value.Version
-			result.IncrementVersion(result, now, fmt.Sprintf("Rollback to version %d", target.Value.Version.Number))
-		}).
-		// Save the object
-		Write(func(context.Context) op.Op {
-			return r.schema.Active().ByKey(k).Put(r.client, result)
-		}).
-		// Save record to the versions history
-		Write(func(context.Context) op.Op {
-			return r.schema.Versions().Of(k).Version(result.VersionNumber()).Put(r.client, result)
+			result.IncrementVersion(result, now, versionDescription)
 		})
+
+	// Save
+	r.saveOne(now, &result, atomicOp.Core())
+
+	return atomicOp
+}
+
+// softDeleteAllFrom the parent key.
+func (r *SourceRepository) softDeleteAllFrom(now time.Time, parentKey any, deletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+	var all []definition.Source
+	atomicOp := op.Atomic(r.client, &all)
+
+	// Get or list
+	switch k := parentKey.(type) {
+	case key.SourceKey:
+		atomicOp.ReadOp(r.Get(k).WithOnResult(func(result definition.Source) {
+			all = []definition.Source{result}
+		}))
+	default:
+		atomicOp.ReadOp(r.List(parentKey).WithAllTo(&all))
+	}
+
+	// Mark deleted
+	atomicOp.BeforeWrite(func(ctx context.Context) {
+		for i := range all {
+			v := &all[i]
+
+			// Mark deleted
+			v.Delete(now, deletedWithParent)
+		}
+	})
+
+	// Save
+	r.saveAll(now, &all, atomicOp.Core())
+
+	// Delete nested entities
+	atomicOp.AddFrom(r.all.sink.softDeleteAllFrom(now, parentKey, true))
+
+	return atomicOp
+}
+
+// undeleteAllFrom the parent key.
+func (r *SourceRepository) undeleteAllFrom(now time.Time, parentKey any, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+	var all []definition.Source
+	atomicOp := op.Atomic(r.client, &all)
+
+	// Get or list
+	switch k := parentKey.(type) {
+	case key.SourceKey:
+		atomicOp.ReadOp(r.GetDeleted(k).WithOnResult(func(result definition.Source) {
+			all = []definition.Source{result}
+		}))
+	default:
+		atomicOp.ReadOp(r.ListDeleted(parentKey).WithAllTo(&all))
+	}
+
+	// r.all.sink.softDeleteAllFrom(now, k, true)
+
+	// Mark undeleted
+	atomicOp.BeforeWrite(func(ctx context.Context) {
+		for i := range all {
+			v := &all[i]
+
+			if v.DeletedWithParent != undeletedWithParent {
+				continue
+			}
+
+			// Mark undeleted
+			v.Undelete(now)
+
+			// Create a new version record, if the entity has been undeleted manually
+			if !undeletedWithParent {
+				versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, v.Version.Number)
+				v.IncrementVersion(v, now, versionDescription)
+			}
+		}
+	})
+
+	// Save
+	r.saveAll(now, &all, atomicOp.Core())
+
+	// Undelete nested entities
+	atomicOp.AddFrom(r.all.sink.undeleteAllFrom(now, parentKey, true))
+
+	return atomicOp
+}
+
+func (r *SourceRepository) saveOne(now time.Time, v *definition.Source, atomicOp *op.AtomicOpCore) {
+	var all []definition.Source
+	atomicOp.BeforeWrite(func(ctx context.Context) { all = []definition.Source{*v} })
+	r.saveAll(now, &all, atomicOp)
+}
+
+//nolint:dupl // similar to SinkRepository.saveAll
+func (r *SourceRepository) saveAll(now time.Time, all *[]definition.Source, atomicOp *op.AtomicOpCore) {
+	// Save
+	atomicOp.Write(func(context.Context) op.Op {
+		txn := op.Txn(r.client)
+		for _, v := range *all {
+			if v.Deleted {
+				// Move entity from the active prefix to the deleted prefix
+				txn.Merge(
+					// Delete entity from the active prefix
+					r.schema.Active().ByKey(v.SourceKey).Delete(r.client),
+					// Save entity to the deleted prefix
+					r.schema.Deleted().ByKey(v.SourceKey).Put(r.client, v),
+				)
+			} else {
+				txn.Merge(
+					// Save record to the "active" prefix
+					r.schema.Active().ByKey(v.SourceKey).Put(r.client, v),
+					// Save record to the versions history
+					r.schema.Versions().Of(v.SourceKey).Version(v.VersionNumber()).Put(r.client, v),
+				)
+
+				if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
+					// Delete record from the "deleted" prefix, if needed
+					txn.Merge(r.schema.Deleted().ByKey(v.SourceKey).Delete(r.client))
+				}
+			}
+		}
+
+		return txn
+	})
+
+	// Enrich atomic operation using hooks
+	if r.all.hooks != nil {
+		r.all.hooks.OnSourceSave(now, all, atomicOp)
+	}
 }
 
 func (r *SourceRepository) checkMaxSourcesPerBranch(k key.BranchKey, newCount int64) op.Op {
