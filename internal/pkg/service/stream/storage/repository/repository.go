@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/hook"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -17,6 +18,8 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	KeboolaPublicAPI() *keboola.PublicAPI
+	HookRegistry() *hook.Registry
+	HookExecutor() *hook.Executor
 	DefinitionRepository() *definitionRepo.Repository
 	StatisticsRepository() *statsRepo.Repository
 }
@@ -24,22 +27,25 @@ type dependencies interface {
 // Repository provides database operations with the storage entities.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
-	hook   *hook
-	sink   *definitionRepo.SinkRepository
-	file   *FileRepository
-	slice  *SliceRepository
-	token  *TokenRepository
-	volume *VolumeRepository
+	hooks    Hooks
+	external *external
+	sink     *definitionRepo.SinkRepository
+	file     *FileRepository
+	slice    *SliceRepository
+	token    *TokenRepository
+	volume   *VolumeRepository
 }
 
 func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) *Repository {
 	r := &Repository{}
-	r.hook = newHook(cfg, d, r)
+	r.hooks = d.HookExecutor()
+	r.external = newExternal(cfg, d, r)
 	r.sink = d.DefinitionRepository().Sink()
 	r.file = newFileRepository(cfg, d, backoff, r)
 	r.slice = newSliceRepository(d, backoff, r)
 	r.token = newTokenRepository(d, r)
 	r.volume = newVolumeRepository(d)
+	r.bridge(d.HookRegistry())
 	return r
 }
 

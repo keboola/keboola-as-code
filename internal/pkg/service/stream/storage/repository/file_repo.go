@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 	"reflect"
 	"time"
 
