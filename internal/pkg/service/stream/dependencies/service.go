@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -13,7 +14,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/hook"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	storageBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/bridge"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	storageStatsBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -23,9 +30,11 @@ const (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
-	hookRegistry         *hook.Registry
-	hookExecutor         *hook.Executor
-	definitionRepository *definitionRepo.Repository
+	hookRegistry                *hook.Registry
+	hookExecutor                *hook.Executor
+	definitionRepository        *definitionRepo.Repository
+	storageRepository           *storageRepo.Repository
+	storageStatisticsRepository *statsRepo.Repository
 }
 
 type parentScopes interface {
@@ -54,11 +63,11 @@ func NewServiceScope(
 ) (v ServiceScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewServiceScope")
 	defer span.End(&err)
-	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
+	parentScp, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentSc), nil
+	return newServiceScope(parentScp, cfg, model.DefaultBackoff()), nil
 }
 
 func newParentScopes(
@@ -109,7 +118,7 @@ func newParentScopes(
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes) ServiceScope {
+func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff model.RetryBackoff) ServiceScope {
 	d := &serviceScope{}
 
 	d.parentScopes = parentScp
@@ -117,6 +126,13 @@ func newServiceScope(parentScp parentScopes) ServiceScope {
 	d.hookRegistry, d.hookExecutor = hook.New()
 
 	d.definitionRepository = definitionRepo.New(d)
+
+	d.storageStatisticsRepository = statsRepo.New(d)
+
+	d.storageRepository = storageRepo.New(cfg.Storage.Level, d, storageBackoff)
+
+	storageBridge.RegisterTableSinkPlugin(d, apiProvider)
+	storageStatsBridge.RegisterStorageStatisticsPlugin(d)
 
 	return d
 }
@@ -131,4 +147,20 @@ func (v *serviceScope) HookExecutor() *hook.Executor {
 
 func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {
 	return v.definitionRepository
+}
+
+func (v *serviceScope) StatisticsRepository() *statsRepo.Repository {
+	return v.storageStatisticsRepository
+}
+
+func (v *serviceScope) StorageRepository() *storageRepo.Repository {
+	return v.storageRepository
+}
+
+func apiProvider(ctx context.Context) *keboola.AuthorizedAPI {
+	api, ok := ctx.Value(KeboolaProjectAPICtxKey).(*keboola.AuthorizedAPI)
+	if !ok {
+		panic(errors.New("the operation must be run in a context with Keboola project API"))
+	}
+	return api
 }

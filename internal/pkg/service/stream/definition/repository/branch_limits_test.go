@@ -12,6 +12,7 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
@@ -34,6 +35,7 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
+	rb := rollback.New(d.Logger())
 	branchRepo := repository.New(d).Branch()
 	branchSchema := schema.ForBranch(d.EtcdSerde())
 
@@ -61,7 +63,7 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 
 	// Exceed the limit
 	branch := test.NewBranch(key.BranchKey{ProjectID: 123, BranchID: 111111})
-	if err := branchRepo.Create(clk.Now(), &branch).Do(ctx).Err(); assert.Error(t, err) {
+	if err := branchRepo.Create(rb, clk.Now(), &branch).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "branch count limit reached in the project, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}

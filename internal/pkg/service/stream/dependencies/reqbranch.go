@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -53,11 +54,10 @@ func getBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Branc
 	}
 }
 
-func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.BranchIDOrDefault) (definition.Branch, error) {
+func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.BranchIDOrDefault) (branch definition.Branch, err error) {
 	repo := d.DefinitionRepository().Branch()
 
 	var res *keboola.Branch
-	var err error
 	if branchInput.Default() {
 		res, err = d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 		if err != nil {
@@ -79,8 +79,12 @@ func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Br
 	}
 
 	branchKey := key.BranchKey{ProjectID: d.ProjectID(), BranchID: res.ID}
-	branch := definition.Branch{BranchKey: branchKey, IsDefault: true}
-	return repo.Create(d.Clock().Now(), &branch).Do(ctx).ResultOrErr()
+	branch = definition.Branch{BranchKey: branchKey, IsDefault: true}
+
+	rb := rollback.New(d.Logger())
+	defer rb.InvokeIfErr(ctx, &err)
+
+	return repo.Create(rb, d.Clock().Now(), &branch).Do(ctx).ResultOrErr()
 }
 
 func (v *branchRequestScope) Branch() definition.Branch {

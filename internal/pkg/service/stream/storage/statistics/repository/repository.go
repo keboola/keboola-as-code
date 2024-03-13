@@ -32,7 +32,6 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/hook"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -56,8 +55,6 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	HookRegistry() *hook.Registry
-	HookExecutor() *hook.Executor
 }
 
 func New(d dependencies) *Repository {
@@ -69,8 +66,6 @@ func New(d dependencies) *Repository {
 
 	// Setup Provider interface
 	r._provider = NewProvider(r.aggregate)
-
-	r.bridge(d.HookRegistry())
 
 	return r
 }

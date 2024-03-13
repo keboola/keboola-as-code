@@ -10,6 +10,7 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	schema "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
@@ -88,7 +89,7 @@ func (r *BranchRepository) GetDeleted(k key.BranchKey) op.WithResult[definition.
 		})
 }
 
-func (r *BranchRepository) Create(now time.Time, input *definition.Branch) *op.AtomicOp[definition.Branch] {
+func (r *BranchRepository) Create(rb rollback.Builder, now time.Time, input *definition.Branch) *op.AtomicOp[definition.Branch] {
 	k := input.BranchKey
 	result := *input
 
@@ -118,14 +119,14 @@ func (r *BranchRepository) Create(now time.Time, input *definition.Branch) *op.A
 		// Save
 		Write(r.saveOne(now, &result)).
 		// Undelete nested sources
-		AddFrom(r.all.source.undeleteAllFrom(now, k, true)).
+		AddFrom(r.all.source.undeleteAllFrom(rb, now, k, true)).
 		// Update the input entity after a successful operation
 		OnResult(func(result definition.Branch) {
 			*input = result
 		})
 }
 
-func (r *BranchRepository) SoftDelete(now time.Time, k key.BranchKey) *op.AtomicOp[definition.Branch] {
+func (r *BranchRepository) SoftDelete(rb rollback.Builder, now time.Time, k key.BranchKey) *op.AtomicOp[definition.Branch] {
 	// Move entity from the active to the deleted prefix
 	var result definition.Branch
 	return op.Atomic(r.client, &result).
@@ -138,10 +139,10 @@ func (r *BranchRepository) SoftDelete(now time.Time, k key.BranchKey) *op.Atomic
 		// Save
 		Write(r.saveOne(now, &result)).
 		// Delete children
-		AddFrom(r.all.source.softDeleteAllFrom(now, k, true))
+		AddFrom(r.all.source.softDeleteAllFrom(rb, now, k, true))
 }
 
-func (r *BranchRepository) Undelete(now time.Time, k key.BranchKey) *op.AtomicOp[definition.Branch] {
+func (r *BranchRepository) Undelete(rb rollback.Builder, now time.Time, k key.BranchKey) *op.AtomicOp[definition.Branch] {
 	// Move entity from the deleted to the active prefix
 	var result definition.Branch
 	return op.Atomic(r.client, &result).
@@ -156,7 +157,7 @@ func (r *BranchRepository) Undelete(now time.Time, k key.BranchKey) *op.AtomicOp
 		// Save
 		Write(r.saveOne(now, &result)).
 		// Undelete children
-		AddFrom(r.all.source.undeleteAllFrom(now, k, true))
+		AddFrom(r.all.source.undeleteAllFrom(rb, now, k, true))
 }
 
 func (r *BranchRepository) saveOne(now time.Time, v *definition.Branch) func(context.Context) op.Op {

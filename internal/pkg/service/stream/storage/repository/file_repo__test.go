@@ -52,11 +52,17 @@ func TestFileRepository_Operations(t *testing.T) {
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
 	sliceRepo := storageRepo.Slice()
-	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
+
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
+	test.MockBucketStorageAPICalls(t, branchKey, transport)
+	test.MockTableStorageAPICalls(t, branchKey, transport)
+	test.MockTokenStorageAPICalls(t, transport)
 	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
 	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
@@ -102,20 +108,18 @@ func TestFileRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
 
 		sink1 := test.NewSink(sinkKey1)
 		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(3, []string{"hdd"}))
-		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink1).Do(ctx).Err())
 
 		sink2 := test.NewSink(sinkKey2)
 		sink2.Config = sink2.Config.With(testconfig.LocalVolumeConfig(3, []string{"ssd"}))
-		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink2).Do(ctx).Err())
-		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
-		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink2).Do(ctx).Err())
 	}
 
 	// Create (the first Rotate)

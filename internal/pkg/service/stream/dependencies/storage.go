@@ -3,19 +3,14 @@ package dependencies
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
-	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 )
 
 // localStorageScope implements LocalStorageScope interface.
 type localStorageScope struct {
 	localStorageParentScopes
-	storageRepository    *storageRepo.Repository
-	statisticsL1Cache    *cache.L1
-	statisticsL2Cache    *cache.L2
-	statisticsRepository *statsRepo.Repository
+	statisticsL1Cache *cache.L1
+	statisticsL2Cache *cache.L2
 }
 
 type localStorageParentScopes interface {
@@ -30,10 +25,6 @@ type localStorageParentScopesImpl struct {
 	dependencies.DistributedLockScope
 }
 
-func (v *localStorageScope) StatisticsRepository() *statsRepo.Repository {
-	return v.statisticsRepository
-}
-
 func (v *localStorageScope) StatisticsL1Cache() *cache.L1 {
 	return v.statisticsL1Cache
 }
@@ -42,22 +33,16 @@ func (v *localStorageScope) StatisticsL2Cache() *cache.L2 {
 	return v.statisticsL2Cache
 }
 
-func (v *localStorageScope) StorageRepository() *storageRepo.Repository {
-	return v.storageRepository
-}
-
 func NewLocalStorageScope(d localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
-	return newLocalStorageScope(d, cfg, model.DefaultBackoff())
+	return newLocalStorageScope(d, cfg)
 }
 
-func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config, backoff model.RetryBackoff) (v LocalStorageScope, err error) {
+func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
 	d := &localStorageScope{}
 
 	d.localStorageParentScopes = parentScp
 
-	d.statisticsRepository = statsRepo.New(d)
-
-	d.statisticsL1Cache, err = cache.NewL1Cache(d.Logger(), d.statisticsRepository)
+	d.statisticsL1Cache, err = cache.NewL1Cache(d.Logger(), d.StatisticsRepository())
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +51,6 @@ func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config,
 	if err != nil {
 		return nil, err
 	}
-
-	d.storageRepository = storageRepo.New(cfg.Storage.Level, d, backoff)
 
 	return d, nil
 }

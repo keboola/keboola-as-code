@@ -10,7 +10,6 @@ import (
 type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	HookRegistry() *hook.Registry
 	HookExecutor() *hook.Executor
 }
 

@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"net/http"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -33,14 +35,23 @@ func TestRepository_Token(t *testing.T) {
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
 	nonExistentSinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "non-existent-sink"}
-	storageToken1 := keboola.Token{Token: "1234"}
-	storageToken2 := keboola.Token{Token: "5678"}
 
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
+	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	r := d.StorageRepository().Token()
+
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
+	// Mock API calls
+	transport := mocked.MockedHTTPTransport()
+	test.MockBucketStorageAPICalls(t, branchKey, transport)
+	test.MockTableStorageAPICalls(t, branchKey, transport)
+	test.MockTokenStorageAPICalls(t, transport)
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -55,7 +66,7 @@ func TestRepository_Token(t *testing.T) {
 	// Create - parent sink doesn't exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := r.Put(sinkKey1, storageToken1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := r.Put(sinkKey1, keboola.Token{Token: "my-token"}).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -65,60 +76,73 @@ func TestRepository_Token(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink1).Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink2).Do(ctx).Err())
 	}
 
-	// Create
+	// Token are created together with sinks
 	// -----------------------------------------------------------------------------------------------------------------
-	{
-		// Create 2 tokens for different sinks
-		result1, err := r.Put(sinkKey1, storageToken1).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, storageToken1, result1.Token)
-
-		result2, err := r.Put(sinkKey2, storageToken2).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, storageToken2, result2.Token)
-	}
 	{
 		// Get
 		result1, err := r.Get(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storageToken1, result1.Token)
-
+		assert.NotEqual(t, "", result1.Token.ID)
+		assert.NotEqual(t, "0", result1.Token.ID)
+		result1.Token.ID = ""
+		assert.Equal(t, model.Token{
+			SinkKey: sinkKey1,
+			Token: keboola.Token{
+				Token:                 "my-token",
+				Description:           "[_internal] Stream Sink my-source/my-sink-1",
+				CanReadAllFileUploads: true,
+				BucketPermissions: keboola.BucketPermissions{
+					keboola.MustParseBucketID("in.bucket"): keboola.BucketPermissionWrite,
+				},
+			},
+		}, result1)
 		result2, err := r.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storageToken2, result2.Token)
+		assert.NotEqual(t, "", result2.Token.ID)
+		assert.NotEqual(t, "0", result2.Token.ID)
+		result2.Token.ID = ""
+		assert.Equal(t, model.Token{
+			SinkKey: sinkKey2,
+			Token: keboola.Token{
+				Token:                 "my-token",
+				Description:           "[_internal] Stream Sink my-source/my-sink-2",
+				CanReadAllFileUploads: true,
+				BucketPermissions: keboola.BucketPermissions{
+					keboola.MustParseBucketID("in.bucket"): keboola.BucketPermissionWrite,
+				},
+			},
+		}, result2)
 	}
 
 	// Update
 	// -----------------------------------------------------------------------------------------------------------------
-	storageToken1.Token = "abcd"
-	storageToken2.Token = "efgh"
 	{
 		// Create 2 slices in different files
-		result1, err := r.Put(sinkKey1, storageToken1).Do(ctx).ResultOrErr()
+		result1, err := r.Put(sinkKey1, keboola.Token{Token: "abcd"}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storageToken1, result1.Token)
+		assert.Equal(t, "abcd", result1.Token.Token)
 
-		result2, err := r.Put(sinkKey2, storageToken2).Do(ctx).ResultOrErr()
+		result2, err := r.Put(sinkKey2, keboola.Token{Token: "efgh"}).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storageToken2, result2.Token)
+		assert.Equal(t, "efgh", result2.Token.Token)
 	}
 	{
 		// Get
 		result1, err := r.Get(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storageToken1, result1.Token)
+		assert.Equal(t, "abcd", result1.Token.Token)
 		result2, err := r.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, storageToken2, result2.Token)
+		assert.Equal(t, "efgh", result2.Token.Token)
 	}
 
 	// Delete

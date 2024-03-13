@@ -233,6 +233,7 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 
 func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnResult[R] {
 	tracker := NewTracker(v.client)
+	ctx = ctxWithClient(ctx, tracker)
 
 	// Create READ operations
 	readTxn, err := v.readTxn(ctx, tracker)

@@ -54,6 +54,7 @@ const (
 	BranchRequestScopeCtxKey  = ctxKey("BranchRequestScope")
 	SourceRequestScopeCtxKey  = ctxKey("SourceRequestScope")
 	SinkRequestScopeCtxKey    = ctxKey("SinkRequestScope")
+	KeboolaProjectAPICtxKey   = ctxKey("KeboolaAuthorizedAPI")
 )
 
 type ServiceScope interface {
@@ -64,6 +65,8 @@ type ServiceScope interface {
 	HookRegistry() *hook.Registry
 	HookExecutor() *hook.Executor
 	DefinitionRepository() *definitionRepo.Repository
+	StorageRepository() *storageRepo.Repository
+	StatisticsRepository() *statsRepo.Repository
 }
 
 type APIScope interface {
@@ -102,10 +105,8 @@ type LocalStorageScope interface {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
-	StatisticsRepository() *statsRepo.Repository
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
-	StorageRepository() *storageRepo.Repository
 }
 
 type Mocked interface {

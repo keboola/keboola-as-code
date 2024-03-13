@@ -9,6 +9,7 @@ services:
       - etcd
     volumes:
       - ./:/code:z
+      - ../go-client:/go-client:z
       - cache:/tmp/cache
     environment:
       # For all

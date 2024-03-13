@@ -8,6 +8,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -32,12 +33,21 @@ func newTokenRepository(d dependencies, all *Repository) *TokenRepository {
 	}
 }
 
-func (r *TokenRepository) Put(k key.SinkKey, token keboola.Token) *op.AtomicOp[model.Token] {
+// List lists tokens in the parent.
+func (r *TokenRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[model.Token] {
+	return r.schema.InObject(parentKey).GetAll(r.client)
+}
+
+func (r *TokenRepository) Put(k key.SinkKey, token keboola.Token) *op.TxnOp[model.Token] {
 	result := model.Token{SinkKey: k, Token: token}
-	return op.Atomic(r.client, &result).
+	return op.TxnWithResult(r.client, &result).
 		// Sink must exist
-		ReadOp(r.all.sink.ExistsOrErr(k)).
-		WriteOp(r.schema.ByKey(k).Put(r.client, result))
+		Merge(r.all.sink.ExistsOrErr(k)).
+		Merge(r.schema.ByKey(k).Put(r.client, result))
+}
+
+func (r *TokenRepository) GetKV(k key.SinkKey) op.WithResult[*op.KeyValueT[model.Token]] {
+	return r.schema.ByKey(k).GetKV(r.client)
 }
 
 func (r *TokenRepository) Get(k key.SinkKey) op.WithResult[model.Token] {

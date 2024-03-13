@@ -10,6 +10,7 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
@@ -71,7 +72,7 @@ func (r *SourceRepository) GetDeleted(k key.SourceKey) op.WithResult[definition.
 }
 
 //nolint:dupl // similar code is in the SinkRepository
-func (r *SourceRepository) Create(now time.Time, versionDescription string, input *definition.Source) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Create(rb rollback.Builder, now time.Time, versionDescription string, input *definition.Source) *op.AtomicOp[definition.Source] {
 	k := input.SourceKey
 	result := *input
 
@@ -105,20 +106,20 @@ func (r *SourceRepository) Create(now time.Time, versionDescription string, inpu
 			result.IncrementVersion(result, now, versionDescription)
 		}).
 		// Undelete nested sinks
-		AddFrom(r.all.sink.undeleteAllFrom(now, k, true)).
+		AddFrom(r.all.sink.undeleteAllFrom(rb, now, k, true)).
 		// Update the input entity after a successful operation
 		OnResult(func(result definition.Source) {
 			*input = result
 		})
 
 	// Save
-	r.saveOne(now, &result, atomicOp.Core())
+	r.saveOne(rb, now, &result, atomicOp.Core())
 
 	return atomicOp
 }
 
 //nolint:dupl // similar code is in SinkRepository
-func (r *SourceRepository) Update(now time.Time, k key.SourceKey, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Update(rb rollback.Builder, now time.Time, k key.SourceKey, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	atomicOp := op.Atomic(r.client, &result).
 		// Check prerequisites
@@ -137,16 +138,16 @@ func (r *SourceRepository) Update(now time.Time, k key.SourceKey, versionDescrip
 		})
 
 	// Save
-	r.saveOne(now, &result, atomicOp.Core())
+	r.saveOne(rb, now, &result, atomicOp.Core())
 
 	return atomicOp
 }
 
-func (r *SourceRepository) SoftDelete(now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) SoftDelete(rb rollback.Builder, now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	return op.Atomic(r.client, &result).
 		AddFrom(r.
-			softDeleteAllFrom(now, k, false).
+			softDeleteAllFrom(rb, now, k, false).
 			OnResult(func(r []definition.Source) {
 				if len(r) == 1 {
 					result = r[0]
@@ -154,14 +155,14 @@ func (r *SourceRepository) SoftDelete(now time.Time, k key.SourceKey) *op.Atomic
 			}))
 }
 
-func (r *SourceRepository) Undelete(now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Undelete(rb rollback.Builder, now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	return op.Atomic(r.client, &result).
 		// Check prerequisites
 		ReadOp(r.all.branch.ExistsOrErr(k.BranchKey)).
 		ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
 		AddFrom(r.
-			undeleteAllFrom(now, k, false).
+			undeleteAllFrom(rb, now, k, false).
 			OnResult(func(r []definition.Source) {
 				if len(r) == 1 {
 					result = r[0]
@@ -186,7 +187,7 @@ func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNu
 }
 
 //nolint:dupl // similar code is in the SinkRepository
-func (r *SourceRepository) Rollback(now time.Time, k key.SourceKey, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Rollback(rb rollback.Builder, now time.Time, k key.SourceKey, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	var latest, targetVersion *op.KeyValueT[definition.Source]
 
@@ -213,13 +214,13 @@ func (r *SourceRepository) Rollback(now time.Time, k key.SourceKey, to definitio
 		})
 
 	// Save
-	r.saveOne(now, &result, atomicOp.Core())
+	r.saveOne(rb, now, &result, atomicOp.Core())
 
 	return atomicOp
 }
 
 // softDeleteAllFrom the parent key.
-func (r *SourceRepository) softDeleteAllFrom(now time.Time, parentKey any, deletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+func (r *SourceRepository) softDeleteAllFrom(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, deletedWithParent bool) *op.AtomicOp[[]definition.Source] {
 	var all []definition.Source
 	atomicOp := op.Atomic(r.client, &all)
 
@@ -244,16 +245,16 @@ func (r *SourceRepository) softDeleteAllFrom(now time.Time, parentKey any, delet
 	})
 
 	// Save
-	r.saveAll(now, &all, atomicOp.Core())
+	r.saveAll(rb, now, parentKey, &all, atomicOp.Core())
 
 	// Delete nested entities
-	atomicOp.AddFrom(r.all.sink.softDeleteAllFrom(now, parentKey, true))
+	atomicOp.AddFrom(r.all.sink.softDeleteAllFrom(rb, now, parentKey, true))
 
 	return atomicOp
 }
 
 // undeleteAllFrom the parent key.
-func (r *SourceRepository) undeleteAllFrom(now time.Time, parentKey any, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+func (r *SourceRepository) undeleteAllFrom(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] {
 	var all []definition.Source
 	atomicOp := op.Atomic(r.client, &all)
 
@@ -290,22 +291,22 @@ func (r *SourceRepository) undeleteAllFrom(now time.Time, parentKey any, undelet
 	})
 
 	// Save
-	r.saveAll(now, &all, atomicOp.Core())
+	r.saveAll(rb, now, parentKey, &all, atomicOp.Core())
 
 	// Undelete nested entities
-	atomicOp.AddFrom(r.all.sink.undeleteAllFrom(now, parentKey, true))
+	atomicOp.AddFrom(r.all.sink.undeleteAllFrom(rb, now, parentKey, true))
 
 	return atomicOp
 }
 
-func (r *SourceRepository) saveOne(now time.Time, v *definition.Source, atomicOp *op.AtomicOpCore) {
+func (r *SourceRepository) saveOne(rb rollback.Builder, now time.Time, v *definition.Source, atomicOp *op.AtomicOpCore) {
 	var all []definition.Source
 	atomicOp.BeforeWrite(func(ctx context.Context) { all = []definition.Source{*v} })
-	r.saveAll(now, &all, atomicOp)
+	r.saveAll(rb, now, v.SourceKey, &all, atomicOp)
 }
 
 //nolint:dupl // similar to SinkRepository.saveAll
-func (r *SourceRepository) saveAll(now time.Time, all *[]definition.Source, atomicOp *op.AtomicOpCore) {
+func (r *SourceRepository) saveAll(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, all *[]definition.Source, atomicOp *op.AtomicOpCore) {
 	// Save
 	atomicOp.Write(func(context.Context) op.Op {
 		txn := op.Txn(r.client)
@@ -338,7 +339,7 @@ func (r *SourceRepository) saveAll(now time.Time, all *[]definition.Source, atom
 
 	// Enrich atomic operation using hooks
 	if r.all.hooks != nil {
-		r.all.hooks.OnSourceSave(now, all, atomicOp)
+		r.all.hooks.OnSourceSave(rb, now, parentKey, all, atomicOp)
 	}
 }
 

@@ -41,8 +41,11 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
-	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
+
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
 
 	// Log etcd operations
 	var etcdLogs bytes.Buffer
@@ -51,6 +54,9 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
+	test.MockBucketStorageAPICalls(t, branchKey, transport)
+	test.MockTableStorageAPICalls(t, branchKey, transport)
+	test.MockTokenStorageAPICalls(t, transport)
 	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
 	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
 
@@ -66,12 +72,11 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	// Create sink
 	// -----------------------------------------------------------------------------------------------------------------
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+	require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
+	require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
 	sink := test.NewSink(sinkKey)
-	require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink).Do(ctx).Err())
-	require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
+	require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink).Do(ctx).Err())
 
 	// Create 2 files, with 2 slices
 	// -----------------------------------------------------------------------------------------------------------------

@@ -1,32 +1,38 @@
 package hook
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
-type sourceHook = func(now time.Time, sources *[]definition.Source, atomicOp *op.AtomicOpCore)
+type sourceHook = func(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sources *[]definition.Source, atomicOp *op.AtomicOpCore)
 
-type sinkHook = func(now time.Time, sinks *[]definition.Sink, atomicOp *op.AtomicOpCore)
+type sinkHook = func(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sinks *[]definition.Sink, atomicOp *op.AtomicOpCore)
 
-func (r *Registry) OnSourceModification(fn sourceHook) {
+// OnSourceSave - see definition/repository.Hooks.
+func (r *Registry) OnSourceSave(fn sourceHook) {
 	r.source = append(r.source, fn)
 }
 
-func (r *Registry) OnSinkModification(fn sinkHook) {
+// OnSinkSave - see definition/repository.Hooks.
+func (r *Registry) OnSinkSave(fn sinkHook) {
 	r.sink = append(r.sink, fn)
 }
 
-func (e *Executor) OnSourceSave(now time.Time, sources *[]definition.Source, atomicOp *op.AtomicOpCore) {
+// OnSourceSave - see definition/repository.Hooks.
+func (e *Executor) OnSourceSave(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sources *[]definition.Source, atomicOp *op.AtomicOpCore) {
 	e.hooks.source.forEach(func(fn sourceHook) {
-		fn(now, sources, atomicOp)
+		fn(rb, now, parentKey, sources, atomicOp)
 	})
 }
 
-func (e *Executor) OnSinkSave(now time.Time, sinks *[]definition.Sink, atomicOp *op.AtomicOpCore) {
+// OnSinkSave - see definition/repository.Hooks.
+func (e *Executor) OnSinkSave(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sinks *[]definition.Sink, atomicOp *op.AtomicOpCore) {
 	e.hooks.sink.forEach(func(fn sinkHook) {
-		fn(now, sinks, atomicOp)
+		fn(rb, now, parentKey, sinks, atomicOp)
 	})
 }
