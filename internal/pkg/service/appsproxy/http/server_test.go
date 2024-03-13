@@ -35,7 +35,7 @@ func TestAppProxyHandler(t *testing.T) {
 
 	// Send logged request
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/path", nil)
+	req := httptest.NewRequest("GET", "https://123.hub.keboola.local/path", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -43,20 +43,21 @@ func TestAppProxyHandler(t *testing.T) {
 
 	// Send ignored request
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/health-check", nil)
+	req = httptest.NewRequest("GET", "https://123.hub.keboola.local/health-check", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "OK", rec.Body.String())
 
-	assert.NotNil(t, mocked.DebugLogger().CompareJSONMessages(`{"level":"info","message":"req /health-check %A"}`))
-	mocked.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"req /path %A","http.request_id":"%s","component":"http"}`)
+	assert.NotNil(t, mocked.DebugLogger().CompareJSONMessages(`{"level":"info","message":"req https://123.hub.keboola.local/health-check %A"}`))
+	mocked.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"req https://123.hub.keboola.local/path %A","http.request_id":"%s","component":"http"}`)
 
 	attributes := attribute.NewSet(
 		attribute.String("http.method", "GET"),
-		attribute.String("http.scheme", "http"),
+		attribute.String("http.scheme", "https"),
 		attribute.Int("http.status_code", 200),
-		attribute.String("net.host.name", "example.com"),
+		attribute.String("net.host.name", "123.hub.keboola.local"),
+		attribute.String("proxy.appid", "123"),
 	)
 
 	mocked.TestTelemetry().AssertMetrics(

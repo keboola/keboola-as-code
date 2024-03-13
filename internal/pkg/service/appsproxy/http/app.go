@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -22,6 +23,21 @@ func appIDMiddleware(publicURL *url.URL) middleware.Middleware {
 				ctx := req.Context()
 				ctx = ctxattr.ContextWith(ctx, attribute.String(attrAppID, appID))
 				req = req.WithContext(ctx)
+			}
+
+			next.ServeHTTP(w, req)
+		})
+	}
+}
+
+func appIDOtelMiddleware() middleware.Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+			appIDString, ok := ctxattr.Attributes(ctx).Value(attrAppID)
+			if ok {
+				labeler, _ := otelhttp.LabelerFromContext(ctx)
+				labeler.Add(attribute.String(attrAppID, appIDString.Emit()))
 			}
 
 			next.ServeHTTP(w, req)

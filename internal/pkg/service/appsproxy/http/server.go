@@ -70,6 +70,7 @@ func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler,
 		appIDMiddleware(publicURL),
 		middleware.Logger(logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
+		appIDOtelMiddleware(),
 	)
 
 	return handler
