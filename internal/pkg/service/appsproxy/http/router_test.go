@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -187,19 +188,14 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err := client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies := response.Cookies()
 
 				// Retry with provider cookie
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies = response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -212,20 +208,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = response.Cookies()
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
@@ -233,13 +222,10 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to sign out url
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/_proxy/sign_out", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = response.Cookies()
+				cookies := response.Cookies()
 				assert.Len(t, cookies, 2)
 
 				assert.Equal(t, "_oauth2_provider", cookies[0].Name)
@@ -268,7 +254,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Make the next request to the provider fail
 				m[0].QueueError(&mockoidc.ServerError{
@@ -286,9 +271,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to private app (still unauthorized because login failed)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -309,7 +291,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -318,6 +299,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location = response.Header["Location"][0]
+
+				// Remove csrf cookie
+				client.Jar.SetCookies(
+					&url.URL{
+						Scheme: "https",
+						Host:   "oidc.hub.keboola.local",
+					},
+					[]*http.Cookie{
+						{
+							Name:   "_oauth2_proxy_csrf",
+							Value:  "",
+							Path:   "/",
+							Domain: "oidc.hub.keboola.local",
+						},
+					},
+				)
 
 				// Request to proxy callback (fails because of missing CSRF token)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -332,9 +329,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -355,7 +349,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -368,9 +361,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback (fails because of missing group)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
@@ -381,9 +371,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -405,7 +392,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -418,20 +404,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback (fails because of unverified email)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
-				cookies = response.Cookies()
 
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -481,9 +460,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to private app (unauthorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -535,9 +511,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -562,9 +535,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to private app (authorized but down)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
@@ -615,6 +585,13 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.True(t, cookies[0].Secure)
 				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
+				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+				assert.Equal(t, "/", cookies[1].Path)
+				assert.Equal(t, "multi.hub.keboola.local", cookies[1].Domain)
+				assert.True(t, cookies[1].HttpOnly)
+				assert.True(t, cookies[1].Secure)
+				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
+
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
@@ -626,29 +603,15 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
-
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
-				assert.Equal(t, "/", cookies[1].Path)
-				assert.Equal(t, "multi.hub.keboola.local", cookies[1].Domain)
-				assert.True(t, cookies[1].HttpOnly)
-				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				request.Header.Set("X-Kbc-Test", "something")
 				request.Header.Set("X-Kbc-User-Email", "manager@keboola.com")
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
@@ -675,14 +638,10 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err := client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies := response.Cookies()
 
 				// Request to private app (unauthorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -706,18 +665,13 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to private app (unauthorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/", nil)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -730,20 +684,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback (fails because of unverified email)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
-				cookies = response.Cookies()
 
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -775,7 +722,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location = response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -788,20 +734,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
 
 				// Request to private app (authorized but down)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
@@ -882,7 +821,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -895,20 +833,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = response.Cookies()
 
 				// Websocket request
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "wss://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
@@ -957,7 +888,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location = response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -970,20 +900,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
 
 				// Websocket request
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "wss://multi.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
@@ -1048,7 +971,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1061,20 +983,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
 
 				// Request to private part (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/api", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
@@ -1082,9 +997,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Since the provider is configured for both /api and /web this works as well.
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/web", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
@@ -1112,7 +1024,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1125,20 +1036,13 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
 
 				// Request to private part (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/web", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
@@ -1147,9 +1051,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// !! In order for this to fail it is necessary for each provider to use a different cookie secret.
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/api", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -1170,7 +1071,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header["Location"][0]
-				cookies := response.Cookies()
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1183,32 +1083,38 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies = append(cookies, response.Cookies()...)
 
 				// Request to private part (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/web", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
 
 				// Use the same cookie values for another app, this needs to fail.
+				cookies := client.Jar.Cookies(
+					&url.URL{
+						Scheme: "https",
+						Host:   "prefix.hub.keboola.local",
+					},
+				)
+				for _, cookie := range cookies {
+					cookie.Domain = `multi.hub.keboola.local`
+				}
+				client.Jar.SetCookies(
+					&url.URL{
+						Scheme: "https",
+						Host:   "multi.hub.keboola.local",
+					},
+					cookies,
+				)
+
 				// !! In order for this to fail it is necessary for each app to use a different cookie secret even if the provider is the same.
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					cookie.Domain = `multi.hub.keboola.local`
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -1321,9 +1227,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
@@ -1348,9 +1251,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), method, "https://oidc.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				require.NoError(t, err)
-				for _, cookie := range cookies {
-					request.AddCookie(cookie)
-				}
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
@@ -1409,7 +1309,7 @@ func TestAppProxyRouter(t *testing.T) {
 			proxyURL, err := url.Parse(proxy.URL)
 			require.NoError(t, err)
 
-			client := createHTTPClient(proxyURL)
+			client := createHTTPClient(t, proxyURL)
 
 			tc.run(t, client, m, appServer, service)
 		})
@@ -1699,14 +1599,17 @@ func createProxyHandler(t *testing.T, sandboxesAPIURL string) http.Handler {
 	)
 }
 
-func createHTTPClient(proxyURL *url.URL) *http.Client {
+func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
+	t.Helper()
+
 	dialer := &net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig.InsecureSkipVerify = true
+
+	// URLs sent to hub.keboola.local:443 are sent to the proxy server. This is necessary for subdomain matching.
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if strings.HasSuffix(addr, "hub.keboola.local:443") {
 			addr = proxyURL.Host
@@ -1714,11 +1617,22 @@ func createHTTPClient(proxyURL *url.URL) *http.Client {
 		return dialer.DialContext(ctx, network, addr)
 	}
 
+	// Disabled TLS verification since the certificate won't match due to the above change.
+	transport.TLSClientConfig.InsecureSkipVerify = true
+
+	// Create a cookie jar so that the client is aware of cookies.
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+
+	// Disable redirect following so that we can assert the target urls.
+	checkRedirect := func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
 	return &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Transport: transport,
+		CheckRedirect: checkRedirect,
+		Transport:     transport,
+		Jar:           jar,
 	}
 }
 
