@@ -35,7 +35,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	tableID := keboola.TableID{BucketID: o.BucketKey.BucketID, TableName: o.CreateTableRequest.Name}
 	tableKey := keboola.TableKey{BranchID: o.BucketKey.BranchID, TableID: tableID}
 
-	res, err := d.KeboolaProjectAPI().CreateTableDefinitionRequest(tableKey, &o.CreateTableRequest).Send(ctx)
+	res, err := d.KeboolaProjectAPI().CreateTableDefinitionRequest(tableKey, o.CreateTableRequest.TableDefinition).Send(ctx)
 	if err != nil {
 		rb.Invoke(ctx)
 		return err
