@@ -71,7 +71,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		loader:    d.Loader(),
 		appHandlers: appconfig.NewSafeMap[string, appHandler](func() *appHandler {
 			return &appHandler{
-				updateLock: &sync.Mutex{},
+				updateLock: &sync.RWMutex{},
 			}
 		}),
 		selectionTemplate: tmpl,
@@ -82,8 +82,20 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 }
 
 type appHandler struct {
-	http.Handler
-	updateLock *sync.Mutex
+	httpHandler http.Handler
+	updateLock  *sync.RWMutex
+}
+
+func (h *appHandler) getHTTPHandler() http.Handler {
+	h.updateLock.RLock()
+	defer h.updateLock.RUnlock()
+	return h.httpHandler
+}
+
+func (h *appHandler) setHTTPHandler(httpHandler http.Handler) {
+	h.updateLock.Lock()
+	defer h.updateLock.Unlock()
+	h.httpHandler = httpHandler
 }
 
 func (r *Router) CreateHandler() http.Handler {
@@ -129,13 +141,14 @@ func (r *Router) CreateHandler() http.Handler {
 
 		// Recreate app handler if configuration changed.
 		handler := r.appHandlers.GetOrInit(appID)
-		if modified {
-			handler.updateLock.Lock()
-			handler.Handler = r.createDataAppHandler(req.Context(), config)
-			handler.updateLock.Unlock()
+		httpHandler := handler.getHTTPHandler()
+
+		if modified || httpHandler == nil {
+			httpHandler = r.createDataAppHandler(req.Context(), config)
+			handler.setHTTPHandler(httpHandler)
 		}
 
-		handler.ServeHTTP(w, req)
+		httpHandler.ServeHTTP(w, req)
 	})
 }
 
