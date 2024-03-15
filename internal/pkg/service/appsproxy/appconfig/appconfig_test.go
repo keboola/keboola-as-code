@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
@@ -304,6 +306,63 @@ func TestLoader_LoadConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoader_LoadConfigConcurrency(t *testing.T) {
+	t.Parallel()
+
+	clk := clock.NewMock()
+	transport := httpmock.NewMockTransport()
+
+	url := "https://sandboxes.keboola.com"
+
+	responses := []*http.Response{
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+	}
+
+	transport.RegisterResponder(
+		http.MethodGet,
+		fmt.Sprintf("%s/apps/%s/proxy-config", url, "test"),
+		httpmock.ResponderFromMultipleResponses(responses),
+	)
+
+	httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
+
+	loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, httpClient, url, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+	counter := atomic.NewInt64(0)
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			config, _, err := loader.LoadConfig(ctx, "test")
+			assert.NoError(t, err)
+
+			assert.Equal(t, "http://app.local", config.UpstreamAppURL)
+
+			counter.Add(1)
+		}()
+	}
+
+	// Wait for all requests
+	wg.Wait()
+
+	// Check total requests count
+	assert.Equal(t, int64(10), counter.Load())
 }
 
 func newResponse(t *testing.T, code int, body map[string]any, eTag string, cacheControl string) *http.Response {
