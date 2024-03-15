@@ -67,7 +67,9 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out 
 	// API request with cached eTag
 	config, err := GetAppProxyConfig(l.sender, appID, item.eTag).Send(ctx)
 	if err != nil {
-		return l.handleError(ctx, appID, now, err, item)
+		config, err := l.handleError(ctx, appID, now, err, item)
+
+		return config, false, err
 	}
 
 	// Update expiration
@@ -83,11 +85,11 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out 
 	return item.config, modified, nil
 }
 
-func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, bool, error) {
+func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
 	var sandboxesError *SandboxesError
 	errors.As(err, &sandboxesError)
 	if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
-		return AppProxyConfig{}, false, err
+		return AppProxyConfig{}, err
 	}
 
 	logger := l.logger
@@ -99,12 +101,12 @@ func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now 
 	if !fallbackItem.expiresAt.IsZero() && now.Before(fallbackItem.expiresAt.Add(staleCacheFallbackDuration)) {
 		logger.Warnf(ctx, `Using stale cache for app "%s": %s`, appID, err.Error())
 
-		return fallbackItem.config, false, nil
+		return fallbackItem.config, nil
 	}
 
 	logger.Errorf(ctx, `Failed loading config for app "%s": %s`, appID, err.Error())
 
-	return AppProxyConfig{}, false, err
+	return AppProxyConfig{}, err
 }
 
 func minDuration(durationA time.Duration, durationB time.Duration) time.Duration {
