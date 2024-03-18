@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -26,7 +27,7 @@ type sandboxesAPILoader struct {
 	logger log.Logger
 	clock  clock.Clock
 	sender request.Sender
-	cache  *SyncMap[string, cacheItem]
+	cache  *syncmap.SyncMap[string, cacheItem]
 }
 
 type cacheItem struct {
@@ -41,7 +42,7 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
-		cache: NewSyncMap[string, cacheItem](func() *cacheItem {
+		cache: syncmap.NewSyncMap[string, cacheItem](func() *cacheItem {
 			return &cacheItem{
 				updateLock: &sync.Mutex{},
 			}

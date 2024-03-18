@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -39,7 +40,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       *appconfig.SyncMap[string, appHandler]
+	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }
@@ -68,7 +69,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:    d.Config(),
 		clock:     d.Clock(),
 		loader:    d.Loader(),
-		appHandlers: appconfig.NewSyncMap[string, appHandler](func() *appHandler {
+		appHandlers: syncmap.NewSyncMap[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
 			}
@@ -91,7 +92,7 @@ func (h *appHandler) getHTTPHandler() http.Handler {
 	return h.httpHandler
 }
 
-func (h *appHandler) setHTTPHandler(handlerFactory func () http.Handler) {
+func (h *appHandler) setHTTPHandler(handlerFactory func() http.Handler) {
 	h.updateLock.Lock()
 	defer h.updateLock.Unlock()
 	h.httpHandler = handlerFactory()
