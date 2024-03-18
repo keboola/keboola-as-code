@@ -91,10 +91,10 @@ func (h *appHandler) getHTTPHandler() http.Handler {
 	return h.httpHandler
 }
 
-func (h *appHandler) setHTTPHandler(httpHandler http.Handler) {
+func (h *appHandler) setHTTPHandler(handlerFactory func () http.Handler) {
 	h.updateLock.Lock()
 	defer h.updateLock.Unlock()
-	h.httpHandler = httpHandler
+	h.httpHandler = handlerFactory()
 }
 
 func (r *Router) CreateHandler() http.Handler {
@@ -143,8 +143,10 @@ func (r *Router) CreateHandler() http.Handler {
 		httpHandler := handler.getHTTPHandler()
 
 		if modified || httpHandler == nil {
-			httpHandler = r.createDataAppHandler(req.Context(), config)
-			handler.setHTTPHandler(httpHandler)
+			handler.setHTTPHandler(func() http.Handler {
+				return r.createDataAppHandler(req.Context(), config)
+			})
+			httpHandler = handler.getHTTPHandler()
 		}
 
 		httpHandler.ServeHTTP(w, req)
