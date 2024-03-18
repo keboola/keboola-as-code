@@ -40,7 +40,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       *appconfig.SafeMap[string, appHandler]
+	appHandlers       *appconfig.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }
@@ -69,7 +69,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:    d.Config(),
 		clock:     d.Clock(),
 		loader:    d.Loader(),
-		appHandlers: appconfig.NewSafeMap[string, appHandler](func() *appHandler {
+		appHandlers: appconfig.NewSyncMap[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
 			}

@@ -26,7 +26,7 @@ type sandboxesAPILoader struct {
 	logger log.Logger
 	clock  clock.Clock
 	sender request.Sender
-	cache  *SafeMap[string, cacheItem]
+	cache  *SyncMap[string, cacheItem]
 }
 
 type cacheItem struct {
@@ -41,7 +41,7 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
-		cache: NewSafeMap[string, cacheItem](func() *cacheItem {
+		cache: NewSyncMap[string, cacheItem](func() *cacheItem {
 			return &cacheItem{
 				updateLock: &sync.Mutex{},
 			}
