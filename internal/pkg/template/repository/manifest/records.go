@@ -2,6 +2,8 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/keboola/go-client/pkg/keboola"
+	"slices"
 	"sort"
 	"strings"
 
@@ -10,13 +12,14 @@ import (
 )
 
 type TemplateRecord struct {
-	ID          string          `json:"id" validate:"required,alphanumdash,min=1,max=40"`
-	Name        string          `json:"name" validate:"required,min=1,max=40"`
-	Description string          `json:"description" validate:"required,min=1,max=200"`
-	Categories  []string        `json:"categories,omitempty"`
-	Deprecated  bool            `json:"deprecated,omitempty"`
-	Path        string          `json:"path,omitempty"`
-	Versions    []VersionRecord `json:"versions" validate:"required,min=1,dive"`
+	ID           string          `json:"id" validate:"required,alphanumdash,min=1,max=40"`
+	Name         string          `json:"name" validate:"required,min=1,max=40"`
+	Description  string          `json:"description" validate:"required,min=1,max=200"`
+	Requirements Requirements    `json:"requirements"`
+	Categories   []string        `json:"categories,omitempty"`
+	Deprecated   bool            `json:"deprecated,omitempty"`
+	Path         string          `json:"path,omitempty"`
+	Versions     []VersionRecord `json:"versions" validate:"required,min=1,dive"`
 }
 
 type VersionRecord struct {
@@ -25,6 +28,12 @@ type VersionRecord struct {
 	Stable      bool             `json:"stable" validate:""`
 	Components  []string         `json:"components,omitempty"`
 	Path        string           `json:"path,omitempty"`
+}
+
+type Requirements struct {
+	Backends   []string `json:"backends"`
+	Components []string `json:"components"`
+	Features   []string `json:"features"`
 }
 
 func (v *TemplateRecord) AllVersions() (out []VersionRecord) {
@@ -155,4 +164,31 @@ func (v *TemplateRecord) DefaultVersionOrErr() (VersionRecord, error) {
 		return version, VersionNotFoundError{errors.Errorf(`default version for template "%s" was not found`, v.ID)}
 	}
 	return version, nil
+}
+
+func (v *TemplateRecord) HasComponent(components *model.ComponentsMap) bool {
+	for _, component := range v.Requirements.Components {
+		if _, found := components.Get(keboola.ComponentID(component)); found {
+			return true
+		}
+	}
+	return false
+}
+
+func (v *TemplateRecord) HasFeature(d keboola.FeaturesMap) bool {
+	for _, feature := range v.Requirements.Features {
+		if d.Has(feature) {
+			return true
+		}
+	}
+	return false
+}
+
+func (v *TemplateRecord) HasBackend(projectBackends []string) bool {
+	for _, backend := range v.Requirements.Backends {
+		if slices.Contains(projectBackends, backend) {
+			return true
+		}
+	}
+	return false
 }
