@@ -130,6 +130,18 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 			continue
 		}
 
+		if !tmpl.HasBackend(d.ProjectBackends()) {
+			continue
+		}
+
+		if !tmpl.HasComponent(d.Components()) {
+			continue
+		}
+
+		if !tmpl.HasFeature(d.ProjectFeatures()) {
+			continue
+		}
+
 		tmpl := tmpl
 		tmplResponse, err := TemplateResponse(ctx, d, &tmpl, out.Repository.Author)
 		if err != nil {
