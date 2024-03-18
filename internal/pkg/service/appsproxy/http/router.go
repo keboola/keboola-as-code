@@ -29,7 +29,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -100,16 +99,18 @@ func (h *appHandler) setHTTPHandler(httpHandler http.Handler) {
 
 func (r *Router) CreateHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		appIDString, ok := ctxattr.Attributes(req.Context()).Value(attrAppID)
+		ctx := req.Context()
+
+		appID, ok := ctx.Value(AppIDCtxKey).(string)
 		if !ok {
 			if req.URL.Path == "/health-check" {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
 
-			r.logger.Info(req.Context(), `unable to parse application ID from the URL`)
+			r.logger.Info(req.Context(), `unable to find application ID from the URL`)
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, `Unable to parse application ID from the URL.`)
+			fmt.Fprint(w, `Unable to find application ID from the URL.`)
 			return
 		}
 
@@ -119,8 +120,6 @@ func (r *Router) CreateHandler() http.Handler {
 				req.Header.Del(name)
 			}
 		}
-
-		appID := appIDString.Emit()
 
 		// Load configuration for given app.
 		config, modified, err := r.loader.LoadConfig(req.Context(), appID)

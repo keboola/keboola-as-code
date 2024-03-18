@@ -55,7 +55,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusNotFound, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Equal(t, `Unable to parse application ID from the URL.`, string(body))
+				assert.Equal(t, `Unable to find application ID from the URL.`, string(body))
 
 				// Request to health-check endpoint
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://hub.keboola.local/health-check", nil)
