@@ -51,6 +51,10 @@ func TestNode(t *testing.T) {
 	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
 	// Setup cleanup interval
 	cleanupInterval := 12 * time.Hour
 	activeFileExpiration := 24 * time.Hour
@@ -74,7 +78,7 @@ func TestNode(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
+	test.MockFileStorageAPICalls(t, clk, transport)
 
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------

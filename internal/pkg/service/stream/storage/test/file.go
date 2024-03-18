@@ -18,7 +18,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
@@ -134,7 +133,7 @@ func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRe
 	}
 }
 
-func MockCreateFilesStorageAPICalls(t *testing.T, clk clock.Clock, branchKey key.BranchKey, transport *httpmock.MockTransport) {
+func MockFileStorageAPICalls(t *testing.T, clk clock.Clock, transport *httpmock.MockTransport) {
 	t.Helper()
 
 	fileID := atomic.NewInt32(1000)
@@ -142,12 +141,17 @@ func MockCreateFilesStorageAPICalls(t *testing.T, clk clock.Clock, branchKey key
 	// Mocked file prepare resource endpoint
 	transport.RegisterResponder(
 		http.MethodPost,
-		fmt.Sprintf("/v2/storage/branch/%d/files/prepare", branchKey.BranchID),
+		`/v2/storage/branch/[0-9]+/files/prepare`,
 		func(request *http.Request) (*http.Response, error) {
+			branchID, err := extractBranchIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
 			return httpmock.NewJsonResponse(http.StatusOK, &keboola.FileUploadCredentials{
 				File: keboola.File{
 					FileKey: keboola.FileKey{
-						BranchID: branchKey.BranchID,
+						BranchID: branchID,
 						FileID:   keboola.FileID(fileID.Inc()),
 					},
 				},
@@ -159,15 +163,11 @@ func MockCreateFilesStorageAPICalls(t *testing.T, clk clock.Clock, branchKey key
 			})
 		},
 	)
-}
-
-func MockDeleteFilesStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport *httpmock.MockTransport) {
-	t.Helper()
 
 	// Mocked file delete endpoint
 	transport.RegisterResponder(
 		http.MethodDelete,
-		fmt.Sprintf(`=~/v2/storage/branch/%d/files/\d+$`, branchKey.BranchID),
+		`=~/v2/storage/branch/[0-9]+/files/\d+$`,
 		httpmock.NewStringResponder(http.StatusNoContent, ""),
 	)
 }

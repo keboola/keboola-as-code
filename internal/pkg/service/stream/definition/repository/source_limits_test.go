@@ -43,6 +43,16 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	sourceRepo := repo.Source()
 	sourceSchema := schema.ForSource(d.EtcdSerde())
 
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
+	// Mock file API calls
+	transport := mock.MockedHTTPTransport()
+	test.MockBucketStorageAPICalls(t, transport)
+	test.MockTableStorageAPICalls(t, transport)
+	test.MockTokenStorageAPICalls(t, transport)
+
 	// Create branch
 	branch := test.NewBranch(branchKey)
 	require.NoError(t, repo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
@@ -97,6 +107,16 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
 	sourceSchema := schema.ForSource(d.EtcdSerde())
+
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
+	// Mock file API calls
+	transport := mock.MockedHTTPTransport()
+	test.MockBucketStorageAPICalls(t, transport)
+	test.MockTableStorageAPICalls(t, transport)
+	test.MockTokenStorageAPICalls(t, transport)
 
 	// Create branch
 	branch := test.NewBranch(branchKey)

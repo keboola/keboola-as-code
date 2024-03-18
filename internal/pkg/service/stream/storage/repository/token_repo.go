@@ -38,12 +38,9 @@ func (r *TokenRepository) List(parentKey fmt.Stringer) iterator.DefinitionT[mode
 	return r.schema.InObject(parentKey).GetAll(r.client)
 }
 
-func (r *TokenRepository) Put(k key.SinkKey, token keboola.Token) *op.TxnOp[model.Token] {
+func (r *TokenRepository) Put(k key.SinkKey, token keboola.Token) op.WithResult[model.Token] {
 	result := model.Token{SinkKey: k, Token: token}
-	return op.TxnWithResult(r.client, &result).
-		// Sink must exist
-		Merge(r.all.sink.ExistsOrErr(k)).
-		Then(r.schema.ByKey(k).Put(r.client, result))
+	return r.schema.ByKey(k).Put(r.client, result)
 }
 
 func (r *TokenRepository) GetKV(k key.SinkKey) op.WithResult[*op.KeyValueT[model.Token]] {

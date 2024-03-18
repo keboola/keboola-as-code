@@ -61,11 +61,10 @@ func TestSliceRepository_Delete(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, branchKey, transport)
-	test.MockTableStorageAPICalls(t, branchKey, transport)
+	test.MockBucketStorageAPICalls(t, transport)
+	test.MockTableStorageAPICalls(t, transport)
 	test.MockTokenStorageAPICalls(t, transport)
-	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
-	test.MockDeleteFilesStorageAPICalls(t, branchKey, transport)
+	test.MockFileStorageAPICalls(t, clk, transport)
 
 	// Create parent branch, source, sinks and tokens
 	// -----------------------------------------------------------------------------------------------------------------

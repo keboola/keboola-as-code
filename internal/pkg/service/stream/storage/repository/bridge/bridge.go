@@ -210,13 +210,6 @@ func (p *tableSinkPlugin) MergeOp(operation op.Op) {
 	p.txn.Merge(operation)
 }
 
-// ThenTxnOp adds a database operation to the transaction.
-func (p *tableSinkPlugin) ThenTxnOp(operation op.Op) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	p.txn.ThenTxn(operation)
-}
-
 // AddFinalizer adds a finalizer function, it is called after the transaction, if succeeded.
 func (p *tableSinkPlugin) AddFinalizer(fn func(context.Context) error) {
 	p.lock.Lock()
@@ -372,7 +365,7 @@ func (p *tableSinkPlugin) createToken(ctx context.Context, rb rollback.Builder, 
 	})
 
 	// Save token
-	p.ThenTxnOp(p.storage.Token().Put(sinkKey, *newToken))
+	p.MergeOp(p.storage.Token().Put(sinkKey, *newToken))
 
 	p.logger.Infof(ctx, `created token "%d" with permissions to the bucket "%s"`, newToken.ID, bucketKey.BucketID)
 	return nil

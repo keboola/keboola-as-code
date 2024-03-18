@@ -5,28 +5,41 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func MockBucketStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport *httpmock.MockTransport) {
+func MockBucketStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
 	t.Helper()
+	lock := &sync.Mutex{}
 
 	// Get bucket - not found
-	checkedBuckets := make(map[keboola.BucketID]bool)
+	checkedBuckets := make(map[keboola.BucketKey]bool)
 	transport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("=~/v2/storage/branch/%s/buckets/.+", branchKey.BranchID),
+		`=~/v2/storage/branch/[0-9]+/buckets/[a-z0-9\.]+`,
 		func(request *http.Request) (*http.Response, error) {
-			parts := strings.Split(request.URL.String(), "/")
-			bucketID := keboola.MustParseBucketID(parts[len(parts)-1])
-			checkedBuckets[bucketID] = true
+			lock.Lock()
+			defer lock.Unlock()
+
+			branchID, err := extractBranchIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
+			bucketID, err := extractBucketIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
+			bucketKey := keboola.BucketKey{BranchID: branchID, BucketID: bucketID}
+			checkedBuckets[bucketKey] = true
 			return httpmock.NewJsonResponse(http.StatusOK, &keboola.StorageError{ErrCode: "storage.buckets.notFound"})
 		},
 	)
@@ -34,8 +47,16 @@ func MockBucketStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport 
 	// Create bucket - ok
 	transport.RegisterResponder(
 		http.MethodPost,
-		fmt.Sprintf("/v2/storage/branch/%s/buckets", branchKey.BranchID),
+		"/v2/storage/branch/[0-9]+/buckets",
 		func(request *http.Request) (*http.Response, error) {
+			lock.Lock()
+			defer lock.Unlock()
+
+			branchID, err := extractBranchIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
 			dataBytes, err := io.ReadAll(request.Body)
 			if err != nil {
 				return nil, err
@@ -48,15 +69,13 @@ func MockBucketStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport 
 
 			// Before POST, we expect GET request, to check bucket existence
 			bucketID := keboola.MustParseBucketID(fmt.Sprintf("%s.c-%s", data["stage"], strings.TrimPrefix(data["name"].(string), "c-")))
-			if !checkedBuckets[bucketID] {
+			bucketKey := keboola.BucketKey{BranchID: keboola.BranchID(branchID), BucketID: bucketID}
+			if !checkedBuckets[bucketKey] {
 				return nil, errors.Errorf(`unexpected order of requests, before creating the bucket "%s" via POST, it should be checked whether it exists via GET`, bucketID)
 			}
 
 			return httpmock.NewJsonResponse(http.StatusOK, &keboola.Bucket{
-				BucketKey: keboola.BucketKey{
-					BranchID: branchKey.BranchID,
-					BucketID: bucketID,
-				},
+				BucketKey: bucketKey,
 			})
 		},
 	)

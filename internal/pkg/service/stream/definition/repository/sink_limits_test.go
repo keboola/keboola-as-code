@@ -44,6 +44,10 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	sinkRepo := repo.Sink()
 	sinkSchema := schema.ForSink(d.EtcdSerde())
 
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
 	// Create parents
 	branch := test.NewBranch(branchKey)
 	require.NoError(t, repo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
@@ -101,6 +105,16 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
 	sinkSchema := schema.ForSink(d.EtcdSerde())
+
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
+	// Mock file API calls
+	transport := mock.MockedHTTPTransport()
+	test.MockBucketStorageAPICalls(t, transport)
+	test.MockTableStorageAPICalls(t, transport)
+	test.MockTokenStorageAPICalls(t, transport)
 
 	// Create parents
 	branch := test.NewBranch(branchKey)

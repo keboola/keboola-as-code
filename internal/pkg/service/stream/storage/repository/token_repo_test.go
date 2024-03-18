@@ -37,7 +37,7 @@ func TestRepository_Token(t *testing.T) {
 	nonExistentSinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "non-existent-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk), deps.WithEtcdDebugLog(true))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
@@ -49,8 +49,8 @@ func TestRepository_Token(t *testing.T) {
 
 	// Mock API calls
 	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, branchKey, transport)
-	test.MockTableStorageAPICalls(t, branchKey, transport)
+	test.MockBucketStorageAPICalls(t, transport)
+	test.MockTableStorageAPICalls(t, transport)
 	test.MockTokenStorageAPICalls(t, transport)
 
 	// Empty
@@ -59,15 +59,6 @@ func TestRepository_Token(t *testing.T) {
 		// Get - not found
 		if err := r.Get(sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink token "123/456/my-source/my-sink-1" not found in the database`, err.Error())
-			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
-		}
-	}
-
-	// Create - parent sink doesn't exists
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		if err := r.Put(sinkKey1, keboola.Token{Token: "my-token"}).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}

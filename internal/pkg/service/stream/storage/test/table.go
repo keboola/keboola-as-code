@@ -13,26 +13,34 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func MockTableStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport *httpmock.MockTransport) {
+func MockTableStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
 	t.Helper()
 	lock := &sync.Mutex{}
 
 	// Get table - not found
-	checkedTables := make(map[keboola.TableID]bool)
+	checkedTables := make(map[keboola.TableKey]bool)
 	transport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf(`=~/v2/storage/branch/%s/tables/[a-z\.]+`, branchKey.BranchID),
+		fmt.Sprintf(`=~/v2/storage/branch/[0-9]+/tables/[a-z0-9\.]+`),
 		func(request *http.Request) (*http.Response, error) {
 			lock.Lock()
 			defer lock.Unlock()
 
-			parts := strings.Split(request.URL.String(), "/")
-			tableID := keboola.MustParseTableID(parts[len(parts)-1])
-			checkedTables[tableID] = true
+			branchID, err := extractBranchIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
+			tableID, err := extractTableIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
+			tableKey := keboola.TableKey{BranchID: branchID, TableID: tableID}
+			checkedTables[tableKey] = true
 			return httpmock.NewJsonResponse(http.StatusNotFound, &keboola.StorageError{ErrCode: "storage.tables.notFound"})
 		},
 	)
@@ -43,10 +51,20 @@ func MockTableStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport *
 	tables := make(map[keboola.StorageJobID]keboola.TableDefinition)
 	transport.RegisterResponder(
 		http.MethodPost,
-		fmt.Sprintf(`=~/v2/storage/branch/%s/buckets/.*/tables-definition`, branchKey.BranchID),
+		`=~/v2/storage/branch/[0-9]+/buckets/[a-z0-9\.]+/tables-definition`,
 		func(request *http.Request) (*http.Response, error) {
 			lock.Lock()
 			defer lock.Unlock()
+
+			branchID, err := extractBranchIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
+
+			bucketID, err := extractBucketIDFromURL(request.URL.String())
+			if err != nil {
+				return nil, err
+			}
 
 			dataBytes, err := io.ReadAll(request.Body)
 			if err != nil {
@@ -59,12 +77,10 @@ func MockTableStorageAPICalls(t *testing.T, branchKey key.BranchKey, transport *
 			}
 
 			// Before POST, we expect GET request, to check bucket existence
-			url := strings.TrimSuffix(request.URL.String(), "/tables-definition")
-			parts := strings.Split(url, "/")
-			bucketID := parts[len(parts)-1]
 			tableName := data.Name
 			tableID := keboola.MustParseTableID(fmt.Sprintf(`%s.%s`, bucketID, tableName))
-			if !checkedTables[tableID] {
+			tableKey := keboola.TableKey{BranchID: branchID, TableID: tableID}
+			if !checkedTables[tableKey] {
 				return nil, errors.Errorf(`unexpected order of requests, before creating the table "%s" via POST, it should be checked whether it exists via GET`, bucketID)
 			}
 

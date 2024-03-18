@@ -39,6 +39,10 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	branchRepo := repository.New(d).Branch()
 	branchSchema := schema.ForBranch(d.EtcdSerde())
 
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
+
 	// Create branches up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
