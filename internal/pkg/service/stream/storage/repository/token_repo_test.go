@@ -91,6 +91,7 @@ func TestRepository_Token(t *testing.T) {
 		result1, err := r.Get(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, storageToken1, result1.Token)
+
 		result2, err := r.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, storageToken2, result2.Token)
