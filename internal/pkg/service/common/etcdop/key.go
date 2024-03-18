@@ -40,18 +40,12 @@ func (v Key) Exists(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 	return op.NewBoolOp(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
-			return etcd.OpGet(v.Key(), opts...), nil
+			return etcd.OpTxn([]etcd.Cmp{
+				etcd.Compare(etcd.ModRevision(v.Key()), "!=", 0),
+			}, nil, nil), nil
 		},
 		func(_ context.Context, raw op.RawResponse) (bool, error) {
-			count := raw.Get().Count
-			switch count {
-			case 0:
-				return false, nil
-			case 1:
-				return true, nil
-			default:
-				return false, errors.Errorf(`etcd exists: at most one result result expected, found %d results`, count)
-			}
+			return raw.Txn().Succeeded, nil
 		},
 	)
 }

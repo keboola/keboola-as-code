@@ -43,7 +43,7 @@ func (r *TokenRepository) Put(k key.SinkKey, token keboola.Token) *op.TxnOp[mode
 	return op.TxnWithResult(r.client, &result).
 		// Sink must exist
 		Merge(r.all.sink.ExistsOrErr(k)).
-		Merge(r.schema.ByKey(k).Put(r.client, result))
+		Then(r.schema.ByKey(k).Put(r.client, result))
 }
 
 func (r *TokenRepository) GetKV(k key.SinkKey) op.WithResult[*op.KeyValueT[model.Token]] {

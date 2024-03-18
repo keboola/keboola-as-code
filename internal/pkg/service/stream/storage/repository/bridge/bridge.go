@@ -196,18 +196,25 @@ func (p *tableSinkPlugin) OnTableSinkActivation(ctx context.Context, sink defini
 func (p *tableSinkPlugin) OnTableSinkDeactivation(ctx context.Context, sink definition.Sink, token *model.Token) {
 	// Cleanup: delete token from the DB and finally from the Storage API.
 	if token != nil {
-		p.AddOp(p.storage.Token().Delete(sink.SinkKey))
+		p.MergeOp(p.storage.Token().Delete(sink.SinkKey))
 		p.AddFinalizer(func(ctx context.Context) error {
 			return p.api.DeleteTokenRequest(token.Token.ID).SendOrErr(ctx)
 		})
 	}
 }
 
-// AddOp adds a database operation to the transaction.
-func (p *tableSinkPlugin) AddOp(operation op.Op) {
+// MergeOp adds a database operation to the transaction.
+func (p *tableSinkPlugin) MergeOp(operation op.Op) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.txn.Merge(operation)
+}
+
+// ThenTxnOp adds a database operation to the transaction.
+func (p *tableSinkPlugin) ThenTxnOp(operation op.Op) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.txn.ThenTxn(operation)
 }
 
 // AddFinalizer adds a finalizer function, it is called after the transaction, if succeeded.
@@ -365,7 +372,7 @@ func (p *tableSinkPlugin) createToken(ctx context.Context, rb rollback.Builder, 
 	})
 
 	// Save token
-	p.AddOp(p.storage.Token().Put(sinkKey, *newToken))
+	p.ThenTxnOp(p.storage.Token().Put(sinkKey, *newToken))
 
 	p.logger.Infof(ctx, `created token "%d" with permissions to the bucket "%s"`, newToken.ID, bucketKey.BucketID)
 	return nil

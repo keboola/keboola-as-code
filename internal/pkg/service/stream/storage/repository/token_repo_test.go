@@ -37,7 +37,7 @@ func TestRepository_Token(t *testing.T) {
 	nonExistentSinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "non-existent-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk), deps.WithEtcdDebugLog(true))
 	client := mocked.TestEtcdClient()
 	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
