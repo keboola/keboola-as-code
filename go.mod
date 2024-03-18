@@ -82,7 +82,7 @@ require (
 	gopkg.in/DataDog/dd-trace-go.v1 v1.61.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	nhooyr.io/websocket v1.8.10
-	v.io/x/lib v0.1.18
+	v.io/x/lib v0.1.19
 )
 
 require (
