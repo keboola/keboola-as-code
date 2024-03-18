@@ -23,7 +23,7 @@
         "Other"
       ],
       "components": [
-        "keboola.wr-db-snowflake",
+        "keboola.wr-%s",
         "foo.bar"
       ],
       "versions": [
@@ -48,7 +48,7 @@
         "Other"
       ],
       "components": [
-        "keboola.wr-db-snowflake",
+        "keboola.wr-%s",
         "foo.bar"
       ],
       "versions": [
