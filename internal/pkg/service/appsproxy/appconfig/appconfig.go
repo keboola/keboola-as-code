@@ -98,6 +98,7 @@ func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now 
 	}
 
 	// An error other than 404 is considered a temporary failure. Keep using the stale cache for staleCacheFallbackDuration as fallback.
+	// If expireAt is zero then there is no cached value.
 	if !fallbackItem.expiresAt.IsZero() && now.Before(fallbackItem.expiresAt.Add(staleCacheFallbackDuration)) {
 		logger.Warnf(ctx, `Using stale cache for app "%s": %s`, appID, err.Error())
 

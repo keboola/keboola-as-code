@@ -344,6 +344,7 @@ func TestLoader_LoadConfigConcurrency(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	counter := atomic.NewInt64(0)
+	// Load configuration 10x in parallel
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
