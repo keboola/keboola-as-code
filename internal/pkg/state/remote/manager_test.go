@@ -110,8 +110,8 @@ func TestRemoteSaveMapper(t *testing.T) {
 	assert.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
 	assert.NoError(t, err)
-	assert.Contains(t, reqBody, `configuration={"key":"api value","new":"value"}`)
-	assert.Contains(t, reqBody, `name=modified name`)
+	assert.Contains(t, reqBody, "\"configuration\":{\"key\"\n:\"api value\"\n,\"new\"\n:\"value\"\n}")
+	assert.Contains(t, reqBody, `"name":"modified name"`)
 
 	// But the internal state is unchanged
 	assert.Equal(t, `internal name`, configState.Local.Name)
@@ -360,7 +360,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	assert.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
 	assert.NoError(t, err)
-	assert.Equal(t, "metadata[0][key]=KBC-KaC-meta1&metadata[0][value]=val1", reqBody)
+	assert.Equal(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
 }
 
 func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
@@ -432,7 +432,7 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	assert.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
 	assert.NoError(t, err)
-	assert.Equal(t, "metadata[0][key]=KBC-KaC-meta1&metadata[0][value]=val1", reqBody)
+	assert.Equal(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
 }
 
 func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
