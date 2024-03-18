@@ -158,7 +158,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 		Categories   []string
 		Deprecated   bool
 		Path         string
-		Requirements Requirements
+		Requirements *Requirements
 		Versions     []VersionRecord
 	}
 	type args struct {
@@ -177,7 +177,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Backends: []string{"snowflake"},
 			},
 			Versions: []VersionRecord{
@@ -192,7 +192,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Backends: []string{"snowflake"},
 			},
 			Versions: []VersionRecord{
@@ -207,7 +207,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Backends: []string{"bigquery"},
 			},
 			Versions: []VersionRecord{
@@ -244,7 +244,7 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 		Categories   []string
 		Deprecated   bool
 		Path         string
-		Requirements Requirements
+		Requirements *Requirements
 		Versions     []VersionRecord
 	}
 	type args struct {
@@ -263,7 +263,7 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Features: []string{"feature5", "feature2"},
 			},
 			Versions: []VersionRecord{
@@ -278,7 +278,7 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Features: []string{"feature5"},
 			},
 			Versions: []VersionRecord{
@@ -315,7 +315,7 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 		Categories   []string
 		Deprecated   bool
 		Path         string
-		Requirements Requirements
+		Requirements *Requirements
 		Versions     []VersionRecord
 	}
 	type args struct {
@@ -334,7 +334,7 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Components: []string{"wrong_component", "keboola.python-transformation-v2", "foo.bar"},
 			},
 			Versions: []VersionRecord{
@@ -349,7 +349,7 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: Requirements{
+			Requirements: &Requirements{
 				Components: []string{"wrong-component"},
 			},
 			Versions: []VersionRecord{
