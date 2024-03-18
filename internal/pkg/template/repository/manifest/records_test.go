@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
 func TestTemplateRecord_DefaultVersion_NotFound(t *testing.T) {
@@ -141,5 +145,233 @@ func TestTemplateRecord_GetByVersion_Complex(t *testing.T) {
 			assert.True(t, found, desc)
 			assert.Equal(t, c.found, value.Version.String(), desc)
 		}
+	}
+}
+
+func TestTemplateRecord_HasBackend(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		ID           string
+		Name         string
+		Description  string
+		Categories   []string
+		Deprecated   bool
+		Path         string
+		Requirements Requirements
+		Versions     []VersionRecord
+	}
+	type args struct {
+		projectBackends []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{name: "supported backend", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Backends: []string{"snowflake"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{projectBackends: []string{"snowflake"}}, want: true},
+
+		{name: "supported backend (more project backend)", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Backends: []string{"snowflake"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{projectBackends: []string{"bigquery", "teradata", "snowflake", "mysql"}}, want: true},
+
+		{name: "unsupported backend", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Backends: []string{"bigquery"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{projectBackends: []string{"teradata", "snowflake", "mysql"}}, want: false},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			v := &TemplateRecord{
+				ID:           tt.fields.ID,
+				Name:         tt.fields.Name,
+				Description:  tt.fields.Description,
+				Categories:   tt.fields.Categories,
+				Deprecated:   tt.fields.Deprecated,
+				Path:         tt.fields.Path,
+				Requirements: tt.fields.Requirements,
+				Versions:     tt.fields.Versions,
+			}
+			assert.Equalf(t, tt.want, v.HasBackend(tt.args.projectBackends), "HasBackend(%v)", tt.args.projectBackends)
+		})
+	}
+}
+
+func TestTemplateRecord_HasFeature(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		ID           string
+		Name         string
+		Description  string
+		Categories   []string
+		Deprecated   bool
+		Path         string
+		Requirements Requirements
+		Versions     []VersionRecord
+	}
+	type args struct {
+		features keboola.FeaturesMap
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{name: "supported features", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Features: []string{"feature5", "feature2"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{features: keboola.Features{"feature1", "feature2", "feature3", "feature4"}.ToMap()}, want: true},
+
+		{name: "unsupported features", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Features: []string{"feature5"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{features: keboola.Features{"feature1", "feature2", "feature3", "feature4"}.ToMap()}, want: false},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			v := &TemplateRecord{
+				ID:           tt.fields.ID,
+				Name:         tt.fields.Name,
+				Description:  tt.fields.Description,
+				Categories:   tt.fields.Categories,
+				Deprecated:   tt.fields.Deprecated,
+				Path:         tt.fields.Path,
+				Requirements: tt.fields.Requirements,
+				Versions:     tt.fields.Versions,
+			}
+			assert.Equalf(t, tt.want, v.HasFeature(tt.args.features), "HasFeature(%v)", tt.args.features)
+		})
+	}
+}
+
+func TestTemplateRecord_HasComponent(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		ID           string
+		Name         string
+		Description  string
+		Categories   []string
+		Deprecated   bool
+		Path         string
+		Requirements Requirements
+		Versions     []VersionRecord
+	}
+	type args struct {
+		components *model.ComponentsMap
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{name: "supported components", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Components: []string{"wrong_component", "keboola.python-transformation-v2", "foo.bar"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{components: testapi.MockedComponentsMap()}, want: true},
+
+		{name: "unsupported components", fields: fields{
+			ID:          "my-template-1",
+			Name:        "My Template-1",
+			Description: "Foo ....",
+			Deprecated:  false,
+			Categories:  []string{"Other"},
+			Path:        "path1",
+			Requirements: Requirements{
+				Components: []string{"wrong-component"},
+			},
+			Versions: []VersionRecord{
+				{Version: version("1.2.4"), Description: "", Stable: false},
+			},
+		}, args: args{components: testapi.MockedComponentsMap()}, want: false},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			v := &TemplateRecord{
+				ID:           tt.fields.ID,
+				Name:         tt.fields.Name,
+				Description:  tt.fields.Description,
+				Categories:   tt.fields.Categories,
+				Deprecated:   tt.fields.Deprecated,
+				Path:         tt.fields.Path,
+				Requirements: tt.fields.Requirements,
+				Versions:     tt.fields.Versions,
+			}
+			assert.Equalf(t, tt.want, v.HasComponent(tt.args.components), "HasComponent(%v)", tt.args.components)
+		})
 	}
 }
