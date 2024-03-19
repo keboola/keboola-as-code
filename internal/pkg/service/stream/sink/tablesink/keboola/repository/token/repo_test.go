@@ -2,6 +2,7 @@ package token_test
 
 import (
 	"context"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"net/http"
 	"testing"
@@ -13,10 +14,10 @@ import (
 
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	tokenRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/repository/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -39,9 +40,9 @@ func TestRepository_Token(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
+	//rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
-	r := d.StorageRepository().Token()
+	var r *tokenRepo.Repository
 
 	// Simulate that the operation is running in an API request authorized by a token
 	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
@@ -49,9 +50,9 @@ func TestRepository_Token(t *testing.T) {
 
 	// Mock API calls
 	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, transport)
-	test.MockTableStorageAPICalls(t, transport)
-	test.MockTokenStorageAPICalls(t, transport)
+	test2.MockBucketStorageAPICalls(t, transport)
+	test2.MockTableStorageAPICalls(t, transport)
+	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -67,13 +68,13 @@ func TestRepository_Token(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink1, clk.Now(), "Create sink").Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), "Create sink").Do(ctx).Err())
 	}
 
 	// Token are created together with sinks

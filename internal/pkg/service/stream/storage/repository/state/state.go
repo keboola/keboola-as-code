@@ -1,4 +1,4 @@
-package repository
+package state
 
 import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// validateFileAndSliceStates validates combination of file and slice state.
-func validateFileAndSliceStates(fileState model.FileState, sliceState model.SliceState) error {
+// ValidateFileAndSliceState validates combination of file and slice state.
+func ValidateFileAndSliceState(fileState model.FileState, sliceState model.SliceState) error {
 	switch fileState {
 	case model.FileWriting, model.FileClosing:
 		// Check allowed states

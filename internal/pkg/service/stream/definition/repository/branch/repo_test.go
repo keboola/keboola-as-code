@@ -2,6 +2,7 @@ package branch_test
 
 import (
 	"context"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"net/http"
 	"testing"
 
@@ -46,9 +47,9 @@ func TestRepository_Branch(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, transport)
-	test.MockTableStorageAPICalls(t, transport)
-	test.MockTokenStorageAPICalls(t, transport)
+	test2.MockBucketStorageAPICalls(t, transport)
+	test2.MockTableStorageAPICalls(t, transport)
+	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------

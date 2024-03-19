@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
-	plugin2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -26,14 +26,14 @@ const (
 type Repository struct {
 	client   etcd.KV
 	schema   schema.Source
-	plugins  *plugin2.Plugins
+	plugins  *plugin.Plugins
 	branches *branch.Repository
 }
 
 type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	Plugins() *plugin2.Plugins
+	Plugins() *plugin.Plugins
 }
 
 func NewRepository(d dependencies, branches *branch.Repository) *Repository {
@@ -45,7 +45,7 @@ func NewRepository(d dependencies, branches *branch.Repository) *Repository {
 	}
 
 	// Delete/undelete source with branch
-	r.plugins.Collection().OnBranchSave(func(ctx *plugin2.SaveContext, v *definition.Branch) {
+	r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, v *definition.Branch) {
 		if v.DeletedAt != nil && v.DeletedAt.Time().Equal(ctx.Now()) {
 			ctx.AddAtomicOp(r.softDeleteAllFrom(v.BranchKey, ctx.Now(), true))
 		} else if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(ctx.Now()) {
@@ -136,7 +136,7 @@ func (r *Repository) Create(input *definition.Source, now time.Time, versionDesc
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, []definition.Source{entity})
+		return r.saveOne(ctx, now, &entity)
 	})
 
 	return atomicOp
@@ -163,7 +163,7 @@ func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription s
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, []definition.Source{entity})
+		return r.saveOne(ctx, now, &entity)
 	})
 
 	return atomicOp
@@ -241,7 +241,7 @@ func (r *Repository) Rollback(k key.SourceKey, now time.Time, to definition.Vers
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, []definition.Source{entity})
+		return r.saveOne(ctx, now, &entity)
 	})
 
 	return atomicOp
@@ -274,7 +274,7 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, all)
+		return r.saveAll(ctx, now, all)
 	})
 
 	return atomicOp
@@ -319,43 +319,51 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, all)
+		return r.saveAll(ctx, now, all)
 	})
 
 	return atomicOp
 }
 
-//nolint:dupl // similar to SinkRepository.save
-func (r *Repository) save(ctx context.Context, now time.Time, all []definition.Source) (op.Op, error) {
-	saveCtx := plugin2.NewSaveContext(now)
-	for _, v := range all {
-		// Call plugins
-		r.plugins.Executor().OnSourceSave(saveCtx, &v)
+func (r *Repository) saveOne(ctx context.Context, now time.Time, v *definition.Source) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	r.save(saveCtx, now, v)
+	return saveCtx.Apply(ctx)
+}
 
-		if v.Deleted {
-			// Move entity from the active prefix to the deleted prefix
-			saveCtx.AddOp(
-				// Delete entity from the active prefix
-				r.schema.Active().ByKey(v.SourceKey).Delete(r.client),
-				// Save entity to the deleted prefix
-				r.schema.Deleted().ByKey(v.SourceKey).Put(r.client, v),
-			)
-		} else {
-			saveCtx.AddOp(
-				// Save record to the "active" prefix
-				r.schema.Active().ByKey(v.SourceKey).Put(r.client, v),
-				// Save record to the versions history
-				r.schema.Versions().Of(v.SourceKey).Version(v.VersionNumber()).Put(r.client, v),
-			)
+func (r *Repository) saveAll(ctx context.Context, now time.Time, all []definition.Source) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	for i := range all {
+		r.save(saveCtx, now, &all[i])
+	}
+	return saveCtx.Apply(ctx)
+}
 
-			if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
-				// Delete record from the "deleted" prefix, if needed
-				saveCtx.AddOp(r.schema.Deleted().ByKey(v.SourceKey).Delete(r.client))
-			}
+func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, v *definition.Source) {
+	// Call plugins
+	r.plugins.Executor().OnSourceSave(saveCtx, v)
+
+	if v.Deleted {
+		// Move entity from the active prefix to the deleted prefix
+		saveCtx.AddOp(
+			// Delete entity from the active prefix
+			r.schema.Active().ByKey(v.SourceKey).Delete(r.client),
+			// Save entity to the deleted prefix
+			r.schema.Deleted().ByKey(v.SourceKey).Put(r.client, *v),
+		)
+	} else {
+		saveCtx.AddOp(
+			// Save record to the "active" prefix
+			r.schema.Active().ByKey(v.SourceKey).Put(r.client, *v),
+			// Save record to the versions history
+			r.schema.Versions().Of(v.SourceKey).Version(v.VersionNumber()).Put(r.client, *v),
+		)
+
+		if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
+			// Delete record from the "deleted" prefix, if needed
+			saveCtx.AddOp(r.schema.Deleted().ByKey(v.SourceKey).Delete(r.client))
 		}
 	}
-
-	return saveCtx.Apply(ctx)
 }
 
 func (r *Repository) checkMaxSourcesPerBranch(k key.BranchKey, newCount int64) op.Op {

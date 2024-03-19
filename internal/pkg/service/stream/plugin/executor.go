@@ -1,6 +1,9 @@
 package plugin
 
-import "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+)
 
 type Executor struct {
 	collection *Collection
@@ -13,12 +16,24 @@ func (e *Executor) OnBranchSave(ctx *SaveContext, v *definition.Branch) {
 }
 
 func (e *Executor) OnSourceSave(ctx *SaveContext, v *definition.Source) {
-	e.collection.onSourceSaveFn.forEach(func(fn onSourceSaveFn) {
+	e.collection.onSourceSave.forEach(func(fn onSourceSaveFn) {
 		fn(ctx, v)
 	})
 }
 func (e *Executor) OnSinkSave(ctx *SaveContext, v *definition.Sink) {
-	e.collection.onSinkSaveFn.forEach(func(fn onSinkSaveFn) {
+	e.collection.onSinkSave.forEach(func(fn onSinkSaveFn) {
+		fn(ctx, v)
+	})
+}
+
+func (e *Executor) OnFileSave(ctx *SaveContext, v *storage.File) {
+	e.collection.onFileSave.forEach(func(fn onFileSaveFn) {
+		fn(ctx, v)
+	})
+}
+
+func (e *Executor) OnSliceSave(ctx *SaveContext, v *storage.Slice) {
+	e.collection.onSliceSave.forEach(func(fn onSliceSaveFn) {
 		fn(ctx, v)
 	})
 }

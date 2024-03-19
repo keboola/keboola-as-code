@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
-	plugin2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -23,14 +23,14 @@ const (
 
 type Repository struct {
 	client  etcd.KV
-	plugins *plugin2.Plugins
+	plugins *plugin.Plugins
 	schema  schema.Branch
 }
 
 type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	Plugins() *plugin2.Plugins
+	Plugins() *plugin.Plugins
 }
 
 func NewRepository(d dependencies) *Repository {
@@ -128,7 +128,7 @@ func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicO
 		}).
 		// Save
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.save(ctx, now, []definition.Branch{entity})
+			return r.saveOne(ctx, now, &entity)
 		}).
 		// Update the input entity after a successful operation
 		OnResult(func(entity definition.Branch) {
@@ -148,7 +148,7 @@ func (r *Repository) SoftDelete(k key.BranchKey, now time.Time) *op.AtomicOp[def
 		}).
 		// Save
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.save(ctx, now, []definition.Branch{entity})
+			return r.saveOne(ctx, now, &entity)
 		})
 }
 
@@ -166,36 +166,37 @@ func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[defin
 		}).
 		// Save
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.save(ctx, now, []definition.Branch{entity})
+			return r.saveOne(ctx, now, &entity)
 		})
 }
 
-func (r *Repository) save(ctx context.Context, now time.Time, all []definition.Branch) (op.Op, error) {
-	saveCtx := plugin2.NewSaveContext(now)
-	for _, v := range all {
-		// Call plugins
-		r.plugins.Executor().OnBranchSave(saveCtx, &v)
+func (r *Repository) saveOne(ctx context.Context, now time.Time, v *definition.Branch) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	r.save(saveCtx, now, v)
+	return saveCtx.Apply(ctx)
+}
 
-		if v.Deleted {
-			// Move entity from the active prefix to the deleted prefix
-			saveCtx.AddOp(
-				// Delete entity from the active prefix
-				r.schema.Active().ByKey(v.BranchKey).Delete(r.client),
-				// Save entity to the deleted prefix
-				r.schema.Deleted().ByKey(v.BranchKey).Put(r.client, v),
-			)
-		} else {
-			// Save record to the "active" prefix
-			saveCtx.AddOp(r.schema.Active().ByKey(v.BranchKey).Put(r.client, v))
+func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, v *definition.Branch) {
+	// Call plugins
+	r.plugins.Executor().OnBranchSave(saveCtx, v)
 
-			if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
-				// Delete record from the "deleted" prefix, if needed
-				saveCtx.AddOp(r.schema.Deleted().ByKey(v.BranchKey).Delete(r.client))
-			}
+	if v.Deleted {
+		// Move entity from the active prefix to the deleted prefix
+		saveCtx.AddOp(
+			// Delete entity from the active prefix
+			r.schema.Active().ByKey(v.BranchKey).Delete(r.client),
+			// Save entity to the deleted prefix
+			r.schema.Deleted().ByKey(v.BranchKey).Put(r.client, *v),
+		)
+	} else {
+		// Save record to the "active" prefix
+		saveCtx.AddOp(r.schema.Active().ByKey(v.BranchKey).Put(r.client, *v))
+
+		if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
+			// Delete record from the "deleted" prefix, if needed
+			saveCtx.AddOp(r.schema.Deleted().ByKey(v.BranchKey).Delete(r.client))
 		}
 	}
-
-	return saveCtx.Apply(ctx)
 }
 
 func (r *Repository) checkMaxBranchesPerProject(k keboola.ProjectID, newCount int64) op.Op {

@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
-	plugin2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -26,14 +26,14 @@ const (
 type Repository struct {
 	client  etcd.KV
 	schema  schema.Sink
-	plugins *plugin2.Plugins
+	plugins *plugin.Plugins
 	sources *source.Repository
 }
 
 type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	Plugins() *plugin2.Plugins
+	Plugins() *plugin.Plugins
 }
 
 func NewRepository(d dependencies, sources *source.Repository) *Repository {
@@ -45,7 +45,7 @@ func NewRepository(d dependencies, sources *source.Repository) *Repository {
 	}
 
 	// Delete/undelete source with branch
-	r.plugins.Collection().OnSourceSave(func(ctx *plugin2.SaveContext, v *definition.Source) {
+	r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, v *definition.Source) {
 		if v.DeletedAt != nil && v.DeletedAt.Time().Equal(ctx.Now()) {
 			ctx.AddAtomicOp(r.softDeleteAllFrom(v.SourceKey, ctx.Now(), true))
 		} else if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(ctx.Now()) {
@@ -136,7 +136,7 @@ func (r *Repository) Create(input *definition.Sink, now time.Time, versionDescri
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, []definition.Sink{entity})
+		return r.saveOne(ctx, now, &entity)
 	})
 
 	return atomicOp
@@ -163,7 +163,7 @@ func (r *Repository) Update(k key.SinkKey, now time.Time, versionDescription str
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, []definition.Sink{entity})
+		return r.saveOne(ctx, now, &entity)
 	})
 
 	return atomicOp
@@ -241,7 +241,7 @@ func (r *Repository) Rollback(k key.SinkKey, now time.Time, to definition.Versio
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, []definition.Sink{entity})
+		return r.saveOne(ctx, now, &entity)
 	})
 
 	return atomicOp
@@ -274,7 +274,7 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, all)
+		return r.saveAll(ctx, now, all)
 	})
 
 	return atomicOp
@@ -317,43 +317,51 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 
 	// Save
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		return r.save(ctx, now, all)
+		return r.saveAll(ctx, now, all)
 	})
 
 	return atomicOp
 }
 
-//nolint:dupl // similar to SourceRepository.save
-func (r *Repository) save(ctx context.Context, now time.Time, all []definition.Sink) (op.Op, error) {
-	saveCtx := plugin2.NewSaveContext(now)
-	for _, v := range all {
-		// Call plugins
-		r.plugins.Executor().OnSinkSave(saveCtx, &v)
+func (r *Repository) saveOne(ctx context.Context, now time.Time, v *definition.Sink) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	r.save(saveCtx, now, v)
+	return saveCtx.Apply(ctx)
+}
 
-		if v.Deleted {
-			// Move entity from the active prefix to the deleted prefix
-			saveCtx.AddOp(
-				// Delete entity from the active prefix
-				r.schema.Active().ByKey(v.SinkKey).Delete(r.client),
-				// Save entity to the deleted prefix
-				r.schema.Deleted().ByKey(v.SinkKey).Put(r.client, v),
-			)
-		} else {
-			saveCtx.AddOp(
-				// Save record to the "active" prefix
-				r.schema.Active().ByKey(v.SinkKey).Put(r.client, v),
-				// Save record to the versions history
-				r.schema.Versions().Of(v.SinkKey).Version(v.VersionNumber()).Put(r.client, v),
-			)
+func (r *Repository) saveAll(ctx context.Context, now time.Time, all []definition.Sink) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	for i := range all {
+		r.save(saveCtx, now, &all[i])
+	}
+	return saveCtx.Apply(ctx)
+}
 
-			if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
-				// Delete record from the "deleted" prefix, if needed
-				saveCtx.AddOp(r.schema.Deleted().ByKey(v.SinkKey).Delete(r.client))
-			}
+func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, v *definition.Sink) {
+	// Call plugins
+	r.plugins.Executor().OnSinkSave(saveCtx, v)
+
+	if v.Deleted {
+		// Move entity from the active prefix to the deleted prefix
+		saveCtx.AddOp(
+			// Delete entity from the active prefix
+			r.schema.Active().ByKey(v.SinkKey).Delete(r.client),
+			// Save entity to the deleted prefix
+			r.schema.Deleted().ByKey(v.SinkKey).Put(r.client, *v),
+		)
+	} else {
+		saveCtx.AddOp(
+			// Save record to the "active" prefix
+			r.schema.Active().ByKey(v.SinkKey).Put(r.client, *v),
+			// Save record to the versions history
+			r.schema.Versions().Of(v.SinkKey).Version(v.VersionNumber()).Put(r.client, *v),
+		)
+
+		if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
+			// Delete record from the "deleted" prefix, if needed
+			saveCtx.AddOp(r.schema.Deleted().ByKey(v.SinkKey).Delete(r.client))
 		}
 	}
-
-	return saveCtx.Apply(ctx)
 }
 
 func (r *Repository) checkMaxSinksPerSource(k key.SourceKey, newCount int64) op.Op {

@@ -3,19 +3,11 @@ package test
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
-	"github.com/relvacode/iso8601"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -28,6 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // fileRepository interface to prevent package import cycle.
@@ -131,43 +125,4 @@ func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRe
 
 		from = to
 	}
-}
-
-func MockFileStorageAPICalls(t *testing.T, clk clock.Clock, transport *httpmock.MockTransport) {
-	t.Helper()
-
-	fileID := atomic.NewInt32(1000)
-
-	// Mocked file prepare resource endpoint
-	transport.RegisterResponder(
-		http.MethodPost,
-		`/v2/storage/branch/[0-9]+/files/prepare`,
-		func(request *http.Request) (*http.Response, error) {
-			branchID, err := extractBranchIDFromURL(request.URL.String())
-			if err != nil {
-				return nil, err
-			}
-
-			return httpmock.NewJsonResponse(http.StatusOK, &keboola.FileUploadCredentials{
-				File: keboola.File{
-					FileKey: keboola.FileKey{
-						BranchID: branchID,
-						FileID:   keboola.FileID(fileID.Inc()),
-					},
-				},
-				S3UploadParams: &s3.UploadParams{
-					Credentials: s3.Credentials{
-						Expiration: iso8601.Time{Time: clk.Now().Add(time.Hour)},
-					},
-				},
-			})
-		},
-	)
-
-	// Mocked file delete endpoint
-	transport.RegisterResponder(
-		http.MethodDelete,
-		`=~/v2/storage/branch/[0-9]+/files/\d+$`,
-		httpmock.NewStringResponder(http.StatusNoContent, ""),
-	)
 }

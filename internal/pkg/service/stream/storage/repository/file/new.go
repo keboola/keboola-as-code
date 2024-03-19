@@ -12,8 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// newFile creates file entity.
-func newFile(cfg level.Config, resource repository.FileResource, sink definition.Sink) (f model.File, err error) {
+// NewFile creates file entity.
+func NewFile(cfg level.Config, resource repository.FileResource, sink definition.Sink) (f model.File, err error) {
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.

@@ -6,6 +6,7 @@ import (
 	sinkrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
 	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"net/http"
 	"testing"
 
@@ -113,9 +114,9 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 
 	// Mock file API calls
 	transport := mock.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, transport)
-	test.MockTableStorageAPICalls(t, transport)
-	test.MockTokenStorageAPICalls(t, transport)
+	test2.MockBucketStorageAPICalls(t, transport)
+	test2.MockTableStorageAPICalls(t, transport)
+	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Create parents
 	branch := test.NewBranch(branchKey)

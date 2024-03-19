@@ -57,17 +57,6 @@ func TestSliceRepository_Operations(t *testing.T) {
 	sliceRepo := storageRepo.Slice()
 	volumeRepo := storageRepo.Volume()
 
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
-
-	// Mock file API calls
-	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, transport)
-	test.MockTableStorageAPICalls(t, transport)
-	test.MockTokenStorageAPICalls(t, transport)
-	test.MockFileStorageAPICalls(t, clk, transport)
-
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -115,16 +104,16 @@ func TestSliceRepository_Operations(t *testing.T) {
 	var fileKey1, fileKey2, fileKey3 model.FileKey
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
 		sink1 := test.NewSink(sinkKey1)
 		sink1.Config = sink1.Config.With(testconfig.StorageConfigPatch())
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink1, clk.Now(), "Create sink").Do(ctx).Err())
 		sink2 := test.NewSink(sinkKey2)
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), "Create sink").Do(ctx).Err())
 		sink3 := test.NewSink(sinkKey3)
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink3).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink3, clk.Now(), "Create sink").Do(ctx).Err())
 
 		file1, err := fileRepo.Rotate(rb, clk.Now(), sink1.SinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)

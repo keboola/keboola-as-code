@@ -12,7 +12,7 @@ import (
 
 func TestVolumeSchema(t *testing.T) {
 	t.Parallel()
-	s := ForVolume(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 
 	volumeID := volume.ID("my-volume")
 

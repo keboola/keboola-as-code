@@ -3,52 +3,61 @@ package slice
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/state"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// SliceRepository provides database operations with the storage.Slice entity.
+// Repository provides database operations with the storage.Slice entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
-type SliceRepository struct {
-	client  etcd.KV
-	schema  schema.Slice
-	backoff model.RetryBackoff
-	all     *repository.Repository
+type Repository struct {
+	client     etcd.KV
+	schema     schema.Slice
+	backoff    model.RetryBackoff
+	definition *definitionRepo.Repository
+	files      *fileRepo.Repository
 }
 
-func NewRepository(d repository.dependencies, backoff model.RetryBackoff, all *repository.Repository) *SliceRepository {
-	return &SliceRepository{
-		client:  d.EtcdClient(),
-		schema:  schema.ForSlice(d.EtcdSerde()),
-		backoff: backoff,
-		all:     all,
+type dependencies interface {
+	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
+	DefinitionRepository() *definitionRepo.Repository
+}
+
+func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.Repository) *Repository {
+	return &Repository{
+		client:     d.EtcdClient(),
+		schema:     schema.New(d.EtcdSerde()),
+		backoff:    backoff,
+		definition: d.DefinitionRepository(),
+		files:      files,
 	}
 }
 
 // ListIn lists slices in the parent, in all storage levels.
-func (r *SliceRepository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.Slice] {
+func (r *Repository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.Slice] {
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
 }
 
 // ListInLevel lists slices in the specified storage level.
-func (r *SliceRepository) ListInLevel(parentKey fmt.Stringer, level level.Level) iterator.DefinitionT[model.Slice] {
+func (r *Repository) ListInLevel(parentKey fmt.Stringer, level level.Level) iterator.DefinitionT[model.Slice] {
 	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
 }
 
 // ListInState lists slices in the specified state.
-func (r *SliceRepository) ListInState(parentKey fmt.Stringer, state model.SliceState) iterator.DefinitionT[model.Slice] {
+func (r *Repository) ListInState(parentKey fmt.Stringer, state model.SliceState) iterator.DefinitionT[model.Slice] {
 	return r.
 		ListInLevel(parentKey, state.Level()).
 		WithFilter(func(file model.Slice) bool {
@@ -57,7 +66,7 @@ func (r *SliceRepository) ListInState(parentKey fmt.Stringer, state model.SliceS
 }
 
 // Get slice entity.
-func (r *SliceRepository) Get(k model.SliceKey) op.WithResult[model.Slice] {
+func (r *Repository) Get(k model.SliceKey) op.WithResult[model.Slice] {
 	return r.schema.
 		AllLevels().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -71,7 +80,7 @@ func (r *SliceRepository) Get(k model.SliceKey) op.WithResult[model.Slice] {
 //   - If no old slice exists, this operation effectively corresponds to the Open operation.
 //   - Slices rotation is done atomically.
 //   - This method is used to rotate slices when the upload conditions are met.
-func (r *SliceRepository) Rotate(now time.Time, fileVolumeKey model.FileVolumeKey) *op.AtomicOp[model.Slice] {
+func (r *Repository) Rotate(now time.Time, fileVolumeKey model.FileVolumeKey) *op.AtomicOp[model.Slice] {
 	return r.rotate(now, fileVolumeKey, true)
 }
 
@@ -79,13 +88,13 @@ func (r *SliceRepository) Rotate(now time.Time, fileVolumeKey model.FileVolumeKe
 //   - NO NEW SLICE is created, that's the difference with Rotate.
 //   - THE OLD SLICE in the storage.SliceWriting state, IF PRESENT, is switched to the storage.SliceClosing state.
 //   - This method is used to drain the volume.
-func (r *SliceRepository) Close(now time.Time, fileVolumeKey model.FileVolumeKey) *op.AtomicOp[op.NoResult] {
+func (r *Repository) Close(now time.Time, fileVolumeKey model.FileVolumeKey) *op.AtomicOp[op.NoResult] {
 	return op.Atomic(r.client, &op.NoResult{}).AddFrom(r.rotate(now, fileVolumeKey, false))
 }
 
 // IncrementRetry increments retry attempt and backoff delay on an error.
 // Retry is reset on StateTransition.
-func (r *SliceRepository) IncrementRetry(now time.Time, sliceKey model.SliceKey, reason string) *op.AtomicOp[model.Slice] {
+func (r *Repository) IncrementRetry(now time.Time, sliceKey model.SliceKey, reason string) *op.AtomicOp[model.Slice] {
 	return r.readAndUpdate(sliceKey, func(slice model.Slice) (model.Slice, error) {
 		slice.IncrementRetry(r.backoff, now, reason)
 		return slice, nil
@@ -93,7 +102,7 @@ func (r *SliceRepository) IncrementRetry(now time.Time, sliceKey model.SliceKey,
 }
 
 // StateTransition switch state of the file, state of the file slices is also atomically switched, if needed.
-func (r *SliceRepository) StateTransition(now time.Time, sliceKey model.SliceKey, from, to model.SliceState) *op.AtomicOp[model.Slice] {
+func (r *Repository) StateTransition(now time.Time, sliceKey model.SliceKey, from, to model.SliceState) *op.AtomicOp[model.Slice] {
 	var file model.File
 	atomicOp := r.
 		readAndUpdate(sliceKey, func(slice model.Slice) (model.Slice, error) {
@@ -111,26 +120,21 @@ func (r *SliceRepository) StateTransition(now time.Time, sliceKey model.SliceKey
 			}
 
 			// Validate file and slice state combination
-			if err := repository.validateFileAndSliceStates(file.State, to); err != nil {
+			if err := state.ValidateFileAndSliceState(file.State, to); err != nil {
 				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
 			}
 
 			// Switch slice state
 			return slice.WithState(now, to)
 		}).
-		ReadOp(r.all.file.Get(sliceKey.FileKey).WithResultTo(&file))
-
-	// Call related hook
-	if r.all.hooks != nil {
-		r.all.hooks.OnSliceStateTransition(sliceKey, from, to, atomicOp)
-	}
+		ReadOp(r.files.Get(sliceKey.FileKey).WithResultTo(&file))
 
 	return atomicOp
 }
 
 // Delete slice.
 // This operation deletes only the metadata, the file resource in the staging storage is unaffected.
-func (r *SliceRepository) Delete(k model.SliceKey) *op.AtomicOp[op.NoResult] {
+func (r *Repository) Delete(k model.SliceKey) *op.AtomicOp[op.NoResult] {
 	atomicOp := op.Atomic(r.client, &op.NoResult{})
 
 	// Delete entity from All prefix
@@ -147,36 +151,21 @@ func (r *SliceRepository) Delete(k model.SliceKey) *op.AtomicOp[op.NoResult] {
 		atomicOp.WriteOp(r.schema.InLevel(l).ByKey(k).Delete(r.client))
 	}
 
-	// Call related hook
-	if r.all.hooks != nil {
-		r.all.hooks.OnSliceDelete(k, atomicOp)
-	}
-
 	return atomicOp
 }
 
 // rotate is a common code for rotate and close operations.
-func (r *SliceRepository) rotate(now time.Time, fileVolumeKey model.FileVolumeKey, openNew bool) *op.AtomicOp[model.Slice] {
+func (r *Repository) rotate(now time.Time, fileVolumeKey model.FileVolumeKey, openNew bool) *op.AtomicOp[model.Slice] {
 	// Init atomic operation
 	var newSliceEntity model.Slice
 	atomicOp := op.Atomic(r.client, &newSliceEntity)
 
-	// Get disk space statistics to calculate pre-allocated disk space for a new slice
-	var maxUsedDiskSpace map[key.SinkKey]datasize.ByteSize
-	if openNew {
-		provider := r.all.external.NewUsedDiskSpaceProvider()
-		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
-			maxUsedDiskSpace, err = provider(ctx, []key.SinkKey{fileVolumeKey.SinkKey})
-			return err
-		})
-	}
-
 	// Check sink, it must exist
-	atomicOp.ReadOp(r.all.sink.ExistsOrErr(fileVolumeKey.SinkKey))
+	atomicOp.ReadOp(r.definition.Sink().ExistsOrErr(fileVolumeKey.SinkKey))
 
 	// Get file, it must exist
 	var file model.File
-	atomicOp.ReadOp(r.all.file.Get(fileVolumeKey.FileKey).WithResultTo(&file))
+	atomicOp.ReadOp(r.files.Get(fileVolumeKey.FileKey).WithResultTo(&file))
 
 	// Read opened slices.
 	// There can be a maximum of one old slice in the storage.SliceWriting state per FileVolumeKey,
@@ -199,7 +188,7 @@ func (r *SliceRepository) rotate(now time.Time, fileVolumeKey model.FileVolumeKe
 		// Open new slice, if enabled
 		if openNew {
 			// Create the new slice
-			if newSliceEntity, err = newSlice(now, file, fileVolumeKey.VolumeID, maxUsedDiskSpace[fileVolumeKey.SinkKey]); err == nil {
+			if newSliceEntity, err = NewSlice(now, file, fileVolumeKey.VolumeID); err == nil {
 				txn.Merge(r.createTxn(newSliceEntity))
 			} else {
 				return nil, err
@@ -231,7 +220,7 @@ func (r *SliceRepository) rotate(now time.Time, fileVolumeKey model.FileVolumeKe
 	return atomicOp
 }
 
-func (r *SliceRepository) deleteAll(parentKey fmt.Stringer) *op.TxnOp[op.NoResult] {
+func (r *Repository) deleteAll(parentKey fmt.Stringer) *op.TxnOp[op.NoResult] {
 	txn := op.Txn(r.client)
 
 	// Delete entity from All prefix
@@ -251,7 +240,7 @@ func (r *SliceRepository) deleteAll(parentKey fmt.Stringer) *op.TxnOp[op.NoResul
 // - "InLevel" prefix is used for effective watching of the storage level.
 //
 //nolint:dupl // similar code is in the FileRepository
-func (r *SliceRepository) createTxn(value model.Slice) *op.TxnOp[model.Slice] {
+func (r *Repository) createTxn(value model.Slice) *op.TxnOp[model.Slice] {
 	etcdKey := r.schema.AllLevels().ByKey(value.SliceKey)
 	return op.TxnWithResult(r.client, &value).
 		// Entity must not exist on create
@@ -267,7 +256,7 @@ func (r *SliceRepository) createTxn(value model.Slice) *op.TxnOp[model.Slice] {
 }
 
 // updateTxn saves an existing entity, see also createTxn method.
-func (r *SliceRepository) updateTxn(oldValue, newValue model.Slice) *op.TxnOp[model.Slice] {
+func (r *Repository) updateTxn(oldValue, newValue model.Slice) *op.TxnOp[model.Slice] {
 	txn := op.TxnWithResult(r.client, &newValue)
 
 	// Put entity to All and InLevel prefixes
@@ -283,7 +272,7 @@ func (r *SliceRepository) updateTxn(oldValue, newValue model.Slice) *op.TxnOp[mo
 	return txn
 }
 
-func (r *SliceRepository) readAndUpdate(sliceKey model.SliceKey, updateFn func(slice model.Slice) (model.Slice, error)) *op.AtomicOp[model.Slice] {
+func (r *Repository) readAndUpdate(sliceKey model.SliceKey, updateFn func(slice model.Slice) (model.Slice, error)) *op.AtomicOp[model.Slice] {
 	var oldValue, newValue model.Slice
 	return op.Atomic(r.client, &newValue).
 		// Read entity for modification

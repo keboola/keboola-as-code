@@ -3,35 +3,44 @@ package file
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file/schema"
-	"reflect"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	volumeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Repository provides database operations with the model.File entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
-	client  etcd.KV
-	schema  schema.File
-	config  level.Config
-	backoff model.RetryBackoff
-	all     *repository.Repository
+	client     etcd.KV
+	schema     schema.File
+	config     level.Config
+	backoff    model.RetryBackoff
+	volumes    *volumeRepo.Repository
+	plugins    *plugin.Plugins
+	definition *definitionRepo.Repository
+}
+
+type dependencies interface {
+	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
+	Plugins() *plugin.Plugins
+	DefinitionRepository() *definitionRepo.Repository
 }
 
 // rotateSinkContext is an auxiliary struct to group arguments needed to rotate a Sink.
@@ -48,19 +57,17 @@ type rotateSinkContext struct {
 	OpenedFiles []model.File
 	// OpenedSlices in the model.SliceWriting state to be closed
 	OpenedSlices []model.Slice
-	// 0 means disabled or no data
-	MaxUsedDiskSize datasize.ByteSize
-	// new file resource created via Storage API, is empty if OpenNew == false
-	NewFileResource *repository.FileResource
 }
 
-func NewRepository(cfg level.Config, d repository.dependencies, backoff model.RetryBackoff, all *repository.Repository) *Repository {
+func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff, volumes *volumeRepo.Repository) *Repository {
 	return &Repository{
-		client:  d.EtcdClient(),
-		schema:  schema.ForFile(d.EtcdSerde()),
-		config:  cfg,
-		backoff: backoff,
-		all:     all,
+		client:     d.EtcdClient(),
+		schema:     schema.ForFile(d.EtcdSerde()),
+		config:     cfg,
+		backoff:    backoff,
+		volumes:    volumes,
+		plugins:    d.Plugins(),
+		definition: d.DefinitionRepository(),
 	}
 }
 
@@ -102,14 +109,14 @@ func (r *Repository) Get(fileKey model.FileKey) op.WithResult[model.File] {
 //   - Opening new slices in the file, on different volumes, is not the task of this method.
 //   - Files rotation is done atomically.
 //   - This method is used to rotate files when the import conditions are met.
-func (r *Repository) Rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey) *op.AtomicOp[model.File] {
-	return r.rotate(rb, now, sinkKey, true)
+func (r *Repository) Rotate(now time.Time, sinkKey key.SinkKey) *op.AtomicOp[model.File] {
+	return r.rotate(now, sinkKey, true)
 }
 
 // RotateAllIn is same as Rotate method, but it is applied for each table sink within the parentKey.
 // - This method is used on Sink/Source undelete or enable operation.
-func (r *Repository) RotateAllIn(rb rollback.Builder, now time.Time, parentKey fmt.Stringer) *op.AtomicOp[[]model.File] {
-	return r.rotateAllIn(rb, now, parentKey, true)
+func (r *Repository) RotateAllIn(now time.Time, parentKey fmt.Stringer) *op.AtomicOp[[]model.File] {
+	return r.rotateAllIn(now, parentKey, true)
 }
 
 // CloseAllIn closes opened file in each table sink within the parentKey.
@@ -121,14 +128,14 @@ func (r *Repository) CloseAllIn(now time.Time, parentKey fmt.Stringer) *op.Atomi
 	// There is no result of the operation, no new file is opened.
 	return op.
 		Atomic(r.client, &op.NoResult{}).
-		AddFrom(r.rotateAllIn(nil, now, parentKey, false))
+		AddFrom(r.rotateAllIn(now, parentKey, false))
 }
 
 // IncrementRetry increments retry attempt and backoff delay on an error.
 // Retry is reset on StateTransition.
 func (r *Repository) IncrementRetry(now time.Time, k model.FileKey, reason string) *op.AtomicOp[model.File] {
 	return r.
-		readAndUpdate(k, func(slice model.File) (model.File, error) {
+		update(k, func(slice model.File) (model.File, error) {
 			slice.IncrementRetry(r.backoff, now, reason)
 			return slice, nil
 		})
@@ -136,10 +143,10 @@ func (r *Repository) IncrementRetry(now time.Time, k model.FileKey, reason strin
 
 // StateTransition switch state of the file, state of the file slices is also atomically switched, if needed.
 func (r *Repository) StateTransition(now time.Time, fileKey model.FileKey, from, to model.FileState) *op.AtomicOp[model.File] {
-	var fileSlices []model.Slice
+	//var fileSlices []model.Slice
 	atomicOp := r.
 		// Modify the file
-		readAndUpdate(fileKey, func(file model.File) (model.File, error) {
+		update(fileKey, func(file model.File) (model.File, error) {
 			// File should be closed via one of the following ways:
 			//   - Rotate* methods - to create new replacement files
 			//   - Close* methods - no replacement files are created.
@@ -155,55 +162,50 @@ func (r *Repository) StateTransition(now time.Time, fileKey model.FileKey, from,
 
 			// Switch file state
 			return file.WithState(now, to)
-		}).
-		// Read slices for modification
-		ReadOp(r.all.slice.ListIn(fileKey).WithAllTo(&fileSlices)).
-		// Modify slices states, if needed
-		WriteOrErr(func(context.Context) (out op.Op, err error) {
-			txn := op.Txn(r.client)
-			errs := errors.NewMultiError()
-			for _, slice := range fileSlices {
-				oldSliceState := slice
-				if to == model.FileClosing && slice.State == model.SliceWriting {
-					// Switch slice state on FileClosing
-					if slice, err = slice.WithState(now, model.SliceClosing); err != nil {
-						errs.Append(err)
-						continue
-					}
-				} else if to == model.FileImported && slice.State == model.SliceUploaded {
-					// Switch slice state on FileImported
-					if slice, err = slice.WithState(now, model.SliceImported); err != nil {
-						errs.Append(err)
-						continue
-					}
-				}
-
-				// Validate file and slice state combination
-				if err = repository.validateFileAndSliceStates(to, slice.State); err != nil {
-					return nil, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
-				}
-
-				// Save modified value, if there is a difference
-				if !reflect.DeepEqual(oldSliceState, slice) {
-					txn.Merge(r.all.slice.updateTxn(oldSliceState, slice))
-				}
-			}
-
-			if err = errs.ErrorOrNil(); err != nil {
-				return nil, err
-			}
-
-			if !txn.Empty() {
-				return txn, nil
-			}
-
-			return nil, nil
 		})
-
-	// Call related hook
-	if r.all.hooks != nil {
-		r.all.hooks.OnFileStateTransition(fileKey, from, to, atomicOp)
-	}
+	//// Read slices for modification
+	//ReadOp(r.all.slice.ListIn(fileKey).WithAllTo(&fileSlices)).
+	//// Modify slices states, if needed
+	//WriteOrErr(func(context.Context) (out op.Op, err error) {
+	//	txn := op.Txn(r.client)
+	//	errs := errors.NewMultiError()
+	//	for _, slice := range fileSlices {
+	//		oldSliceState := slice
+	//		if to == model.FileClosing && slice.State == model.SliceWriting {
+	//			// Switch slice state on FileClosing
+	//			if slice, err = slice.WithState(now, model.SliceClosing); err != nil {
+	//				errs.Append(err)
+	//				continue
+	//			}
+	//		} else if to == model.FileImported && slice.State == model.SliceUploaded {
+	//			// Switch slice state on FileImported
+	//			if slice, err = slice.WithState(now, model.SliceImported); err != nil {
+	//				errs.Append(err)
+	//				continue
+	//			}
+	//		}
+	//
+	//		// Validate file and slice state combination
+	//		if err = repository.validateFileAndSliceStates(to, slice.State); err != nil {
+	//			return nil, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
+	//		}
+	//
+	//		// Save modified value, if there is a difference
+	//		if !reflect.DeepEqual(oldSliceState, slice) {
+	//			txn.Merge(r.all.slice.updateTxn(oldSliceState, slice))
+	//		}
+	//	}
+	//
+	//	if err = errs.ErrorOrNil(); err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	if !txn.Empty() {
+	//		return txn, nil
+	//	}
+	//
+	//	return nil, nil
+	//})
 
 	return atomicOp
 }
@@ -227,23 +229,15 @@ func (r *Repository) Delete(k model.FileKey) *op.AtomicOp[op.NoResult] {
 		atomicOp.WriteOp(r.schema.InLevel(l).ByKey(k).Delete(r.client))
 	}
 
-	// Delete all slices
-	atomicOp.WriteOp(r.all.slice.deleteAll(k))
-
-	// Call related hook
-	if r.all.hooks != nil {
-		r.all.hooks.OnFileDelete(k, atomicOp)
-	}
-
 	return atomicOp
 }
 
 // rotate one file, it is a special case of the rotateAllIn.
-func (r *Repository) rotate(rb rollback.Builder, now time.Time, sinkKey key.SinkKey, openNewFile bool) *op.AtomicOp[model.File] {
+func (r *Repository) rotate(now time.Time, sinkKey key.SinkKey, openNewFile bool) *op.AtomicOp[model.File] {
 	var file model.File
 	return op.Atomic(r.client, &file).
 		AddFrom(r.
-			rotateAllIn(rb, now, sinkKey, openNewFile).
+			rotateAllIn(now, sinkKey, openNewFile).
 			AddProcessor(func(_ context.Context, result *op.Result[[]model.File]) {
 				// Unwrap results, there in only one file
 				if result.Err() == nil {
@@ -272,7 +266,7 @@ func (r *Repository) rotate(rb rollback.Builder, now time.Time, sinkKey key.Sink
 // If the pointer is nil, the loading of sinks is handled automatically.
 //
 // If openNew is set to true, the operation will open new files and slices; if false, it will only close the existing ones.
-func (r *Repository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, openNew bool) *op.AtomicOp[[]model.File] {
+func (r *Repository) rotateAllIn(now time.Time, parentKey fmt.Stringer, openNew bool) *op.AtomicOp[[]model.File] {
 	// Validate arguments
 	if openNew && rb == nil {
 		panic(errors.New("rollback.Builder must be set if the creation of new file resources is allowed"))
@@ -286,12 +280,12 @@ func (r *Repository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey f
 	var sinks []definition.Sink
 	if sinkKey, ok := parentKey.(key.SinkKey); ok {
 		// Get
-		atomicOp.ReadOp(r.all.sink.Get(sinkKey).WithOnResult(func(sink definition.Sink) {
+		atomicOp.ReadOp(r.definition.Sink().Get(sinkKey).WithOnResult(func(sink definition.Sink) {
 			sinks = []definition.Sink{sink}
 		}))
 	} else {
 		// List
-		atomicOp.ReadOp(r.all.sink.List(parentKey).WithAllTo(&sinks))
+		atomicOp.ReadOp(r.definition.Sink().List(parentKey).WithAllTo(&sinks))
 	}
 
 	// Get sink keys
@@ -305,28 +299,18 @@ func (r *Repository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey f
 	// Get all active volumes
 	var volumes []volume.Metadata
 	if openNew {
-		atomicOp.ReadOp(r.all.Volume().ListWriterVolumes().WithAllTo(&volumes))
+		atomicOp.ReadOp(r.volumes.ListWriterVolumes().WithAllTo(&volumes))
 	}
 
-	// Create file resources
-	var fileResources map[key.SinkKey]*repository.FileResource
-	if openNew {
-		provider := r.all.external.NewFileResourcesProvider(rb)
-		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
-			fileResources, err = provider(ctx, now, sinkKeys)
-			return err
-		})
-	}
-
-	// Get disk space statistics to calculate pre-allocated disk space for a new slice
-	var maxUsedDiskSpace map[key.SinkKey]datasize.ByteSize
-	if openNew {
-		provider := r.all.external.NewUsedDiskSpaceProvider()
-		atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
-			maxUsedDiskSpace, err = provider(ctx, sinkKeys)
-			return err
-		})
-	}
+	//// Create file resources
+	//var fileResources map[key.SinkKey]*repository.FileResource
+	//if openNew {
+	//	provider := r.all.external.NewFileResourcesProvider(rb)
+	//	atomicOp.BeforeWriteOrErr(func(ctx context.Context) (err error) {
+	//		fileResources, err = provider(ctx, now, sinkKeys)
+	//		return err
+	//	})
+	//}
 
 	// Read opened files in the model.FileWriting state.
 	// There can be a maximum of one old file in the model.FileWriting state per each table sink.
@@ -334,10 +318,10 @@ func (r *Repository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey f
 	var openedFiles []model.File
 	atomicOp.ReadOp(r.ListInState(parentKey, model.FileWriting).WithAllTo(&openedFiles))
 
-	// Read opened slices in the model.SliceWriting state.
-	// On rotation, opened slices are switched to the model.SliceClosing state.
-	var openedSlices []model.Slice
-	atomicOp.ReadOp(r.all.slice.ListInState(parentKey, model.SliceWriting).WithAllTo(&openedSlices))
+	//// Read opened slices in the model.SliceWriting state.
+	//// On rotation, opened slices are switched to the model.SliceClosing state.
+	//var openedSlices []model.Slice
+	//atomicOp.ReadOp(r.all.slice.ListInState(parentKey, model.SliceWriting).WithAllTo(&openedSlices))
 
 	// Group opened files by the sink
 	var openedFilesPerSink map[key.SinkKey][]model.File
@@ -348,14 +332,14 @@ func (r *Repository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey f
 		}
 	})
 
-	// Group opened slices by the file
-	var openedSlicesPerSink map[key.SinkKey][]model.Slice
-	atomicOp.BeforeWrite(func(ctx context.Context) {
-		openedSlicesPerSink = make(map[key.SinkKey][]model.Slice)
-		for _, slice := range openedSlices {
-			openedSlicesPerSink[slice.SinkKey] = append(openedSlicesPerSink[slice.SinkKey], slice)
-		}
-	})
+	//// Group opened slices by the file
+	//var openedSlicesPerSink map[key.SinkKey][]model.Slice
+	//atomicOp.BeforeWrite(func(ctx context.Context) {
+	//	openedSlicesPerSink = make(map[key.SinkKey][]model.Slice)
+	//	for _, slice := range openedSlices {
+	//		openedSlicesPerSink[slice.SinkKey] = append(openedSlicesPerSink[slice.SinkKey], slice)
+	//	}
+	//})
 
 	// Close old files, open new files
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
@@ -365,14 +349,12 @@ func (r *Repository) rotateAllIn(rb rollback.Builder, now time.Time, parentKey f
 		// Open a new file in each sink
 		for _, sink := range sinks {
 			sinkTxn, err := r.rotateSink(ctx, rotateSinkContext{
-				Now:             now,
-				OpenNew:         openNew,
-				Sink:            sink,
-				Volumes:         volumes,
-				OpenedFiles:     openedFilesPerSink[sink.SinkKey],
-				OpenedSlices:    openedSlicesPerSink[sink.SinkKey],
-				MaxUsedDiskSize: maxUsedDiskSpace[sink.SinkKey],
-				NewFileResource: fileResources[sink.SinkKey],
+				Now:         now,
+				OpenNew:     openNew,
+				Sink:        sink,
+				Volumes:     volumes,
+				OpenedFiles: openedFilesPerSink[sink.SinkKey],
+				//OpenedSlices:    openedSlicesPerSink[sink.SinkKey],
 			})
 
 			if err != nil {
@@ -430,15 +412,15 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 		}
 	}
 
-	// Close old slices, if present
-	for _, oldSlice := range c.OpenedSlices {
-		if modified, err := oldSlice.WithState(c.Now, model.SliceClosing); err == nil {
-			// Switch the old slice from the state model.SliceWriting to the state model.SliceClosing
-			txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
-		} else {
-			return nil, err
-		}
-	}
+	//// Close old slices, if present
+	//for _, oldSlice := range c.OpenedSlices {
+	//	if modified, err := oldSlice.WithState(c.Now, model.SliceClosing); err == nil {
+	//		// Switch the old slice from the state model.SliceWriting to the state model.SliceClosing
+	//		txn.Merge(r.all.slice.updateTxn(oldSlice, modified))
+	//	} else {
+	//		return nil, err
+	//	}
+	//}
 
 	// Open new file, if enabled
 	if c.NewFileResource != nil {
@@ -455,27 +437,27 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 		}
 
 		// Create file entity
-		file, err := newFile(cfg, *c.NewFileResource, c.Sink)
+		file, err := NewFile(cfg, *c.NewFileResource, c.Sink)
 		if err != nil {
 			return nil, err
 		}
 
 		// Assign volumes
-		file.Assignment = r.all.external.AssignVolumes(ctx, c.Volumes, cfg.Local.Volume.Assignment, file.OpenedAt().Time())
+		file.Assignment = r.volumes.AssignVolumes(c.Volumes, cfg.Local.Volume.Assignment, file.OpenedAt().Time())
 
 		// At least one volume must be assigned
 		if len(file.Assignment.Volumes) == 0 {
 			return nil, errors.New(`no volume is available for the file`)
 		}
 
-		// Open slices in the assigned volumes
-		for _, volumeID := range file.Assignment.Volumes {
-			if slice, err := repository.newSlice(c.Now, file, volumeID, c.MaxUsedDiskSize); err == nil {
-				txn.Merge(r.all.slice.createTxn(slice))
-			} else {
-				return nil, err
-			}
-		}
+		//// Open slices in the assigned volumes
+		//for _, volumeID := range file.Assignment.Volumes {
+		//	if slice, err := repository.newSlice(c.Now, file, volumeID, c.MaxUsedDiskSize); err == nil {
+		//		txn.Merge(r.all.slice.createTxn(slice))
+		//	} else {
+		//		return nil, err
+		//	}
+		//}
 
 		// Open file
 		txn.Merge(r.createTxn(file).OnSucceeded(func(r *op.TxnResult[model.File]) {
@@ -485,6 +467,58 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 	}
 
 	return txn, nil
+}
+
+// update reads the file, applies updateFn and save modified value.
+func (r *Repository) update(k model.FileKey, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
+	var oldValue, newValue model.File
+	return op.Atomic(r.client, &newValue).
+		// Read entity for modification
+		ReadOp(r.Get(k).WithResultTo(&oldValue)).
+		// Prepare the new value
+		BeforeWriteOrErr(func(context.Context) (err error) {
+			newValue, err = updateFn(oldValue)
+			return err
+		}).
+		// Save the updated object
+		Write(func(context.Context) op.Op { return r.updateTxn(oldValue, newValue) })
+}
+
+func (r *Repository) saveOne(ctx context.Context, now time.Time, v *model.File) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	r.save(saveCtx, now, v)
+	return saveCtx.Apply(ctx)
+}
+
+func (r *Repository) saveAll(ctx context.Context, now time.Time, all []model.File) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	for i := range all {
+		r.save(saveCtx, now, &all[i])
+	}
+	return saveCtx.Apply(ctx)
+}
+
+func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, v *model.File) {
+	// Call plugins
+	r.plugins.Executor().OnFileSave(saveCtx, v)
+
+	if v.Deleted {
+		// Move entity from the active prefix to the deleted prefix
+		saveCtx.AddOp(
+			// Delete entity from the active prefix
+			r.schema.Active().ByKey(v.BranchKey).Delete(r.client),
+			// Save entity to the deleted prefix
+			r.schema.Deleted().ByKey(v.BranchKey).Put(r.client, *v),
+		)
+	} else {
+		// Save record to the "active" prefix
+		saveCtx.AddOp(r.schema.Active().ByKey(v.BranchKey).Put(r.client, *v))
+
+		if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
+			// Delete record from the "deleted" prefix, if needed
+			saveCtx.AddOp(r.schema.Deleted().ByKey(v.BranchKey).Delete(r.client))
+		}
+	}
 }
 
 // createTxn saves a new entity, see also update method.
@@ -522,19 +556,4 @@ func (r *Repository) updateTxn(oldValue, newValue model.File) *op.TxnOp[model.Fi
 	}
 
 	return txn
-}
-
-// readAndUpdate reads the file, applies updateFn and save modified value.
-func (r *Repository) readAndUpdate(k model.FileKey, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
-	var oldValue, newValue model.File
-	return op.Atomic(r.client, &newValue).
-		// Read entity for modification
-		ReadOp(r.Get(k).WithResultTo(&oldValue)).
-		// Prepare the new value
-		BeforeWriteOrErr(func(context.Context) (err error) {
-			newValue, err = updateFn(oldValue)
-			return err
-		}).
-		// Save the updated object
-		Write(func(context.Context) op.Op { return r.updateTxn(oldValue, newValue) })
 }

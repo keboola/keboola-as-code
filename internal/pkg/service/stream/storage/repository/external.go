@@ -16,8 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -59,11 +57,6 @@ func newExternal(cfg level.Config, d dependencies, repo *Repository) *external {
 		stats:     d.StatisticsRepository(),
 		storage:   repo,
 	}
-}
-
-// AssignVolumes assigns volumes to a new file.
-func (e *external) AssignVolumes(_ context.Context, allVolumes []volume.Metadata, cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
-	return assignment.VolumesFor(allVolumes, cfg, fileOpenedAt.UnixNano())
 }
 
 func (e *external) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {

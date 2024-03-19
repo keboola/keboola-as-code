@@ -3,6 +3,7 @@ package file_test
 import (
 	"context"
 	"fmt"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"net/http"
 	"strings"
 	"testing"
@@ -49,17 +50,6 @@ func TestFileRepository_Rotate(t *testing.T) {
 	fileRepo := storageRepo.File()
 	volumeRepo := storageRepo.Volume()
 
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
-
-	// Mock file API calls
-	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, transport)
-	test.MockTableStorageAPICalls(t, transport)
-	test.MockTokenStorageAPICalls(t, transport)
-	test.MockFileStorageAPICalls(t, clk, transport)
-
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -73,12 +63,12 @@ func TestFileRepository_Rotate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(2, []string{"default"}))
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
 	}
 
 	// Create (the first file Rotate operation)
@@ -111,16 +101,6 @@ func TestFileRepository_Rotate(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file3.OpenedAt().Time())
 	}
-
-	// Check Storage API calls
-	// -----------------------------------------------------------------------------------------------------------------
-	// File prepare endpoint should be called N times
-	assert.Equal(t, 3, transport.GetCallCountInfo()["POST /v2/storage/branch/456/files/prepare"])
-	assert.Equal(t, 0, transport.GetCallCountInfo()[`DELETE =~/v2/storage/branch/456/files/\d+$`])
-
-	// Test rollback, delete file endpoint should be called N times
-	rb.Invoke(ctx)
-	assert.Equal(t, 3, transport.GetCallCountInfo()[`DELETE =~/v2/storage/branch/456/files/\d+$`])
 
 	// Check etcd state
 	//   - Only the last file is in the storage.FileWriting state.
@@ -339,9 +319,9 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 
 	// Mock file API calls
 	transport := mocked.MockedHTTPTransport()
-	test.MockBucketStorageAPICalls(t, transport)
-	test.MockTableStorageAPICalls(t, transport)
-	test.MockTokenStorageAPICalls(t, transport)
+	test2.MockBucketStorageAPICalls(t, transport)
+	test2.MockTableStorageAPICalls(t, transport)
+	test2.MockTokenStorageAPICalls(t, transport)
 	transport.RegisterResponder(
 		http.MethodPost,
 		fmt.Sprintf("/v2/storage/branch/%d/files/prepare", branchKey.BranchID),
@@ -367,12 +347,12 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(rb, clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(rb, clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(1, []string{"default"}))
-		require.NoError(t, defRepo.Sink().Create(rb, clk.Now(), "Create sink", &sink).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
 	}
 
 	// Create (the first file Rotate operation)

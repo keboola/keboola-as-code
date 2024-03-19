@@ -1,8 +1,9 @@
-package slice
+package slice_test
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
-	file2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
+	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
 	"testing"
 	"time"
 
@@ -58,14 +59,14 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 	cfg := level.NewConfig()
 
 	// Create file
-	file, err := file2.newFile(cfg, repository.FileResource{FileKey: fileKey, Credentials: credentials}, sink)
+	file, err := fileRepo.NewFile(cfg, repository.FileResource{FileKey: fileKey, Credentials: credentials}, sink)
 	require.NoError(t, err)
 
 	// Set unsupported compression type
 	file.LocalStorage.Compression.Type = compression.TypeZSTD
 
 	// Assert
-	_, err = newSlice(now, file, "my-volume", 0)
+	_, err = sliceRepo.NewSlice(now, file, "my-volume")
 	require.Error(t, err)
 	assert.Equal(t, `file compression type "zstd" is not supported`, err.Error())
 }
