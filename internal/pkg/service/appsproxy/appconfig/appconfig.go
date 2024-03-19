@@ -42,7 +42,7 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
-		cache: syncmap.NewSyncMap[string, cacheItem](func() *cacheItem {
+		cache: syncmap.New[string, cacheItem](func() *cacheItem {
 			return &cacheItem{
 				updateLock: &sync.Mutex{},
 			}

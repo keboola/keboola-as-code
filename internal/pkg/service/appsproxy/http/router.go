@@ -69,7 +69,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		config:    d.Config(),
 		clock:     d.Clock(),
 		loader:    d.Loader(),
-		appHandlers: syncmap.NewSyncMap[string, appHandler](func() *appHandler {
+		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
 			}
@@ -145,9 +145,9 @@ func (r *Router) CreateHandler() http.Handler {
 
 		if modified || httpHandler == nil {
 			handler.setHTTPHandler(func() http.Handler {
-				return r.createDataAppHandler(req.Context(), config)
+				httpHandler = r.createDataAppHandler(req.Context(), config)
+				return httpHandler
 			})
-			httpHandler = handler.getHTTPHandler()
 		}
 
 		httpHandler.ServeHTTP(w, req)

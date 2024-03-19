@@ -11,7 +11,7 @@ type SyncMap[K comparable, V any] struct {
 	kvs  map[K]*V
 }
 
-func NewSyncMap[K comparable, V any](init func() *V) *SyncMap[K, V] {
+func New[K comparable, V any](init func() *V) *SyncMap[K, V] {
 	return &SyncMap[K, V]{
 		init: init,
 		lock: &sync.Mutex{},
