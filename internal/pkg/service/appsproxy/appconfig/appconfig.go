@@ -20,6 +20,7 @@ import (
 const staleCacheFallbackDuration = time.Hour
 
 type Loader interface {
+	Notify(ctx context.Context, appID string) error
 	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, bool, error)
 }
 
@@ -48,6 +49,19 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 			}
 		}),
 	}
+}
+
+func (l *sandboxesAPILoader) Notify(ctx context.Context, appID string) error {
+	now := l.clock.Now()
+
+	_, err := PatchApp(l.sender, appID, now).Send(ctx)
+	if err != nil {
+		l.logger.Errorf(ctx, `Failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
+
+		return err
+	}
+
+	return nil
 }
 
 // LoadConfig gets the current configuration from Sandboxes Service.
