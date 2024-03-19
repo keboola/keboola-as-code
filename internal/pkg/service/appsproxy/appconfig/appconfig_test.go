@@ -375,3 +375,23 @@ func newResponse(t *testing.T, code int, body map[string]any, eTag string, cache
 	response.Header.Set("Cache-Control", cacheControl)
 	return response
 }
+
+func TestLoader_Notify(t *testing.T) {
+	t.Parallel()
+
+	clk := clock.NewMock()
+	transport := httpmock.NewMockTransport()
+
+	url := "https://sandboxes.keboola.com"
+	appID := "app"
+
+	transport.RegisterResponder(
+		http.MethodPatch,
+		fmt.Sprintf("%s/apps/%s", url, appID),
+		httpmock.NewStringResponder(http.StatusOK, ""),
+	)
+
+	loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, client.New().WithTransport(transport), url, "")
+	err := loader.Notify(context.Background(), appID)
+	assert.NoError(t, err)
+}

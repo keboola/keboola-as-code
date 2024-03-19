@@ -43,6 +43,22 @@ type AuthRule struct {
 	Auth  []string `json:"auth"`
 }
 
+type PatchBody struct {
+	LastRequestTimestamp string `json:"lastRequestTimestamp"`
+}
+
+func PatchApp(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
+	body := PatchBody{
+		LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
+	}
+	req := request.NewHTTPRequest(sender).
+		WithError(&SandboxesError{}).
+		WithPatch("apps/{appId}").
+		AndPathParam("appId", appID).
+		WithJSONBody(body)
+	return request.NewAPIRequest(request.NoResult{}, req)
+}
+
 func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request.APIRequest[*AppProxyConfig] {
 	result := &AppProxyConfig{}
 	req := request.NewHTTPRequest(sender).
