@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	file "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
 	slice "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume"
@@ -15,6 +16,7 @@ import (
 type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
 }
 

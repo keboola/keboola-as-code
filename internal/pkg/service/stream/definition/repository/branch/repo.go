@@ -2,6 +2,7 @@ package branch
 
 import (
 	"context"
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
@@ -98,37 +99,32 @@ func (r *Repository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch
 
 func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicOp[definition.Branch] {
 	k := input.BranchKey
-	var entity definition.Branch
+	var created definition.Branch
 	var actual, deleted *op.KeyValueT[definition.Branch]
 
-	return op.Atomic(r.client, &entity).
+	return op.Atomic(r.client, &created).
 		// Check prerequisites
-		ReadOp(r.checkMaxBranchesPerProject(entity.ProjectID, 1)).
+		ReadOp(r.checkMaxBranchesPerProject(k.ProjectID, 1)).
 		// Get gets actual version to check if the entity already exists
 		ReadOp(r.schema.Active().ByKey(k).GetKV(r.client).WithResultTo(&actual)).
 		// GetDelete gets deleted version to check if we have to do undelete
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
-		// Entity must not exist
-		BeforeWriteOrErr(func(context.Context) error {
-			if actual != nil {
-				return serviceError.NewResourceAlreadyExistsError("branch", k.BranchID.String(), "project")
-			}
-			return nil
-		}).
-		// Init the entity
-		BeforeWrite(func(context.Context) {
-			entity = *input
-		}).
-		// Set state from the deleted value, if any
-		BeforeWrite(func(context.Context) {
-			if deleted != nil {
-				entity.SoftDeletable = deleted.Value.SoftDeletable
-				entity.Undelete(now)
-			}
-		}).
-		// Save
+		// Create
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.saveOne(ctx, now, &entity)
+			// Entity must not exist
+			if actual != nil {
+				return nil, serviceError.NewResourceAlreadyExistsError("branch", k.BranchID.String(), "project")
+			}
+
+			// Create or undelete
+			created = deepcopy.Copy(*input).(definition.Branch)
+			if deleted != nil {
+				created.SoftDeletable = deleted.Value.SoftDeletable
+				created.Undelete(now)
+			}
+
+			// Save
+			return r.saveOne(ctx, now, nil, &created)
 		}).
 		// Update the input entity after a successful operation
 		OnResult(func(entity definition.Branch) {
@@ -138,63 +134,58 @@ func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicO
 
 func (r *Repository) SoftDelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] {
 	// Move entity from the active to the deleted prefix
-	var entity definition.Branch
-	return op.Atomic(r.client, &entity).
+	var old, updated definition.Branch
+	return op.Atomic(r.client, &updated).
 		// Read the entity
-		ReadOp(r.Get(k).WithResultTo(&entity)).
+		ReadOp(r.Get(k).WithResultTo(&old)).
 		// Mark deleted
-		BeforeWrite(func(ctx context.Context) {
-			entity.Delete(now, false)
-		}).
-		// Save
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.saveOne(ctx, now, &entity)
+			updated = deepcopy.Copy(old).(definition.Branch)
+			updated.Delete(now, false)
+			return r.saveOne(ctx, now, &old, &updated)
 		})
 }
 
 func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] {
 	// Move entity from the deleted to the active prefix
-	var entity definition.Branch
-	return op.Atomic(r.client, &entity).
+	var created definition.Branch
+	return op.Atomic(r.client, &created).
 		// Check prerequisites
 		ReadOp(r.checkMaxBranchesPerProject(k.ProjectID, 1)).
 		// Read the entity
-		ReadOp(r.GetDeleted(k).WithResultTo(&entity)).
+		ReadOp(r.GetDeleted(k).WithResultTo(&created)).
 		// Mark undeleted
-		BeforeWrite(func(ctx context.Context) {
-			entity.Undelete(now)
-		}).
-		// Save
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.saveOne(ctx, now, &entity)
+			created.Undelete(now)
+			return r.saveOne(ctx, now, nil, &created)
 		})
 }
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, v *definition.Branch) (op.Op, error) {
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Branch) (op.Op, error) {
 	saveCtx := plugin.NewSaveContext(now)
-	r.save(saveCtx, now, v)
+	r.save(saveCtx, now, old, updated)
 	return saveCtx.Apply(ctx)
 }
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, v *definition.Branch) {
+func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, old, updated *definition.Branch) {
 	// Call plugins
-	r.plugins.Executor().OnBranchSave(saveCtx, v)
+	r.plugins.Executor().OnBranchSave(saveCtx, old, updated)
 
-	if v.Deleted {
+	if updated.Deleted {
 		// Move entity from the active prefix to the deleted prefix
 		saveCtx.AddOp(
 			// Delete entity from the active prefix
-			r.schema.Active().ByKey(v.BranchKey).Delete(r.client),
+			r.schema.Active().ByKey(updated.BranchKey).Delete(r.client),
 			// Save entity to the deleted prefix
-			r.schema.Deleted().ByKey(v.BranchKey).Put(r.client, *v),
+			r.schema.Deleted().ByKey(updated.BranchKey).Put(r.client, *updated),
 		)
 	} else {
 		// Save record to the "active" prefix
-		saveCtx.AddOp(r.schema.Active().ByKey(v.BranchKey).Put(r.client, *v))
+		saveCtx.AddOp(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
 
-		if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
+		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(now) {
 			// Delete record from the "deleted" prefix, if needed
-			saveCtx.AddOp(r.schema.Deleted().ByKey(v.BranchKey).Delete(r.client))
+			saveCtx.AddOp(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
 		}
 	}
 }

@@ -31,9 +31,9 @@ func TestFile_Validation(t *testing.T) {
 		{
 			Name: "ok",
 			Value: File{
-				Compression:                 compression.NewConfig(),
-				UploadCredentials:           &keboola.FileUploadCredentials{},
-				UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
+				Compression:       compression.NewConfig(),
+				UploadCredentials: &keboola.FileUploadCredentials{},
+				Expiration:        utctime.MustParse("2006-01-02T15:04:05.000Z"),
 			},
 		},
 	}

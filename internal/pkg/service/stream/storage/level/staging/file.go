@@ -14,15 +14,13 @@ type File struct {
 	// Compression configuration.
 	Compression compression.Config `json:"compression"  `
 	// UploadCredentials to the staging storage.
-	UploadCredentials           *keboola.FileUploadCredentials `json:"credentials" validate:"required"`
-	UploadCredentialsExpiration utctime.UTCTime                `json:"credentialsExpiration" validate:"required"`
+	UploadCredentials *keboola.FileUploadCredentials `json:"credentials" validate:"required"`
+	Expiration        utctime.UTCTime                `json:"expiration" validate:"required"`
 }
 
-func NewFile(localFile local.File, credentials *keboola.FileUploadCredentials) File {
+func NewFile(localFile local.File) File {
 	// Note: Compression in the staging storage is same as in the local storage, but it can be modified in the future.
 	return File{
-		Compression:                 localFile.Compression,
-		UploadCredentials:           credentials,
-		UploadCredentialsExpiration: utctime.From(credentials.CredentialsExpiration()),
+		Compression: localFile.Compression,
 	}
 }

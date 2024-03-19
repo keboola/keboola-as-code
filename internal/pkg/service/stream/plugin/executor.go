@@ -9,31 +9,31 @@ type Executor struct {
 	collection *Collection
 }
 
-func (e *Executor) OnBranchSave(ctx *SaveContext, v *definition.Branch) {
+func (e *Executor) OnBranchSave(ctx *SaveContext, old, updated *definition.Branch) {
 	e.collection.onBranchSave.forEach(func(fn onBranchSaveFn) {
-		fn(ctx, v)
+		fn(ctx, old, updated)
 	})
 }
 
-func (e *Executor) OnSourceSave(ctx *SaveContext, v *definition.Source) {
+func (e *Executor) OnSourceSave(ctx *SaveContext, old, updated *definition.Source) {
 	e.collection.onSourceSave.forEach(func(fn onSourceSaveFn) {
-		fn(ctx, v)
+		fn(ctx, old, updated)
 	})
 }
-func (e *Executor) OnSinkSave(ctx *SaveContext, v *definition.Sink) {
+func (e *Executor) OnSinkSave(ctx *SaveContext, old, updated *definition.Sink) {
 	e.collection.onSinkSave.forEach(func(fn onSinkSaveFn) {
-		fn(ctx, v)
+		fn(ctx, old, updated)
 	})
 }
 
-func (e *Executor) OnFileSave(ctx *SaveContext, v *storage.File) {
+func (e *Executor) OnFileSave(ctx *SaveContext, old, updated *storage.File) {
 	e.collection.onFileSave.forEach(func(fn onFileSaveFn) {
-		fn(ctx, v)
+		fn(ctx, old, updated)
 	})
 }
 
-func (e *Executor) OnSliceSave(ctx *SaveContext, v *storage.Slice) {
+func (e *Executor) OnSliceSave(ctx *SaveContext, old, updated *storage.Slice) {
 	e.collection.onSliceSave.forEach(func(fn onSliceSaveFn) {
-		fn(ctx, v)
+		fn(ctx, old, updated)
 	})
 }

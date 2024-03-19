@@ -44,6 +44,15 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 		definition: d.DefinitionRepository(),
 		files:      files,
 	}
+
+	//// Open slices in the assigned volumes
+	//for _, volumeID := range file.Assignment.Volumes {
+	//	if slice, err := repository.newSlice(c.Now, file, volumeID, c.MaxUsedDiskSize); err == nil {
+	//		txn.Merge(r.all.slice.createTxn(slice))
+	//	} else {
+	//		return nil, err
+	//	}
+	//}
 }
 
 // ListIn lists slices in the parent, in all storage levels.

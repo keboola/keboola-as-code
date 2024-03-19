@@ -392,20 +392,19 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 	var result *model.File
 	txn := op.TxnWithResult(r.client, &result)
 
-	// Check file resource
-	if c.OpenNew && c.NewFileResource == nil {
-		return nil, errors.Errorf(`credentials for the sink "%s" was not provided`, c.Sink.SinkKey)
-	}
-
 	// Close the old file, if present
 	if count := len(c.OpenedFiles); count > 1 {
 		return nil, errors.Errorf(`unexpected state, found %d opened files in the sink "%s"`, count, c.Sink.SinkKey)
 	} else if count == 1 {
-		if oldFile := c.OpenedFiles[0]; c.NewFileResource != nil && oldFile.FileKey == c.NewFileResource.FileKey {
-			// File already exists
-			return nil, serviceError.NewResourceAlreadyExistsError("file", oldFile.FileKey.String(), "sink")
-		} else if modified, err := oldFile.WithState(c.Now, model.FileClosing); err == nil {
-			// Switch the old file from the state model.FileWriting to the state model.FileClosing
+		// Switch the old file from the state model.FileWriting to the state model.FileClosing
+		modified, err := c.OpenedFiles[0].WithState(c.Now, model.FileClosing)
+		if err != nil {
+			return nil, err
+		}
+
+
+		if ; err == nil {
+
 			txn.Merge(r.updateTxn(oldFile, modified))
 		} else {
 			return nil, err
@@ -437,7 +436,7 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 		}
 
 		// Create file entity
-		file, err := NewFile(cfg, *c.NewFileResource, c.Sink)
+		file, err := NewFile(cfg, fileKey, c.Sink)
 		if err != nil {
 			return nil, err
 		}
@@ -450,16 +449,8 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 			return nil, errors.New(`no volume is available for the file`)
 		}
 
-		//// Open slices in the assigned volumes
-		//for _, volumeID := range file.Assignment.Volumes {
-		//	if slice, err := repository.newSlice(c.Now, file, volumeID, c.MaxUsedDiskSize); err == nil {
-		//		txn.Merge(r.all.slice.createTxn(slice))
-		//	} else {
-		//		return nil, err
-		//	}
-		//}
-
 		// Open file
+		txn.Merge()
 		txn.Merge(r.createTxn(file).OnSucceeded(func(r *op.TxnResult[model.File]) {
 			file = r.Result()
 			result = &file
@@ -470,7 +461,7 @@ func (r *Repository) rotateSink(ctx context.Context, c rotateSinkContext) (*op.T
 }
 
 // update reads the file, applies updateFn and save modified value.
-func (r *Repository) update(k model.FileKey, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
+func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
 	var oldValue, newValue model.File
 	return op.Atomic(r.client, &newValue).
 		// Read entity for modification
@@ -480,8 +471,10 @@ func (r *Repository) update(k model.FileKey, updateFn func(model.File) (model.Fi
 			newValue, err = updateFn(oldValue)
 			return err
 		}).
-		// Save the updated object
-		Write(func(context.Context) op.Op { return r.updateTxn(oldValue, newValue) })
+		// Save the entity
+		WriteOrErr(func(ctx context.Context) (op.Op, error) {
+			return r.saveOne(ctx, now, &newValue)
+		})
 }
 
 func (r *Repository) saveOne(ctx context.Context, now time.Time, v *model.File) (op.Op, error) {
@@ -502,58 +495,45 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, v *model.F
 	// Call plugins
 	r.plugins.Executor().OnFileSave(saveCtx, v)
 
+	allKey := r.schema.AllLevels().ByKey(v.FileKey)
+	inLevelKey := r.schema.InLevel(v.State.Level()).ByKey(v.FileKey)
+
 	if v.Deleted {
-		// Move entity from the active prefix to the deleted prefix
+		// Delete entity to All and InLevel prefixes
 		saveCtx.AddOp(
-			// Delete entity from the active prefix
-			r.schema.Active().ByKey(v.BranchKey).Delete(r.client),
-			// Save entity to the deleted prefix
-			r.schema.Deleted().ByKey(v.BranchKey).Put(r.client, *v),
+			allKey.Delete(r.client),
+			inLevelKey.Delete(r.client),
 		)
 	} else {
-		// Save record to the "active" prefix
-		saveCtx.AddOp(r.schema.Active().ByKey(v.BranchKey).Put(r.client, *v))
+		if old == nil {
+			// Entity should not exist
+			saveCtx.AddOp(op.Txn(r.client).
+				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
+				OnFailed(func(r *op.TxnResult[op.NoResult]) {
+					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", v.FileKey.String(), "sink"))
+				}),
+			)
+		} else {
+			// Entity should exist
+			saveCtx.AddOp(op.Txn(r.client).
+				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
+				OnFailed(func(r *op.TxnResult[op.NoResult]) {
+					r.AddErr(serviceError.NewResourceNotFoundError("file", v.FileKey.String(), "sink"))
+				}),
+			)
+		}
 
-		if v.UndeletedAt != nil && v.UndeletedAt.Time().Equal(now) {
-			// Delete record from the "deleted" prefix, if needed
-			saveCtx.AddOp(r.schema.Deleted().ByKey(v.BranchKey).Delete(r.client))
+		// Put entity to All and InLevel prefixes
+		saveCtx.AddOp(
+			allKey.Put(r.client, *v),
+			inLevelKey.Put(r.client, *v),
+		)
+
+		// Remove entity from the old InLevel prefix, if needed
+		if {
+			saveCtx.AddOp(
+				r.schema.InLevel(v.State.Level()).ByKey(v.FileKey).Delete(r.client),
+			)
 		}
 	}
-}
-
-// createTxn saves a new entity, see also update method.
-// The entity is stored in 2 copies, under "All" prefix and "InLevel" prefix.
-// - "All" prefix is used for classic CRUD operations.
-// - "InLevel" prefix is used for effective watching of the storage level.
-// nolint: dupl // similar code is in the SliceRepository
-func (r *Repository) createTxn(value model.File) *op.TxnOp[model.File] {
-	etcdKey := r.schema.AllLevels().ByKey(value.FileKey)
-	return op.TxnWithResult(r.client, &value).
-		// Entity must not exist on create
-		If(etcd.Compare(etcd.ModRevision(etcdKey.Key()), "=", 0)).
-		AddProcessor(func(ctx context.Context, r *op.TxnResult[model.File]) {
-			if r.Err() == nil && !r.Succeeded() {
-				r.AddErr(serviceError.NewResourceAlreadyExistsError("file", value.FileKey.String(), "sink"))
-			}
-		}).
-		// Put entity to All and InLevel prefixes
-		Then(etcdKey.Put(r.client, value)).
-		Then(r.schema.InLevel(value.State.Level()).ByKey(value.FileKey).Put(r.client, value))
-}
-
-// updateTxn saves an existing entity, see also createTxn method.
-func (r *Repository) updateTxn(oldValue, newValue model.File) *op.TxnOp[model.File] {
-	txn := op.TxnWithResult(r.client, &newValue)
-
-	// Put entity to All and InLevel prefixes
-	txn.
-		Then(r.schema.AllLevels().ByKey(newValue.FileKey).Put(r.client, newValue)).
-		Then(r.schema.InLevel(newValue.State.Level()).ByKey(newValue.FileKey).Put(r.client, newValue))
-
-	// Delete entity from old level, if needed.
-	if newValue.State.Level() != oldValue.State.Level() {
-		txn.Then(r.schema.InLevel(oldValue.State.Level()).ByKey(oldValue.FileKey).Delete(r.client))
-	}
-
-	return txn
 }

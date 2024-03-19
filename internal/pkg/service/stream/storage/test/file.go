@@ -70,9 +70,9 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 			DiskSync:    disksync.NewConfig(),
 		},
 		StagingStorage: staging.File{
-			Compression:                 compression.NewNoneConfig(),
-			UploadCredentials:           &keboola.FileUploadCredentials{},
-			UploadCredentialsExpiration: utctime.From(openedAt.Time().Add(time.Hour)),
+			Compression:       compression.NewNoneConfig(),
+			UploadCredentials: &keboola.FileUploadCredentials{},
+			Expiration:        utctime.From(openedAt.Time().Add(time.Hour)),
 		},
 		TargetStorage: target.Target{
 			Table: target.Table{

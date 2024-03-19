@@ -14,15 +14,15 @@ type Collection struct {
 	onSliceSave  fnList[onSliceSaveFn]
 }
 
-type onBranchSaveFn func(ctx *SaveContext, v *definition.Branch)
+type onBranchSaveFn func(ctx *SaveContext, old, updated *definition.Branch)
 
-type onSourceSaveFn func(ctx *SaveContext, v *definition.Source)
+type onSourceSaveFn func(ctx *SaveContext, old, updated *definition.Source)
 
-type onSinkSaveFn func(ctx *SaveContext, v *definition.Sink)
+type onSinkSaveFn func(ctx *SaveContext, old, updated *definition.Sink)
 
-type onFileSaveFn func(ctx *SaveContext, v *storage.File)
+type onFileSaveFn func(ctx *SaveContext, old, updated *storage.File)
 
-type onSliceSaveFn func(ctx *SaveContext, v *storage.Slice)
+type onSliceSaveFn func(ctx *SaveContext, old, updated *storage.Slice)
 
 func (c *Collection) OnBranchSave(fn onBranchSaveFn) {
 	c.onBranchSave = append(c.onBranchSave, fn)
