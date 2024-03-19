@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/state"
@@ -28,31 +29,41 @@ type Repository struct {
 	backoff    model.RetryBackoff
 	definition *definitionRepo.Repository
 	files      *fileRepo.Repository
+	plugins    *plugin.Plugins
 }
 
 type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
 }
 
 func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.Repository) *Repository {
-	return &Repository{
+	r := &Repository{
 		client:     d.EtcdClient(),
 		schema:     schema.New(d.EtcdSerde()),
 		backoff:    backoff,
 		definition: d.DefinitionRepository(),
 		files:      files,
+		plugins:    d.Plugins(),
 	}
 
-	//// Open slices in the assigned volumes
-	//for _, volumeID := range file.Assignment.Volumes {
-	//	if slice, err := repository.newSlice(c.Now, file, volumeID, c.MaxUsedDiskSize); err == nil {
-	//		txn.Merge(r.all.slice.createTxn(slice))
-	//	} else {
-	//		return nil, err
-	//	}
-	//}
+	// Connect to the file events
+	r.plugins.Collection().OnFileSave(func(ctx *plugin.SaveContext, old, updated *model.File) {
+		created := old == nil
+		if created {
+			// Rotate slice on the file creation
+			ctx.AddAtomicOp(r.Rotate(ctx.Now(), fileVolumeKey))
+		} else if updated.Deleted {
+			// Delete slice on the file deletion
+			ctx.AddAtomicOp(r.Delete(sliceKey))
+		} else if old != nil && old.State != updated.State {
+			ctx.AddAtomicOp(r.Rotate(ctx.Now(), fileVolumeKey))
+		}
+	})
+
+	return r
 }
 
 // ListIn lists slices in the parent, in all storage levels.

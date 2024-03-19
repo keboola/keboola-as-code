@@ -47,9 +47,11 @@ func NewRepository(d dependencies, sources *source.Repository) *Repository {
 
 	// Delete/undelete source with branch
 	r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, old, updated *definition.Source) {
-		if updated.DeletedAt != nil && updated.DeletedAt.Time().Equal(ctx.Now()) {
+		deleted := updated.Deleted && updated.DeletedAt.Time().Equal(ctx.Now())
+		undeleted := updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(ctx.Now())
+		if deleted {
 			ctx.AddAtomicOp(r.softDeleteAllFrom(updated.SourceKey, ctx.Now(), true))
-		} else if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(ctx.Now()) {
+		} else if undeleted {
 			ctx.AddAtomicOp(r.undeleteAllFrom(updated.SourceKey, ctx.Now(), true))
 		}
 	})
