@@ -1,4 +1,4 @@
-package repository
+package schema
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 func TestSliceSchema(t *testing.T) {
 	t.Parallel()
-	s := newSliceSchema(serde.NewJSON(serde.NoValidation))
+	s := ForSlice(serde.NewJSON(serde.NoValidation))
 
 	sliceKey := test.NewSliceKey()
 

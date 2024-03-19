@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
 )
 
 const (
@@ -21,14 +22,14 @@ const (
 
 type SinkRepository struct {
 	client etcd.KV
-	schema sinkSchema
+	schema schema.Sink
 	all    *Repository
 }
 
 func newSinkRepository(d dependencies, all *Repository) *SinkRepository {
 	return &SinkRepository{
 		client: d.EtcdClient(),
-		schema: newSinkSchema(d.EtcdSerde()),
+		schema: schema.ForSink(d.EtcdSerde()),
 		all:    all,
 	}
 }
@@ -41,7 +42,7 @@ func (r *SinkRepository) ListDeleted(parentKey any) iterator.DefinitionT[definit
 	return r.list(r.schema.Deleted(), parentKey)
 }
 
-func (r *SinkRepository) list(pfx sinkSchemaInState, parentKey any) iterator.DefinitionT[definition.Sink] {
+func (r *SinkRepository) list(pfx schema.SinkInState, parentKey any) iterator.DefinitionT[definition.Sink] {
 	return pfx.In(parentKey).GetAll(r.client)
 }
 

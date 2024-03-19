@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
 )
 
 const (
@@ -21,14 +22,14 @@ const (
 
 type SourceRepository struct {
 	client etcd.KV
-	schema sourceSchema
+	schema schema.Source
 	all    *Repository
 }
 
 func newSourceRepository(d dependencies, all *Repository) *SourceRepository {
 	return &SourceRepository{
 		client: d.EtcdClient(),
-		schema: newSourceSchema(d.EtcdSerde()),
+		schema: schema.ForSource(d.EtcdSerde()),
 		all:    all,
 	}
 }
@@ -41,7 +42,7 @@ func (r *SourceRepository) ListDeleted(parentKey any, opts ...iterator.Option) i
 	return r.list(r.schema.Deleted(), parentKey, opts...)
 }
 
-func (r *SourceRepository) list(pfx sourceSchemaInState, parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+func (r *SourceRepository) list(pfx schema.SourceInState, parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
 	return pfx.In(parentKey).GetAll(r.client, opts...)
 }
 

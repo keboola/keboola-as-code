@@ -6,19 +6,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 )
 
 // VolumeRepository provides database operations with the storage.Metadata entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type VolumeRepository struct {
 	client etcd.KV
-	schema volumeSchema
+	schema schema.Volume
 }
 
 func newVolumeRepository(d dependencies) *VolumeRepository {
 	return &VolumeRepository{
 		client: d.EtcdClient(),
-		schema: newVolumeSchema(d.EtcdSerde()),
+		schema: schema.ForVolume(d.EtcdSerde()),
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/schema"
 )
 
 // TokenRepository provides database operations with the storage.Token entity.
@@ -18,7 +19,7 @@ import (
 type TokenRepository struct {
 	clock  clock.Clock
 	client etcd.KV
-	schema tokenSchema
+	schema schema.Token
 	all    *Repository
 }
 
@@ -26,7 +27,7 @@ func newTokenRepository(d dependencies, all *Repository) *TokenRepository {
 	return &TokenRepository{
 		clock:  d.Clock(),
 		client: d.EtcdClient(),
-		schema: newTokenSchema(d.EtcdSerde()),
+		schema: schema.ForToken(d.EtcdSerde()),
 		all:    all,
 	}
 }

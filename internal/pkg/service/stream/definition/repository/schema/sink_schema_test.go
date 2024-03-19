@@ -1,4 +1,4 @@
-package repository
+package schema
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 func TestSinkSchema(t *testing.T) {
 	t.Parallel()
-	s := newSinkSchema(serde.NewJSON(serde.NoValidation))
+	s := ForSink(serde.NewJSON(serde.NoValidation))
 
 	sourceKey := key.SourceKey{
 		BranchKey: key.BranchKey{
@@ -101,7 +101,7 @@ func TestSinkSchema(t *testing.T) {
 
 func TestSinkSchemaInState_In(t *testing.T) {
 	t.Parallel()
-	s := newSinkSchema(serde.NewJSON(serde.NoValidation))
+	s := ForSink(serde.NewJSON(serde.NoValidation))
 	assert.Panics(t, func() {
 		s.Active().In("unexpected type")
 	})

@@ -1,4 +1,4 @@
-package repository
+package schema
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 func TestFileSchema(t *testing.T) {
 	t.Parallel()
-	s := newFileSchema(serde.NewJSON(serde.NoValidation))
+	s := ForFile(serde.NewJSON(serde.NoValidation))
 
 	fileKey := test.NewFileKey()
 

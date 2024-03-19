@@ -1,4 +1,4 @@
-package repository
+package schema
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 func TestVolumeSchema(t *testing.T) {
 	t.Parallel()
-	s := newVolumeSchema(serde.NewJSON(serde.NoValidation))
+	s := ForVolume(serde.NewJSON(serde.NoValidation))
 
 	volumeID := volume.ID("my-volume")
 

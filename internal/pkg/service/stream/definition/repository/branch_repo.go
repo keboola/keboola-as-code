@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	schema "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
 )
 
 const (
@@ -20,14 +21,14 @@ const (
 
 type BranchRepository struct {
 	client etcd.KV
-	schema branchSchema
+	schema schema.Branch
 	all    *Repository
 }
 
 func newBranchRepository(d dependencies, all *Repository) *BranchRepository {
 	return &BranchRepository{
 		client: d.EtcdClient(),
-		schema: newBranchSchema(d.EtcdSerde()),
+		schema: schema.ForBranch(d.EtcdSerde()),
 		all:    all,
 	}
 }
@@ -40,7 +41,7 @@ func (r *BranchRepository) ListDeleted(parentKey keboola.ProjectID) iterator.Def
 	return r.list(r.schema.Deleted(), parentKey)
 }
 
-func (r *BranchRepository) list(pfx branchSchemaInState, parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] {
+func (r *BranchRepository) list(pfx schema.BranchInState, parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] {
 	return pfx.InProject(parentKey).GetAll(r.client)
 }
 
