@@ -83,7 +83,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source1 := test.NewSource(sourceKey1)
-		if err := sourceRepo.Create("Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sourceRepo.Create(clk.Now(), "Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "456" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -94,9 +94,9 @@ func TestRepository_Source(t *testing.T) {
 	{
 		branch1 := test.NewBranch(sourceKey1.BranchKey)
 		branch1.IsDefault = true
-		require.NoError(t, branchRepo.Create(&branch1).Do(ctx).Err())
+		require.NoError(t, branchRepo.Create(clk.Now(), &branch1).Do(ctx).Err())
 		branch2 := test.NewBranch(sourceKey2.BranchKey)
-		require.NoError(t, branchRepo.Create(&branch2).Do(ctx).Err())
+		require.NoError(t, branchRepo.Create(clk.Now(), &branch2).Do(ctx).Err())
 	}
 
 	// Create
@@ -105,7 +105,7 @@ func TestRepository_Source(t *testing.T) {
 		source1 := test.NewSource(sourceKey1)
 		source1.Name = "My Source 1"
 		source1.Config = source1.Config.With(testconfig.StorageConfigPatch())
-		result1, err := sourceRepo.Create("Create description", &source1).Do(ctx).ResultOrErr()
+		result1, err := sourceRepo.Create(clk.Now(), "Create description", &source1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, result1, source1)
 		assert.Equal(t, definition.VersionNumber(1), source1.VersionNumber())
@@ -113,7 +113,7 @@ func TestRepository_Source(t *testing.T) {
 
 		source2 := test.NewSource(sourceKey2)
 		source2.Name = "My Source 2"
-		result2, err := sourceRepo.Create("Create description", &source2).Do(ctx).ResultOrErr()
+		result2, err := sourceRepo.Create(clk.Now(), "Create description", &source2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, result2, source2)
 		assert.Equal(t, definition.VersionNumber(1), source2.VersionNumber())
@@ -160,7 +160,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source1 := test.NewSource(sourceKey1)
-		if err := sourceRepo.Create("Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sourceRepo.Create(clk.Now(), "Create description", &source1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "my-source-1" already exists in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -170,7 +170,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		result, err := sourceRepo.Update(sourceKey1, "Update description", func(v definition.Source) (definition.Source, error) {
+		result, err := sourceRepo.Update(clk.Now(), sourceKey1, "Update description", func(v definition.Source) (definition.Source, error) {
 			v.Name = "Modified Name"
 			return v, nil
 		}).Do(ctx).ResultOrErr()
@@ -184,7 +184,7 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// Modify description
-		result, err := sourceRepo.Update(sourceKey1, "Update description", func(v definition.Source) (definition.Source, error) {
+		result, err := sourceRepo.Update(clk.Now(), sourceKey1, "Update description", func(v definition.Source) (definition.Source, error) {
 			v.Description = "Modified Description"
 			return v, nil
 		}).Do(ctx).ResultOrErr()
@@ -200,7 +200,7 @@ func TestRepository_Source(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sourceRepo.Update(nonExistentSourceKey, "Update description", func(v definition.Source) (definition.Source, error) {
+		err := sourceRepo.Update(clk.Now(), nonExistentSourceKey, "Update description", func(v definition.Source) (definition.Source, error) {
 			v.Name = "Modified Name"
 			return v, nil
 		}).Do(ctx).Err()
@@ -236,21 +236,21 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Create 3 sinks
 		sink1 = test.NewSink(key.SinkKey{SourceKey: sourceKey1, SinkID: "sink-1"})
-		require.NoError(t, sinkRepo.Create("Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Create sink", &sink1).Do(ctx).Err())
 		sink2 = test.NewSink(key.SinkKey{SourceKey: sourceKey1, SinkID: "sink-2"})
-		require.NoError(t, sinkRepo.Create("Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Create sink", &sink2).Do(ctx).Err())
 		sink3 = test.NewSink(key.SinkKey{SourceKey: sourceKey1, SinkID: "sink-3"})
-		require.NoError(t, sinkRepo.Create("Create sink", &sink3).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Create sink", &sink3).Do(ctx).Err())
 	}
 	{
 		// Delete sink3 manually, so it should not be undeleted with the source1 later
-		require.NoError(t, sinkRepo.SoftDelete(sink3.SinkKey).Do(ctx).Err())
+		require.NoError(t, sinkRepo.SoftDelete(clk.Now(), sink3.SinkKey).Do(ctx).Err())
 	}
 
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sourceRepo.SoftDelete(sourceKey1).Do(ctx).Err())
+		assert.NoError(t, sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -288,7 +288,7 @@ func TestRepository_Source(t *testing.T) {
 
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sourceRepo.SoftDelete(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source "my-source-1" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -297,7 +297,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		result, err := sourceRepo.Undelete(sourceKey1).Do(ctx).ResultOrErr()
+		result, err := sourceRepo.Undelete(clk.Now(), sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
@@ -336,7 +336,7 @@ func TestRepository_Source(t *testing.T) {
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sourceRepo.Undelete(sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.Undelete(clk.Now(), sourceKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted source "my-source-1" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -348,12 +348,12 @@ func TestRepository_Source(t *testing.T) {
 		source1, err := sourceRepo.Get(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(3), source1.VersionNumber())
-		assert.NoError(t, sourceRepo.SoftDelete(sourceKey1).Do(ctx).Err())
+		assert.NoError(t, sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		source1 := test.NewSource(sourceKey1)
-		assert.NoError(t, sourceRepo.Create("Re-create", &source1).Do(ctx).Err())
+		assert.NoError(t, sourceRepo.Create(clk.Now(), "Re-create", &source1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), source1.VersionNumber())
 		assert.Equal(t, "My Source", source1.Name)
 		assert.Equal(t, "My Description", source1.Description)
@@ -378,7 +378,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, sourceRepo.Rollback(sourceKey1, 2).Do(ctx).Err())
+		assert.NoError(t, sourceRepo.Rollback(clk.Now(), sourceKey1, 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
@@ -391,13 +391,13 @@ func TestRepository_Source(t *testing.T) {
 
 	// Rollback version - object not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sourceRepo.Rollback(nonExistentSourceKey, 1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.Rollback(clk.Now(), nonExistentSourceKey, 1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source "non-existent" not found in the branch`, err.Error())
 	}
 
 	// Rollback version - version not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sourceRepo.Rollback(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.Rollback(clk.Now(), sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source version "my-source-1/0000000010" not found in the branch`, err.Error())
 	}
 

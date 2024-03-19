@@ -80,7 +80,7 @@ func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Br
 
 	branchKey := key.BranchKey{ProjectID: d.ProjectID(), BranchID: res.ID}
 	branch := definition.Branch{BranchKey: branchKey, IsDefault: true}
-	return repo.Create(&branch).Do(ctx).ResultOrErr()
+	return repo.Create(d.Clock().Now(), &branch).Do(ctx).ResultOrErr()
 }
 
 func (v *branchRequestScope) Branch() definition.Branch {

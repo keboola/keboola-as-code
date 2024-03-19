@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -20,7 +20,6 @@ const (
 )
 
 type SourceRepository struct {
-	clock  clock.Clock
 	client etcd.KV
 	schema sourceSchema
 	all    *Repository
@@ -28,7 +27,6 @@ type SourceRepository struct {
 
 func newSourceRepository(d dependencies, all *Repository) *SourceRepository {
 	return &SourceRepository{
-		clock:  d.Clock(),
 		client: d.EtcdClient(),
 		schema: newSourceSchema(d.EtcdSerde()),
 		all:    all,
@@ -72,7 +70,7 @@ func (r *SourceRepository) GetDeleted(k key.SourceKey) op.WithResult[definition.
 }
 
 //nolint:dupl // similar code is in the SinkRepository
-func (r *SourceRepository) Create(versionDescription string, input *definition.Source) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Create(now time.Time, versionDescription string, input *definition.Source) *op.AtomicOp[definition.Source] {
 	k := input.SourceKey
 	result := *input
 
@@ -105,7 +103,7 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 			}
 
 			// Increment version and save
-			result.IncrementVersion(result, r.clock.Now(), versionDescription)
+			result.IncrementVersion(result, now, versionDescription)
 
 			// Create the object
 			txn.Then(r.schema.Active().ByKey(k).Put(r.client, result))
@@ -122,11 +120,11 @@ func (r *SourceRepository) Create(versionDescription string, input *definition.S
 
 			return txn
 		}).
-		AddFrom(r.all.sink.undeleteAllFrom(k))
+		AddFrom(r.all.sink.undeleteAllFrom(now, k))
 }
 
 //nolint:dupl // similar code is in SinkRepository
-func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Update(now time.Time, k key.SourceKey, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	return op.Atomic(r.client, &result).
 		ReadOp(r.checkMaxSourcesVersionsPerSource(k, 1)).
@@ -138,7 +136,7 @@ func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, up
 				return err
 			}
 
-			result.IncrementVersion(result, r.clock.Now(), versionDescription)
+			result.IncrementVersion(result, now, versionDescription)
 			return nil
 		}).
 		// Save the update object
@@ -151,40 +149,40 @@ func (r *SourceRepository) Update(k key.SourceKey, versionDescription string, up
 		})
 }
 
-func (r *SourceRepository) SoftDelete(k key.SourceKey) *op.AtomicOp[op.NoResult] {
-	return r.softDelete(k, false)
+func (r *SourceRepository) SoftDelete(now time.Time, k key.SourceKey) *op.AtomicOp[op.NoResult] {
+	return r.softDelete(now, k, false)
 }
 
-func (r *SourceRepository) softDelete(k key.SourceKey, deletedWithParent bool) *op.AtomicOp[op.NoResult] {
+func (r *SourceRepository) softDelete(now time.Time, k key.SourceKey, deletedWithParent bool) *op.AtomicOp[op.NoResult] {
 	// Move object from the active to the deleted prefix
 	var value definition.Source
 	return op.Atomic(r.client, &op.NoResult{}).
 		// Move object from the active prefix to the deleted prefix
 		ReadOp(r.Get(k).WithResultTo(&value)).
-		Write(func(context.Context) op.Op { return r.softDeleteValue(value, deletedWithParent) }).
+		Write(func(context.Context) op.Op { return r.softDeleteValue(now, value, deletedWithParent) }).
 		// Delete children
-		AddFrom(r.all.sink.softDeleteAllFrom(k))
+		AddFrom(r.all.sink.softDeleteAllFrom(now, k))
 }
 
 // softDeleteAllFrom the parent key.
 // All objects are marked with DeletedWithParent=true.
-func (r *SourceRepository) softDeleteAllFrom(parentKey any) *op.AtomicOp[op.NoResult] {
+func (r *SourceRepository) softDeleteAllFrom(now time.Time, parentKey any) *op.AtomicOp[op.NoResult] {
 	var writeOps []op.Op
 	return op.Atomic(r.client, &op.NoResult{}).
 		Read(func(context.Context) op.Op {
 			writeOps = nil // reset after retry
 			return r.List(parentKey).ForEach(func(v definition.Source, _ *iterator.Header) error {
-				writeOps = append(writeOps, r.softDeleteValue(v, true))
+				writeOps = append(writeOps, r.softDeleteValue(now, v, true))
 				return nil
 			})
 		}).
 		Write(func(ctx context.Context) op.Op { return op.MergeToTxn(r.client, writeOps...) }).
 		// Delete children
-		AddFrom(r.all.sink.softDeleteAllFrom(parentKey))
+		AddFrom(r.all.sink.softDeleteAllFrom(now, parentKey))
 }
 
-func (r *SourceRepository) softDeleteValue(v definition.Source, deletedWithParent bool) *op.TxnOp[op.NoResult] {
-	v.Delete(r.clock.Now(), deletedWithParent)
+func (r *SourceRepository) softDeleteValue(now time.Time, v definition.Source, deletedWithParent bool) *op.TxnOp[op.NoResult] {
+	v.Delete(now, deletedWithParent)
 	return op.MergeToTxn(
 		r.client,
 		// Delete object from the active prefix
@@ -194,7 +192,7 @@ func (r *SourceRepository) softDeleteValue(v definition.Source, deletedWithParen
 	)
 }
 
-func (r *SourceRepository) Undelete(k key.SourceKey) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Undelete(now time.Time, k key.SourceKey) *op.AtomicOp[definition.Source] {
 	// Move object from the deleted to the active prefix
 	var result definition.Source
 	return op.Atomic(r.client, &result).
@@ -205,12 +203,12 @@ func (r *SourceRepository) Undelete(k key.SourceKey) *op.AtomicOp[definition.Sou
 		// Undelete
 		Write(func(context.Context) op.Op { return r.undeleteValue(result) }).
 		// Undelete children
-		AddFrom(r.all.sink.undeleteAllFrom(k))
+		AddFrom(r.all.sink.undeleteAllFrom(now, k))
 }
 
 // undeleteAllFrom the parent key.
 // Only object with DeletedWithParent=true are undeleted.
-func (r *SourceRepository) undeleteAllFrom(parentKey any) *op.AtomicOp[op.NoResult] {
+func (r *SourceRepository) undeleteAllFrom(now time.Time, parentKey any) *op.AtomicOp[op.NoResult] {
 	var writeOps []op.Op
 	return op.Atomic(r.client, &op.NoResult{}).
 		Read(func(context.Context) op.Op {
@@ -224,7 +222,7 @@ func (r *SourceRepository) undeleteAllFrom(parentKey any) *op.AtomicOp[op.NoResu
 		}).
 		Write(func(context.Context) op.Op { return op.MergeToTxn(r.client, writeOps...) }).
 		// Undelete children
-		AddFrom(r.all.sink.undeleteAllFrom(parentKey))
+		AddFrom(r.all.sink.undeleteAllFrom(now, parentKey))
 }
 
 func (r *SourceRepository) undeleteValue(v definition.Source) *op.TxnOp[op.NoResult] {
@@ -255,7 +253,7 @@ func (r *SourceRepository) Version(k key.SourceKey, version definition.VersionNu
 }
 
 //nolint:dupl // similar code is in the SinkRepository
-func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
+func (r *SourceRepository) Rollback(now time.Time, k key.SourceKey, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
 	var result definition.Source
 	var latest, target *op.KeyValueT[definition.Source]
 
@@ -277,7 +275,7 @@ func (r *SourceRepository) Rollback(k key.SourceKey, to definition.VersionNumber
 		BeforeWrite(func(context.Context) {
 			result = target.Value
 			result.Version = latest.Value.Version
-			result.IncrementVersion(result, r.clock.Now(), fmt.Sprintf("Rollback to version %d", target.Value.Version.Number))
+			result.IncrementVersion(result, now, fmt.Sprintf("Rollback to version %d", target.Value.Version.Number))
 		}).
 		// Save the object
 		Write(func(context.Context) op.Op {

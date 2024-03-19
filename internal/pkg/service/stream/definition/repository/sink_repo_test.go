@@ -88,7 +88,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		sink1 := test.NewSink(sinkKey1)
-		if err := sinkRepo.Create("Create description", &sink1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sinkRepo.Create(clk.Now(), "Create description", &sink1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "my-source-1" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -98,11 +98,11 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(sinkKey1.BranchKey)
-		require.NoError(t, branchRepo.Create(&branch).Do(ctx).Err())
+		require.NoError(t, branchRepo.Create(clk.Now(), &branch).Do(ctx).Err())
 		source1 := test.NewSource(sinkKey1.SourceKey)
-		require.NoError(t, sourceRepo.Create("Create source", &source1).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Create(clk.Now(), "Create source", &source1).Do(ctx).Err())
 		source2 := test.NewSource(sinkKey2.SourceKey)
-		require.NoError(t, sourceRepo.Create("Create source", &source2).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Create(clk.Now(), "Create source", &source2).Do(ctx).Err())
 	}
 
 	// Create
@@ -111,7 +111,7 @@ func TestRepository_Sink(t *testing.T) {
 		sink1 := test.NewSink(sinkKey1)
 		sink1.Name = "My Sink 1"
 		sink1.Config = sink1.Config.With(testconfig.StorageConfigPatch())
-		result1, err := sinkRepo.Create("Create description", &sink1).Do(ctx).ResultOrErr()
+		result1, err := sinkRepo.Create(clk.Now(), "Create description", &sink1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, sink1, result1)
 		assert.Equal(t, definition.VersionNumber(1), sink1.VersionNumber())
@@ -119,7 +119,7 @@ func TestRepository_Sink(t *testing.T) {
 
 		sink2 := test.NewSink(sinkKey2)
 		sink2.Name = "My Sink 2"
-		result2, err := sinkRepo.Create("Create description", &sink2).Do(ctx).ResultOrErr()
+		result2, err := sinkRepo.Create(clk.Now(), "Create description", &sink2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, sink2, result2)
 		assert.Equal(t, definition.VersionNumber(1), sink2.VersionNumber())
@@ -173,7 +173,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		sink1 := test.NewSink(sinkKey1)
-		if err := sinkRepo.Create("Create description", &sink1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sinkRepo.Create(clk.Now(), "Create description", &sink1).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink-1" already exists in the source`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -183,7 +183,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Modify name
-		result, err := sinkRepo.Update(sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
+		result, err := sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
 			v.Name = "Modified Name"
 			return v
 		}).Do(ctx).ResultOrErr()
@@ -197,7 +197,7 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// Modify description
-		assert.NoError(t, sinkRepo.Update(sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
+		assert.NoError(t, sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
 			v.Description = "Modified Description"
 			return v
 		}).Do(ctx).Err())
@@ -211,7 +211,7 @@ func TestRepository_Sink(t *testing.T) {
 	// Update - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sinkRepo.Update(nonExistentSinkKey, "Update description", func(v definition.Sink) definition.Sink {
+		err := sinkRepo.Update(clk.Now(), nonExistentSinkKey, "Update description", func(v definition.Sink) definition.Sink {
 			v.Name = "Modified Name"
 			return v
 		}).Do(ctx).Err()
@@ -244,7 +244,7 @@ func TestRepository_Sink(t *testing.T) {
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sinkRepo.SoftDelete(sinkKey1).Do(ctx).Err())
+		assert.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
 	}
 	{
 		// ExistsOrErr - not found
@@ -289,7 +289,7 @@ func TestRepository_Sink(t *testing.T) {
 
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sinkRepo.SoftDelete(sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -298,7 +298,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Undelete
-		result, err := sinkRepo.Undelete(sinkKey1).Do(ctx).ResultOrErr()
+		result, err := sinkRepo.Undelete(clk.Now(), sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
@@ -337,7 +337,7 @@ func TestRepository_Sink(t *testing.T) {
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sinkRepo.Undelete(sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.Undelete(clk.Now(), sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted sink "my-sink-1" not found in the source`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -349,12 +349,12 @@ func TestRepository_Sink(t *testing.T) {
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(3), sink1.VersionNumber())
-		assert.NoError(t, sinkRepo.SoftDelete(sinkKey1).Do(ctx).Err())
+		assert.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		sink1 := test.NewSink(sinkKey1)
-		assert.NoError(t, sinkRepo.Create("Re-create", &sink1).Do(ctx).Err())
+		assert.NoError(t, sinkRepo.Create(clk.Now(), "Re-create", &sink1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
 		assert.Equal(t, "My Sink", sink1.Name)
 		assert.Equal(t, "My Description", sink1.Description)
@@ -385,7 +385,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, sinkRepo.Rollback(sinkKey1, 2).Do(ctx).Err())
+		assert.NoError(t, sinkRepo.Rollback(clk.Now(), sinkKey1, 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
@@ -398,13 +398,13 @@ func TestRepository_Sink(t *testing.T) {
 
 	// Rollback version - object not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sinkRepo.Rollback(nonExistentSinkKey, 1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.Rollback(clk.Now(), nonExistentSinkKey, 1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink "non-existent" not found in the source`, err.Error())
 	}
 
 	// Rollback version - version not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sinkRepo.Rollback(sinkKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.Rollback(clk.Now(), sinkKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink version "my-sink-1/0000000010" not found in the source`, err.Error())
 	}
 

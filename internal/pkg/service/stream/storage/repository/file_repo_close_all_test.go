@@ -66,11 +66,11 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	// Create sink
 	// -----------------------------------------------------------------------------------------------------------------
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
+	require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
+	require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
 	sink := test.NewSink(sinkKey)
-	require.NoError(t, defRepo.Sink().Create("Create sink", &sink).Do(ctx).Err())
+	require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink).Do(ctx).Err())
 	require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 
 	// Create 2 files, with 2 slices

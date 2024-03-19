@@ -102,18 +102,18 @@ func TestFileRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(&branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create("Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
 
 		sink1 := test.NewSink(sinkKey1)
 		sink1.Config = sink1.Config.With(testconfig.LocalVolumeConfig(3, []string{"hdd"}))
-		require.NoError(t, defRepo.Sink().Create("Create sink", &sink1).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink1).Do(ctx).Err())
 
 		sink2 := test.NewSink(sinkKey2)
 		sink2.Config = sink2.Config.With(testconfig.LocalVolumeConfig(3, []string{"ssd"}))
-		require.NoError(t, defRepo.Sink().Create("Create sink", &sink2).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink2).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink1.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 		require.NoError(t, tokenRepo.Put(sink2.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
 	}
