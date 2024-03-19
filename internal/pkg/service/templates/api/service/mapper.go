@@ -130,18 +130,8 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 			continue
 		}
 
-		if tmpl.Requirements != nil {
-			if tmpl.Requirements.Backends != nil && !tmpl.HasBackend(d.ProjectBackends()) {
-				continue
-			}
-
-			if tmpl.Requirements.Components != nil && !tmpl.HasComponent(d.Components()) {
-				continue
-			}
-
-			if tmpl.Requirements.Features != nil && !tmpl.HasFeature(d.ProjectFeatures()) {
-				continue
-			}
+		if tmpl.Requirements != nil && !hasRequirements(tmpl, d) {
+			continue
 		}
 
 		tmpl := tmpl
@@ -592,4 +582,19 @@ func instanceDetails(ctx context.Context, d dependencies.ProjectRequestScope, in
 	versionResponse := VersionDetailResponse(d, versionRecord, tmpl)
 
 	return tmplResponse, versionResponse
+}
+
+func hasRequirements(tmpl repository.TemplateRecord, d dependencies.ProjectRequestScope) bool {
+	if tmpl.Requirements.Backends != nil && !tmpl.HasBackend(d.ProjectBackends()) {
+		return false
+	}
+
+	if tmpl.Requirements.Components != nil && !tmpl.HasComponent(d.Components()) {
+		return false
+	}
+
+	if tmpl.Requirements.Features != nil && !tmpl.HasFeature(d.ProjectFeatures()) {
+		return false
+	}
+	return true
 }
