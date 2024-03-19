@@ -20,4 +20,5 @@ func TestTemplatesResponse(t *testing.T) {
 
 	_, err := TemplatesResponse(ctx, a, &repository.Repository{}, []repository.TemplateRecord{})
 	require.NoError(t, err)
+
 }
