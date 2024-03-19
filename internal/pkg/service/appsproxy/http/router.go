@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/justinas/alice"
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/cookies"
@@ -170,12 +171,14 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
+	chain := alice.New(r.notifySandboxesServiceMiddleware())
+
 	oauthProviders := make(map[string]*oauthProvider)
 	for _, providerConfig := range app.AuthProviders {
-		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app)
+		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app, chain)
 	}
 
-	publicAppHandler := r.publicAppHandler(ctx, app)
+	publicAppHandler := r.publicAppHandler(ctx, app, chain)
 
 	mux := http.NewServeMux()
 
@@ -236,7 +239,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyCo
 	return r.createMultiProviderHandler(selectedProviders, app)
 }
 
-func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyConfig) http.Handler {
+func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyConfig, chain alice.Chain) http.Handler {
 	target, err := url.Parse(app.UpstreamAppURL)
 	if err != nil {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
@@ -244,7 +247,24 @@ func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyCon
 		r.createConfigErrorHandler(exceptionID)
 	}
 
-	return httputil.NewSingleHostReverseProxy(target)
+	return chain.Then(httputil.NewSingleHostReverseProxy(target))
+}
+
+func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+			appID, ok := ctx.Value(AppIDCtxKey).(string)
+			if ok {
+				go func() {
+					// Error is already logged by the Notify method itself. We can ignore it here.
+					_ = r.loader.Notify(ctx, appID)
+				}()
+			}
+
+			next.ServeHTTP(w, req)
+		})
+	}
 }
 
 type oauthProvider struct {
@@ -254,7 +274,7 @@ type oauthProvider struct {
 	handler        http.Handler
 }
 
-func (r *Router) createProvider(ctx context.Context, authProvider appconfig.AuthProvider, app appconfig.AppProxyConfig) *oauthProvider {
+func (r *Router) createProvider(ctx context.Context, authProvider appconfig.AuthProvider, app appconfig.AppProxyConfig, chain alice.Chain) *oauthProvider {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
@@ -292,7 +312,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 	}
 
 	// Create a configuration for oauth2-proxy. This can cause a validation failure.
-	proxyConfig, err := r.authProxyConfig(app, providerConfig)
+	proxyConfig, err := r.authProxyConfig(app, providerConfig, chain)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
@@ -497,7 +517,7 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 	writer.Header().Set("Location", selectionPageURL.String())
 }
 
-func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.Provider) (*options.Options, error) {
+func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.Provider, chain alice.Chain) (*options.Options, error) {
 	v := options.NewOptions()
 
 	domain := r.formatAppDomain(app)
@@ -522,6 +542,7 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
 		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),
 	}
+	v.UpstreamChain = chain
 	v.UpstreamServers = options.UpstreamConfig{
 		Upstreams: []options.Upstream{
 			{
