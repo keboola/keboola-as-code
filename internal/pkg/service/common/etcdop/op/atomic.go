@@ -32,11 +32,8 @@ import (
 //
 // Retries on network errors are always performed.
 type AtomicOp[R any] struct {
-	client         etcd.KV
+	*AtomicOpCore
 	result         *R
-	locks          []mutex
-	readPhase      []HighLevelFactory
-	writePhase     []HighLevelFactory
 	processors     processors[R]
 	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
 }
@@ -53,7 +50,7 @@ type AtomicOpInterface interface {
 }
 
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
-	return &AtomicOp[R]{client: client, result: result, checkPrefixKey: true}
+	return &AtomicOp[R]{AtomicOpCore: &AtomicOpCore{client: client}, result: result, checkPrefixKey: true}
 }
 
 // SkipPrefixKeysCheck disables the feature.
@@ -68,14 +65,6 @@ func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
 // See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
 func (v *AtomicOp[R]) SkipPrefixKeysCheck() *AtomicOp[R] {
 	v.checkPrefixKey = false
-	return v
-}
-
-func (v *AtomicOp[R]) AddFrom(ops ...AtomicOpInterface) *AtomicOp[R] {
-	for _, op := range ops {
-		v.readPhase = append(v.readPhase, op.ReadPhaseOps()...)
-		v.writePhase = append(v.writePhase, op.WritePhaseOps()...)
-	}
 	return v
 }
 
@@ -94,6 +83,17 @@ func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
 	return out
 }
 
+// Core returns a common interface of the atomic operation, without result type specific methods.
+// It is useful when you need to use some helper/hook to modify atomic operations with different result types.
+func (v *AtomicOp[R]) Core() *AtomicOpCore {
+	return v.AtomicOpCore
+}
+
+func (v *AtomicOp[R]) AddFrom(ops ...AtomicOpInterface) *AtomicOp[R] {
+	v.AtomicOpCore.AddFrom(ops...)
+	return v
+}
+
 // RequireLock to run the operation. Internally, an IF condition is generated for each registered lock.
 //
 // The lock must be locked during the entire operation, otherwise the NotLockedError occurs.
@@ -104,91 +104,57 @@ func (v *AtomicOp[R]) WritePhaseOps() (out []HighLevelFactory) {
 //
 // The method ensures that only the owner of the lock performs the database operation.
 func (v *AtomicOp[R]) RequireLock(lock mutex) *AtomicOp[R] {
-	v.locks = append(v.locks, lock)
+	v.AtomicOpCore.RequireLock(lock)
 	return v
 }
 
 func (v *AtomicOp[R]) ReadOp(ops ...Op) *AtomicOp[R] {
-	for _, op := range ops {
-		v.Read(func(context.Context) Op {
-			return op
-		})
-	}
+	v.AtomicOpCore.ReadOp(ops...)
 	return v
 }
 
 func (v *AtomicOp[R]) Read(factories ...func(ctx context.Context) Op) *AtomicOp[R] {
-	for _, fn := range factories {
-		v.ReadOrErr(func(ctx context.Context) (Op, error) {
-			return fn(ctx), nil
-		})
-	}
+	v.AtomicOpCore.Read(factories...)
 	return v
 }
 
 func (v *AtomicOp[R]) OnRead(fns ...func(ctx context.Context)) *AtomicOp[R] {
-	for _, fn := range fns {
-		v.ReadOrErr(func(ctx context.Context) (Op, error) {
-			fn(ctx)
-			return nil, nil
-		})
-	}
+	v.AtomicOpCore.OnRead(fns...)
 	return v
 }
 
 func (v *AtomicOp[R]) OnReadOrErr(fns ...func(ctx context.Context) error) *AtomicOp[R] {
-	for _, fn := range fns {
-		v.ReadOrErr(func(ctx context.Context) (Op, error) {
-			return nil, fn(ctx)
-		})
-	}
+	v.AtomicOpCore.OnReadOrErr(fns...)
 	return v
 }
 
 func (v *AtomicOp[R]) ReadOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
-	v.readPhase = append(v.readPhase, factories...)
+	v.AtomicOpCore.ReadOrErr(factories...)
 	return v
 }
 
 func (v *AtomicOp[R]) Write(factories ...func(ctx context.Context) Op) *AtomicOp[R] {
-	for _, fn := range factories {
-		v.WriteOrErr(func(ctx context.Context) (Op, error) {
-			return fn(ctx), nil
-		})
-	}
+	v.AtomicOpCore.Write(factories...)
 	return v
 }
 
 func (v *AtomicOp[R]) BeforeWrite(fns ...func(ctx context.Context)) *AtomicOp[R] {
-	for _, fn := range fns {
-		v.WriteOrErr(func(ctx context.Context) (Op, error) {
-			fn(ctx)
-			return nil, nil
-		})
-	}
+	v.AtomicOpCore.BeforeWrite(fns...)
 	return v
 }
 
 func (v *AtomicOp[R]) BeforeWriteOrErr(fns ...func(ctx context.Context) error) *AtomicOp[R] {
-	for _, fn := range fns {
-		v.WriteOrErr(func(ctx context.Context) (Op, error) {
-			return nil, fn(ctx)
-		})
-	}
+	v.AtomicOpCore.BeforeWriteOrErr(fns...)
 	return v
 }
 
 func (v *AtomicOp[R]) WriteOp(ops ...Op) *AtomicOp[R] {
-	for _, op := range ops {
-		v.Write(func(context.Context) Op {
-			return op
-		})
-	}
+	v.AtomicOpCore.WriteOp(ops...)
 	return v
 }
 
 func (v *AtomicOp[R]) WriteOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
-	v.writePhase = append(v.writePhase, factories...)
+	v.AtomicOpCore.WriteOrErr(factories...)
 	return v
 }
 
