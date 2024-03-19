@@ -574,7 +574,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
-					Groups: []string{"admin"},
+					Groups: []string{"admin", "manager"},
 				})
 
 				// Request to private app (unauthorized)
@@ -649,7 +649,7 @@ func TestAppProxyRouter(t *testing.T) {
 				appRequest := (*appServer.appRequests)[0]
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
 				assert.Equal(t, "admin@keboola.com", appRequest.Header.Get("X-Kbc-User-Email"))
-				assert.Equal(t, "admin", appRequest.Header.Get("X-Kbc-User-Roles"))
+				assert.Equal(t, "admin,manager", appRequest.Header.Get("X-Kbc-User-Roles"))
 				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
 			},
 		},
