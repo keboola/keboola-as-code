@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"io"
 
 	"github.com/benbjohnson/clock"
@@ -13,12 +14,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/hook"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
-	storageBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/bridge"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
-	storageStatsBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -30,8 +28,7 @@ const (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
-	hookRegistry                *hook.Registry
-	hookExecutor                *hook.Executor
+	plugins                     *plugin.Plugins
 	definitionRepository        *definitionRepo.Repository
 	storageRepository           *storageRepo.Repository
 	storageStatisticsRepository *statsRepo.Repository
@@ -123,7 +120,7 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 
 	d.parentScopes = parentScp
 
-	d.hookRegistry, d.hookExecutor = hook.New()
+	d.plugins = plugin.New()
 
 	d.definitionRepository = definitionRepo.New(d)
 
@@ -131,18 +128,11 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 
 	d.storageRepository = storageRepo.New(cfg.Storage.Level, d, storageBackoff)
 
-	storageBridge.RegisterTableSinkPlugin(d, apiProvider)
-	storageStatsBridge.RegisterStorageStatisticsPlugin(d)
-
 	return d
 }
 
-func (v *serviceScope) HookRegistry() *hook.Registry {
-	return v.hookRegistry
-}
-
-func (v *serviceScope) HookExecutor() *hook.Executor {
-	return v.hookExecutor
+func (v *serviceScope) Plugins() *plugin.Plugins {
+	return v.plugins
 }
 
 func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {

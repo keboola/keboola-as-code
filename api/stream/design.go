@@ -3,6 +3,8 @@ package stream
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"reflect"
 	"strings"
 
@@ -25,7 +27,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
@@ -620,7 +621,7 @@ var DisabledEntity = Type("DisabledEntity", func() {
 // Source -------------------------------------------------------------------------------------------------------------
 
 var Source = Type("Source", func() {
-	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
 	SourceFieldsRW()
 	Attribute("http", HTTPSource, func() {
@@ -634,7 +635,7 @@ var Source = Type("Source", func() {
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
-	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
 })
 
 var SourceType = Type("SourceType", String, func() {
@@ -680,7 +681,7 @@ var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
 })
 
 var SourcesList = Type("SourcesList", func() {
-	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	BranchKeyResponse()
 	Attribute("page", PaginatedResponse)
 	Attribute("sources", Sources)
@@ -726,7 +727,7 @@ var Sink = Type("Sink", func() {
 })
 
 var Sinks = Type("Sinks", ArrayOf(Sink), func() {
-	Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", repository.MaxSinksPerSource))
+	Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", sink.MaxSinksPerSource))
 })
 
 var SinkType = Type("SinkType", String, func() {
@@ -736,7 +737,7 @@ var SinkType = Type("SinkType", String, func() {
 })
 
 var SinksList = Type("SinksList", func() {
-	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
 	Attribute("page", PaginatedResponse)
 	Attribute("sinks", Sinks)
@@ -1054,7 +1055,7 @@ func SinkAlreadyExistsError() {
 }
 
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, repository.MaxSourcesPerBranch))
+	GenericError(StatusUnprocessableEntity, "resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, source.MaxSourcesPerBranch))
 }
 
 func TaskNotFoundError() {
