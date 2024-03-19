@@ -50,6 +50,8 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 	}
 }
 
+// LoadConfig gets the current configuration from Sandboxes Service.
+// It handles local caching based on the Cache-Control and ETag headers.
 func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
 	// Get cache item or init an empty item
 	item := l.cache.GetOrInit(appID)
