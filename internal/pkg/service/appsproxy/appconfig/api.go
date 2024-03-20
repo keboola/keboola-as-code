@@ -38,9 +38,10 @@ type RuleType string
 const PathPrefix = RuleType("pathPrefix")
 
 type AuthRule struct {
-	Type  RuleType  `json:"type"`
-	Value string    `json:"value"`
-	Auth  *[]string `json:"auth"`
+	Type         RuleType `json:"type"`
+	Value        string   `json:"value"`
+	Auth         []string `json:"auth"`
+	AuthRequired *bool    `json:"authRequired"`
 }
 
 func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request.APIRequest[*AppProxyConfig] {

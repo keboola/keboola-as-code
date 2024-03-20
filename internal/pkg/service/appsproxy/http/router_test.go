@@ -1402,9 +1402,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
-					Value: "/",
-					Auth:  nil,
+					Type:         appconfig.PathPrefix,
+					Value:        "/",
+					AuthRequired: pointer(false),
 				},
 			},
 		},
@@ -1424,9 +1424,10 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
-					Value: "/",
-					Auth:  pointer([]string{}),
+					Type:         appconfig.PathPrefix,
+					Value:        "/",
+					AuthRequired: pointer(false),
+					Auth:         []string{"test"},
 				},
 			},
 		},
@@ -1447,7 +1448,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  pointer([]string{"oidc"}),
+					Auth:  []string{"oidc"},
 				},
 			},
 		},
@@ -1458,7 +1459,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  pointer([]string{"unknown"}),
+					Auth:  []string{"unknown"},
 				},
 			},
 		},
@@ -1479,7 +1480,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  pointer([]string{"oidc"}),
+					Auth:  []string{"oidc"},
 				},
 			},
 		},
@@ -1511,7 +1512,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  pointer([]string{"oidc0", "oidc1", "oidc2"}),
+					Auth:  []string{"oidc0", "oidc1", "oidc2"},
 				},
 			},
 		},
@@ -1532,7 +1533,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/",
-					Auth:  pointer([]string{"oidc"}),
+					Auth:  []string{"oidc"},
 				},
 			},
 		},
@@ -1561,16 +1562,17 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/api",
-					Auth:  pointer([]string{"oidc0"}),
+					Auth:  []string{"oidc0"},
 				},
 				{
 					Type:  appconfig.PathPrefix,
 					Value: "/web",
-					Auth:  pointer([]string{"oidc0", "oidc1"}),
+					Auth:  []string{"oidc0", "oidc1"},
 				},
 				{
-					Type:  appconfig.PathPrefix,
-					Value: "/public",
+					Type:         appconfig.PathPrefix,
+					Value:        "/public",
+					AuthRequired: pointer(false),
 				},
 			},
 		},

@@ -186,31 +186,43 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders, app))
 
 	for _, rule := range app.AuthRules {
-		if rule.Type != appconfig.PathPrefix {
-			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
-			return r.createConfigErrorHandler(exceptionID)
-		}
-
-		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, publicAppHandler, oauthProviders, rule.Auth))
+		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, rule, publicAppHandler, oauthProviders))
 	}
 
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers *[]string) http.Handler {
-	if providers == nil {
+func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, rule appconfig.AuthRule, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider) http.Handler {
+	// If AuthRequired is unset, use true by default
+	authRequired := true
+	if rule.AuthRequired != nil {
+		authRequired = *rule.AuthRequired
+	}
+
+	if rule.Type != appconfig.PathPrefix {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
+		return r.createConfigErrorHandler(exceptionID)
+	}
+
+	if !authRequired {
+		if len(rule.Auth) > 0 {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected auth while authRequired is false for app "<proxy.appid>" "%s"`, app.Name)
+			return r.createConfigErrorHandler(exceptionID)
+		}
+
 		return publicAppHandler
 	}
 
-	if len(*providers) == 0 {
+	if len(rule.Auth) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty providers array for app "<proxy.appid>" "%s"`, app.Name)
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
 	selectedProviders := make(map[string]*oauthProvider)
-	for _, id := range *providers {
+	for _, id := range rule.Auth {
 		provider, found := oauthProviders[id]
 		if !found {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
