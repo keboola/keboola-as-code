@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 
@@ -30,7 +32,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
-	mockoidcCustom "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/mockoidc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -54,7 +55,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusNotFound, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Equal(t, `Unable to parse application ID from the URL.`, string(body))
+				assert.Equal(t, `Unable to find application ID from the URL.`, string(body))
 
 				// Request to health-check endpoint
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://hub.keboola.local/health-check", nil)
@@ -176,7 +177,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-verified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
 					Groups:        []string{"admin"},
@@ -279,7 +280,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-missing-csrf-token",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -337,7 +338,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-group-mismatch",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "manager@keboola.com",
 					Groups: []string{"manager"},
 				})
@@ -379,7 +380,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-unverified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
 					Groups:        []string{"admin"},
@@ -470,7 +471,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				appServer.Close()
 
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -543,7 +544,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-basic-flow",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -627,7 +628,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-selection-page-redirect",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -652,7 +653,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-unverified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
 					Groups:        []string{"admin"},
@@ -701,7 +702,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				appServer.Close()
 
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -808,7 +809,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-websocket",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
 					Groups:        []string{"admin"},
@@ -867,7 +868,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-websocket",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -959,7 +960,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "prefix-app-api-auth",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1005,7 +1006,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "prefix-app-web-auth",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1059,7 +1060,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "shared-provider",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[1].QueueUser(&mockoidcCustom.MockUser{
+				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1154,6 +1155,44 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 		},
+		{
+			name: "concurrency-test",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+
+				wg := sync.WaitGroup{}
+				counter := atomic.NewInt64(0)
+				for i := 0; i < 100; i++ {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+
+						m[0].QueueUser(&mockoidc.MockUser{
+							Email:         "admin@keboola.com",
+							EmailVerified: pointer(true),
+							Groups:        []string{"admin"},
+						})
+
+						request, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://oidc.hub.keboola.local/foo/bar", nil)
+						assert.NoError(t, err)
+
+						response, err := client.Do(request)
+						assert.NoError(t, err)
+
+						if assert.Equal(t, http.StatusFound, response.StatusCode) {
+							counter.Add(1)
+						}
+					}()
+				}
+
+				// Wait for all requests
+				wg.Wait()
+
+				// Check total requests count
+				assert.Equal(t, int64(100), counter.Load())
+			},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
@@ -1186,7 +1225,7 @@ func TestAppProxyRouter(t *testing.T) {
 		return testCase{
 			name: "private-app-oidc-" + method,
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
-				m[0].QueueUser(&mockoidcCustom.MockUser{
+				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1479,6 +1518,7 @@ type appServer struct {
 func startAppServer(t *testing.T) *appServer {
 	t.Helper()
 
+	lock := &sync.Mutex{}
 	var requests []*http.Request
 
 	mux := http.NewServeMux()
@@ -1496,6 +1536,8 @@ func startAppServer(t *testing.T) *appServer {
 		c.Close(websocket.StatusNormalClosure, "")
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		defer lock.Unlock()
 		requests = append(requests, r)
 		fmt.Fprint(w, "Hello, client")
 	})

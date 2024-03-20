@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,13 +15,17 @@ import (
 
 const attrAppID = "proxy.appid"
 
+type ctxKey string
+
+const AppIDCtxKey = ctxKey("appid")
+
 func appIDMiddleware(publicURL *url.URL) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			appID, ok := parseAppID(publicURL, req.Host)
-
 			if ok {
 				ctx := req.Context()
+				ctx = context.WithValue(ctx, AppIDCtxKey, appID)
 				ctx = ctxattr.ContextWith(ctx, attribute.String(attrAppID, appID))
 				req = req.WithContext(ctx)
 			}
@@ -34,10 +39,10 @@ func appIDOtelMiddleware() middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
-			appIDString, ok := ctxattr.Attributes(ctx).Value(attrAppID)
+			appID, ok := ctx.Value(AppIDCtxKey).(string)
 			if ok {
 				labeler, _ := otelhttp.LabelerFromContext(ctx)
-				labeler.Add(attribute.String(attrAppID, appIDString.Emit()))
+				labeler.Add(attribute.String(attrAppID, appID))
 			}
 
 			next.ServeHTTP(w, req)

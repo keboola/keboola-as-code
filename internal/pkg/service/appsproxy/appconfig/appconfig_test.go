@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
@@ -268,29 +270,21 @@ func TestLoader_LoadConfig(t *testing.T) {
 
 			url := "https://sandboxes.keboola.com"
 
-			loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, client.New().WithTransport(transport), url, "")
+			httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
 
-			for _, attempt := range tc.attempts {
+			loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, httpClient, url, "")
+
+			for i, attempt := range tc.attempts {
+				t.Logf("attempt %d/%d", i+1, len(tc.attempts))
 				transport.Reset()
 
 				clk.Add(attempt.delay)
 
-				if len(attempt.responses) > 0 {
-					transport.RegisterResponder(
-						http.MethodGet,
-						fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
-						httpmock.ResponderFromMultipleResponses(attempt.responses),
-					)
-				} else {
-					transport.RegisterResponder(
-						http.MethodGet,
-						fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
-						func(req *http.Request) (*http.Response, error) {
-							require.Fail(t, "A call to sandboxes API is not expected.")
-							return nil, nil
-						},
-					)
-				}
+				transport.RegisterResponder(
+					http.MethodGet,
+					fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
+					httpmock.ResponderFromMultipleResponses(attempt.responses),
+				)
 
 				config, modified, err := loader.LoadConfig(context.Background(), tc.appID)
 				if attempt.expectedErrorCode != 0 {
@@ -312,6 +306,64 @@ func TestLoader_LoadConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoader_LoadConfigConcurrency(t *testing.T) {
+	t.Parallel()
+
+	clk := clock.NewMock()
+	transport := httpmock.NewMockTransport()
+
+	url := "https://sandboxes.keboola.com"
+
+	responses := []*http.Response{
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
+		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
+	}
+
+	transport.RegisterResponder(
+		http.MethodGet,
+		fmt.Sprintf("%s/apps/%s/proxy-config", url, "test"),
+		httpmock.ResponderFromMultipleResponses(responses),
+	)
+
+	httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
+
+	loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, httpClient, url, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+	counter := atomic.NewInt64(0)
+	// Load configuration 10x in parallel
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			config, _, err := loader.LoadConfig(ctx, "test")
+			assert.NoError(t, err)
+
+			assert.Equal(t, "http://app.local", config.UpstreamAppURL)
+
+			counter.Add(1)
+		}()
+	}
+
+	// Wait for all requests
+	wg.Wait()
+
+	// Check total requests count
+	assert.Equal(t, int64(10), counter.Load())
 }
 
 func newResponse(t *testing.T, code int, body map[string]any, eTag string, cacheControl string) *http.Response {

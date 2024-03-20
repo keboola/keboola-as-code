@@ -13,6 +13,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -28,7 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -39,7 +40,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            appconfig.Loader
-	appHandlers       map[string]http.Handler
+	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 }
@@ -63,12 +64,16 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 	}
 
 	router := &Router{
-		logger:            d.Logger(),
-		telemetry:         d.Telemetry(),
-		config:            d.Config(),
-		clock:             d.Clock(),
-		loader:            d.Loader(),
-		appHandlers:       make(map[string]http.Handler),
+		logger:    d.Logger(),
+		telemetry: d.Telemetry(),
+		config:    d.Config(),
+		clock:     d.Clock(),
+		loader:    d.Loader(),
+		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
+			return &appHandler{
+				updateLock: &sync.RWMutex{},
+			}
+		}),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 	}
@@ -76,18 +81,37 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 	return router, nil
 }
 
+type appHandler struct {
+	httpHandler http.Handler
+	updateLock  *sync.RWMutex
+}
+
+func (h *appHandler) getHTTPHandler() http.Handler {
+	h.updateLock.RLock()
+	defer h.updateLock.RUnlock()
+	return h.httpHandler
+}
+
+func (h *appHandler) setHTTPHandler(handlerFactory func() http.Handler) {
+	h.updateLock.Lock()
+	defer h.updateLock.Unlock()
+	h.httpHandler = handlerFactory()
+}
+
 func (r *Router) CreateHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		appIDString, ok := ctxattr.Attributes(req.Context()).Value(attrAppID)
+		ctx := req.Context()
+
+		appID, ok := ctx.Value(AppIDCtxKey).(string)
 		if !ok {
 			if req.URL.Path == "/health-check" {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
 
-			r.logger.Info(req.Context(), `unable to parse application ID from the URL`)
+			r.logger.Info(req.Context(), `unable to find application ID from the URL`)
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, `Unable to parse application ID from the URL.`)
+			fmt.Fprint(w, `Unable to find application ID from the URL.`)
 			return
 		}
 
@@ -97,8 +121,6 @@ func (r *Router) CreateHandler() http.Handler {
 				req.Header.Del(name)
 			}
 		}
-
-		appID := appIDString.Emit()
 
 		// Load configuration for given app.
 		config, modified, err := r.loader.LoadConfig(req.Context(), appID)
@@ -118,13 +140,17 @@ func (r *Router) CreateHandler() http.Handler {
 		}
 
 		// Recreate app handler if configuration changed.
-		handler, ok := r.appHandlers[appID]
-		if !ok || modified {
-			handler = r.createDataAppHandler(req.Context(), config)
-			r.appHandlers[appID] = handler
+		handler := r.appHandlers.GetOrInit(appID)
+		httpHandler := handler.getHTTPHandler()
+
+		if modified || httpHandler == nil {
+			handler.setHTTPHandler(func() http.Handler {
+				httpHandler = r.createDataAppHandler(req.Context(), config)
+				return httpHandler
+			})
 		}
 
-		handler.ServeHTTP(w, req)
+		httpHandler.ServeHTTP(w, req)
 	})
 }
 
