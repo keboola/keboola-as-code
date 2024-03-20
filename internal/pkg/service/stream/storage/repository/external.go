@@ -138,30 +138,3 @@ func (e *external) NewFileResourcesProvider(rb rollback.Builder) FileResourcesPr
 		return result, nil
 	}
 }
-
-func (e *external) NewUsedDiskSpaceProvider() UsedDiskSpaceProvider {
-	result := make(map[key.SinkKey]datasize.ByteSize)
-	return func(ctx context.Context, sinkKeys []key.SinkKey) (map[key.SinkKey]datasize.ByteSize, error) {
-		txn := op.Txn(e.client)
-		for _, sinkKey := range sinkKeys {
-			// Load statistics only once, the provider can be reused within op.AtomicOp retries.
-			if _, ok := result[sinkKey]; !ok {
-				txn.Merge(e.stats.
-					MaxUsedDiskSizeBySliceIn(sinkKey, recordsForSliceDiskSizeCalc).
-					OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
-						result[sinkKey] = r.Result()
-					}),
-				)
-			}
-		}
-
-		// Get all in one transaction
-		if !txn.Empty() {
-			if err := txn.Do(ctx).Err(); err != nil {
-				return nil, err
-			}
-		}
-
-		return result, nil
-	}
-}

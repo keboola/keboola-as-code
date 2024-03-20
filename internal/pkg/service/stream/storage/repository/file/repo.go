@@ -154,33 +154,13 @@ func (r *Repository) StateTransition(now time.Time, k model.FileKey, from, to mo
 	})
 }
 
-// Delete file a file slices.
+// Delete the file.
 // This operation deletes only the metadata, the file resource in the staging storage is unaffected.
 func (r *Repository) Delete(k model.FileKey, now time.Time) *op.AtomicOp[model.File] {
 	return r.update(k, now, func(file model.File) (model.File, error) {
 		file.Deleted = true
 		return file, nil
 	})
-}
-
-// update reads the file, applies updateFn and save modified value.
-func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
-	var old, updated model.File
-	return op.Atomic(r.client, &updated).
-		// Read entity for modification
-		ReadOp(r.Get(k).WithResultTo(&old)).
-		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
-			// Update
-			updated = deepcopy.Copy(old).(model.File)
-			updated, err = updateFn(updated)
-			if err != nil {
-				return nil, err
-			}
-
-			// Save
-			return r.saveOne(ctx, now, &old, &updated)
-		})
 }
 
 // rotateAllIn is a common method used by both Rotate and Close method.
@@ -205,9 +185,9 @@ func (r *Repository) rotate(now time.Time, k key.SinkKey, openNewFile bool) *op.
 		atomicOp.ReadOp(r.volumes.ListWriterVolumes().WithAllTo(&volumes))
 	}
 
-	// Read opened files in the model.FileWriting state.
+	// Load opened files in the model.FileWriting state.
 	// There can be a maximum of one old file in the model.FileWriting state per each table sink.
-	// On rotation, opened files are switched to the model.FileClosing state.
+	// On rotation, the opened file is switched to the model.FileClosing state.
 	var openedFiles []model.File
 	atomicOp.ReadOp(r.ListInState(k, model.FileWriting).WithAllTo(&openedFiles))
 
@@ -274,6 +254,26 @@ func (r *Repository) rotate(now time.Time, k key.SinkKey, openNewFile bool) *op.
 	})
 
 	return atomicOp
+}
+
+// update reads the file, applies updateFn and save modified value.
+func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
+	var old, updated model.File
+	return op.Atomic(r.client, &updated).
+		// Read entity for modification
+		ReadOp(r.Get(k).WithResultTo(&old)).
+		// Update the entity
+		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
+			// Update
+			updated = deepcopy.Copy(old).(model.File)
+			updated, err = updateFn(updated)
+			if err != nil {
+				return nil, err
+			}
+
+			// Save
+			return r.saveOne(ctx, now, &old, &updated)
+		})
 }
 
 func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *model.File) (op.Op, error) {
