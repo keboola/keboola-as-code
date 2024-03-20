@@ -2,20 +2,20 @@ package branch
 
 import (
 	"context"
-	"github.com/keboola/go-utils/pkg/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 )
 
 const (

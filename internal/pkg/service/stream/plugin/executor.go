@@ -20,6 +20,7 @@ func (e *Executor) OnSourceSave(ctx *SaveContext, old, updated *definition.Sourc
 		fn(ctx, old, updated)
 	})
 }
+
 func (e *Executor) OnSinkSave(ctx *SaveContext, old, updated *definition.Sink) {
 	e.collection.onSinkSave.forEach(func(fn onSinkSaveFn) {
 		fn(ctx, old, updated)

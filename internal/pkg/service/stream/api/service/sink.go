@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -14,9 +13,6 @@ import (
 
 //nolint:dupl // CreateSource method is similar
 func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestScope, payload *stream.CreateSinkPayload) (res *stream.Task, err error) {
-	rb := rollback.New(d.Logger())
-	defer rb.InvokeIfErr(ctx, &err)
-
 	sink, err := s.mapper.NewSinkEntity(d.SourceKey(), payload)
 	if err != nil {
 		return nil, err
@@ -29,7 +25,7 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 		ProjectID: d.ProjectID(),
 		ObjectKey: sink.SinkKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.repo.Sink().Create(rb, s.clock.Now(), "New sink.", &sink).Do(ctx).Err(); err == nil {
+			if err := s.repo.Sink().Create(&sink, s.clock.Now(), "New sink.").Do(ctx).Err(); err == nil {
 				result := task.OkResult("Sink has been created successfully.")
 				result = s.mapper.WithTaskOutputs(result, sink.SinkKey)
 				return result

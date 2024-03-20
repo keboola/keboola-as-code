@@ -1,12 +1,11 @@
 package slice_test
 
 import (
+	"testing"
+
 	"github.com/keboola/go-client/pkg/keboola"
-	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
-	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -16,6 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
+	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
 )
 
 func TestNewSlice_InvalidCompressionType(t *testing.T) {

@@ -24,7 +24,7 @@ func MockTableStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
 	checkedTables := make(map[keboola.TableKey]bool)
 	transport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf(`=~/v2/storage/branch/[0-9]+/tables/[a-z0-9\.]+`),
+		`=~/v2/storage/branch/[0-9]+/tables/[a-z0-9\.]+`,
 		func(request *http.Request) (*http.Response, error) {
 			lock.Lock()
 			defer lock.Unlock()

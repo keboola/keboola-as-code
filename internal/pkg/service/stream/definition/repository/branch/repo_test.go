@@ -2,7 +2,6 @@ package branch_test
 
 import (
 	"context"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"net/http"
 	"testing"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -36,7 +36,7 @@ func TestRepository_Branch(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedServiceScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	//rb := rollback.NewRepository(d.Logger())
+	// rb := rollback.NewRepository(d.Logger())
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()
 	sinkRepo := d.DefinitionRepository().Sink()

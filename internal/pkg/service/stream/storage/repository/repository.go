@@ -1,16 +1,16 @@
 package repository
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	file "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
-	slice "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	file "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
+	slice "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume"
 )
 
 type dependencies interface {

@@ -6,7 +6,6 @@ import (
 )
 
 type Collection struct {
-	executor     *Executor
 	onBranchSave fnList[onBranchSaveFn]
 	onSourceSave fnList[onSourceSaveFn]
 	onSinkSave   fnList[onSinkSaveFn]

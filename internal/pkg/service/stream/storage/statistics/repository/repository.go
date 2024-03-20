@@ -29,17 +29,17 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"github.com/c2h5oh/datasize"
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
-
-	etcd "go.etcd.io/etcd/client/v3"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -130,6 +130,7 @@ func New(d dependencies) *Repository {
 						})
 				}),
 			)
+			return
 		}
 
 		// On slice modification: move statistics to the target storage level, if needed

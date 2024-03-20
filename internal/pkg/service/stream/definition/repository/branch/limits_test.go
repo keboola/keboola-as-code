@@ -2,8 +2,6 @@ package branch_test
 
 import (
 	"context"
-	branchrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 	"net/http"
 	"testing"
 
@@ -17,6 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	branchrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
@@ -35,7 +35,7 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	//rb := rollback.NewRepository(d.Logger())
+	// rb := rollback.NewRepository(d.Logger())
 	branchRepo := repository.New(d).Branch()
 	branchSchema := schema.ForBranch(d.EtcdSerde())
 

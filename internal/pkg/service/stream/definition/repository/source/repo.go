@@ -3,20 +3,20 @@ package source
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/go-utils/pkg/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 )
 
 const (
@@ -245,6 +245,8 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
 		saveCtx := plugin.NewSaveContext(now)
 		for _, old := range allOld {
+			old := old
+
 			// Mark deleted
 			deleted := deepcopy.Copy(old).(definition.Source)
 			deleted.Delete(now, deletedWithParent)
@@ -276,6 +278,8 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
 		saveCtx := plugin.NewSaveContext(now)
 		for _, old := range allOld {
+			old := old
+
 			if old.DeletedWithParent != undeletedWithParent {
 				continue
 			}

@@ -1,7 +1,7 @@
 package repository
 
 //
-//import (
+// import (
 //	"context"
 //	"fmt"
 //	"sync"
@@ -24,10 +24,10 @@ package repository
 //
 //// recordsForSliceDiskSizeCalc defines the number of last slice statistics that are taken into account
 //// when calculating the amount of disk space that needs to be pre-allocated for a new slice.
-//const recordsForSliceDiskSizeCalc = 10
+// const recordsForSliceDiskSizeCalc = 10
 //
 //// FileResource is an auxiliary struct that connect the stream storage.FileKey with the Keboola file resource.
-//type FileResource struct {
+// type FileResource struct {
 //	model.FileKey
 //	Credentials *keboola.FileUploadCredentials
 //}
@@ -35,14 +35,14 @@ package repository
 //// FileResourcesProvider is a function that in parallel creates file resources for the provided sinks.
 //// The function can be called multiple times within op.AtomicOp retries,
 //// so the result map should be cached.
-//type FileResourcesProvider func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]*FileResource, error)
+// type FileResourcesProvider func(ctx context.Context, now time.Time, sinkKeys []key.SinkKey) (map[key.SinkKey]*FileResource, error)
 //
 //// UsedDiskSpaceProvider provides maximum size of previous uploaded/imported slices.
 //// The result is used to pre-allocate disk space for a new slice.
-//type UsedDiskSpaceProvider func(ctx context.Context, sinkKeys []key.SinkKey) (map[key.SinkKey]datasize.ByteSize, error)
+// type UsedDiskSpaceProvider func(ctx context.Context, sinkKeys []key.SinkKey) (map[key.SinkKey]datasize.ByteSize, error)
 //
 //// external provide bridge to other parts of the system that are not part of the repository, but are needed for repository operations.
-//type external struct {
+// type external struct {
 //	client    *etcd.Client
 //	publicAPI *keboola.PublicAPI
 //	config    level.Config
@@ -50,7 +50,7 @@ package repository
 //	storage   *Repository
 //}
 //
-//func newExternal(cfg level.Config, d dependencies, repo *Repository) *external {
+// func newExternal(cfg level.Config, d dependencies, repo *Repository) *external {
 //	return &external{
 //		client:    d.EtcdClient(),
 //		publicAPI: d.KeboolaPublicAPI(),

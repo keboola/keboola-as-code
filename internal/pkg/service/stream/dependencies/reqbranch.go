@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -81,10 +80,7 @@ func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Br
 	branchKey := key.BranchKey{ProjectID: d.ProjectID(), BranchID: res.ID}
 	branch = definition.Branch{BranchKey: branchKey, IsDefault: true}
 
-	rb := rollback.New(d.Logger())
-	defer rb.InvokeIfErr(ctx, &err)
-
-	return repo.Create(rb, d.Clock().Now(), &branch).Do(ctx).ResultOrErr()
+	return repo.Create(&branch, d.Clock().Now()).Do(ctx).ResultOrErr()
 }
 
 func (v *branchRequestScope) Branch() definition.Branch {

@@ -69,7 +69,7 @@ func MockBucketStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) 
 
 			// Before POST, we expect GET request, to check bucket existence
 			bucketID := keboola.MustParseBucketID(fmt.Sprintf("%s.c-%s", data["stage"], strings.TrimPrefix(data["name"].(string), "c-")))
-			bucketKey := keboola.BucketKey{BranchID: keboola.BranchID(branchID), BucketID: bucketID}
+			bucketKey := keboola.BucketKey{BranchID: branchID, BucketID: bucketID}
 			if !checkedBuckets[bucketKey] {
 				return nil, errors.Errorf(`unexpected order of requests, before creating the bucket "%s" via POST, it should be checked whether it exists via GET`, bucketID)
 			}

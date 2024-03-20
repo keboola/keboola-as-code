@@ -3,23 +3,23 @@ package slice
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/go-utils/pkg/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/state"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -169,6 +169,8 @@ func (r *Repository) deleteAllFrom(k model.FileKey, now time.Time) *op.AtomicOp[
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
 			saveCtx := plugin.NewSaveContext(now)
 			for _, old := range allOld {
+				old := old
+
 				// Mark deleted
 				deleted := deepcopy.Copy(old).(model.Slice)
 				deleted.Deleted = true

@@ -3,8 +3,6 @@ package stream
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"reflect"
 	"strings"
 
@@ -27,6 +25,8 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )

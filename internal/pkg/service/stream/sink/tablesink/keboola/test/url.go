@@ -1,10 +1,12 @@
 package test
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/umisama/go-regexpcache"
 	"strconv"
+
+	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func extractBranchIDFromURL(url string) (keboola.BranchID, error) {

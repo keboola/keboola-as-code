@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/repository/token"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/repository/token"
 )
 
 type dependencies interface {

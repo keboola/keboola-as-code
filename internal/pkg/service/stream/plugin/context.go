@@ -2,8 +2,9 @@ package plugin
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
 type SaveContext struct {

@@ -2,11 +2,9 @@ package dependencies
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"io"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -14,11 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -145,12 +143,4 @@ func (v *serviceScope) StatisticsRepository() *statsRepo.Repository {
 
 func (v *serviceScope) StorageRepository() *storageRepo.Repository {
 	return v.storageRepository
-}
-
-func apiProvider(ctx context.Context) *keboola.AuthorizedAPI {
-	api, ok := ctx.Value(KeboolaProjectAPICtxKey).(*keboola.AuthorizedAPI)
-	if !ok {
-		panic(errors.New("the operation must be run in a context with Keboola project API"))
-	}
-	return api
 }

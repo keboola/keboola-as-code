@@ -2,8 +2,6 @@ package token_test
 
 import (
 	"context"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"net/http"
 	"testing"
 
@@ -18,6 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	tokenRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/repository/token"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -40,7 +40,7 @@ func TestRepository_Token(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	//rb := rollback.New(d.Logger())
+	// rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	var r *tokenRepo.Repository
 

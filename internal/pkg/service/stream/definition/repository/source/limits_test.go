@@ -3,9 +3,6 @@ package source_test
 import (
 	"context"
 	"fmt"
-	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"net/http"
 	"testing"
 
@@ -21,7 +18,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -39,7 +39,7 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	//rb := rollback.NewRepository(d.Logger())
+	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
 	sourceSchema := schema.ForSource(d.EtcdSerde())
@@ -104,7 +104,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	//rb := rollback.NewRepository(d.Logger())
+	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
 	sourceSchema := schema.ForSource(d.EtcdSerde())

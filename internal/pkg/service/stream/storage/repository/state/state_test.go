@@ -12,7 +12,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -37,7 +36,6 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
@@ -71,7 +69,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	var sliceKey1, sliceKey2, sliceKey3 model.SliceKey
 	{
 		var err error
-		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file, err = fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
 		slices, err := sliceRepo.ListIn(file.FileKey).Do(ctx).All()
@@ -93,7 +91,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// INVALID: FileImporting - invalid transition
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileWriting, model.FileImporting).Do(ctx).Err()
+		err := fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileWriting, model.FileImporting).Do(ctx).Err()
 		require.Error(t, err)
 		assert.Equal(t, `unexpected file "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" state transition from "writing" to "importing"`, err.Error())
 	}
@@ -114,7 +112,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// VALID: FileClosing, slices in SliceWriting state are switched to SliceClosing state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
 		fileKV, err := fileRepo.Get(file.FileKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.FileClosing, fileKV.State)
@@ -161,7 +159,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// INVALID: FileImporting (1) - a slice is not uploaded
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileClosing, model.FileImporting).Do(ctx).Err()
+		err := fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err()
 		require.Error(t, err)
 		assert.Equal(t, strings.TrimSpace(`
 unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5/2000-01-01T01:00:00.000Z" state:
@@ -181,7 +179,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5
 	// INVALID: FileImporting (2) - a slice is not uploaded
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileClosing, model.FileImporting).Do(ctx).Err()
+		err := fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err()
 		require.Error(t, err)
 		assert.Equal(t, strings.TrimSpace(`
 unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5/2000-01-01T01:00:00.000Z" state:
@@ -201,7 +199,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5
 	// INVALID: from argument doesn't match
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileWriting, model.FileImporting).Do(ctx).Err()
+		err := fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileWriting, model.FileImporting).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `file "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" is in "closing" state, expected "writing"`, err.Error())
 		}
@@ -210,7 +208,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5
 	// VALID: FileImporting - all slices are in SliceUploaded state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileClosing, model.FileImporting).Do(ctx).Err())
+		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
 		fileKV, err := fileRepo.Get(file.FileKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.FileImporting, fileKV.State)
@@ -222,7 +220,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5
 	// VALID: FileImported - slices in SliceUploaded state are switched to SliceImported state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileImporting, model.FileImported).Do(ctx).Err())
+		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
 		fileKV, err := fileRepo.Get(file.FileKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.FileImported, fileKV.State)

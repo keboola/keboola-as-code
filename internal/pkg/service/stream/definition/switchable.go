@@ -7,12 +7,14 @@ import (
 )
 
 type SwitchableInterface interface {
-	Enable()
+	Enable(now time.Time, by string)
 	Disable(now time.Time, by, reason string)
 	IsEnabled() bool
 	GetDisabledBy() string
 	GetDisabledAt() *utctime.UTCTime
 	GetDisabledReason() string
+	GetEnabledBy() string
+	GetEnabledAt() *utctime.UTCTime
 }
 
 type Switchable struct {
@@ -58,4 +60,12 @@ func (v *Switchable) GetDisabledAt() *utctime.UTCTime {
 
 func (v *Switchable) GetDisabledReason() string {
 	return v.DisabledReason
+}
+
+func (v *Switchable) GetEnabledBy() string {
+	return v.EnabledBy
+}
+
+func (v *Switchable) GetEnabledAt() *utctime.UTCTime {
+	return v.EnabledAt
 }

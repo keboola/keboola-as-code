@@ -3,10 +3,6 @@ package sink_test
 import (
 	"context"
 	"fmt"
-	sinkrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
-	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"net/http"
 	"testing"
 
@@ -22,7 +18,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	sinkrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
+	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -103,7 +103,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	//rb := rollback.NewRepository(d.Logger())
+	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
 	sinkSchema := schema.ForSink(d.EtcdSerde())

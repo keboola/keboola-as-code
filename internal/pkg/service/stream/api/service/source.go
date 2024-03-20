@@ -16,9 +16,6 @@ import (
 
 //nolint:dupl // CreateSink method is similar
 func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (res *api.Task, err error) {
-	rb := rollback.New(d.Logger())
-	defer rb.InvokeIfErr(ctx, &err)
-
 	source, err := s.mapper.NewSourceEntity(d.BranchKey(), payload)
 	if err != nil {
 		return nil, err
@@ -31,7 +28,7 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 		ProjectID: d.ProjectID(),
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.repo.Source().Create(rb, s.clock.Now(), "New source.", &source).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Create(&source, s.clock.Now(), "New source.").Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been created successfully.")
 				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
 				return result
@@ -48,9 +45,6 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 }
 
 func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (res *api.Task, err error) {
-	rb := rollback.New(d.Logger())
-	defer rb.InvokeIfErr(ctx, &err)
-
 	// Get the change description
 	var changeDesc string
 	if payload.ChangeDescription == nil {
@@ -72,7 +66,7 @@ func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequest
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.repo.Source().Update(rb, s.clock.Now(), d.SourceKey(), changeDesc, update).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), changeDesc, update).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been updated successfully.")
 				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
 				return result
@@ -104,9 +98,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (err error) {
-	rb := rollback.New(d.Logger())
-	defer rb.InvokeIfErr(ctx, &err)
-	return s.repo.Source().SoftDelete(rb, s.clock.Now(), d.SourceKey()).Do(ctx).Err()
+	return s.repo.Source().SoftDelete(d.SourceKey(), s.clock.Now()).Do(ctx).Err()
 }
 
 func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (res *api.SettingsResult, err error) {
@@ -142,7 +134,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	}
 
 	// Save changes
-	source, err := s.repo.Source().Update(rb, s.clock.Now(), d.SourceKey(), changeDesc, update).Do(ctx).ResultOrErr()
+	source, err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), changeDesc, update).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}

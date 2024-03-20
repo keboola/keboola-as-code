@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -97,18 +96,10 @@ func TestFile_Validation(t *testing.T) {
 		DiskAllocation: diskalloc.NewConfig(),
 	}
 	stagingStorage := staging.File{
-		Compression:       compression.NewConfig(),
-		UploadCredentials: &keboola.FileUploadCredentials{},
-		Expiration:        utctime.MustParse("2006-01-02T15:04:05.000Z"),
+		Compression: compression.NewConfig(),
+		Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}
-	targetStorage := target.Target{
-		Table: target.Table{
-			Keboola: target.KeboolaTable{
-				TableID:    keboola.MustParseTableID("in.bucket.table"),
-				StorageJob: &keboola.StorageJob{},
-			},
-		},
-	}
+	targetStorage := target.Target{}
 	volumeAssignment := assignment.Assignment{
 		Config: assignment.Config{
 			Count:          2,
