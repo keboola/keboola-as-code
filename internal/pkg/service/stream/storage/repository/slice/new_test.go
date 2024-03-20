@@ -1,17 +1,12 @@
 package slice_test
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	"github.com/keboola/go-client/pkg/keboola"
 	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
 	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
-	"testing"
-	"time"
-
-	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
-	"github.com/relvacode/iso8601"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -49,17 +44,10 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 			},
 		},
 	}
-	credentials := &keboola.FileUploadCredentials{
-		S3UploadParams: &s3.UploadParams{
-			Credentials: s3.Credentials{
-				Expiration: iso8601.Time{Time: now.Add(time.Hour)},
-			},
-		},
-	}
-	cfg := level.NewConfig()
 
 	// Create file
-	file, err := fileRepo.NewFile(cfg, repository.FileResource{FileKey: fileKey, Credentials: credentials}, sink)
+	cfg := level.NewConfig()
+	file, err := fileRepo.NewFile(cfg, fileKey, sink)
 	require.NoError(t, err)
 
 	// Set unsupported compression type

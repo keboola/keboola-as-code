@@ -3,7 +3,6 @@ package file_test
 import (
 	"bytes"
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"testing"
 	"time"
 
@@ -115,12 +114,12 @@ func TestFileRepository_Delete(t *testing.T) {
 	// Put slices statistics values - only statistics in the Target level should be preserved after deletion
 	// -----------------------------------------------------------------------------------------------------------------
 	require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
-		repository.statsPerSlice(s0101),
-		repository.statsPerSlice(s0102),
-		repository.statsPerSlice(s0201),
-		repository.statsPerSlice(s0202),
-		repository.statsPerSlice(s0301),
-		repository.statsPerSlice(s0302),
+		test.StatsPerSlice(s0101),
+		test.StatsPerSlice(s0102),
+		test.StatsPerSlice(s0201),
+		test.StatsPerSlice(s0202),
+		test.StatsPerSlice(s0301),
+		test.StatsPerSlice(s0302),
 	}))
 
 	// File and slices in the Sink2 are in the Staging level

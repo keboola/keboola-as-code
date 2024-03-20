@@ -15,7 +15,6 @@ import (
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -49,7 +48,6 @@ func TestSliceRepository_Operations(t *testing.T) {
 
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
-	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
@@ -115,15 +113,15 @@ func TestSliceRepository_Operations(t *testing.T) {
 		sink3 := test.NewSink(sinkKey3)
 		require.NoError(t, defRepo.Sink().Create(&sink3, clk.Now(), "Create sink").Do(ctx).Err())
 
-		file1, err := fileRepo.Rotate(rb, clk.Now(), sink1.SinkKey).Do(ctx).ResultOrErr()
+		file1, err := fileRepo.Rotate(sink1.SinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey1 = file1.FileKey
 
-		file2, err := fileRepo.Rotate(rb, clk.Now(), sink2.SinkKey).Do(ctx).ResultOrErr()
+		file2, err := fileRepo.Rotate(sink2.SinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey2 = file2.FileKey
 
-		file3, err := fileRepo.Rotate(rb, clk.Now(), sink3.SinkKey).Do(ctx).ResultOrErr()
+		file3, err := fileRepo.Rotate(sink3.SinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey3 = file3.FileKey
 	}
@@ -196,7 +194,7 @@ func TestSliceRepository_Operations(t *testing.T) {
 	// Rotate - parent file is not in storage.FileWriting state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey3).Do(ctx).Err())
+		require.NoError(t, fileRepo.Close(sinkKey3, clk.Now()).Do(ctx).Err())
 
 		fileVolumeKey := model.FileVolumeKey{FileKey: fileKey3, VolumeID: sliceKey3.VolumeID}
 		if err := sliceRepo.Rotate(clk.Now(), fileVolumeKey).Do(ctx).Err(); assert.Error(t, err) {
@@ -277,10 +275,10 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 		model.FileWriting, model.FileClosing, model.FileImporting, model.FileImported,
 	})
 
-	// Delete
+	// Delete slices together with the file
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sliceRepo.Delete(sliceKey2).Do(ctx).Err())
+		assert.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -296,14 +294,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 		assert.Empty(t, slices)
 	}
 
-	// Delete - not found
-	// -----------------------------------------------------------------------------------------------------------------
-	if err := sliceRepo.Delete(nonExistentSliceKey).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `slice "123/456/my-source/my-sink-1/2000-01-01T01:02:03.000Z/my-volume/2000-01-01T01:02:03.000Z" not found in the file`, err.Error())
-		serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
-	}
-
-	// Check etcd state - slice2 has been deleted, but slice 1 exists
+	// Check final etcd state
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<

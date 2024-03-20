@@ -15,7 +15,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -43,7 +42,6 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	statsRepo := d.StatisticsRepository()
 	storageRepo := d.StorageRepository()
@@ -77,7 +75,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
-		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file, err = fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		slices, err := sliceRepo.ListIn(file.FileKey).Do(ctx).All()
 		require.NoError(t, err)
@@ -152,11 +150,11 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileClosing, model.FileImporting).Do(ctx).Err())
+		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileImporting, model.FileImported).Do(ctx).Err())
+		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
 	}
 
 	// Check etcd logs

@@ -14,7 +14,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -43,7 +42,6 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	statsRepo := d.StatisticsRepository()
 	storageRepo := d.StorageRepository()
@@ -83,7 +81,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		var err error
-		file, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file, err = fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file.OpenedAt().Time())
 	}
@@ -129,7 +127,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	// Switch file to the storage.FileClosing state by StateTransition, it is not possible
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileWriting, model.FileClosing).Do(ctx).Err()
+		err := fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileWriting, model.FileClosing).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `unexpected file transition to the state "closing", use Rotate* or Close* methods`, err.Error())
 		}
@@ -139,7 +137,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Both slices are uploaded
@@ -160,7 +158,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileClosing, model.FileImporting).Do(ctx).Err())
+		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
 		toImportingEtcdLogs = etcdLogs.String()
 	}
 
@@ -170,7 +168,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(clk.Now(), file.FileKey, model.FileImporting, model.FileImported).Do(ctx).Err())
+		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
 		toImportedEtcdLogs = etcdLogs.String()
 	}
 

@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"testing"
 	"time"
 
@@ -121,5 +122,19 @@ func SwitchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, slice
 		}
 
 		from = to
+	}
+}
+
+func StatsPerSlice(k model.SliceKey) statistics.PerSlice {
+	return statistics.PerSlice{
+		SliceKey: k,
+		Value: statistics.Value{
+			SlicesCount:      1,
+			FirstRecordAt:    k.OpenedAt(),
+			LastRecordAt:     k.OpenedAt().Add(time.Minute),
+			RecordsCount:     100,
+			UncompressedSize: 100 * datasize.MB,
+			CompressedSize:   100 * datasize.MB,
+		},
 	}
 }

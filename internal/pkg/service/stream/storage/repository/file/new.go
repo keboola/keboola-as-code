@@ -30,7 +30,7 @@ func NewFile(cfg level.Config, k model.FileKey, sink definition.Sink) (f model.F
 	f.Columns = sink.Table.Mapping.Columns
 	f.LocalStorage = local.NewFile(localDir, cfg.Local)
 	f.StagingStorage = staging.NewFile(f.LocalStorage)
-	f.TargetStorage = target.New(sink.Table.Keboola.TableID)
+	f.TargetStorage = target.New()
 	f.Assignment.Config = cfg.Local.Volume.Assignment
 
 	return f, nil

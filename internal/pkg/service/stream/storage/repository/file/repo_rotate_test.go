@@ -17,7 +17,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -44,7 +43,6 @@ func TestFileRepository_Rotate(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
@@ -77,7 +75,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	{
 		var err error
 		clk.Add(time.Hour)
-		file1, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file1, err = fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file1.OpenedAt().Time())
 	}
@@ -86,7 +84,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		file2, err := fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file2, err := fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file2.OpenedAt().Time())
 	}
@@ -97,7 +95,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	{
 		var err error
 		clk.Add(time.Hour)
-		file3, err = fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file3, err = fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), file3.OpenedAt().Time())
 	}
@@ -307,7 +305,6 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
@@ -358,7 +355,7 @@ func TestFileRepository_Rotate_FileResourceError(t *testing.T) {
 	// Create (the first file Rotate operation)
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		_, err := fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		_, err := fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		if assert.Error(t, err) {
 			assert.Equal(t, strings.TrimSpace(`
 cannot create file resource:
