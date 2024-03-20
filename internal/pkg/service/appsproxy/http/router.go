@@ -238,6 +238,7 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 			ctx := req.Context()
 			appID, ok := ctx.Value(AppIDCtxKey).(string)
 			if ok {
+				// Current request should not wait for the notification
 				go func() {
 					// Error is already logged by the Notify method itself. We can ignore it here.
 					_ = r.loader.Notify(ctx, appID)
