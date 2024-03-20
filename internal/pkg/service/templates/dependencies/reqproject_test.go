@@ -54,7 +54,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// FS contains template1, but doesn't contain template2
 	assert.NoError(t, err)
 	assert.True(t, repo1.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo1.Fs().Exists(ctx, "template2"))
+	assert.False(t, repo1.Fs().Exists(ctx, "template4"))
 
 	// Update repository -> no change
 	err = <-manager.Update(ctx)
@@ -72,7 +72,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// FS contains template1, but doesn't contain template2 (no change).
 	assert.Same(t, repo1.Fs(), repo2.Fs())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
+	assert.False(t, repo2.Fs().Exists(ctx, "template4"))
 
 	// Modify git repository
 	runGitCommand(t, tmpDir, "reset", "--hard", "b1")
@@ -92,7 +92,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Repo1 and repo2 use still same directory/FS, without change
 	assert.Equal(t, repo1.Fs(), repo2.Fs())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
+	assert.False(t, repo2.Fs().Exists(ctx, "template4"))
 
 	// But repo3 uses different/updated FS
 	assert.NotEqual(t, repo1.Fs(), repo3.Fs())
@@ -104,7 +104,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	assert.DirExists(t, repo2.Fs().BasePath())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
+	assert.False(t, repo2.Fs().Exists(ctx, "template4"))
 
 	// Request 2 finished -> old FS is deleted (nobody uses it)
 	req2CancelFn()
@@ -184,7 +184,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	assert.Same(t, tmpl1Req1, tmpl1Req2)
 
 	// Modify git repository
-	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~2")
+	runGitCommand(t, tmpDir, "reset", "--hard", "985928c70ad7fa0a450269b30f203c1fd0eb86c5")
 
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
