@@ -71,11 +71,11 @@ func (v *provider) SliceStats(ctx context.Context, k model.SliceKey) (statistics
 func (r *Repository) MaxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int) *op.TxnOp[datasize.ByteSize] {
 	var maxSize datasize.ByteSize
 	txn := op.TxnWithResult(r.client, &maxSize)
-	for _, level := range []level.Level{level.Staging, level.Target} {
+	for _, l := range []level.Level{level.Staging, level.Target} {
 		// Get maximum
 		txn.Then(
 			r.schema.
-				InLevel(level).InObject(parentKey).
+				InLevel(l).InObject(parentKey).
 				GetAll(r.client, iterator.WithLimit(limit), iterator.WithSort(etcd.SortDescend)).
 				ForEach(func(v statistics.Value, header *iterator.Header) error {
 					// Ignore sums
@@ -92,15 +92,15 @@ func (r *Repository) MaxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int)
 func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Aggregated] {
 	var result statistics.Aggregated
 	txn := op.TxnWithResult(r.client, &result)
-	for _, level := range level.AllLevels() {
-		level := level
+	for _, l := range level.AllLevels() {
+		l := l
 
 		// Get stats prefix for the slice state
-		pfx := r.schema.InLevel(level).InObject(objectKey)
+		pfx := r.schema.InLevel(l).InObject(objectKey)
 
 		// Sum
 		txn.Then(pfx.GetAll(r.client).ForEach(func(v statistics.Value, header *iterator.Header) error {
-			aggregate.Aggregate(level, v, &result)
+			aggregate.Aggregate(l, v, &result)
 			return nil
 		}))
 	}

@@ -123,7 +123,8 @@ func New(d dependencies) *Repository {
 					}
 
 					// Calculate pre-allocated size
-					return r.MaxUsedDiskSizeBySliceIn(updated.SinkKey, recordsForSliceDiskSizeCalc).
+					return r.
+						MaxUsedDiskSizeBySliceIn(updated.SinkKey, recordsForSliceDiskSizeCalc).
 						OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
 							updated.LocalStorage.AllocatedDiskSpace = cfg.ForNextSlice(r.Result())
 						})
