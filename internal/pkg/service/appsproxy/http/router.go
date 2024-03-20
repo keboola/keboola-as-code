@@ -171,7 +171,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
-	chain := alice.New(r.notifySandboxesServiceMiddleware())
+	chain := alice.New(r.notifySandboxesServiceMiddleware(), r.dataAppTelemetryMiddleware())
 
 	oauthProviders := make(map[string]*oauthProvider)
 	for _, providerConfig := range app.AuthProviders {
@@ -245,6 +245,18 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 				}()
 			}
 
+			next.ServeHTTP(w, req)
+		})
+	}
+}
+
+func (r *Router) dataAppTelemetryMiddleware() alice.Constructor {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+			ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.request")
+			defer span.End(nil)
+			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)
 		})
 	}
