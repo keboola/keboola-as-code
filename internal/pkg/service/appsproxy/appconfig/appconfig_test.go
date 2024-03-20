@@ -283,7 +283,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 				transport.RegisterResponder(
 					http.MethodGet,
 					fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
-					httpmock.ResponderFromMultipleResponses(attempt.responses),
+					httpmock.ResponderFromMultipleResponses(attempt.responses, t.Log),
 				)
 
 				config, modified, err := loader.LoadConfig(context.Background(), tc.appID)
@@ -308,7 +308,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 	}
 }
 
-func TestLoader_LoadConfigConcurrency(t *testing.T) {
+func TestLoader_LoadConfig_Race(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.NewMock()
@@ -332,7 +332,7 @@ func TestLoader_LoadConfigConcurrency(t *testing.T) {
 	transport.RegisterResponder(
 		http.MethodGet,
 		fmt.Sprintf("%s/apps/%s/proxy-config", url, "test"),
-		httpmock.ResponderFromMultipleResponses(responses),
+		httpmock.ResponderFromMultipleResponses(responses, t.Log),
 	)
 
 	httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
@@ -394,4 +394,53 @@ func TestLoader_Notify(t *testing.T) {
 	loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, client.New().WithTransport(transport), url, "")
 	err := loader.Notify(context.Background(), appID)
 	assert.NoError(t, err)
+	err = loader.Notify(context.Background(), appID)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, transport.GetTotalCallCount())
+}
+
+func TestLoader_Notify_Race(t *testing.T) {
+	t.Parallel()
+
+	clk := clock.NewMock()
+	transport := httpmock.NewMockTransport()
+
+	url := "https://sandboxes.keboola.com"
+
+	transport.RegisterResponder(
+		http.MethodPatch,
+		fmt.Sprintf("%s/apps/%s", url, "test"),
+		httpmock.NewStringResponder(http.StatusOK, "{}").Times(10, t.Log),
+	)
+
+	httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
+
+	loader := appconfig.NewSandboxesAPILoader(log.NewDebugLogger(), clk, httpClient, url, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+	counter := atomic.NewInt64(0)
+	// Load configuration 10x in parallel
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			err := loader.Notify(ctx, "test")
+			assert.NoError(t, err)
+
+			counter.Add(1)
+		}()
+	}
+
+	// Wait for all requests
+	wg.Wait()
+
+	// Check total requests count
+	assert.Equal(t, int64(10), counter.Load())
+
+	assert.Equal(t, 1, transport.GetTotalCallCount())
 }
