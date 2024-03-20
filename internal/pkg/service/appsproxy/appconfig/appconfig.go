@@ -19,16 +19,19 @@ import (
 // staleCacheFallbackDuration is the maximum duration for which the old configuration of an application is used if loading new configuration is not possible.
 const staleCacheFallbackDuration = time.Hour
 
+const notificationDelay = time.Second * 30
+
 type Loader interface {
 	Notify(ctx context.Context, appID string) error
 	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, bool, error)
 }
 
 type sandboxesAPILoader struct {
-	logger log.Logger
-	clock  clock.Clock
-	sender request.Sender
-	cache  *syncmap.SyncMap[string, cacheItem]
+	logger        log.Logger
+	clock         clock.Clock
+	sender        request.Sender
+	cache         *syncmap.SyncMap[string, cacheItem]
+	notifications *syncmap.SyncMap[string, notificationItem]
 }
 
 type cacheItem struct {
@@ -36,6 +39,11 @@ type cacheItem struct {
 	eTag       string
 	expiresAt  time.Time
 	updateLock *sync.Mutex
+}
+
+type notificationItem struct {
+	lastNotification *time.Time
+	updateLock       *sync.Mutex
 }
 
 func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Loader {
@@ -48,12 +56,35 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 				updateLock: &sync.Mutex{},
 			}
 		}),
+		notifications: syncmap.New[string, notificationItem](func() *notificationItem {
+			return &notificationItem{
+				updateLock: &sync.Mutex{},
+			}
+		}),
 	}
 }
 
 func (l *sandboxesAPILoader) Notify(ctx context.Context, appID string) error {
+	// Get cache item or init an empty item
+	item := l.notifications.GetOrInit(appID)
+
+	// Only one notification runs in parallel.
+	// If there is an in-flight update, we are waiting for its results.
+	item.updateLock.Lock()
+	defer item.updateLock.Unlock()
+
+	// Return config from cache if still valid
 	now := l.clock.Now()
 
+	if item.lastNotification != nil && now.Before(item.lastNotification.Add(notificationDelay)) {
+		// Skip if a notification was sent less than notificationDelay ago
+		return nil
+	}
+
+	// Update lastNotification time
+	item.lastNotification = &now
+
+	// Send the notification
 	_, err := PatchApp(l.sender, appID, now).Send(ctx)
 	if err != nil {
 		l.logger.Errorf(ctx, `Failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
