@@ -13,7 +13,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -44,7 +43,6 @@ func TestFileRepository_Delete(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	statsRepo := d.StatisticsRepository()
 	storageRepo := d.StorageRepository()
@@ -91,12 +89,17 @@ func TestFileRepository_Delete(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 
-		files, err := fileRepo.RotateAllIn(rb, clk.Now(), branchKey).Do(ctx).ResultOrErr()
+		file1, err := fileRepo.Rotate(sinkKey1, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		require.Len(t, files, 3)
-		f1 = files[0].FileKey
-		f2 = files[1].FileKey
-		f3 = files[2].FileKey
+		f1 = file1.FileKey
+
+		file2, err := fileRepo.Rotate(sinkKey2, clk.Now()).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		f2 = file2.FileKey
+
+		file3, err := fileRepo.Rotate(sinkKey3, clk.Now()).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		f3 = file3.FileKey
 
 		slices, err := sliceRepo.ListIn(branchKey).Do(ctx).All()
 		require.NoError(t, err)
@@ -154,11 +157,11 @@ func TestFileRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var deleteEtcdLogs string
 	{
-		require.NoError(t, fileRepo.Delete(f1).Do(ctx).Err())
-		require.NoError(t, fileRepo.Delete(f2).Do(ctx).Err())
+		require.NoError(t, fileRepo.Delete(f1, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.Delete(f2, clk.Now()).Do(ctx).Err())
 
 		etcdLogs.Reset()
-		require.NoError(t, fileRepo.Delete(f3).Do(ctx).Err())
+		require.NoError(t, fileRepo.Delete(f3, clk.Now()).Do(ctx).Err())
 		deleteEtcdLogs = etcdLogs.String()
 	}
 

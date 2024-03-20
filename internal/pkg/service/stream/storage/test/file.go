@@ -2,12 +2,11 @@ package test
 
 import (
 	"context"
-	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -26,9 +25,9 @@ import (
 
 // fileRepository interface to prevent package import cycle.
 type fileRepository interface {
-	CloseAllIn(now time.Time, parentKey fmt.Stringer) *op.AtomicOp[op.NoResult]
-	Get(fileKey model.FileKey) op.WithResult[model.File]
-	StateTransition(now time.Time, fileKey model.FileKey, from, to model.FileState) *op.AtomicOp[model.File]
+	Close(k key.SinkKey, now time.Time) *op.AtomicOp[op.NoResult]
+	Get(k model.FileKey) op.WithResult[model.File]
+	StateTransition(fileKey model.FileKey, now time.Time, from, to model.FileState) *op.AtomicOp[model.File]
 }
 
 func NewFileKey() model.FileKey {
@@ -70,18 +69,10 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 			DiskSync:    disksync.NewConfig(),
 		},
 		StagingStorage: staging.File{
-			Compression:       compression.NewNoneConfig(),
-			UploadCredentials: &keboola.FileUploadCredentials{},
-			Expiration:        utctime.From(openedAt.Time().Add(time.Hour)),
+			Compression: compression.NewNoneConfig(),
+			Expiration:  utctime.From(openedAt.Time().Add(time.Hour)),
 		},
-		TargetStorage: target.Target{
-			Table: target.Table{
-				Keboola: target.KeboolaTable{
-					TableID:    keboola.MustParseTableID("in.bucket.table"),
-					StorageJob: nil,
-				},
-			},
-		},
+		TargetStorage: target.Target{},
 	}
 }
 
@@ -96,11 +87,11 @@ func SwitchFileStates(t *testing.T, ctx context.Context, clk *clock.Mock, fileRe
 		var err error
 		if to == model.FileClosing {
 			require.Equal(t, model.FileWriting, from)
-			require.NoError(t, fileRepo.CloseAllIn(clk.Now(), fileKey.SinkKey).Do(ctx).Err())
+			require.NoError(t, fileRepo.Close(fileKey.SinkKey, clk.Now()).Do(ctx).Err())
 			file, err = fileRepo.Get(fileKey).Do(ctx).ResultOrErr()
 			require.NoError(t, err)
 		} else {
-			file, err = fileRepo.StateTransition(clk.Now(), fileKey, from, to).Do(ctx).ResultOrErr()
+			file, err = fileRepo.StateTransition(fileKey, clk.Now(), from, to).Do(ctx).ResultOrErr()
 			require.NoError(t, err)
 		}
 

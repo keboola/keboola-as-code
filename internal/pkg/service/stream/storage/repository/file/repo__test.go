@@ -16,7 +16,6 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -46,7 +45,6 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
-	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
@@ -86,7 +84,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	// Entity exists only in memory
 	{
-		if err := fileRepo.Rotate(rb, clk.Now(), sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := fileRepo.Rotate(sinkKey1, clk.Now()).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -117,15 +115,13 @@ func TestFileRepository_Operations(t *testing.T) {
 	{
 		// Create 2 files in different sinks
 		clk.Add(time.Hour)
-		file1, err := fileRepo.Rotate(rb, clk.Now(), sinkKey1).Do(ctx).ResultOrErr()
+		file1, err := fileRepo.Rotate(sinkKey1, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.NotNil(t, file1.StagingStorage.UploadCredentials)
 		fileKey1 = file1.FileKey
 
 		clk.Add(time.Hour)
-		file2, err := fileRepo.Rotate(rb, clk.Now(), sinkKey2).Do(ctx).ResultOrErr()
+		file2, err := fileRepo.Rotate(sinkKey2, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.NotNil(t, file2.StagingStorage.UploadCredentials)
 		fileKey2 = file2.FileKey
 	}
 	{
@@ -192,7 +188,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	// Rotate - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := fileRepo.Rotate(rb, fileKey1.OpenedAt().Time(), sinkKey1).Do(ctx).Err(); assert.Error(t, err) {
+		if err := fileRepo.Rotate(sinkKey1, fileKey1.OpenedAt().Time()).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z" already exists in the sink`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -202,7 +198,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		err := fileRepo.IncrementRetry(clk.Now(), nonExistentFileKey, "some error").Do(ctx).Err()
+		err := fileRepo.IncrementRetry(nonExistentFileKey, clk.Now(), "some error").Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T18:00:00.000Z" not found in the sink`, err.Error())
 			serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
@@ -212,7 +208,7 @@ func TestFileRepository_Operations(t *testing.T) {
 	// Increment retry attempt
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		result, err := fileRepo.IncrementRetry(clk.Now(), fileKey1, "some error").Do(ctx).ResultOrErr()
+		result, err := fileRepo.IncrementRetry(fileKey1, clk.Now(), "some error").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, 1, result.RetryAttempt)
 		assert.Equal(t, "some error", result.RetryReason)
@@ -232,7 +228,7 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Switch file state - slices are not uploaded
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := fileRepo.StateTransition(clk.Now(), fileKey1, model.FileClosing, model.FileImporting).Do(ctx).Err(); assert.Error(t, err) {
+	if err := fileRepo.StateTransition(fileKey1, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z" state:
 - unexpected combination: file state "importing" and slice state "closing"
@@ -258,14 +254,14 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 
 	// Switch file state - already in the state
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := fileRepo.StateTransition(clk.Now(), fileKey1, model.FileImported, model.FileImported).Do(ctx).Err(); assert.Error(t, err) {
+	if err := fileRepo.StateTransition(fileKey1, clk.Now(), model.FileImported, model.FileImported).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `unexpected file "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z" state transition from "imported" to "imported"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
 	// Switch file state - unexpected transition
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := fileRepo.StateTransition(clk.Now(), fileKey1, model.FileImported, model.FileImporting).Do(ctx).Err(); assert.Error(t, err) {
+	if err := fileRepo.StateTransition(fileKey1, clk.Now(), model.FileImported, model.FileImporting).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `unexpected file "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z" state transition from "imported" to "importing"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
@@ -273,7 +269,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	// Delete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, fileRepo.Delete(fileKey2).Do(ctx).Err())
+		assert.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -291,7 +287,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 
 	// Delete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := fileRepo.Delete(nonExistentFileKey).Do(ctx).Err(); assert.Error(t, err) {
+	if err := fileRepo.Delete(nonExistentFileKey, clk.Now()).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `file "123/456/my-source/my-sink-1/2000-01-01T18:00:00.000Z" not found in the sink`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}

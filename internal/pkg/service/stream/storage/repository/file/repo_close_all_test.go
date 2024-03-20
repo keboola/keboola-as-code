@@ -12,7 +12,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -36,7 +35,6 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
-	rb := rollback.New(d.Logger())
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
@@ -68,15 +66,15 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 
 	// Create 2 files, with 2 slices
 	// -----------------------------------------------------------------------------------------------------------------
-	require.NoError(t, fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).Err())
+	require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	clk.Add(time.Hour)
-	require.NoError(t, fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).Err())
+	require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
 	// Close the last file
 	// -----------------------------------------------------------------------------------------------------------------
 	clk.Add(time.Hour)
 	etcdLogs.Reset()
-	require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey).Do(ctx).Err())
+	require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
 	closeAllInEtcdLogs := etcdLogs.String()
 
 	// Check etcd state
@@ -188,6 +186,6 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/m
 
 	// Call CloseAllIn again - no change
 	clk.Add(time.Hour)
-	require.NoError(t, fileRepo.CloseAllIn(clk.Now(), sinkKey).Do(ctx).Err())
+	require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, expectedEtcdState, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }

@@ -36,6 +36,8 @@ type Repository struct {
 	volumes    *volumeRepo.Repository
 	definition *definitionRepo.Repository
 	plugins    *plugin.Plugins
+	// sinkTypes defines which sinks use local storage
+	sinkTypes map[definition.SinkType]bool
 }
 
 type dependencies interface {
@@ -54,24 +56,35 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 		volumes:    volumes,
 		definition: d.DefinitionRepository(),
 		plugins:    d.Plugins(),
+		sinkTypes:  make(map[definition.SinkType]bool),
 	}
 
 	// Connect to the sink events
 	r.plugins.Collection().OnSinkSave(func(ctx *plugin.SaveContext, old, updated *definition.Sink) {
+		// Skip unsupported sink type
+		if !r.sinkTypes[updated.Type] {
+			return
+		}
+
+		createdOrModified := !updated.Deleted && !updated.Disabled
 		deleted := updated.Deleted && updated.DeletedAt.Time().Equal(ctx.Now())
 		disabled := updated.Disabled && updated.DisabledAt.Time().Equal(ctx.Now())
-		createdOrUpdated := !updated.Deleted && !updated.Disabled
 		deactivated := deleted || disabled
-		if createdOrUpdated {
-			// Rotate file on the sink create/update
-			ctx.AddAtomicOp(r.Rotate(ctx.Now(), updated.SinkKey))
+		if createdOrModified {
+			// Rotate file on the sink creation/modification
+			ctx.AddAtomicOp(r.Rotate(updated.SinkKey, ctx.Now()))
 		} else if deactivated {
 			// Close file on the sink deactivation
-			ctx.AddAtomicOp(r.Close(ctx.Now(), updated.SinkKey))
+			ctx.AddAtomicOp(r.Close(updated.SinkKey, ctx.Now()))
 		}
 	})
 
 	return r
+}
+
+// RegisterSinkType with the local storage support.
+func (r *Repository) RegisterSinkType(v definition.SinkType) {
+	r.sinkTypes[v] = true
 }
 
 // ListAll files in all storage levels.
@@ -109,24 +122,24 @@ func (r *Repository) Get(fileKey model.FileKey) op.WithResult[model.File] {
 //   - The old file, if present, is switched from the model.FileWriting state to the model.FileClosing state.
 //   - New file in the model.FileWriting state is created.
 //   - This method is used to rotate files when the import conditions are met.
-func (r *Repository) Rotate(now time.Time, sinkKey key.SinkKey) *op.AtomicOp[model.File] {
-	return r.rotate(now, sinkKey, true)
+func (r *Repository) Rotate(k key.SinkKey, now time.Time) *op.AtomicOp[model.File] {
+	return r.rotate(k, now, true)
 }
 
 // Close closes opened file in the sink.
 // - NO NEW FILE is created, so the sink stops accepting new writes, that's the difference with RotateAllIn.
 // - THE OLD FILE in the model.FileWriting state, IF PRESENT, is switched to the model.FileClosing state.
 // - This method is used on Sink/Source soft-delete or disable operation.
-func (r *Repository) Close(now time.Time, sinkKey key.SinkKey) *op.AtomicOp[op.NoResult] {
+func (r *Repository) Close(k key.SinkKey, now time.Time) *op.AtomicOp[op.NoResult] {
 	// There is no result of the operation, no new file is opened.
 	return op.
 		Atomic(r.client, &op.NoResult{}).
-		AddFrom(r.rotate(now, sinkKey, false))
+		AddFrom(r.rotate(k, now, false))
 }
 
 // IncrementRetry increments retry attempt and backoff delay on an error.
 // Retry is reset on StateTransition.
-func (r *Repository) IncrementRetry(now time.Time, k model.FileKey, reason string) *op.AtomicOp[model.File] {
+func (r *Repository) IncrementRetry(k model.FileKey, now time.Time, reason string) *op.AtomicOp[model.File] {
 	return r.update(k, now, func(slice model.File) (model.File, error) {
 		slice.IncrementRetry(r.backoff, now, reason)
 		return slice, nil
@@ -134,7 +147,7 @@ func (r *Repository) IncrementRetry(now time.Time, k model.FileKey, reason strin
 }
 
 // StateTransition switch state of the file, state of the file slices is also atomically switched, if needed.
-func (r *Repository) StateTransition(now time.Time, k model.FileKey, from, to model.FileState) *op.AtomicOp[model.File] {
+func (r *Repository) StateTransition(k model.FileKey, now time.Time, from, to model.FileState) *op.AtomicOp[model.File] {
 	return r.update(k, now, func(file model.File) (model.File, error) {
 		// File should be closed via one of the following ways:
 		//   - Rotate* methods - to create new replacement files
@@ -166,7 +179,7 @@ func (r *Repository) Delete(k model.FileKey, now time.Time) *op.AtomicOp[model.F
 // rotateAllIn is a common method used by both Rotate and Close method.
 //
 // If openNew is set to true, the operation will open new files and slices; if false, it will only close the existing ones.
-func (r *Repository) rotate(now time.Time, k key.SinkKey, openNewFile bool) *op.AtomicOp[model.File] {
+func (r *Repository) rotate(k key.SinkKey, now time.Time, openNewFile bool) *op.AtomicOp[model.File] {
 	// Init atomic operation
 	var openedFile model.File
 	atomicOp := op.Atomic(r.client, &openedFile)
