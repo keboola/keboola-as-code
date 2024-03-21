@@ -39,14 +39,16 @@ func TestGetCreateRequest(t *testing.T) {
 				{
 					Name: "id",
 					Definition: keboola.ColumnDefinition{
-						Type: "STRING",
+						Type:     "STRING",
+						Nullable: true,
 					},
 					BaseType: keboola.TypeString,
 				},
 				{
 					Name: "name",
 					Definition: keboola.ColumnDefinition{
-						Type: "STRING",
+						Type:     "STRING",
+						Nullable: true,
 					},
 					BaseType: keboola.TypeString,
 				},

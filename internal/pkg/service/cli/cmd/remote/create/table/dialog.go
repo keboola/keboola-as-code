@@ -112,10 +112,11 @@ func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*ke
 		opts.CreateTableRequest.PrimaryKeyNames = primaryKeys
 	}
 
+	// if the column is marked as a primary key, 'nullable' field have to be false
 	if columnsMethod == columnsNamesFlag || columnsMethod == columnsNamesInteractive {
 		for i := range opts.CreateTableRequest.TableDefinition.Columns {
-			if !slices.Contains(opts.CreateTableRequest.PrimaryKeyNames, opts.CreateTableRequest.Columns[i].Name) {
-				opts.CreateTableRequest.Columns[i].Definition.Nullable = true
+			if slices.Contains(opts.CreateTableRequest.PrimaryKeyNames, opts.CreateTableRequest.Columns[i].Name) {
+				opts.CreateTableRequest.Columns[i].Definition.Nullable = false
 			}
 		}
 	}
@@ -191,6 +192,7 @@ func getOptionCreateRequest(columns []string) []keboola.Column {
 		col.Name = column
 		col.BaseType = keboola.TypeString
 		col.Definition.Type = keboola.TypeString.String()
+		col.Definition.Nullable = true
 		c = append(c, col)
 	}
 
