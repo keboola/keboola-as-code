@@ -16,7 +16,7 @@ type TemplateRecord struct {
 	ID           string          `json:"id" validate:"required,alphanumdash,min=1,max=40"`
 	Name         string          `json:"name" validate:"required,min=1,max=40"`
 	Description  string          `json:"description" validate:"required,min=1,max=200"`
-	Requirements *Requirements   `json:"requirements,omitempty"`
+	Requirements Requirements    `json:"requirements"`
 	Categories   []string        `json:"categories,omitempty"`
 	Deprecated   bool            `json:"deprecated,omitempty"`
 	Path         string          `json:"path,omitempty"`
@@ -167,22 +167,22 @@ func (v *TemplateRecord) DefaultVersionOrErr() (VersionRecord, error) {
 	return version, nil
 }
 
-func (v *TemplateRecord) HasComponent(components *model.ComponentsMap) bool {
+func (v *TemplateRecord) CheckComponents(components *model.ComponentsMap) bool {
 	for _, component := range v.Requirements.Components {
-		if _, found := components.Get(keboola.ComponentID(component)); found {
-			return true
+		if _, found := components.Get(keboola.ComponentID(component)); !found {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
-func (v *TemplateRecord) HasFeature(d keboola.FeaturesMap) bool {
+func (v *TemplateRecord) CheckFeatures(d keboola.FeaturesMap) bool {
 	for _, feature := range v.Requirements.Features {
-		if d.Has(feature) {
-			return true
+		if !d.Has(feature) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (v *TemplateRecord) HasBackend(projectBackends []string) bool {

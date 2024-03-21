@@ -158,7 +158,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 		Categories   []string
 		Deprecated   bool
 		Path         string
-		Requirements *Requirements
+		Requirements Requirements
 		Versions     []VersionRecord
 	}
 	type args struct {
@@ -177,7 +177,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
+			Requirements: Requirements{
 				Backends: []string{"snowflake"},
 			},
 			Versions: []VersionRecord{
@@ -192,7 +192,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
+			Requirements: Requirements{
 				Backends: []string{"snowflake"},
 			},
 			Versions: []VersionRecord{
@@ -207,7 +207,7 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
+			Requirements: Requirements{
 				Backends: []string{"bigquery"},
 			},
 			Versions: []VersionRecord{
@@ -244,7 +244,7 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 		Categories   []string
 		Deprecated   bool
 		Path         string
-		Requirements *Requirements
+		Requirements Requirements
 		Versions     []VersionRecord
 	}
 	type args struct {
@@ -263,8 +263,8 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
-				Features: []string{"feature5", "feature2"},
+			Requirements: Requirements{
+				Features: []string{"feature4", "feature2"},
 			},
 			Versions: []VersionRecord{
 				{Version: version("1.2.4"), Description: "", Stable: false},
@@ -278,8 +278,8 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
-				Features: []string{"feature5"},
+			Requirements: Requirements{
+				Features: []string{"feature3", "feature5"},
 			},
 			Versions: []VersionRecord{
 				{Version: version("1.2.4"), Description: "", Stable: false},
@@ -300,7 +300,7 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 				Requirements: tt.fields.Requirements,
 				Versions:     tt.fields.Versions,
 			}
-			assert.Equalf(t, tt.want, v.HasFeature(tt.args.features), "HasFeature(%v)", tt.args.features)
+			assert.Equalf(t, tt.want, v.CheckFeatures(tt.args.features), "CheckFeatures(%v)", tt.args.features)
 		})
 	}
 }
@@ -315,7 +315,7 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 		Categories   []string
 		Deprecated   bool
 		Path         string
-		Requirements *Requirements
+		Requirements Requirements
 		Versions     []VersionRecord
 	}
 	type args struct {
@@ -334,8 +334,8 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
-				Components: []string{"wrong_component", "keboola.python-transformation-v2", "foo.bar"},
+			Requirements: Requirements{
+				Components: []string{"keboola.python-transformation-v2", "foo.bar"},
 			},
 			Versions: []VersionRecord{
 				{Version: version("1.2.4"), Description: "", Stable: false},
@@ -349,8 +349,8 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 			Deprecated:  false,
 			Categories:  []string{"Other"},
 			Path:        "path1",
-			Requirements: &Requirements{
-				Components: []string{"wrong-component"},
+			Requirements: Requirements{
+				Components: []string{"wrong-component", "foo.bar"},
 			},
 			Versions: []VersionRecord{
 				{Version: version("1.2.4"), Description: "", Stable: false},
@@ -371,7 +371,7 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 				Requirements: tt.fields.Requirements,
 				Versions:     tt.fields.Versions,
 			}
-			assert.Equalf(t, tt.want, v.HasComponent(tt.args.components), "HasComponent(%v)", tt.args.components)
+			assert.Equalf(t, tt.want, v.CheckComponents(tt.args.components), "CheckComponents(%v)", tt.args.components)
 		})
 	}
 }

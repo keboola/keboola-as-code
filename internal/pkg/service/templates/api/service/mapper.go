@@ -130,7 +130,7 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 			continue
 		}
 
-		if tmpl.Requirements != nil && !hasRequirements(tmpl, d) {
+		if !hasRequirements(tmpl, d) {
 			continue
 		}
 
@@ -589,11 +589,11 @@ func hasRequirements(tmpl repository.TemplateRecord, d dependencies.ProjectReque
 		return false
 	}
 
-	if tmpl.Requirements.Components != nil && !tmpl.HasComponent(d.Components()) {
+	if tmpl.Requirements.Components != nil && !tmpl.CheckComponents(d.Components()) {
 		return false
 	}
 
-	if tmpl.Requirements.Features != nil && !tmpl.HasFeature(d.ProjectFeatures()) {
+	if tmpl.Requirements.Features != nil && !tmpl.CheckFeatures(d.ProjectFeatures()) {
 		return false
 	}
 	return true
