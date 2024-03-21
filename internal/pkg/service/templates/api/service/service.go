@@ -588,7 +588,7 @@ func getTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope,
 		}
 	}
 
-	if tmplRecord.Requirements != nil && !hasRequirements(tmplRecord, d) {
+	if !hasRequirements(tmplRecord, d) {
 		return nil, nil, &GenericError{
 			Name:    "templates.templateNoRequirements",
 			Message: fmt.Sprintf(`Template "%s" doesn't have requirements.`, templateID),
