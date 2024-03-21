@@ -285,11 +285,13 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 		BackendLogoutURL: authProvider.LogoutURL,
 	}
 
+	// Use error handler by default.
 	provider := &oauthProvider{
 		providerConfig: providerConfig,
 		handler:        r.createConfigErrorHandler(exceptionID),
 	}
 
+	// Create a configuration for oauth2-proxy. This can cause a validation failure.
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
@@ -297,11 +299,13 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 	}
 	provider.proxyConfig = proxyConfig
 
+	// AllowedRoles nil means there is no role requirement. Empty array doesn't make sense.
 	if authProvider.AllowedRoles != nil && len(allowedRoles) == 0 {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty array of allowed roles for app "%s" "%s"`, app.ID, app.Name)
 		return provider
 	}
 
+	// Create a provider instance. This may fail on invalid url, unknown provider type and various other reasons.
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
@@ -309,6 +313,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 	}
 	provider.proxyProvider = proxyProvider
 
+	// Create the actual proxy instance. May fail on some runtime error.
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
