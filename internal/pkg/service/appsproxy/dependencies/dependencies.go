@@ -21,8 +21,8 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -34,7 +34,7 @@ import (
 type ServiceScope interface {
 	dependencies.BaseScope
 	Config() config.Config
-	Loader() appconfig.Loader
+	Loader() dataapps.Client
 }
 
 const (
@@ -45,7 +45,7 @@ const (
 type serviceScope struct {
 	parentScopes
 	config config.Config
-	loader appconfig.Loader
+	loader dataapps.Client
 }
 
 type parentScopes interface {
@@ -112,7 +112,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d := &serviceScope{}
 	d.parentScopes = parentScp
 	d.config = cfg
-	d.loader = appconfig.NewSandboxesAPILoader(parentScp.Logger(), parentScp.Clock(), parentScp.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
+	d.loader = dataapps.NewSandboxesServiceLoader(parentScp.Logger(), parentScp.Clock(), parentScp.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
 
 	return d, nil
 }
@@ -121,6 +121,6 @@ func (v *serviceScope) Config() config.Config {
 	return v.config
 }
 
-func (v *serviceScope) Loader() appconfig.Loader {
+func (v *serviceScope) Loader() dataapps.Client {
 	return v.loader
 }
