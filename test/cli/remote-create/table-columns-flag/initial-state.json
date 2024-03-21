@@ -1,0 +1,23 @@
+{
+  "backend": {
+    "type": "snowflake"
+  },
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-bucket",
+      "name": "bucket",
+      "stage": "in",
+      "tables": []
+    }
+  ]
+}
