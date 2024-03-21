@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -41,20 +40,9 @@ func TestRepository_Source(t *testing.T) {
 	// Get services
 	d, mocked := dependencies.NewMockedServiceScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
-	// rb := rollback.NewRepository(d.Logger())
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()
 	sinkRepo := d.DefinitionRepository().Sink()
-
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mocked.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
-
-	// Mock file API calls
-	transport := mocked.MockedHTTPTransport()
-	test2.MockBucketStorageAPICalls(t, transport)
-	test2.MockTableStorageAPICalls(t, transport)
-	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------

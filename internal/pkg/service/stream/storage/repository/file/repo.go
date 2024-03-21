@@ -246,21 +246,22 @@ func (r *Repository) rotate(k key.SinkKey, now time.Time, openNewFile bool) *op.
 
 			// Create file entity
 			fileKey := model.FileKey{SinkKey: sink.SinkKey, FileID: model.FileID{OpenedAt: utctime.From(now)}}
-			newFile, err := NewFile(cfg, fileKey, sink)
-			if err != nil {
+			if newFile, err := NewFile(cfg, fileKey, sink); err == nil {
+				openedFile = newFile
+			} else {
 				return nil, err
 			}
 
 			// Assign volumes
-			newFile.Assignment = r.volumes.AssignVolumes(volumes, cfg.Local.Volume.Assignment, newFile.OpenedAt().Time())
+			openedFile.Assignment = r.volumes.AssignVolumes(volumes, cfg.Local.Volume.Assignment, openedFile.OpenedAt().Time())
 
 			// At least one volume must be assigned
-			if len(newFile.Assignment.Volumes) == 0 {
+			if len(openedFile.Assignment.Volumes) == 0 {
 				return nil, errors.New(`no volume is available for the file`)
 			}
 
 			// Save new file
-			r.save(saveCtx, nil, &newFile)
+			r.save(saveCtx, nil, &openedFile)
 		}
 
 		return saveCtx.Apply(ctx)

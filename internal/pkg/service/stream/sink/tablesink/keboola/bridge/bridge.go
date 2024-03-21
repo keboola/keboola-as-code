@@ -43,7 +43,7 @@ package bridge
 //	apiProvider apiProvider
 //}
 //
-//type tableSinkPlugin struct {
+// type tableSinkPlugin struct {
 //	*bridge
 //
 //	grp *errgroup.Group
@@ -59,12 +59,12 @@ package bridge
 //	finalizers []func(context.Context) error
 //}
 //
-//func RegisterTableSinkPlugin(d dependencies, apiProvider apiProvider) {
+// func RegisterTableSinkPlugin(d dependencies, apiProvider apiProvider) {
 //	b := newBridge(d, apiProvider)
 //	d.HookRegistry().OnSinkSave(b.OnSinkSave)
 //}
 //
-//func newBridge(d dependencies, apiProvider apiProvider) *bridge {
+// func newBridge(d dependencies, apiProvider apiProvider) *bridge {
 //	return &bridge{
 //		logger:      d.Logger(),
 //		storage:     d.StorageRepository(),

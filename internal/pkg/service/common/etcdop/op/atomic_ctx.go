@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"errors"
 
 	etcd "go.etcd.io/etcd/client/v3"
 )
@@ -17,5 +18,9 @@ func ctxWithClient(ctx context.Context, client etcd.KV) context.Context {
 }
 
 func ClientFromCtx(ctx context.Context) etcd.KV {
-	return ctx.Value(clientCtxKey).(etcd.KV)
+	client, ok := ctx.Value(clientCtxKey).(etcd.KV)
+	if !ok {
+		panic(errors.New("etcd client is not set"))
+	}
+	return client
 }

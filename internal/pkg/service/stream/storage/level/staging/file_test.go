@@ -15,6 +15,8 @@ import (
 func TestFile_Validation(t *testing.T) {
 	t.Parallel()
 
+	expiration := utctime.MustParse("2006-01-02T15:04:05.000Z")
+
 	cases := []struct {
 		Name          string
 		ExpectedError string
@@ -31,7 +33,7 @@ func TestFile_Validation(t *testing.T) {
 			Name: "ok",
 			Value: File{
 				Compression: compression.NewConfig(),
-				Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
+				Expiration:  &expiration,
 			},
 		},
 	}

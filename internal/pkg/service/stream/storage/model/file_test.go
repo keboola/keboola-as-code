@@ -88,6 +88,8 @@ func TestFileKey_OpenedAt(t *testing.T) {
 func TestFile_Validation(t *testing.T) {
 	t.Parallel()
 
+	expiration := utctime.MustParse("2006-01-02T15:04:05.000Z")
+
 	// Following values have own validation
 	localStorage := local.File{
 		Dir:            "my-dir",
@@ -97,7 +99,7 @@ func TestFile_Validation(t *testing.T) {
 	}
 	stagingStorage := staging.File{
 		Compression: compression.NewConfig(),
-		Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
+		Expiration:  &expiration,
 	}
 	targetStorage := target.Target{}
 	volumeAssignment := assignment.Assignment{

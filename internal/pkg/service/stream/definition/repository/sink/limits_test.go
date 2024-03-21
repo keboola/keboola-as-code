@@ -22,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
 	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -41,14 +40,9 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
 	sinkSchema := schema.ForSink(d.EtcdSerde())
-
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
@@ -103,20 +97,9 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
 	sinkSchema := schema.ForSink(d.EtcdSerde())
-
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
-
-	// Mock file API calls
-	transport := mock.MockedHTTPTransport()
-	test2.MockBucketStorageAPICalls(t, transport)
-	test2.MockTableStorageAPICalls(t, transport)
-	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Create parents
 	branch := test.NewBranch(branchKey)

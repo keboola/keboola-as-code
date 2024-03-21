@@ -33,22 +33,16 @@ func (c *SaveContext) AddAtomicOp(ops ...op.AtomicOpInterface) {
 }
 
 func (c *SaveContext) Apply(ctx context.Context) (op.Op, error) {
-	readTxn := op.Txn(nil)
+	client := op.ClientFromCtx(ctx)
+
+	// Create read operations
+	readTxn := op.Txn(client)
 	for _, item := range c.atomicOps {
-		// Create read operations
 		for _, factory := range item.ReadPhaseOps() {
-			if readOp, err := factory(ctx); err == nil {
+			if readOp, err := factory(ctx); err != nil {
+				return nil, err
+			} else if readOp != nil {
 				readTxn.Merge(readOp)
-			} else {
-				return nil, err
-			}
-		}
-		// Create write operations
-		for _, factory := range item.WritePhaseOps() {
-			if writeOp, err := factory(ctx); err == nil {
-				c.writeTxn.Merge(writeOp)
-			} else {
-				return nil, err
 			}
 		}
 	}
@@ -58,6 +52,19 @@ func (c *SaveContext) Apply(ctx context.Context) (op.Op, error) {
 		return nil, err
 	}
 
+	// Create write operations
+	writeTxn := op.Txn(client).Merge(c.writeTxn)
+	for _, item := range c.atomicOps {
+		// Create write operations
+		for _, factory := range item.WritePhaseOps() {
+			if writeOp, err := factory(ctx); err != nil {
+				return nil, err
+			} else if writeOp != nil {
+				writeTxn.Merge(writeOp)
+			}
+		}
+	}
+
 	// Return write operation
-	return c.writeTxn, nil
+	return writeTxn, nil
 }

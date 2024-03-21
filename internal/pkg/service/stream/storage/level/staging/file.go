@@ -12,7 +12,7 @@ type File struct {
 	// Compression configuration.
 	Compression compression.Config `json:"compression"`
 	// Expiration determines how long it is possible to write to the staging file, e.g. due to expiring credentials.
-	Expiration utctime.UTCTime `json:"expiration" validate:"required"`
+	Expiration *utctime.UTCTime `json:"expiration"`
 }
 
 func NewFile(localFile local.File) File {

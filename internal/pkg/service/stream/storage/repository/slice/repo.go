@@ -61,12 +61,24 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 
 		for _, volumeID := range updated.Assignment.Volumes {
 			k := model.FileVolumeKey{FileKey: updated.FileKey, VolumeID: volumeID}
+
+			// On create
 			if old == nil {
-				// On file creation, create new slice
-				ctx.AddAtomicOp(r.rotate(ctx.Now(), k, updated, true))
-			} else if old.State != updated.State && updated.State == model.FileClosing {
-				// On file closing, close the slice
-				ctx.AddAtomicOp(r.rotate(ctx.Now(), k, updated, false))
+				// Open slice
+				ctx.AddAtomicOp(r.open(ctx.Now(), k, updated))
+				continue
+			}
+
+			// On update
+			if old.State != updated.State {
+				switch updated.State {
+				case model.FileClosing:
+					// Close slice
+					ctx.AddAtomicOp(r.close(ctx.Now(), k, updated))
+				case model.FileImported:
+					// Mark slice imported
+					ctx.AddAtomicOp(r.rotate(ctx.Now(), k, updated, false))
+				}
 			}
 		}
 	})
@@ -88,8 +100,8 @@ func (r *Repository) ListInLevel(parentKey fmt.Stringer, level level.Level) iter
 func (r *Repository) ListInState(parentKey fmt.Stringer, state model.SliceState) iterator.DefinitionT[model.Slice] {
 	return r.
 		ListInLevel(parentKey, state.Level()).
-		WithFilter(func(file model.Slice) bool {
-			return file.State == state
+		WithFilter(func(slice model.Slice) bool {
+			return slice.State == state
 		})
 }
 
@@ -117,7 +129,9 @@ func (r *Repository) Rotate(now time.Time, k model.FileVolumeKey) *op.AtomicOp[m
 //   - THE OLD SLICE in the storage.SliceWriting state, IF PRESENT, is switched to the storage.SliceClosing state.
 //   - This method is used to drain the volume.
 func (r *Repository) Close(now time.Time, k model.FileVolumeKey) *op.AtomicOp[op.NoResult] {
-	return op.Atomic(r.client, &op.NoResult{}).AddFrom(r.rotate(now, k, nil, false))
+	return op.
+		Atomic(r.client, &op.NoResult{}).
+		AddFrom(r.rotate(now, k, nil, false))
 }
 
 // IncrementRetry increments retry attempt and backoff delay on an error.
@@ -181,6 +195,38 @@ func (r *Repository) deleteAllFrom(k model.FileKey, now time.Time) *op.AtomicOp[
 			}
 			return saveCtx.Apply(ctx)
 		})
+}
+
+func (r *Repository) open(saveCtx *plugin.SaveContext, k model.FileVolumeKey, file *model.File) *op.AtomicOp[model.Slice] {
+	// Init atomic operation
+	var openedSlice model.Slice
+	atomicOp := op.Atomic(r.client, &openedSlice)
+
+	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
+		// Pass the disk allocation config to the hook in the statistics repository
+		ctx = diskalloc.ContextWithConfig(ctx, file.LocalStorage.DiskAllocation)
+
+		// File must be in the storage.FileWriting state, to open a new slice
+		if fileState := file.State; fileState != model.FileWriting {
+			return nil, serviceError.NewBadRequestError(errors.Errorf(
+				`slice cannot be created: unexpected file "%s" state "%s", expected "%s"`,
+				k.FileKey.String(), fileState, model.FileWriting,
+			))
+		}
+
+		// Create slice entity
+		newSlice, err := NewSlice(now, *file, k.VolumeID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Save new file
+		r.save(saveCtx, nil, &newSlice)
+	})
+}
+
+func (r *Repository) close(now time.Time, k model.FileVolumeKey, file *model.File) *op.AtomicOp[op.NoResult] {
+
 }
 
 // rotate is a common code for rotate and close operations.

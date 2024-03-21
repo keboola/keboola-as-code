@@ -133,7 +133,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		}
 	}
 
-	// Switch file to the storage.FileClosing state by CloseAllIn
+	// Switch file to the storage.FileClosing state by Close
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)

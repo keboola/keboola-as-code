@@ -52,6 +52,7 @@ func NewFile() model.File {
 func NewFileOpenedAt(openedAtStr string) model.File {
 	openedAt := utctime.MustParse(openedAtStr)
 	fileKey := NewFileKeyOpenedAt(openedAtStr)
+	expiration := utctime.From(openedAt.Time().Add(time.Hour))
 	return model.File{
 		FileKey: fileKey,
 		Type:    model.FileTypeCSV,
@@ -71,7 +72,7 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		},
 		StagingStorage: staging.File{
 			Compression: compression.NewNoneConfig(),
-			Expiration:  utctime.From(openedAt.Time().Add(time.Hour)),
+			Expiration:  &expiration,
 		},
 		TargetStorage: target.Target{},
 	}

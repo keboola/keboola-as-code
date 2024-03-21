@@ -21,7 +21,6 @@ import (
 	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	test2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink/keboola/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -39,20 +38,9 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
 	sourceSchema := schema.ForSource(d.EtcdSerde())
-
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
-
-	// Mock file API calls
-	transport := mock.MockedHTTPTransport()
-	test2.MockBucketStorageAPICalls(t, transport)
-	test2.MockTableStorageAPICalls(t, transport)
-	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
@@ -84,7 +72,7 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	// Exceed the limit
 	source := test.NewSource(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "over-maximum-count"})
 	if err := sourceRepo.Create(&source, clk.Now(), "Create description").Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, "sourcerepo count limit reached in the branch, the maximum is 100", err.Error())
+		assert.Equal(t, "source count limit reached in the branch, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
 }
@@ -104,20 +92,9 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	// rb := rollback.NewRepository(d.Logger())
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
 	sourceSchema := schema.ForSource(d.EtcdSerde())
-
-	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, api)
-
-	// Mock file API calls
-	transport := mock.MockedHTTPTransport()
-	test2.MockBucketStorageAPICalls(t, transport)
-	test2.MockTableStorageAPICalls(t, transport)
-	test2.MockTokenStorageAPICalls(t, transport)
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
@@ -157,7 +134,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 		return v, nil
 	}).Do(ctx).Err()
 	if assert.Error(t, err) {
-		assert.Equal(t, "version count limit reached in the sourcerepo, the maximum is 1000", err.Error())
+		assert.Equal(t, "version count limit reached in the source, the maximum is 1000", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
 }

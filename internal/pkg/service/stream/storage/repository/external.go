@@ -60,7 +60,7 @@ package repository
 //	}
 //}
 //
-//func (e *external) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {
+// func (e *external) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvider {
 //	result := make(map[key.SinkKey]*FileResource)
 //	rb = rb.AddParallel()
 //	lock := &sync.Mutex{}
