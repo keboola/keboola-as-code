@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -61,26 +62,23 @@ func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*ke
 
 	switch columnsMethod {
 	case columnsNamesFlag:
-		columnsStr := f.Columns.Value
-		colNames := strings.Split(strings.TrimSpace(columnsStr), ",")
-		opts.CreateTableRequest.Columns = getOptionCreateRequest(colNames)
+		opts.CreateTableRequest.Columns = getOptionCreateRequest(f.Columns.Value)
 	case columnsDefinitionFlag:
 		filePath := f.ColumnsFrom.Value
-		columnsDefinition, err := ParseJSONInputForCreateTable(filePath)
+		definition, err := ParseJSONInputForCreateTable(filePath)
 		if err != nil {
 			return table.Options{}, err
 		}
-		opts.CreateTableRequest.Columns = columnsDefinition
+		opts.CreateTableRequest.Columns = definition
 	case columnsNamesInteractive:
-		columnsStr := f.Columns.Value
 		if !f.Columns.IsSet() {
-			columnsStr, _ = d.Ask(&prompt.Question{
+			columnsStr, _ := d.Ask(&prompt.Question{
 				Label:       "Columns",
 				Description: "Enter a comma-separated list of column names.",
 			})
+			f.Columns.Value = strings.Split(strings.TrimSpace(columnsStr), ",")
 		}
-		colNames := strings.Split(strings.TrimSpace(columnsStr), ",")
-		opts.CreateTableRequest.Columns = getOptionCreateRequest(colNames)
+		opts.CreateTableRequest.Columns = getOptionCreateRequest(f.Columns.Value)
 	case columnsDefinitionInteractive:
 		input, _ := d.Editor("yaml", &prompt.Question{
 			Label:       "Columns definitions",
@@ -103,14 +101,23 @@ func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*ke
 		panic(errors.New("unexpected state"))
 	}
 
-	if f.PrimaryKey.IsSet() {
+	if f.PrimaryKey.Value != "" {
 		opts.CreateTableRequest.PrimaryKeyNames = strings.Split(strings.TrimSpace(f.PrimaryKey.Value), ",")
 	} else {
-		primaryKey, _ := d.MultiSelect(&prompt.MultiSelect{
+		primaryKeys, _ := d.MultiSelect(&prompt.MultiSelect{
 			Label:   "Select columns for primary key",
 			Options: getColumnsName(opts.CreateTableRequest.Columns),
 		})
-		opts.CreateTableRequest.PrimaryKeyNames = primaryKey
+
+		opts.CreateTableRequest.PrimaryKeyNames = primaryKeys
+	}
+
+	if columnsMethod == columnsNamesFlag || columnsMethod == columnsNamesInteractive {
+		for i := range opts.CreateTableRequest.TableDefinition.Columns {
+			if !slices.Contains(opts.CreateTableRequest.PrimaryKeyNames, opts.CreateTableRequest.Columns[i].Name) {
+				opts.CreateTableRequest.Columns[i].Definition.Nullable = true
+			}
+		}
 	}
 
 	return opts, nil

@@ -231,7 +231,7 @@ func TestAskCreate(t *testing.T) {
 							Name: "name",
 							Definition: keboola.ColumnDefinition{
 								Type:     "STRING",
-								Nullable: false,
+								Nullable: true,
 							},
 							BaseType: "STRING",
 						},
@@ -383,7 +383,7 @@ func TestAskCreate(t *testing.T) {
 
 		// set flag --columns
 		f := Flags{
-			Columns: configmap.NewValueWithOrigin("id,name", configmap.SetByFlag),
+			Columns: configmap.NewValueWithOrigin([]string{"id", "name"}, configmap.SetByFlag),
 		}
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f)
 		assert.NoError(t, err)
@@ -406,7 +406,7 @@ func TestAskCreate(t *testing.T) {
 							Name: "name",
 							Definition: keboola.ColumnDefinition{
 								Type:     "STRING",
-								Nullable: false,
+								Nullable: true,
 							},
 							BaseType: "STRING",
 						},
