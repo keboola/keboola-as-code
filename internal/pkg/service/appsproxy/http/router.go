@@ -301,7 +301,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 
 	// AllowedRoles nil means there is no role requirement. Empty array doesn't make sense.
 	if authProvider.AllowedRoles != nil && len(allowedRoles) == 0 {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty array of allowed roles for app "%s" "%s"`, app.ID, app.Name)
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Infof(ctx, `empty array of allowed roles for app "%s" "%s"`, app.ID, app.Name)
 		return provider
 	}
 
