@@ -27,8 +27,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -40,7 +40,7 @@ type Router struct {
 	telemetry         telemetry.Telemetry
 	config            config.Config
 	clock             clock.Clock
-	loader            appconfig.Loader
+	loader            dataapps.Client
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
@@ -126,7 +126,7 @@ func (r *Router) CreateHandler() http.Handler {
 		// Load configuration for given app.
 		config, modified, err := r.loader.LoadConfig(req.Context(), appID)
 		if err != nil {
-			var sandboxesError *appconfig.SandboxesError
+			var sandboxesError *dataapps.SandboxesError
 			errors.As(err, &sandboxesError)
 			if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
 				r.logger.Infof(req.Context(), `application "%s" not found`, appID)
@@ -164,7 +164,7 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	})
 }
 
-func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProxyConfig) http.Handler {
+func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxyConfig) http.Handler {
 	if len(app.AuthRules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
@@ -195,14 +195,14 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, rule appconfig.AuthRule, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider) http.Handler {
+func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyConfig, rule dataapps.AuthRule, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider) http.Handler {
 	// If AuthRequired is unset, use true by default
 	authRequired := true
 	if rule.AuthRequired != nil {
 		authRequired = *rule.AuthRequired
 	}
 
-	if rule.Type != appconfig.PathPrefix {
+	if rule.Type != dataapps.PathPrefix {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
 		return r.createConfigErrorHandler(exceptionID)
@@ -239,7 +239,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyCo
 	return r.createMultiProviderHandler(selectedProviders, app)
 }
 
-func (r *Router) publicAppHandler(ctx context.Context, app appconfig.AppProxyConfig, chain alice.Chain) http.Handler {
+func (r *Router) publicAppHandler(ctx context.Context, app dataapps.AppProxyConfig, chain alice.Chain) http.Handler {
 	target, err := url.Parse(app.UpstreamAppURL)
 	if err != nil {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
@@ -287,7 +287,7 @@ type oauthProvider struct {
 	handler        http.Handler
 }
 
-func (r *Router) createProvider(ctx context.Context, authProvider appconfig.AuthProvider, app appconfig.AppProxyConfig, chain alice.Chain) *oauthProvider {
+func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthProvider, app dataapps.AppProxyConfig, chain alice.Chain) *oauthProvider {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
@@ -422,7 +422,7 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProv
 // OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
 // So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
 // See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
-func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider, app appconfig.AppProxyConfig) http.Handler {
+func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider, app dataapps.AppProxyConfig) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var provider *oauthProvider
 		ok := false
@@ -530,7 +530,7 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 	writer.Header().Set("Location", selectionPageURL.String())
 }
 
-func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.Provider, chain alice.Chain) (*options.Options, error) {
+func (r *Router) authProxyConfig(app dataapps.AppProxyConfig, provider options.Provider, chain alice.Chain) (*options.Options, error) {
 	v := options.NewOptions()
 
 	domain := r.formatAppDomain(app)
@@ -577,7 +577,7 @@ func (r *Router) authProxyConfig(app appconfig.AppProxyConfig, provider options.
 	return v, nil
 }
 
-func (r *Router) formatAppDomain(app appconfig.AppProxyConfig) string {
+func (r *Router) formatAppDomain(app dataapps.AppProxyConfig) string {
 	domain := app.ID + "." + r.config.API.PublicURL.Host
 	if app.Name != "" {
 		domain = app.Name + "-" + domain
@@ -589,7 +589,7 @@ func (r *Router) formatAppDomain(app appconfig.AppProxyConfig) string {
 // This is necessary because otherwise cookies created by provider A would also be valid in a section that requires provider B but not A.
 // To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
 // App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
-func (r *Router) generateCookieSecret(app appconfig.AppProxyConfig, provider options.Provider) ([]byte, error) {
+func (r *Router) generateCookieSecret(app dataapps.AppProxyConfig, provider options.Provider) ([]byte, error) {
 	if r.config.CookieSecretSalt == "" {
 		return nil, errors.New("missing cookie secret salt")
 	}

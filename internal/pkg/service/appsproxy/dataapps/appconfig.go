@@ -1,4 +1,4 @@
-package appconfig
+package dataapps
 
 import (
 	"context"
@@ -23,12 +23,12 @@ const staleCacheFallbackDuration = time.Hour
 // If the last notification for given app was less than this interval ago then the notification is skipped.
 const notificationInterval = time.Second * 30
 
-type Loader interface {
+type Client interface {
 	Notify(ctx context.Context, appID string) error
 	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, bool, error)
 }
 
-type sandboxesAPILoader struct {
+type sandboxesServiceClient struct {
 	logger        log.Logger
 	clock         clock.Clock
 	sender        request.Sender
@@ -48,8 +48,8 @@ type notificationItem struct {
 	updateLock            *sync.Mutex
 }
 
-func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Loader {
-	return &sandboxesAPILoader{
+func NewSandboxesServiceLoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Client {
+	return &sandboxesServiceClient{
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
@@ -66,7 +66,7 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 	}
 }
 
-func (l *sandboxesAPILoader) Notify(ctx context.Context, appID string) error {
+func (l *sandboxesServiceClient) Notify(ctx context.Context, appID string) error {
 	// Get cache item or init an empty item
 	item := l.notifications.GetOrInit(appID)
 
@@ -99,7 +99,7 @@ func (l *sandboxesAPILoader) Notify(ctx context.Context, appID string) error {
 
 // LoadConfig gets the current configuration from Sandboxes Service.
 // It handles local caching based on the Cache-Control and ETag headers.
-func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
+func (l *sandboxesServiceClient) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
 	// Get cache item or init an empty item
 	item := l.cache.GetOrInit(appID)
 
@@ -135,7 +135,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out 
 	return item.config, modified, nil
 }
 
-func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
+func (l *sandboxesServiceClient) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
 	var sandboxesError *SandboxesError
 	errors.As(err, &sandboxesError)
 	if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {

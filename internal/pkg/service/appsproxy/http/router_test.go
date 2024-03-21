@@ -28,8 +28,8 @@ import (
 	"nhooyr.io/websocket/wsjson"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -1390,8 +1390,8 @@ func TestAppProxyRouter(t *testing.T) {
 	}
 }
 
-func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppProxyConfig {
-	return []appconfig.AppProxyConfig{
+func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []dataapps.AppProxyConfig {
+	return []dataapps.AppProxyConfig{
 		{
 			ID:             "norule",
 			UpstreamAppURL: tsURL.String(),
@@ -1400,9 +1400,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			ID:             "123",
 			Name:           "public",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:         appconfig.PathPrefix,
+					Type:         dataapps.PathPrefix,
 					Value:        "/",
 					AuthRequired: pointer(false),
 				},
@@ -1411,7 +1411,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "invalid1",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
 					Type:  "unknown",
 					Value: "/",
@@ -1422,9 +1422,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "invalid2",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:         appconfig.PathPrefix,
+					Type:         dataapps.PathPrefix,
 					Value:        "/",
 					AuthRequired: pointer(false),
 					Auth:         []string{"test"},
@@ -1434,19 +1434,19 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "invalid3",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []appconfig.AuthProvider{
+			AuthProviders: []dataapps.AuthProvider{
 				{
 					ID:           "oidc",
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/",
 					Auth:  []string{"oidc"},
 				},
@@ -1455,9 +1455,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "invalid4",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/",
 					Auth:  []string{"unknown"},
 				},
@@ -1466,19 +1466,19 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "oidc",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []appconfig.AuthProvider{
+			AuthProviders: []dataapps.AuthProvider{
 				{
 					ID:           "oidc",
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/",
 					Auth:  []string{"oidc"},
 				},
@@ -1487,12 +1487,12 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "multi",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []appconfig.AuthProvider{
+			AuthProviders: []dataapps.AuthProvider{
 				{
 					ID:           "oidc0",
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"manager"}),
 					IssuerURL:    m[0].Issuer(),
 				},
@@ -1500,7 +1500,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ID:           "oidc1",
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
@@ -1508,9 +1508,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ID: "oidc2",
 				},
 			},
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/",
 					Auth:  []string{"oidc0", "oidc1", "oidc2"},
 				},
@@ -1519,19 +1519,19 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "broken",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []appconfig.AuthProvider{
+			AuthProviders: []dataapps.AuthProvider{
 				{
 					ID:           "oidc",
 					ClientID:     "",
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/",
 					Auth:  []string{"oidc"},
 				},
@@ -1540,12 +1540,12 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 		{
 			ID:             "prefix",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []appconfig.AuthProvider{
+			AuthProviders: []dataapps.AuthProvider{
 				{
 					ID:           "oidc0",
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
@@ -1553,24 +1553,24 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ID:           "oidc1",
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					Type:         appconfig.OIDCProvider,
+					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 			},
-			AuthRules: []appconfig.AuthRule{
+			AuthRules: []dataapps.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/api",
 					Auth:  []string{"oidc0"},
 				},
 				{
-					Type:  appconfig.PathPrefix,
+					Type:  dataapps.PathPrefix,
 					Value: "/web",
 					Auth:  []string{"oidc0", "oidc1"},
 				},
 				{
-					Type:         appconfig.PathPrefix,
+					Type:         dataapps.PathPrefix,
 					Value:        "/public",
 					AuthRequired: pointer(false),
 				},
@@ -1620,14 +1620,14 @@ func startAppServer(t *testing.T) *appServer {
 
 type sandboxesService struct {
 	*httptest.Server
-	apps map[string]appconfig.AppProxyConfig
+	apps map[string]dataapps.AppProxyConfig
 }
 
-func startSandboxesService(t *testing.T, apps []appconfig.AppProxyConfig) *sandboxesService {
+func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandboxesService {
 	t.Helper()
 
 	service := &sandboxesService{
-		apps: make(map[string]appconfig.AppProxyConfig),
+		apps: make(map[string]dataapps.AppProxyConfig),
 	}
 
 	for _, app := range apps {
