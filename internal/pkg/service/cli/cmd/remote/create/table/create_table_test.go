@@ -37,19 +37,11 @@ func TestGetCreateRequest(t *testing.T) {
 			args: args{columns: []string{"id", "name"}},
 			want: []keboola.Column{
 				{
-					Name: "id",
-					Definition: keboola.ColumnDefinition{
-						Type:     "STRING",
-						Nullable: true,
-					},
+					Name:     "id",
 					BaseType: keboola.TypeString,
 				},
 				{
-					Name: "name",
-					Definition: keboola.ColumnDefinition{
-						Type:     "STRING",
-						Nullable: true,
-					},
+					Name:     "name",
 					BaseType: keboola.TypeString,
 				},
 			},
@@ -135,7 +127,7 @@ func TestAskCreate(t *testing.T) {
 					Columns: []keboola.Column{
 						{
 							Name: "id",
-							Definition: keboola.ColumnDefinition{
+							Definition: &keboola.ColumnDefinition{
 								Type:     "VARCHAR",
 								Nullable: false,
 							},
@@ -143,7 +135,7 @@ func TestAskCreate(t *testing.T) {
 						},
 						{
 							Name: "name",
-							Definition: keboola.ColumnDefinition{
+							Definition: &keboola.ColumnDefinition{
 								Type:     "VARCHAR",
 								Nullable: false,
 							},
@@ -222,19 +214,11 @@ func TestAskCreate(t *testing.T) {
 					PrimaryKeyNames: []string{"id"},
 					Columns: []keboola.Column{
 						{
-							Name: "id",
-							Definition: keboola.ColumnDefinition{
-								Type:     "STRING",
-								Nullable: false,
-							},
+							Name:     "id",
 							BaseType: "STRING",
 						},
 						{
-							Name: "name",
-							Definition: keboola.ColumnDefinition{
-								Type:     "STRING",
-								Nullable: true,
-							},
+							Name:     "name",
 							BaseType: "STRING",
 						},
 					},
@@ -318,7 +302,7 @@ func TestAskCreate(t *testing.T) {
 					Columns: []keboola.Column{
 						{
 							Name: "id",
-							Definition: keboola.ColumnDefinition{
+							Definition: &keboola.ColumnDefinition{
 								Type:     "INT",
 								Nullable: false,
 							},
@@ -326,7 +310,7 @@ func TestAskCreate(t *testing.T) {
 						},
 						{
 							Name: "name",
-							Definition: keboola.ColumnDefinition{
+							Definition: &keboola.ColumnDefinition{
 								Type:     "STRING",
 								Nullable: false,
 							},
@@ -397,19 +381,11 @@ func TestAskCreate(t *testing.T) {
 					PrimaryKeyNames: []string{"id"},
 					Columns: []keboola.Column{
 						{
-							Name: "id",
-							Definition: keboola.ColumnDefinition{
-								Type:     "STRING",
-								Nullable: false,
-							},
+							Name:     "id",
 							BaseType: "STRING",
 						},
 						{
-							Name: "name",
-							Definition: keboola.ColumnDefinition{
-								Type:     "STRING",
-								Nullable: true,
-							},
+							Name:     "name",
 							BaseType: "STRING",
 						},
 					},
@@ -471,14 +447,14 @@ func TestParseJsonInput(t *testing.T) {
 	assert.Equal(t, []keboola.Column{
 		{
 			Name: "id",
-			Definition: keboola.ColumnDefinition{
+			Definition: &keboola.ColumnDefinition{
 				Type: "INT",
 			},
 			BaseType: "NUMERIC",
 		},
 		{
 			Name: "name",
-			Definition: keboola.ColumnDefinition{
+			Definition: &keboola.ColumnDefinition{
 				Type: "STRING",
 			},
 			BaseType: "STRING",

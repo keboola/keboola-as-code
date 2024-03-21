@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -103,22 +102,13 @@ func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*ke
 
 	if f.PrimaryKey.Value != "" {
 		opts.CreateTableRequest.PrimaryKeyNames = strings.Split(strings.TrimSpace(f.PrimaryKey.Value), ",")
-	} else {
+	} else if !f.PrimaryKey.IsSet() {
 		primaryKeys, _ := d.MultiSelect(&prompt.MultiSelect{
 			Label:   "Select columns for primary key",
 			Options: getColumnsName(opts.CreateTableRequest.Columns),
 		})
 
 		opts.CreateTableRequest.PrimaryKeyNames = primaryKeys
-	}
-
-	// if the column is marked as a primary key, 'nullable' field have to be false
-	if columnsMethod == columnsNamesFlag || columnsMethod == columnsNamesInteractive {
-		for i := range opts.CreateTableRequest.TableDefinition.Columns {
-			if slices.Contains(opts.CreateTableRequest.PrimaryKeyNames, opts.CreateTableRequest.Columns[i].Name) {
-				opts.CreateTableRequest.Columns[i].Definition.Nullable = false
-			}
-		}
 	}
 
 	return opts, nil
@@ -191,8 +181,6 @@ func getOptionCreateRequest(columns []string) []keboola.Column {
 		var col keboola.Column
 		col.Name = column
 		col.BaseType = keboola.TypeString
-		col.Definition.Type = keboola.TypeString.String()
-		col.Definition.Nullable = true
 		c = append(c, col)
 	}
 
