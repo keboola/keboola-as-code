@@ -167,7 +167,8 @@ func (v *TemplateRecord) DefaultVersionOrErr() (VersionRecord, error) {
 	return version, nil
 }
 
-func (v *TemplateRecord) CheckComponents(components *model.ComponentsMap) bool {
+// CheckProjectComponents - all required components must be present.
+func (v *TemplateRecord) CheckProjectComponents(components *model.ComponentsMap) bool {
 	for _, component := range v.Requirements.Components {
 		if _, found := components.Get(keboola.ComponentID(component)); !found {
 			return false
@@ -176,7 +177,8 @@ func (v *TemplateRecord) CheckComponents(components *model.ComponentsMap) bool {
 	return true
 }
 
-func (v *TemplateRecord) CheckFeatures(d keboola.FeaturesMap) bool {
+// CheckProjectFeatures - all required project features must be present.
+func (v *TemplateRecord) CheckProjectFeatures(d keboola.FeaturesMap) bool {
 	for _, feature := range v.Requirements.Features {
 		if !d.Has(feature) {
 			return false
@@ -185,7 +187,11 @@ func (v *TemplateRecord) CheckFeatures(d keboola.FeaturesMap) bool {
 	return true
 }
 
+// HasBackend - at least one required backend must be present.
 func (v *TemplateRecord) HasBackend(projectBackends []string) bool {
+	if len(v.Requirements.Backends) == 0 {
+		return true
+	}
 	for _, backend := range v.Requirements.Backends {
 		if slices.Contains(projectBackends, backend) {
 			return true

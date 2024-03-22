@@ -300,7 +300,7 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 				Requirements: tt.fields.Requirements,
 				Versions:     tt.fields.Versions,
 			}
-			assert.Equalf(t, tt.want, v.CheckFeatures(tt.args.features), "CheckFeatures(%v)", tt.args.features)
+			assert.Equalf(t, tt.want, v.CheckProjectFeatures(tt.args.features), "CheckProjectFeatures(%v)", tt.args.features)
 		})
 	}
 }
@@ -371,7 +371,7 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 				Requirements: tt.fields.Requirements,
 				Versions:     tt.fields.Versions,
 			}
-			assert.Equalf(t, tt.want, v.CheckComponents(tt.args.components), "CheckComponents(%v)", tt.args.components)
+			assert.Equalf(t, tt.want, v.CheckProjectComponents(tt.args.components), "CheckProjectComponents(%v)", tt.args.components)
 		})
 	}
 }

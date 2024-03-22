@@ -585,15 +585,15 @@ func instanceDetails(ctx context.Context, d dependencies.ProjectRequestScope, in
 }
 
 func hasRequirements(tmpl repository.TemplateRecord, d dependencies.ProjectRequestScope) bool {
-	if tmpl.Requirements.Backends != nil && !tmpl.HasBackend(d.ProjectBackends()) {
+	if !tmpl.HasBackend(d.ProjectBackends()) {
 		return false
 	}
 
-	if tmpl.Requirements.Components != nil && !tmpl.CheckComponents(d.Components()) {
+	if !tmpl.CheckProjectComponents(d.Components()) {
 		return false
 	}
 
-	if tmpl.Requirements.Features != nil && !tmpl.CheckFeatures(d.ProjectFeatures()) {
+	if !tmpl.CheckProjectFeatures(d.ProjectFeatures()) {
 		return false
 	}
 	return true
