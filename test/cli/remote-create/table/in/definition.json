@@ -1,17 +1,18 @@
 [
-    {
-      "name": "id",
-      "definition": {
-        "type": "VARCHAR"
-      },
-      "basetype": "STRING"
+  {
+    "name": "id",
+    "definition": {
+      "type": "VARCHAR",
+      "nullable": false
     },
-    {
-      "name": "name",
-      "definition": {
-        "type": "VARCHAR"
-      },
-      "basetype": "STRING"
-    }
+    "basetype": "STRING"
+  },
+  {
+    "name": "name",
+    "definition": {
+      "type": "VARCHAR",
+      "nullable": true
+    },
+    "basetype": "STRING"
+  }
 ]
-

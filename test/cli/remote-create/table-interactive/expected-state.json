@@ -56,7 +56,7 @@
                 "definition": {
                   "type": "VARCHAR",
                   "length": "16777216",
-                  "nullable": false,
+                  "nullable": true,
                   "default": ""
                 },
                 "basetype": "STRING"
