@@ -164,7 +164,7 @@ func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[defin
 func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Branch) (op.Op, error) {
 	saveCtx := plugin.NewSaveContext(now)
 	r.save(saveCtx, now, old, updated)
-	return saveCtx.Apply(ctx)
+	return saveCtx.Do(ctx)
 }
 
 func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, old, updated *definition.Branch) {
@@ -173,7 +173,7 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, old, updat
 
 	if updated.Deleted {
 		// Move entity from the active prefix to the deleted prefix
-		saveCtx.AddOp(
+		saveCtx.WriteOp(
 			// Delete entity from the active prefix
 			r.schema.Active().ByKey(updated.BranchKey).Delete(r.client),
 			// Save entity to the deleted prefix
@@ -181,11 +181,11 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, now time.Time, old, updat
 		)
 	} else {
 		// Save record to the "active" prefix
-		saveCtx.AddOp(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
+		saveCtx.WriteOp(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
 
 		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(now) {
 			// Delete record from the "deleted" prefix, if needed
-			saveCtx.AddOp(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
+			saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
 		}
 	}
 }

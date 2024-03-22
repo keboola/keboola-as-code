@@ -15,7 +15,6 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
@@ -53,32 +52,30 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 
 	// Connect to the file events
 	r.plugins.Collection().OnFileSave(func(ctx *plugin.SaveContext, old, updated *model.File) {
-		// On file deletion, delete all slices
+		// On delete
 		if updated.Deleted {
-			ctx.AddAtomicOp(r.deleteAllFrom(updated.FileKey, ctx.Now()))
+			ctx.AddFrom(r.deleteAllFrom(updated.FileKey, ctx.Now()))
 			return
 		}
 
-		for _, volumeID := range updated.Assignment.Volumes {
-			k := model.FileVolumeKey{FileKey: updated.FileKey, VolumeID: volumeID}
+		// On create
+		if old == nil {
+			// Open slices
+			ctx.AddFrom(r.openSlicesInFile(ctx.Now(), *updated))
+			return
+		}
 
-			// On create
-			if old == nil {
-				// Open slice
-				ctx.AddAtomicOp(r.open(ctx.Now(), k, updated))
-				continue
-			}
-
-			// On update
-			if old.State != updated.State {
-				switch updated.State {
-				case model.FileClosing:
-					// Close slice
-					ctx.AddAtomicOp(r.close(ctx.Now(), k, updated))
-				case model.FileImported:
-					// Mark slice imported
-					ctx.AddAtomicOp(r.rotate(ctx.Now(), k, updated, false))
-				}
+		// On update
+		if old.State != updated.State {
+			switch updated.State {
+			case model.FileClosing:
+				// Close slices
+				ctx.AddFrom(r.closeSlicesInFile(updated.FileKey, ctx.Now()))
+			case model.FileImported:
+				// Mark slice imported
+				ctx.AddFrom(r.stateTransitionAllInFile(updated.FileKey, ctx.Now(), updated.State, model.SliceUploaded, model.SliceImported))
+			default:
+				// nop
 			}
 		}
 	})
@@ -114,64 +111,155 @@ func (r *Repository) Get(k model.SliceKey) op.WithResult[model.Slice] {
 		})
 }
 
-// Rotate closes the opened slice, if present, and opens a new slice in the file volume.
-//   - THE NEW SLICE is ALWAYS created in the state storage.SliceWriting.
-//   - THE OLD SLICE in the storage.SliceWriting state, IF PRESENT, is switched to the storage.SliceClosing state.
-//   - If no old slice exists, this operation effectively corresponds to the Open operation.
-//   - Slices rotation is done atomically.
-//   - This method is used to rotate slices when the upload conditions are met.
-func (r *Repository) Rotate(now time.Time, k model.FileVolumeKey) *op.AtomicOp[model.Slice] {
-	return r.rotate(now, k, nil, true)
-}
-
-// Close closes the opened slice, if present.
-//   - NO NEW SLICE is created, that's the difference with Rotate.
-//   - THE OLD SLICE in the storage.SliceWriting state, IF PRESENT, is switched to the storage.SliceClosing state.
-//   - This method is used to drain the volume.
-func (r *Repository) Close(now time.Time, k model.FileVolumeKey) *op.AtomicOp[op.NoResult] {
-	return op.
-		Atomic(r.client, &op.NoResult{}).
-		AddFrom(r.rotate(now, k, nil, false))
-}
-
 // IncrementRetry increments retry attempt and backoff delay on an error.
 // Retry is reset on StateTransition.
 func (r *Repository) IncrementRetry(now time.Time, sliceKey model.SliceKey, reason string) *op.AtomicOp[model.Slice] {
-	return r.update(sliceKey, now, func(slice model.Slice) (model.Slice, error) {
+	return r.updateOne(sliceKey, now, func(slice model.Slice) (model.Slice, error) {
 		slice.IncrementRetry(r.backoff, now, reason)
 		return slice, nil
 	})
 }
 
 // StateTransition switch state of the file, state of the file slices is also atomically switched, if needed.
-func (r *Repository) StateTransition(now time.Time, k model.SliceKey, from, to model.SliceState) *op.AtomicOp[model.Slice] {
+func (r *Repository) StateTransition(k model.SliceKey, now time.Time, from, to model.SliceState) *op.AtomicOp[model.Slice] {
 	var file model.File
-	atomicOp := r.
-		update(k, now, func(slice model.Slice) (model.Slice, error) {
-			// Slice should be closed via one of the following ways:
-			//   - Rotate/FileRepository.Rotate* methods - to create new replacement files
-			//   - Close* methods - no replacement files are created.
-			//   - Closing slice via StateTransition is therefore forbidden.
-			if to == model.SliceClosing {
-				return model.Slice{}, errors.Errorf(`unexpected transition to the state "%s", use Rotate or Close method`, model.SliceClosing)
-			}
-
-			// Validate from state
-			if slice.State != from {
-				return model.Slice{}, errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, slice.SliceKey, slice.State, from)
-			}
-
-			// Validate file and slice state combination
-			if err := state.ValidateFileAndSliceState(file.State, to); err != nil {
-				return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
-			}
-
-			// Switch slice state
-			return slice.WithState(now, to)
+	return r.
+		updateOne(k, now, func(slice model.Slice) (model.Slice, error) {
+			return r.stateTransition(file.State, slice, now, from, to)
 		}).
 		ReadOp(r.files.Get(k.FileKey).WithResultTo(&file))
+}
 
-	return atomicOp
+func (r *Repository) stateTransitionAllInFile(k model.FileKey, now time.Time, fileState model.FileState, from, to model.SliceState) *op.AtomicOp[[]model.Slice] {
+	return r.updateAllInFile(k, now, func(slice model.Slice) (model.Slice, error) {
+		return r.stateTransition(fileState, slice, now, from, to)
+	})
+}
+
+func (r *Repository) stateTransition(fileState model.FileState, slice model.Slice, now time.Time, from, to model.SliceState) (model.Slice, error) {
+	// Slice should be closed via one of the following ways:
+	//   - Rotate/FileRepository.Rotate* methods - to create new replacement files
+	//   - Close* methods - no replacement files are created.
+	//   - Closing slice via StateTransition is therefore forbidden.
+	if to == model.SliceClosing {
+		return model.Slice{}, errors.Errorf(`unexpected transition to the state "%s", use Rotate or Close method`, model.SliceClosing)
+	}
+
+	// Validate from state
+	if slice.State != from {
+		return model.Slice{}, errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, slice.SliceKey, slice.State, from)
+	}
+
+	// Validate file and slice state combination
+	if err := state.ValidateFileAndSliceState(fileState, to); err != nil {
+		return slice, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, slice.SliceKey)
+	}
+
+	// Switch slice state
+	return slice.WithState(now, to)
+}
+
+// update reads the file, applies updateFn and save modified value.
+func (r *Repository) updateAllInFile(k model.FileKey, now time.Time, updateFn func(model.Slice) (model.Slice, error)) *op.AtomicOp[[]model.Slice] {
+	var allOld, allUpdated []model.Slice
+	return op.Atomic(r.client, &allUpdated).
+		// Read entity for modification
+		ReadOp(r.ListIn(k).WithAllTo(&allOld)).
+		// Update the entity
+		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
+			allUpdated = nil
+			saveCtx := plugin.NewSaveContext(now)
+			for _, old := range allOld {
+				if updated, err := r.update(saveCtx, old, updateFn); err == nil {
+					allUpdated = append(allUpdated, updated)
+				} else {
+					return nil, err
+				}
+			}
+			return saveCtx.Do(ctx)
+		})
+}
+
+// update reads the file, applies updateFn and save modified value.
+func (r *Repository) updateOne(k model.SliceKey, now time.Time, updateFn func(model.Slice) (model.Slice, error)) *op.AtomicOp[model.Slice] {
+	var old, updated model.Slice
+	return op.Atomic(r.client, &updated).
+		// Read entity for modification
+		ReadOp(r.Get(k).WithResultTo(&old)).
+		// Update the entity
+		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
+			saveCtx := plugin.NewSaveContext(now)
+			updated, err = r.update(saveCtx, old, updateFn)
+			if err != nil {
+				return nil, err
+			}
+			return saveCtx.Do(ctx)
+		})
+}
+
+func (r *Repository) update(saveCtx *plugin.SaveContext, old model.Slice, updateFn func(model.Slice) (model.Slice, error)) (model.Slice, error) {
+	// Update
+	updated, err := updateFn(deepcopy.Copy(old).(model.Slice))
+	if err != nil {
+		return model.Slice{}, err
+	}
+
+	// Save
+	r.save(saveCtx, &old, &updated)
+	return updated, nil
+}
+
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *model.Slice) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	r.save(saveCtx, old, updated)
+	return saveCtx.Do(ctx)
+}
+
+func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *model.Slice) {
+	// Call plugins
+	r.plugins.Executor().OnSliceSave(saveCtx, old, updated)
+
+	allKey := r.schema.AllLevels().ByKey(updated.SliceKey)
+	inLevelKey := r.schema.InLevel(updated.State.Level()).ByKey(updated.SliceKey)
+
+	if updated.Deleted {
+		// Delete entity from All and InLevel prefixes
+		saveCtx.WriteOp(
+			allKey.Delete(r.client),
+			inLevelKey.Delete(r.client),
+		)
+	} else {
+		if old == nil {
+			// Entity should not exist
+			saveCtx.WriteOp(op.Txn(r.client).
+				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
+				OnFailed(func(r *op.TxnResult[op.NoResult]) {
+					r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", updated.SliceKey.String(), "file"))
+				}),
+			)
+		} else {
+			// Entity should exist
+			saveCtx.WriteOp(op.Txn(r.client).
+				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
+				OnFailed(func(r *op.TxnResult[op.NoResult]) {
+					r.AddErr(serviceError.NewResourceNotFoundError("slice", updated.SliceKey.String(), "file"))
+				}),
+			)
+		}
+
+		// Put entity to All and InLevel prefixes
+		saveCtx.WriteOp(
+			allKey.Put(r.client, *updated),
+			inLevelKey.Put(r.client, *updated),
+		)
+
+		// Remove entity from the old InLevel prefix, if needed
+		if old != nil && old.State.Level() != updated.State.Level() {
+			saveCtx.WriteOp(
+				r.schema.InLevel(old.State.Level()).ByKey(old.SliceKey).Delete(r.client),
+			)
+		}
+	}
 }
 
 // Delete the slice.
@@ -193,183 +281,6 @@ func (r *Repository) deleteAllFrom(k model.FileKey, now time.Time) *op.AtomicOp[
 				r.save(saveCtx, &old, &deleted)
 				allDeleted = append(allDeleted, deleted)
 			}
-			return saveCtx.Apply(ctx)
+			return saveCtx.Do(ctx)
 		})
-}
-
-func (r *Repository) open(saveCtx *plugin.SaveContext, k model.FileVolumeKey, file *model.File) *op.AtomicOp[model.Slice] {
-	// Init atomic operation
-	var openedSlice model.Slice
-	atomicOp := op.Atomic(r.client, &openedSlice)
-
-	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		// Pass the disk allocation config to the hook in the statistics repository
-		ctx = diskalloc.ContextWithConfig(ctx, file.LocalStorage.DiskAllocation)
-
-		// File must be in the storage.FileWriting state, to open a new slice
-		if fileState := file.State; fileState != model.FileWriting {
-			return nil, serviceError.NewBadRequestError(errors.Errorf(
-				`slice cannot be created: unexpected file "%s" state "%s", expected "%s"`,
-				k.FileKey.String(), fileState, model.FileWriting,
-			))
-		}
-
-		// Create slice entity
-		newSlice, err := NewSlice(now, *file, k.VolumeID)
-		if err != nil {
-			return nil, err
-		}
-
-		// Save new file
-		r.save(saveCtx, nil, &newSlice)
-	})
-}
-
-func (r *Repository) close(now time.Time, k model.FileVolumeKey, file *model.File) *op.AtomicOp[op.NoResult] {
-
-}
-
-// rotate is a common code for rotate and close operations.
-func (r *Repository) rotate(now time.Time, k model.FileVolumeKey, file *model.File, openNewSlice bool) *op.AtomicOp[model.Slice] {
-	// Init atomic operation
-	var openedSlice model.Slice
-	atomicOp := op.Atomic(r.client, &openedSlice)
-
-	// Sink must exist
-	atomicOp.ReadOp(r.definition.Sink().ExistsOrErr(k.SinkKey))
-
-	// Load file
-	if file == nil {
-		atomicOp.ReadOp(r.files.Get(k.FileKey).WithResultTo(file))
-	}
-
-	// Load opened slices.
-	// There can be a maximum of one old slice in the storage.SliceWriting state per FileVolumeKey,
-	// On rotation, the opened slice is switched to the model.SliceClosing state.
-	var openedSlices []model.Slice
-	atomicOp.ReadOp(r.ListInState(k, model.SliceWriting).WithAllTo(&openedSlices))
-
-	// Close old slice, open new slice
-	atomicOp.WriteOrErr(func(ctx context.Context) (out op.Op, err error) {
-		// There must be at most one opened file in the sink
-		slicesCount := len(openedSlices)
-		if slicesCount > 1 {
-			return nil, errors.Errorf(`unexpected state, found %d opened slices in the file volume "%s"`, slicesCount, k)
-		}
-
-		saveCtx := plugin.NewSaveContext(now)
-
-		// Close the old slice, if present
-		if slicesCount == 1 {
-			// Switch the old file from the state model.FileWriting to the state model.FileClosing
-			oldSlice := openedSlices[0]
-			oldUpdatedSlice, err := oldSlice.WithState(now, model.SliceClosing)
-			if err != nil {
-				return nil, err
-			}
-
-			// Save update old file
-			r.save(saveCtx, &oldSlice, &oldUpdatedSlice)
-		}
-
-		// Open new slice, if enabled
-		if openNewSlice {
-			// Pass the disk allocation config to the hook in the statistics repository
-			ctx = diskalloc.ContextWithConfig(ctx, file.LocalStorage.DiskAllocation)
-
-			// File must be in the storage.FileWriting state, to open a new slice
-			if fileState := file.State; fileState != model.FileWriting {
-				return nil, serviceError.NewBadRequestError(errors.Errorf(
-					`slice cannot be created: unexpected file "%s" state "%s", expected "%s"`,
-					k.FileKey.String(), fileState, model.FileWriting,
-				))
-			}
-
-			// Create slice entity
-			newSlice, err := NewSlice(now, *file, k.VolumeID)
-			if err != nil {
-				return nil, err
-			}
-
-			// Save new file
-			r.save(saveCtx, nil, &newSlice)
-		}
-
-		return saveCtx.Apply(ctx)
-	})
-
-	return atomicOp
-}
-
-// update reads the file, applies updateFn and save modified value.
-func (r *Repository) update(k model.SliceKey, now time.Time, updateFn func(model.Slice) (model.Slice, error)) *op.AtomicOp[model.Slice] {
-	var old, updated model.Slice
-	return op.Atomic(r.client, &updated).
-		// Read entity for modification
-		ReadOp(r.Get(k).WithResultTo(&old)).
-		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
-			// Update
-			updated = deepcopy.Copy(old).(model.Slice)
-			updated, err = updateFn(updated)
-			if err != nil {
-				return nil, err
-			}
-
-			// Save
-			return r.saveOne(ctx, now, &old, &updated)
-		})
-}
-
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *model.Slice) (op.Op, error) {
-	saveCtx := plugin.NewSaveContext(now)
-	r.save(saveCtx, old, updated)
-	return saveCtx.Apply(ctx)
-}
-
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *model.Slice) {
-	// Call plugins
-	r.plugins.Executor().OnSliceSave(saveCtx, old, updated)
-
-	allKey := r.schema.AllLevels().ByKey(updated.SliceKey)
-	inLevelKey := r.schema.InLevel(updated.State.Level()).ByKey(updated.SliceKey)
-
-	if updated.Deleted {
-		// Delete entity from All and InLevel prefixes
-		saveCtx.AddOp(
-			allKey.Delete(r.client),
-			inLevelKey.Delete(r.client),
-		)
-	} else {
-		if old == nil {
-			// Entity should not exist
-			saveCtx.AddOp(op.Txn(r.client).
-				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
-				OnFailed(func(r *op.TxnResult[op.NoResult]) {
-					r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", updated.SliceKey.String(), "file"))
-				}),
-			)
-		} else {
-			// Entity should exist
-			saveCtx.AddOp(op.Txn(r.client).
-				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
-				OnFailed(func(r *op.TxnResult[op.NoResult]) {
-					r.AddErr(serviceError.NewResourceNotFoundError("slice", updated.SliceKey.String(), "file"))
-				}),
-			)
-		}
-
-		// Put entity to All and InLevel prefixes
-		saveCtx.AddOp(
-			allKey.Put(r.client, *updated),
-			inLevelKey.Put(r.client, *updated),
-		)
-
-		// Remove entity from the old InLevel prefix, if needed
-		if old != nil && old.State.Level() != updated.State.Level() {
-			saveCtx.AddOp(
-				r.schema.InLevel(old.State.Level()).ByKey(old.SliceKey).Delete(r.client),
-			)
-		}
-	}
 }

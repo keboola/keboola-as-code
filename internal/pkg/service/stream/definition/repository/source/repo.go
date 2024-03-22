@@ -50,9 +50,9 @@ func NewRepository(d dependencies, branches *branch.Repository) *Repository {
 		deleted := updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(ctx.Now())
 		undeleted := updated.DeletedAt != nil && updated.DeletedAt.Time().Equal(ctx.Now())
 		if undeleted {
-			ctx.AddAtomicOp(r.softDeleteAllFrom(updated.BranchKey, ctx.Now(), true))
+			ctx.AddFrom(r.softDeleteAllFrom(updated.BranchKey, ctx.Now(), true))
 		} else if deleted {
-			ctx.AddAtomicOp(r.undeleteAllFrom(updated.BranchKey, ctx.Now(), true))
+			ctx.AddFrom(r.undeleteAllFrom(updated.BranchKey, ctx.Now(), true))
 		}
 	})
 
@@ -255,7 +255,7 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
 			r.save(saveCtx, &old, &deleted)
 			allDeleted = append(allDeleted, deleted)
 		}
-		return saveCtx.Apply(ctx)
+		return saveCtx.Do(ctx)
 	})
 
 	return atomicOp
@@ -298,7 +298,7 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 			r.save(saveCtx, &old, &created)
 			allCreated = append(allCreated, created)
 		}
-		return saveCtx.Apply(ctx)
+		return saveCtx.Do(ctx)
 	})
 
 	return atomicOp
@@ -307,7 +307,7 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Source) (op.Op, error) {
 	saveCtx := plugin.NewSaveContext(now)
 	r.save(saveCtx, old, updated)
-	return saveCtx.Apply(ctx)
+	return saveCtx.Do(ctx)
 }
 
 func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Source) {
@@ -316,14 +316,14 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
 
 	if updated.Deleted {
 		// Move entity from the active prefix to the deleted prefix
-		saveCtx.AddOp(
+		saveCtx.WriteOp(
 			// Delete entity from the active prefix
 			r.schema.Active().ByKey(updated.SourceKey).Delete(r.client),
 			// Save entity to the deleted prefix
 			r.schema.Deleted().ByKey(updated.SourceKey).Put(r.client, *updated),
 		)
 	} else {
-		saveCtx.AddOp(
+		saveCtx.WriteOp(
 			// Save record to the "active" prefix
 			r.schema.Active().ByKey(updated.SourceKey).Put(r.client, *updated),
 			// Save record to the versions history
@@ -332,7 +332,7 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
 
 		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(saveCtx.Now()) {
 			// Delete record from the "deleted" prefix, if needed
-			saveCtx.AddOp(r.schema.Deleted().ByKey(updated.SourceKey).Delete(r.client))
+			saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.SourceKey).Delete(r.client))
 		}
 	}
 }
