@@ -180,7 +180,6 @@ func getOptionCreateRequest(columns []string) []keboola.Column {
 	for _, column := range columns {
 		var col keboola.Column
 		col.Name = column
-		col.BaseType = keboola.TypeString
 		c = append(c, col)
 	}
 
@@ -217,7 +216,10 @@ func defaultValue() string {
 func getColumnsName(columns []keboola.Column) []string {
 	var result []string
 	for _, column := range columns {
-		result = append(result, column.Name)
+		if column.Definition == nil || !column.Definition.Nullable {
+			result = append(result, column.Name)
+		}
 	}
+
 	return result
 }
