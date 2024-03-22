@@ -24,16 +24,19 @@ import (
 
 func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	t.Parallel()
+
 	if runtime.GOOS == "windows" {
 		t.Skip("unstable on windows - random git timeouts")
 	}
 
 	// Copy the git repository to a temp dir
 	tmpDir := t.TempDir()
+
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
+	runGitCommand(t, tmpDir, "reset", "--hard", "c6c1f0be98fa8fd49be15022a47dcdca22f0dc41")
 	// Mocked API scope
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -45,7 +48,6 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 		req := httptest.NewRequest("GET", "/req1", nil)
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
-
 	// Get repository for request 1
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
@@ -54,7 +56,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// FS contains template1, but doesn't contain template2
 	assert.NoError(t, err)
 	assert.True(t, repo1.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo1.Fs().Exists(ctx, "template4"))
+	assert.False(t, repo1.Fs().Exists(ctx, "template2"))
 
 	// Update repository -> no change
 	err = <-manager.Update(ctx)
@@ -72,7 +74,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// FS contains template1, but doesn't contain template2 (no change).
 	assert.Same(t, repo1.Fs(), repo2.Fs())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo2.Fs().Exists(ctx, "template4"))
+	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
 
 	// Modify git repository
 	runGitCommand(t, tmpDir, "reset", "--hard", "b1")
@@ -92,7 +94,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Repo1 and repo2 use still same directory/FS, without change
 	assert.Equal(t, repo1.Fs(), repo2.Fs())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo2.Fs().Exists(ctx, "template4"))
+	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
 
 	// But repo3 uses different/updated FS
 	assert.NotEqual(t, repo1.Fs(), repo3.Fs())
@@ -104,7 +106,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	assert.DirExists(t, repo2.Fs().BasePath())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
-	assert.False(t, repo2.Fs().Exists(ctx, "template4"))
+	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
 
 	// Request 2 finished -> old FS is deleted (nobody uses it)
 	req2CancelFn()
