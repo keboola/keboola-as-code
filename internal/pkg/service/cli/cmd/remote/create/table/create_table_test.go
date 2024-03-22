@@ -456,3 +456,51 @@ func TestParseJsonInput(t *testing.T) {
 		},
 	}, res)
 }
+
+func TestPossiblePrimaryKeys(t *testing.T) {
+	testCases := []struct {
+		name           string
+		exceptedResult []string
+		columns        keboola.Columns
+	}{
+		{
+			name:           "columns-from definition",
+			exceptedResult: []string{"name"},
+			columns: keboola.Columns{
+				{
+					Name: "name",
+					Definition: &keboola.ColumnDefinition{
+						Type:     "STRING",
+						Nullable: false,
+					},
+					BaseType: ptr.Ptr(keboola.TypeString),
+				},
+				{
+					Name: "age",
+					Definition: &keboola.ColumnDefinition{
+						Type:     "NUMERIC",
+						Nullable: true,
+					},
+					BaseType: ptr.Ptr(keboola.TypeNumeric),
+				},
+			},
+		},
+		{
+			name:           "columns flag",
+			exceptedResult: []string{"name", "age"},
+			columns: keboola.Columns{
+				{
+					Name: "name",
+				},
+				{
+					Name: "age",
+				},
+			},
+		},
+	}
+
+	for _, c := range testCases {
+		result := possiblePrimaryKeys(c.columns)
+		assert.Equal(t, c.exceptedResult, result)
+	}
+}
