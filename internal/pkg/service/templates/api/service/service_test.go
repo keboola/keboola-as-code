@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 )
 
-func Test_getTemplateVersion(t *testing.T) {
+func Test_getTemplateVersion_Requirements(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
