@@ -458,6 +458,7 @@ func TestParseJsonInput(t *testing.T) {
 }
 
 func TestPossiblePrimaryKeys(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name           string
 		exceptedResult []string
