@@ -15,7 +15,6 @@ The release process is handled by [.github/workflows](../.github/workflows).
 
 - macOS binaries are signed with an Apple Developer code signing certificate
 - The certificate is issued by Tomas Netrval's Apple Developer account for the time being
-- Packaging and signing of macOS binaries is handled by [gon](https://github.com/mitchellh/gon) from within [build/ci/goreleaser.yml](../build/ci/goreleaser.yml)
 - macOS binaries are distributed using [Homebrew distribution](#homebrew)
 
 ## Homebrew
