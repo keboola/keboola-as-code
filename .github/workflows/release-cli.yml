@@ -127,11 +127,6 @@ jobs:
           echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
           chmod 0600 /tmp/keys/apk.key
 
-      - name: Install Gon
-        run: |
-          brew tap mitchellh/gon
-          brew install mitchellh/gon/gon
-
       - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
