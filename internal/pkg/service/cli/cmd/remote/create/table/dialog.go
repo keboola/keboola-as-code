@@ -105,7 +105,7 @@ func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*ke
 	} else if !f.PrimaryKey.IsSet() {
 		primaryKeys, _ := d.MultiSelect(&prompt.MultiSelect{
 			Label:   "Select columns for primary key",
-			Options: getColumnsName(opts.CreateTableRequest.Columns),
+			Options: possiblePrimaryKeys(opts.CreateTableRequest.Columns),
 		})
 
 		opts.CreateTableRequest.PrimaryKeyNames = primaryKeys
@@ -180,7 +180,6 @@ func getOptionCreateRequest(columns []string) []keboola.Column {
 	for _, column := range columns {
 		var col keboola.Column
 		col.Name = column
-		col.BaseType = keboola.TypeString
 		c = append(c, col)
 	}
 
@@ -214,10 +213,13 @@ func defaultValue() string {
 	return fileHeader
 }
 
-func getColumnsName(columns []keboola.Column) []string {
+func possiblePrimaryKeys(columns []keboola.Column) []string {
 	var result []string
 	for _, column := range columns {
-		result = append(result, column.Name)
+		if column.Definition == nil || !column.Definition.Nullable {
+			result = append(result, column.Name)
+		}
 	}
+
 	return result
 }

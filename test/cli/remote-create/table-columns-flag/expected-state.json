@@ -22,41 +22,6 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [],
-          "definition": {
-            "primaryKeysNames": [],
-            "columns": [
-              {
-                "name": "col1",
-                "definition": {
-                  "type": "VARCHAR",
-                  "length": "16777216",
-                  "nullable": true,
-                  "default": ""
-                },
-                "basetype": "STRING"
-              },
-              {
-                "name": "col2",
-                "definition": {
-                  "type": "VARCHAR",
-                  "length": "16777216",
-                  "nullable": true,
-                  "default": ""
-                },
-                "basetype": "STRING"
-              },
-              {
-                "name": "col3",
-                "definition": {
-                  "type": "VARCHAR",
-                  "length": "16777216",
-                  "nullable": true,
-                  "default": ""
-                },
-                "basetype": "STRING"
-              }
-            ]
-          },
           "columns": [
             "col1",
             "col2",
