@@ -186,25 +186,43 @@ func (r *Router) createDataAppHandler(ctx context.Context, app appconfig.AppProx
 	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders, app))
 
 	for _, rule := range app.AuthRules {
-		if rule.Type != appconfig.PathPrefix {
-			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
-			return r.createConfigErrorHandler(exceptionID)
-		}
-
-		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, publicAppHandler, oauthProviders, rule.Auth))
+		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, rule, publicAppHandler, oauthProviders))
 	}
 
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider, providers []string) http.Handler {
-	if len(providers) == 0 {
+func (r *Router) createRuleHandler(ctx context.Context, app appconfig.AppProxyConfig, rule appconfig.AuthRule, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider) http.Handler {
+	// If AuthRequired is unset, use true by default
+	authRequired := true
+	if rule.AuthRequired != nil {
+		authRequired = *rule.AuthRequired
+	}
+
+	if rule.Type != appconfig.PathPrefix {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
+		return r.createConfigErrorHandler(exceptionID)
+	}
+
+	if !authRequired {
+		if len(rule.Auth) > 0 {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected auth while authRequired is false for app "<proxy.appid>" "%s"`, app.Name)
+			return r.createConfigErrorHandler(exceptionID)
+		}
+
 		return publicAppHandler
 	}
 
+	if len(rule.Auth) == 0 {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty providers array for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID)
+	}
+
 	selectedProviders := make(map[string]*oauthProvider)
-	for _, id := range providers {
+	for _, id := range rule.Auth {
 		provider, found := oauthProviders[id]
 		if !found {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
@@ -244,11 +262,16 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 
 	exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 
+	allowedRoles := []string{}
+	if authProvider.AllowedRoles != nil {
+		allowedRoles = *authProvider.AllowedRoles
+	}
+
 	providerConfig := options.Provider{
 		ID:                  authProvider.ID,
 		Type:                options.ProviderType(authProvider.Type),
 		Name:                authProvider.Name,
-		AllowedGroups:       authProvider.AllowedRoles,
+		AllowedGroups:       allowedRoles,
 		CodeChallengeMethod: providers.CodeChallengeMethodS256,
 		ClientID:            authProvider.ClientID,
 		ClientSecret:        authProvider.ClientSecret,
@@ -262,11 +285,13 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 		BackendLogoutURL: authProvider.LogoutURL,
 	}
 
+	// Use error handler by default.
 	provider := &oauthProvider{
 		providerConfig: providerConfig,
 		handler:        r.createConfigErrorHandler(exceptionID),
 	}
 
+	// Create a configuration for oauth2-proxy. This can cause a validation failure.
 	proxyConfig, err := r.authProxyConfig(app, providerConfig)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
@@ -274,6 +299,13 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 	}
 	provider.proxyConfig = proxyConfig
 
+	// AllowedRoles nil means there is no role requirement. Empty array doesn't make sense.
+	if authProvider.AllowedRoles != nil && len(allowedRoles) == 0 {
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Infof(ctx, `empty array of allowed roles for app "%s" "%s"`, app.ID, app.Name)
+		return provider
+	}
+
+	// Create a provider instance. This may fail on invalid url, unknown provider type and various other reasons.
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
@@ -281,6 +313,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider appconfig.Auth
 	}
 	provider.proxyProvider = proxyProvider
 
+	// Create the actual proxy instance. May fail on some runtime error.
 	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())

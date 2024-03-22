@@ -108,10 +108,10 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid-app",
+			name: "wrong-rule-type-app",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				// Request to app with invalid rule type
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid.hub.keboola.local/", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid1.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -122,10 +122,38 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
-			name: "badprovider-app",
+			name: "empty-providers-array-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+				// Request to app with invalid rule type
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid2.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
+			},
+		},
+		{
+			name: "empty-allowed-roles-array-app",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+				// Request to app with invalid rule type
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid3.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `Application has invalid configuration.`)
+			},
+		},
+		{
+			name: "unknown-provider-app",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
 				// Request to app with unknown provider
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://badprovider.hub.keboola.local/", nil)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid4.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -955,6 +983,13 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to web (no matching prefix)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/unknown", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNotFound, response.StatusCode)
 			},
 		},
 		{
@@ -1367,25 +1402,58 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
-					Type:  appconfig.PathPrefix,
-					Value: "/",
-					Auth:  []string{},
+					Type:         appconfig.PathPrefix,
+					Value:        "/",
+					AuthRequired: pointer(false),
 				},
 			},
 		},
 		{
-			ID:             "invalid",
+			ID:             "invalid1",
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
 					Type:  "unknown",
 					Value: "/",
-					Auth:  []string{},
+					Auth:  nil,
 				},
 			},
 		},
 		{
-			ID:             "badprovider",
+			ID:             "invalid2",
+			UpstreamAppURL: tsURL.String(),
+			AuthRules: []appconfig.AuthRule{
+				{
+					Type:         appconfig.PathPrefix,
+					Value:        "/",
+					AuthRequired: pointer(false),
+					Auth:         []string{"test"},
+				},
+			},
+		},
+		{
+			ID:             "invalid3",
+			UpstreamAppURL: tsURL.String(),
+			AuthProviders: []appconfig.AuthProvider{
+				{
+					ID:           "oidc",
+					ClientID:     m[0].Config().ClientID,
+					ClientSecret: m[0].Config().ClientSecret,
+					Type:         appconfig.OIDCProvider,
+					AllowedRoles: pointer([]string{}),
+					IssuerURL:    m[0].Issuer(),
+				},
+			},
+			AuthRules: []appconfig.AuthRule{
+				{
+					Type:  appconfig.PathPrefix,
+					Value: "/",
+					Auth:  []string{"oidc"},
+				},
+			},
+		},
+		{
+			ID:             "invalid4",
 			UpstreamAppURL: tsURL.String(),
 			AuthRules: []appconfig.AuthRule{
 				{
@@ -1404,7 +1472,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
 					Type:         appconfig.OIDCProvider,
-					AllowedRoles: []string{"admin"},
+					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -1425,7 +1493,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
 					Type:         appconfig.OIDCProvider,
-					AllowedRoles: []string{"manager"},
+					AllowedRoles: pointer([]string{"manager"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 				{
@@ -1433,7 +1501,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
 					Type:         appconfig.OIDCProvider,
-					AllowedRoles: []string{"admin"},
+					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 				{
@@ -1457,7 +1525,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ClientID:     "",
 					ClientSecret: m[0].Config().ClientSecret,
 					Type:         appconfig.OIDCProvider,
-					AllowedRoles: []string{"admin"},
+					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -1478,7 +1546,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
 					Type:         appconfig.OIDCProvider,
-					AllowedRoles: []string{"admin"},
+					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 				{
@@ -1486,7 +1554,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
 					Type:         appconfig.OIDCProvider,
-					AllowedRoles: []string{"admin"},
+					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 			},
@@ -1502,8 +1570,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []appconfig.AppPr
 					Auth:  []string{"oidc0", "oidc1"},
 				},
 				{
-					Type:  appconfig.PathPrefix,
-					Value: "/",
+					Type:         appconfig.PathPrefix,
+					Value:        "/public",
+					AuthRequired: pointer(false),
 				},
 			},
 		},
