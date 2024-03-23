@@ -260,7 +260,7 @@ func TestRepository_Branch(t *testing.T) {
 	}
 	{
 		//  Re-create
-		branch1 := test.NewBranch(branchKey1)
+		branch1 = test.NewBranch(branchKey1)
 		assert.NoError(t, branchRepo.Create(&branch1, clk.Now()).Do(ctx).Err())
 		assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
 		assert.False(t, branch1.Deleted)
