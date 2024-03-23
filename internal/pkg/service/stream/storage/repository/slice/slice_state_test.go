@@ -102,7 +102,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// Switch slice to the storage.SliceClosing state by StateTransition, it is not possible
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sliceRepo.StateTransition(clk.Now(), slice.SliceKey, model.SliceWriting, model.SliceClosing).Do(ctx).Err()
+		err := sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceWriting, model.SliceClosing).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `unexpected transition to the state "closing", use Rotate or Close method`, err.Error())
 		}
@@ -112,7 +112,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.Close(clk.Now(), slice.FileVolumeKey).Do(ctx).Err())
+		require.NoError(t, sliceRepo.Rotate(clk.Now(), slice.FileVolumeKey).Do(ctx).Err())
 	}
 
 	// Switch slice to the storage.SliceUploading state
@@ -121,7 +121,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), slice.SliceKey, model.SliceClosing, model.SliceUploading).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceClosing, model.SliceUploading).Do(ctx).Err())
 		toUploadingEtcdLogs = etcdLogs.String()
 	}
 
@@ -131,7 +131,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), slice.SliceKey, model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
 		toUploadedEtcdLogs = etcdLogs.String()
 	}
 
@@ -140,7 +140,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		err := sliceRepo.StateTransition(clk.Now(), slice.SliceKey, model.SliceUploaded, model.SliceImported).Do(ctx).Err()
+		err := sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceUploaded, model.SliceImported).Do(ctx).Err()
 		if assert.Error(t, err) {
 			wildcards.Assert(t, "unexpected slice \"%s\" state:\n- unexpected combination: file state \"writing\" and slice state \"imported\"", err.Error())
 		}

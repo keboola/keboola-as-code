@@ -241,27 +241,29 @@ func TestSliceRepository_Operations(t *testing.T) {
 
 	// Switch slice state
 	// -----------------------------------------------------------------------------------------------------------------
+	require.NoError(t, sliceRepo.Rotate(clk.Now(), sliceKey1.FileVolumeKey).Do(ctx).Err())
+	clk.Add(time.Hour)
 	test.SwitchSliceStates(t, ctx, clk, sliceRepo, sliceKey1, time.Hour, []model.SliceState{
-		model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded,
+		model.SliceClosing, model.SliceUploading, model.SliceUploaded,
 	})
 
 	// Switch slice state - already in the state
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceUploaded, model.SliceUploaded).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceUploaded, model.SliceUploaded).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state transition from "uploaded" to "uploaded"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
 	// Switch slice state - unexpected transition (1)
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceUploaded, model.SliceUploading).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceUploaded, model.SliceUploading).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state transition from "uploaded" to "uploading"`, err.Error())
 		serviceError.AssertErrorStatusCode(t, http.StatusBadRequest, err)
 	}
 
 	// Switch slice state - unexpected transition (2)
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceUploaded, model.SliceImported).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceUploaded, model.SliceImported).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, strings.TrimSpace(`
 unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state:
 - unexpected combination: file state "writing" and slice state "imported"

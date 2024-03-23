@@ -82,7 +82,6 @@ func TestFileRepository_Operations(t *testing.T) {
 
 	// Create (the first Rotate) - parent sink doesn't exists
 	// -----------------------------------------------------------------------------------------------------------------
-	// Entity exists only in memory
 	{
 		if err := fileRepo.Rotate(sinkKey1, clk.Now()).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink-1" not found in the source`, err.Error())

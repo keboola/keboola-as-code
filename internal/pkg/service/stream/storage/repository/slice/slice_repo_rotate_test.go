@@ -142,9 +142,9 @@ func TestSliceRepository_Rotate(t *testing.T) {
 
 		// Closing -> Uploading -> Uploaded
 		clk.Add(time.Hour)
-		require.NoError(t, sliceFacade.StateTransition(clk.Now(), slice3.SliceKey, model.SliceClosing, model.SliceUploading).Do(ctx).Err())
+		require.NoError(t, sliceFacade.StateTransition(slice3.SliceKey, clk.Now(), model.SliceClosing, model.SliceUploading).Do(ctx).Err())
 		clk.Add(time.Hour)
-		require.NoError(t, sliceFacade.StateTransition(clk.Now(), slice3.SliceKey, model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
+		require.NoError(t, sliceFacade.StateTransition(slice3.SliceKey, clk.Now(), model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
 	}
 
 	// Rotate (5) - AllocatedDiskSpace is calculated from the uploaded slice3 statistics

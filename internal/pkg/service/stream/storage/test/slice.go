@@ -25,9 +25,8 @@ import (
 
 // sliceRepository interface to prevent package import cycle.
 type sliceRepository interface {
-	Close(now time.Time, fileVolumeKey model.FileVolumeKey) *op.AtomicOp[op.NoResult]
 	Get(k model.SliceKey) op.WithResult[model.Slice]
-	StateTransition(now time.Time, sliceKey model.SliceKey, from, to model.SliceState) *op.AtomicOp[model.Slice]
+	StateTransition(sliceKey model.SliceKey, now time.Time, from, to model.SliceState) *op.AtomicOp[model.Slice]
 }
 
 func NewSliceKey() model.SliceKey {
@@ -92,11 +91,9 @@ func SwitchSliceStates(t *testing.T, ctx context.Context, clk *clock.Mock, slice
 		var slice model.Slice
 		var err error
 		if to == model.SliceClosing {
-			require.NoError(t, sliceRepo.Close(clk.Now(), sliceKey.FileVolumeKey).Do(ctx).Err())
-			slice, err = sliceRepo.Get(sliceKey).Do(ctx).ResultOrErr()
-			require.NoError(t, err)
+			require.Fail(t, "to switch slice to the SliceClosing state use: File Rotate/Close operations, or Slice Rotate operation")
 		} else {
-			slice, err = sliceRepo.StateTransition(clk.Now(), sliceKey, from, to).Do(ctx).ResultOrErr()
+			slice, err = sliceRepo.StateTransition(sliceKey, clk.Now(), from, to).Do(ctx).ResultOrErr()
 			require.NoError(t, err)
 		}
 

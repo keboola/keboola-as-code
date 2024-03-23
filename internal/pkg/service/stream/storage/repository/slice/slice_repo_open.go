@@ -12,12 +12,14 @@ import (
 )
 
 func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
-	var openedSlices []model.Slice
-	return op.Atomic(r.client, &openedSlices).
+	var newSlices []model.Slice
+	return op.Atomic(r.client, &newSlices).
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
 			saveCtx := plugin.NewSaveContext(now)
 			for _, volumeID := range file.Assignment.Volumes {
-				if err := r.openSlice(saveCtx, file, volumeID); err != nil {
+				if slice, err := r.openSlice(saveCtx, file, volumeID); err == nil {
+					newSlices = append(newSlices, slice)
+				} else {
 					return nil, err
 				}
 			}
@@ -25,10 +27,10 @@ func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.Atomic
 		})
 }
 
-func (r *Repository) openSlice(saveCtx *plugin.SaveContext, file model.File, volumeID volume.ID) error {
+func (r *Repository) openSlice(saveCtx *plugin.SaveContext, file model.File, volumeID volume.ID) (model.Slice, error) {
 	// File must be in the storage.FileWriting state, to open a new slice
 	if fileState := file.State; fileState != model.FileWriting {
-		return serviceError.NewBadRequestError(errors.Errorf(
+		return model.Slice{}, serviceError.NewBadRequestError(errors.Errorf(
 			`slice cannot be created: unexpected file "%s" state "%s", expected "%s"`,
 			file.FileKey.String(), fileState, model.FileWriting,
 		))
@@ -37,10 +39,10 @@ func (r *Repository) openSlice(saveCtx *plugin.SaveContext, file model.File, vol
 	// Create slice entity
 	newSlice, err := NewSlice(saveCtx.Now(), file, volumeID)
 	if err != nil {
-		return err
+		return model.Slice{}, err
 	}
 
 	// Save new file
 	r.save(saveCtx, nil, &newSlice)
-	return nil
+	return newSlice, nil
 }

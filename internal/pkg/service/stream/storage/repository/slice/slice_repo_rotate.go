@@ -17,12 +17,13 @@ import (
 func (r *Repository) Rotate(now time.Time, k model.FileVolumeKey) *op.AtomicOp[model.Slice] {
 	// Init atomic operation
 	var file model.File
+	var slices []model.Slice
 	var newSlice model.Slice
 	return op.Atomic(r.client, &newSlice).
 		// Load file
 		ReadOp(r.files.Get(k.FileKey).WithResultTo(&file)).
 		// Load slices
-
+		ReadOp(r.ListInState(k, model.SliceWriting).WithAllTo(&slices)).
 		// Close old slice, open a new one, if enabled
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
 			saveCtx := plugin.NewSaveContext(now)
@@ -33,7 +34,9 @@ func (r *Repository) Rotate(now time.Time, k model.FileVolumeKey) *op.AtomicOp[m
 			}
 
 			// Open new slice
-			if err := r.openSlice(saveCtx, file, k.VolumeID); err != nil {
+			if slice, err := r.openSlice(saveCtx, file, k.VolumeID); err == nil {
+				newSlice = slice
+			} else {
 				return nil, err
 			}
 
