@@ -21,7 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestBranchLimits_BranchesPerProject(t *testing.T) {
+func TestBranchRepository_Limits_BranchesPerProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -46,7 +46,7 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 		branch := test.NewBranch(key.BranchKey{ProjectID: branchKey.ProjectID, BranchID: keboola.BranchID(1000 + i)})
 		txn.Then(branchSchema.Active().ByKey(branch.BranchKey).Put(client, branch))
 
-		// Send the txn it is full, or after the last item
+		// Send the txn if it is full, or after the last item
 		ops++
 		if ops == 100 || i == branchrepo.MaxBranchesPerProject {
 			// Send

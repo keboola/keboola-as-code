@@ -3,6 +3,8 @@ package etcdhelper
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -66,6 +68,17 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 
 	// Compare expected and actual keys
 	return assert.Equal(t, expectedKeys, actualKeys)
+}
+
+// AssertKVsFromFile dumps all KVs from an etcd database and compares them with content of the file.
+// In the file, a wildcards can be used, see the wildcards package.
+func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...AssertOption) {
+	data, err := os.ReadFile(path)
+	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
+		expected := string(data)
+		AssertKVsString(t, client, expected, ops...)
+	}
+
 }
 
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
