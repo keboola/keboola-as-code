@@ -33,7 +33,7 @@ func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err er
 		fmt.Fprintf(w, "Template ID:          %s\n", instance.TemplateID)
 		fmt.Fprintf(w, "Instance ID:          %s\n", instance.InstanceID)
 		fmt.Fprintf(w, "RepositoryName:       %s\n", instance.RepositoryName)
-		fmt.Fprintf(w, "Version:              %s\n", instance.Version)
+		fmt.Fprintf(w, "GetVersion:              %s\n", instance.Version)
 		fmt.Fprintf(w, "Name:                 %s\n", instance.InstanceName)
 		fmt.Fprintln(w, "Created:")
 		fmt.Fprintf(w, "  Date:               %s\n", instance.Created.Date.Format(time.RFC3339))

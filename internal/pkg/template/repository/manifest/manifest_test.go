@@ -316,12 +316,12 @@ func TestManifest_GetVersion(t *testing.T) {
 	record.AddVersion(version("1.2.3"), []string{})
 	m.Persist(record)
 
-	// Version found
+	// GetVersion found
 	_, v, err := m.GetVersion("foo", "v1")
 	assert.NoError(t, err)
 	assert.Equal(t, version("1.2.3"), v.Version)
 
-	// Version not found
+	// GetVersion not found
 	_, _, err = m.GetVersion("foo", "v2")
 	assert.Error(t, err)
 	assert.Equal(t, `template "foo" found but version "v2" is missing`, err.Error())

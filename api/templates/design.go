@@ -532,7 +532,7 @@ func TemplateNotFoundError() {
 }
 
 func VersionNotFoundError() {
-	GenericError(StatusNotFound, "templates.versionNotFound", "Version not found error.", `Version "v1.2.3" not found.`)
+	GenericError(StatusNotFound, "templates.versionNotFound", "GetVersion not found error.", `GetVersion "v1.2.3" not found.`)
 }
 
 func BranchNotFoundError() {
@@ -812,7 +812,7 @@ var Template = Type("Template", func() {
 	Required("id", "name", "deprecated", "author", "description", "defaultVersion", "categories", "components", "versions")
 })
 
-var TemplateVersion = Type("Version", func() {
+var TemplateVersion = Type("GetVersion", func() {
 	Description("Template version.")
 	Attribute("version", String, "Semantic version.", func() {
 		MinLength(1)

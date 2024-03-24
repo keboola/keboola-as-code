@@ -33,7 +33,7 @@ func Run(ctx context.Context, repo *repository.Repository, d dependencies) (err 
 		fmt.Fprintln(w)
 
 		for _, v := range tmpl.AllVersions() {
-			fmt.Fprintf(w, "  Version:            %s\n", v.Version.String())
+			fmt.Fprintf(w, "  GetVersion:            %s\n", v.Version.String())
 			fmt.Fprintf(w, "  Stable:             %t\n", v.Stable)
 			fmt.Fprintf(w, "  Description:        %s\n", v.Description)
 			fmt.Fprintln(w)

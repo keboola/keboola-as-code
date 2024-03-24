@@ -24,7 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestSourceLimits_SourcesPerBranch(t *testing.T) {
+func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -124,7 +124,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 		}
 	}
 	// Check that the maximum count is reached
-	sources, err := sourceRepo.Versions(sourceKey).Do(ctx).AllKVs()
+	sources, err := sourceRepo.ListVersions(sourceKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
 	assert.Len(t, sources, sourcerepo.MaxSourceVersionsPerSource)
 

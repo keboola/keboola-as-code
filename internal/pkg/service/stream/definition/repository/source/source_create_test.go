@@ -1,4 +1,4 @@
-package branch_test
+package source_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestBranchRepository_Create(t *testing.T) {
+func TestSourceRepository_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -24,35 +24,50 @@ func TestBranchRepository_Create(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
-	repo := d.DefinitionRepository().Branch()
+	repo := d.DefinitionRepository().Source()
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)")
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+
+	// Create - parent branch not found
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		source := test.NewSource(sourceKey)
+		if err := repo.Create(&source, now, "Create source").Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `branch "567" not found in the project`, err.Error())
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+		}
+	}
 
 	// Create - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		result, err := repo.Create(&branch, now).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, branch, result)
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_001.txt")
+		source := test.NewSource(sourceKey)
+		result, err := repo.Create(&source, now, "Create source").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, source, result)
+
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(branchKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
 	}
 
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch := test.NewBranch(branchKey)
-		if err := repo.Create(&branch, now).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "567" already exists in the project`, err.Error())
+		source := test.NewSource(sourceKey)
+		if err := repo.Create(&source, now, "Create source").Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `source "my-source" already exists in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
@@ -60,23 +75,22 @@ func TestBranchRepository_Create(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(branchKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
 	}
 
 	// Create - ok, undeleted
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch := test.NewBranch(branchKey)
-		result, err := repo.Create(&branch, now.Add(time.Hour)).Do(ctx).ResultOrErr()
+		source := test.NewSource(sourceKey)
+		result, err := repo.Create(&source, now.Add(time.Hour), "Create source").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, branch, result)
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_002.txt")
+		assert.Equal(t, source, result)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(branchKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
 	}
-
 }

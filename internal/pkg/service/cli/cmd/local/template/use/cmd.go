@@ -107,7 +107,7 @@ func parseTemplateArg(args []string) (repository string, template string, versio
 	repository = parts[0]
 	template = parts[1]
 
-	// Version is optional, if it is missing, then default version will be used
+	// GetVersion is optional, if it is missing, then default version will be used
 	if len(parts) > 2 {
 		version = parts[2]
 	}

@@ -13,7 +13,7 @@ func TestVersion(t *testing.T) {
 	assert.Regexp(
 		t,
 		`^`+
-			`Version:.*\n`+
+			`GetVersion:.*\n`+
 			`Git commit:.*\n`+
 			`Build date:.*\n`+
 			`Go version:\s+`+regexp.QuoteMeta(runtime.Version())+`\n`+

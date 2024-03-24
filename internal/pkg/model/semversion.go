@@ -11,7 +11,7 @@ import (
 
 type value = semver.Version
 
-// SemVersion is wrapper around semver.Version - for better error message in UnmarshalJSON.
+// SemVersion is wrapper around semver.GetVersion - for better error message in UnmarshalJSON.
 type SemVersion struct {
 	*value
 }

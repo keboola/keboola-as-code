@@ -1,4 +1,4 @@
-package branch_test
+package source_test
 
 import (
 	"context"
@@ -13,10 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
-	"time"
 )
 
-func TestBranchRepository_Create(t *testing.T) {
+func TestSourceRepository_SoftDelete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -24,59 +23,58 @@ func TestBranchRepository_Create(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
-	repo := d.DefinitionRepository().Branch()
+	repo := d.DefinitionRepository().Source()
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)")
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+
+	// SoftDelete - not found
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		if err := repo.SoftDelete(sourceKey, now).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+		}
+	}
 
 	// Create - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		result, err := repo.Create(&branch, now).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, branch, result)
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_001.txt")
+		source := test.NewSource(sourceKey)
+		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
 	}
 
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(branchKey).Do(ctx).Err())
-	}
-
-	// Create - already exists
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		branch := test.NewBranch(branchKey)
-		if err := repo.Create(&branch, now).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "567" already exists in the project`, err.Error())
-			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
-		}
+		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
 	}
 
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(branchKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_delete_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
-	// Create - ok, undeleted
+	// Get - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch := test.NewBranch(branchKey)
-		result, err := repo.Create(&branch, now.Add(time.Hour)).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, branch, result)
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_002.txt")
+		err := repo.Get(sourceKey).Do(ctx).Err()
+		if assert.Error(t, err) {
+			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
+		}
 	}
 
-	// Get - ok
+	// GetDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(branchKey).Do(ctx).Err())
+		assert.NoError(t, repo.GetDeleted(sourceKey).Do(ctx).Err())
 	}
-
 }

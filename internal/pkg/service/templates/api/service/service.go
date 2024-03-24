@@ -627,7 +627,7 @@ func getTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope,
 		if errors.As(err, &manifest.VersionNotFoundError{}) {
 			return nil, nil, &GenericError{
 				Name:    "templates.versionNotFound",
-				Message: fmt.Sprintf(`Version "%s" not found.`, versionStr),
+				Message: fmt.Sprintf(`GetVersion "%s" not found.`, versionStr),
 			}
 		}
 		return nil, nil, err

@@ -538,11 +538,11 @@ var ServiceDetail = Type("ServiceDetail", func() {
 
 // Versioned trait ----------------------------------------------------------------------------------------------------
 
-var EntityVersion = Type("Version", func() {
-	Description("Version of the entity.")
+var EntityVersion = Type("GetVersion", func() {
+	Description("GetVersion of the entity.")
 	Attribute("number", Int, func() {
 		Meta("struct:field:type", "definition.VersionNumber", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
-		Description("Version number counted from 1.")
+		Description("GetVersion number counted from 1.")
 		Minimum(1)
 		Example(3)
 	})

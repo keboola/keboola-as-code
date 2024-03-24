@@ -131,7 +131,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	root.SetErr(stderr)
 
 	// Setup templates
-	root.SetVersionTemplate("{{.Version}}")
+	root.SetVersionTemplate("{{.GetVersion}}")
 	root.SetUsageTemplate(helpmsg.Read(`usage`) + "\n")
 
 	// Persistent flags for all sub-commands
@@ -194,9 +194,9 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		// Check version
 		if err := versionCheck.Run(cmd.Context(), root.globalFlags.VersionCheck.Value, p.BaseScope()); err != nil {
 			// Ignore error, send to logs
-			root.logger.Debugf(cmd.Context(), `Version check: %s.`, err.Error())
+			root.logger.Debugf(cmd.Context(), `GetVersion check: %s.`, err.Error())
 		} else {
-			root.logger.Debug(cmd.Context(), `Version check: successful.`)
+			root.logger.Debug(cmd.Context(), `GetVersion check: successful.`)
 		}
 
 		return nil

@@ -221,7 +221,7 @@ func TestRepository_Sink(t *testing.T) {
 		}
 	}
 
-	// Version - found
+	// GetVersion - found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		sink, err := sinkRepo.Version(sinkKey1, 1).Do(ctx).ResultOrErr()
@@ -232,7 +232,7 @@ func TestRepository_Sink(t *testing.T) {
 		assert.Equal(t, "Modified Name", sink.Name)
 	}
 
-	// Version - not found
+	// GetVersion - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		if err := sinkRepo.Version(sinkKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
@@ -268,7 +268,7 @@ func TestRepository_Sink(t *testing.T) {
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 	}
 	{
-		// Version - found
+		// GetVersion - found
 		result, err := sinkRepo.Version(sinkKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "My Sink 1", result.Name)

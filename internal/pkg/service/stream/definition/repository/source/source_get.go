@@ -7,14 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] {
-	return r.schema.
-		Active().ByKey(k).Exists(r.client).
-		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
-		})
-}
-
 func (r *Repository) Get(k key.SourceKey) op.WithResult[definition.Source] {
 	return r.schema.
 		Active().ByKey(k).Get(r.client).

@@ -151,7 +151,7 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// Versions
-		versions, err := sourceRepo.Versions(sourceKey1).Do(ctx).AllKVs()
+		versions, err := sourceRepo.ListVersions(sourceKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, versions, 1)
 	}
@@ -210,21 +210,21 @@ func TestRepository_Source(t *testing.T) {
 		}
 	}
 
-	// Version - found
+	// GetVersion - found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		source, err := sourceRepo.Version(sourceKey1, 1).Do(ctx).ResultOrErr()
+		source, err := sourceRepo.GetVersion(sourceKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "My Source 1", source.Name)
-		source, err = sourceRepo.Version(sourceKey1, 2).Do(ctx).ResultOrErr()
+		source, err = sourceRepo.GetVersion(sourceKey1, 2).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "Modified Name", source.Name)
 	}
 
-	// Version - not found
+	// GetVersion - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := sourceRepo.Version(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sourceRepo.GetVersion(sourceKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source version "my-source-1/0000000010" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -267,8 +267,8 @@ func TestRepository_Source(t *testing.T) {
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 	}
 	{
-		// Version - found
-		result, err := sourceRepo.Version(sourceKey1, 1).Do(ctx).ResultOrErr()
+		// GetVersion - found
+		result, err := sourceRepo.GetVersion(sourceKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "My Source 1", result.Name)
 		assert.Equal(t, definition.VersionNumber(1), result.VersionNumber())
@@ -370,7 +370,7 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// Versions
-		versions, err := sourceRepo.Versions(sourceKey1).Do(ctx).AllKVs()
+		versions, err := sourceRepo.ListVersions(sourceKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, versions, 5)
 	}
@@ -379,7 +379,7 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, sourceRepo.Rollback(sourceKey1, clk.Now(), 2).Do(ctx).Err())
+		assert.NoError(t, sourceRepo.RollbackVersion(sourceKey1, clk.Now(), 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
@@ -392,13 +392,13 @@ func TestRepository_Source(t *testing.T) {
 
 	// Rollback version - object not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sourceRepo.Rollback(nonExistentSourceKey, clk.Now(), 1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.RollbackVersion(nonExistentSourceKey, clk.Now(), 1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source "non-existent" not found in the branch`, err.Error())
 	}
 
 	// Rollback version - version not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sourceRepo.Rollback(sourceKey1, clk.Now(), 10).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.RollbackVersion(sourceKey1, clk.Now(), 10).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `source version "my-source-1/0000000010" not found in the branch`, err.Error())
 	}
 

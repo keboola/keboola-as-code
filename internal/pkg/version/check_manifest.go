@@ -47,7 +47,7 @@ Warning: Your project needs to be migrated to the new version of the Keboola CLI
 		`
 		logger.Warn(ctx, strings.TrimLeft(warning, "\n"))
 	} else {
-		logger.Debugf(ctx, `Version "%d" in "%s" is up to date.`, version, manifestPath)
+		logger.Debugf(ctx, `GetVersion "%d" in "%s" is up to date.`, version, manifestPath)
 	}
 
 	return nil

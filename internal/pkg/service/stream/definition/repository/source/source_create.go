@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+// Create a new Source.
+// - If there is a deleted Source with the same key, the Undelete operation is performed.
+// - If the Source already exists, the ResourceAlreadyExistsError is returned.
+// - If the MaxSourcesPerBranch limit is exceeded, the CountLimitReachedError is returned.
+// - If the MaxSourceVersionsPerSource limit is exceeded, the CountLimitReachedError is returned.
 func (r *Repository) Create(input *definition.Source, now time.Time, versionDescription string) *op.AtomicOp[definition.Source] {
 	k := input.SourceKey
 	var created definition.Source

@@ -15,7 +15,7 @@
 //   - Zero or more parameters (or options).
 //
 // Example operations:
-//   - Version check: [src/github.com/keboola/keboola-as-code/pkg/lib/operation/version/check/operation.go]
+//   - GetVersion check: [src/github.com/keboola/keboola-as-code/pkg/lib/operation/version/check/operation.go]
 //   - Status: [src/github.com/keboola/keboola-as-code/pkg/lib/operation/status/operation.go]
 //
 // Operations are easily composable and testable because:

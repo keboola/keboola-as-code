@@ -578,7 +578,7 @@ func instanceDetails(ctx context.Context, d dependencies.ProjectRequestScope, in
 		return nil, nil
 	}
 
-	// Version info
+	// GetVersion info
 	versionResponse := VersionDetailResponse(d, versionRecord, tmpl)
 
 	return tmplResponse, versionResponse

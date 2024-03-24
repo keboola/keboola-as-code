@@ -25,17 +25,17 @@ func TestTemplateRecord_DefaultVersion_Found(t *testing.T) {
 			{
 				Version:     version(`0.0.1`),
 				Stable:      false,
-				Description: `Version 0`,
+				Description: `GetVersion 0`,
 			},
 			{
 				Version:     version(`1.2.3`),
 				Stable:      true,
-				Description: `Version 1`,
+				Description: `GetVersion 1`,
 			},
 			{
 				Version:     version(`0.1.0`),
 				Stable:      false,
-				Description: `Version 0.1`,
+				Description: `GetVersion 0.1`,
 			},
 		},
 	}
@@ -45,7 +45,7 @@ func TestTemplateRecord_DefaultVersion_Found(t *testing.T) {
 	assert.Equal(t, VersionRecord{
 		Version:     version(`1.2.3`),
 		Stable:      true,
-		Description: `Version 1`,
+		Description: `GetVersion 1`,
 	}, v)
 }
 
@@ -56,7 +56,7 @@ func TestTemplateRecord_DefaultVersion_Found_Minimal(t *testing.T) {
 			{
 				Version:     version(`0.0.1`),
 				Stable:      false,
-				Description: `Version 0`,
+				Description: `GetVersion 0`,
 			},
 		},
 	}
@@ -66,7 +66,7 @@ func TestTemplateRecord_DefaultVersion_Found_Minimal(t *testing.T) {
 	assert.Equal(t, VersionRecord{
 		Version:     version(`0.0.1`),
 		Stable:      false,
-		Description: `Version 0`,
+		Description: `GetVersion 0`,
 	}, v)
 }
 

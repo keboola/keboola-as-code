@@ -36,7 +36,7 @@ func Run(ctx context.Context, tmpl *template.Template, d dependencies) (err erro
 	}
 
 	v := tmpl.VersionRecord()
-	fmt.Fprintf(w, "Version:              %s\n", v.Version.String())
+	fmt.Fprintf(w, "GetVersion:              %s\n", v.Version.String())
 	fmt.Fprintf(w, "Stable:               %t\n", v.Stable)
 	fmt.Fprintf(w, "Description:          %s\n", v.Description)
 	if len(v.Components) > 0 {

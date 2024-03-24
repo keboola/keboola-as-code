@@ -664,7 +664,7 @@ type HTTPSourceResponseBody struct {
 
 // VersionResponseBody is used to define fields on response body types.
 type VersionResponseBody struct {
-	// Version number counted from 1.
+	// GetVersion number counted from 1.
 	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
 	// Hash of the entity state.
 	Hash string `form:"hash" json:"hash" xml:"hash"`
