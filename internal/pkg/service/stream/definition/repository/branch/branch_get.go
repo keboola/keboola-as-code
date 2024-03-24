@@ -9,11 +9,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) ExistsOrErr(k key.BranchKey) op.WithResult[bool] {
+func (r *Repository) Get(k key.BranchKey) op.WithResult[definition.Branch] {
 	return r.schema.
-		Active().ByKey(k).Exists(r.client).
+		Active().ByKey(k).Get(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
+		})
+}
+
+func (r *Repository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch] {
+	return r.schema.
+		Deleted().ByKey(k).Get(r.client).
+		WithEmptyResultAsError(func() error {
+			return serviceError.NewResourceNotFoundError("deleted branch", k.BranchID.String(), "project")
 		})
 }
 
@@ -33,21 +41,5 @@ func (r *Repository) GetDefault(k keboola.ProjectID) *op.TxnOp[definition.Branch
 			if !found {
 				r.AddErr(serviceError.NewResourceNotFoundError("branch", "default", "project"))
 			}
-		})
-}
-
-func (r *Repository) Get(k key.BranchKey) op.WithResult[definition.Branch] {
-	return r.schema.
-		Active().ByKey(k).Get(r.client).
-		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
-		})
-}
-
-func (r *Repository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch] {
-	return r.schema.
-		Deleted().ByKey(k).Get(r.client).
-		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("deleted branch", k.BranchID.String(), "project")
 		})
 }
