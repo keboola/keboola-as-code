@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -25,6 +27,8 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	ProjectBackends() []string
+	ProjectFeatures() keboola.FeaturesMap
 }
 
 func LoadStateOptions(force bool) loadState.Options {
