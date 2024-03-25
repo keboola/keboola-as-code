@@ -24,7 +24,7 @@ type Client struct {
 
 func NewClient() (*Client, error) {
 	// Dialer
-	dialer := newDialer()
+	dialer := NewDialer()
 
 	// DNS client
 	client := &dns.Client{

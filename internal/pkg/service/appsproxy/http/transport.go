@@ -1,4 +1,4 @@
-package dns
+package http
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"golang.org/x/net/http2"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dns"
 )
 
 // TLSHandshakeTimeout specifies the default timeout of TLS handshake.
@@ -33,7 +35,7 @@ const HTTP2WriteByteTimeout = 15 * time.Second
 // NewDNSSkippingHTTPTransport creates an HTTP transport which can skip DNS resolution if the address is already within request context.
 // Timeouts are optimized for our usage in reverse proxy.
 func NewDNSSkippingHTTPTransport(addressCtxKey any) (*http.Transport, error) {
-	dialer := newDialer()
+	dialer := dns.NewDialer()
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
