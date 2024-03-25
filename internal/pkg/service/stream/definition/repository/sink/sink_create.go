@@ -14,7 +14,6 @@ func (r *Repository) Create(input *definition.Sink, now time.Time, versionDescri
 	k := input.SinkKey
 	var created definition.Sink
 	var deleted *op.KeyValueT[definition.Sink]
-
 	atomicOp := op.Atomic(r.client, &created).
 		// Check prerequisites
 		ReadOp(r.sources.ExistsOrErr(k.SourceKey)).

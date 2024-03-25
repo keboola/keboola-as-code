@@ -131,7 +131,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 		}
 	}
 	// Check that the maximum count is reached
-	sinks, err := sinkRepo.Versions(sinkKey).Do(ctx).AllKVs()
+	sinks, err := sinkRepo.ListVersions(sinkKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
 	assert.Len(t, sinks, sourcerepo.MaxSourceVersionsPerSource)
 

@@ -1,4 +1,4 @@
-package source_test
+package sink_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"testing"
 )
 
-func TestSourceRepository_SoftDelete(t *testing.T) {
+func TestSinkRepository_SoftDelete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -24,19 +24,20 @@ func TestSourceRepository_SoftDelete(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
-	repo := d.DefinitionRepository().Source()
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)")
+	repo := d.DefinitionRepository().Sink()
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)")
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := repo.SoftDelete(sourceKey, now).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
+		if err := repo.SoftDelete(sinkKey, now).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `sink "my-sink" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -48,39 +49,42 @@ func TestSourceRepository_SoftDelete(t *testing.T) {
 		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+
+		sink := test.NewSink(sinkKey)
+		require.NoError(t, repo.Create(&sink, now, "Create sink").Do(ctx).Err())
 	}
 
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sinkKey).Do(ctx).Err())
 	}
 
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_delete_test_snapshot_001.txt", ignoredEtcdKeys)
+		assert.NoError(t, repo.SoftDelete(sinkKey, now).Do(ctx).Err())
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := repo.Get(sourceKey).Do(ctx).Err()
+		err := repo.Get(sinkKey).Do(ctx).Err()
 		if assert.Error(t, err) {
-			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
+			assert.Equal(t, `sink "my-sink" not found in the branch`, err.Error())
 		}
 	}
 
 	// GetDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.GetDeleted(sourceKey).Do(ctx).Err())
+		assert.NoError(t, repo.GetDeleted(sinkKey).Do(ctx).Err())
 	}
 }
 
-func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
+func TestSinkRepository_DeleteSinksOnSourceDelete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -88,15 +92,16 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
-	repo := d.DefinitionRepository().Source()
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)")
+	repo := d.DefinitionRepository().Sink()
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/sink/version)")
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
-	sourceKey1 := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-1"}
-	sourceKey2 := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-2"}
-	sourceKey3 := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-3"}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	sinkKey3 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 
 	// Create Branch
 	// -----------------------------------------------------------------------------------------------------------------
@@ -105,47 +110,47 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
 	}
 
-	// Create sources
+	// Create sinks
 	// -----------------------------------------------------------------------------------------------------------------
-	var source1, source2, source3 definition.Source
+	var sink1, sink2, sink3 definition.Sink
 	{
-		source1 = test.NewSource(sourceKey1)
-		require.NoError(t, repo.Create(&source1, now, "Create source").Do(ctx).Err())
-		source2 = test.NewSource(sourceKey2)
-		require.NoError(t, repo.Create(&source2, now, "Create source").Do(ctx).Err())
-		source3 = test.NewSource(sourceKey3)
-		require.NoError(t, repo.Create(&source3, now, "Create source").Do(ctx).Err())
+		sink1 = test.NewSink(sinkKey1)
+		require.NoError(t, repo.Create(&sink1, now, "Create sink").Do(ctx).Err())
+		sink2 = test.NewSink(sinkKey2)
+		require.NoError(t, repo.Create(&sink2, now, "Create sink").Do(ctx).Err())
+		sink3 = test.NewSink(sinkKey3)
+		require.NoError(t, repo.Create(&sink3, now, "Create sink").Do(ctx).Err())
 	}
 
-	// Delete Source1
+	// Delete Sink1
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		var err error
-		source1, err = repo.SoftDelete(sourceKey1, now).Do(ctx).ResultOrErr()
+		sink1, err = repo.SoftDelete(sinkKey1, now).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source1.Deleted)
-		assert.Equal(t, now, source1.DeletedAt.Time())
+		assert.True(t, sink1.Deleted)
+		assert.Equal(t, now, sink1.DeletedAt.Time())
 	}
 
-	// Delete Branch
+	// Delete Source
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_delete_test_snapshot_002.txt", ignoredEtcdKeys)
+		require.NoError(t, d.DefinitionRepository().Source().SoftDelete(sourceKey, now).Do(ctx).Err())
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_002.txt", ignoredEtcdKeys)
 	}
 	{
 		var err error
-		source1, err = repo.GetDeleted(sourceKey1).Do(ctx).ResultOrErr()
+		sink1, err = repo.GetDeleted(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source1.Deleted)
-		assert.False(t, source1.DeletedWithParent) // Source1 has been deleted before the Branch deletion.
-		source2, err = repo.GetDeleted(sourceKey2).Do(ctx).ResultOrErr()
+		assert.True(t, sink1.Deleted)
+		assert.False(t, sink1.DeletedWithParent) // Sink1 has been deleted before the Source deletion.
+		sink2, err = repo.GetDeleted(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source2.Deleted)
-		assert.True(t, source2.DeletedWithParent)
-		source3, err = repo.GetDeleted(sourceKey3).Do(ctx).ResultOrErr()
+		assert.True(t, sink2.Deleted)
+		assert.True(t, sink2.DeletedWithParent)
+		sink3, err = repo.GetDeleted(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source3.Deleted)
-		assert.True(t, source3.DeletedWithParent)
+		assert.True(t, sink3.Deleted)
+		assert.True(t, sink3.DeletedWithParent)
 	}
 }

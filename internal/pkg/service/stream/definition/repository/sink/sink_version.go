@@ -13,15 +13,15 @@ import (
 	"time"
 )
 
-// Versions fetches all versions records for the object.
+// ListVersions fetches all versions records for the object.
 // The method can be used also for deleted objects.
-func (r *Repository) Versions(k key.SinkKey) iterator.DefinitionT[definition.Sink] {
+func (r *Repository) ListVersions(k key.SinkKey) iterator.DefinitionT[definition.Sink] {
 	return r.schema.Versions().Of(k).GetAll(r.client)
 }
 
-// Version fetch entity version.
+// GetVersion fetch entity version.
 // The method can be used also for deleted objects.
-func (r *Repository) Version(k key.SinkKey, version definition.VersionNumber) op.WithResult[definition.Sink] {
+func (r *Repository) GetVersion(k key.SinkKey, version definition.VersionNumber) op.WithResult[definition.Sink] {
 	return r.schema.
 		Versions().Of(k).Version(version).Get(r.client).
 		WithEmptyResultAsError(func() error {
@@ -29,8 +29,7 @@ func (r *Repository) Version(k key.SinkKey, version definition.VersionNumber) op
 		})
 }
 
-//nolint:dupl // similar code is in the SourceRepository
-func (r *Repository) Rollback(k key.SinkKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Sink] {
+func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Sink] {
 	var updated definition.Sink
 	var latestVersion, targetVersion *op.KeyValueT[definition.Sink]
 	return op.Atomic(r.client, &updated).

@@ -164,7 +164,7 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// Versions
-		versions, err := sinkRepo.Versions(sinkKey1).Do(ctx).AllKVs()
+		versions, err := sinkRepo.ListVersions(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, versions, 1)
 	}
@@ -224,10 +224,10 @@ func TestRepository_Sink(t *testing.T) {
 	// GetVersion - found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink, err := sinkRepo.Version(sinkKey1, 1).Do(ctx).ResultOrErr()
+		sink, err := sinkRepo.GetVersion(sinkKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "My Sink 1", sink.Name)
-		sink, err = sinkRepo.Version(sinkKey1, 2).Do(ctx).ResultOrErr()
+		sink, err = sinkRepo.GetVersion(sinkKey1, 2).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "Modified Name", sink.Name)
 	}
@@ -235,7 +235,7 @@ func TestRepository_Sink(t *testing.T) {
 	// GetVersion - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := sinkRepo.Version(sinkKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sinkRepo.GetVersion(sinkKey1, 10).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink version "my-sink-1/0000000010" not found in the source`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -269,7 +269,7 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// GetVersion - found
-		result, err := sinkRepo.Version(sinkKey1, 1).Do(ctx).ResultOrErr()
+		result, err := sinkRepo.GetVersion(sinkKey1, 1).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, "My Sink 1", result.Name)
 		assert.Equal(t, definition.VersionNumber(1), result.VersionNumber())
@@ -377,7 +377,7 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// Versions
-		versions, err := sinkRepo.Versions(sinkKey1).Do(ctx).AllKVs()
+		versions, err := sinkRepo.ListVersions(sinkKey1).Do(ctx).AllKVs()
 		assert.NoError(t, err)
 		assert.Len(t, versions, 5)
 	}
@@ -386,7 +386,7 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, sinkRepo.Rollback(sinkKey1, clk.Now(), 2).Do(ctx).Err())
+		assert.NoError(t, sinkRepo.RollbackVersion(sinkKey1, clk.Now(), 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
@@ -399,13 +399,13 @@ func TestRepository_Sink(t *testing.T) {
 
 	// Rollback version - object not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sinkRepo.Rollback(nonExistentSinkKey, clk.Now(), 1).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.RollbackVersion(nonExistentSinkKey, clk.Now(), 1).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink "non-existent" not found in the source`, err.Error())
 	}
 
 	// Rollback version - version not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := sinkRepo.Rollback(sinkKey1, clk.Now(), 10).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.RollbackVersion(sinkKey1, clk.Now(), 10).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `sink version "my-sink-1/0000000010" not found in the source`, err.Error())
 	}
 

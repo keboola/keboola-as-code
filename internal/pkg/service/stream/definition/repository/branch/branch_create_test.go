@@ -70,6 +70,7 @@ func TestBranchRepository_Create(t *testing.T) {
 		result, err := repo.Create(&branch, now.Add(time.Hour)).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch, result)
+
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_002.txt")
 	}
 

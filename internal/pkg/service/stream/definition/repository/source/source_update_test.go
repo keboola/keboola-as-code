@@ -74,6 +74,14 @@ func TestSourceRepository_Update(t *testing.T) {
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_update_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
+	// Get - ok
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		result, err := repo.Get(sourceKey).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, source, result)
+	}
+
 	// Update - error from the update function
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -86,14 +94,6 @@ func TestSourceRepository_Update(t *testing.T) {
 		if assert.Error(t, err) {
 			assert.Equal(t, "some error", err.Error())
 		}
-	}
-
-	// Get - ok
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		result, err := repo.Get(sourceKey).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, source, result)
 	}
 
 	// Update - "Disabled" field cannot be modified by the Update operation

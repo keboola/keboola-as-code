@@ -1,4 +1,4 @@
-package source_test
+package sink_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestSourceRepository_Create(t *testing.T) {
+func TestSinkRepository_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -24,20 +24,21 @@ func TestSourceRepository_Create(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
-	repo := d.DefinitionRepository().Source()
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)")
+	repo := d.DefinitionRepository().Sink()
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)")
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
-	// Create - parent branch not found
+	// Create - parent source not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		source := test.NewSource(sourceKey)
-		if err := repo.Create(&source, now, "Create source").Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "567" not found in the project`, err.Error())
+		sink := test.NewSink(sinkKey)
+		if err := repo.Create(&sink, now, "Create sink").Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 	}
@@ -49,26 +50,29 @@ func TestSourceRepository_Create(t *testing.T) {
 		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		result, err := repo.Create(&source, now, "Create source").Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, source, result)
-		assert.Equal(t, now, source.VersionModifiedAt().Time())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_001.txt", ignoredEtcdKeys)
+		sink := test.NewSink(sinkKey)
+		result, err := repo.Create(&sink, now, "Create sink").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, sink, result)
+		assert.Equal(t, now, sink.VersionModifiedAt().Time())
+
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_create_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sinkKey).Do(ctx).Err())
 	}
 
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		source := test.NewSource(sourceKey)
-		if err := repo.Create(&source, now, "Create source").Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `source "my-source" already exists in the branch`, err.Error())
+		sink := test.NewSink(sinkKey)
+		if err := repo.Create(&sink, now, "Create sink").Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `sink "my-sink" already exists in the source`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
 	}
@@ -76,22 +80,22 @@ func TestSourceRepository_Create(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(sinkKey, now).Do(ctx).Err())
 	}
 
 	// Create - ok, undeleted
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		source := test.NewSource(sourceKey)
-		result, err := repo.Create(&source, now.Add(time.Hour), "Create source").Do(ctx).ResultOrErr()
+		sink := test.NewSink(sinkKey)
+		result, err := repo.Create(&sink, now.Add(time.Hour), "Create sink").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, source, result)
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_002.txt", ignoredEtcdKeys)
+		assert.Equal(t, sink, result)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_create_test_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sinkKey).Do(ctx).Err())
 	}
 }
