@@ -1,0 +1,677 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>schema: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema/source_schema.go (100.0%)</option>
+				
+				<option value="file1">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_create.go (100.0%)</option>
+				
+				<option value="file2">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_delete.go (100.0%)</option>
+				
+				<option value="file3">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_exists.go (100.0%)</option>
+				
+				<option value="file4">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_get.go (100.0%)</option>
+				
+				<option value="file5">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_limits.go (100.0%)</option>
+				
+				<option value="file6">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_list.go (100.0%)</option>
+				
+				<option value="file7">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_repo.go (100.0%)</option>
+				
+				<option value="file8">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_undelete.go (100.0%)</option>
+				
+				<option value="file9">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_update.go (92.9%)</option>
+				
+				<option value="file10">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/source_version.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package schema
+
+import (
+        "github.com/keboola/go-client/pkg/keboola"
+
+        . "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        . "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+        "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+type (
+        Source           struct{ PrefixT[definition.Source] }
+        SourceInState    Source
+        SourceVersions   Source
+        SourceVersionsOf Source
+)
+
+func ForSource(s *serde.Serde) Source <span class="cov8" title="1">{
+        return Source{PrefixT: NewTypedPrefix[definition.Source]("definition/source", s)}
+}</span>
+
+// Active prefix contains all not deleted objects.
+func (v Source) Active() SourceInState <span class="cov8" title="1">{
+        return SourceInState{PrefixT: v.PrefixT.Add("active")}
+}</span>
+
+// Deleted prefix contains all deleted objects whose parent existed on deleted.
+func (v Source) Deleted() SourceInState <span class="cov8" title="1">{
+        return SourceInState{PrefixT: v.PrefixT.Add("deleted")}
+}</span>
+
+// Versions prefix contains full history of the object.
+func (v Source) Versions() SourceVersions <span class="cov8" title="1">{
+        return SourceVersions{PrefixT: v.PrefixT.Add("version")}
+}</span>
+
+func (v SourceInState) In(objectKey any) PrefixT[definition.Source] <span class="cov8" title="1">{
+        switch k := objectKey.(type) </span>{
+        case keboola.ProjectID:<span class="cov8" title="1">
+                return v.InProject(k)</span>
+        case BranchKey:<span class="cov8" title="1">
+                return v.InBranch(k)</span>
+        default:<span class="cov8" title="1">
+                panic(errors.Errorf(`unexpected Source parent key type "%T"`, objectKey))</span>
+        }
+}
+
+func (v SourceInState) InProject(k keboola.ProjectID) PrefixT[definition.Source] <span class="cov8" title="1">{
+        return v.PrefixT.Add(k.String())
+}</span>
+
+func (v SourceInState) InBranch(k BranchKey) PrefixT[definition.Source] <span class="cov8" title="1">{
+        return v.PrefixT.Add(k.String())
+}</span>
+
+func (v SourceInState) ByKey(k SourceKey) KeyT[definition.Source] <span class="cov8" title="1">{
+        return v.PrefixT.Key(k.String())
+}</span>
+
+func (v SourceVersions) Of(k SourceKey) SourceVersionsOf <span class="cov8" title="1">{
+        return SourceVersionsOf{PrefixT: v.PrefixT.Add(k.String())}
+}</span>
+
+func (v SourceVersionsOf) Version(version definition.VersionNumber) KeyT[definition.Source] <span class="cov8" title="1">{
+        return v.PrefixT.Key(version.String())
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package source
+
+import (
+        "context"
+        "github.com/keboola/go-utils/pkg/deepcopy"
+        serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "time"
+)
+
+// Create a new Source.
+// - If there is a deleted Source with the same key, the Undelete operation is performed.
+// - If the Source already exists, the ResourceAlreadyExistsError is returned.
+// - If the MaxSourcesPerBranch limit is exceeded, the CountLimitReachedError is returned.
+// - If the MaxSourceVersionsPerSource limit is exceeded, the CountLimitReachedError is returned.
+func (r *Repository) Create(input *definition.Source, now time.Time, versionDescription string) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+        k := input.SourceKey
+        var created definition.Source
+        var deleted *op.KeyValueT[definition.Source]
+        return op.Atomic(r.client, &amp;created).
+                // Check prerequisites
+                ReadOp(r.branches.ExistsOrErr(k.BranchKey)).
+                ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
+                // Entity must not exist
+                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                        return serviceError.NewResourceAlreadyExistsError("source", k.SourceID.String(), "branch")
+                }</span>)).
+                // Get deleted entity, if any, to undelete it.
+                ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&amp;deleted)).
+                // Create
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                        // Create or undelete
+                        created = deepcopy.Copy(*input).(definition.Source)
+                        if deleted != nil </span><span class="cov8" title="1">{
+                                created.Version = deleted.Value.Version
+                                created.SoftDeletable = deleted.Value.SoftDeletable
+                                created.Undelete(now)
+                        }</span>
+
+                        // Save
+                        <span class="cov8" title="1">created.IncrementVersion(created, now, versionDescription)
+                        return r.saveOne(ctx, now, nil, &amp;created)</span>
+                }).
+                // Update the input entity after a successful operation
+                OnResult(func(result definition.Source) <span class="cov8" title="1">{
+                        *input = result
+                }</span>)
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package source
+
+import (
+        "context"
+        "fmt"
+        "github.com/keboola/go-utils/pkg/deepcopy"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+        "time"
+)
+
+func (r *Repository) SoftDelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+        var deleted definition.Source
+        return op.Atomic(r.client, &amp;deleted).
+                AddFrom(r.
+                        softDeleteAllFrom(k, now, false).
+                        OnResult(func(r []definition.Source) </span><span class="cov8" title="1">{
+                                if len(r) == 1 </span><span class="cov8" title="1">{
+                                        deleted = r[0]
+                                }</span>
+                        }))
+}
+
+func (r *Repository) deleteSourcesOnBranchDelete() <span class="cov8" title="1">{
+        r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) </span><span class="cov8" title="1">{
+                deleted := entity.DeletedAt != nil &amp;&amp; entity.DeletedAt.Time().Equal(ctx.Now())
+                if deleted </span><span class="cov8" title="1">{
+                        ctx.AddFrom(r.softDeleteAllFrom(entity.BranchKey, ctx.Now(), true))
+                }</span>
+        })
+
+}
+
+// softDeleteAllFrom the parent key.
+func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, deletedWithParent bool) *op.AtomicOp[[]definition.Source] <span class="cov8" title="1">{
+        var allOld, allDeleted []definition.Source
+        atomicOp := op.Atomic(r.client, &amp;allDeleted)
+
+        // Get or list
+        switch k := parentKey.(type) </span>{
+        case key.SourceKey:<span class="cov8" title="1">
+                atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Source) </span><span class="cov8" title="1">{ allOld = []definition.Source{entity} }</span>))
+        default:<span class="cov8" title="1">
+                atomicOp.ReadOp(r.List(parentKey).WithAllTo(&amp;allOld))</span>
+        }
+
+        // Iterate all
+        <span class="cov8" title="1">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+                saveCtx := plugin.NewSaveContext(now)
+                for _, old := range allOld </span><span class="cov8" title="1">{
+                        old := old
+
+                        // Mark deleted
+                        deleted := deepcopy.Copy(old).(definition.Source)
+                        deleted.Delete(now, deletedWithParent)
+
+                        // Save
+                        r.save(saveCtx, &amp;old, &amp;deleted)
+                        allDeleted = append(allDeleted, deleted)
+                }</span>
+                <span class="cov8" title="1">return saveCtx.Do(ctx)</span>
+        })
+
+        <span class="cov8" title="1">return atomicOp</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package source
+
+import (
+        serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+)
+
+func (r *Repository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] <span class="cov8" title="1">{
+        return r.schema.
+                Active().ByKey(k).Exists(r.client).
+                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                        return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
+                }</span>)
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package source
+
+import (
+        serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+)
+
+func (r *Repository) Get(k key.SourceKey) op.WithResult[definition.Source] <span class="cov8" title="1">{
+        return r.schema.
+                Active().ByKey(k).Get(r.client).
+                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                        return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
+                }</span>)
+}
+
+func (r *Repository) GetDeleted(k key.SourceKey) op.WithResult[definition.Source] <span class="cov8" title="1">{
+        return r.schema.
+                Deleted().ByKey(k).Get(r.client).
+                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                        return serviceError.NewResourceNotFoundError("deleted source", k.SourceID.String(), "branch")
+                }</span>)
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package source
+
+import (
+        serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+)
+
+const (
+        MaxSourcesPerBranch        = 100
+        MaxSourceVersionsPerSource = 1000
+)
+
+func (r *Repository) checkMaxSourcesPerBranch(k key.BranchKey, newCount int64) op.Op <span class="cov8" title="1">{
+        return r.schema.
+                Active().InBranch(k).Count(r.client).
+                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
+                        if actualCount+newCount &gt; MaxSourcesPerBranch </span><span class="cov8" title="1">{
+                                return serviceError.NewCountLimitReachedError("source", MaxSourcesPerBranch, "branch")
+                        }</span>
+                        <span class="cov8" title="1">return nil</span>
+                })
+}
+
+func (r *Repository) checkMaxSourcesVersionsPerSource(k key.SourceKey, newCount int64) op.Op <span class="cov8" title="1">{
+        return r.schema.
+                Versions().Of(k).Count(r.client).
+                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
+                        if actualCount+newCount &gt; MaxSourceVersionsPerSource </span><span class="cov8" title="1">{
+                                return serviceError.NewCountLimitReachedError("version", MaxSourceVersionsPerSource, "source")
+                        }</span>
+                        <span class="cov8" title="1">return nil</span>
+                })
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package source
+
+import (
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
+)
+
+func (r *Repository) List(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+        return r.list(r.schema.Active(), parentKey, opts...)
+}</span>
+
+func (r *Repository) ListDeleted(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+        return r.list(r.schema.Deleted(), parentKey, opts...)
+}</span>
+
+func (r *Repository) list(pfx schema.SourceInState, parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+        return pfx.In(parentKey).GetAll(r.client, opts...)
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package source
+
+import (
+        "context"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        etcd "go.etcd.io/etcd/client/v3"
+        "time"
+
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+)
+
+type Repository struct {
+        client   etcd.KV
+        schema   schema.Source
+        plugins  *plugin.Plugins
+        branches *branch.Repository
+}
+
+type dependencies interface {
+        EtcdClient() *etcd.Client
+        EtcdSerde() *serde.Serde
+        Plugins() *plugin.Plugins
+}
+
+func NewRepository(d dependencies, branches *branch.Repository) *Repository <span class="cov8" title="1">{
+        r := &amp;Repository{
+                client:   d.EtcdClient(),
+                schema:   schema.ForSource(d.EtcdSerde()),
+                plugins:  d.Plugins(),
+                branches: branches,
+        }
+
+        r.deleteSourcesOnBranchDelete()
+        r.undeleteSourcesOnBranchUndelete()
+        return r
+}</span>
+
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Source) (op.Op, error) <span class="cov8" title="1">{
+        saveCtx := plugin.NewSaveContext(now)
+        r.save(saveCtx, old, updated)
+        return saveCtx.Do(ctx)
+}</span>
+
+func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Source) <span class="cov8" title="1">{
+        // Call plugins
+        r.plugins.Executor().OnSourceSave(saveCtx, old, updated)
+
+        if updated.Deleted </span><span class="cov8" title="1">{
+                // Move entity from the active prefix to the deleted prefix
+                saveCtx.WriteOp(
+                        // Delete entity from the active prefix
+                        r.schema.Active().ByKey(updated.SourceKey).Delete(r.client),
+                        // Save entity to the deleted prefix
+                        r.schema.Deleted().ByKey(updated.SourceKey).Put(r.client, *updated),
+                )
+        }</span> else<span class="cov8" title="1"> {
+                saveCtx.WriteOp(
+                        // Save record to the "active" prefix
+                        r.schema.Active().ByKey(updated.SourceKey).Put(r.client, *updated),
+                        // Save record to the versions history
+                        r.schema.Versions().Of(updated.SourceKey).Version(updated.VersionNumber()).Put(r.client, *updated),
+                )
+
+                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov8" title="1">{
+                        // Delete record from the "deleted" prefix, if needed
+                        saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.SourceKey).Delete(r.client))
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package source
+
+import (
+        "context"
+        "fmt"
+        "github.com/keboola/go-utils/pkg/deepcopy"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+        "time"
+)
+
+func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+        var undeleted definition.Source
+        return op.Atomic(r.client, &amp;undeleted).
+                // Check prerequisites
+                ReadOp(r.branches.ExistsOrErr(k.BranchKey)).
+                // Read the entity
+                ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
+                // Mark undeleted
+                AddFrom(r.
+                        undeleteAllFrom(k, now, false).
+                        OnResult(func(r []definition.Source) </span><span class="cov8" title="1">{
+                                if len(r) == 1 </span><span class="cov8" title="1">{
+                                        undeleted = r[0]
+                                }</span>
+                        }))
+}
+
+func (r *Repository) undeleteSourcesOnBranchUndelete() <span class="cov8" title="1">{
+        r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) </span><span class="cov8" title="1">{
+                undeleted := entity.UndeletedAt != nil &amp;&amp; entity.UndeletedAt.Time().Equal(ctx.Now())
+                if undeleted </span><span class="cov8" title="1">{
+                        ctx.AddFrom(r.undeleteAllFrom(entity.BranchKey, ctx.Now(), true))
+                }</span>
+        })
+
+}
+
+// undeleteAllFrom the parent key.
+func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] <span class="cov8" title="1">{
+        var allOld, allCreated []definition.Source
+        atomicOp := op.Atomic(r.client, &amp;allCreated)
+
+        // Get or list
+        switch k := parentKey.(type) </span>{
+        case key.SourceKey:<span class="cov8" title="1">
+                atomicOp.ReadOp(r.GetDeleted(k).WithOnResult(func(entity definition.Source) </span><span class="cov8" title="1">{ allOld = []definition.Source{entity} }</span>))
+        default:<span class="cov8" title="1">
+                atomicOp.ReadOp(r.ListDeleted(parentKey).WithAllTo(&amp;allOld))</span>
+        }
+
+        // Iterate all
+        <span class="cov8" title="1">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+                saveCtx := plugin.NewSaveContext(now)
+                for _, old := range allOld </span><span class="cov8" title="1">{
+                        old := old
+
+                        if old.DeletedWithParent != undeletedWithParent </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+
+                        // Mark undeleted
+                        <span class="cov8" title="1">created := deepcopy.Copy(old).(definition.Source)
+                        created.Undelete(now)
+
+                        // Create a new version record, if the entity has been undeleted manually
+                        if !undeletedWithParent </span><span class="cov8" title="1">{
+                                versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
+                                created.IncrementVersion(created, now, versionDescription)
+                        }</span>
+
+                        // Save
+                        <span class="cov8" title="1">r.save(saveCtx, &amp;old, &amp;created)
+                        allCreated = append(allCreated, created)</span>
+                }
+                <span class="cov8" title="1">return saveCtx.Do(ctx)</span>
+        })
+
+        <span class="cov8" title="1">return atomicOp</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package source
+
+import (
+        "context"
+        "github.com/keboola/go-utils/pkg/deepcopy"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+        "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+        "time"
+)
+
+func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+        var old, updated definition.Source
+        return op.Atomic(r.client, &amp;updated).
+                // Check prerequisites
+                ReadOp(r.checkMaxSourcesVersionsPerSource(k, 1)).
+                // Read the entity
+                ReadOp(r.Get(k).WithResultTo(&amp;old)).
+                // Update the entity
+                WriteOrErr(func(ctx context.Context) (op op.Op, err error) </span><span class="cov8" title="1">{
+                        // Get old state
+                        disabled := old.Disabled
+                        deleted := old.Deleted
+
+                        // Update
+                        updated = deepcopy.Copy(old).(definition.Source)
+                        updated, err = updateFn(updated)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+
+                        // Disabled and Deleted fields cannot be modified by the Update operation
+                        <span class="cov8" title="1">if disabled != updated.Disabled </span><span class="cov8" title="1">{
+                                return nil, errors.Errorf(`"Disabled" field cannot be modified by the Update operation`)
+                        }</span>
+                        <span class="cov8" title="1">if deleted != updated.Deleted </span><span class="cov8" title="1">{
+                                return nil, errors.Errorf(`"Deleted" field cannot be modified by the Update operation`)
+                        }</span>
+
+                        // Save
+                        <span class="cov8" title="1">updated.IncrementVersion(updated, now, versionDescription)
+                        return r.saveOne(ctx, now, &amp;old, &amp;updated)</span>
+                })
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package source
+
+import (
+        "context"
+        "fmt"
+        "github.com/keboola/go-utils/pkg/deepcopy"
+        serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+        "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+        etcd "go.etcd.io/etcd/client/v3"
+        "time"
+)
+
+// ListVersions fetches all versions records for the object.
+// The method can be used also for deleted objects.
+func (r *Repository) ListVersions(k key.SourceKey) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+        return r.schema.Versions().Of(k).GetAll(r.client)
+}</span>
+
+// GetVersion fetch entity version.
+// The method can be used also for deleted objects.
+func (r *Repository) GetVersion(k key.SourceKey, version definition.VersionNumber) op.WithResult[definition.Source] <span class="cov8" title="1">{
+        return r.schema.
+                Versions().Of(k).Version(version).Get(r.client).
+                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                        return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+version.String(), "branch")
+                }</span>)
+}
+
+func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+        var updated definition.Source
+        var latest, targetVersion *op.KeyValueT[definition.Source]
+        return op.Atomic(r.client, &amp;updated).
+                // Get latest version to calculate next version number
+                ReadOp(r.schema.Versions().Of(k).GetOne(r.client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).WithResultTo(&amp;latest)).
+                // Get target version
+                ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&amp;targetVersion)).
+                // Return the most significant error
+                BeforeWriteOrErr(func(ctx context.Context) error </span><span class="cov8" title="1">{
+                        if latest == nil </span><span class="cov8" title="1">{
+                                return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
+                        }</span> else<span class="cov8" title="1"> if targetVersion == nil </span><span class="cov8" title="1">{
+                                return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+to.String(), "branch")
+                        }</span>
+                        <span class="cov8" title="1">return nil</span>
+                }).
+                // Prepare the new value
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                        versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
+                        old := targetVersion.Value
+                        updated = deepcopy.Copy(old).(definition.Source)
+                        updated.Version = latest.Value.Version
+                        updated.IncrementVersion(updated, now, versionDescription)
+                        return r.saveOne(ctx, now, &amp;old, &amp;updated)
+                }</span>)
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

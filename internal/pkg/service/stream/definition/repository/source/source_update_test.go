@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,6 +72,20 @@ func TestSourceRepository_Update(t *testing.T) {
 		require.NoError(t, err)
 
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_update_test_snapshot_001.txt", ignoredEtcdKeys)
+	}
+
+	// Update - error from the update function
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		updateFn := func(source definition.Source) (definition.Source, error) {
+			return definition.Source{}, errors.New("some error")
+		}
+
+		var err error
+		err = repo.Update(sourceKey, now, "Update source", updateFn).Do(ctx).Err()
+		if assert.Error(t, err) {
+			assert.Equal(t, "some error", err.Error())
+		}
 	}
 
 	// Get - ok

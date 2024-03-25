@@ -1,0 +1,85 @@
+<<<<<
+definition/branch/deleted/123/567
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "deleted": true,
+  "deletedAt": "2000-01-01T01:00:00.000Z",
+  "isDefault": false
+}
+>>>>>
+
+<<<<<
+definition/source/deleted/123/567/my-source-1
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source-1",
+  "version": {
+    "number": 1,
+    "hash": "1ca196a1b1750482",
+    "modifiedAt": "2000-01-01T01:00:00.000Z",
+    "description": "Create source"
+  },
+  "deleted": true,
+  "deletedAt": "2000-01-01T01:00:00.000Z",
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/deleted/123/567/my-source-2
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source-2",
+  "version": {
+    "number": 1,
+    "hash": "6d4bf0f4f0a1b502",
+    "modifiedAt": "2000-01-01T01:00:00.000Z",
+    "description": "Create source"
+  },
+  "deleted": true,
+  "deletedAt": "2000-01-01T01:00:00.000Z",
+  "deletedWithParent": true,
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/deleted/123/567/my-source-3
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source-3",
+  "version": {
+    "number": 1,
+    "hash": "56cf5709745e921d",
+    "modifiedAt": "2000-01-01T01:00:00.000Z",
+    "description": "Create source"
+  },
+  "deleted": true,
+  "deletedAt": "2000-01-01T01:00:00.000Z",
+  "deletedWithParent": true,
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
