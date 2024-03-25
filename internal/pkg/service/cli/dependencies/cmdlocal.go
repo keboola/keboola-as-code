@@ -4,6 +4,8 @@ import (
 	"context"
 	"path/filepath"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -11,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
@@ -22,10 +25,22 @@ import (
 type localCommandScope struct {
 	dependencies.PublicScope
 	BaseScope
+
+	projectBackends []string
+	projectFeatures keboola.FeaturesMap
+
 	components              dependencies.Lazy[*model.ComponentsMap]
 	localProject            dependencies.Lazy[localProjectValue]
 	localTemplate           dependencies.Lazy[localTemplateValue]
 	localTemplateRepository dependencies.Lazy[localRepositoryValue]
+}
+
+func (v *localCommandScope) ProjectBackends() []string {
+	return v.projectBackends
+}
+
+func (v *localCommandScope) ProjectFeatures() keboola.FeaturesMap {
+	return v.projectFeatures
 }
 
 type localProjectValue struct {
@@ -52,6 +67,11 @@ func newLocalCommandScope(ctx context.Context, baseScp BaseScope, hostByFlag con
 		return nil, err
 	}
 
+	fileContent, err := project.Load(ctx, baseScp.Fs())
+	if err != nil {
+		return nil, err
+	}
+
 	// Create common local dependencies
 	pubScp, err := dependencies.NewPublicScope(
 		ctx, baseScp, host,
@@ -62,8 +82,10 @@ func newLocalCommandScope(ctx context.Context, baseScp BaseScope, hostByFlag con
 	}
 
 	return &localCommandScope{
-		PublicScope: pubScp,
-		BaseScope:   baseScp,
+		PublicScope:     pubScp,
+		BaseScope:       baseScp,
+		projectFeatures: fileContent.Features,
+		projectBackends: fileContent.Backends,
 	}, nil
 }
 
