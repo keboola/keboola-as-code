@@ -30,7 +30,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dns"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -70,7 +69,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
-	transport, err := dns.NewDNSSkippingHTTPTransport(AppAddressCtxKey)
+	transport, err := NewDNSSkippingHTTPTransport(AppAddressCtxKey)
 	if err != nil {
 		return nil, errors.PrefixError(err, "could not create http transport")
 	}
