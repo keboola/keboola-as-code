@@ -33,7 +33,7 @@ archives:
 signs:
   - id: mac-os-signed
     signature: "${artifact}.zip"
-    cmd: ./build/package/mac-os/gon/notarize.sh
+    cmd: ./build/package/mac-os/notarytool/notarize.sh
     args: [ "${artifact}", "${signature}" ]
     artifacts: binary
 
