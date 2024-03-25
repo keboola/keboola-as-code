@@ -36,6 +36,8 @@ type dependencies interface {
 	StorageAPIToken() keboola.Token
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	ProjectBackends() []string
+	ProjectFeatures() keboola.FeaturesMap
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
