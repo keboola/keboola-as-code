@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-//nolint:dupl // similar code is in the SourceRepository
 func (r *Repository) Create(input *definition.Sink, now time.Time, versionDescription string) *op.AtomicOp[definition.Sink] {
 	k := input.SinkKey
 	var created definition.Sink

@@ -1,0 +1,83 @@
+<<<<<
+definition/sink/active/123/567/my-source/my-sink
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "version": {
+    "number": 2,
+    "hash": "a27ee0719465fe15",
+    "modifiedAt": "2000-01-01T04:00:00.000Z",
+    "description": "Undeleted to version \"1\"."
+  },
+  "undeletedAt": "2000-01-01T04:00:00.000Z",
+  "type": "table",
+  "name": "My Sink",
+  "description": "My Description",
+  "table": {
+    "type": "keboola",
+    "keboola": {
+      "tableId": "in.bucket.table"
+    },
+    "mapping": {
+      "columns": [
+        {
+          "type": "datetime",
+          "name": "datetime"
+        },
+        {
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    }
+  }
+}
+>>>>>
+
+<<<<<
+definition/sink/version/123/567/my-source/my-sink/0000000001
+-----
+%A
+>>>>>
+
+<<<<<
+definition/sink/version/123/567/my-source/my-sink/0000000002
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "version": {
+    "number": 2,
+    "hash": "a27ee0719465fe15",
+    "modifiedAt": "2000-01-01T04:00:00.000Z",
+    "description": "Undeleted to version \"1\"."
+  },
+  "undeletedAt": "2000-01-01T04:00:00.000Z",
+  "type": "table",
+  "name": "My Sink",
+  "description": "My Description",
+  "table": {
+    "type": "keboola",
+    "keboola": {
+      "tableId": "in.bucket.table"
+    },
+    "mapping": {
+      "columns": [
+        {
+          "type": "datetime",
+          "name": "datetime"
+        },
+        {
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    }
+  }
+}
+>>>>>

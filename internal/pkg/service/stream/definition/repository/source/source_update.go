@@ -19,7 +19,7 @@ func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription s
 		ReadOp(r.Get(k).WithResultTo(&old)).
 		// Update the entity
 		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
-			// Get old state
+			// Store old state
 			disabled := old.Disabled
 			deleted := old.Deleted
 

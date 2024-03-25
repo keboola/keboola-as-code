@@ -63,6 +63,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		now = now.Add(time.Hour)
 		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_undelete_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
@@ -79,6 +80,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// Undelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		now = now.Add(time.Hour)
 		require.NoError(t, repo.Undelete(sourceKey, now.Add(time.Hour)).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_undelete_test_snapshot_002.txt", ignoredEtcdKeys)
 	}
@@ -139,12 +141,14 @@ func TestSourceRepository_UndeleteSourcesOnBranchUndelete(t *testing.T) {
 	// Delete Source1
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		now = now.Add(time.Hour)
 		require.NoError(t, repo.SoftDelete(sourceKey1, now).Do(ctx).Err())
 	}
 
 	// Delete Branch
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now).Do(ctx).Err())
 	}
 

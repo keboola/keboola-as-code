@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func TestSourceRepository_SoftDelete(t *testing.T) {
@@ -120,6 +121,7 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 	// Delete Source1
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		now = now.Add(time.Hour)
 		var err error
 		source1, err = repo.SoftDelete(sourceKey1, now).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
@@ -130,6 +132,7 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 	// Delete Branch
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_delete_test_snapshot_002.txt", ignoredEtcdKeys)
 	}

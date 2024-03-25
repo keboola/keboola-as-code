@@ -12,11 +12,7 @@ definition/source/active/123/567/my-source
     "description": "Rollback to version \"2\"."
   },
   "type": "http",
-  "name": "My Source",
-  "description": "Updated description 1",
-  "http": {
-    "secret": "012345678901234567890123456789012345678912345678"
-  }
+  %A
 }
 >>>>>
 

@@ -23,23 +23,7 @@ definition/source/active/123/567/my-source
 <<<<<
 definition/source/version/123/567/my-source/0000000001
 -----
-{
-  "projectId": 123,
-  "branchId": 567,
-  "sourceId": "my-source",
-  "version": {
-    "number": 1,
-    "hash": "419a32b072570054",
-    "modifiedAt": "2000-01-01T01:00:00.000Z",
-    "description": "Create source"
-  },
-  "type": "http",
-  "name": "My Source",
-  "description": "My Description",
-  "http": {
-    "secret": "012345678901234567890123456789012345678912345678"
-  }
-}
+%A
 >>>>>
 
 
