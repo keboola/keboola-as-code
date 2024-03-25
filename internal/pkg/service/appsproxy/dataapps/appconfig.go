@@ -87,7 +87,7 @@ func (l *sandboxesServiceClient) Notify(ctx context.Context, appID string) error
 	item.nextNotificationAfter = now.Add(notificationInterval)
 
 	// Send the notification
-	_, err := PatchApp(l.sender, appID, now).Send(ctx)
+	_, err := PatchNotifyAppUsage(l.sender, appID, now).Send(ctx)
 	if err != nil {
 		l.logger.Errorf(ctx, `Failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
 

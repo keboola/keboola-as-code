@@ -44,12 +44,12 @@ type AuthRule struct {
 	AuthRequired *bool    `json:"authRequired"`
 }
 
-type PatchBody struct {
+type NotifyBody struct {
 	LastRequestTimestamp string `json:"lastRequestTimestamp"`
 }
 
-func PatchApp(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
-	body := PatchBody{
+func PatchNotifyAppUsage(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
+	body := NotifyBody{
 		LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
 	}
 	req := request.NewHTTPRequest(sender).
