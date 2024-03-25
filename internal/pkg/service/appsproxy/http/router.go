@@ -30,6 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dns"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -42,6 +43,7 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            dataapps.Client
+	transport         *http.Transport
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
@@ -51,6 +53,8 @@ type Router struct {
 const providerCookie = "_oauth2_provider"
 
 const selectionPagePath = "/_proxy/selection"
+
+const AppAddressCtxKey = ctxKey("app-address")
 
 //go:embed template/*
 var templates embed.FS
@@ -66,12 +70,18 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
+	transport, err := dns.NewDNSSkippingHTTPTransport(AppAddressCtxKey)
+	if err != nil {
+		return nil, errors.PrefixError(err, "could not create http transport")
+	}
+
 	router := &Router{
 		logger:    d.Logger(),
 		telemetry: d.Telemetry(),
 		config:    d.Config(),
 		clock:     d.Clock(),
 		loader:    d.Loader(),
+		transport: transport,
 		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
@@ -178,6 +188,13 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
+	target, err := url.Parse(app.UpstreamAppURL)
+	if err != nil {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID)
+	}
+
 	chain := alice.New(r.notifySandboxesServiceMiddleware(), r.dataAppTelemetryMiddleware())
 
 	oauthProviders := make(map[string]*oauthProvider)
@@ -185,7 +202,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app, chain)
 	}
 
-	publicAppHandler := r.publicAppHandler(ctx, app, chain)
+	publicAppHandler := r.publicAppHandler(target, chain)
 
 	mux := http.NewServeMux()
 
@@ -246,14 +263,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyCon
 	return r.createMultiProviderHandler(selectedProviders, app)
 }
 
-func (r *Router) publicAppHandler(ctx context.Context, app dataapps.AppProxyConfig, chain alice.Chain) http.Handler {
-	target, err := url.Parse(app.UpstreamAppURL)
-	if err != nil {
-		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
-		r.createConfigErrorHandler(exceptionID)
-	}
-
+func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handler {
 	return chain.Then(httputil.NewSingleHostReverseProxy(target))
 }
 
