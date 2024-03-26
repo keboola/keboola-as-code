@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -1634,19 +1633,11 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 		service.apps[app.ID] = app
 	}
 
-	r := regexp.MustCompile("apps/([a-zA-Z0-9]+)/proxy-config")
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /apps/{app}/proxy-config", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		appID := req.PathValue("app")
 
-		match := r.FindStringSubmatch(req.RequestURI)
-		if len(match) < 2 {
-			w.WriteHeader(http.StatusNotFound)
-			io.WriteString(w, "{}")
-			return
-		}
-
-		appID := match[1]
 		app, ok := service.apps[appID]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -1664,7 +1655,7 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 		w.Write(jsonData)
 	})
 
-	ts := httptest.NewUnstartedServer(handler)
+	ts := httptest.NewUnstartedServer(mux)
 	ts.EnableHTTP2 = true
 	ts.Start()
 
