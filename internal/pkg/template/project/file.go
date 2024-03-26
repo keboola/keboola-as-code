@@ -2,11 +2,12 @@ package project
 
 import (
 	"context"
-	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const FileName = "project.json"
