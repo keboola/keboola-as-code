@@ -44,6 +44,7 @@ type Router struct {
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
+	wg                sync.WaitGroup
 }
 
 const providerCookie = "_oauth2_provider"
@@ -77,6 +78,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		}),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
+		wg:                sync.WaitGroup{},
 	}
 
 	return router, nil
@@ -153,6 +155,10 @@ func (r *Router) CreateHandler() http.Handler {
 
 		httpHandler.ServeHTTP(w, req)
 	})
+}
+
+func (r *Router) Shutdown() {
+	r.wg.Wait()
 }
 
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
@@ -256,8 +262,10 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 			ctx := req.Context()
 			appID, ok := ctx.Value(AppIDCtxKey).(string)
 			if ok {
+				r.wg.Add(1)
 				// Current request should not wait for the notification
 				go func() {
+					defer r.wg.Done()
 					// Error is already logged by the Notify method itself. We can ignore it here.
 					_ = r.loader.Notify(ctx, appID)
 				}()
