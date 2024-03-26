@@ -1,12 +1,8 @@
 package file
 
 import (
-	"fmt"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
@@ -77,38 +73,8 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 	return r
 }
 
-// RegisterSinkType with the local storage support.
-func (r *Repository) RegisterSinkType(v definition.SinkType) {
-	r.sinkTypes[v] = true
-}
-
-// ListAll files in all storage levels.
-func (r *Repository) ListAll() iterator.DefinitionT[model.File] {
-	return r.schema.AllLevels().GetAll(r.client)
-}
-
-// ListIn files in all storage levels, in the parent.
-func (r *Repository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
-	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
-}
-
-// ListInLevel lists files in the specified storage level.
-func (r *Repository) ListInLevel(parentKey fmt.Stringer, level level.Level) iterator.DefinitionT[model.File] {
-	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
-}
-
-// ListInState lists files in the specified state.
-func (r *Repository) ListInState(parentKey fmt.Stringer, state model.FileState) iterator.DefinitionT[model.File] {
-	return r.
-		ListInLevel(parentKey, state.Level()).
-		WithFilter(func(file model.File) bool {
-			return file.State == state
-		})
-}
-
-// Get file entity.
-func (r *Repository) Get(fileKey model.FileKey) op.WithResult[model.File] {
-	return r.schema.AllLevels().ByKey(fileKey).Get(r.client).WithEmptyResultAsError(func() error {
-		return serviceError.NewResourceNotFoundError("file", fileKey.String(), "sink")
-	})
-}
+//
+//// RegisterSinkType with the local storage support.
+//func (r *Repository) RegisterSinkType(v definition.SinkType) {
+//	r.sinkTypes[v] = true
+//}

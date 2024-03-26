@@ -16,7 +16,9 @@ import (
 )
 
 func (r *Repository) rotateFileOnSinkModification() {
+	r.plugins.Collection().OnSinkModification(func(ctx *plugin.SaveContext, old, updated *definition.Sink) {
 
+	})
 }
 
 // Rotate closes the opened file, if present, and opens a new file in the table sink.

@@ -75,7 +75,7 @@
 				
 				<option value="file9">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/repository.go (100.0%)</option>
 				
-				<option value="file10">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema/sink_schema.go (93.3%)</option>
+				<option value="file10">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema/sink_schema.go (100.0%)</option>
 				
 				<option value="file11">github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/sink_create.go (100.0%)</option>
 				
@@ -124,8 +124,17 @@
 			<div id="legend">
 				<span>not tracked</span>
 			
-				<span class="cov0">not covered</span>
-				<span class="cov8">covered</span>
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
 			
 			</div>
 		</div>
@@ -146,7 +155,7 @@ import (
 // - If there is a deleted Branch with the same key, the Undelete operation is performed.
 // - If the Branch already exists, the ResourceAlreadyExistsError is returned.
 // - If the MaxBranchesPerProject limit is exceeded, the CountLimitReachedError is returned.
-func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicOp[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicOp[definition.Branch] <span class="cov10" title="15">{
         k := input.BranchKey
         var created definition.Branch
         var deleted *op.KeyValueT[definition.Branch]
@@ -154,25 +163,25 @@ func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicO
                 // Check prerequisites
                 ReadOp(r.checkMaxBranchesPerProject(k.ProjectID, 1)).
                 // Entity must not exist
-                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceAlreadyExistsError("branch", k.BranchID.String(), "project")
                 }</span>)).
                 // Get deleted entity, if any, to undelete it
                 ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&amp;deleted)).
                 // Create
-                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov9" title="13">{
                         // Create or undelete
                         created = deepcopy.Copy(*input).(definition.Branch)
-                        if deleted != nil </span><span class="cov8" title="1">{
+                        if deleted != nil </span><span class="cov1" title="1">{
                                 created.SoftDeletable = deleted.Value.SoftDeletable
                                 created.Undelete(now)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">return r.saveOne(ctx, now, nil, &amp;created)</span>
+                        <span class="cov9" title="13">return r.saveOne(ctx, now, nil, &amp;created)</span>
                 }).
                 // Update the input entity after a successful operation
-                OnResult(func(entity definition.Branch) <span class="cov8" title="1">{
+                OnResult(func(entity definition.Branch) <span class="cov9" title="13">{
                         *input = entity
                 }</span>)
 }
@@ -189,14 +198,14 @@ import (
         "time"
 )
 
-func (r *Repository) SoftDelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) SoftDelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] <span class="cov10" title="7">{
         // Move entity from the active to the deleted prefix
         var old, updated definition.Branch
         return op.Atomic(r.client, &amp;updated).
                 // Read the entity
                 ReadOp(r.Get(k).WithResultTo(&amp;old)).
                 // Mark deleted
-                WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov9" title="6">{
                         updated = deepcopy.Copy(old).(definition.Branch)
                         updated.Delete(now, false)
                         return r.saveOne(ctx, now, &amp;old, &amp;updated)
@@ -212,10 +221,10 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) ExistsOrErr(k key.BranchKey) op.WithResult[bool] <span class="cov8" title="1">{
+func (r *Repository) ExistsOrErr(k key.BranchKey) op.WithResult[bool] <span class="cov10" title="2">{
         return r.schema.
                 Active().ByKey(k).Exists(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
                 }</span>)
 }
@@ -232,36 +241,36 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) Get(k key.BranchKey) op.WithResult[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) Get(k key.BranchKey) op.WithResult[definition.Branch] <span class="cov10" title="16">{
         return r.schema.
                 Active().ByKey(k).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov5" title="4">{
                         return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
                 }</span>)
 }
 
-func (r *Repository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch] <span class="cov7" title="7">{
         return r.schema.
                 Deleted().ByKey(k).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov5" title="4">{
                         return serviceError.NewResourceNotFoundError("deleted branch", k.BranchID.String(), "project")
                 }</span>)
 }
 
-func (r *Repository) GetDefault(k keboola.ProjectID) *op.TxnOp[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) GetDefault(k keboola.ProjectID) *op.TxnOp[definition.Branch] <span class="cov3" title="2">{
         found := false
         var entity definition.Branch
         return op.
                 TxnWithResult(r.client, &amp;entity).
-                Then(r.List(k).ForEach(func(branch definition.Branch, _ *iterator.Header) error </span><span class="cov8" title="1">{
-                        if branch.IsDefault </span><span class="cov8" title="1">{
+                Then(r.List(k).ForEach(func(branch definition.Branch, _ *iterator.Header) error </span><span class="cov3" title="2">{
+                        if branch.IsDefault </span><span class="cov1" title="1">{
                                 found = true
                                 entity = branch
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov3" title="2">return nil</span>
                 })).
-                OnSucceeded(func(r *op.TxnResult[definition.Branch]) <span class="cov8" title="1">{
-                        if !found </span><span class="cov8" title="1">{
+                OnSucceeded(func(r *op.TxnResult[definition.Branch]) <span class="cov3" title="2">{
+                        if !found </span><span class="cov1" title="1">{
                                 r.AddErr(serviceError.NewResourceNotFoundError("branch", "default", "project"))
                         }</span>
                 })
@@ -276,14 +285,14 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
-func (r *Repository) checkMaxBranchesPerProject(k keboola.ProjectID, newCount int64) op.Op <span class="cov8" title="1">{
+func (r *Repository) checkMaxBranchesPerProject(k keboola.ProjectID, newCount int64) op.Op <span class="cov10" title="17">{
         return r.schema.
                 Active().InProject(k).Count(r.client).
-                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
-                        if actualCount+newCount &gt; MaxBranchesPerProject </span><span class="cov8" title="1">{
+                WithResultValidator(func(actualCount int64) error </span><span class="cov10" title="17">{
+                        if actualCount+newCount &gt; MaxBranchesPerProject </span><span class="cov1" title="1">{
                                 return serviceError.NewCountLimitReachedError("branch", MaxBranchesPerProject, "project")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov9" title="16">return nil</span>
                 })
 }
 </pre>
@@ -297,15 +306,15 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 )
 
-func (r *Repository) List(parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) List(parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] <span class="cov7" title="5">{
         return r.list(r.schema.Active(), parentKey)
 }</span>
 
-func (r *Repository) ListDeleted(parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) ListDeleted(parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] <span class="cov5" title="3">{
         return r.list(r.schema.Deleted(), parentKey)
 }</span>
 
-func (r *Repository) list(pfx schema.BranchInState, parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) list(pfx schema.BranchInState, parentKey keboola.ProjectID) iterator.DefinitionT[definition.Branch] <span class="cov10" title="8">{
         return pfx.InProject(parentKey).GetAll(r.client)
 }</span>
 </pre>
@@ -340,7 +349,7 @@ type dependencies interface {
         Plugins() *plugin.Plugins
 }
 
-func NewRepository(d dependencies) *Repository <span class="cov8" title="1">{
+func NewRepository(d dependencies) *Repository <span class="cov8" title="11">{
         return &amp;Repository{
                 client:  d.EtcdClient(),
                 schema:  schema.ForBranch(d.EtcdSerde()),
@@ -348,17 +357,17 @@ func NewRepository(d dependencies) *Repository <span class="cov8" title="1">{
         }
 }</span>
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Branch) (op.Op, error) <span class="cov8" title="1">{
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Branch) (op.Op, error) <span class="cov10" title="20">{
         saveCtx := plugin.NewSaveContext(now)
         r.save(saveCtx, old, updated)
         return saveCtx.Do(ctx)
 }</span>
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Branch) <span class="cov8" title="1">{
+func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Branch) <span class="cov10" title="20">{
         // Call plugins
         r.plugins.Executor().OnBranchSave(saveCtx, old, updated)
 
-        if updated.Deleted </span><span class="cov8" title="1">{
+        if updated.Deleted </span><span class="cov6" title="6">{
                 // Move entity from the active prefix to the deleted prefix
                 saveCtx.WriteOp(
                         // Delete entity from the active prefix
@@ -366,11 +375,11 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
                         // Save entity to the deleted prefix
                         r.schema.Deleted().ByKey(updated.BranchKey).Put(r.client, *updated),
                 )
-        }</span> else<span class="cov8" title="1"> {
+        }</span> else<span class="cov8" title="14"> {
                 // Save record to the "active" prefix
                 saveCtx.WriteOp(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
 
-                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov8" title="1">{
+                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov3" title="2">{
                         // Delete record from the "deleted" prefix, if needed
                         saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
                 }</span>
@@ -388,7 +397,7 @@ import (
         "time"
 )
 
-func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] <span class="cov8" title="1">{
+func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] <span class="cov10" title="2">{
         // Move entity from the deleted to the active prefix
         var created definition.Branch
         return op.Atomic(r.client, &amp;created).
@@ -397,7 +406,7 @@ func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[defin
                 // Read the entity
                 ReadOp(r.GetDeleted(k).WithResultTo(&amp;created)).
                 // Mark undeleted
-                WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov1" title="1">{
                         created.Undelete(now)
                         return r.saveOne(ctx, now, nil, &amp;created)
                 }</span>)
@@ -420,25 +429,25 @@ type (
         BranchInState Branch
 )
 
-func ForBranch(s *serde.Serde) Branch <span class="cov8" title="1">{
+func ForBranch(s *serde.Serde) Branch <span class="cov1" title="1">{
         return Branch{PrefixT: NewTypedPrefix[definition.Branch]("definition/branch", s)}
 }</span>
 
 // Active prefix contains all not deleted objects.
-func (v Branch) Active() BranchInState <span class="cov8" title="1">{
+func (v Branch) Active() BranchInState <span class="cov6" title="2">{
         return BranchInState{PrefixT: v.PrefixT.Add("active")}
 }</span>
 
 // Deleted prefix contains all deleted objects whose parent existed on deleted.
-func (v Branch) Deleted() BranchInState <span class="cov8" title="1">{
+func (v Branch) Deleted() BranchInState <span class="cov10" title="3">{
         return BranchInState{PrefixT: v.PrefixT.Add("deleted")}
 }</span>
 
-func (v BranchInState) InProject(k keboola.ProjectID) PrefixT[definition.Branch] <span class="cov8" title="1">{
+func (v BranchInState) InProject(k keboola.ProjectID) PrefixT[definition.Branch] <span class="cov1" title="1">{
         return v.PrefixT.Add(k.String())
 }</span>
 
-func (v BranchInState) ByKey(k BranchKey) KeyT[definition.Branch] <span class="cov8" title="1">{
+func (v BranchInState) ByKey(k BranchKey) KeyT[definition.Branch] <span class="cov6" title="2">{
         return v.PrefixT.Key(k.String())
 }</span>
 </pre>
@@ -467,7 +476,7 @@ type Repository struct {
         sink   *sink.Repository
 }
 
-func New(d dependencies) *Repository <span class="cov8" title="1">{
+func New(d dependencies) *Repository <span class="cov9" title="45">{
         r := &amp;Repository{}
         r.branch = branch.NewRepository(d)
         r.source = source.NewRepository(d, r.branch)
@@ -475,15 +484,15 @@ func New(d dependencies) *Repository <span class="cov8" title="1">{
         return r
 }</span>
 
-func (r *Repository) Branch() *branch.Repository <span class="cov8" title="1">{
+func (r *Repository) Branch() *branch.Repository <span class="cov10" title="46">{
         return r.branch
 }</span>
 
-func (r *Repository) Source() *source.Repository <span class="cov8" title="1">{
+func (r *Repository) Source() *source.Repository <span class="cov9" title="33">{
         return r.source
 }</span>
 
-func (r *Repository) Sink() *sink.Repository <span class="cov8" title="1">{
+func (r *Repository) Sink() *sink.Repository <span class="cov7" title="16">{
         return r.sink
 }</span>
 </pre>
@@ -507,59 +516,59 @@ type (
         SinkVersionsOf Sink
 )
 
-func ForSink(s *serde.Serde) Sink <span class="cov8" title="1">{
+func ForSink(s *serde.Serde) Sink <span class="cov3" title="2">{
         return Sink{PrefixT: NewTypedPrefix[definition.Sink]("definition/sink", s)}
 }</span>
 
 // Active prefix contains all not deleted objects.
-func (v Sink) Active() SinkInState <span class="cov8" title="1">{
+func (v Sink) Active() SinkInState <span class="cov10" title="9">{
         return SinkInState{PrefixT: v.PrefixT.Add("active")}
 }</span>
 
 // Deleted prefix contains all deleted objects whose parent existed on deleted.
-func (v Sink) Deleted() SinkInState <span class="cov8" title="1">{
+func (v Sink) Deleted() SinkInState <span class="cov7" title="5">{
         return SinkInState{PrefixT: v.PrefixT.Add("deleted")}
 }</span>
 
 // Versions prefix contains full history of the object.
-func (v Sink) Versions() SinkVersions <span class="cov8" title="1">{
+func (v Sink) Versions() SinkVersions <span class="cov5" title="3">{
         return SinkVersions{PrefixT: v.PrefixT.Add("version")}
 }</span>
 
-func (v SinkInState) In(objectKey any) PrefixT[definition.Sink] <span class="cov8" title="1">{
+func (v SinkInState) In(objectKey any) PrefixT[definition.Sink] <span class="cov6" title="4">{
         switch k := objectKey.(type) </span>{
-        case keboola.ProjectID:<span class="cov8" title="1">
+        case keboola.ProjectID:<span class="cov1" title="1">
                 return v.InProject(k)</span>
-        case BranchKey:<span class="cov8" title="1">
+        case BranchKey:<span class="cov1" title="1">
                 return v.InBranch(k)</span>
-        case SourceKey:<span class="cov0" title="0">
+        case SourceKey:<span class="cov1" title="1">
                 return v.InSource(k)</span>
-        default:<span class="cov8" title="1">
+        default:<span class="cov1" title="1">
                 panic(errors.Errorf(`unexpected Sink parent key type "%T"`, objectKey))</span>
         }
 }
 
-func (v SinkInState) InProject(k keboola.ProjectID) PrefixT[definition.Sink] <span class="cov8" title="1">{
+func (v SinkInState) InProject(k keboola.ProjectID) PrefixT[definition.Sink] <span class="cov5" title="3">{
         return v.PrefixT.Add(k.String())
 }</span>
 
-func (v SinkInState) InBranch(k BranchKey) PrefixT[definition.Sink] <span class="cov8" title="1">{
+func (v SinkInState) InBranch(k BranchKey) PrefixT[definition.Sink] <span class="cov5" title="3">{
         return v.PrefixT.Add(k.String())
 }</span>
 
-func (v SinkInState) InSource(k SourceKey) PrefixT[definition.Sink] <span class="cov8" title="1">{
+func (v SinkInState) InSource(k SourceKey) PrefixT[definition.Sink] <span class="cov5" title="3">{
         return v.PrefixT.Add(k.String())
 }</span>
 
-func (v SinkInState) ByKey(k SinkKey) KeyT[definition.Sink] <span class="cov8" title="1">{
+func (v SinkInState) ByKey(k SinkKey) KeyT[definition.Sink] <span class="cov3" title="2">{
         return v.PrefixT.Key(k.String())
 }</span>
 
-func (v SinkVersions) Of(k SinkKey) SinkVersionsOf <span class="cov8" title="1">{
+func (v SinkVersions) Of(k SinkKey) SinkVersionsOf <span class="cov3" title="2">{
         return SinkVersionsOf{PrefixT: v.PrefixT.Add(k.String())}
 }</span>
 
-func (v SinkVersionsOf) Version(version definition.VersionNumber) KeyT[definition.Sink] <span class="cov8" title="1">{
+func (v SinkVersionsOf) Version(version definition.VersionNumber) KeyT[definition.Sink] <span class="cov1" title="1">{
         return v.PrefixT.Key(version.String())
 }</span>
 </pre>
@@ -575,7 +584,7 @@ import (
         "time"
 )
 
-func (r *Repository) Create(input *definition.Sink, now time.Time, versionDescription string) *op.AtomicOp[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) Create(input *definition.Sink, now time.Time, versionDescription string) *op.AtomicOp[definition.Sink] <span class="cov10" title="29">{
         k := input.SinkKey
         var created definition.Sink
         var deleted *op.KeyValueT[definition.Sink]
@@ -584,31 +593,31 @@ func (r *Repository) Create(input *definition.Sink, now time.Time, versionDescri
                 ReadOp(r.sources.ExistsOrErr(k.SourceKey)).
                 ReadOp(r.checkMaxSinksPerSource(k.SourceKey, 1)).
                 // Entity must not exist
-                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceAlreadyExistsError("sink", k.SinkID.String(), "source")
                 }</span>)).
                 // Get deleted entity, if any, to undelete it
                 ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&amp;deleted)).
                 // Create
-                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov9" title="26">{
                         // Create on undelete
                         created = deepcopy.Copy(*input).(definition.Sink)
-                        if deleted != nil </span><span class="cov8" title="1">{
+                        if deleted != nil </span><span class="cov1" title="1">{
                                 created.Version = deleted.Value.Version
                                 created.SoftDeletable = deleted.Value.SoftDeletable
                                 created.Undelete(now)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">created.IncrementVersion(created, now, versionDescription)
+                        <span class="cov9" title="26">created.IncrementVersion(created, now, versionDescription)
                         return r.saveOne(ctx, now, nil, &amp;created)</span>
                 }).
                 // Update the input entity after successful operation
-                OnResult(func(entity definition.Sink) <span class="cov8" title="1">{
+                OnResult(func(entity definition.Sink) <span class="cov9" title="26">{
                         *input = entity
                 }</span>)
 
-        <span class="cov8" title="1">return atomicOp</span>
+        <span class="cov10" title="29">return atomicOp</span>
 }
 </pre>
 		
@@ -625,22 +634,22 @@ import (
         "time"
 )
 
-func (r *Repository) SoftDelete(k key.SinkKey, now time.Time) *op.AtomicOp[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) SoftDelete(k key.SinkKey, now time.Time) *op.AtomicOp[definition.Sink] <span class="cov7" title="11">{
         var deleted definition.Sink
         return op.Atomic(r.client, &amp;deleted).
                 AddFrom(r.
                         softDeleteAllFrom(k, now, false).
-                        OnResult(func(r []definition.Sink) </span><span class="cov8" title="1">{
-                                if len(r) == 1 </span><span class="cov8" title="1">{
+                        OnResult(func(r []definition.Sink) </span><span class="cov7" title="10">{
+                                if len(r) == 1 </span><span class="cov7" title="10">{
                                         deleted = r[0]
                                 }</span>
                         }))
 }
 
-func (r *Repository) deleteSinksOnSourceDelete() <span class="cov8" title="1">{
-        r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, old, entity *definition.Source) </span><span class="cov8" title="1">{
+func (r *Repository) deleteSinksOnSourceDelete() <span class="cov9" title="18">{
+        r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, old, entity *definition.Source) </span><span class="cov10" title="24">{
                 deleted := entity.Deleted &amp;&amp; entity.DeletedAt.Time().Equal(ctx.Now())
-                if deleted </span><span class="cov8" title="1">{
+                if deleted </span><span class="cov4" title="4">{
                         ctx.AddFrom(r.softDeleteAllFrom(entity.SourceKey, ctx.Now(), true))
                 }</span>
         })
@@ -648,22 +657,22 @@ func (r *Repository) deleteSinksOnSourceDelete() <span class="cov8" title="1">{
 }
 
 // softDeleteAllFrom the parent key.
-func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, deletedWithParent bool) *op.AtomicOp[[]definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, deletedWithParent bool) *op.AtomicOp[[]definition.Sink] <span class="cov8" title="15">{
         var allOld, allDeleted []definition.Sink
         atomicOp := op.Atomic(r.client, &amp;allDeleted)
 
         // Get or list
         switch k := parentKey.(type) </span>{
-        case key.SinkKey:<span class="cov8" title="1">
-                atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Sink) </span><span class="cov8" title="1">{ allOld = []definition.Sink{entity} }</span>))
-        default:<span class="cov8" title="1">
+        case key.SinkKey:<span class="cov7" title="11">
+                atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Sink) </span><span class="cov7" title="10">{ allOld = []definition.Sink{entity} }</span>))
+        default:<span class="cov4" title="4">
                 atomicOp.ReadOp(r.List(parentKey).WithAllTo(&amp;allOld))</span>
         }
 
         // Iterate all
-        <span class="cov8" title="1">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+        <span class="cov8" title="15">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="14">{
                 saveCtx := plugin.NewSaveContext(now)
-                for _, old := range allOld </span><span class="cov8" title="1">{
+                for _, old := range allOld </span><span class="cov9" title="18">{
                         old := old
 
                         // Mark deleted
@@ -674,10 +683,10 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
                         r.save(saveCtx, &amp;old, &amp;deleted)
                         allDeleted = append(allDeleted, deleted)
                 }</span>
-                <span class="cov8" title="1">return saveCtx.Do(ctx)</span>
+                <span class="cov8" title="14">return saveCtx.Do(ctx)</span>
         })
 
-        <span class="cov8" title="1">return atomicOp</span>
+        <span class="cov8" title="15">return atomicOp</span>
 }
 </pre>
 		
@@ -689,10 +698,10 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) ExistsOrErr(k key.SinkKey) op.WithResult[bool] <span class="cov8" title="1">{
+func (r *Repository) ExistsOrErr(k key.SinkKey) op.WithResult[bool] <span class="cov10" title="2">{
         return r.schema.
                 Active().ByKey(k).Exists(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
                 }</span>)
 }
@@ -707,18 +716,18 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) Get(k key.SinkKey) op.WithResult[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) Get(k key.SinkKey) op.WithResult[definition.Sink] <span class="cov10" title="33">{
         return r.schema.
                 Active().ByKey(k).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov5" title="5">{
                         return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
                 }</span>)
 }
 
-func (r *Repository) GetDeleted(k key.SinkKey) op.WithResult[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) GetDeleted(k key.SinkKey) op.WithResult[definition.Sink] <span class="cov7" title="15">{
         return r.schema.
                 Deleted().ByKey(k).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov4" title="4">{
                         return serviceError.NewResourceNotFoundError("deleted sink", k.SinkID.String(), "source")
                 }</span>)
 }
@@ -737,25 +746,25 @@ const (
         MaxSinkVersionsPerSink = 1000
 )
 
-func (r *Repository) checkMaxSinksPerSource(k key.SourceKey, newCount int64) op.Op <span class="cov8" title="1">{
+func (r *Repository) checkMaxSinksPerSource(k key.SourceKey, newCount int64) op.Op <span class="cov10" title="31">{
         return r.schema.
                 Active().InSource(k).Count(r.client).
-                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
-                        if actualCount+newCount &gt; MaxSinksPerSource </span><span class="cov8" title="1">{
+                WithResultValidator(func(actualCount int64) error </span><span class="cov10" title="31">{
+                        if actualCount+newCount &gt; MaxSinksPerSource </span><span class="cov1" title="1">{
                                 return serviceError.NewCountLimitReachedError("sink", MaxSinksPerSource, "source")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov9" title="30">return nil</span>
                 })
 }
 
-func (r *Repository) checkMaxSinksVersionsPerSink(k key.SinkKey, newCount int64) op.Op <span class="cov8" title="1">{
+func (r *Repository) checkMaxSinksVersionsPerSink(k key.SinkKey, newCount int64) op.Op <span class="cov6" title="8">{
         return r.schema.
                 Versions().Of(k).Count(r.client).
-                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
-                        if actualCount+newCount &gt; MaxSinkVersionsPerSink </span><span class="cov8" title="1">{
+                WithResultValidator(func(actualCount int64) error </span><span class="cov6" title="8">{
+                        if actualCount+newCount &gt; MaxSinkVersionsPerSink </span><span class="cov1" title="1">{
                                 return serviceError.NewCountLimitReachedError("version", MaxSinkVersionsPerSink, "sink")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov6" title="7">return nil</span>
                 })
 }
 </pre>
@@ -768,15 +777,15 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
 )
 
-func (r *Repository) List(parentKey any) iterator.DefinitionT[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) List(parentKey any) iterator.DefinitionT[definition.Sink] <span class="cov8" title="7">{
         return r.list(r.schema.Active(), parentKey)
 }</span>
 
-func (r *Repository) ListDeleted(parentKey any) iterator.DefinitionT[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) ListDeleted(parentKey any) iterator.DefinitionT[definition.Sink] <span class="cov6" title="5">{
         return r.list(r.schema.Deleted(), parentKey)
 }</span>
 
-func (r *Repository) list(pfx schema.SinkInState, parentKey any) iterator.DefinitionT[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) list(pfx schema.SinkInState, parentKey any) iterator.DefinitionT[definition.Sink] <span class="cov10" title="12">{
         return pfx.In(parentKey).GetAll(r.client)
 }</span>
 </pre>
@@ -809,7 +818,7 @@ type dependencies interface {
         Plugins() *plugin.Plugins
 }
 
-func NewRepository(d dependencies, sources *source.Repository) *Repository <span class="cov8" title="1">{
+func NewRepository(d dependencies, sources *source.Repository) *Repository <span class="cov7" title="18">{
         r := &amp;Repository{
                 client:  d.EtcdClient(),
                 schema:  schema.ForSink(d.EtcdSerde()),
@@ -822,17 +831,17 @@ func NewRepository(d dependencies, sources *source.Repository) *Repository <span
         return r
 }</span>
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Sink) (op.Op, error) <span class="cov8" title="1">{
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Sink) (op.Op, error) <span class="cov8" title="30">{
         saveCtx := plugin.NewSaveContext(now)
         r.save(saveCtx, old, updated)
         return saveCtx.Do(ctx)
 }</span>
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Sink) <span class="cov8" title="1">{
+func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Sink) <span class="cov10" title="53">{
         // Call plugins
         r.plugins.Executor().OnSinkSave(saveCtx, old, updated)
 
-        if updated.Deleted </span><span class="cov8" title="1">{
+        if updated.Deleted </span><span class="cov7" title="18">{
                 // Move entity from the active prefix to the deleted prefix
                 saveCtx.WriteOp(
                         // Delete entity from the active prefix
@@ -840,7 +849,7 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
                         // Save entity to the deleted prefix
                         r.schema.Deleted().ByKey(updated.SinkKey).Put(r.client, *updated),
                 )
-        }</span> else<span class="cov8" title="1"> {
+        }</span> else<span class="cov9" title="35"> {
                 saveCtx.WriteOp(
                         // Save record to the "active" prefix
                         r.schema.Active().ByKey(updated.SinkKey).Put(r.client, *updated),
@@ -848,7 +857,7 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
                         r.schema.Versions().Of(updated.SinkKey).Version(updated.VersionNumber()).Put(r.client, *updated),
                 )
 
-                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov8" title="1">{
+                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov5" title="6">{
                         // Delete record from the "deleted" prefix, if needed
                         saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.SinkKey).Delete(r.client))
                 }</span>
@@ -869,7 +878,7 @@ import (
         "time"
 )
 
-func (r *Repository) Undelete(k key.SinkKey, now time.Time) *op.AtomicOp[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) Undelete(k key.SinkKey, now time.Time) *op.AtomicOp[definition.Sink] <span class="cov2" title="2">{
         var undeleted definition.Sink
         return op.Atomic(r.client, &amp;undeleted).
                 // Check prerequisites
@@ -879,62 +888,62 @@ func (r *Repository) Undelete(k key.SinkKey, now time.Time) *op.AtomicOp[definit
                 // Mark undeleted
                 AddFrom(r.
                         undeleteAllFrom(k, now, false).
-                        OnResult(func(r []definition.Sink) </span><span class="cov8" title="1">{
-                                if len(r) == 1 </span><span class="cov8" title="1">{
+                        OnResult(func(r []definition.Sink) </span><span class="cov1" title="1">{
+                                if len(r) == 1 </span><span class="cov1" title="1">{
                                         undeleted = r[0]
                                 }</span>
                         }))
 }
 
-func (r *Repository) undeleteSinksOnSourceUndelete() <span class="cov8" title="1">{
-        r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, old, entity *definition.Source) </span><span class="cov8" title="1">{
+func (r *Repository) undeleteSinksOnSourceUndelete() <span class="cov9" title="18">{
+        r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, old, entity *definition.Source) </span><span class="cov10" title="24">{
                 undeleted := entity.UndeletedAt != nil &amp;&amp; entity.UndeletedAt.Time().Equal(ctx.Now())
-                if undeleted </span><span class="cov8" title="1">{
+                if undeleted </span><span class="cov2" title="2">{
                         ctx.AddFrom(r.undeleteAllFrom(entity.SourceKey, ctx.Now(), true))
                 }</span>
         })
 }
 
 // undeleteAllFrom the parent key.
-func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, undeletedWithParent bool) *op.AtomicOp[[]definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, undeletedWithParent bool) *op.AtomicOp[[]definition.Sink] <span class="cov4" title="4">{
         var allOld, allCreated []definition.Sink
         atomicOp := op.Atomic(r.client, &amp;allCreated)
 
         // Get or list
         switch k := parentKey.(type) </span>{
-        case key.SinkKey:<span class="cov8" title="1">
-                atomicOp.ReadOp(r.GetDeleted(k).WithOnResult(func(entity definition.Sink) </span><span class="cov8" title="1">{ allOld = []definition.Sink{entity} }</span>))
-        default:<span class="cov8" title="1">
+        case key.SinkKey:<span class="cov2" title="2">
+                atomicOp.ReadOp(r.GetDeleted(k).WithOnResult(func(entity definition.Sink) </span><span class="cov1" title="1">{ allOld = []definition.Sink{entity} }</span>))
+        default:<span class="cov2" title="2">
                 atomicOp.ReadOp(r.ListDeleted(parentKey).WithAllTo(&amp;allOld))</span>
         }
 
         // Iterate all
-        <span class="cov8" title="1">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+        <span class="cov4" title="4">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov4" title="3">{
                 allCreated = nil
                 saveCtx := plugin.NewSaveContext(now)
-                for _, old := range allOld </span><span class="cov8" title="1">{
-                        if old.DeletedWithParent != undeletedWithParent </span><span class="cov8" title="1">{
+                for _, old := range allOld </span><span class="cov6" title="7">{
+                        if old.DeletedWithParent != undeletedWithParent </span><span class="cov2" title="2">{
                                 continue</span>
                         }
 
                         // Mark undeleted
-                        <span class="cov8" title="1">created := deepcopy.Copy(old).(definition.Sink)
+                        <span class="cov5" title="5">created := deepcopy.Copy(old).(definition.Sink)
                         created.Undelete(now)
 
                         // Create a new version record, if the entity has been undeleted manually
-                        if !undeletedWithParent </span><span class="cov8" title="1">{
+                        if !undeletedWithParent </span><span class="cov1" title="1">{
                                 versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
                                 created.IncrementVersion(created, now, versionDescription)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">r.save(saveCtx, nil, &amp;created)
+                        <span class="cov5" title="5">r.save(saveCtx, nil, &amp;created)
                         allCreated = append(allCreated, created)</span>
                 }
-                <span class="cov8" title="1">return saveCtx.Do(ctx)</span>
+                <span class="cov4" title="3">return saveCtx.Do(ctx)</span>
         })
 
-        <span class="cov8" title="1">return atomicOp</span>
+        <span class="cov4" title="4">return atomicOp</span>
 }
 </pre>
 		
@@ -950,7 +959,7 @@ import (
         "time"
 )
 
-func (r *Repository) Update(k key.SinkKey, now time.Time, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) Update(k key.SinkKey, now time.Time, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] <span class="cov10" title="8">{
         var old, updated definition.Sink
         return op.Atomic(r.client, &amp;updated).
                 // Check prerequisites
@@ -958,7 +967,7 @@ func (r *Repository) Update(k key.SinkKey, now time.Time, versionDescription str
                 // Read the entity
                 ReadOp(r.Get(k).WithResultTo(&amp;old)).
                 // Update the entity
-                WriteOrErr(func(ctx context.Context) (op op.Op, err error) </span><span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op op.Op, err error) </span><span class="cov8" title="6">{
                         // Store old state
                         disabled := old.Disabled
                         deleted := old.Deleted
@@ -966,20 +975,20 @@ func (r *Repository) Update(k key.SinkKey, now time.Time, versionDescription str
                         // Update
                         updated = deepcopy.Copy(old).(definition.Sink)
                         updated, err = updateFn(updated)
-                        if err != nil </span><span class="cov8" title="1">{
+                        if err != nil </span><span class="cov1" title="1">{
                                 return nil, err
                         }</span>
 
                         // Disabled and Deleted fields cannot be modified by the Update operation
-                        <span class="cov8" title="1">if disabled != updated.Disabled </span><span class="cov8" title="1">{
+                        <span class="cov7" title="5">if disabled != updated.Disabled </span><span class="cov1" title="1">{
                                 return nil, errors.Errorf(`"Disabled" field cannot be modified by the Update operation`)
                         }</span>
-                        <span class="cov8" title="1">if deleted != updated.Deleted </span><span class="cov8" title="1">{
+                        <span class="cov7" title="4">if deleted != updated.Deleted </span><span class="cov1" title="1">{
                                 return nil, errors.Errorf(`"Deleted" field cannot be modified by the Update operation`)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">updated.IncrementVersion(updated, now, versionDescription)
+                        <span class="cov5" title="3">updated.IncrementVersion(updated, now, versionDescription)
                         return r.saveOne(ctx, now, &amp;old, &amp;updated)</span>
                 })
 }
@@ -1002,21 +1011,21 @@ import (
 
 // ListVersions fetches all versions records for the object.
 // The method can be used also for deleted objects.
-func (r *Repository) ListVersions(k key.SinkKey) iterator.DefinitionT[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) ListVersions(k key.SinkKey) iterator.DefinitionT[definition.Sink] <span class="cov10" title="4">{
         return r.schema.Versions().Of(k).GetAll(r.client)
 }</span>
 
 // GetVersion fetch entity version.
 // The method can be used also for deleted objects.
-func (r *Repository) GetVersion(k key.SinkKey, version definition.VersionNumber) op.WithResult[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) GetVersion(k key.SinkKey, version definition.VersionNumber) op.WithResult[definition.Sink] <span class="cov5" title="2">{
         return r.schema.
                 Versions().Of(k).Version(version).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceNotFoundError("sink version", k.SinkID.String()+"/"+version.String(), "source")
                 }</span>)
 }
 
-func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Sink] <span class="cov8" title="1">{
+func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Sink] <span class="cov8" title="3">{
         var updated definition.Sink
         var latestVersion, targetVersion *op.KeyValueT[definition.Sink]
         return op.Atomic(r.client, &amp;updated).
@@ -1025,16 +1034,16 @@ func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, to definition
                 // Get target version
                 ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&amp;targetVersion)).
                 // Return the most significant error
-                BeforeWriteOrErr(func(ctx context.Context) error </span><span class="cov8" title="1">{
-                        if latestVersion == nil </span><span class="cov8" title="1">{
+                BeforeWriteOrErr(func(ctx context.Context) error </span><span class="cov8" title="3">{
+                        if latestVersion == nil </span><span class="cov1" title="1">{
                                 return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
-                        }</span> else<span class="cov8" title="1"> if targetVersion == nil </span><span class="cov8" title="1">{
+                        }</span> else<span class="cov5" title="2"> if targetVersion == nil </span><span class="cov1" title="1">{
                                 return serviceError.NewResourceNotFoundError("sink version", k.SinkID.String()+"/"+to.String(), "source")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov1" title="1">return nil</span>
                 }).
                 // Prepare the new value
-                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov1" title="1">{
                         versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
                         old := targetVersion.Value
                         updated = deepcopy.Copy(old).(definition.Sink)
@@ -1064,53 +1073,53 @@ type (
         SourceVersionsOf Source
 )
 
-func ForSource(s *serde.Serde) Source <span class="cov8" title="1">{
+func ForSource(s *serde.Serde) Source <span class="cov4" title="2">{
         return Source{PrefixT: NewTypedPrefix[definition.Source]("definition/source", s)}
 }</span>
 
 // Active prefix contains all not deleted objects.
-func (v Source) Active() SourceInState <span class="cov8" title="1">{
+func (v Source) Active() SourceInState <span class="cov10" title="7">{
         return SourceInState{PrefixT: v.PrefixT.Add("active")}
 }</span>
 
 // Deleted prefix contains all deleted objects whose parent existed on deleted.
-func (v Source) Deleted() SourceInState <span class="cov8" title="1">{
+func (v Source) Deleted() SourceInState <span class="cov7" title="4">{
         return SourceInState{PrefixT: v.PrefixT.Add("deleted")}
 }</span>
 
 // Versions prefix contains full history of the object.
-func (v Source) Versions() SourceVersions <span class="cov8" title="1">{
+func (v Source) Versions() SourceVersions <span class="cov6" title="3">{
         return SourceVersions{PrefixT: v.PrefixT.Add("version")}
 }</span>
 
-func (v SourceInState) In(objectKey any) PrefixT[definition.Source] <span class="cov8" title="1">{
+func (v SourceInState) In(objectKey any) PrefixT[definition.Source] <span class="cov6" title="3">{
         switch k := objectKey.(type) </span>{
-        case keboola.ProjectID:<span class="cov8" title="1">
+        case keboola.ProjectID:<span class="cov1" title="1">
                 return v.InProject(k)</span>
-        case BranchKey:<span class="cov8" title="1">
+        case BranchKey:<span class="cov1" title="1">
                 return v.InBranch(k)</span>
-        default:<span class="cov8" title="1">
+        default:<span class="cov1" title="1">
                 panic(errors.Errorf(`unexpected Source parent key type "%T"`, objectKey))</span>
         }
 }
 
-func (v SourceInState) InProject(k keboola.ProjectID) PrefixT[definition.Source] <span class="cov8" title="1">{
+func (v SourceInState) InProject(k keboola.ProjectID) PrefixT[definition.Source] <span class="cov6" title="3">{
         return v.PrefixT.Add(k.String())
 }</span>
 
-func (v SourceInState) InBranch(k BranchKey) PrefixT[definition.Source] <span class="cov8" title="1">{
+func (v SourceInState) InBranch(k BranchKey) PrefixT[definition.Source] <span class="cov6" title="3">{
         return v.PrefixT.Add(k.String())
 }</span>
 
-func (v SourceInState) ByKey(k SourceKey) KeyT[definition.Source] <span class="cov8" title="1">{
+func (v SourceInState) ByKey(k SourceKey) KeyT[definition.Source] <span class="cov4" title="2">{
         return v.PrefixT.Key(k.String())
 }</span>
 
-func (v SourceVersions) Of(k SourceKey) SourceVersionsOf <span class="cov8" title="1">{
+func (v SourceVersions) Of(k SourceKey) SourceVersionsOf <span class="cov4" title="2">{
         return SourceVersionsOf{PrefixT: v.PrefixT.Add(k.String())}
 }</span>
 
-func (v SourceVersionsOf) Version(version definition.VersionNumber) KeyT[definition.Source] <span class="cov8" title="1">{
+func (v SourceVersionsOf) Version(version definition.VersionNumber) KeyT[definition.Source] <span class="cov1" title="1">{
         return v.PrefixT.Key(version.String())
 }</span>
 </pre>
@@ -1131,7 +1140,7 @@ import (
 // - If the Source already exists, the ResourceAlreadyExistsError is returned.
 // - If the MaxSourcesPerBranch limit is exceeded, the CountLimitReachedError is returned.
 // - If the MaxSourceVersionsPerSource limit is exceeded, the CountLimitReachedError is returned.
-func (r *Repository) Create(input *definition.Source, now time.Time, versionDescription string) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) Create(input *definition.Source, now time.Time, versionDescription string) *op.AtomicOp[definition.Source] <span class="cov10" title="23">{
         k := input.SourceKey
         var created definition.Source
         var deleted *op.KeyValueT[definition.Source]
@@ -1140,27 +1149,27 @@ func (r *Repository) Create(input *definition.Source, now time.Time, versionDesc
                 ReadOp(r.branches.ExistsOrErr(k.BranchKey)).
                 ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
                 // Entity must not exist
-                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceAlreadyExistsError("source", k.SourceID.String(), "branch")
                 }</span>)).
                 // Get deleted entity, if any, to undelete it.
                 ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&amp;deleted)).
                 // Create
-                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov9" title="20">{
                         // Create or undelete
                         created = deepcopy.Copy(*input).(definition.Source)
-                        if deleted != nil </span><span class="cov8" title="1">{
+                        if deleted != nil </span><span class="cov1" title="1">{
                                 created.Version = deleted.Value.Version
                                 created.SoftDeletable = deleted.Value.SoftDeletable
                                 created.Undelete(now)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">created.IncrementVersion(created, now, versionDescription)
+                        <span class="cov9" title="20">created.IncrementVersion(created, now, versionDescription)
                         return r.saveOne(ctx, now, nil, &amp;created)</span>
                 }).
                 // Update the input entity after a successful operation
-                OnResult(func(result definition.Source) <span class="cov8" title="1">{
+                OnResult(func(result definition.Source) <span class="cov9" title="20">{
                         *input = result
                 }</span>)
 }
@@ -1179,22 +1188,22 @@ import (
         "time"
 )
 
-func (r *Repository) SoftDelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) SoftDelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] <span class="cov7" title="9">{
         var deleted definition.Source
         return op.Atomic(r.client, &amp;deleted).
                 AddFrom(r.
                         softDeleteAllFrom(k, now, false).
-                        OnResult(func(r []definition.Source) </span><span class="cov8" title="1">{
-                                if len(r) == 1 </span><span class="cov8" title="1">{
+                        OnResult(func(r []definition.Source) </span><span class="cov7" title="8">{
+                                if len(r) == 1 </span><span class="cov7" title="8">{
                                         deleted = r[0]
                                 }</span>
                         }))
 }
 
-func (r *Repository) deleteSourcesOnBranchDelete() <span class="cov8" title="1">{
-        r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) </span><span class="cov8" title="1">{
+func (r *Repository) deleteSourcesOnBranchDelete() <span class="cov9" title="16">{
+        r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) </span><span class="cov10" title="19">{
                 deleted := entity.DeletedAt != nil &amp;&amp; entity.DeletedAt.Time().Equal(ctx.Now())
-                if deleted </span><span class="cov8" title="1">{
+                if deleted </span><span class="cov3" title="2">{
                         ctx.AddFrom(r.softDeleteAllFrom(entity.BranchKey, ctx.Now(), true))
                 }</span>
         })
@@ -1202,22 +1211,22 @@ func (r *Repository) deleteSourcesOnBranchDelete() <span class="cov8" title="1">
 }
 
 // softDeleteAllFrom the parent key.
-func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, deletedWithParent bool) *op.AtomicOp[[]definition.Source] <span class="cov8" title="1">{
+func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, deletedWithParent bool) *op.AtomicOp[[]definition.Source] <span class="cov8" title="11">{
         var allOld, allDeleted []definition.Source
         atomicOp := op.Atomic(r.client, &amp;allDeleted)
 
         // Get or list
         switch k := parentKey.(type) </span>{
-        case key.SourceKey:<span class="cov8" title="1">
-                atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Source) </span><span class="cov8" title="1">{ allOld = []definition.Source{entity} }</span>))
-        default:<span class="cov8" title="1">
+        case key.SourceKey:<span class="cov7" title="9">
+                atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Source) </span><span class="cov7" title="8">{ allOld = []definition.Source{entity} }</span>))
+        default:<span class="cov3" title="2">
                 atomicOp.ReadOp(r.List(parentKey).WithAllTo(&amp;allOld))</span>
         }
 
         // Iterate all
-        <span class="cov8" title="1">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+        <span class="cov8" title="11">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="10">{
                 saveCtx := plugin.NewSaveContext(now)
-                for _, old := range allOld </span><span class="cov8" title="1">{
+                for _, old := range allOld </span><span class="cov8" title="12">{
                         old := old
 
                         // Mark deleted
@@ -1228,10 +1237,10 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
                         r.save(saveCtx, &amp;old, &amp;deleted)
                         allDeleted = append(allDeleted, deleted)
                 }</span>
-                <span class="cov8" title="1">return saveCtx.Do(ctx)</span>
+                <span class="cov8" title="10">return saveCtx.Do(ctx)</span>
         })
 
-        <span class="cov8" title="1">return atomicOp</span>
+        <span class="cov8" title="11">return atomicOp</span>
 }
 </pre>
 		
@@ -1243,10 +1252,10 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] <span class="cov8" title="1">{
+func (r *Repository) ExistsOrErr(k key.SourceKey) op.WithResult[bool] <span class="cov10" title="2">{
         return r.schema.
                 Active().ByKey(k).Exists(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
                 }</span>)
 }
@@ -1261,18 +1270,18 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-func (r *Repository) Get(k key.SourceKey) op.WithResult[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) Get(k key.SourceKey) op.WithResult[definition.Source] <span class="cov10" title="29">{
         return r.schema.
                 Active().ByKey(k).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov5" title="5">{
                         return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
                 }</span>)
 }
 
-func (r *Repository) GetDeleted(k key.SourceKey) op.WithResult[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) GetDeleted(k key.SourceKey) op.WithResult[definition.Source] <span class="cov7" title="11">{
         return r.schema.
                 Deleted().ByKey(k).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov4" title="4">{
                         return serviceError.NewResourceNotFoundError("deleted source", k.SourceID.String(), "branch")
                 }</span>)
 }
@@ -1291,25 +1300,25 @@ const (
         MaxSourceVersionsPerSource = 1000
 )
 
-func (r *Repository) checkMaxSourcesPerBranch(k key.BranchKey, newCount int64) op.Op <span class="cov8" title="1">{
+func (r *Repository) checkMaxSourcesPerBranch(k key.BranchKey, newCount int64) op.Op <span class="cov10" title="25">{
         return r.schema.
                 Active().InBranch(k).Count(r.client).
-                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
-                        if actualCount+newCount &gt; MaxSourcesPerBranch </span><span class="cov8" title="1">{
+                WithResultValidator(func(actualCount int64) error </span><span class="cov10" title="25">{
+                        if actualCount+newCount &gt; MaxSourcesPerBranch </span><span class="cov1" title="1">{
                                 return serviceError.NewCountLimitReachedError("source", MaxSourcesPerBranch, "branch")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov9" title="24">return nil</span>
                 })
 }
 
-func (r *Repository) checkMaxSourcesVersionsPerSource(k key.SourceKey, newCount int64) op.Op <span class="cov8" title="1">{
+func (r *Repository) checkMaxSourcesVersionsPerSource(k key.SourceKey, newCount int64) op.Op <span class="cov6" title="8">{
         return r.schema.
                 Versions().Of(k).Count(r.client).
-                WithResultValidator(func(actualCount int64) error </span><span class="cov8" title="1">{
-                        if actualCount+newCount &gt; MaxSourceVersionsPerSource </span><span class="cov8" title="1">{
+                WithResultValidator(func(actualCount int64) error </span><span class="cov6" title="8">{
+                        if actualCount+newCount &gt; MaxSourceVersionsPerSource </span><span class="cov1" title="1">{
                                 return serviceError.NewCountLimitReachedError("version", MaxSourceVersionsPerSource, "source")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov6" title="7">return nil</span>
                 })
 }
 </pre>
@@ -1322,15 +1331,15 @@ import (
         "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
 )
 
-func (r *Repository) List(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) List(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov7" title="5">{
         return r.list(r.schema.Active(), parentKey, opts...)
 }</span>
 
-func (r *Repository) ListDeleted(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) ListDeleted(parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov6" title="4">{
         return r.list(r.schema.Deleted(), parentKey, opts...)
 }</span>
 
-func (r *Repository) list(pfx schema.SourceInState, parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) list(pfx schema.SourceInState, parentKey any, opts ...iterator.Option) iterator.DefinitionT[definition.Source] <span class="cov10" title="9">{
         return pfx.In(parentKey).GetAll(r.client, opts...)
 }</span>
 </pre>
@@ -1363,7 +1372,7 @@ type dependencies interface {
         Plugins() *plugin.Plugins
 }
 
-func NewRepository(d dependencies, branches *branch.Repository) *Repository <span class="cov8" title="1">{
+func NewRepository(d dependencies, branches *branch.Repository) *Repository <span class="cov7" title="16">{
         r := &amp;Repository{
                 client:   d.EtcdClient(),
                 schema:   schema.ForSource(d.EtcdSerde()),
@@ -1376,17 +1385,17 @@ func NewRepository(d dependencies, branches *branch.Repository) *Repository <spa
         return r
 }</span>
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Source) (op.Op, error) <span class="cov8" title="1">{
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Source) (op.Op, error) <span class="cov8" title="24">{
         saveCtx := plugin.NewSaveContext(now)
         r.save(saveCtx, old, updated)
         return saveCtx.Do(ctx)
 }</span>
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Source) <span class="cov8" title="1">{
+func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Source) <span class="cov10" title="39">{
         // Call plugins
         r.plugins.Executor().OnSourceSave(saveCtx, old, updated)
 
-        if updated.Deleted </span><span class="cov8" title="1">{
+        if updated.Deleted </span><span class="cov7" title="12">{
                 // Move entity from the active prefix to the deleted prefix
                 saveCtx.WriteOp(
                         // Delete entity from the active prefix
@@ -1394,7 +1403,7 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
                         // Save entity to the deleted prefix
                         r.schema.Deleted().ByKey(updated.SourceKey).Put(r.client, *updated),
                 )
-        }</span> else<span class="cov8" title="1"> {
+        }</span> else<span class="cov9" title="27"> {
                 saveCtx.WriteOp(
                         // Save record to the "active" prefix
                         r.schema.Active().ByKey(updated.SourceKey).Put(r.client, *updated),
@@ -1402,7 +1411,7 @@ func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.
                         r.schema.Versions().Of(updated.SourceKey).Version(updated.VersionNumber()).Put(r.client, *updated),
                 )
 
-                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov8" title="1">{
+                if updated.UndeletedAt != nil &amp;&amp; updated.UndeletedAt.Time().Equal(saveCtx.Now()) </span><span class="cov4" title="4">{
                         // Delete record from the "deleted" prefix, if needed
                         saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.SourceKey).Delete(r.client))
                 }</span>
@@ -1423,7 +1432,7 @@ import (
         "time"
 )
 
-func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] <span class="cov3" title="2">{
         var undeleted definition.Source
         return op.Atomic(r.client, &amp;undeleted).
                 // Check prerequisites
@@ -1433,17 +1442,17 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[defin
                 // Mark undeleted
                 AddFrom(r.
                         undeleteAllFrom(k, now, false).
-                        OnResult(func(r []definition.Source) </span><span class="cov8" title="1">{
-                                if len(r) == 1 </span><span class="cov8" title="1">{
+                        OnResult(func(r []definition.Source) </span><span class="cov1" title="1">{
+                                if len(r) == 1 </span><span class="cov1" title="1">{
                                         undeleted = r[0]
                                 }</span>
                         }))
 }
 
-func (r *Repository) undeleteSourcesOnBranchUndelete() <span class="cov8" title="1">{
-        r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) </span><span class="cov8" title="1">{
+func (r *Repository) undeleteSourcesOnBranchUndelete() <span class="cov9" title="16">{
+        r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) </span><span class="cov10" title="19">{
                 undeleted := entity.UndeletedAt != nil &amp;&amp; entity.UndeletedAt.Time().Equal(ctx.Now())
-                if undeleted </span><span class="cov8" title="1">{
+                if undeleted </span><span class="cov1" title="1">{
                         ctx.AddFrom(r.undeleteAllFrom(entity.BranchKey, ctx.Now(), true))
                 }</span>
         })
@@ -1451,46 +1460,46 @@ func (r *Repository) undeleteSourcesOnBranchUndelete() <span class="cov8" title=
 }
 
 // undeleteAllFrom the parent key.
-func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] <span class="cov8" title="1">{
+func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] <span class="cov4" title="3">{
         var allOld, allCreated []definition.Source
         atomicOp := op.Atomic(r.client, &amp;allCreated)
 
         // Get or list
         switch k := parentKey.(type) </span>{
-        case key.SourceKey:<span class="cov8" title="1">
-                atomicOp.ReadOp(r.GetDeleted(k).WithOnResult(func(entity definition.Source) </span><span class="cov8" title="1">{ allOld = []definition.Source{entity} }</span>))
-        default:<span class="cov8" title="1">
+        case key.SourceKey:<span class="cov3" title="2">
+                atomicOp.ReadOp(r.GetDeleted(k).WithOnResult(func(entity definition.Source) </span><span class="cov1" title="1">{ allOld = []definition.Source{entity} }</span>))
+        default:<span class="cov1" title="1">
                 atomicOp.ReadOp(r.ListDeleted(parentKey).WithAllTo(&amp;allOld))</span>
         }
 
         // Iterate all
-        <span class="cov8" title="1">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov8" title="1">{
+        <span class="cov4" title="3">atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) </span><span class="cov3" title="2">{
                 saveCtx := plugin.NewSaveContext(now)
-                for _, old := range allOld </span><span class="cov8" title="1">{
+                for _, old := range allOld </span><span class="cov5" title="4">{
                         old := old
 
-                        if old.DeletedWithParent != undeletedWithParent </span><span class="cov8" title="1">{
+                        if old.DeletedWithParent != undeletedWithParent </span><span class="cov1" title="1">{
                                 continue</span>
                         }
 
                         // Mark undeleted
-                        <span class="cov8" title="1">created := deepcopy.Copy(old).(definition.Source)
+                        <span class="cov4" title="3">created := deepcopy.Copy(old).(definition.Source)
                         created.Undelete(now)
 
                         // Create a new version record, if the entity has been undeleted manually
-                        if !undeletedWithParent </span><span class="cov8" title="1">{
+                        if !undeletedWithParent </span><span class="cov1" title="1">{
                                 versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
                                 created.IncrementVersion(created, now, versionDescription)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">r.save(saveCtx, &amp;old, &amp;created)
+                        <span class="cov4" title="3">r.save(saveCtx, &amp;old, &amp;created)
                         allCreated = append(allCreated, created)</span>
                 }
-                <span class="cov8" title="1">return saveCtx.Do(ctx)</span>
+                <span class="cov3" title="2">return saveCtx.Do(ctx)</span>
         })
 
-        <span class="cov8" title="1">return atomicOp</span>
+        <span class="cov4" title="3">return atomicOp</span>
 }
 </pre>
 		
@@ -1506,7 +1515,7 @@ import (
         "time"
 )
 
-func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] <span class="cov10" title="8">{
         var old, updated definition.Source
         return op.Atomic(r.client, &amp;updated).
                 // Check prerequisites
@@ -1514,7 +1523,7 @@ func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription s
                 // Read the entity
                 ReadOp(r.Get(k).WithResultTo(&amp;old)).
                 // Update the entity
-                WriteOrErr(func(ctx context.Context) (op op.Op, err error) </span><span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op op.Op, err error) </span><span class="cov8" title="6">{
                         // Store old state
                         disabled := old.Disabled
                         deleted := old.Deleted
@@ -1522,20 +1531,20 @@ func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription s
                         // Update
                         updated = deepcopy.Copy(old).(definition.Source)
                         updated, err = updateFn(updated)
-                        if err != nil </span><span class="cov8" title="1">{
+                        if err != nil </span><span class="cov1" title="1">{
                                 return nil, err
                         }</span>
 
                         // Disabled and Deleted fields cannot be modified by the Update operation
-                        <span class="cov8" title="1">if disabled != updated.Disabled </span><span class="cov8" title="1">{
+                        <span class="cov7" title="5">if disabled != updated.Disabled </span><span class="cov1" title="1">{
                                 return nil, errors.Errorf(`"Disabled" field cannot be modified by the Update operation`)
                         }</span>
-                        <span class="cov8" title="1">if deleted != updated.Deleted </span><span class="cov8" title="1">{
+                        <span class="cov7" title="4">if deleted != updated.Deleted </span><span class="cov1" title="1">{
                                 return nil, errors.Errorf(`"Deleted" field cannot be modified by the Update operation`)
                         }</span>
 
                         // Save
-                        <span class="cov8" title="1">updated.IncrementVersion(updated, now, versionDescription)
+                        <span class="cov5" title="3">updated.IncrementVersion(updated, now, versionDescription)
                         return r.saveOne(ctx, now, &amp;old, &amp;updated)</span>
                 })
 }
@@ -1558,21 +1567,21 @@ import (
 
 // ListVersions fetches all versions records for the object.
 // The method can be used also for deleted objects.
-func (r *Repository) ListVersions(k key.SourceKey) iterator.DefinitionT[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) ListVersions(k key.SourceKey) iterator.DefinitionT[definition.Source] <span class="cov10" title="4">{
         return r.schema.Versions().Of(k).GetAll(r.client)
 }</span>
 
 // GetVersion fetch entity version.
 // The method can be used also for deleted objects.
-func (r *Repository) GetVersion(k key.SourceKey, version definition.VersionNumber) op.WithResult[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) GetVersion(k key.SourceKey, version definition.VersionNumber) op.WithResult[definition.Source] <span class="cov5" title="2">{
         return r.schema.
                 Versions().Of(k).Version(version).Get(r.client).
-                WithEmptyResultAsError(func() error </span><span class="cov8" title="1">{
+                WithEmptyResultAsError(func() error </span><span class="cov1" title="1">{
                         return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+version.String(), "branch")
                 }</span>)
 }
 
-func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Source] <span class="cov8" title="1">{
+func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Source] <span class="cov8" title="3">{
         var updated definition.Source
         var latest, targetVersion *op.KeyValueT[definition.Source]
         return op.Atomic(r.client, &amp;updated).
@@ -1581,16 +1590,16 @@ func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, to definiti
                 // Get target version
                 ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&amp;targetVersion)).
                 // Return the most significant error
-                BeforeWriteOrErr(func(ctx context.Context) error </span><span class="cov8" title="1">{
-                        if latest == nil </span><span class="cov8" title="1">{
+                BeforeWriteOrErr(func(ctx context.Context) error </span><span class="cov8" title="3">{
+                        if latest == nil </span><span class="cov1" title="1">{
                                 return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
-                        }</span> else<span class="cov8" title="1"> if targetVersion == nil </span><span class="cov8" title="1">{
+                        }</span> else<span class="cov5" title="2"> if targetVersion == nil </span><span class="cov1" title="1">{
                                 return serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+to.String(), "branch")
                         }</span>
-                        <span class="cov8" title="1">return nil</span>
+                        <span class="cov1" title="1">return nil</span>
                 }).
                 // Prepare the new value
-                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov8" title="1">{
+                WriteOrErr(func(ctx context.Context) (op.Op, error) <span class="cov1" title="1">{
                         versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
                         old := targetVersion.Value
                         updated = deepcopy.Copy(old).(definition.Source)
