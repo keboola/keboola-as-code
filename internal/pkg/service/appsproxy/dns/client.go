@@ -13,6 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const DialTimeout = 2 * time.Second
+
 const DNSReadTimeout = 2 * time.Second
 
 const DNSWriteTimeout = 2 * time.Second
@@ -22,10 +24,7 @@ type Client struct {
 	dnsServer string
 }
 
-func NewClient() (*Client, error) {
-	// Dialer
-	dialer := NewDialer()
-
+func NewClient(dialer *net.Dialer) (*Client, error) {
 	// DNS client
 	client := &dns.Client{
 		Net:          "udp",

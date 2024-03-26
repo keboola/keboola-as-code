@@ -53,8 +53,6 @@ const providerCookie = "_oauth2_provider"
 
 const selectionPagePath = "/_proxy/selection"
 
-const AppAddressCtxKey = ctxKey("app-address")
-
 //go:embed template/*
 var templates embed.FS
 
@@ -69,7 +67,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
-	transport, err := NewDNSSkippingHTTPTransport(AppAddressCtxKey)
+	transport, err := NewReverseProxyHTTPTransport()
 	if err != nil {
 		return nil, errors.PrefixError(err, "could not create http transport")
 	}
