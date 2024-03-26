@@ -1439,7 +1439,7 @@ func TestAppProxyRouter(t *testing.T) {
 			service := startSandboxesService(t, apps)
 			defer service.Close()
 
-			handler := createProxyHandler(t, service.URL)
+			router, handler := createProxyHandler(t, service.URL)
 
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
@@ -1452,6 +1452,8 @@ func TestAppProxyRouter(t *testing.T) {
 			client := createHTTPClient(t, proxyURL)
 
 			tc.run(t, client, m, appServer, service)
+
+			router.Shutdown()
 
 			assert.Equal(t, tc.expectedNotifications, service.notifications)
 		})
@@ -1764,7 +1766,7 @@ func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
 	return m
 }
 
-func createProxyHandler(t *testing.T, sandboxesAPIURL string) http.Handler {
+func createProxyHandler(t *testing.T, sandboxesAPIURL string) (*Router, http.Handler) {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -1786,7 +1788,7 @@ func createProxyHandler(t *testing.T, sandboxesAPIURL string) http.Handler {
 	router, err := NewRouter(d, "proxy-")
 	require.NoError(t, err)
 
-	return middleware.Wrap(
+	return router, middleware.Wrap(
 		router.CreateHandler(),
 		appIDMiddleware(d.Config().API.PublicURL),
 	)
