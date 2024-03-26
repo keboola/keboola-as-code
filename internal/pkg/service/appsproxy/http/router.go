@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
 	"strings"
@@ -268,26 +269,37 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
+
 			appID, ok := ctx.Value(AppIDCtxKey).(string)
-			if ok {
-				r.wg.Add(1)
-				// Current request should not wait for the notification
-				go func() {
-					defer r.wg.Done()
-
-					notificationCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-					defer cancel()
-
-					notificationCtx = ctxattr.ContextWith(notificationCtx, attribute.String(attrAppID, appID))
-
-					_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.notify")
-					notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
-
-					// Error is already logged by the Notify method itself. We can ignore it here.
-					err := r.loader.Notify(notificationCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
-					span.End(&err)
-				}()
+			if !ok {
+				// App ID should always be defined when the request gets to this middleware.
+				w.WriteHeader(http.StatusBadGateway)
+				return
 			}
+
+			trace := &httptrace.ClientTrace{
+				// Send notification only if a connection to the app was made successfully.
+				GotConn: func(connInfo httptrace.GotConnInfo) {
+					r.wg.Add(1)
+					// Current request should not wait for the notification
+					go func() {
+						defer r.wg.Done()
+
+						notificationCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+						defer cancel()
+
+						notificationCtx = ctxattr.ContextWith(notificationCtx, attribute.String(attrAppID, appID))
+
+						_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.notify")
+						notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
+
+						// Error is already logged by the Notify method itself. We can ignore it here.
+						err := r.loader.Notify(notificationCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+						span.End(&err)
+					}()
+				},
+			}
+			req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 
 			next.ServeHTTP(w, req)
 		})
