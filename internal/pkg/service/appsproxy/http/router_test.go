@@ -1439,7 +1439,8 @@ func TestAppProxyRouter(t *testing.T) {
 			service := startSandboxesService(t, apps)
 			defer service.Close()
 
-			router, handler := createProxyHandler(t, service.URL)
+			d, mocked := createDependencies(t, service.URL)
+			router, handler := createProxyHandler(t, d)
 
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
@@ -1456,6 +1457,7 @@ func TestAppProxyRouter(t *testing.T) {
 			router.Shutdown()
 
 			assert.Equal(t, tc.expectedNotifications, service.notifications)
+			assert.Equal(t, "", mocked.DebugLogger().ErrorMessages())
 		})
 	}
 }
@@ -1731,17 +1733,11 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 		appID := req.PathValue("app")
 
 		body, err := io.ReadAll(req.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadGateway)
-			return
-		}
+		assert.NoError(t, err)
 
 		data := make(map[string]string)
 		err = json.DecodeString(string(body), &data)
-		if err != nil {
-			w.WriteHeader(http.StatusBadGateway)
-			return
-		}
+		assert.NoError(t, err)
 
 		if _, ok := data["lastRequestTimestamp"]; ok {
 			service.notifications[appID] += 1
@@ -1766,7 +1762,7 @@ func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
 	return m
 }
 
-func createProxyHandler(t *testing.T, sandboxesAPIURL string) (*Router, http.Handler) {
+func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies.ServiceScope, dependencies.Mocked) {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -1777,8 +1773,10 @@ func createProxyHandler(t *testing.T, sandboxesAPIURL string) (*Router, http.Han
 	cfg.CookieSecretSalt = string(secret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
-	d, _ := proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
+	return proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
+}
 
+func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope) (*Router, http.Handler) {
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because oauthproxy will override its error writer with either
