@@ -79,6 +79,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
+		// Save project.json
 		if err := prjFile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures()); err != nil {
 			return err
 		}
