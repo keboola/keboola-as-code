@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
@@ -60,11 +59,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	manifest, err := createManifest.Run(ctx, fs, o.ManifestOptions, d)
 	if err != nil {
 		return errors.Errorf(`cannot create manifest: %w`, err)
-	}
-
-	// Create ENV files
-	if err := createEnvFiles.Run(ctx, fs, d); err != nil {
-		return err
 	}
 
 	// Related operations
