@@ -84,7 +84,7 @@ func newLocalCommandScope(ctx context.Context, baseScp BaseScope, hostByFlag con
 	return &localCommandScope{
 		PublicScope:     pubScp,
 		BaseScope:       baseScp,
-		projectFeatures: fileContent.Features,
+		projectFeatures: fileContent.Features.ToMap(),
 		projectBackends: fileContent.Backends,
 	}, nil
 }
