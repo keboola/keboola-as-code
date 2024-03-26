@@ -32,20 +32,29 @@ const HTTP2PingTimeout = 2 * time.Second
 // HTTP2WriteByteTimeout is the timeout after which the connection will be closed no data can be written to it.
 const HTTP2WriteByteTimeout = 15 * time.Second
 
-// NewDNSSkippingHTTPTransport creates an HTTP transport which can skip DNS resolution if the address is already within request context.
-// Timeouts are optimized for our usage in reverse proxy.
-func NewDNSSkippingHTTPTransport(addressCtxKey any) (*http.Transport, error) {
-	dialer := dns.NewDialer()
+// NewReverseProxyHTTPTransport creates new http transport intended to be used with NewSingleHostReverseProxy.
+func NewReverseProxyHTTPTransport() (*http.Transport, error) {
+	dialer := newDialer()
+
+	dnsClient, err := dns.NewClient(dialer)
+	if err != nil {
+		return nil, err
+	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		address, ok := ctx.Value(addressCtxKey).(string)
-		if ok {
-			addr = address
+	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return nil, err
 		}
 
-		return dialer.DialContext(ctx, network, addr)
+		ip, err := dnsClient.Resolve(ctx, host)
+		if err != nil {
+			return nil, err
+		}
+
+		return dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
 	}
 
 	transport.DisableKeepAlives = false
@@ -60,6 +69,7 @@ func NewDNSSkippingHTTPTransport(addressCtxKey any) (*http.Transport, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	http2Transport.ReadIdleTimeout = HTTP2ReadIdleTimeout
 	http2Transport.PingTimeout = HTTP2PingTimeout
 	http2Transport.WriteByteTimeout = HTTP2WriteByteTimeout

@@ -15,7 +15,8 @@ import (
 func TestClient_Resolve(t *testing.T) {
 	t.Parallel()
 
-	client, err := dns.NewClient()
+	dialer := &net.Dialer{}
+	client, err := dns.NewClient(dialer)
 	require.NoError(t, err)
 
 	// Local DNS server will be unable to resolve keboola.com because of RecursionDesired = false.
