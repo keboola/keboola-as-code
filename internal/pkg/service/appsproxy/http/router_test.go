@@ -37,8 +37,9 @@ import (
 )
 
 type testCase struct {
-	name string
-	run  func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService)
+	name                  string
+	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService)
+	expectedNotifications map[string]int
 }
 
 func TestAppProxyRouter(t *testing.T) {
@@ -63,6 +64,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "unknown-app-id",
@@ -77,6 +79,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, `Application "unknown" not found.`, string(body))
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "broken-app",
@@ -91,6 +94,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "no-rule-app",
@@ -105,6 +109,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "wrong-rule-type-app",
@@ -119,6 +124,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "empty-providers-array-app",
@@ -133,6 +139,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "empty-allowed-roles-array-app",
@@ -147,6 +154,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "unknown-provider-app",
@@ -161,6 +169,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-down",
@@ -173,6 +182,9 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err := client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
 			},
 		},
 		{
@@ -199,6 +211,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "application/json", appRequest.Header.Get("Content-Type"))
 				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
 				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-User-Email"))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
 			},
 		},
 		{
@@ -271,6 +286,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.True(t, cookies[1].Secure)
 				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
 			},
+			expectedNotifications: map[string]int{
+				"oidc": 1,
+			},
 		},
 		{
 			name: "private-app-unauthorized",
@@ -303,6 +321,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-missing-csrf-token",
@@ -361,6 +380,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-group-mismatch",
@@ -403,6 +423,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-unverified-email",
@@ -443,6 +464,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-oidc-down",
@@ -492,6 +514,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-down",
@@ -566,6 +589,9 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"oidc": 1,
 			},
 		},
 		{
@@ -651,6 +677,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "admin,manager", appRequest.Header.Get("X-Kbc-User-Roles"))
 				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
 			},
+			expectedNotifications: map[string]int{
+				"multi": 1,
+			},
 		},
 		{
 			name: "multi-app-selection-page-redirect",
@@ -676,6 +705,7 @@ func TestAppProxyRouter(t *testing.T) {
 				location := response.Header["Location"][0]
 				assert.Equal(t, "https://multi.hub.keboola.local/_proxy/selection", location)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-unverified-email",
@@ -723,6 +753,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-down",
@@ -773,6 +804,9 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{
+				"multi": 1,
+			},
 		},
 		{
 			name: "multi-app-broken-provider",
@@ -790,6 +824,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-websocket",
@@ -815,6 +850,9 @@ func TestAppProxyRouter(t *testing.T) {
 
 				c.Close(websocket.StatusNormalClosure, "")
 			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
 		},
 		{
 			name: "private-app-websocket-unauthorized",
@@ -832,6 +870,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "failed to WebSocket dial: expected handshake response status code 101 but got 302")
 			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-websocket",
@@ -890,6 +929,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "Hello websocket", v)
 
 				c.Close(websocket.StatusNormalClosure, "")
+			},
+			expectedNotifications: map[string]int{
+				"oidc": 1,
 			},
 		},
 		{
@@ -958,6 +1000,9 @@ func TestAppProxyRouter(t *testing.T) {
 
 				c.Close(websocket.StatusNormalClosure, "")
 			},
+			expectedNotifications: map[string]int{
+				"multi": 1,
+			},
 		},
 		{
 			name: "prefix-app-no-auth",
@@ -989,6 +1034,9 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusNotFound, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"prefix": 1,
 			},
 		},
 		{
@@ -1035,6 +1083,9 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"prefix": 1,
 			},
 		},
 		{
@@ -1089,6 +1140,9 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"prefix": 1,
 			},
 		},
 		{
@@ -1154,6 +1208,9 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
+			expectedNotifications: map[string]int{
+				"prefix": 1,
+			},
 		},
 		{
 			name: "configuration-change",
@@ -1187,6 +1244,9 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
 			},
 		},
 		{
@@ -1226,6 +1286,7 @@ func TestAppProxyRouter(t *testing.T) {
 				// Check total requests count
 				assert.Equal(t, int64(100), counter.Load())
 			},
+			expectedNotifications: map[string]int{},
 		},
 	}
 
@@ -1242,6 +1303,9 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Equal(t, `Hello, client`, string(body))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
 			},
 		}
 	}
@@ -1334,6 +1398,9 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "admin@keboola.com", appRequest.Header.Get("X-Kbc-User-Email"))
 				assert.Equal(t, "admin", appRequest.Header.Get("X-Kbc-User-Roles"))
 			},
+			expectedNotifications: map[string]int{
+				"oidc": 1,
+			},
 		}
 	}
 
@@ -1385,6 +1452,8 @@ func TestAppProxyRouter(t *testing.T) {
 			client := createHTTPClient(t, proxyURL)
 
 			tc.run(t, client, m, appServer, service)
+
+			assert.Equal(t, tc.expectedNotifications, service.notifications)
 		})
 	}
 }
@@ -1619,14 +1688,16 @@ func startAppServer(t *testing.T) *appServer {
 
 type sandboxesService struct {
 	*httptest.Server
-	apps map[string]dataapps.AppProxyConfig
+	apps          map[string]dataapps.AppProxyConfig
+	notifications map[string]int
 }
 
 func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandboxesService {
 	t.Helper()
 
 	service := &sandboxesService{
-		apps: make(map[string]dataapps.AppProxyConfig),
+		apps:          make(map[string]dataapps.AppProxyConfig),
+		notifications: make(map[string]int),
 	}
 
 	for _, app := range apps {
@@ -1653,6 +1724,26 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 		assert.NoError(t, err)
 
 		w.Write(jsonData)
+	})
+	mux.HandleFunc("PATCH /apps/{app}", func(w http.ResponseWriter, req *http.Request) {
+		appID := req.PathValue("app")
+
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+
+		data := make(map[string]string)
+		err = json.DecodeString(string(body), &data)
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+
+		if _, ok := data["lastRequestTimestamp"]; ok {
+			service.notifications[appID] += 1
+		}
 	})
 
 	ts := httptest.NewUnstartedServer(mux)
