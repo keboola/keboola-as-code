@@ -1,8 +1,6 @@
 package source
 
 import (
-	"context"
-	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -11,35 +9,26 @@ import (
 )
 
 func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
-	var old, updated definition.Source
-	return op.Atomic(r.client, &updated).
-		// Check prerequisites
-		ReadOp(r.checkMaxSourcesVersionsPerSource(k, 1)).
-		// Read the entity
-		ReadOp(r.Get(k).WithResultTo(&old)).
-		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
-			// Store old state
-			disabled := old.Disabled
-			deleted := old.Deleted
+	return r.update(k, now, versionDescription, func(source definition.Source) (definition.Source, error) {
+		// Store old state
+		disabled := source.Disabled
+		deleted := source.Deleted
 
-			// Update
-			updated = deepcopy.Copy(old).(definition.Source)
-			updated, err = updateFn(updated)
-			if err != nil {
-				return nil, err
-			}
+		// Update
+		var err error
+		source, err = updateFn(source)
+		if err != nil {
+			return definition.Source{}, err
+		}
 
-			// Disabled and Deleted fields cannot be modified by the Update operation
-			if disabled != updated.Disabled {
-				return nil, errors.Errorf(`"Disabled" field cannot be modified by the Update operation`)
-			}
-			if deleted != updated.Deleted {
-				return nil, errors.Errorf(`"Deleted" field cannot be modified by the Update operation`)
-			}
+		// Disabled and Deleted fields cannot be modified by the Update operation
+		if disabled != source.Disabled {
+			return definition.Source{}, errors.Errorf(`"Disabled" field cannot be modified by the Update operation`)
+		}
+		if deleted != source.Deleted {
+			return definition.Source{}, errors.Errorf(`"Deleted" field cannot be modified by the Update operation`)
+		}
 
-			// Save
-			updated.IncrementVersion(updated, now, versionDescription)
-			return r.saveOne(ctx, now, &old, &updated)
-		})
+		return source, nil
+	})
 }

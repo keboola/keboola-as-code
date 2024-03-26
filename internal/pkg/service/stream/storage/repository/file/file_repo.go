@@ -1,7 +1,12 @@
 package file
 
 import (
+	"context"
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	etcd "go.etcd.io/etcd/client/v3"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -49,28 +54,80 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 	r.openFileOnSinkActivation()
 	r.closeFileOnSinkDeactivation()
 	r.rotateFileOnSinkModification()
-
-	// Connect to the sink events
-	r.plugins.Collection().OnSinkSave(func(ctx *plugin.SaveContext, old, updated *definition.Sink) {
-		// Skip unsupported sink type
-		if !r.sinkTypes[updated.Type] {
-			return
-		}
-
-		createdOrModified := !updated.Deleted && !updated.Disabled
-		deleted := updated.Deleted && updated.DeletedAt.Time().Equal(ctx.Now())
-		disabled := updated.Disabled && updated.DisabledAt.Time().Equal(ctx.Now())
-		deactivated := deleted || disabled
-		if createdOrModified {
-			// Rotate file on the sink creation/modification
-			ctx.AddFrom(r.Rotate(updated.SinkKey, ctx.Now()))
-		} else if deactivated {
-			// Close file on the sink deactivation
-			ctx.AddFrom(r.Close(updated.SinkKey, ctx.Now()))
-		}
-	})
-
 	return r
+}
+
+func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *model.File) (op.Op, error) {
+	saveCtx := plugin.NewSaveContext(now)
+	r.save(saveCtx, old, updated)
+	return saveCtx.Do(ctx)
+}
+
+func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *model.File) {
+	// Call plugins
+	r.plugins.Executor().OnFileSave(saveCtx, old, updated)
+
+	allKey := r.schema.AllLevels().ByKey(updated.FileKey)
+	inLevelKey := r.schema.InLevel(updated.State.Level()).ByKey(updated.FileKey)
+
+	if updated.Deleted {
+		// Delete entity from All and InLevel prefixes
+		saveCtx.WriteOp(
+			allKey.Delete(r.client),
+			inLevelKey.Delete(r.client),
+		)
+	} else {
+		if old == nil {
+			// Entity should not exist
+			saveCtx.WriteOp(op.Txn(r.client).
+				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
+				OnFailed(func(r *op.TxnResult[op.NoResult]) {
+					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", updated.FileKey.String(), "sink"))
+				}),
+			)
+		} else {
+			// Entity should exist
+			saveCtx.WriteOp(op.Txn(r.client).
+				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
+				OnFailed(func(r *op.TxnResult[op.NoResult]) {
+					r.AddErr(serviceError.NewResourceNotFoundError("file", updated.FileKey.String(), "sink"))
+				}),
+			)
+		}
+
+		// Put entity to All and InLevel prefixes
+		saveCtx.WriteOp(
+			allKey.Put(r.client, *updated),
+			inLevelKey.Put(r.client, *updated),
+		)
+
+		// Remove entity from the old InLevel prefix, if needed
+		if old != nil && old.State.Level() != updated.State.Level() {
+			saveCtx.WriteOp(
+				r.schema.InLevel(old.State.Level()).ByKey(old.FileKey).Delete(r.client),
+			)
+		}
+	}
+}
+
+// update reads the file, applies updateFn and save modified value.
+func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
+	var old, updated model.File
+	return op.Atomic(r.client, &updated).
+		// Read entity for modification
+		ReadOp(r.Get(k).WithResultTo(&old)).
+		// Update the entity
+		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
+			// Update
+			updated = deepcopy.Copy(old).(model.File)
+			updated, err = updateFn(updated)
+			if err != nil {
+				return nil, err
+			}
+
+			// Save
+			return r.saveOne(ctx, now, &old, &updated)
+		})
 }
 
 //
@@ -78,3 +135,7 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 //func (r *Repository) RegisterSinkType(v definition.SinkType) {
 //	r.sinkTypes[v] = true
 //}
+
+func (r *Repository) isSinkWithLocalStorage(sink definition.Sink) bool {
+	return sink.Type == definition.SinkTypeTable && sink.Table.Type == definition.TableTypeKeboola
+}
