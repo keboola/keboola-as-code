@@ -1,4 +1,4 @@
-package dns
+package http
 
 import (
 	"net"
@@ -11,7 +11,7 @@ const DialTimeout = 2 * time.Second
 // KeepAlive specifies the default interval between keep-alive probes.
 const KeepAlive = 15 * time.Second
 
-func NewDialer() *net.Dialer {
+func newDialer() *net.Dialer {
 	return &net.Dialer{
 		Timeout:   DialTimeout,
 		KeepAlive: KeepAlive,
