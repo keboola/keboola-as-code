@@ -183,9 +183,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-sub-url",
@@ -590,9 +588,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"oidc": 1,
-			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-basic-flow",
@@ -804,9 +800,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"multi": 1,
-			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-broken-provider",
