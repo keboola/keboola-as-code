@@ -31,6 +31,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -44,6 +45,7 @@ type Router struct {
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
+	wg                sync.WaitGroup
 }
 
 const providerCookie = "_oauth2_provider"
@@ -77,6 +79,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		}),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
+		wg:                sync.WaitGroup{},
 	}
 
 	return router, nil
@@ -153,6 +156,10 @@ func (r *Router) CreateHandler() http.Handler {
 
 		httpHandler.ServeHTTP(w, req)
 	})
+}
+
+func (r *Router) Shutdown() {
+	r.wg.Wait()
 }
 
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
@@ -256,10 +263,22 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 			ctx := req.Context()
 			appID, ok := ctx.Value(AppIDCtxKey).(string)
 			if ok {
+				r.wg.Add(1)
 				// Current request should not wait for the notification
 				go func() {
+					defer r.wg.Done()
+
+					notificationCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					defer cancel()
+
+					notificationCtx = ctxattr.ContextWith(notificationCtx, attribute.String(attrAppID, appID))
+
+					_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.notify")
+					notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
+
 					// Error is already logged by the Notify method itself. We can ignore it here.
-					_ = r.loader.Notify(ctx, appID)
+					err := r.loader.Notify(notificationCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+					span.End(&err)
 				}()
 			}
 
