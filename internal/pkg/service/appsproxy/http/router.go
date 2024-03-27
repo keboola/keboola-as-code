@@ -268,13 +268,17 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 				go func() {
 					defer r.wg.Done()
 
-					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					notificationCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
 
-					ctx = ctxattr.ContextWith(ctx, attribute.String(attrAppID, appID))
+					notificationCtx = ctxattr.ContextWith(notificationCtx, attribute.String(attrAppID, appID))
+
+					_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.notify")
+					notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
 
 					// Error is already logged by the Notify method itself. We can ignore it here.
-					_ = r.loader.Notify(ctx, appID)
+					err := r.loader.Notify(notificationCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+					span.End(&err)
 				}()
 			}
 
