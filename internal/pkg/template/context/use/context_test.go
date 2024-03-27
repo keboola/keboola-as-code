@@ -94,7 +94,7 @@ func TestContext(t *testing.T) {
 	// Create template use context
 	d := dependenciesPkg.NewMocked(t)
 	projectState := d.MockedState()
-	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
+	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
 
 	// Check Jsonnet functions
 	code := `
@@ -211,7 +211,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
-		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState)
+		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState, d.ProjectBackends())
 	}
 
 	// Jsonnet template
@@ -290,6 +290,72 @@ func TestComponentsFunctions(t *testing.T) {
   "keboola.wr-db-snowflake-gcs": false,
   "keboola.wr-snowflake-blob-storage": true,
   "wr-snowflake": "keboola.wr-db-snowflake"
+}
+`
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+}
+
+func TestHasBackendFunction(t *testing.T) {
+	t.Parallel()
+
+	// Mocked ticket provider
+	c, httpTransport := client.NewMockedClient()
+	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
+	ctx := context.Background()
+
+	d := dependenciesPkg.NewMocked(t, dependenciesPkg.WithSnowflakeBackend())
+
+	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", d.StorageAPIToken().Token, keboola.WithClient(&c))
+	assert.NoError(t, err)
+
+	projectState := d.MockedState()
+	tickets := keboola.NewTicketProvider(context.Background(), api)
+	components := model.NewComponentsMap(keboola.Components{})
+	targetBranch := model.BranchKey{ID: 123}
+	inputsValues := template.InputsValues{}
+	inputs := map[string]*template.Input{}
+	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
+	instanceID := "my-instance"
+	fs := aferofs.NewMemoryFs()
+
+	// Context factory for template use operation
+	newUseCtx := func() *Context {
+		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState, d.ProjectBackends())
+	}
+
+	// Jsonnet template
+	code := `
+{
+	"snowflake": HasProjectBackend('snowflake'),
+	"bigquery": HasProjectBackend('bigquery')
+}
+`
+	// Case 1: project backend 'snowflake'
+	expected := `
+{
+  "bigquery": false,
+  "snowflake": true
+}
+`
+
+	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+
+	// Case 2 backend 'bigquery'
+	d = dependenciesPkg.NewMocked(t, dependenciesPkg.WithBigQueryBackend())
+
+	expected = `
+{
+  "bigquery": true,
+  "snowflake": false
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())

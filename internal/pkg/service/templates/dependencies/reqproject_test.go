@@ -24,16 +24,19 @@ import (
 
 func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	t.Parallel()
+
 	if runtime.GOOS == "windows" {
 		t.Skip("unstable on windows - random git timeouts")
 	}
 
 	// Copy the git repository to a temp dir
 	tmpDir := t.TempDir()
+
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
+	runGitCommand(t, tmpDir, "reset", "--hard", "c6c1f0be98fa8fd49be15022a47dcdca22f0dc41")
 	// Mocked API scope
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -45,7 +48,6 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 		req := httptest.NewRequest("GET", "/req1", nil)
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
-
 	// Get repository for request 1
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
@@ -184,7 +186,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	assert.Same(t, tmpl1Req1, tmpl1Req2)
 
 	// Modify git repository
-	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~2")
+	runGitCommand(t, tmpDir, "reset", "--hard", "985928c70ad7fa0a450269b30f203c1fd0eb86c5")
 
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)

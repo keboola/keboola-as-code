@@ -45,6 +45,7 @@ type dependencies interface {
 	Logger() log.Logger
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
+	ProjectBackends() []string
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
 }
@@ -71,7 +72,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Prepare template
-	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.InstanceID, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State())
+	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.InstanceID, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State(), d.ProjectBackends())
 	plan, err := PrepareTemplate(ctx, d, ExtendedOptions{
 		TargetBranch:          o.TargetBranch,
 		Inputs:                o.Inputs,

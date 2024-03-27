@@ -57,6 +57,7 @@ type Context struct {
 	components        *model.ComponentsMap
 	placeholdersCount int
 	ticketsResolved   bool
+	projectBackends   []string
 
 	lock          *sync.Mutex
 	placeholders  PlaceholdersMap
@@ -94,7 +95,7 @@ const (
 	instanceIDShortLength = 8
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State, projectBackends []string) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -111,6 +112,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		objectIds:       make(metadata.ObjectIdsMap),
 		inputsUsage:     metadata.NewInputsUsage(),
 		inputsDefsMap:   inputsDefsMap,
+		projectBackends: projectBackends,
 	}
 
 	// Convert inputsValues to map
@@ -233,6 +235,7 @@ func (c *Context) registerJsonnetFunctions() {
 	c.jsonnetCtx.NativeFunctionWithAlias(function.InstanceIDShort(c.instanceIDShort))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.HasProjectBackend(c.projectBackends))
 }
 
 // mapID maps ConfigId/ConfigRowId in Jsonnet files to a <<~~ticket:123~~>> placeholder.

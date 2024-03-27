@@ -1,9 +1,9 @@
 Loaded env file ".env.local".
-Created metadata directory ".keboola".
-Created manifest file ".keboola/manifest.json".
 Updated file ".env.local" - it contains the API token, keep it local and secret.
 Updated file ".env.dist" - an ".env.local" template.
 Updated file ".gitignore" - to keep ".env.local" local.
+Created metadata directory ".keboola".
+Created manifest file ".keboola/manifest.json".
 
 Generating CI workflows ...
 Created file ".github/actions/install/action.yml".

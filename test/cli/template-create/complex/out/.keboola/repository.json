@@ -9,6 +9,7 @@
       "id": "my-template",
       "name": "My Template",
       "description": "Full workflow to ...",
+      "requirements": {},
       "path": "my-template",
       "versions": [
         {

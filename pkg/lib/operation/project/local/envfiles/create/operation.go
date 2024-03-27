@@ -45,6 +45,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 	gitIgnoreMsg := ` - to keep ".env.local" local`
 	gitIgnoreLines := []filesystem.FileLine{
 		{Line: "/.env.local"},
+		{Line: "/.keboola/project.json"},
 	}
 	if err := createFile(ctx, logger, fs, ".gitignore", gitIgnoreMsg, gitIgnoreLines); err != nil {
 		return err

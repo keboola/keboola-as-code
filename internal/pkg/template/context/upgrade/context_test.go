@@ -98,7 +98,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := aferofs.NewMemoryFs()
-	ctx := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
+	ctx := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
 
 	// Check Jsonnet functions
 	code := `

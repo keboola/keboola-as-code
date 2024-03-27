@@ -4,9 +4,12 @@ import (
 	"context"
 	"io"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
@@ -25,6 +28,9 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	ProjectBackends() []string
+	ProjectFeatures() keboola.FeaturesMap
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -54,6 +60,12 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
+	// Get default branch
+	defaultBranch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Log plan
 	plan.Log(d.Stdout())
 
@@ -71,6 +83,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Save manifest
 		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+			return err
+		}
+
+		// Save project.json
+		if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranch.ID); err != nil {
 			return err
 		}
 

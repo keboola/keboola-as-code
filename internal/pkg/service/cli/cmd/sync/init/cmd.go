@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
@@ -58,6 +59,11 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Get init options
 			options, err := AskInitOptions(cmd.Context(), projectDeps.Dialogs(), projectDeps, f)
 			if err != nil {
+				return err
+			}
+
+			// Create ENV files
+			if err = createEnvFiles.Run(cmd.Context(), projectDeps.Fs(), projectDeps); err != nil {
 				return err
 			}
 
