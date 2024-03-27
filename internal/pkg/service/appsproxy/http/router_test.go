@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/kuritka/go-fake-dns/fakedns"
+	"github.com/miekg/dns"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +37,27 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+func startDNSServer(t *testing.T, records map[string]string) {
+	t.Helper()
+
+	server := fakedns.NewFakeDNS(
+		fakedns.FakeDNSSettings{
+			FakeDNSPort:     8853,
+			EdgeDNSZoneFQDN: "example.com.",
+			DNSZoneFQDN:     "cloud.example.com.",
+		},
+	)
+
+	for domain, address := range records {
+		ip, _, err := net.ParseCIDR(address)
+		assert.NoError(t, err)
+
+		server.AddARecord(dns.Fqdn(domain), ip)
+	}
+
+	server.Start()
+}
 
 type testCase struct {
 	name                  string
