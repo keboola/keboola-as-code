@@ -137,7 +137,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
 
 	// Load objects
-	m, err := projectManifest.Load(context.Background(), fs, false)
+	m, err := projectManifest.Load(context.Background(), fs, env.Empty(), false)
 	assert.NoError(t, err)
 	uow.LoadAll(m, *m.Filter())
 	assert.NoError(t, uow.Invoke())

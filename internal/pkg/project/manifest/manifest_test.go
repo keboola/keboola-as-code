@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -57,7 +58,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(context.Background(), fs, false)
+	manifest, err := Load(context.Background(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -74,7 +75,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(ctx, fs, false)
+		manifest, err := Load(ctx, fs, env.Empty(), false)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -175,7 +176,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, cyclicDependencyJSON())))
 
 	// Load
-	manifest, err := Load(ctx, fs, false)
+	manifest, err := Load(ctx, fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())

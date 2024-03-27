@@ -22,6 +22,7 @@ import (
 // baseScope dependencies container implements BaseScope interface.
 type baseScope struct {
 	dependencies.BaseScope
+	envs            *env.Map
 	fs              filesystem.Fs
 	fsInfo          FsInfo
 	configBinder    *cmdconfig.Binder
@@ -46,16 +47,21 @@ func newBaseScope(
 	fs filesystem.Fs,
 	dialogs *dialog.Dialogs,
 	flags flag.GlobalFlags,
-	osEnvs *env.Map,
+	envs *env.Map,
 ) *baseScope {
 	return &baseScope{
 		BaseScope:    dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clock.New(), proc, httpClient),
+		envs:         envs,
 		fs:           fs,
 		fsInfo:       FsInfo{fs: fs},
-		configBinder: cmdconfig.NewBinder(osEnvs, logger),
+		configBinder: cmdconfig.NewBinder(envs, logger),
 		dialogs:      dialogs,
 		globalsFlags: flags,
 	}
+}
+
+func (v *baseScope) Environment() env.Provider {
+	return v.envs
 }
 
 func (v *baseScope) Fs() filesystem.Fs {

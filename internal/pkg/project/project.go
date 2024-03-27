@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -24,8 +25,8 @@ func NewManifest(projectID keboola.ProjectID, apiHost string) *Manifest {
 	return projectManifest.New(projectID, apiHost)
 }
 
-func LoadManifest(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
-	return projectManifest.Load(ctx, fs, ignoreErrors)
+func LoadManifest(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Manifest, error) {
+	return projectManifest.Load(ctx, fs, envs, ignoreErrors)
 }
 
 type dependencies interface {
@@ -43,8 +44,8 @@ type Project struct {
 	manifest   *Manifest
 }
 
-func New(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Project, error) {
-	m, err := projectManifest.Load(ctx, fs, ignoreErrors)
+func New(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Project, error) {
+	m, err := projectManifest.Load(ctx, fs, envs, ignoreErrors)
 	if err != nil {
 		return nil, err
 	}
