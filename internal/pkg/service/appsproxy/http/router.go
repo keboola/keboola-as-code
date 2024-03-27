@@ -262,7 +262,10 @@ func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyCon
 }
 
 func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handler {
-	return chain.Then(httputil.NewSingleHostReverseProxy(target))
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.Transport = r.transport
+
+	return chain.Then(proxy)
 }
 
 func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
@@ -597,9 +600,10 @@ func (r *Router) authProxyConfig(app dataapps.AppProxyConfig, provider options.P
 	v.UpstreamServers = options.UpstreamConfig{
 		Upstreams: []options.Upstream{
 			{
-				ID:   app.ID,
-				Path: "/",
-				URI:  app.UpstreamAppURL,
+				ID:        app.ID,
+				Path:      "/",
+				URI:       app.UpstreamAppURL,
+				Transport: r.transport,
 			},
 		},
 	}
