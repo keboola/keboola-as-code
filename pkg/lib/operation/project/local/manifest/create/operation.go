@@ -17,6 +17,8 @@ import (
 type Options struct {
 	Naming          naming.Template
 	AllowedBranches model.AllowedBranches
+	// AllowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs for future operations
+	AllowTargetENV bool
 }
 
 type dependencies interface {
@@ -40,6 +42,7 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 	manifest := project.NewManifest(projectID, host)
 
 	// Configure
+	manifest.SetAllowTargetENV(o.AllowTargetENV)
 	manifest.SetNamingTemplate(o.Naming)
 	manifest.SetAllowedBranches(o.AllowedBranches)
 

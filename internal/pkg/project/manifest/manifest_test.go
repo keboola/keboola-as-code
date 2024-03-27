@@ -188,6 +188,7 @@ func minimalJSON() string {
     "id": 12345,
     "apiHost": "foo.bar"
   },
+  "allowTargetEnv": false,
   "sortBy": "id",
   "naming": {
     "branch": "{branch_id}-{branch_name}",
@@ -231,6 +232,7 @@ func fullJSON() string {
     "id": 12345,
     "apiHost": "foo.bar"
   },
+  "allowTargetEnv": false,
   "sortBy": "id",
   "naming": {
     "branch": "{branch_name}",

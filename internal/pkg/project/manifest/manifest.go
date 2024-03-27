@@ -33,10 +33,12 @@ type records = manifest.Records
 // file contains IDs and paths of the all objects: branches, configs, rows.
 type Manifest struct {
 	*records
-	project      Project
-	naming       naming.Template
-	filter       model.ObjectsFilter
-	repositories []model.TemplateRepository
+	project Project
+	// allowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs to override manifest values
+	allowTargetENV bool
+	naming         naming.Template
+	filter         model.ObjectsFilter
+	repositories   []model.TemplateRepository
 }
 
 type Project struct {
@@ -86,6 +88,7 @@ func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, 
 func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	// Create file content
 	content := newFile(m.ProjectID(), m.APIHost())
+	content.AllowTargetENV = m.allowTargetENV
 	content.SortBy = m.SortBy()
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
@@ -124,6 +127,14 @@ func (m *Manifest) NamingTemplate() naming.Template {
 
 func (m *Manifest) SetNamingTemplate(v naming.Template) {
 	m.naming = v
+}
+
+func (m *Manifest) AllowTargetENV() bool {
+	return m.allowTargetENV
+}
+
+func (m *Manifest) SetAllowTargetENV(v bool) {
+	m.allowTargetENV = v
 }
 
 func (m *Manifest) AllowedBranches() model.AllowedBranches {

@@ -37,7 +37,8 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 	out := initOp.Options{
 		Pull: true,
 		ManifestOptions: createManifest.Options{
-			Naming: naming.TemplateWithoutIds(),
+			Naming:         naming.TemplateWithoutIds(),
+			AllowTargetENV: f.AllowTargetENV.Value,
 		},
 	}
 

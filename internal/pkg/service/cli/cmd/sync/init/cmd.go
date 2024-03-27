@@ -20,16 +20,18 @@ type Flags struct {
 	CIPush          configmap.Value[bool]   `configKey:"ci-push" configUsage:"create workflow to push change in main branch to the project"`
 	CIPull          configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
 	CIMainBranch    configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
+	AllowTargetENV  configmap.Value[bool]   `configKey:"allow-target-env" configUsage:"allow usage of KBC_PROJECT_ID and KBC_BRANCH_ID envs for future operations"`
 }
 
 func DefaultFlags() Flags {
 	return Flags{
-		CI:           configmap.NewValue(true),
-		CIValidate:   configmap.NewValue(true),
-		CIPull:       configmap.NewValue(true),
-		CIPush:       configmap.NewValue(true),
-		CIMainBranch: configmap.NewValue("main"),
-		Branches:     configmap.NewValue("main"),
+		Branches:       configmap.NewValue("main"),
+		CI:             configmap.NewValue(true),
+		CIValidate:     configmap.NewValue(true),
+		CIPull:         configmap.NewValue(true),
+		CIPush:         configmap.NewValue(true),
+		CIMainBranch:   configmap.NewValue("main"),
+		AllowTargetENV: configmap.NewValue(false),
 	}
 }
 
