@@ -2,12 +2,15 @@ package manifest
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -57,7 +60,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(context.Background(), fs, false)
+	manifest, err := Load(context.Background(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -74,7 +77,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(ctx, fs, false)
+		manifest, err := Load(ctx, fs, env.Empty(), false)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -175,10 +178,95 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, cyclicDependencyJSON())))
 
 	// Load
-	manifest, err := Load(ctx, fs, false)
+	manifest, err := Load(ctx, fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
+}
+
+func TestManifest_AllowTargetENV(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	envs := env.Empty()
+
+	// Write file
+	fs := aferofs.NewMemoryFs()
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, allowTargetEnvJSON())))
+
+	// Load file
+	envs.Set(ProjectIDOverrideENV, "111")
+	envs.Set(BranchIDOverrideENV, "222")
+	m, err := Load(ctx, fs, envs, false)
+	require.NoError(t, err)
+
+	// IDs are mapped on load/save
+	assert.Equal(t, keboola.ProjectID(111), m.ProjectID())
+	branch, ok := m.GetRecord(model.BranchKey{ID: 222})
+	assert.True(t, ok)
+	assert.Equal(t, "main", branch.Path())
+
+	// Save file
+	require.NoError(t, m.Save(ctx, fs))
+
+	// The file content is same
+	updatedFile, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(allowTargetEnvJSON()), strings.TrimSpace(updatedFile.Content))
+}
+
+func allowTargetEnvJSON() string {
+	return `{
+  "version": 2,
+  "project": {
+    "id": 123,
+    "apiHost": "foo.bar"
+  },
+  "allowTargetEnv": true,
+  "sortBy": "id",
+  "naming": {
+    "branch": "{branch_id}-{branch_name}",
+    "config": "{component_type}/{component_id}/{config_id}-{config_name}",
+    "configRow": "rows/{config_row_id}-{config_row_name}",
+    "schedulerConfig": "schedules/{config_id}-{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_id}-{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_id}-{config_name}"
+  },
+  "allowedBranches": [
+    "__main__"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": 456,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 456,
+      "componentId": "keboola.ex-db-oracle",
+      "id": "789",
+      "path": "extractor",
+      "rows": []
+    }
+  ]
+}
+`
 }
 
 func minimalJSON() string {
@@ -188,6 +276,7 @@ func minimalJSON() string {
     "id": 12345,
     "apiHost": "foo.bar"
   },
+  "allowTargetEnv": false,
   "sortBy": "id",
   "naming": {
     "branch": "{branch_id}-{branch_name}",
@@ -231,6 +320,7 @@ func fullJSON() string {
     "id": 12345,
     "apiHost": "foo.bar"
   },
+  "allowTargetEnv": false,
   "sortBy": "id",
   "naming": {
     "branch": "{branch_name}",

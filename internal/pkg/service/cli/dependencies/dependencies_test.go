@@ -76,7 +76,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	localScp, err := newLocalCommandScope(ctx, baseScp, configmap.NewValueWithOrigin("mocked.transport.http", configmap.SetByFlag))
 	assert.NoError(t, err)
 	_, err = newRemoteCommandScope(ctx, localScp, configmap.NewValueWithOrigin("my-secret", configmap.SetByFlag))
-	expected := `given token is from the project "12345", but in manifest is defined project "789"`
+	expected := `provided token is from the project "12345", but in manifest is defined project "789"`
 	assert.Error(t, err)
 	assert.Equal(t, expected, err.Error())
 }

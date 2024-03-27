@@ -152,6 +152,27 @@ func (v AllowedBranches) IsBranchAllowed(branch *Branch) bool {
 	return false
 }
 
+func (v AllowedBranches) IsOneSpecificBranch() bool {
+	// There is different number of definitions that one
+	if len(v) != 1 {
+		return false
+	}
+
+	branch := v[0]
+
+	// All branches are allowed
+	if branch == AllBranchesDef {
+		return false
+	}
+
+	// Branch is defined via a wildcard
+	if strings.ContainsAny(string(branch), "*?") {
+		return false
+	}
+
+	return true
+}
+
 func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	pattern := string(v)
 

@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	etcdPkg "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -436,7 +437,7 @@ func (v *mocked) MockedRequest() *http.Request {
 }
 
 func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {
-	prj, err := projectPkg.New(context.Background(), fs, false)
+	prj, err := projectPkg.New(context.Background(), fs, env.Empty(), false)
 	if err != nil {
 		panic(err)
 	}

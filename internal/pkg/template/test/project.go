@@ -88,7 +88,7 @@ func PrepareProject(
 	}
 
 	// Load project state
-	prj, err := project.New(ctx, prjFS, true)
+	prj, err := project.New(ctx, prjFS, env.Empty(), true)
 	if err != nil {
 		unlockFn()
 		return nil, nil, nil, nil, err

@@ -46,7 +46,7 @@ func newRemoteCommandScope(ctx context.Context, localCmdScp LocalCommandScope, t
 		tokenProjectID := prjScp.ProjectID()
 		manifest := prj.ProjectManifest()
 		if manifest != nil && manifest.ProjectID() != tokenProjectID {
-			return nil, errors.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, tokenProjectID, manifest.ProjectID())
+			return nil, errors.Errorf(`provided token is from the project "%d", but in manifest is defined project "%d"`, tokenProjectID, manifest.ProjectID())
 		}
 	}
 

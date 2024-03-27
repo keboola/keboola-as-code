@@ -19,6 +19,7 @@ Usage:
   %s init [flags]
 
 Flags:
+      --allow-target-env           allow usage of KBC_PROJECT_ID and KBC_BRANCH_ID envs for future operations
   -b, --branches string            comma separated IDs or name globs, use "*" for all (default "main")
       --ci                         generate workflows (default true)
       --ci-main-branch string      name of the main branch for push/pull workflows (default "main")

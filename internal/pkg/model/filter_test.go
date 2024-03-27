@@ -10,6 +10,17 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+func TestAllowedBranches_IsOneSpecificBranch(t *testing.T) {
+	t.Parallel()
+	assert.False(t, (AllowedBranches{}).IsOneSpecificBranch())
+	assert.False(t, (AllowedBranches{AllBranchesDef}).IsOneSpecificBranch())
+	assert.False(t, (AllowedBranches{"123", "456"}).IsOneSpecificBranch())
+	assert.False(t, (AllowedBranches{"foo-*"}).IsOneSpecificBranch())
+	assert.False(t, (AllowedBranches{"foo-???"}).IsOneSpecificBranch())
+	assert.True(t, (AllowedBranches{"foo"}).IsOneSpecificBranch())
+	assert.True(t, (AllowedBranches{"123"}).IsOneSpecificBranch())
+}
+
 func TestIsBranchAllowed(t *testing.T) {
 	t.Parallel()
 	assert.True(t, (AllowedBranches{"*", "xyz"}).IsBranchAllowed(
