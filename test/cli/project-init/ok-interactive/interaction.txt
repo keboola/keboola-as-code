@@ -4,7 +4,7 @@
 < Please enter Keboola Storage API token. The value will be hidden.
 > %%TEST_KBC_STORAGE_API_TOKEN%%
 
-< Please select which project's branches you want to use with this CLI.
+< Please select project's branches you want to use with this CLI.
 # Select all branches
 > <down arrow>
 > <enter>
