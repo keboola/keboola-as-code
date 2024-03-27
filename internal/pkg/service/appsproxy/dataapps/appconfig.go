@@ -1,4 +1,4 @@
-package appconfig
+package dataapps
 
 import (
 	"context"
@@ -19,15 +19,21 @@ import (
 // staleCacheFallbackDuration is the maximum duration for which the old configuration of an application is used if loading new configuration is not possible.
 const staleCacheFallbackDuration = time.Hour
 
-type Loader interface {
+// notificationInterval sets how often the proxy sends notifications to sandboxes service.
+// If the last notification for given app was less than this interval ago then the notification is skipped.
+const notificationInterval = time.Second * 30
+
+type Client interface {
+	Notify(ctx context.Context, appID string) error
 	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, bool, error)
 }
 
-type sandboxesAPILoader struct {
-	logger log.Logger
-	clock  clock.Clock
-	sender request.Sender
-	cache  *syncmap.SyncMap[string, cacheItem]
+type sandboxesServiceClient struct {
+	logger        log.Logger
+	clock         clock.Clock
+	sender        request.Sender
+	cache         *syncmap.SyncMap[string, cacheItem]
+	notifications *syncmap.SyncMap[string, notificationItem]
 }
 
 type cacheItem struct {
@@ -37,8 +43,13 @@ type cacheItem struct {
 	updateLock *sync.Mutex
 }
 
-func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Loader {
-	return &sandboxesAPILoader{
+type notificationItem struct {
+	nextNotificationAfter time.Time
+	updateLock            *sync.Mutex
+}
+
+func NewSandboxesServiceLoader(logger log.Logger, clock clock.Clock, client client.Client, baseURL string, token string) Client {
+	return &sandboxesServiceClient{
 		logger: logger,
 		clock:  clock,
 		sender: client.WithBaseURL(baseURL).WithHeader("X-KBC-ManageApiToken", token),
@@ -47,10 +58,48 @@ func NewSandboxesAPILoader(logger log.Logger, clock clock.Clock, client client.C
 				updateLock: &sync.Mutex{},
 			}
 		}),
+		notifications: syncmap.New[string, notificationItem](func() *notificationItem {
+			return &notificationItem{
+				updateLock: &sync.Mutex{},
+			}
+		}),
 	}
 }
 
-func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
+func (l *sandboxesServiceClient) Notify(ctx context.Context, appID string) error {
+	// Get cache item or init an empty item
+	item := l.notifications.GetOrInit(appID)
+
+	// Only one notification runs in parallel.
+	// If there is an in-flight update, we are waiting for its results.
+	item.updateLock.Lock()
+	defer item.updateLock.Unlock()
+
+	// Return config from cache if still valid
+	now := l.clock.Now()
+
+	if now.Before(item.nextNotificationAfter) {
+		// Skip if a notification was sent less than notificationInterval ago
+		return nil
+	}
+
+	// Update nextNotificationAfter time
+	item.nextNotificationAfter = now.Add(notificationInterval)
+
+	// Send the notification
+	_, err := PatchNotifyAppUsage(l.sender, appID, now).Send(ctx)
+	if err != nil {
+		l.logger.Errorf(ctx, `Failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
+
+		return err
+	}
+
+	return nil
+}
+
+// LoadConfig gets the current configuration from Sandboxes Service.
+// It handles local caching based on the Cache-Control and ETag headers.
+func (l *sandboxesServiceClient) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
 	// Get cache item or init an empty item
 	item := l.cache.GetOrInit(appID)
 
@@ -86,7 +135,7 @@ func (l *sandboxesAPILoader) LoadConfig(ctx context.Context, appID string) (out 
 	return item.config, modified, nil
 }
 
-func (l *sandboxesAPILoader) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
+func (l *sandboxesServiceClient) handleError(ctx context.Context, appID string, now time.Time, err error, fallbackItem *cacheItem) (AppProxyConfig, error) {
 	var sandboxesError *SandboxesError
 	errors.As(err, &sandboxesError)
 	if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
