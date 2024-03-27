@@ -9,8 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	prjFile "github.com/keboola/keboola-as-code/internal/pkg/template/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
@@ -30,6 +30,7 @@ type dependencies interface {
 	Stdout() io.Writer
 	ProjectBackends() []string
 	ProjectFeatures() keboola.FeaturesMap
+	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -59,6 +60,12 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
+	// Get default branch
+	defaultBranch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Log plan
 	plan.Log(d.Stdout())
 
@@ -80,7 +87,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Save project.json
-		if err := prjFile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures()); err != nil {
+		if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranch.ID); err != nil {
 			return err
 		}
 
