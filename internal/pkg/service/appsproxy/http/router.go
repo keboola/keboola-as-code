@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
 	"strings"
@@ -31,6 +32,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -41,9 +43,11 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            dataapps.Client
+	transport         *http.Transport
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
+	wg                sync.WaitGroup
 }
 
 const providerCookie = "_oauth2_provider"
@@ -64,12 +68,18 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
+	transport, err := NewReverseProxyHTTPTransport()
+	if err != nil {
+		return nil, errors.PrefixError(err, "could not create http transport")
+	}
+
 	router := &Router{
 		logger:    d.Logger(),
 		telemetry: d.Telemetry(),
 		config:    d.Config(),
 		clock:     d.Clock(),
 		loader:    d.Loader(),
+		transport: transport,
 		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
@@ -77,6 +87,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		}),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
+		wg:                sync.WaitGroup{},
 	}
 
 	return router, nil
@@ -155,6 +166,10 @@ func (r *Router) CreateHandler() http.Handler {
 	})
 }
 
+func (r *Router) Shutdown() {
+	r.wg.Wait()
+}
+
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
@@ -171,6 +186,13 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
+	target, err := url.Parse(app.UpstreamAppURL)
+	if err != nil {
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID)
+	}
+
 	chain := alice.New(r.notifySandboxesServiceMiddleware(), r.dataAppTelemetryMiddleware())
 
 	oauthProviders := make(map[string]*oauthProvider)
@@ -178,7 +200,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app, chain)
 	}
 
-	publicAppHandler := r.publicAppHandler(ctx, app, chain)
+	publicAppHandler := r.publicAppHandler(target, chain)
 
 	mux := http.NewServeMux()
 
@@ -239,14 +261,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyCon
 	return r.createMultiProviderHandler(selectedProviders, app)
 }
 
-func (r *Router) publicAppHandler(ctx context.Context, app dataapps.AppProxyConfig, chain alice.Chain) http.Handler {
-	target, err := url.Parse(app.UpstreamAppURL)
-	if err != nil {
-		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
-		r.createConfigErrorHandler(exceptionID)
-	}
-
+func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handler {
 	return chain.Then(httputil.NewSingleHostReverseProxy(target))
 }
 
@@ -254,14 +269,37 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
+
 			appID, ok := ctx.Value(AppIDCtxKey).(string)
-			if ok {
-				// Current request should not wait for the notification
-				go func() {
-					// Error is already logged by the Notify method itself. We can ignore it here.
-					_ = r.loader.Notify(ctx, appID)
-				}()
+			if !ok {
+				// App ID should always be defined when the request gets to this middleware.
+				w.WriteHeader(http.StatusBadGateway)
+				return
 			}
+
+			trace := &httptrace.ClientTrace{
+				// Send notification only if a connection to the app was made successfully.
+				GotConn: func(connInfo httptrace.GotConnInfo) {
+					r.wg.Add(1)
+					// Current request should not wait for the notification
+					go func() {
+						defer r.wg.Done()
+
+						notificationCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+						defer cancel()
+
+						notificationCtx = ctxattr.ContextWith(notificationCtx, attribute.String(attrAppID, appID))
+
+						_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.notify")
+						notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
+
+						// Error is already logged by the Notify method itself. We can ignore it here.
+						err := r.loader.Notify(notificationCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+						span.End(&err)
+					}()
+				},
+			}
+			req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 
 			next.ServeHTTP(w, req)
 		})
