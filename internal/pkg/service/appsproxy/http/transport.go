@@ -49,6 +49,11 @@ func NewReverseProxyHTTPTransport() (*http.Transport, error) {
 			return nil, err
 		}
 
+		validIP := net.ParseIP(host)
+		if validIP != nil {
+			return dialer.DialContext(ctx, network, address)
+		}
+
 		ip, err := dnsClient.Resolve(ctx, host)
 		if err != nil {
 			return nil, err
