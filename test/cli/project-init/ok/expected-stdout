@@ -35,6 +35,7 @@ INFO	Init done.
 INFO	Running pull.
 %A
 DEBUG	Project state has been successfully loaded.
+%A
 Plan for "pull" operation:
   + B main
 DEBUG	Execution plan is valid.

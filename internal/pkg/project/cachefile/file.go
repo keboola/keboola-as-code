@@ -1,4 +1,4 @@
-package project
+package cachefile
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func Path() string {
 type File struct {
 	Backends        []string         `json:"backends"`
 	Features        keboola.Features `json:"features"`
-	DefaultBranchID string           `json:"defaultBranchId"`
+	DefaultBranchID keboola.BranchID `json:"defaultBranchId"`
 }
 
 func New() *File {
@@ -41,7 +41,7 @@ func Load(ctx context.Context, fs filesystem.Fs) (*File, error) {
 	return content, nil
 }
 
-func (f *File) Save(ctx context.Context, fs filesystem.Fs, backends []string, featuresMap keboola.FeaturesMap) error {
+func (f *File) Save(ctx context.Context, fs filesystem.Fs, backends []string, featuresMap keboola.FeaturesMap, branch keboola.BranchID) error {
 	if len(backends) != 0 {
 		f.Backends = backends
 	}
@@ -49,6 +49,8 @@ func (f *File) Save(ctx context.Context, fs filesystem.Fs, backends []string, fe
 	if len(featuresMap.ToSlice()) != 0 {
 		f.Features = featuresMap.ToSlice()
 	}
+
+	f.DefaultBranchID = branch
 
 	// Write JSON file
 	content, err := json.EncodeString(f, true)
