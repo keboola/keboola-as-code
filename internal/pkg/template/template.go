@@ -141,7 +141,7 @@ type CreatedTest struct {
 	*Test
 }
 
-func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, components *model.ComponentsMap) (*Template, error) {
+func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, components *model.ComponentsMap, projectBackends []string) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
 	//   src dir FS - objects root
@@ -163,7 +163,7 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir}
 
 	// Create load context
-	loadCtx := load.NewContext(ctx, srcDir, components)
+	loadCtx := load.NewContext(ctx, srcDir, components, projectBackends)
 
 	// Load manifest
 	out.manifestFile, err = LoadManifest(ctx, templateDir)
