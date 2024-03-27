@@ -350,7 +350,7 @@ func TestHasBackendFunction(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 2 backend 'bigquery'
-	d = dependenciesPkg.NewMocked(t, dependenciesPkg.WithBigqueryBackend())
+	d = dependenciesPkg.NewMocked(t, dependenciesPkg.WithBigQueryBackend())
 
 	expected = `
 {

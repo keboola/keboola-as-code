@@ -102,7 +102,7 @@ func WithSnowflakeBackend() MockedOption {
 	}
 }
 
-func WithBigqueryBackend() MockedOption {
+func WithBigQueryBackend() MockedOption {
 	return func(c *MockedConfig) {
 		c.storageAPIToken.Owner.HasBigquery = true
 	}
