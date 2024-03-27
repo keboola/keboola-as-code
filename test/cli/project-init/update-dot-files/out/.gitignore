@@ -1,3 +1,4 @@
 foo
 !bar
 /.env.local
+/.keboola/project.json

@@ -18,6 +18,14 @@ type remoteCommandScope struct {
 	eventSender event.Sender
 }
 
+func (r *remoteCommandScope) ProjectBackends() []string {
+	return r.ProjectScope.ProjectBackends()
+}
+
+func (r remoteCommandScope) ProjectFeatures() keboola.FeaturesMap {
+	return r.ProjectScope.ProjectFeatures()
+}
+
 func newRemoteCommandScope(ctx context.Context, localCmdScp LocalCommandScope, tokenByFlags configmap.Value[string], opts ...Option) (*remoteCommandScope, error) {
 	cfg := newConfig(opts)
 

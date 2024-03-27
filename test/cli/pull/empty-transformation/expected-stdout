@@ -1,5 +1,6 @@
 %A
 DEBUG	Project state has been successfully loaded.
+%A
 Plan for "pull" operation:
   + B main
   + C main/transformation/keboola.python-transformation-v2/empty-transformation
