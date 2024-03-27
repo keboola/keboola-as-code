@@ -130,6 +130,10 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 			continue
 		}
 
+		if !hasRequirements(tmpl, d) {
+			continue
+		}
+
 		tmpl := tmpl
 		tmplResponse, err := TemplateResponse(ctx, d, &tmpl, out.Repository.Author)
 		if err != nil {
@@ -578,4 +582,19 @@ func instanceDetails(ctx context.Context, d dependencies.ProjectRequestScope, in
 	versionResponse := VersionDetailResponse(d, versionRecord, tmpl)
 
 	return tmplResponse, versionResponse
+}
+
+func hasRequirements(tmpl repository.TemplateRecord, d dependencies.ProjectRequestScope) bool {
+	if !tmpl.HasBackend(d.ProjectBackends()) {
+		return false
+	}
+
+	if !tmpl.CheckProjectComponents(d.Components()) {
+		return false
+	}
+
+	if !tmpl.CheckProjectFeatures(d.ProjectFeatures()) {
+		return false
+	}
+	return true
 }

@@ -367,6 +367,7 @@ func fullJSON() string {
       "id": "template-1",
       "name": "Template 1",
       "description": "My Template 1",
+      "requirements": {},
       "path": "template-1",
       "versions": [
         {
