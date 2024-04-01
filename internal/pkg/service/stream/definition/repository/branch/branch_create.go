@@ -6,6 +6,7 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 )
 
@@ -28,6 +29,8 @@ func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicO
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Create
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
+			ctx, pluginOp := plugin.X(ctx, now)
+
 			// Create or undelete
 			created = deepcopy.Copy(*input).(definition.Branch)
 			if deleted != nil {
@@ -36,7 +39,9 @@ func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicO
 			}
 
 			// Save
-			return r.saveOne(ctx, now, nil, &created)
+			r.save(ctx, nil, &created)
+
+			return pluginOp.Do(ctx)
 		}).
 		// Update the input entity after a successful operation
 		OnResult(func(entity definition.Branch) {

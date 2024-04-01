@@ -26,7 +26,7 @@ func (r *Repository) closeSlicesInFile(k model.FileKey, now time.Time) *op.Atomi
 		})
 }
 
-func (r *Repository) closeSlices(saveCtx *plugin.SaveContext, slices []model.Slice) error {
+func (r *Repository) closeSlices(saveCtx *plugin.Operation, slices []model.Slice) error {
 	// Group slices by volume
 	var volumes []model.FileVolumeKey
 	perVolume := make(map[model.FileVolumeKey][]model.Slice)

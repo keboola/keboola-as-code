@@ -29,7 +29,7 @@ func (r *Repository) Undelete(k key.SinkKey, now time.Time) *op.AtomicOp[definit
 }
 
 func (r *Repository) undeleteSinksOnSourceUndelete() {
-	r.plugins.Collection().OnSourceSave(func(ctx *plugin.SaveContext, old, entity *definition.Source) {
+	r.plugins.Collection().OnSourceSave(func(ctx *plugin.Operation, old, entity *definition.Source) {
 		undeleted := entity.UndeletedAt != nil && entity.UndeletedAt.Time().Equal(ctx.Now())
 		if undeleted {
 			ctx.AddFrom(r.undeleteAllFrom(entity.SourceKey, ctx.Now(), true))

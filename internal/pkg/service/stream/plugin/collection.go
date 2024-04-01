@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"reflect"
@@ -14,15 +15,15 @@ type Collection struct {
 	onSliceSave  fnList[onSliceSaveFn]
 }
 
-type onBranchSaveFn func(ctx *SaveContext, old, updated *definition.Branch)
+type onBranchSaveFn func(ctx context.Context, old, updated *definition.Branch)
 
-type onSourceSaveFn func(ctx *SaveContext, old, updated *definition.Source)
+type onSourceSaveFn func(ctx context.Context, old, updated *definition.Source)
 
-type onSinkSaveFn func(ctx *SaveContext, old, updated *definition.Sink)
+type onSinkSaveFn func(ctx context.Context, old, updated *definition.Sink)
 
-type onFileSaveFn func(ctx *SaveContext, old, updated *storage.File)
+type onFileSaveFn func(ctx context.Context, old, updated *storage.File)
 
-type onSliceSaveFn func(ctx *SaveContext, old, updated *storage.Slice)
+type onSliceSaveFn func(ctx context.Context, old, updated *storage.Slice)
 
 func (c *Collection) OnBranchSave(fn onBranchSaveFn) {
 	c.onBranchSave = append(c.onBranchSave, fn)
@@ -37,7 +38,7 @@ func (c *Collection) OnSinkSave(fn onSinkSaveFn) {
 }
 
 func (c *Collection) OnSinkActivation(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx *SaveContext, old, updated *definition.Sink) {
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, old, updated *definition.Sink) {
 		if isSinkActivation(ctx, old, updated) {
 			fn(ctx, old, updated)
 		}
@@ -45,7 +46,7 @@ func (c *Collection) OnSinkActivation(fn onSinkSaveFn) {
 }
 
 func (c *Collection) OnSinkDeactivation(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx *SaveContext, old, updated *definition.Sink) {
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, old, updated *definition.Sink) {
 		if isSinkDeactivation(ctx, old, updated) {
 			fn(ctx, old, updated)
 		}
@@ -53,7 +54,7 @@ func (c *Collection) OnSinkDeactivation(fn onSinkSaveFn) {
 }
 
 func (c *Collection) OnSinkModification(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx *SaveContext, old, updated *definition.Sink) {
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, old, updated *definition.Sink) {
 		if !isSinkActivation(ctx, old, updated) && !isSinkDeactivation(ctx, old, updated) && !reflect.DeepEqual(old, updated) {
 			fn(ctx, old, updated)
 		}
@@ -68,14 +69,14 @@ func (c *Collection) OnSliceSave(fn onSliceSaveFn) {
 	c.onSliceSave = append(c.onSliceSave, fn)
 }
 
-func isSinkActivation(ctx *SaveContext, old, updated *definition.Sink) bool {
+func isSinkActivation(ctx context.Context, old, updated *definition.Sink) bool {
 	created := old == nil
 	undeleted := updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(ctx.Now())
 	enabled := updated.EnabledAt != nil && updated.EnabledAt.Time().Equal(ctx.Now())
 	return created || undeleted || enabled
 }
 
-func isSinkDeactivation(ctx *SaveContext, old, updated *definition.Sink) bool {
+func isSinkDeactivation(ctx context.Context, old, updated *definition.Sink) bool {
 	deleted := updated.DeletedAt != nil && updated.DeletedAt.Time().Equal(ctx.Now())
 	disabled := updated.DisabledAt != nil && updated.DisabledAt.Time().Equal(ctx.Now())
 	return deleted || disabled

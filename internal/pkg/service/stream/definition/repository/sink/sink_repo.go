@@ -47,7 +47,7 @@ func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *d
 	return saveCtx.Do(ctx)
 }
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *definition.Sink) {
+func (r *Repository) save(saveCtx *plugin.Operation, old, updated *definition.Sink) {
 	// Call plugins
 	r.plugins.Executor().OnSinkSave(saveCtx, old, updated)
 

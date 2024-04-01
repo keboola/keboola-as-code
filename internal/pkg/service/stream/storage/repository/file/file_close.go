@@ -10,12 +10,12 @@ import (
 )
 
 func (r *Repository) closeFileOnSinkDeactivation() {
-	r.plugins.Collection().OnSinkDeactivation(func(ctx *plugin.SaveContext, old, updated *definition.Sink) {
+	r.plugins.Collection().OnSinkDeactivation(func(ctx *plugin.Operation, old, updated *definition.Sink) {
 
 	})
 }
 
-func (r *Repository) close(ctx *plugin.SaveContext, file model.File) (model.File, error) {
+func (r *Repository) close(ctx *plugin.Operation, file model.File) (model.File, error) {
 	// Switch the old file from the state model.FileWriting to the state model.FileClosing
 	updated, err := file.WithState(ctx.Now(), model.FileClosing)
 	if err != nil {

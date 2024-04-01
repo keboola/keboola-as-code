@@ -63,7 +63,7 @@ func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *m
 	return saveCtx.Do(ctx)
 }
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *model.File) {
+func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.File) {
 	// Call plugins
 	r.plugins.Executor().OnFileSave(saveCtx, old, updated)
 

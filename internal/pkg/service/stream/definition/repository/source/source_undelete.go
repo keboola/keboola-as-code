@@ -29,7 +29,7 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[defin
 }
 
 func (r *Repository) undeleteSourcesOnBranchUndelete() {
-	r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) {
+	r.plugins.Collection().OnBranchSave(func(ctx *plugin.Operation, old, entity *definition.Branch) {
 		undeleted := entity.UndeletedAt != nil && entity.UndeletedAt.Time().Equal(ctx.Now())
 		if undeleted {
 			ctx.AddFrom(r.undeleteAllFrom(entity.BranchKey, ctx.Now(), true))

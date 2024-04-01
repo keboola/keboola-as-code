@@ -81,7 +81,7 @@ func New(d dependencies) *Repository {
 	r._provider = NewProvider(r.aggregate)
 
 	// Connect to file/slice events
-	r.plugins.Collection().OnFileSave(func(ctx *plugin.SaveContext, old, updated *model.File) {
+	r.plugins.Collection().OnFileSave(func(ctx *plugin.Operation, old, updated *model.File) {
 		// On file deletion: delete/rollup statistics
 		if updated.Deleted {
 			ctx.AddFrom(r.Delete(updated.FileKey))
@@ -105,7 +105,7 @@ func New(d dependencies) *Repository {
 			}))
 		}
 	})
-	r.plugins.Collection().OnSliceSave(func(ctx *plugin.SaveContext, old, updated *model.Slice) {
+	r.plugins.Collection().OnSliceSave(func(ctx *plugin.Operation, old, updated *model.Slice) {
 		// On slice deletion: delete/rollup statistics
 		if updated.Deleted {
 			ctx.AddFrom(r.Delete(updated.SliceKey))

@@ -13,7 +13,7 @@ import (
 )
 
 func (r *Repository) rotateFileOnSinkModification() {
-	r.plugins.Collection().OnSinkModification(func(ctx *plugin.SaveContext, old, updated *definition.Sink) {
+	r.plugins.Collection().OnSinkModification(func(ctx *plugin.Operation, old, updated *definition.Sink) {
 		ctx.AddFrom(r.Rotate(updated.SinkKey, ctx.Now()))
 	})
 }

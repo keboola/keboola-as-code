@@ -27,7 +27,7 @@ func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.Atomic
 		})
 }
 
-func (r *Repository) openSlice(saveCtx *plugin.SaveContext, file model.File, volumeID volume.ID) (model.Slice, error) {
+func (r *Repository) openSlice(saveCtx *plugin.Operation, file model.File, volumeID volume.ID) (model.Slice, error) {
 	// File must be in the storage.FileWriting state, to open a new slice
 	if fileState := file.State; fileState != model.FileWriting {
 		return model.Slice{}, serviceError.NewBadRequestError(errors.Errorf(

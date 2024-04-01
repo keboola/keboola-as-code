@@ -3,24 +3,22 @@ package op
 import (
 	"context"
 	"errors"
-
-	etcd "go.etcd.io/etcd/client/v3"
 )
 
 const (
-	clientCtxKey = ctxKey("etcdClient")
+	atomicOpCtxKey = ctxKey("atomicOp")
 )
 
 type ctxKey string
 
-func ctxWithClient(ctx context.Context, client etcd.KV) context.Context {
-	return context.WithValue(ctx, clientCtxKey, client)
+func ctxWithAtomicOp(ctx context.Context, op *AtomicOpCore) context.Context {
+	return context.WithValue(ctx, atomicOpCtxKey, op)
 }
 
-func ClientFromCtx(ctx context.Context) etcd.KV {
-	client, ok := ctx.Value(clientCtxKey).(etcd.KV)
+func AtomicOpFromCtx(ctx context.Context) *AtomicOpCore {
+	value, ok := ctx.Value(atomicOpCtxKey).(*AtomicOpCore)
 	if !ok {
-		panic(errors.New("etcd client is not set"))
+		panic(errors.New("atomic op is not set"))
 	}
-	return client
+	return value
 }

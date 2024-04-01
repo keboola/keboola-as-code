@@ -24,7 +24,7 @@ func (r *Repository) SoftDelete(k key.SourceKey, now time.Time) *op.AtomicOp[def
 }
 
 func (r *Repository) deleteSourcesOnBranchDelete() {
-	r.plugins.Collection().OnBranchSave(func(ctx *plugin.SaveContext, old, entity *definition.Branch) {
+	r.plugins.Collection().OnBranchSave(func(ctx *plugin.Operation, old, entity *definition.Branch) {
 		deleted := entity.DeletedAt != nil && entity.DeletedAt.Time().Equal(ctx.Now())
 		if deleted {
 			ctx.AddFrom(r.softDeleteAllFrom(entity.BranchKey, ctx.Now(), true))

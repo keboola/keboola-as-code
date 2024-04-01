@@ -51,7 +51,7 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 	}
 
 	// Connect to the file events
-	r.plugins.Collection().OnFileSave(func(ctx *plugin.SaveContext, old, updated *model.File) {
+	r.plugins.Collection().OnFileSave(func(ctx *plugin.Operation, old, updated *model.File) {
 		// On delete
 		if updated.Deleted {
 			ctx.AddFrom(r.deleteAllFrom(updated.FileKey, ctx.Now()))
@@ -197,7 +197,7 @@ func (r *Repository) updateOne(k model.SliceKey, now time.Time, updateFn func(mo
 		})
 }
 
-func (r *Repository) update(saveCtx *plugin.SaveContext, old model.Slice, updateFn func(model.Slice) (model.Slice, error)) (model.Slice, error) {
+func (r *Repository) update(saveCtx *plugin.Operation, old model.Slice, updateFn func(model.Slice) (model.Slice, error)) (model.Slice, error) {
 	// Update
 	updated, err := updateFn(deepcopy.Copy(old).(model.Slice))
 	if err != nil {
@@ -215,7 +215,7 @@ func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *m
 	return saveCtx.Do(ctx)
 }
 
-func (r *Repository) save(saveCtx *plugin.SaveContext, old, updated *model.Slice) {
+func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.Slice) {
 	// Call plugins
 	r.plugins.Executor().OnSliceSave(saveCtx, old, updated)
 
