@@ -52,7 +52,7 @@ func getFreePort() (port int, err error) {
 	return
 }
 
-func startDNSServer(t *testing.T, records map[string]string) int {
+func startDNSServer(t *testing.T, records map[string]string) (*fakedns.DNSMock, int) {
 	t.Helper()
 
 	port, err := getFreePort()
@@ -74,7 +74,7 @@ func startDNSServer(t *testing.T, records map[string]string) int {
 
 	server.Start()
 
-	return port
+	return server, port
 }
 
 func TestDNS(t *testing.T) {
@@ -82,7 +82,9 @@ func TestDNS(t *testing.T) {
 		"test.example.com": "127.0.0.2",
 	}
 
-	port := startDNSServer(t, records)
+	server, port := startDNSServer(t, records)
+	// fakedns doesn't expose a shutdown method, but we can trigger it like this
+	defer server.RunTestFunc(func() {})
 
 	dialer := newDialer()
 
