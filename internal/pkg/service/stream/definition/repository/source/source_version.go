@@ -38,7 +38,7 @@ func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, to definiti
 		// Get target version
 		ReadOp(r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&targetVersion)).
 		// Return the most significant error
-		BeforeWriteOrErr(func(ctx context.Context) error {
+		OnWriteOrErr(func(ctx context.Context) error {
 			if latest == nil {
 				return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
 			} else if targetVersion == nil {

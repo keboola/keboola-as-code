@@ -2,7 +2,6 @@ package op
 
 import (
 	"context"
-
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

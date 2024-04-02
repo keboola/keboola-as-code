@@ -43,7 +43,7 @@ func (c *Operation) Now() time.Time {
 }
 
 func (c *Operation) Do(ctx context.Context) (op.Op, error) {
-	client := op.AtomicOpFromCtx(ctx)
+	client := op.AtomicFromCtx(ctx)
 
 	writeTxn := op.Txn(client)
 

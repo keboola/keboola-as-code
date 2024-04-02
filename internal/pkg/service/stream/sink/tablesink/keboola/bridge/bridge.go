@@ -90,7 +90,7 @@ package bridge
 //
 //	// Convert tokens slice to a map
 //	var tokenMap map[key.SinkKey]*model.Token
-//	atomicOp.BeforeWrite(func(ctx context.Context) {
+//	atomicOp.OnWrite(func(ctx context.Context) {
 //		tokenMap = make(map[key.SinkKey]*model.Token)
 //		for _, token := range tokens {
 //			token := token

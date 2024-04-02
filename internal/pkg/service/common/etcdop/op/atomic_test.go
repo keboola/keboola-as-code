@@ -308,7 +308,7 @@ func (tc atomicOpTestCase) RunBreakingChange(t *testing.T) {
 	atomicOp := op.
 		Atomic(client, &op.NoResult{}).
 		ReadOp(tc.ReadPhase(t, client)...).
-		BeforeWrite(func(ctx context.Context) {
+		OnWrite(func(ctx context.Context) {
 			// Modify a key loaded by the Read Phase
 			require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
 			logs.Reset()
@@ -348,7 +348,7 @@ func (tc atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
 
 // TestAtomicUpdate has been partially replaced with the TestAtomicOp.
 // In the future we should remove the test,
-// it is necessary to make a separate test for nested transactions and for shortcuts such as the BeforeWriteOrErr method.
+// it is necessary to make a separate test for nested transactions and for shortcuts such as the OnWriteOrErr method.
 func TestAtomicUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -411,7 +411,7 @@ func TestAtomicUpdate(t *testing.T) {
 				Else(key7.Get(client)),
 		)
 	})
-	atomicOp.BeforeWriteOrErr(func(context.Context) error {
+	atomicOp.OnWriteOrErr(func(context.Context) error {
 		if beforeUpdate != nil {
 			if clearCallback := beforeUpdate(); clearCallback {
 				beforeUpdate = nil
@@ -600,7 +600,7 @@ func TestAtomicOp_RequireLock(t *testing.T) {
 		Atomic(client, &op.NoResult{}).
 		RequireLock(mutex).
 		ReadOp(etcdop.NewKey("key1").Get(client)).
-		BeforeWrite(func(ctx context.Context) {
+		OnWrite(func(ctx context.Context) {
 			if betweenPhasesFn != nil {
 				betweenPhasesFn()
 			}

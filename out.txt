@@ -1,0 +1,267 @@
+=== RUN   TestBoolOp
+=== PAUSE TestBoolOp
+=== RUN   TestCountOp
+=== PAUSE TestCountOp
+=== RUN   TestGetManyOp
+=== PAUSE TestGetManyOp
+=== RUN   TestGetManyTOp
+=== PAUSE TestGetManyTOp
+=== RUN   TestNoResultOp
+=== PAUSE TestNoResultOp
+=== RUN   TestGetOneOp
+=== PAUSE TestGetOneOp
+=== RUN   TestGetOneTOp
+=== PAUSE TestGetOneTOp
+=== RUN   TestResult
+=== PAUSE TestResult
+=== RUN   TestAtomicUpdateBackoff
+=== PAUSE TestAtomicUpdateBackoff
+=== RUN   TestTracker
+=== PAUSE TestTracker
+=== RUN   TestTxnResult
+=== PAUSE TestTxnResult
+=== RUN   TestMapRawResponse_Panic
+=== PAUSE TestMapRawResponse_Panic
+=== RUN   TestAtomicOp
+=== PAUSE TestAtomicOp
+=== RUN   TestAtomicUpdate
+=== PAUSE TestAtomicUpdate
+=== RUN   TestAtomicOp_AddFrom
+=== PAUSE TestAtomicOp_AddFrom
+=== RUN   TestAtomicOp_RequireLock
+=== PAUSE TestAtomicOp_RequireLock
+=== RUN   TestOpForType_WithProcessorMethods_ScalarType
+=== PAUSE TestOpForType_WithProcessorMethods_ScalarType
+=== RUN   TestOpForType_WithProcessorMethods_Pointer
+=== PAUSE TestOpForType_WithProcessorMethods_Pointer
+=== RUN   TestTxnOp_Empty
+=== PAUSE TestTxnOp_Empty
+=== RUN   TestTxnOp_OpError_Create
+=== PAUSE TestTxnOp_OpError_Create
+=== RUN   TestTxnOp_OpError_MapResult_IfBranch
+=== PAUSE TestTxnOp_OpError_MapResult_IfBranch
+=== RUN   TestTxnOp_OpError_MapResult_ElseBranch
+=== PAUSE TestTxnOp_OpError_MapResult_ElseBranch
+=== RUN   TestTxnOp_ServerError
+=== PAUSE TestTxnOp_ServerError
+=== RUN   TestTxnOp_IfThenElse
+=== PAUSE TestTxnOp_IfThenElse
+=== RUN   TestTxnOp_Then_CalledWithTxn_1
+=== PAUSE TestTxnOp_Then_CalledWithTxn_1
+=== RUN   TestTxnOp_Then_CalledWithTxn_2
+=== PAUSE TestTxnOp_Then_CalledWithTxn_2
+=== RUN   TestTxnOp_ThenTxn_CalledWithoutTxn
+=== PAUSE TestTxnOp_ThenTxn_CalledWithoutTxn
+=== RUN   TestTxnOp_Then_Simple
+=== PAUSE TestTxnOp_Then_Simple
+=== RUN   TestTxnOp_Merge_Simple
+=== PAUSE TestTxnOp_Merge_Simple
+=== RUN   TestTxnOp_Then_Simple_Ifs
+=== PAUSE TestTxnOp_Then_Simple_Ifs
+=== RUN   TestTxnOp_Merge_Simple_Ifs
+=== PAUSE TestTxnOp_Merge_Simple_Ifs
+=== RUN   TestTxnOp_Merge_RealExample
+=== PAUSE TestTxnOp_Merge_RealExample
+=== RUN   TestTxnOp_Merge_Complex
+=== PAUSE TestTxnOp_Merge_Complex
+=== CONT  TestBoolOp
+=== CONT  TestTxnOp_IfThenElse
+=== CONT  TestTxnOp_Merge_Simple
+=== CONT  TestTxnOp_Merge_RealExample
+=== CONT  TestTxnOp_Merge_Simple_Ifs
+=== CONT  TestTxnOp_ServerError
+=== CONT  TestAtomicOp
+=== RUN   TestAtomicOp/GetKey_CreateKey_ok
+=== PAUSE TestAtomicOp/GetKey_CreateKey_ok
+=== RUN   TestAtomicOp/GetKey_CreateKey_bc
+=== PAUSE TestAtomicOp/GetKey_CreateKey_bc
+=== RUN   TestAtomicOp/GetKey_ModifyKey_ok
+=== PAUSE TestAtomicOp/GetKey_ModifyKey_ok
+=== RUN   TestAtomicOp/GetKey_ModifyKey_bc
+=== PAUSE TestAtomicOp/GetKey_ModifyKey_bc
+=== RUN   TestAtomicOp/GetKey_DeleteKey_ok
+=== PAUSE TestAtomicOp/GetKey_DeleteKey_ok
+=== RUN   TestAtomicOp/GetKey_DeleteKey_bc
+=== PAUSE TestAtomicOp/GetKey_DeleteKey_bc
+=== RUN   TestAtomicOp/GetPrefix_CreateKey_ok
+=== PAUSE TestAtomicOp/GetPrefix_CreateKey_ok
+=== RUN   TestAtomicOp/GetPrefix_CreateKey_bc
+=== PAUSE TestAtomicOp/GetPrefix_CreateKey_bc
+=== RUN   TestAtomicOp/GetPrefix_ModifyKey_ok
+=== PAUSE TestAtomicOp/GetPrefix_ModifyKey_ok
+=== RUN   TestAtomicOp/GetPrefix_ModifyKey_bc
+=== PAUSE TestAtomicOp/GetPrefix_ModifyKey_bc
+=== RUN   TestAtomicOp/GetPrefix_DeleteKey_ok
+=== PAUSE TestAtomicOp/GetPrefix_DeleteKey_ok
+=== RUN   TestAtomicOp/GetPrefix_DeleteKey_bc
+=== PAUSE TestAtomicOp/GetPrefix_DeleteKey_bc
+=== CONT  TestTxnOp_Merge_Complex
+=== RUN   TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_ok
+=== PAUSE TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_ok
+=== RUN   TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_bc
+=== PAUSE TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_bc
+=== RUN   TestAtomicOp/PutKey_ModifyKey_ok
+=== PAUSE TestAtomicOp/PutKey_ModifyKey_ok
+=== RUN   TestAtomicOp/PutKey_ModifyKey_bc
+=== PAUSE TestAtomicOp/PutKey_ModifyKey_bc
+=== RUN   TestAtomicOp/PutKey_DeleteKey_ok
+=== PAUSE TestAtomicOp/PutKey_DeleteKey_ok
+=== RUN   TestAtomicOp/PutKey_DeleteKey_bc
+=== PAUSE TestAtomicOp/PutKey_DeleteKey_bc
+=== RUN   TestAtomicOp/DeleteKey_CreateKey_ok
+=== PAUSE TestAtomicOp/DeleteKey_CreateKey_ok
+=== RUN   TestAtomicOp/DeleteKey_CreateKey_bc
+=== PAUSE TestAtomicOp/DeleteKey_CreateKey_bc
+=== RUN   TestAtomicOp/DeleteKey_RecreateKey_ok
+=== PAUSE TestAtomicOp/DeleteKey_RecreateKey_ok
+=== RUN   TestAtomicOp/DeleteKey_RecreateKey_bc
+=== PAUSE TestAtomicOp/DeleteKey_RecreateKey_bc
+=== CONT  TestTxnOp_OpError_MapResult_ElseBranch
+=== NAME  TestTxnOp_IfThenElse
+    txn_test.go:342: test case: Succeeded: false, Else branch
+=== NAME  TestTxnOp_Merge_RealExample
+    txn_test.go:965: test case: PutIfNotExists=fail | DeleteIfExists=fail
+=== NAME  TestTxnOp_Merge_Complex
+    txn_test.go:1313: test case: Succeeded: false, Else branch
+=== NAME  TestTxnOp_IfThenElse
+    txn_test.go:342: test case: Succeeded: true, Then branch
+=== NAME  TestTxnOp_Merge_RealExample
+    txn_test.go:965: test case: PutIfNotExists=success | DeleteIfExists=fail
+=== NAME  TestTxnOp_Merge_Complex
+    txn_test.go:1313: test case: Succeeded: partial, Else branch
+{"level":"warn","ts":"2024-04-02T09:13:43.484579Z","logger":"etcd-client","caller":"v3@v3.5.12/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0008f1180/etcd:2379","attempt":0,"error":"rpc error: code = InvalidArgument desc = etcdserver: duplicate key given in txn request"}
+=== NAME  TestTxnOp_Merge_RealExample
+    txn_test.go:965: test case: PutIfNotExists=fail | DeleteIfExists=success
+=== NAME  TestTxnOp_Merge_Complex
+    txn_test.go:1313: test case: Succeeded: true, Then branch
+=== NAME  TestTxnOp_Merge_RealExample
+    txn_test.go:965: test case: PutIfNotExists=success | DeleteIfExists=success
+--- PASS: TestTxnOp_Merge_Simple (0.15s)
+=== CONT  TestTxnOp_OpError_MapResult_IfBranch
+--- PASS: TestBoolOp (0.15s)
+=== CONT  TestTxnOp_OpError_Create
+--- PASS: TestTxnOp_Merge_Simple_Ifs (0.16s)
+=== CONT  TestTxnOp_Empty
+--- PASS: TestTxnOp_ServerError (0.16s)
+=== CONT  TestOpForType_WithProcessorMethods_Pointer
+--- PASS: TestTxnOp_IfThenElse (0.16s)
+=== CONT  TestOpForType_WithProcessorMethods_ScalarType
+--- PASS: TestTxnOp_OpError_MapResult_ElseBranch (0.16s)
+=== CONT  TestAtomicOp_RequireLock
+--- PASS: TestTxnOp_Merge_RealExample (0.18s)
+=== CONT  TestAtomicOp_AddFrom
+--- PASS: TestTxnOp_Merge_Complex (0.19s)
+=== CONT  TestAtomicUpdate
+=== NAME  TestOpForType_WithProcessorMethods_ScalarType
+    op_test.go:190: test case "Key Not Found"
+=== NAME  TestOpForType_WithProcessorMethods_Pointer
+    op_test.go:316: test case "Key Not Found"
+=== NAME  TestOpForType_WithProcessorMethods_ScalarType
+    op_test.go:190: test case "Key Not Found + Errors"
+=== NAME  TestOpForType_WithProcessorMethods_Pointer
+    op_test.go:316: test case "Key Not Found + Errors"
+=== NAME  TestOpForType_WithProcessorMethods_ScalarType
+    op_test.go:190: test case "Key Found + Empty"
+=== NAME  TestOpForType_WithProcessorMethods_Pointer
+    op_test.go:316: test case "Key Found + Empty"
+=== NAME  TestOpForType_WithProcessorMethods_ScalarType
+    op_test.go:190: test case "Key Found + Empty + Errors"
+=== NAME  TestOpForType_WithProcessorMethods_Pointer
+    op_test.go:316: test case "Key Found + Empty + Errors"
+=== NAME  TestOpForType_WithProcessorMethods_ScalarType
+    op_test.go:190: test case "Key Found"
+=== NAME  TestOpForType_WithProcessorMethods_Pointer
+    op_test.go:316: test case "Key Found"
+=== NAME  TestOpForType_WithProcessorMethods_ScalarType
+    op_test.go:190: test case "Key Found + Errors"
+=== NAME  TestOpForType_WithProcessorMethods_Pointer
+    op_test.go:316: test case "Key Found + Errors"
+--- PASS: TestTxnOp_OpError_MapResult_IfBranch (0.14s)
+=== CONT  TestTxnOp_Then_CalledWithTxn_2
+--- PASS: TestTxnOp_Then_CalledWithTxn_2 (0.00s)
+=== CONT  TestTxnOp_Then_Simple
+--- PASS: TestTxnOp_OpError_Create (0.14s)
+=== CONT  TestTxnOp_ThenTxn_CalledWithoutTxn
+--- PASS: TestTxnOp_ThenTxn_CalledWithoutTxn (0.00s)
+=== CONT  TestGetOneTOp
+--- PASS: TestTxnOp_Empty (0.14s)
+=== CONT  TestMapRawResponse_Panic
+--- PASS: TestMapRawResponse_Panic (0.00s)
+=== CONT  TestTxnResult
+--- PASS: TestTxnResult (0.00s)
+=== CONT  TestTracker
+--- PASS: TestOpForType_WithProcessorMethods_ScalarType (0.16s)
+=== CONT  TestAtomicUpdateBackoff
+--- PASS: TestOpForType_WithProcessorMethods_Pointer (0.16s)
+=== CONT  TestResult
+--- PASS: TestResult (0.00s)
+=== CONT  TestTxnOp_Then_CalledWithTxn_1
+--- PASS: TestTxnOp_Then_CalledWithTxn_1 (0.00s)
+=== CONT  TestGetManyTOp
+--- PASS: TestAtomicOp_AddFrom (0.16s)
+=== CONT  TestGetOneOp
+--- PASS: TestAtomicUpdateBackoff (0.02s)
+=== CONT  TestNoResultOp
+--- PASS: TestTxnOp_Then_Simple (0.14s)
+=== CONT  TestGetManyOp
+--- PASS: TestGetOneTOp (0.14s)
+=== CONT  TestTxnOp_Then_Simple_Ifs
+{"level":"warn","ts":"2024-04-02T09:13:43.835648Z","logger":"etcd-client","caller":"v3@v3.5.12/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc000534000/etcd:2379","attempt":0,"error":"rpc error: code = Canceled desc = context canceled"}
+{"level":"warn","ts":"2024-04-02T09:13:43.835822Z","logger":"etcd-client","caller":"v3@v3.5.12/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc000534000/etcd:2379","attempt":0,"error":"rpc error: code = Canceled desc = context canceled"}
+--- PASS: TestTracker (0.15s)
+=== CONT  TestCountOp
+--- PASS: TestGetManyTOp (0.14s)
+=== CONT  TestAtomicOp/GetKey_CreateKey_ok
+--- PASS: TestGetOneOp (0.14s)
+=== CONT  TestAtomicOp/GetPrefix_DeleteKey_bc
+--- PASS: TestNoResultOp (0.14s)
+=== CONT  TestAtomicOp/DeleteKey_RecreateKey_bc
+--- PASS: TestAtomicUpdate (0.31s)
+=== CONT  TestAtomicOp/DeleteKey_RecreateKey_ok
+--- PASS: TestAtomicOp_RequireLock (0.35s)
+=== CONT  TestAtomicOp/DeleteKey_CreateKey_bc
+--- PASS: TestGetManyOp (0.15s)
+=== CONT  TestAtomicOp/DeleteKey_CreateKey_ok
+--- PASS: TestTxnOp_Then_Simple_Ifs (0.16s)
+=== CONT  TestAtomicOp/PutKey_DeleteKey_bc
+--- PASS: TestCountOp (0.15s)
+=== CONT  TestAtomicOp/PutKey_DeleteKey_ok
+=== CONT  TestAtomicOp/PutKey_ModifyKey_bc
+=== CONT  TestAtomicOp/PutKey_ModifyKey_ok
+=== CONT  TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_bc
+=== CONT  TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_ok
+=== CONT  TestAtomicOp/GetPrefix_CreateKey_ok
+=== CONT  TestAtomicOp/GetPrefix_DeleteKey_ok
+=== CONT  TestAtomicOp/GetPrefix_ModifyKey_bc
+=== CONT  TestAtomicOp/GetPrefix_ModifyKey_ok
+=== CONT  TestAtomicOp/GetPrefix_CreateKey_bc
+=== CONT  TestAtomicOp/GetKey_ModifyKey_bc
+=== CONT  TestAtomicOp/GetKey_DeleteKey_bc
+=== CONT  TestAtomicOp/GetKey_DeleteKey_ok
+=== CONT  TestAtomicOp/GetKey_ModifyKey_ok
+=== CONT  TestAtomicOp/GetKey_CreateKey_bc
+--- PASS: TestAtomicOp (0.00s)
+    --- PASS: TestAtomicOp/GetKey_CreateKey_ok (0.15s)
+    --- PASS: TestAtomicOp/GetPrefix_DeleteKey_bc (0.14s)
+    --- PASS: TestAtomicOp/DeleteKey_RecreateKey_bc (0.15s)
+    --- PASS: TestAtomicOp/DeleteKey_RecreateKey_ok (0.15s)
+    --- PASS: TestAtomicOp/DeleteKey_CreateKey_bc (0.14s)
+    --- PASS: TestAtomicOp/DeleteKey_CreateKey_ok (0.14s)
+    --- PASS: TestAtomicOp/PutKey_DeleteKey_bc (0.14s)
+    --- PASS: TestAtomicOp/PutKey_DeleteKey_ok (0.14s)
+    --- PASS: TestAtomicOp/PutKey_ModifyKey_bc (0.14s)
+    --- PASS: TestAtomicOp/PutKey_ModifyKey_ok (0.14s)
+    --- PASS: TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_bc (0.14s)
+    --- PASS: TestAtomicOp/GetPrefix_DeleteKey_SkipPrefixKeysCheck_ok (0.14s)
+    --- PASS: TestAtomicOp/GetPrefix_CreateKey_ok (0.14s)
+    --- PASS: TestAtomicOp/GetPrefix_DeleteKey_ok (0.15s)
+    --- PASS: TestAtomicOp/GetPrefix_ModifyKey_ok (0.15s)
+    --- PASS: TestAtomicOp/GetPrefix_ModifyKey_bc (0.17s)
+    --- PASS: TestAtomicOp/GetPrefix_CreateKey_bc (0.15s)
+    --- PASS: TestAtomicOp/GetKey_ModifyKey_bc (0.17s)
+    --- PASS: TestAtomicOp/GetKey_DeleteKey_bc (0.16s)
+    --- PASS: TestAtomicOp/GetKey_ModifyKey_ok (0.16s)
+    --- PASS: TestAtomicOp/GetKey_DeleteKey_ok (0.16s)
+    --- PASS: TestAtomicOp/GetKey_CreateKey_bc (0.14s)
+PASS
+ok  	github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op	1.033s
