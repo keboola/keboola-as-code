@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
@@ -264,8 +265,26 @@ func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyCon
 func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handler {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = r.transport
+	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+			r.dnsErrorHandler(w, req)
+			return
+		}
+
+		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), err.Error())
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintln(w, "Unable to connect to application.")
+		fmt.Fprintln(w, "Exception ID:", exceptionID)
+	}
 
 	return chain.Then(proxy)
+}
+
+func (r *Router) dnsErrorHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusServiceUnavailable)
+	fmt.Fprintln(w, "Starting...")
 }
 
 func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
@@ -387,8 +406,15 @@ func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthP
 	}
 	provider.proxyProvider = proxyProvider
 
+	// Create a page writer instance. This is necessary for triggering data app wakeup.
+	pageWriter, err := NewPageWriter(proxyConfig, r.dnsErrorHandler)
+	if err != nil {
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create page writer for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		return provider
+	}
+
 	// Create the actual proxy instance. May fail on some runtime error.
-	proxy, err := oauthproxy.NewOAuthProxy(proxyConfig, authValidator)
+	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, pageWriter)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
