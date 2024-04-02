@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -39,14 +40,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func startDNSServer(t *testing.T, records map[string]string) {
+func getFreePort() (port int, err error) {
+	var a *net.TCPAddr
+	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
+		var l *net.TCPListener
+		if l, err = net.ListenTCP("tcp", a); err == nil {
+			defer l.Close()
+			return l.Addr().(*net.TCPAddr).Port, nil
+		}
+	}
+	return
+}
+
+func startDNSServer(t *testing.T, records map[string]string) int {
 	t.Helper()
+
+	port, err := getFreePort()
+	assert.NoError(t, err)
 
 	server := fakedns.NewFakeDNS(
 		fakedns.FakeDNSSettings{
-			FakeDNSPort:     8853,
+			FakeDNSPort:     port,
 			EdgeDNSZoneFQDN: "example.com.",
-			DNSZoneFQDN:     "cloud.example.com.",
 		},
 	)
 
@@ -58,6 +73,8 @@ func startDNSServer(t *testing.T, records map[string]string) {
 	}
 
 	server.Start()
+
+	return port
 }
 
 func TestDNS(t *testing.T) {
@@ -65,11 +82,11 @@ func TestDNS(t *testing.T) {
 		"test.example.com": "127.0.0.2",
 	}
 
-	startDNSServer(t, records)
+	port := startDNSServer(t, records)
 
 	dialer := newDialer()
 
-	dnsClient, err := dns.NewClient(dialer, "127.0.0.1:8853")
+	dnsClient, err := dns.NewClient(dialer, "127.0.0.1:" + strconv.Itoa(port))
 	assert.NoError(t, err)
 
 	ip, err := dnsClient.Resolve(context.Background(), "test.example.com")
