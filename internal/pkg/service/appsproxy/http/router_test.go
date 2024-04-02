@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dns"
 	"io"
 	"net"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/kuritka/go-fake-dns/fakedns"
-	"github.com/miekg/dns"
+	miekgdns "github.com/miekg/dns"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -50,13 +51,31 @@ func startDNSServer(t *testing.T, records map[string]string) {
 	)
 
 	for domain, address := range records {
-		ip, _, err := net.ParseCIDR(address)
-		assert.NoError(t, err)
+		ip := net.ParseIP(address)
+		assert.NotNil(t, ip)
 
-		server.AddARecord(dns.Fqdn(domain), ip)
+		server.AddARecord(miekgdns.Fqdn(domain), ip)
 	}
 
 	server.Start()
+}
+
+func TestDNS(t *testing.T) {
+	records := map[string]string{
+		"test.example.com": "127.0.0.2",
+	}
+
+	startDNSServer(t, records)
+
+	dialer := newDialer()
+
+	dnsClient, err := dns.NewClient(dialer, "127.0.0.1:8853")
+	assert.NoError(t, err)
+
+	ip, err := dnsClient.Resolve(context.Background(), "test.example.com")
+	assert.NoError(t, err)
+
+	fmt.Println(ip)
 }
 
 type testCase struct {
