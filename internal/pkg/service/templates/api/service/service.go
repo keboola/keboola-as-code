@@ -579,17 +579,26 @@ func getTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope,
 		return nil, nil, err
 	}
 
+	tmplRecord, found := repo.RecordByID(templateID)
+
+	if !found {
+		return nil, nil, &GenericError{
+			Name:    "templates.templateNotFound",
+			Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
+		}
+	}
+
+	if !hasRequirements(tmplRecord, d) {
+		return nil, nil, &GenericError{
+			Name:    "templates.templateNoRequirements",
+			Message: fmt.Sprintf(`Template "%s" doesn't have requirements.`, templateID),
+		}
+	}
+
 	// Parse version
 	var semVersion model.SemVersion
 	if versionStr == "default" {
 		// Default version
-		tmplRecord, found := repo.RecordByID(templateID)
-		if !found {
-			return nil, nil, &GenericError{
-				Name:    "templates.templateNotFound",
-				Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
-			}
-		}
 		if versionRecord, err := tmplRecord.DefaultVersionOrErr(); err != nil {
 			return nil, nil, &GenericError{
 				Name:    "templates.templateNotFound",

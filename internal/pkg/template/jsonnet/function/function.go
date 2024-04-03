@@ -159,3 +159,23 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 		},
 	}
 }
+
+// HasProjectBackend Jsonnet function returns true if the project backend is available, otherwise false.
+func HasProjectBackend(backends []string) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name:   `HasProjectBackend`,
+		Params: ast.Identifiers{"backend"},
+		Func: func(params []any) (any, error) {
+			if len(params) != 1 {
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
+			}
+
+			for _, backend := range backends {
+				if backend == params[0] {
+					return true, nil
+				}
+			}
+			return false, nil
+		},
+	}
+}

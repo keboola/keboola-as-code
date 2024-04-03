@@ -97,6 +97,18 @@ func WithEnabledEtcdClient() MockedOption {
 	}
 }
 
+func WithSnowflakeBackend() MockedOption {
+	return func(c *MockedConfig) {
+		c.storageAPIToken.Owner.HasSnowflake = true
+	}
+}
+
+func WithBigQueryBackend() MockedOption {
+	return func(c *MockedConfig) {
+		c.storageAPIToken.Owner.HasBigquery = true
+	}
+}
+
 func WithEnabledTasks() MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)

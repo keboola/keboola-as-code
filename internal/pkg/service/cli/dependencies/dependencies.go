@@ -15,6 +15,8 @@ package dependencies
 import (
 	"context"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -60,6 +62,8 @@ type LocalCommandScope interface {
 	BaseScope
 	dependencies.PublicScope
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
+	ProjectBackends() []string
+	ProjectFeatures() keboola.FeaturesMap
 	LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)

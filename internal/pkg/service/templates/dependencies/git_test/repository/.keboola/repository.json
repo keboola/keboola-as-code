@@ -18,6 +18,44 @@
           "path": "v1"
         }
       ]
+    },
+    {
+      "id": "template2-required-feature",
+      "name": "Template 2",
+      "description": "Full workflow to ...",
+      "path": "template2",
+      "requirements": {
+        "features":[
+          "my-feature"
+        ]
+      },
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "",
+          "stable": false,
+          "path": "v1"
+        }
+      ]
+    },
+    {
+      "id": "template3-required-component",
+      "name": "Template 3",
+      "description": "Full workflow to ...",
+      "path": "template3",
+      "requirements": {
+        "components":[
+          "my.component"
+        ]
+      },
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "",
+          "stable": false,
+          "path": "v1"
+        }
+      ]
     }
   ]
 }

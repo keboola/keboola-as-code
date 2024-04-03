@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -21,7 +22,7 @@ import (
 func NewMockedAPIScope(t *testing.T, cfg config.Config, opts ...dependencies.MockedOption) (APIScope, dependencies.Mocked) {
 	t.Helper()
 
-	opts = append(opts, dependencies.WithEnabledEtcdClient())
+	opts = append(opts, dependencies.WithEnabledEtcdClient(), dependencies.WithEnabledTasks())
 	mocked := dependencies.NewMocked(t, opts...)
 
 	var err error
@@ -33,8 +34,11 @@ func NewMockedAPIScope(t *testing.T, cfg config.Config, opts ...dependencies.Moc
 	// Prepare test repository with templates, instead of default repositories, to prevent loading of all production templates.
 	if reflect.DeepEqual(cfg.Repositories, config.DefaultRepositories()) {
 		tmpDir := t.TempDir()
-		assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
-		assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
+		_, filename, _, _ := runtime.Caller(0)
+		srcFs, err := aferofs.NewLocalFs(path.Dir(filename))
+		require.NoError(t, err)
+		require.NoError(t, aferofs.CopyFs2Fs(srcFs, filesystem.Join("git_test", "repository"), nil, tmpDir))
+		require.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 		cfg.Repositories = []model.TemplateRepository{{
 			Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main",
 		}}
