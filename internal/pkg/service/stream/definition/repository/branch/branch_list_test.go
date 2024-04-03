@@ -18,6 +18,7 @@ func TestBranchRepository_List(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Branch()
@@ -41,8 +42,8 @@ func TestBranchRepository_List(t *testing.T) {
 	{
 		branch1 = test.NewBranch(branchKey1)
 		branch2 = test.NewBranch(branchKey2)
-		require.NoError(t, repo.Create(&branch1, now).Do(ctx).Err())
-		require.NoError(t, repo.Create(&branch2, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch1, now, by).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch2, now, by).Do(ctx).Err())
 	}
 
 	// List - ok
@@ -63,6 +64,7 @@ func TestBranchRepository_ListDeleted(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Branch()
@@ -86,8 +88,8 @@ func TestBranchRepository_ListDeleted(t *testing.T) {
 	{
 		branch1 = test.NewBranch(branchKey1)
 		branch2 = test.NewBranch(branchKey2)
-		require.NoError(t, repo.Create(&branch1, now).Do(ctx).Err())
-		require.NoError(t, repo.Create(&branch2, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch1, now, by).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch2, now, by).Do(ctx).Err())
 	}
 
 	// ListDeleted - empty
@@ -102,9 +104,9 @@ func TestBranchRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		var err error
-		branch1, err = repo.SoftDelete(branchKey1, now).Do(ctx).ResultOrErr()
+		branch1, err = repo.SoftDelete(branchKey1, now, by).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		branch2, err = repo.SoftDelete(branchKey2, now).Do(ctx).ResultOrErr()
+		branch2, err = repo.SoftDelete(branchKey2, now, by).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 	}
 

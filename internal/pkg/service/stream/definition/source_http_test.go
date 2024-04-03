@@ -1,6 +1,8 @@
-package definition
+package definition_test
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"strings"
 	"testing"
 	"time"
@@ -17,20 +19,21 @@ func TestHTTPSource_Validation(t *testing.T) {
 		BranchKey: key.BranchKey{ProjectID: 123, BranchID: 456},
 		SourceID:  "my-source",
 	}
-	versioned := Versioned{
-		Version: Version{
+	versioned := definition.Versioned{
+		Version: definition.Version{
 			Number:      1,
 			Hash:        "0123456789123456",
 			ModifiedAt:  utctime.From(time.Now()),
+			ModifiedBy:  test.ByUser(),
 			Description: "foo bar",
 		},
 	}
-	softDeletable := SoftDeletable{
+	softDeletable := definition.SoftDeletable{
 		Deleted: false,
 	}
 
 	// Test cases
-	cases := testvalidation.TestCases[Source]{
+	cases := testvalidation.TestCases[definition.Source]{
 		{
 			Name: "empty",
 			ExpectedError: `
@@ -40,19 +43,20 @@ func TestHTTPSource_Validation(t *testing.T) {
 - "version.number" is a required field
 - "version.hash" is a required field
 - "version.modifiedAt" is a required field
+- "version.modifiedBy" is a required field
 - "type" is a required field
 - "name" is a required field
 `,
-			Value: Source{},
+			Value: definition.Source{},
 		},
 		{
 			Name:          "nil HTTP section",
 			ExpectedError: `"http" is a required field`,
-			Value: Source{
+			Value: definition.Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SourceTypeHTTP,
+				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
 			},
@@ -60,27 +64,27 @@ func TestHTTPSource_Validation(t *testing.T) {
 		{
 			Name:          "empty HTTP section",
 			ExpectedError: `"http.secret" is a required field`,
-			Value: Source{
+			Value: definition.Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SourceTypeHTTP,
+				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
-				HTTP:          &HTTPSource{},
+				HTTP:          &definition.HTTPSource{},
 			},
 		},
 		{
 			Name:          "short secret",
 			ExpectedError: `"http.secret" must be 48 characters in length`,
-			Value: Source{
+			Value: definition.Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SourceTypeHTTP,
+				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
-				HTTP: &HTTPSource{
+				HTTP: &definition.HTTPSource{
 					Secret: "foo",
 				},
 			},
@@ -88,14 +92,14 @@ func TestHTTPSource_Validation(t *testing.T) {
 		{
 			Name:          "long name",
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
-			Value: Source{
+			Value: definition.Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SourceTypeHTTP,
+				Type:          definition.SourceTypeHTTP,
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
-				HTTP: &HTTPSource{
+				HTTP: &definition.HTTPSource{
 					Secret: "012345678901234567890123456789012345678912345678",
 				},
 			},
@@ -103,28 +107,28 @@ func TestHTTPSource_Validation(t *testing.T) {
 		{
 			Name:          "long description",
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
-			Value: Source{
+			Value: definition.Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SourceTypeHTTP,
+				Type:          definition.SourceTypeHTTP,
 				Name:          strings.Repeat("a", 4096+1),
 				Description:   "My Description",
-				HTTP: &HTTPSource{
+				HTTP: &definition.HTTPSource{
 					Secret: "012345678901234567890123456789012345678912345678",
 				},
 			},
 		},
 		{
 			Name: "ok",
-			Value: Source{
+			Value: definition.Source{
 				SourceKey:     sourceKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SourceTypeHTTP,
+				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
-				HTTP: &HTTPSource{
+				HTTP: &definition.HTTPSource{
 					Secret: "012345678901234567890123456789012345678912345678",
 				},
 			},

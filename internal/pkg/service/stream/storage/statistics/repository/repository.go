@@ -29,6 +29,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -81,10 +82,12 @@ func New(d dependencies) *Repository {
 	r._provider = NewProvider(r.aggregate)
 
 	// Connect to file/slice events
-	r.plugins.Collection().OnFileSave(func(ctx *plugin.Operation, old, updated *model.File) {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, old, updated *model.File) {
+		atomicOp := op.AtomicFromCtx(ctx)
+
 		// On file deletion: delete/rollup statistics
 		if updated.Deleted {
-			ctx.AddFrom(r.Delete(updated.FileKey))
+			atomicOp.AddFrom(r.Delete(updated.FileKey))
 			return
 		}
 
@@ -97,7 +100,7 @@ func New(d dependencies) *Repository {
 		fromLevel := old.State.Level()
 		toLevel := updated.State.Level()
 		if fromLevel != toLevel {
-			ctx.AddFrom(r.MoveAll(updated.FileKey, fromLevel, toLevel, func(value *statistics.Value) {
+			atomicOp.AddFrom(r.MoveAll(updated.FileKey, fromLevel, toLevel, func(value *statistics.Value) {
 				// There is actually no additional compression, when uploading slice to the staging storage
 				if toLevel == level.Staging {
 					value.StagingSize = value.CompressedSize
@@ -105,16 +108,18 @@ func New(d dependencies) *Repository {
 			}))
 		}
 	})
-	r.plugins.Collection().OnSliceSave(func(ctx *plugin.Operation, old, updated *model.Slice) {
+	r.plugins.Collection().OnSliceSave(func(ctx context.Context, now time.Time, old, updated *model.Slice) {
+		atomicOp := op.AtomicFromCtx(ctx)
+
 		// On slice deletion: delete/rollup statistics
 		if updated.Deleted {
-			ctx.AddFrom(r.Delete(updated.SliceKey))
+			atomicOp.AddFrom(r.Delete(updated.SliceKey))
 			return
 		}
 
 		// On slice creation: calculate pre-allocated disk space from the size of previous slices
 		if old == nil {
-			ctx.AddFrom(op.Atomic(nil, &op.NoResult{}).
+			atomicOp.AddFrom(op.Atomic(nil, &op.NoResult{}).
 				Read(func(ctx context.Context) op.Op {
 					// Get disk allocation config
 					cfg, ok := diskalloc.ConfigFromContext(ctx)
@@ -137,7 +142,7 @@ func New(d dependencies) *Repository {
 		fromLevel := old.State.Level()
 		toLevel := updated.State.Level()
 		if fromLevel != toLevel {
-			ctx.AddFrom(r.Move(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
+			atomicOp.AddFrom(r.Move(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
 				// There is actually no additional compression, when uploading slice to the staging storage
 				if toLevel == level.Staging {
 					value.StagingSize = value.CompressedSize

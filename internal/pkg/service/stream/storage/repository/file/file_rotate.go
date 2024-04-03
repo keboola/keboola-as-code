@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -13,8 +12,8 @@ import (
 )
 
 func (r *Repository) rotateFileOnSinkModification() {
-	r.plugins.Collection().OnSinkModification(func(ctx *plugin.Operation, old, updated *definition.Sink) {
-		ctx.AddFrom(r.Rotate(updated.SinkKey, ctx.Now()))
+	r.plugins.Collection().OnSinkModification(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) {
+		op.AtomicFromCtx(ctx).AddFrom(r.Rotate(updated.SinkKey, now))
 	})
 }
 
@@ -58,23 +57,27 @@ func (r *Repository) Rotate(k key.SinkKey, now time.Time) *op.AtomicOp[model.Fil
 			return nil, errors.Errorf(`unexpected state, found %d opened files in the sink "%s"`, filesCount, sink.SinkKey)
 		}
 
-		saveCtx := plugin.NewSaveContext(now)
+		txn := op.Txn(r.client)
 
 		// Close the old file, if present
 		if filesCount == 1 {
-			if _, err := r.close(saveCtx, activeFiles[0]); err != nil {
+			if closeTxn, err := r.close(ctx, now, activeFiles[0]); err == nil {
+				txn.Merge(closeTxn)
+			} else {
 				return nil, err
 			}
 		}
 
 		// Open new file
-		if f, err := r.open(saveCtx, source, sink, volumes); err == nil {
-			openedFile = f
+		if openTxn, err := r.open(ctx, now, source, sink, volumes); err == nil {
+			txn.Merge(openTxn.OnResult(func(result *op.TxnResult[model.File]) {
+				openedFile = result.Result()
+			}))
 		} else {
 			return nil, err
 		}
 
-		return saveCtx.Do(ctx)
+		return txn, nil
 	})
 
 	return atomicOp

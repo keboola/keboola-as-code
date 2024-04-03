@@ -24,6 +24,7 @@ import (
 func TestBranchRepository_Limits_BranchesPerProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -62,7 +63,7 @@ func TestBranchRepository_Limits_BranchesPerProject(t *testing.T) {
 
 	// Exceed the limit
 	branch := test.NewBranch(key.BranchKey{ProjectID: 123, BranchID: 111111})
-	if err := branchRepo.Create(&branch, clk.Now()).Do(ctx).Err(); assert.Error(t, err) {
+	if err := branchRepo.Create(&branch, clk.Now(), by).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "branch count limit reached in the project, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}

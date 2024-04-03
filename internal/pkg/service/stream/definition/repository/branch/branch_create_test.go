@@ -21,6 +21,7 @@ func TestBranchRepository_Create(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -34,7 +35,7 @@ func TestBranchRepository_Create(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		result, err := repo.Create(&branch, now).Do(ctx).ResultOrErr()
+		result, err := repo.Create(&branch, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch, result)
 
@@ -51,7 +52,7 @@ func TestBranchRepository_Create(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		if err := repo.Create(&branch, now).Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.Create(&branch, now, by).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "567" already exists in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -60,14 +61,14 @@ func TestBranchRepository_Create(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(branchKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(branchKey, now, by).Do(ctx).Err())
 	}
 
 	// Create - ok, undeleted
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		result, err := repo.Create(&branch, now.Add(time.Hour)).Do(ctx).ResultOrErr()
+		result, err := repo.Create(&branch, now.Add(time.Hour), by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, branch, result)
 

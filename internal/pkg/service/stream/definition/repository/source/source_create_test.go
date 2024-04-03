@@ -21,6 +21,7 @@ func TestSourceRepository_Create(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -36,7 +37,7 @@ func TestSourceRepository_Create(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source := test.NewSource(sourceKey)
-		if err := repo.Create(&source, now, "Create source").Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.Create(&source, now, by, "Create source").Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -46,10 +47,10 @@ func TestSourceRepository_Create(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		result, err := repo.Create(&source, now, "Create source").Do(ctx).ResultOrErr()
+		result, err := repo.Create(&source, now, by, "Create source").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, source, result)
 		assert.Equal(t, now, source.VersionModifiedAt().Time())
@@ -67,7 +68,7 @@ func TestSourceRepository_Create(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source := test.NewSource(sourceKey)
-		if err := repo.Create(&source, now, "Create source").Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.Create(&source, now, by, "Create source").Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "my-source" already exists in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}
@@ -76,14 +77,14 @@ func TestSourceRepository_Create(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
 	}
 
 	// Create - ok, undeleted
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source := test.NewSource(sourceKey)
-		result, err := repo.Create(&source, now.Add(time.Hour), "Create source").Do(ctx).ResultOrErr()
+		result, err := repo.Create(&source, now.Add(time.Hour), by, "Create source").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, source, result)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_002.txt", ignoredEtcdKeys)

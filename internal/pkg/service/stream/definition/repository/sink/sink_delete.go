@@ -7,15 +7,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 )
 
-func (r *Repository) SoftDelete(k key.SinkKey, now time.Time) *op.AtomicOp[definition.Sink] {
+func (r *Repository) SoftDelete(k key.SinkKey, now time.Time, by definition.By) *op.AtomicOp[definition.Sink] {
 	var deleted definition.Sink
 	return op.Atomic(r.client, &deleted).
 		AddFrom(r.
-			softDeleteAllFrom(k, now, false).
+			softDeleteAllFrom(k, now, by, false).
 			OnResult(func(r []definition.Sink) {
 				if len(r) == 1 {
 					deleted = r[0]
@@ -24,17 +23,14 @@ func (r *Repository) SoftDelete(k key.SinkKey, now time.Time) *op.AtomicOp[defin
 }
 
 func (r *Repository) deleteSinksOnSourceDelete() {
-	r.plugins.Collection().OnSourceSave(func(ctx *plugin.Operation, old, entity *definition.Source) {
-		deleted := entity.Deleted && entity.DeletedAt.Time().Equal(ctx.Now())
-		if deleted {
-			ctx.AddFrom(r.softDeleteAllFrom(entity.SourceKey, ctx.Now(), true))
-		}
+	r.plugins.Collection().OnSourceDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) {
+		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(updated.SourceKey, now, by, true))
 	})
 
 }
 
 // softDeleteAllFrom the parent key.
-func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, deletedWithParent bool) *op.AtomicOp[[]definition.Sink] {
+func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, deletedWithParent bool) *op.AtomicOp[[]definition.Sink] {
 	var allOld, allDeleted []definition.Sink
 	atomicOp := op.Atomic(r.client, &allDeleted)
 
@@ -47,20 +43,20 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, de
 	}
 
 	// Iterate all
-	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		saveCtx := plugin.NewSaveContext(now)
+	atomicOp.Write(func(ctx context.Context) op.Op {
+		txn := op.Txn(r.client)
 		for _, old := range allOld {
 			old := old
 
 			// Mark deleted
 			deleted := deepcopy.Copy(old).(definition.Sink)
-			deleted.Delete(now, deletedWithParent)
+			deleted.Delete(now, by, deletedWithParent)
 
 			// Save
-			r.save(saveCtx, &old, &deleted)
+			txn.Merge(r.save(ctx, now, by, &old, &deleted))
 			allDeleted = append(allDeleted, deleted)
 		}
-		return saveCtx.Do(ctx)
+		return txn
 	})
 
 	return atomicOp

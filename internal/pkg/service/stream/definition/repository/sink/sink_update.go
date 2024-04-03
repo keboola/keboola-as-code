@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func (r *Repository) Update(k key.SinkKey, now time.Time, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] {
-	return r.update(k, now, versionDescription, func(sink definition.Sink) (definition.Sink, error) {
+func (r *Repository) Update(k key.SinkKey, now time.Time, by definition.By, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] {
+	return r.update(k, now, by, versionDescription, func(sink definition.Sink) (definition.Sink, error) {
 		// Store old state
 		disabled := sink.Disabled
 		deleted := sink.Deleted

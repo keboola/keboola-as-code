@@ -2,11 +2,13 @@ package branch
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	etcd "go.etcd.io/etcd/client/v3"
+	"time"
 )
 
 const (
@@ -33,15 +35,14 @@ func NewRepository(d dependencies) *Repository {
 	}
 }
 
-func (r *Repository) save(ctx context.Context, old, updated *definition.Branch) {
+func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) op.Op {
 	// Call plugins
-	r.plugins.Executor().OnBranchSave(ctx, old, updated)
+	r.plugins.Executor().OnBranchSave(ctx, now, by, old, updated)
 
-	pluginOp := plugin.FromContext(ctx)
-
+	saveTxn := op.Txn(r.client)
 	if updated.Deleted {
 		// Move entity from the active prefix to the deleted prefix
-		pluginOp.WriteOp(
+		saveTxn.Then(
 			// Delete entity from the active prefix
 			r.schema.Active().ByKey(updated.BranchKey).Delete(r.client),
 			// Save entity to the deleted prefix
@@ -49,11 +50,13 @@ func (r *Repository) save(ctx context.Context, old, updated *definition.Branch) 
 		)
 	} else {
 		// Save record to the "active" prefix
-		pluginOp.WriteOp(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
+		saveTxn.Then(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
 
-		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(pluginOp.Now()) {
+		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(now) {
 			// Delete record from the "deleted" prefix, if needed
-			pluginOp.WriteOp(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
+			saveTxn.Then(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
 		}
 	}
+
+	return saveTxn
 }

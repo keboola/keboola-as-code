@@ -26,7 +26,9 @@ import (
 
 func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -44,7 +46,7 @@ func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 
 	// Create sources up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -52,7 +54,7 @@ func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 	ops := 0
 	for i := 1; i <= sourcerepo.MaxSourcesPerBranch; i++ {
 		source := test.NewSource(key.SourceKey{BranchKey: branchKey, SourceID: key.SourceID(fmt.Sprintf("my-sourcerepo-%d", i))})
-		source.IncrementVersion(source, clk.Now(), "Create")
+		source.IncrementVersion(source, clk.Now(), by, "Create")
 		txn.Then(sourceSchema.Active().ByKey(source.SourceKey).Put(client, source))
 
 		// Send the txn it is full, or after the last item
@@ -71,7 +73,7 @@ func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 
 	// Exceed the limit
 	source := test.NewSource(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "over-maximum-count"})
-	if err := sourceRepo.Create(&source, clk.Now(), "Create description").Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.Create(&source, clk.Now(), by, "Create description").Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "source count limit reached in the branch, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
@@ -79,7 +81,9 @@ func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 
 func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -98,11 +102,11 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 
 	// Create sourcerepo
 	source := test.NewSource(sourceKey)
-	require.NoError(t, sourceRepo.Create(&source, clk.Now(), "Create").Do(ctx).Err())
+	require.NoError(t, sourceRepo.Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create versions up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -110,7 +114,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	ops := 0
 	for i := source.VersionNumber() + 1; i <= sourcerepo.MaxSourceVersionsPerSource; i++ {
 		source.Description = fmt.Sprintf("Description %04d", i)
-		source.IncrementVersion(source, clk.Now(), "Some Update")
+		source.IncrementVersion(source, clk.Now(), by, "Some Update")
 		txn.Then(sourceSchema.Versions().Of(sourceKey).Version(source.VersionNumber()).Put(client, source))
 
 		// Send the txn it is full, or after the last item
@@ -129,7 +133,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	assert.Len(t, sources, sourcerepo.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sourceRepo.Update(sourceKey, clk.Now(), "Some update", func(v definition.Source) (definition.Source, error) {
+	err = sourceRepo.Update(sourceKey, clk.Now(), by, "Some update", func(v definition.Source) (definition.Source, error) {
 		v.Description = "foo"
 		return v, nil
 	}).Do(ctx).Err()

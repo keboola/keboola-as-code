@@ -51,33 +51,35 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 	}
 
 	// Connect to the file events
-	r.plugins.Collection().OnFileSave(func(ctx *plugin.Operation, old, updated *model.File) {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, old, updated *model.File) {
+		atomicOp := op.AtomicFromCtx(ctx)
+
 		// On delete
 		if updated.Deleted {
-			ctx.AddFrom(r.deleteAllFrom(updated.FileKey, ctx.Now()))
+			atomicOp.AddFrom(r.deleteAllFrom(updated.FileKey, now))
 			return
 		}
 
-		// On create
-		if old == nil {
-			// Open slices
-			ctx.AddFrom(r.openSlicesInFile(ctx.Now(), *updated))
-			return
-		}
-
-		// On update
-		if old.State != updated.State {
-			switch updated.State {
-			case model.FileClosing:
-				// Close slices
-				ctx.AddFrom(r.closeSlicesInFile(updated.FileKey, ctx.Now()))
-			case model.FileImported:
-				// Mark slice imported
-				ctx.AddFrom(r.stateTransitionAllInFile(updated.FileKey, ctx.Now(), updated.State, model.SliceUploaded, model.SliceImported))
-			default:
-				// nop
-			}
-		}
+		//// On create
+		//if old == nil {
+		//	// Open slices
+		//	atomicOp.AddFrom(r.openSlicesInFile(now, *updated))
+		//	return
+		//}
+		//
+		//// On update
+		//if old.State != updated.State {
+		//	switch updated.State {
+		//	case model.FileClosing:
+		//		// Close slices
+		//		atomicOp.AddFrom(r.closeSlicesInFile(updated.FileKey, now))
+		//	case model.FileImported:
+		//		// Mark slice imported
+		//		atomicOp.AddFrom(r.stateTransitionAllInFile(updated.FileKey, now, updated.State, model.SliceUploaded, model.SliceImported))
+		//	default:
+		//		// nop
+		//	}
+		//}
 	})
 
 	return r
@@ -166,17 +168,19 @@ func (r *Repository) updateAllInFile(k model.FileKey, now time.Time, updateFn fu
 		// Read entity for modification
 		ReadOp(r.ListIn(k).WithAllTo(&allOld)).
 		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
+		WriteOrErr(func(ctx context.Context) (op.Op, error) {
 			allUpdated = nil
-			saveCtx := plugin.NewSaveContext(now)
+			txn := op.Txn(r.client)
 			for _, old := range allOld {
-				if updated, err := r.update(saveCtx, old, updateFn); err == nil {
-					allUpdated = append(allUpdated, updated)
+				if updated, err := r.update(ctx, now, old, updateFn); err == nil {
+					txn.Merge(updated.OnResult(func(result *op.TxnResult[model.Slice]) {
+						allUpdated = append(allUpdated, result.Result())
+					}))
 				} else {
 					return nil, err
 				}
 			}
-			return saveCtx.Do(ctx)
+			return txn, nil
 		})
 }
 
@@ -187,51 +191,40 @@ func (r *Repository) updateOne(k model.SliceKey, now time.Time, updateFn func(mo
 		// Read entity for modification
 		ReadOp(r.Get(k).WithResultTo(&old)).
 		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
-			saveCtx := plugin.NewSaveContext(now)
-			updated, err = r.update(saveCtx, old, updateFn)
-			if err != nil {
-				return nil, err
-			}
-			return saveCtx.Do(ctx)
+		WriteOrErr(func(ctx context.Context) (op.Op, error) {
+			return r.update(ctx, now, old, updateFn)
 		})
 }
 
-func (r *Repository) update(saveCtx *plugin.Operation, old model.Slice, updateFn func(model.Slice) (model.Slice, error)) (model.Slice, error) {
+func (r *Repository) update(ctx context.Context, now time.Time, old model.Slice, updateFn func(model.Slice) (model.Slice, error)) (*op.TxnOp[model.Slice], error) {
 	// Update
 	updated, err := updateFn(deepcopy.Copy(old).(model.Slice))
 	if err != nil {
-		return model.Slice{}, err
+		return nil, err
 	}
 
 	// Save
-	r.save(saveCtx, &old, &updated)
-	return updated, nil
+	return r.save(ctx, now, &old, &updated), nil
 }
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *model.Slice) (op.Op, error) {
-	saveCtx := plugin.NewSaveContext(now)
-	r.save(saveCtx, old, updated)
-	return saveCtx.Do(ctx)
-}
-
-func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.Slice) {
+func (r *Repository) save(ctx context.Context, now time.Time, old, updated *model.Slice) *op.TxnOp[model.Slice] {
 	// Call plugins
-	r.plugins.Executor().OnSliceSave(saveCtx, old, updated)
+	r.plugins.Executor().OnSliceSave(ctx, now, old, updated)
 
 	allKey := r.schema.AllLevels().ByKey(updated.SliceKey)
 	inLevelKey := r.schema.InLevel(updated.State.Level()).ByKey(updated.SliceKey)
 
+	saveTxn := op.TxnWithResult(r.client, updated)
 	if updated.Deleted {
 		// Delete entity from All and InLevel prefixes
-		saveCtx.WriteOp(
+		saveTxn.Then(
 			allKey.Delete(r.client),
 			inLevelKey.Delete(r.client),
 		)
 	} else {
 		if old == nil {
 			// Entity should not exist
-			saveCtx.WriteOp(op.Txn(r.client).
+			saveTxn.Then(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
 					r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", updated.SliceKey.String(), "file"))
@@ -239,7 +232,7 @@ func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.Slice) 
 			)
 		} else {
 			// Entity should exist
-			saveCtx.WriteOp(op.Txn(r.client).
+			saveTxn.Then(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
 					r.AddErr(serviceError.NewResourceNotFoundError("slice", updated.SliceKey.String(), "file"))
@@ -248,18 +241,19 @@ func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.Slice) 
 		}
 
 		// Put entity to All and InLevel prefixes
-		saveCtx.WriteOp(
+		saveTxn.Then(
 			allKey.Put(r.client, *updated),
 			inLevelKey.Put(r.client, *updated),
 		)
 
 		// Remove entity from the old InLevel prefix, if needed
 		if old != nil && old.State.Level() != updated.State.Level() {
-			saveCtx.WriteOp(
+			saveTxn.Then(
 				r.schema.InLevel(old.State.Level()).ByKey(old.SliceKey).Delete(r.client),
 			)
 		}
 	}
+	return saveTxn
 }
 
 // Delete the slice.
@@ -268,8 +262,8 @@ func (r *Repository) deleteAllFrom(k model.FileKey, now time.Time) *op.AtomicOp[
 	var allOld, allDeleted []model.Slice
 	return op.Atomic(r.client, &allDeleted).
 		ReadOp(r.ListIn(k).WithAllTo(&allOld)).
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			saveCtx := plugin.NewSaveContext(now)
+		Write(func(ctx context.Context) op.Op {
+			txn := op.Txn(r.client)
 			for _, old := range allOld {
 				old := old
 
@@ -278,9 +272,9 @@ func (r *Repository) deleteAllFrom(k model.FileKey, now time.Time) *op.AtomicOp[
 				deleted.Deleted = true
 
 				// Save
-				r.save(saveCtx, &old, &deleted)
+				r.save(ctx, now, &old, &deleted)
 				allDeleted = append(allDeleted, deleted)
 			}
-			return saveCtx.Do(ctx)
+			return txn
 		})
 }

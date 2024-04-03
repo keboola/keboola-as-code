@@ -9,16 +9,16 @@ import (
 	"time"
 )
 
-func (r *Repository) SoftDelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] {
+func (r *Repository) SoftDelete(k key.BranchKey, now time.Time, by definition.By) *op.AtomicOp[definition.Branch] {
 	// Move entity from the active to the deleted prefix
 	var old, updated definition.Branch
 	return op.Atomic(r.client, &updated).
 		// Read the entity
 		ReadOp(r.Get(k).WithResultTo(&old)).
 		// Mark deleted
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
+		Write(func(ctx context.Context) op.Op {
 			updated = deepcopy.Copy(old).(definition.Branch)
-			updated.Delete(now, false)
-			return r.saveOne(ctx, now, &old, &updated)
+			updated.Delete(now, by, false)
+			return r.save(ctx, now, by, &old, &updated)
 		})
 }

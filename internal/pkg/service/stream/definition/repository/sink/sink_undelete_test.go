@@ -109,7 +109,7 @@ func TestSinkRepository_Undelete(t *testing.T) {
 	}
 }
 
-func TestSinkRepository_UndeleteSinksOnBranchUndelete_UndeleteSource(t *testing.T) {
+func TestSinkRepository_UndeleteSinksOnSourceUndelete_UndeleteSource(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -185,7 +185,7 @@ func TestSinkRepository_UndeleteSinksOnBranchUndelete_UndeleteSource(t *testing.
 	}
 }
 
-func TestSinkRepository_UndeleteSinksOnBranchUndelete_UndeleteBranch(t *testing.T) {
+func TestSinkRepository_UndeleteSinksOnSourceUndelete_UndeleteBranch(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()

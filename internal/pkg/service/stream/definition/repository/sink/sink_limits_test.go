@@ -27,7 +27,9 @@ import (
 
 func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -46,9 +48,9 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, repo.Source().Create(&source, clk.Now(), "Create").Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create sinks up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -56,7 +58,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	ops := 0
 	for i := 1; i <= sinkrepo.MaxSinksPerSource; i++ {
 		sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", i))})
-		sink.IncrementVersion(sink, clk.Now(), "Create")
+		sink.IncrementVersion(sink, clk.Now(), by, "Create")
 		txn.Then(sinkSchema.Active().ByKey(sink.SinkKey).Put(client, sink))
 
 		// Send the txn it is full, or after the last item
@@ -75,7 +77,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 
 	// Exceed the limit
 	sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "over-maximum-count"})
-	if err := sinkRepo.Create(&sink, clk.Now(), "Create description").Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.Create(&sink, clk.Now(), by, "Create description").Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "sink count limit reached in the source, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
@@ -83,7 +85,9 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 
 func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -103,13 +107,13 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, repo.Source().Create(&source, clk.Now(), "Create").Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create sink
 	sink := test.NewSink(sinkKey)
-	require.NoError(t, sinkRepo.Create(&sink, clk.Now(), "create").Do(ctx).Err())
+	require.NoError(t, sinkRepo.Create(&sink, clk.Now(), by, "create").Do(ctx).Err())
 
 	// Create versions up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
@@ -117,7 +121,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	ops := 0
 	for i := sink.VersionNumber() + 1; i <= sourcerepo.MaxSourceVersionsPerSource; i++ {
 		sink.Description = fmt.Sprintf("Description %04d", i)
-		sink.IncrementVersion(sink, clk.Now(), "Some Update")
+		sink.IncrementVersion(sink, clk.Now(), by, "Some Update")
 		txn.Then(sinkSchema.Versions().Of(sinkKey).Version(sink.VersionNumber()).Put(client, sink))
 
 		// Send the txn it is full, or after the last item
@@ -136,7 +140,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	assert.Len(t, sinks, sourcerepo.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sinkRepo.Update(sinkKey, clk.Now(), "Some update", func(v definition.Sink) (definition.Sink, error) {
+	err = sinkRepo.Update(sinkKey, clk.Now(), by, "Some update", func(v definition.Sink) (definition.Sink, error) {
 		v.Description = "foo"
 		return v, nil
 	}).Do(ctx).Err()

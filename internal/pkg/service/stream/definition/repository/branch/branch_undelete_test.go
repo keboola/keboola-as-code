@@ -21,6 +21,7 @@ func TestBranchRepository_Undelete(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -32,7 +33,7 @@ func TestBranchRepository_Undelete(t *testing.T) {
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := repo.Undelete(branchKey, now).Do(ctx).Err(); assert.Error(t, err) {
+	if err := repo.Undelete(branchKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted branch "567" not found in the project`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -41,7 +42,7 @@ func TestBranchRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, repo.Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// Get - ok
@@ -53,7 +54,7 @@ func TestBranchRepository_Undelete(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(branchKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(branchKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_undelete_test_snapshot_001.txt")
 	}
 
@@ -69,7 +70,7 @@ func TestBranchRepository_Undelete(t *testing.T) {
 	// Undelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.Undelete(branchKey, now.Add(time.Hour)).Do(ctx).Err())
+		require.NoError(t, repo.Undelete(branchKey, now.Add(time.Hour), by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_undelete_test_snapshot_002.txt")
 	}
 

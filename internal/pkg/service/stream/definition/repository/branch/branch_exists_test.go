@@ -19,6 +19,7 @@ func TestBranchRepository_ExistsOrErr(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Branch()
@@ -40,7 +41,7 @@ func TestBranchRepository_ExistsOrErr(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, repo.Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// ExistsOrErr - ok

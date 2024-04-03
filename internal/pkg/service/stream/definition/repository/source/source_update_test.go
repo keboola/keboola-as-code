@@ -23,6 +23,7 @@ func TestSourceRepository_Update(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -40,7 +41,7 @@ func TestSourceRepository_Update(t *testing.T) {
 		updateFn := func(source definition.Source) (definition.Source, error) {
 			return source, nil
 		}
-		if err := repo.Update(sourceKey, now, "Update source", updateFn).Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -51,10 +52,10 @@ func TestSourceRepository_Update(t *testing.T) {
 	var source definition.Source
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source = test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// Update - ok
@@ -68,7 +69,7 @@ func TestSourceRepository_Update(t *testing.T) {
 		}
 
 		var err error
-		source, err = repo.Update(sourceKey, now, "Update source", updateFn).Do(ctx).ResultOrErr()
+		source, err = repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_update_test_snapshot_001.txt", ignoredEtcdKeys)
@@ -90,7 +91,7 @@ func TestSourceRepository_Update(t *testing.T) {
 		}
 
 		var err error
-		err = repo.Update(sourceKey, now, "Update source", updateFn).Do(ctx).Err()
+		err = repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, "some error", err.Error())
 		}
@@ -103,7 +104,7 @@ func TestSourceRepository_Update(t *testing.T) {
 			source.Disabled = true
 			return source, nil
 		}
-		err := repo.Update(sourceKey, now, "Update source", updateFn).Do(ctx).Err()
+		err := repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `"Disabled" field cannot be modified by the Update operation`, err.Error())
 		}
@@ -116,7 +117,7 @@ func TestSourceRepository_Update(t *testing.T) {
 			source.Deleted = true
 			return source, nil
 		}
-		err := repo.Update(sourceKey, now, "Update source", updateFn).Do(ctx).Err()
+		err := repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `"Deleted" field cannot be modified by the Update operation`, err.Error())
 		}

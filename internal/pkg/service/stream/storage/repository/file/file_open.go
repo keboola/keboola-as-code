@@ -6,40 +6,34 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-)
-
-const (
-	xLoadAllVolumes = ""
-	x
+	"time"
 )
 
 func (r *Repository) openFileOnSinkActivation() {
-	r.plugins.Collection().OnSinkActivation(func(ctx *plugin.Operation, old, sink *definition.Sink) {
+	r.plugins.Collection().OnSinkActivation(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) {
+		atomicOp := op.AtomicFromCtx(ctx)
+
 		var volumes []volume.Metadata
-		ctx.Read(func(ctx context.Context) op.Op {
+		atomicOp.Read(func(ctx context.Context) op.Op {
 			return r.volumes.ListWriterVolumes().WithAllTo(&volumes)
 		})
 
 		var source definition.Source
-		ctx.Read(func(ctx context.Context) op.Op {
-			return r.definition.Source().Get(sink.SourceKey).WithResultTo(&source)
+		atomicOp.Read(func(ctx context.Context) op.Op {
+			return r.definition.Source().Get(updated.SourceKey).WithResultTo(&source)
 		})
 
-		ctx.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.open(source, *sink, volumes)
+		atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
+			return r.open(ctx, now, source, *updated, volumes)
 		})
 	})
 }
 
-func (r *Repository) open(source definition.Source, sink definition.Sink, volumes []volume.Metadata) (*op.TxnOp[model.File], error) {
-	var newFile model.File
-	txn := op.TxnWithResult(r.client, &newFile)
-
+func (r *Repository) open(ctx context.Context, now time.Time, source definition.Source, sink definition.Sink, volumes []volume.Metadata) (*op.TxnOp[model.File], error) {
 	// Apply configuration overrides from the source and the sink
 	cfg := r.config
 	patch := level.ConfigPatch{}
@@ -51,8 +45,8 @@ func (r *Repository) open(source definition.Source, sink definition.Sink, volume
 	}
 
 	// Create file entity
-	fileKey := model.FileKey{SinkKey: sink.SinkKey, FileID: model.FileID{OpenedAt: utctime.From(ctx.Now())}}
-	newFile, err = NewFile(cfg, fileKey, sink)
+	fileKey := model.FileKey{SinkKey: sink.SinkKey, FileID: model.FileID{OpenedAt: utctime.From(now)}}
+	newFile, err := NewFile(cfg, fileKey, sink)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +60,5 @@ func (r *Repository) open(source definition.Source, sink definition.Sink, volume
 	}
 
 	// Save new file
-	r.save(ctx, nil, &newFile)
-
-	return txn, nil
+	return r.save(ctx, now, nil, &newFile), nil
 }

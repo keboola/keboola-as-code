@@ -29,7 +29,7 @@ func (r *Repository) GetVersion(k key.SinkKey, version definition.VersionNumber)
 		})
 }
 
-func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, to definition.VersionNumber) *op.AtomicOp[definition.Sink] {
+func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, by definition.By, to definition.VersionNumber) *op.AtomicOp[definition.Sink] {
 	var updated definition.Sink
 	var latestVersion, targetVersion *op.KeyValueT[definition.Sink]
 	return op.Atomic(r.client, &updated).
@@ -47,12 +47,12 @@ func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, to definition
 			return nil
 		}).
 		// Prepare the new value
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
+		Write(func(ctx context.Context) op.Op {
 			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
 			old := targetVersion.Value
 			updated = deepcopy.Copy(old).(definition.Sink)
 			updated.Version = latestVersion.Value.Version
-			updated.IncrementVersion(updated, now, versionDescription)
-			return r.saveOne(ctx, now, &old, &updated)
+			updated.IncrementVersion(updated, now, by, versionDescription)
+			return r.save(ctx, now, by, &old, &updated)
 		})
 }

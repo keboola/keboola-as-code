@@ -20,6 +20,7 @@ func TestSinkRepository_Get(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Sink()
@@ -44,13 +45,13 @@ func TestSinkRepository_Get(t *testing.T) {
 	var sink definition.Sink
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
 		sink = test.NewSink(sinkKey)
-		require.NoError(t, repo.Create(&sink, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 
 	// Get - ok
@@ -68,6 +69,7 @@ func TestSinkRepository_GetDeleted(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Sink()
@@ -92,13 +94,13 @@ func TestSinkRepository_GetDeleted(t *testing.T) {
 	var sink definition.Sink
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
 		sink = test.NewSink(sinkKey)
-		require.NoError(t, repo.Create(&sink, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 
 	// GetDeleted - not found
@@ -113,7 +115,7 @@ func TestSinkRepository_GetDeleted(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.SoftDelete(sinkKey, now).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(sinkKey, now, by).Do(ctx).Err())
 	}
 
 	// GetDeleted - ok

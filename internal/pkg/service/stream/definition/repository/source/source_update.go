@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func (r *Repository) Update(k key.SourceKey, now time.Time, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
-	return r.update(k, now, versionDescription, func(source definition.Source) (definition.Source, error) {
+func (r *Repository) Update(k key.SourceKey, now time.Time, by definition.By, versionDescription string, updateFn func(definition.Source) (definition.Source, error)) *op.AtomicOp[definition.Source] {
+	return r.update(k, now, by, versionDescription, func(source definition.Source) (definition.Source, error) {
 		// Store old state
 		disabled := source.Disabled
 		deleted := source.Deleted

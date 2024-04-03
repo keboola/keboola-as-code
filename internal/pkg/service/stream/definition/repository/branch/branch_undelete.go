@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[definition.Branch] {
+func (r *Repository) Undelete(k key.BranchKey, now time.Time, by definition.By) *op.AtomicOp[definition.Branch] {
 	// Move entity from the deleted to the active prefix
 	var created definition.Branch
 	return op.Atomic(r.client, &created).
@@ -17,8 +17,8 @@ func (r *Repository) Undelete(k key.BranchKey, now time.Time) *op.AtomicOp[defin
 		// Read the entity
 		ReadOp(r.GetDeleted(k).WithResultTo(&created)).
 		// Mark undeleted
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			created.Undelete(now)
-			return r.saveOne(ctx, now, nil, &created)
+		Write(func(ctx context.Context) op.Op {
+			created.Undelete(now, by)
+			return r.save(ctx, now, by, nil, &created)
 		})
 }

@@ -20,6 +20,7 @@ func TestBranchRepository_Get(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Branch()
@@ -42,7 +43,7 @@ func TestBranchRepository_Get(t *testing.T) {
 	var branch definition.Branch
 	{
 		branch = test.NewBranch(branchKey)
-		require.NoError(t, repo.Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// Get - ok
@@ -60,6 +61,7 @@ func TestBranchRepository_GetDeleted(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Branch()
@@ -82,7 +84,7 @@ func TestBranchRepository_GetDeleted(t *testing.T) {
 	var branch definition.Branch
 	{
 		branch = test.NewBranch(branchKey)
-		require.NoError(t, repo.Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// GetDeleted - not found
@@ -97,7 +99,7 @@ func TestBranchRepository_GetDeleted(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.SoftDelete(branchKey, now).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(branchKey, now, by).Do(ctx).Err())
 	}
 
 	// GetDeleted - ok
@@ -106,6 +108,7 @@ func TestBranchRepository_GetDeleted(t *testing.T) {
 		deletedAt := utctime.From(now)
 		branch.Deleted = true
 		branch.DeletedAt = &deletedAt
+		branch.DeletedBy = &by
 		result, err := repo.GetDeleted(branchKey).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
 			assert.Equal(t, branch, result)
@@ -118,6 +121,7 @@ func TestBranchRepository_GetDefault(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Branch()
@@ -142,14 +146,14 @@ func TestBranchRepository_GetDefault(t *testing.T) {
 	{
 		defaultBranch = test.NewBranch(defaultBranchKey)
 		defaultBranch.IsDefault = true
-		require.NoError(t, repo.Create(&defaultBranch, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&defaultBranch, now, by).Do(ctx).Err())
 	}
 
 	// Create another branch
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(anotherBranchKey)
-		require.NoError(t, repo.Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, repo.Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// GetDefault - ok

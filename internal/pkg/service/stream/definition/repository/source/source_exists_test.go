@@ -19,6 +19,7 @@ func TestSourceRepository_ExistsOrErr(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Source()
@@ -41,10 +42,10 @@ func TestSourceRepository_ExistsOrErr(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// ExistsOrErr - ok

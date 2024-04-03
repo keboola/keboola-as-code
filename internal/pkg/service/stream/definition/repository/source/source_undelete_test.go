@@ -22,6 +22,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -37,12 +38,12 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := repo.Undelete(sourceKey, now).Do(ctx).Err(); assert.Error(t, err) {
+	if err := repo.Undelete(sourceKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, `deleted source "my-source" not found in the branch`, err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 	}
@@ -51,7 +52,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source := test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// Get - ok
@@ -64,7 +65,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		assert.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_undelete_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
@@ -81,7 +82,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, repo.Undelete(sourceKey, now.Add(time.Hour)).Do(ctx).Err())
+		require.NoError(t, repo.Undelete(sourceKey, now.Add(time.Hour), by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_undelete_test_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
@@ -106,6 +107,7 @@ func TestSourceRepository_UndeleteSourcesOnBranchUndelete(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -123,7 +125,7 @@ func TestSourceRepository_UndeleteSourcesOnBranchUndelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 	}
 
 	// Create sources
@@ -131,32 +133,32 @@ func TestSourceRepository_UndeleteSourcesOnBranchUndelete(t *testing.T) {
 	var source1, source2, source3 definition.Source
 	{
 		source1 = test.NewSource(sourceKey1)
-		require.NoError(t, repo.Create(&source1, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source1, now, by, "Create source").Do(ctx).Err())
 		source2 = test.NewSource(sourceKey2)
-		require.NoError(t, repo.Create(&source2, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source2, now, by, "Create source").Do(ctx).Err())
 		source3 = test.NewSource(sourceKey3)
-		require.NoError(t, repo.Create(&source3, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source3, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// Delete Source1
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, repo.SoftDelete(sourceKey1, now).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(sourceKey1, now, by).Do(ctx).Err())
 	}
 
 	// Delete Branch
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now, by).Do(ctx).Err())
 	}
 
 	// Undelete Branch
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Branch().Undelete(branchKey, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Undelete(branchKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_undelete_test_snapshot_003.txt", ignoredEtcdKeys)
 	}
 	{

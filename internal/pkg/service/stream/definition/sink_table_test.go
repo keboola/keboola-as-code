@@ -1,6 +1,8 @@
-package definition
+package definition_test
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"strings"
 	"testing"
 	"time"
@@ -27,20 +29,21 @@ func TestTableSink_Validation(t *testing.T) {
 		},
 		SinkID: "my-sink",
 	}
-	versioned := Versioned{
-		Version: Version{
+	versioned := definition.Versioned{
+		Version: definition.Version{
 			Number:      1,
 			Hash:        "0123456789123456",
 			ModifiedAt:  utctime.From(time.Now()),
+			ModifiedBy:  test.ByUser(),
 			Description: "foo bar",
 		},
 	}
-	softDeletable := SoftDeletable{
+	softDeletable := definition.SoftDeletable{
 		Deleted: false,
 	}
 
 	// Test cases
-	cases := testvalidation.TestCases[Sink]{
+	cases := testvalidation.TestCases[definition.Sink]{
 		{
 			Name: "empty",
 			ExpectedError: `
@@ -51,19 +54,20 @@ func TestTableSink_Validation(t *testing.T) {
 - "version.number" is a required field
 - "version.hash" is a required field
 - "version.modifiedAt" is a required field
+- "version.modifiedBy" is a required field
 - "type" is a required field
 - "name" is a required field
 `,
-			Value: Sink{},
+			Value: definition.Sink{},
 		},
 		{
 			Name:          "nil table section",
 			ExpectedError: `"table" is a required field`,
-			Value: Sink{
+			Value: definition.Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SinkTypeTable,
+				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
 			},
@@ -74,29 +78,29 @@ func TestTableSink_Validation(t *testing.T) {
 - "table.type" must be one of [keboola]
 - "table.mapping.columns" is a required field
 `,
-			Value: Sink{
+			Value: definition.Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SinkTypeTable,
+				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
-				Table:         &TableSink{},
+				Table:         &definition.TableSink{},
 			},
 		},
 		{
 			Name:          "long name",
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
-			Value: Sink{
+			Value: definition.Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SinkTypeTable,
+				Type:          definition.SinkTypeTable,
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
-				Table: &TableSink{
-					Type:    TableTypeKeboola,
-					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
+				Table: &definition.TableSink{
+					Type:    definition.TableTypeKeboola,
+					Keboola: &definition.KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
@@ -110,16 +114,16 @@ func TestTableSink_Validation(t *testing.T) {
 		{
 			Name:          "long description",
 			ExpectedError: `"description" must be a maximum of 4,096 characters in length`,
-			Value: Sink{
+			Value: definition.Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SinkTypeTable,
+				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   strings.Repeat("a", 4096+1),
-				Table: &TableSink{
-					Type:    TableTypeKeboola,
-					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
+				Table: &definition.TableSink{
+					Type:    definition.TableTypeKeboola,
+					Keboola: &definition.KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
@@ -132,16 +136,16 @@ func TestTableSink_Validation(t *testing.T) {
 		},
 		{
 			Name: "minimal",
-			Value: Sink{
+			Value: definition.Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SinkTypeTable,
+				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
-				Table: &TableSink{
-					Type:    TableTypeKeboola,
-					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
+				Table: &definition.TableSink{
+					Type:    definition.TableTypeKeboola,
+					Keboola: &definition.KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{
@@ -154,16 +158,16 @@ func TestTableSink_Validation(t *testing.T) {
 		},
 		{
 			Name: "with custom upload conditions",
-			Value: Sink{
+			Value: definition.Sink{
 				SinkKey:       sinkKey,
 				Versioned:     versioned,
 				SoftDeletable: softDeletable,
-				Type:          SinkTypeTable,
+				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
-				Table: &TableSink{
-					Type:    TableTypeKeboola,
-					Keboola: &KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
+				Table: &definition.TableSink{
+					Type:    definition.TableTypeKeboola,
+					Keboola: &definition.KeboolaTable{TableID: keboola.MustParseTableID("in.bucket.table")},
 					Mapping: table.Mapping{
 						Columns: column.Columns{
 							column.Body{

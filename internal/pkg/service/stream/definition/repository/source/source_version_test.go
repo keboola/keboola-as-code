@@ -22,6 +22,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -55,7 +56,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// RollbackVersion - entity not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := repo.RollbackVersion(sourceKey, now, definition.VersionNumber(1)).Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.RollbackVersion(sourceKey, now, by, definition.VersionNumber(1)).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "my-source" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -66,10 +67,10 @@ func TestSourceRepository_Versions(t *testing.T) {
 	var version1 definition.Source
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		version1 = test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&version1, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&version1, now, by, "Create source").Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(1), version1.Version.Number)
 	}
 
@@ -87,12 +88,12 @@ func TestSourceRepository_Versions(t *testing.T) {
 		}
 
 		now = now.Add(time.Hour)
-		version2, err = repo.Update(sourceKey, now, "Update source 1", updateFn1).Do(ctx).ResultOrErr()
+		version2, err = repo.Update(sourceKey, now, by, "Update source 1", updateFn1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(2), version2.Version.Number)
 
 		now = now.Add(time.Hour)
-		version3, err = repo.Update(sourceKey, now, "Update source 2", updateFn2).Do(ctx).ResultOrErr()
+		version3, err = repo.Update(sourceKey, now, by, "Update source 2", updateFn2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(3), version3.Version.Number)
 	}
@@ -119,7 +120,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	var version4 definition.Source
 	{
 		now = now.Add(time.Hour)
-		version4, err = repo.RollbackVersion(sourceKey, now, version2.VersionNumber()).Do(ctx).ResultOrErr()
+		version4, err = repo.RollbackVersion(sourceKey, now, by, version2.VersionNumber()).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(4), version4.Version.Number)
 	}
@@ -127,7 +128,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// RollbackVersion - version not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := repo.RollbackVersion(sourceKey, now, definition.VersionNumber(123)).Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.RollbackVersion(sourceKey, now, by, definition.VersionNumber(123)).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source version "my-source/0000000123" not found in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}

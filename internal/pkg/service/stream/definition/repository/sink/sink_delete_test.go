@@ -22,6 +22,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -37,7 +38,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 	// SoftDelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := repo.SoftDelete(sinkKey, now).Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.SoftDelete(sinkKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink" not found in the source`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -47,13 +48,13 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
 		sink := test.NewSink(sinkKey)
-		require.NoError(t, repo.Create(&sink, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 
 	// Get - ok
@@ -65,7 +66,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(sinkKey, now).Do(ctx).Err())
+		assert.NoError(t, repo.SoftDelete(sinkKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
@@ -90,6 +91,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -108,10 +110,10 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// Create sinks
@@ -119,11 +121,11 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	var sink1, sink2, sink3 definition.Sink
 	{
 		sink1 = test.NewSink(sinkKey1)
-		require.NoError(t, repo.Create(&sink1, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink1, now, by, "Create sink").Do(ctx).Err())
 		sink2 = test.NewSink(sinkKey2)
-		require.NoError(t, repo.Create(&sink2, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink2, now, by, "Create sink").Do(ctx).Err())
 		sink3 = test.NewSink(sinkKey3)
-		require.NoError(t, repo.Create(&sink3, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink3, now, by, "Create sink").Do(ctx).Err())
 	}
 
 	// Delete Sink1
@@ -131,7 +133,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		var err error
-		sink1, err = repo.SoftDelete(sinkKey1, now).Do(ctx).ResultOrErr()
+		sink1, err = repo.SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.True(t, sink1.Deleted)
 		assert.Equal(t, now, sink1.DeletedAt.Time())
@@ -141,7 +143,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Source().SoftDelete(sourceKey, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().SoftDelete(sourceKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_002.txt", ignoredEtcdKeys)
 	}
 	{
@@ -166,6 +168,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -184,10 +187,10 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// Create sinks
@@ -195,11 +198,11 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	var sink1, sink2, sink3 definition.Sink
 	{
 		sink1 = test.NewSink(sinkKey1)
-		require.NoError(t, repo.Create(&sink1, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink1, now, by, "Create sink").Do(ctx).Err())
 		sink2 = test.NewSink(sinkKey2)
-		require.NoError(t, repo.Create(&sink2, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink2, now, by, "Create sink").Do(ctx).Err())
 		sink3 = test.NewSink(sinkKey3)
-		require.NoError(t, repo.Create(&sink3, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink3, now, by, "Create sink").Do(ctx).Err())
 	}
 
 	// Delete Sink1
@@ -207,7 +210,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		var err error
-		sink1, err = repo.SoftDelete(sinkKey1, now).Do(ctx).ResultOrErr()
+		sink1, err = repo.SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.True(t, sink1.Deleted)
 		assert.Equal(t, now, sink1.DeletedAt.Time())
@@ -217,7 +220,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_003.txt", ignoredEtcdKeys)
 	}
 	{

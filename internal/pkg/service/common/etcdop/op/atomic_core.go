@@ -3,7 +3,6 @@ package op
 import (
 	"context"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"slices"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -12,11 +11,12 @@ import (
 // AtomicOpCore provides a common interface of the atomic operation, without result type specific methods.
 // See the AtomicOp.Core method for details.
 type AtomicOpCore struct {
-	client           etcd.KV
-	checkPrefixKey   bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
-	locks            []Mutex
-	readPhase        []HighLevelFactory
-	writePhase       []HighLevelFactory
+	client         etcd.KV
+	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
+	locks          []Mutex
+	readPhase      []HighLevelFactory
+	writePhase     []HighLevelFactory
+	// processorFactory allows injection of the type-specific processors from the AtomicOp[R].
 	processorFactory atomicOpCoreProcessorFactory
 }
 
@@ -235,71 +235,6 @@ func (v *AtomicOpCore) writeTxn(ctx context.Context) (*TxnOp[NoResult], error) {
 	}
 
 	return writeTxn, nil
-}
-
-// x Create IF part of the transaction.
-func (v *AtomicOpCore) writeIfConditions(tracker *TrackerKV, readRev int64) (cmps []etcd.Cmp) {
-	for _, op := range tracker.Operations() {
-		mustExist := (op.Type == GetOp || op.Type == PutOp) && op.Count > 0
-		mustNotExist := op.Type == DeleteOp || op.Count == 0
-		switch {
-		case mustExist:
-			// IF: 0 < modification version <= Read Phase revision
-			// Key/range exists and has not been modified since the Read Phase.
-			//
-			// Note: we cannot check that nothing was deleted from the prefix.
-			// The condition IF count == n is needed, and it is not implemented in etcd.
-			// We can verify that an individual key was deleted, its MOD == 0.
-			cmps = append(cmps,
-				// The key/prefix must exist, version must be NOT equal to 0.
-				etcd.Cmp{
-					Target:      etcdserverpb.Compare_MOD,
-					Result:      etcdserverpb.Compare_GREATER,
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
-					Key:         op.Key,
-					RangeEnd:    op.RangeEnd, // may be empty
-				},
-				// The key/prefix cannot be modified between GET and UPDATE phase.
-				// Mod revision of the item must be less or equal to header.Revision.
-				etcd.Cmp{
-					Target:      etcdserverpb.Compare_MOD,
-					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readRev + 1},
-					Key:         op.Key,
-					RangeEnd:    op.RangeEnd, // may be empty
-				},
-			)
-
-			// See SkipPrefixKeysCheck method documentation, by default, the feature is enabled.
-			if v.checkPrefixKey {
-				if op.RangeEnd != nil {
-					for _, kv := range op.KVs {
-						cmps = append(cmps, etcd.Cmp{
-							Target:      etcdserverpb.Compare_MOD,
-							Result:      etcdserverpb.Compare_GREATER,
-							TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
-							Key:         kv.Key,
-						})
-					}
-				}
-			}
-		case mustNotExist:
-			cmps = append(cmps,
-				// IF: modification version == 0
-				// The key/range doesn't exist.
-				etcd.Cmp{
-					Target:      etcdserverpb.Compare_MOD,
-					Result:      etcdserverpb.Compare_EQUAL,
-					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
-					Key:         op.Key,
-					RangeEnd:    op.RangeEnd, // may be empty
-				},
-			)
-		default:
-			panic(errors.Errorf(`unexpected state, operation type "%v"`, op.Type))
-		}
-	}
-	return cmps
 }
 
 func (v *AtomicOpCore) do(ctx context.Context, tracker *TrackerKV, opts ...Option) (writeTxn *TxnOp[NoResult], readRevision int64, err error) {

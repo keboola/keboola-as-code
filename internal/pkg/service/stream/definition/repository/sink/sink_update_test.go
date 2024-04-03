@@ -23,6 +23,7 @@ func TestSinkRepository_Update(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, mocked := dependencies.NewMockedServiceScope(t)
 	client := mocked.TestEtcdClient()
@@ -41,7 +42,7 @@ func TestSinkRepository_Update(t *testing.T) {
 		updateFn := func(sink definition.Sink) (definition.Sink, error) {
 			return sink, nil
 		}
-		if err := repo.Update(sinkKey, now, "Update sink", updateFn).Do(ctx).Err(); assert.Error(t, err) {
+		if err := repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink" not found in the source`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -52,13 +53,13 @@ func TestSinkRepository_Update(t *testing.T) {
 	var sink definition.Sink
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source := test.NewSource(sourceKey)
-		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
 		sink = test.NewSink(sinkKey)
-		require.NoError(t, repo.Create(&sink, now, "Create sink").Do(ctx).Err())
+		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 
 	// Update - ok
@@ -72,7 +73,7 @@ func TestSinkRepository_Update(t *testing.T) {
 		}
 
 		var err error
-		sink, err = repo.Update(sinkKey, now, "Update sink", updateFn).Do(ctx).ResultOrErr()
+		sink, err = repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_update_test_snapshot_001.txt", ignoredEtcdKeys)
@@ -94,7 +95,7 @@ func TestSinkRepository_Update(t *testing.T) {
 		}
 
 		var err error
-		err = repo.Update(sinkKey, now, "Update sink", updateFn).Do(ctx).Err()
+		err = repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, "some error", err.Error())
 		}
@@ -107,7 +108,7 @@ func TestSinkRepository_Update(t *testing.T) {
 			sink.Disabled = true
 			return sink, nil
 		}
-		err := repo.Update(sinkKey, now, "Update sink", updateFn).Do(ctx).Err()
+		err := repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `"Disabled" field cannot be modified by the Update operation`, err.Error())
 		}
@@ -120,7 +121,7 @@ func TestSinkRepository_Update(t *testing.T) {
 			sink.Deleted = true
 			return sink, nil
 		}
-		err := repo.Update(sinkKey, now, "Update sink", updateFn).Do(ctx).Err()
+		err := repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `"Deleted" field cannot be modified by the Update operation`, err.Error())
 		}

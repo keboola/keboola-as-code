@@ -7,11 +7,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 )
 
-func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] {
+func (r *Repository) Undelete(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
 	var undeleted definition.Source
 	return op.Atomic(r.client, &undeleted).
 		// Check prerequisites
@@ -20,7 +19,7 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[defin
 		ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
 		// Mark undeleted
 		AddFrom(r.
-			undeleteAllFrom(k, now, false).
+			undeleteAllFrom(k, now, by, false).
 			OnResult(func(r []definition.Source) {
 				if len(r) == 1 {
 					undeleted = r[0]
@@ -29,17 +28,14 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time) *op.AtomicOp[defin
 }
 
 func (r *Repository) undeleteSourcesOnBranchUndelete() {
-	r.plugins.Collection().OnBranchSave(func(ctx *plugin.Operation, old, entity *definition.Branch) {
-		undeleted := entity.UndeletedAt != nil && entity.UndeletedAt.Time().Equal(ctx.Now())
-		if undeleted {
-			ctx.AddFrom(r.undeleteAllFrom(entity.BranchKey, ctx.Now(), true))
-		}
+	r.plugins.Collection().OnBranchUndelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
+		op.AtomicFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.BranchKey, now, by, true))
 	})
 
 }
 
 // undeleteAllFrom the parent key.
-func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] {
 	var allOld, allCreated []definition.Source
 	atomicOp := op.Atomic(r.client, &allCreated)
 
@@ -52,8 +48,8 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 	}
 
 	// Iterate all
-	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
-		saveCtx := plugin.NewSaveContext(now)
+	atomicOp.Write(func(ctx context.Context) op.Op {
+		txn := op.Txn(r.client)
 		for _, old := range allOld {
 			old := old
 
@@ -63,19 +59,19 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, unde
 
 			// Mark undeleted
 			created := deepcopy.Copy(old).(definition.Source)
-			created.Undelete(now)
+			created.Undelete(now, by)
 
 			// Create a new version record, if the entity has been undeleted manually
 			if !undeletedWithParent {
 				versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
-				created.IncrementVersion(created, now, versionDescription)
+				created.IncrementVersion(created, now, by, versionDescription)
 			}
 
 			// Save
-			r.save(saveCtx, &old, &created)
+			txn.Merge(r.save(ctx, now, by, &old, &created))
 			allCreated = append(allCreated, created)
 		}
-		return saveCtx.Do(ctx)
+		return txn
 	})
 
 	return atomicOp

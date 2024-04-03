@@ -51,35 +51,30 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 		sinkTypes:  make(map[definition.SinkType]bool),
 	}
 
-	r.openFileOnSinkActivation()
-	r.closeFileOnSinkDeactivation()
-	r.rotateFileOnSinkModification()
+	//r.openFileOnSinkActivation()
+	//r.closeFileOnSinkDeactivation()
+	//r.rotateFileOnSinkModification()
 	return r
 }
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *model.File) (op.Op, error) {
-	saveCtx := plugin.NewSaveContext(now)
-	r.save(saveCtx, old, updated)
-	return saveCtx.Do(ctx)
-}
-
-func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.File) {
+func (r *Repository) save(ctx context.Context, now time.Time, old, updated *model.File) *op.TxnOp[model.File] {
 	// Call plugins
-	r.plugins.Executor().OnFileSave(saveCtx, old, updated)
+	r.plugins.Executor().OnFileSave(ctx, now, old, updated)
 
 	allKey := r.schema.AllLevels().ByKey(updated.FileKey)
 	inLevelKey := r.schema.InLevel(updated.State.Level()).ByKey(updated.FileKey)
 
+	saveTxn := op.TxnWithResult(r.client, updated)
 	if updated.Deleted {
 		// Delete entity from All and InLevel prefixes
-		saveCtx.WriteOp(
+		saveTxn.Then(
 			allKey.Delete(r.client),
 			inLevelKey.Delete(r.client),
 		)
 	} else {
 		if old == nil {
 			// Entity should not exist
-			saveCtx.WriteOp(op.Txn(r.client).
+			saveTxn.Then(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
 					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", updated.FileKey.String(), "sink"))
@@ -87,7 +82,7 @@ func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.File) {
 			)
 		} else {
 			// Entity should exist
-			saveCtx.WriteOp(op.Txn(r.client).
+			saveTxn.Then(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
 					r.AddErr(serviceError.NewResourceNotFoundError("file", updated.FileKey.String(), "sink"))
@@ -96,18 +91,19 @@ func (r *Repository) save(saveCtx *plugin.Operation, old, updated *model.File) {
 		}
 
 		// Put entity to All and InLevel prefixes
-		saveCtx.WriteOp(
+		saveTxn.Then(
 			allKey.Put(r.client, *updated),
 			inLevelKey.Put(r.client, *updated),
 		)
 
 		// Remove entity from the old InLevel prefix, if needed
 		if old != nil && old.State.Level() != updated.State.Level() {
-			saveCtx.WriteOp(
+			saveTxn.Then(
 				r.schema.InLevel(old.State.Level()).ByKey(old.FileKey).Delete(r.client),
 			)
 		}
 	}
+	return saveTxn
 }
 
 // update reads the file, applies updateFn and save modified value.
@@ -126,7 +122,7 @@ func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.
 			}
 
 			// Save
-			return r.saveOne(ctx, now, &old, &updated)
+			return r.save(ctx, now, &old, &updated), nil
 		})
 }
 

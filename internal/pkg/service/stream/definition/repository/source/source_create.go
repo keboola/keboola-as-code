@@ -14,7 +14,7 @@ import (
 // - If the Source already exists, the ResourceAlreadyExistsError is returned.
 // - If the MaxSourcesPerBranch limit is exceeded, the CountLimitReachedError is returned.
 // - If the MaxSourceVersionsPerSource limit is exceeded, the CountLimitReachedError is returned.
-func (r *Repository) Create(input *definition.Source, now time.Time, versionDescription string) *op.AtomicOp[definition.Source] {
+func (r *Repository) Create(input *definition.Source, now time.Time, by definition.By, versionDescription string) *op.AtomicOp[definition.Source] {
 	k := input.SourceKey
 	var created definition.Source
 	var deleted *op.KeyValueT[definition.Source]
@@ -29,18 +29,18 @@ func (r *Repository) Create(input *definition.Source, now time.Time, versionDesc
 		// Get deleted entity, if any, to undelete it.
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Create
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
+		Write(func(ctx context.Context) op.Op {
 			// Create or undelete
 			created = deepcopy.Copy(*input).(definition.Source)
 			if deleted != nil {
 				created.Version = deleted.Value.Version
 				created.SoftDeletable = deleted.Value.SoftDeletable
-				created.Undelete(now)
+				created.Undelete(now, by)
 			}
 
 			// Save
-			created.IncrementVersion(created, now, versionDescription)
-			return r.saveOne(ctx, now, nil, &created)
+			created.IncrementVersion(created, now, by, versionDescription)
+			return r.save(ctx, now, by, nil, &created)
 		}).
 		// Update the input entity after a successful operation
 		OnResult(func(result definition.Source) {

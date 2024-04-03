@@ -6,7 +6,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 )
 
@@ -14,7 +13,7 @@ import (
 // - If there is a deleted Branch with the same key, the Undelete operation is performed.
 // - If the Branch already exists, the ResourceAlreadyExistsError is returned.
 // - If the MaxBranchesPerProject limit is exceeded, the CountLimitReachedError is returned.
-func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicOp[definition.Branch] {
+func (r *Repository) Create(input *definition.Branch, now time.Time, by definition.By) *op.AtomicOp[definition.Branch] {
 	k := input.BranchKey
 	var created definition.Branch
 	var deleted *op.KeyValueT[definition.Branch]
@@ -28,20 +27,16 @@ func (r *Repository) Create(input *definition.Branch, now time.Time) *op.AtomicO
 		// Get deleted entity, if any, to undelete it
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Create
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			ctx, pluginOp := plugin.X(ctx, now)
-
+		Write(func(ctx context.Context) op.Op {
 			// Create or undelete
 			created = deepcopy.Copy(*input).(definition.Branch)
 			if deleted != nil {
 				created.SoftDeletable = deleted.Value.SoftDeletable
-				created.Undelete(now)
+				created.Undelete(now, by)
 			}
 
 			// Save
-			r.save(ctx, nil, &created)
-
-			return pluginOp.Do(ctx)
+			return r.save(ctx, now, by, nil, &created)
 		}).
 		// Update the input entity after a successful operation
 		OnResult(func(entity definition.Branch) {

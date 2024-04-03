@@ -18,6 +18,7 @@ func TestSourceRepository_List(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Source()
@@ -41,12 +42,12 @@ func TestSourceRepository_List(t *testing.T) {
 	var source1, source2 definition.Source
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source1 = test.NewSource(sourceKey1)
 		source2 = test.NewSource(sourceKey2)
-		require.NoError(t, repo.Create(&source1, now, "Create source").Do(ctx).Err())
-		require.NoError(t, repo.Create(&source2, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source1, now, by, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source2, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// List - ok
@@ -64,6 +65,7 @@ func TestSourceRepository_ListDeleted(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Source()
@@ -87,12 +89,12 @@ func TestSourceRepository_ListDeleted(t *testing.T) {
 	var source1, source2 definition.Source
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source1 = test.NewSource(sourceKey1)
 		source2 = test.NewSource(sourceKey2)
-		require.NoError(t, repo.Create(&source1, now, "Create source").Do(ctx).Err())
-		require.NoError(t, repo.Create(&source2, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source1, now, by, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source2, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// ListDeleted - empty
@@ -107,9 +109,9 @@ func TestSourceRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		var err error
-		source1, err = repo.SoftDelete(sourceKey1, now).Do(ctx).ResultOrErr()
+		source1, err = repo.SoftDelete(sourceKey1, now, by).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
-		source2, err = repo.SoftDelete(sourceKey2, now).Do(ctx).ResultOrErr()
+		source2, err = repo.SoftDelete(sourceKey2, now, by).Do(ctx).ResultOrErr()
 		assert.NoError(t, err)
 	}
 

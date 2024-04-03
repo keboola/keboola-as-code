@@ -20,6 +20,7 @@ func TestSourceRepository_Get(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Source()
@@ -43,10 +44,10 @@ func TestSourceRepository_Get(t *testing.T) {
 	var source definition.Source
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source = test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// Get - ok
@@ -64,6 +65,7 @@ func TestSourceRepository_GetDeleted(t *testing.T) {
 
 	ctx := context.Background()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
 
 	d, _ := dependencies.NewMockedServiceScope(t)
 	repo := d.DefinitionRepository().Source()
@@ -87,10 +89,10 @@ func TestSourceRepository_GetDeleted(t *testing.T) {
 	var source definition.Source
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now).Do(ctx).Err())
+		require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, now, by).Do(ctx).Err())
 
 		source = test.NewSource(sourceKey)
-		require.NoError(t, repo.Create(&source, now, "Create source").Do(ctx).Err())
+		require.NoError(t, repo.Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
 	// GetDeleted - not found
@@ -105,7 +107,7 @@ func TestSourceRepository_GetDeleted(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.SoftDelete(sourceKey, now).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
 	}
 
 	// GetDeleted - ok
@@ -114,6 +116,7 @@ func TestSourceRepository_GetDeleted(t *testing.T) {
 		deletedAt := utctime.From(now)
 		source.Deleted = true
 		source.DeletedAt = &deletedAt
+		source.DeletedBy = &by
 		result, err := repo.GetDeleted(sourceKey).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
 			assert.Equal(t, source, result)

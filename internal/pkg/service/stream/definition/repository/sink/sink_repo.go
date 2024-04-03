@@ -41,40 +41,36 @@ func NewRepository(d dependencies, sources *source.Repository) *Repository {
 	return r
 }
 
-func (r *Repository) saveOne(ctx context.Context, now time.Time, old, updated *definition.Sink) (op.Op, error) {
-	saveCtx := plugin.NewSaveContext(now)
-	r.save(saveCtx, old, updated)
-	return saveCtx.Do(ctx)
-}
-
-func (r *Repository) save(saveCtx *plugin.Operation, old, updated *definition.Sink) {
+func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) op.Op {
 	// Call plugins
-	r.plugins.Executor().OnSinkSave(saveCtx, old, updated)
+	r.plugins.Executor().OnSinkSave(ctx, now, by, old, updated)
 
+	saveTxn := op.Txn(r.client)
 	if updated.Deleted {
 		// Move entity from the active prefix to the deleted prefix
-		saveCtx.WriteOp(
+		saveTxn.Then(
 			// Delete entity from the active prefix
 			r.schema.Active().ByKey(updated.SinkKey).Delete(r.client),
 			// Save entity to the deleted prefix
 			r.schema.Deleted().ByKey(updated.SinkKey).Put(r.client, *updated),
 		)
 	} else {
-		saveCtx.WriteOp(
+		saveTxn.Then(
 			// Save record to the "active" prefix
 			r.schema.Active().ByKey(updated.SinkKey).Put(r.client, *updated),
 			// Save record to the versions history
 			r.schema.Versions().Of(updated.SinkKey).Version(updated.VersionNumber()).Put(r.client, *updated),
 		)
 
-		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(saveCtx.Now()) {
+		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(now) {
 			// Delete record from the "deleted" prefix, if needed
-			saveCtx.WriteOp(r.schema.Deleted().ByKey(updated.SinkKey).Delete(r.client))
+			saveTxn.Then(r.schema.Deleted().ByKey(updated.SinkKey).Delete(r.client))
 		}
 	}
+	return saveTxn
 }
 
-func (r *Repository) update(k key.SinkKey, now time.Time, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] {
+func (r *Repository) update(k key.SinkKey, now time.Time, by definition.By, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] {
 	var old, updated definition.Sink
 	return op.Atomic(r.client, &updated).
 		// Check prerequisites
@@ -90,7 +86,7 @@ func (r *Repository) update(k key.SinkKey, now time.Time, versionDescription str
 			}
 
 			// Save
-			updated.IncrementVersion(updated, now, versionDescription)
-			return r.saveOne(ctx, now, &old, &updated)
+			updated.IncrementVersion(updated, now, by, versionDescription)
+			return r.save(ctx, now, by, &old, &updated), nil
 		})
 }
