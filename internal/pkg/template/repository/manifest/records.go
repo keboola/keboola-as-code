@@ -32,9 +32,9 @@ type VersionRecord struct {
 }
 
 type Requirements struct {
-	Backends   []string `json:"backends,omitempty"`
-	Components []string `json:"components,omitempty"`
-	Features   []string `json:"features,omitempty"`
+	Backends   []string `json:"backends"`
+	Components []string `json:"components"`
+	Features   []string `json:"features"`
 }
 
 func (v *TemplateRecord) AllVersions() (out []VersionRecord) {

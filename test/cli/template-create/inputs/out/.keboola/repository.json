@@ -9,7 +9,11 @@
       "id": "my-template",
       "name": "My Template",
       "description": "Full workflow to ...",
-      "requirements": {},
+      "requirements": {
+        "backends": null,
+        "components": null,
+        "features": null
+      },
       "path": "my-template",
       "versions": [
         {

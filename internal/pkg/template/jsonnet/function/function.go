@@ -160,7 +160,7 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 	}
 }
 
-// HasProjectBackend Jsonnet function returns component ID of the Snowflake Writer it the stack.
+// HasProjectBackend Jsonnet function returns true if the project backend is available, otherwise false.
 func HasProjectBackend(backends []string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `HasProjectBackend`,
