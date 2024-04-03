@@ -167,7 +167,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
 
 	// Load manifest
-	m, err := projectManifest.Load(context.Background(), fs, false)
+	m, err := projectManifest.Load(context.Background(), fs, env.Empty(), false)
 	assert.NoError(t, err)
 
 	return m, fs

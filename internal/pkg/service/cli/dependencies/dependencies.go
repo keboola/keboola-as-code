@@ -16,6 +16,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -43,6 +44,7 @@ var (
 // BaseScope interface provides basic CLI dependencies.
 type BaseScope interface {
 	dependencies.BaseScope
+	Environment() env.Provider
 	Fs() filesystem.Fs
 	FsInfo() FsInfo
 	ConfigBinder() *cmdconfig.Binder

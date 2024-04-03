@@ -1,0 +1,38 @@
+name: Keboola as Code Install
+description: Install Keboola as Code CLI
+inputs:
+  githubToken:
+    description: GitHub Workflow Token
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - id: prepare
+      run: |
+        mkdir "${{ runner.temp }}/kbc"
+      shell: bash
+    # Download the latest release asset
+    - id: kbc_download_latest_release
+      uses: robinraju/release-downloader@v1.7
+      with:
+        repository: "keboola/keboola-as-code"
+        latest: true
+        fileName: "*_linux_amd64.zip"
+        token: ${{ inputs.githubToken }}
+        out-file-path: "${{ runner.temp }}/kbc"
+    # Extract binary
+    - id: kbc_extract_release
+      run: |
+        latest_tag=${{steps.kbc_download_latest_release.outputs.tag_name}}
+        latest_version=${latest_tag:1}
+        release_zip="${{ runner.temp }}/kbc/keboola-cli_${latest_version}_linux_amd64.zip"
+        if [ ! -f "$release_zip" ]; then
+          echo "Could not download keboola-cli_${latest_version}_linux_amd64.zip from the latest release."
+          exit 1
+        fi
+        release_bin="/usr/local/bin/kbc"
+        unzip "$release_zip" -d /usr/local/bin
+        chmod +x "$release_bin"
+        echo "Keboola as Code CLI installed: $release_bin"
+        kbc --version
+      shell: bash

@@ -37,7 +37,8 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 	out := initOp.Options{
 		Pull: true,
 		ManifestOptions: createManifest.Options{
-			Naming: naming.TemplateWithoutIds(),
+			Naming:         naming.TemplateWithoutIds(),
+			AllowTargetENV: f.AllowTargetENV.Value,
 		},
 	}
 
@@ -85,7 +86,17 @@ type branchesDialogDeps interface {
 }
 
 func AskAllowedBranches(ctx context.Context, deps branchesDialogDeps, d *dialog.Dialogs, f Flags) (model.AllowedBranches, error) {
-	return (&branchesDialog{Dialogs: d, deps: deps, Flags: f}).ask(ctx)
+	result, err := (&branchesDialog{Dialogs: d, deps: deps, Flags: f}).ask(ctx)
+	if err != nil {
+		return model.AllowedBranches{}, err
+	}
+
+	// Check that only one branch is specified if the flag is used
+	if f.AllowTargetENV.Value && !result.IsOneSpecificBranch() {
+		return nil, errors.Errorf(`flag --allow-target-env can only be used with one specific branch, found %s`, result.String())
+	}
+
+	return result, nil
 }
 
 func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error) {
@@ -137,18 +148,31 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 }
 
 func (d *branchesDialog) askMode() string {
-	mode, _ := d.Select(&prompt.Select{
-		Label: "Allowed project's branches:",
-		Description: "Please select which project's branches you want to use with this CLI.\n" +
-			"The other branches will still exist, but they will be invisible in the CLI.",
-		Options: []string{
+	var description string
+	var options []string
+	if d.Flags.AllowTargetENV.Value {
+		description = "Please select project's branch you want to use with this CLI.\nThe other branches will still exist, but they will be invisible in the CLI."
+		options = []string{
+			ModeMainBranch,
+			ModeSelectSpecific,
+		}
+	} else {
+		description = "Please select project's branches you want to use with this CLI.\nThe other branches will still exist, but they will be invisible in the CLI."
+		options = []string{
 			ModeMainBranch,
 			ModeAllBranches,
 			ModeSelectSpecific,
 			ModeTypeList,
-		},
-		Default: ModeMainBranch,
+		}
+	}
+
+	mode, _ := d.Select(&prompt.Select{
+		Label:       "Allowed project's branches:",
+		Description: description,
+		Options:     options,
+		Default:     ModeMainBranch,
 	})
+
 	return mode
 }
 
@@ -256,15 +280,26 @@ func SelectBranches(all []*model.Branch, label string, d *dialog.Dialogs, f Flag
 		msg := fmt.Sprintf(`%s (%d)`, branch.Name, branch.ID)
 		selectOpts.Set(msg, branch.ID)
 	}
-	indexes, _ := d.MultiSelectIndex(&prompt.MultiSelectIndex{
-		Label:       label,
-		Description: "Please select one or more branches.",
-		Options:     selectOpts.Keys(),
-		Validator:   prompt.AtLeastOneRequired,
-	})
-	for _, index := range indexes {
+
+	if f.AllowTargetENV.Value {
+		index, _ := d.SelectIndex(&prompt.SelectIndex{
+			Label:       label,
+			Description: "Please select one branch.",
+			Options:     selectOpts.Keys(),
+		})
 		results = append(results, all[index])
+	} else {
+		indexes, _ := d.MultiSelectIndex(&prompt.MultiSelectIndex{
+			Label:       label,
+			Description: "Please select one or more branches.",
+			Options:     selectOpts.Keys(),
+			Validator:   prompt.AtLeastOneRequired,
+		})
+		for _, index := range indexes {
+			results = append(results, all[index])
+		}
 	}
+
 	if len(results) > 0 {
 		return results, nil
 	}

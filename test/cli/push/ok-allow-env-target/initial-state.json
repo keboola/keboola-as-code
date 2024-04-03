@@ -1,0 +1,19 @@
+{
+  "backend": {
+    "type": "snowflake"
+  },
+  "allBranchesConfigs": [
+    "empty"
+  ],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "data-app"
+      ]
+    }
+  ]
+}

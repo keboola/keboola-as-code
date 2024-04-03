@@ -4,6 +4,7 @@
     "id": __PROJECT_ID__,
     "apiHost": "__STORAGE_API_HOST__"
   },
+  "allowTargetEnv": false,
   "sortBy": "id",
   "naming": {
     "branch": "{branch_name}",

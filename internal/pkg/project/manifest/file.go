@@ -25,8 +25,10 @@ func Path() string {
 
 // file is template repository manifest JSON file.
 type file struct {
-	Version           int                             `json:"version" validate:"required,min=1,max=2"`
-	Project           Project                         `json:"project" validate:"required"`
+	Version int     `json:"version" validate:"required,min=1,max=2"`
+	Project Project `json:"project" validate:"required"`
+	// AllowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs to override manifest values
+	AllowTargetENV    bool                            `json:"allowTargetEnv"`
 	SortBy            string                          `json:"sortBy" validate:"oneof=id path"`
 	Naming            naming.Template                 `json:"naming" validate:"required"`
 	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
