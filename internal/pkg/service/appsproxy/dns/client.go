@@ -66,8 +66,10 @@ func (c *Client) Resolve(ctx context.Context, host string) (string, error) {
 	msg := &dns.Msg{}
 	msg.SetQuestion(dns.Fqdn(host), dns.TypeA)
 	msg.Authoritative = true
-	msg.RecursionAvailable = false
+	// Disable recursion because we want to know if service pod is available in k8s.
+	// No need to recursively ask other servers. Also disables caching which we also want.
 	msg.RecursionDesired = false
+	msg.RecursionAvailable = false
 
 	// Send DNS query
 	resp, _, err := c.client.ExchangeContext(ctx, msg, c.dnsServer)
