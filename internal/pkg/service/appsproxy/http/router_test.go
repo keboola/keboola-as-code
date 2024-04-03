@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -43,6 +44,11 @@ type testCase struct {
 }
 
 func TestAppProxyRouter(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("windows doesn't have /etc/resolv.conf")
+	}
+
 	testCases := []testCase{
 		{
 			name: "missing-app-id",
@@ -1406,8 +1412,6 @@ func TestAppProxyRouter(t *testing.T) {
 		privateAppTestCaseFactory(http.MethodPatch),
 		privateAppTestCaseFactory(http.MethodDelete),
 	)
-
-	t.Parallel()
 
 	for _, tc := range testCases {
 		tc := tc
