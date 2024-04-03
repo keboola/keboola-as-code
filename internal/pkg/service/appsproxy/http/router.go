@@ -283,6 +283,33 @@ func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handl
 }
 
 func (r *Router) dnsErrorHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	appID, ok := ctx.Value(AppIDCtxKey).(string)
+	if !ok {
+		// App ID should always be defined when the request gets here.
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	r.wg.Add(1)
+	// Current request should not wait for the wakeup request
+	go func() {
+		defer r.wg.Done()
+
+		wakeupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		wakeupCtx = ctxattr.ContextWith(wakeupCtx, attribute.String(attrAppID, appID))
+
+		_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.wakeup")
+		wakeupCtx = telemetry.ContextWithSpan(wakeupCtx, span)
+
+		// Error is already logged by the Wakeup method itself. We can ignore it here.
+		err := r.loader.Wakeup(wakeupCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+		span.End(&err)
+	}()
+
 	w.WriteHeader(http.StatusServiceUnavailable)
 	fmt.Fprintln(w, "Starting...")
 }
