@@ -26,7 +26,7 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 
 	logger := d.Logger()
 
-	m, err = project.LoadManifest(ctx, fs, d.Environment(), o.IgnoreErrors)
+	m, err = project.LoadManifest(ctx, d.Logger(), fs, d.Environment(), o.IgnoreErrors)
 	if err != nil {
 		return nil, err
 	}

@@ -102,7 +102,7 @@ func (v *localCommandScope) LocalProject(ctx context.Context, ignoreErrors bool)
 		}
 
 		// Create local instance
-		p, err := projectPkg.New(ctx, fs, v.Environment(), ignoreErrors)
+		p, err := projectPkg.New(ctx, v.Logger(), fs, v.Environment(), ignoreErrors)
 		return localProjectValue{found: found, value: p}, err
 	})
 	return value.value, value.found, err

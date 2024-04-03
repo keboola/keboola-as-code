@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
@@ -60,7 +61,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(context.Background(), fs, env.Empty(), false)
+	manifest, err := Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -77,7 +78,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(ctx, fs, env.Empty(), false)
+		manifest, err := Load(ctx, log.NewNopLogger(), fs, env.Empty(), false)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -178,7 +179,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, cyclicDependencyJSON())))
 
 	// Load
-	manifest, err := Load(ctx, fs, env.Empty(), false)
+	manifest, err := Load(ctx, log.NewNopLogger(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
@@ -196,10 +197,15 @@ func TestManifest_AllowTargetENV(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, allowTargetEnvJSON())))
 
 	// Load file
+	logger := log.NewDebugLogger()
 	envs.Set(ProjectIDOverrideENV, "111")
 	envs.Set(BranchIDOverrideENV, "222")
-	m, err := Load(ctx, fs, envs, false)
+	m, err := Load(ctx, logger, fs, envs, false)
 	require.NoError(t, err)
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"Overriding the project ID by the environment variable KBC_PROJECT_ID=111"}
+{"level":"info","message":"Overriding the branch ID by the environment variable KBC_BRANCH_ID=222"}
+`)
 
 	// IDs are mapped on load/save
 	assert.Equal(t, keboola.ProjectID(111), m.ProjectID())

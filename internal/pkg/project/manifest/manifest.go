@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
@@ -75,7 +76,7 @@ func New(projectID keboola.ProjectID, apiHost string) *Manifest {
 	}
 }
 
-func Load(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Manifest, error) {
+func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Manifest, error) {
 	// Load file content
 	content, err := loadFile(ctx, fs)
 	if err != nil && (!ignoreErrors || content == nil) {
@@ -96,6 +97,7 @@ func Load(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors
 			if projectIDInt, err := strconv.Atoi(projectIDStr); err == nil {
 				projectID := keboola.ProjectID(projectIDInt)
 				if projectID != content.Project.ID {
+					logger.Infof(ctx, `Overriding the project ID by the environment variable %s=%v`, ProjectIDOverrideENV, projectID)
 					mapping = append(mapping, mappingItem{
 						ManifestValue: content.Project.ID,
 						MemoryValue:   projectID,
@@ -110,6 +112,7 @@ func Load(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors
 			if branchIDInt, err := strconv.Atoi(branchIDStr); err == nil {
 				branchID := keboola.BranchID(branchIDInt)
 				if branchID != content.Branches[0].ID {
+					logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, branchID)
 					mapping = append(mapping, mappingItem{
 						ManifestValue: content.Branches[0].ID,
 						MemoryValue:   branchID,

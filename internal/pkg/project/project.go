@@ -25,8 +25,8 @@ func NewManifest(projectID keboola.ProjectID, apiHost string) *Manifest {
 	return projectManifest.New(projectID, apiHost)
 }
 
-func LoadManifest(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Manifest, error) {
-	return projectManifest.Load(ctx, fs, envs, ignoreErrors)
+func LoadManifest(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Manifest, error) {
+	return projectManifest.Load(ctx, logger, fs, envs, ignoreErrors)
 }
 
 type dependencies interface {
@@ -44,8 +44,8 @@ type Project struct {
 	manifest   *Manifest
 }
 
-func New(ctx context.Context, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Project, error) {
-	m, err := projectManifest.Load(ctx, fs, envs, ignoreErrors)
+func New(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Provider, ignoreErrors bool) (*Project, error) {
+	m, err := projectManifest.Load(ctx, logger, fs, envs, ignoreErrors)
 	if err != nil {
 		return nil, err
 	}
