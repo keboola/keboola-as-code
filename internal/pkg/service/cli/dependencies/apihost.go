@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -26,7 +27,7 @@ func storageAPIHost(ctx context.Context, baseScp BaseScope, fallback string, hos
 	var host string
 	if fs.IsFile(ctx, projectManifest.Path()) {
 		// Get host from manifest
-		m, err := projectManifest.Load(ctx, fs, env.Empty(), true)
+		m, err := projectManifest.Load(ctx, log.NewNopLogger(), fs, env.Empty(), true)
 		if err != nil {
 			return "", err
 		} else {

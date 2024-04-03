@@ -437,7 +437,7 @@ func (v *mocked) MockedRequest() *http.Request {
 }
 
 func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {
-	prj, err := projectPkg.New(context.Background(), fs, env.Empty(), false)
+	prj, err := projectPkg.New(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
 	if err != nil {
 		panic(err)
 	}

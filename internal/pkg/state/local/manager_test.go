@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -137,7 +138,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
 
 	// Load objects
-	m, err := projectManifest.Load(context.Background(), fs, env.Empty(), false)
+	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
 	assert.NoError(t, err)
 	uow.LoadAll(m, *m.Filter())
 	assert.NoError(t, uow.Invoke())

@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -167,7 +168,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
 
 	// Load manifest
-	m, err := projectManifest.Load(context.Background(), fs, env.Empty(), false)
+	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
 	assert.NoError(t, err)
 
 	return m, fs

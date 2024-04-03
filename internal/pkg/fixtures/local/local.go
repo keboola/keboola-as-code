@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
@@ -30,7 +31,7 @@ func LoadManifest(ctx context.Context, dirName string, envs testhelper.EnvProvid
 		return nil, nil, err
 	}
 
-	m, err := manifest.Load(ctx, fs, env.Empty(), false)
+	m, err := manifest.Load(ctx, log.NewNopLogger(), fs, env.Empty(), false)
 	if err != nil {
 		return nil, nil, err
 	}
