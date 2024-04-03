@@ -24,16 +24,7 @@ type Client struct {
 	dnsServer string
 }
 
-func NewClient(dialer *net.Dialer) (*Client, error) {
-	// DNS client
-	client := &dns.Client{
-		Net:          "udp",
-		Dialer:       dialer,
-		DialTimeout:  DialTimeout,
-		ReadTimeout:  DNSReadTimeout,
-		WriteTimeout: DNSWriteTimeout,
-	}
-
+func NewClientFromEtc(dialer *net.Dialer) (*Client, error) {
 	// Parse DNS config
 	dnsCfgFile := "/etc/resolv.conf"
 	dnsCfg, err := dns.ClientConfigFromFile(dnsCfgFile)
@@ -48,6 +39,19 @@ func NewClient(dialer *net.Dialer) (*Client, error) {
 	dnsServer := dnsCfg.Servers[0]
 	if !strings.Contains(dnsServer, ":") {
 		dnsServer += ":53"
+	}
+
+	return NewClient(dialer, dnsServer)
+}
+
+func NewClient(dialer *net.Dialer, dnsServer string) (*Client, error) {
+	// DNS client
+	client := &dns.Client{
+		Net:          "udp",
+		Dialer:       dialer,
+		DialTimeout:  DialTimeout,
+		ReadTimeout:  DNSReadTimeout,
+		WriteTimeout: DNSWriteTimeout,
 	}
 
 	c := &Client{
