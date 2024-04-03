@@ -36,7 +36,7 @@ const HTTP2WriteByteTimeout = 15 * time.Second
 func NewReverseProxyHTTPTransport() (*http.Transport, error) {
 	dialer := newDialer()
 
-	dnsClient, err := dns.NewClient(dialer)
+	dnsClient, err := dns.NewClientFromEtc(dialer)
 	if err != nil {
 		return nil, err
 	}
