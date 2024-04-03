@@ -52,7 +52,7 @@ type WakeupBody struct {
 	DesiredState string `json:"desiredState"`
 }
 
-func PatchNotifyAppUsage(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
+func NotifyAppUsage(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
 	body := NotifyBody{
 		LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
 	}
@@ -64,7 +64,7 @@ func PatchNotifyAppUsage(sender request.Sender, appID string, lastRequestTimesta
 	return request.NewAPIRequest(request.NoResult{}, req)
 }
 
-func Wakeup(sender request.Sender, appID string) request.APIRequest[request.NoResult] {
+func WakeupApp(sender request.Sender, appID string) request.APIRequest[request.NoResult] {
 	body := WakeupBody{
 		DesiredState: "running",
 	}

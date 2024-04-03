@@ -25,6 +25,7 @@ const notificationInterval = time.Second * 30
 
 type Client interface {
 	Notify(ctx context.Context, appID string) error
+	Wakeup(ctx context.Context, appID string) error
 	LoadConfig(ctx context.Context, appID string) (AppProxyConfig, bool, error)
 }
 
@@ -87,9 +88,20 @@ func (l *sandboxesServiceClient) Notify(ctx context.Context, appID string) error
 	item.nextNotificationAfter = now.Add(notificationInterval)
 
 	// Send the notification
-	_, err := PatchNotifyAppUsage(l.sender, appID, now).Send(ctx)
+	_, err := NotifyAppUsage(l.sender, appID, now).Send(ctx)
 	if err != nil {
 		l.logger.Errorf(ctx, `Failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
+
+		return err
+	}
+
+	return nil
+}
+
+func (l *sandboxesServiceClient) Wakeup(ctx context.Context, appID string) error {
+	_, err := WakeupApp(l.sender, appID).Send(ctx)
+	if err != nil {
+		l.logger.Errorf(ctx, `Failed sending wakeup request to Sandboxes Service about for app "%s": %s`, appID, err.Error())
 
 		return err
 	}
