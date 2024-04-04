@@ -30,7 +30,15 @@ type columnsDefinitionMethod int
 func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*keboola.Bucket, d *dialog.Dialogs, f Flags, backends []string) (table.Options, error) {
 	opts := table.Options{}
 
-	if f.OptionsFrom.IsSet() && f.ColumnsFrom.IsSet() && slices.Contains(backends, BackendBigQuery) {
+	if f.OptionsFrom.Value != "" {
+		if !f.ColumnsFrom.IsSet() {
+			return opts, errors.Errorf("columns-from must be set for bigquery settings")
+		}
+
+		if !slices.Contains(backends, BackendBigQuery) {
+			return opts, errors.Errorf("backend have to be `bigquery`")
+		}
+
 		bigQueryOptions, err := parseOptionsFromFile(f.OptionsFrom.Value)
 		if err != nil {
 			return opts, err
