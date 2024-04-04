@@ -1,4 +1,4 @@
-package appconfig
+package dataapps
 
 import (
 	"context"
@@ -42,6 +42,22 @@ type AuthRule struct {
 	Value        string   `json:"value"`
 	Auth         []string `json:"auth"`
 	AuthRequired *bool    `json:"authRequired"`
+}
+
+type NotifyBody struct {
+	LastRequestTimestamp string `json:"lastRequestTimestamp"`
+}
+
+func PatchNotifyAppUsage(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
+	body := NotifyBody{
+		LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
+	}
+	req := request.NewHTTPRequest(sender).
+		WithError(&SandboxesError{}).
+		WithPatch("apps/{appId}").
+		AndPathParam("appId", appID).
+		WithJSONBody(body)
+	return request.NewAPIRequest(request.NoResult{}, req)
 }
 
 func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request.APIRequest[*AppProxyConfig] {
