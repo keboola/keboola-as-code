@@ -1,0 +1,67 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-bucket",
+      "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/in.c-bucket",
+      "displayName": "bucket",
+      "description": "",
+      "tables": [
+        {
+          "id": "in.c-bucket.table1",
+          "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/tables/in.c-bucket.table1",
+          "name": "table1",
+          "displayName": "table1",
+          "primaryKey": [
+            "id"
+          ],
+          "definition": {
+            "primaryKeysNames": [
+              "id"
+            ],
+            "columns": [
+              {
+                "name": "id",
+                "definition": {
+                  "type": "INTEGER",
+                  "length": %A,
+                  "nullable": false,
+                  "default": ""
+                },
+                "basetype": "INTEGER"
+              },
+              {
+                "name": "time",
+                "definition": {
+                  "type": "TIMESTAMP",
+                  "length": %A,
+                  "nullable": true,
+                  "default": ""
+                },
+                "basetype": "TIMESTAMP"
+              }
+            ],
+            "timePartitioning": {
+              "type": "DAY",
+              "expirationMs": "864000000",
+              "field": "time"
+            }
+          },
+          "columns": [
+            "id",
+            "time"
+          ]
+        }
+      ]
+    }
+  ]
+}

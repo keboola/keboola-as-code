@@ -1,0 +1,7 @@
+{
+  "timePartitioning": {
+  "type": "DAY",
+  "expirationMs": "864000000",
+  "field": "time"
+  }
+}

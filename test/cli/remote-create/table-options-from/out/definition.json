@@ -1,0 +1,18 @@
+[
+  {
+    "name": "id",
+    "definition": {
+      "type": "INT64",
+      "nullable": false
+    },
+    "basetype": "INTEGER"
+  },
+  {
+    "name": "time",
+    "definition": {
+      "type": "TIMESTAMP",
+      "nullable": true
+    },
+    "basetype": "TIMESTAMP"
+  }
+]
