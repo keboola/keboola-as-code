@@ -21,6 +21,7 @@ type Flags struct {
 	Columns         configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of column names"`
 	PrimaryKey      configmap.Value[string]   `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
 	ColumnsFrom     configmap.Value[string]   `configKey:"columns-from" configUsage:"the path to the table definition file in json"`
+	OptionsFrom     configmap.Value[string]   `configKey:"options-from" configUsage:"the path to the set of specific settings for bigquery"`
 }
 
 func DefaultFlags() Flags {
@@ -62,7 +63,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				}
 				allBuckets = *allBucketsPtr
 			}
-			opts, err := AskCreateTable(args, branch.BranchKey, allBuckets, d.Dialogs(), f)
+			opts, err := AskCreateTable(args, branch.BranchKey, allBuckets, d.Dialogs(), f, d.ProjectBackends())
 			if err != nil {
 				return err
 			}

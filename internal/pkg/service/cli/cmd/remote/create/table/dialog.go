@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -17,6 +18,7 @@ import (
 )
 
 const (
+	BackendBigQuery                          = "bigquery"
 	columnsNamesFlag columnsDefinitionMethod = iota
 	columnsNamesInteractive
 	columnsDefinitionFlag
@@ -25,8 +27,16 @@ const (
 
 type columnsDefinitionMethod int
 
-func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*keboola.Bucket, d *dialog.Dialogs, f Flags) (table.Options, error) {
+func AskCreateTable(args []string, branchKey keboola.BranchKey, allBuckets []*keboola.Bucket, d *dialog.Dialogs, f Flags, backends []string) (table.Options, error) {
 	opts := table.Options{}
+
+	if f.OptionsFrom.IsSet() && f.ColumnsFrom.IsSet() && slices.Contains(backends, BackendBigQuery) {
+		bigQueryOptions, err := parseOptionsFromFile(f.OptionsFrom.Value)
+		if err != nil {
+			return opts, err
+		}
+		opts.CreateTableRequest.TableDefinition = bigQueryOptions
+	}
 
 	if len(args) == 1 {
 		tableID, err := keboola.ParseTableID(args[0])
@@ -194,6 +204,22 @@ func parseColumnsDefinitionFromFile(input string) ([]keboola.Column, error) {
 		return nil, err
 	}
 	return result, err
+}
+
+func parseOptionsFromFile(filePath string) (keboola.TableDefinition, error) {
+	dataFile, err := os.ReadFile(filePath) // nolint: forbidigo
+	if err != nil {
+		return keboola.TableDefinition{}, err
+	}
+
+	o := keboola.TableDefinition{}
+
+	err = json.Unmarshal(dataFile, &o)
+	if err != nil {
+		return keboola.TableDefinition{}, err
+	}
+
+	return o, nil
 }
 
 func defaultValue() string {
