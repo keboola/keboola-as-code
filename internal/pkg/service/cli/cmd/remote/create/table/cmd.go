@@ -20,8 +20,8 @@ type Flags struct {
 	Name            configmap.Value[string]   `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
 	Columns         configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of column names"`
 	PrimaryKey      configmap.Value[string]   `configKey:"primary-key" configUsage:"columns used as primary key, comma-separated"`
-	ColumnsFrom     configmap.Value[string]   `configKey:"columns-from" configUsage:"the path to the table definition file in json"`
-	OptionsFrom     configmap.Value[string]   `configKey:"options-from" configUsage:"the path to the set of specific settings for bigquery"`
+	ColumnsFrom     configmap.Value[string]   `configKey:"columns-from" configUsage:"the path to the columns definition file in json"`
+	OptionsFrom     configmap.Value[string]   `configKey:"options-from" configUsage:"the path to the table definition file with backend specific options"`
 }
 
 func DefaultFlags() Flags {

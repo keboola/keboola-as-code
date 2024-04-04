@@ -32,9 +32,9 @@ Usage:
 Flags:
       --bucket string              bucket ID (required if the tableId argument is empty)
       --columns strings            comma-separated list of column names
-      --columns-from string        the path to the table definition file in json
+      --columns-from string        the path to the columns definition file in json
       --name string                name of the table (required if the tableId argument is empty)
-      --options-from string        the path to the set of specific settings for bigquery
+      --options-from string        the path to the table definition file with backend specific options
       --primary-key string         columns used as primary key, comma-separated
   -H, --storage-api-host string    if command is run outside the project directory
   -t, --storage-api-token string   storage API token from your project
