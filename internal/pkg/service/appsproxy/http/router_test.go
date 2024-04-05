@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/miekg/dns"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
@@ -39,8 +41,9 @@ import (
 
 type testCase struct {
 	name                  string
-	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService)
+	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server)
 	expectedNotifications map[string]int
+	expectedWakeUps       map[string]int
 }
 
 func TestAppProxyRouter(t *testing.T) {
@@ -52,7 +55,7 @@ func TestAppProxyRouter(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "missing-app-id",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request without app id
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -71,10 +74,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "unknown-app-id",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to unknown app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://unknown.hub.keboola.local/health-check", nil)
 				require.NoError(t, err)
@@ -86,10 +90,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, `Application "unknown" not found.`, string(body))
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "broken-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to broken app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://broken.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -101,10 +106,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "no-rule-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with no path rules
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://norule.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -116,10 +122,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "wrong-rule-type-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid1.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -131,10 +138,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "empty-providers-array-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid2.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -146,10 +154,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "empty-allowed-roles-array-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid3.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -161,10 +170,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "unknown-provider-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with unknown provider
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid4.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -176,10 +186,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				// Request to public app
@@ -190,10 +201,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-app-sub-url",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				request.Header.Set("User-Agent", "Internet Exploder")
@@ -219,10 +231,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "private-app-verified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
@@ -293,10 +306,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"oidc": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "private-app-unauthorized",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -326,10 +340,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-missing-csrf-token",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -385,10 +400,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-group-mismatch",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "manager@keboola.com",
 					Groups: []string{"manager"},
@@ -428,10 +444,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-unverified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
@@ -469,10 +486,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-oidc-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -519,10 +537,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				m[0].QueueUser(&mockoidc.MockUser{
@@ -595,10 +614,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-basic-flow",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin", "manager"},
@@ -682,10 +702,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"multi": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "multi-app-selection-page-redirect",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -708,10 +729,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "https://multi.hub.keboola.local/_proxy/selection", location)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-unverified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
@@ -756,10 +778,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				m[1].QueueUser(&mockoidc.MockUser{
@@ -807,10 +830,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-broken-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				// Provider selection
@@ -825,10 +849,11 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
 
@@ -853,10 +878,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "private-app-websocket-unauthorized",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
 
@@ -871,10 +897,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Contains(t, err.Error(), "failed to WebSocket dial: expected handshake response status code 101 but got 302")
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
@@ -933,10 +960,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"oidc": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "multi-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1003,10 +1031,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"multi": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "prefix-app-no-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public part of the app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/public", nil)
 				require.NoError(t, err)
@@ -1038,10 +1067,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "prefix-app-api-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1087,10 +1117,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "prefix-app-web-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1144,10 +1175,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "shared-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1211,10 +1243,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "configuration-change",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1248,10 +1281,11 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "concurrency-test",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
@@ -1287,13 +1321,226 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, int64(100), counter.Load())
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
+			name: "public-app-wakeup",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				// Request to public app - fails because the app doesn't have a DNS record
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+
+				// Request to public app
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, `Hello, client`, string(body))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
+			expectedWakeUps: map[string]int{
+				"123": 1,
+			},
+		},
+		{
+			name: "public-app-wakeup-only",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				// Request to public app - fails because the app doesn't have a DNS record
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps: map[string]int{
+				"123": 1,
+			},
+		},
+		{
+			name: "private-app-wakeup",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Retry with provider cookie
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to private app (authorized but missing dns, triggers wakeup)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+
+				// Request to private app (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"oidc": 1,
+			},
+			expectedWakeUps: map[string]int{
+				"oidc": 1,
+			},
+		},
+		{
+			name: "private-app-wakeup-only",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Retry with provider cookie
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to private app (authorized but missing dns, triggers wakeup)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps: map[string]int{
+				"oidc": 1,
+			},
+		},
+		{
+			name: "private-app-no-wakeup",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Retry with provider cookie
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Expect no notification or wakeup because there was never an authorized request to the app
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
 		return testCase{
 			name: "public-app-" + method,
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(context.Background(), method, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1307,6 +1554,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		}
 	}
 
@@ -1322,7 +1570,7 @@ func TestAppProxyRouter(t *testing.T) {
 	privateAppTestCaseFactory := func(method string) testCase {
 		return testCase{
 			name: "private-app-oidc-" + method,
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1401,6 +1649,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"oidc": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		}
 	}
 
@@ -1427,18 +1676,31 @@ func TestAppProxyRouter(t *testing.T) {
 			m1 := startOIDCProviderServer(t)
 			defer m1.Shutdown()
 
+			dnsServer := startDNSServer(t)
+			defer dnsServer.Shutdown()
+
 			tsURL, err := url.Parse(appServer.URL)
 			require.NoError(t, err)
 
 			m := []*mockoidc.MockOIDC{m0, m1}
 
-			apps := configureDataApps(tsURL, m)
+			ip, _, err := net.SplitHostPort(tsURL.Host)
+			require.NoError(t, err)
+
+			appHost := "app.local"
+			appURL := &url.URL{
+				Scheme: tsURL.Scheme,
+				Host:   net.JoinHostPort(appHost, tsURL.Port()),
+			}
+			apps := configureDataApps(appURL, m)
+
+			dnsServer.AddARecord(dns.Fqdn(appHost), net.ParseIP(ip))
 
 			service := startSandboxesService(t, apps)
 			defer service.Close()
 
 			d, mocked := createDependencies(t, service.URL)
-			router, handler := createProxyHandler(t, d)
+			router, handler := createProxyHandler(t, d, dnsServer.Addr())
 
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
@@ -1450,11 +1712,12 @@ func TestAppProxyRouter(t *testing.T) {
 
 			client := createHTTPClient(t, proxyURL)
 
-			tc.run(t, client, m, appServer, service)
+			tc.run(t, client, m, appServer, service, dnsServer)
 
 			router.Shutdown()
 
 			assert.Equal(t, tc.expectedNotifications, service.notifications)
+			assert.Equal(t, tc.expectedWakeUps, service.wakeUps)
 			assert.Equal(t, "", mocked.DebugLogger().ErrorMessages())
 		})
 	}
@@ -1692,6 +1955,7 @@ type sandboxesService struct {
 	*httptest.Server
 	apps          map[string]dataapps.AppProxyConfig
 	notifications map[string]int
+	wakeUps       map[string]int
 }
 
 func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandboxesService {
@@ -1700,6 +1964,7 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 	service := &sandboxesService{
 		apps:          make(map[string]dataapps.AppProxyConfig),
 		notifications: make(map[string]int),
+		wakeUps:       make(map[string]int),
 	}
 
 	for _, app := range apps {
@@ -1740,6 +2005,9 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 		if _, ok := data["lastRequestTimestamp"]; ok {
 			service.notifications[appID] += 1
 		}
+		if _, ok := data["desiredState"]; ok {
+			service.wakeUps[appID] += 1
+		}
 	})
 
 	ts := httptest.NewUnstartedServer(mux)
@@ -1760,6 +2028,16 @@ func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
 	return m
 }
 
+func startDNSServer(t *testing.T) *dnsmock.Server {
+	t.Helper()
+
+	server := dnsmock.New()
+	err := server.Start()
+	require.NoError(t, err)
+
+	return server
+}
+
 func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies.ServiceScope, dependencies.Mocked) {
 	t.Helper()
 
@@ -1774,7 +2052,7 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 	return proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
 }
 
-func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope) (*Router, http.Handler) {
+func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope, dnsServerAddress string) (*Router, http.Handler) {
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because oauthproxy will override its error writer with either
@@ -1782,6 +2060,9 @@ func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope) (*Router
 	logger.SetErrOutput(loggerWriter)
 
 	router, err := NewRouter(d, "proxy-")
+	require.NoError(t, err)
+
+	router.transport, err = NewReverseProxyHTTPTransport(dnsServerAddress)
 	require.NoError(t, err)
 
 	return router, middleware.Wrap(

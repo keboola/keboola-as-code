@@ -4,9 +4,9 @@ go 1.22
 
 replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
-replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240327093507-f9b5f906a4f4
+replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240404125540-ac0aff7a6c75
 
-replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240315091712-13066a8eb680
+replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
 	ariga.io/atlas v0.21.0

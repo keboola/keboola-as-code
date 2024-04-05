@@ -69,7 +69,7 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
-	transport, err := NewReverseProxyHTTPTransport()
+	transport, err := NewReverseProxyHTTPTransport("")
 	if err != nil {
 		return nil, errors.PrefixError(err, "could not create http transport")
 	}
