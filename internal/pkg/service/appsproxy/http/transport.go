@@ -33,12 +33,18 @@ const HTTP2PingTimeout = 2 * time.Second
 const HTTP2WriteByteTimeout = 15 * time.Second
 
 // NewReverseProxyHTTPTransport creates new http transport intended to be used with NewSingleHostReverseProxy.
-func NewReverseProxyHTTPTransport() (*http.Transport, error) {
+func NewReverseProxyHTTPTransport(dnsServerAddress string) (*http.Transport, error) {
 	dialer := newDialer()
 
-	dnsClient, err := dns.NewClientFromEtc(dialer)
-	if err != nil {
-		return nil, err
+	var dnsClient *dns.Client
+	var err error
+	if dnsServerAddress == "" {
+		dnsClient, err = dns.NewClientFromEtc(dialer)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dnsClient = dns.NewClient(dialer, dnsServerAddress)
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()

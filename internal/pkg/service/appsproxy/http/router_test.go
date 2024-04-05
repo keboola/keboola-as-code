@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/miekg/dns"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -1436,13 +1437,23 @@ func TestAppProxyRouter(t *testing.T) {
 
 			m := []*mockoidc.MockOIDC{m0, m1}
 
-			apps := configureDataApps(tsURL, m)
+			ip, _, err := net.SplitHostPort(tsURL.Host)
+			require.NoError(t, err)
+
+			appHost := "app.local"
+			appURL := &url.URL{
+				Scheme: tsURL.Scheme,
+				Host:   net.JoinHostPort(appHost, tsURL.Port()),
+			}
+			apps := configureDataApps(appURL, m)
+
+			dnsServer.AddARecord(dns.Fqdn(appHost), net.ParseIP(ip))
 
 			service := startSandboxesService(t, apps)
 			defer service.Close()
 
 			d, mocked := createDependencies(t, service.URL)
-			router, handler := createProxyHandler(t, d)
+			router, handler := createProxyHandler(t, d, dnsServer.Addr())
 
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
@@ -1788,7 +1799,7 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 	return proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
 }
 
-func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope) (*Router, http.Handler) {
+func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope, dnsServerAddress string) (*Router, http.Handler) {
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because oauthproxy will override its error writer with either
@@ -1796,6 +1807,9 @@ func createProxyHandler(t *testing.T, d proxyDependencies.ServiceScope) (*Router
 	logger.SetErrOutput(loggerWriter)
 
 	router, err := NewRouter(d, "proxy-")
+	require.NoError(t, err)
+
+	router.transport, err = NewReverseProxyHTTPTransport(dnsServerAddress)
 	require.NoError(t, err)
 
 	return router, middleware.Wrap(
