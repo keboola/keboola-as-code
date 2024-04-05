@@ -2,11 +2,13 @@ package sink
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"time"
 )
 
 func (r *Repository) Create(input *definition.Sink, now time.Time, by definition.By, versionDescription string) *op.AtomicOp[definition.Sink] {

@@ -3,7 +3,6 @@ package etcdhelper
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"os"
 	"strings"
 	"testing"
@@ -14,6 +13,8 @@ import (
 	"github.com/umisama/go-regexpcache"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type AssertOption func(*assertConfig)
@@ -78,7 +79,6 @@ func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...As
 		expected := string(data)
 		AssertKVsString(t, client, expected, ops...)
 	}
-
 }
 
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.

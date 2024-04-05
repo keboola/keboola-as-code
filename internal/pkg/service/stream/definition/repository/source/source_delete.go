@@ -3,11 +3,13 @@ package source
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"time"
 )
 
 func (r *Repository) SoftDelete(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
@@ -26,7 +28,6 @@ func (r *Repository) deleteSourcesOnBranchDelete() {
 	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
 		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(updated.BranchKey, now, by, true))
 	})
-
 }
 
 // softDeleteAllFrom the parent key.

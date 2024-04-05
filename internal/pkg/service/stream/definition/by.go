@@ -1,8 +1,9 @@
 package definition
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
 	"strconv"
+
+	"github.com/keboola/go-client/pkg/keboola"
 )
 
 const (

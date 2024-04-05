@@ -2,14 +2,15 @@ package source
 
 import (
 	"context"
-	"github.com/keboola/go-utils/pkg/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	etcd "go.etcd.io/etcd/client/v3"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"

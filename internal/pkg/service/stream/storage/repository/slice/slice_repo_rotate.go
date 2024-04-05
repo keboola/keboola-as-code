@@ -7,7 +7,7 @@ package slice
 ////   - If no old slice exists, this operation effectively corresponds to the Open operation.
 ////   - Slices rotation is done atomically.
 ////   - This method is used to rotate slices when the upload conditions are met.
-//func (r *Repository) Rotate(now time.Time, k model.FileVolumeKey) *op.AtomicOp[model.Slice] {
+// func (r *Repository) Rotate(now time.Time, k model.FileVolumeKey) *op.AtomicOp[model.Slice] {
 //	// Init atomic operation
 //	var file model.File
 //	var slices []model.Slice

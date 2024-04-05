@@ -2,15 +2,15 @@ package file
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"time"
 )
 
 func (r *Repository) closeFileOnSinkDeactivation() {
 	r.plugins.Collection().OnSinkDeactivation(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) {
-
 	})
 }
 

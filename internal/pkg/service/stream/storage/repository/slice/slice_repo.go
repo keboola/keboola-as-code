@@ -61,7 +61,7 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 		}
 
 		//// On create
-		//if old == nil {
+		// if old == nil {
 		//	// Open slices
 		//	atomicOp.AddFrom(r.openSlicesInFile(now, *updated))
 		//	return

@@ -2,11 +2,13 @@ package branch
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"time"
 )
 
 // Create a branch that already exists in the Storage API and in the Stream Service database.

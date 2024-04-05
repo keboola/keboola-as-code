@@ -2,10 +2,11 @@ package plugin
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"reflect"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
 type Collection struct {

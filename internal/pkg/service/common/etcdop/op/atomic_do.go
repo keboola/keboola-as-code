@@ -2,11 +2,13 @@ package op
 
 import (
 	"context"
+	"time"
+
 	"github.com/cenkalti/backoff/v4"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
-	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (

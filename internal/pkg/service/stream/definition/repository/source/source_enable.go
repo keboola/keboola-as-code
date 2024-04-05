@@ -1,7 +1,7 @@
 package source
 
 //
-//func (r *Repository) Enable(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] {
+// func (r *Repository) Enable(k key.SourceKey, now time.Time) *op.AtomicOp[definition.Source] {
 //	return r.update(k, now, versionDescription, func(source definition.Source) (definition.Source, error) {
 //		if !source.IsEnabled() {
 //			source.Enable(now)

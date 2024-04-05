@@ -2,12 +2,13 @@ package file
 
 import (
 	"context"
-	"github.com/keboola/go-utils/pkg/deepcopy"
-	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	etcd "go.etcd.io/etcd/client/v3"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	etcd "go.etcd.io/etcd/client/v3"
+
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
@@ -51,9 +52,9 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 		sinkTypes:  make(map[definition.SinkType]bool),
 	}
 
-	//r.openFileOnSinkActivation()
-	//r.closeFileOnSinkDeactivation()
-	//r.rotateFileOnSinkModification()
+	// r.openFileOnSinkActivation()
+	// r.closeFileOnSinkDeactivation()
+	// r.rotateFileOnSinkModification()
 	return r
 }
 
@@ -128,7 +129,7 @@ func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.
 
 //
 //// RegisterSinkType with the local storage support.
-//func (r *Repository) RegisterSinkType(v definition.SinkType) {
+// func (r *Repository) RegisterSinkType(v definition.SinkType) {
 //	r.sinkTypes[v] = true
 //}
 

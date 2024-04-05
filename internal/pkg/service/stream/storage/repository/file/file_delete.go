@@ -1,9 +1,10 @@
 package file
 
 import (
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"time"
 )
 
 // Delete the file.

@@ -1,10 +1,11 @@
 package file
 
 import (
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"time"
 )
 
 // StateTransition switch state of the file, state of the file slices is also atomically switched, if needed.

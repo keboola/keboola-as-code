@@ -1,14 +1,14 @@
 package definition_test
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
 

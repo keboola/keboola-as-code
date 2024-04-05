@@ -5,11 +5,33 @@ definition/source/active/123/567/my-source
   "projectId": 123,
   "branchId": 567,
   "sourceId": "my-source",
+  "createdAt": "2000-01-01T02:00:00.000Z",
+  "createdBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
+  },
   "version": {
     "number": 2,
-    "hash": "e4c3bdf21511a0dc",
+    "hash": "cdb64fd7ae070284",
     "modifiedAt": "2000-01-01T02:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
     "description": "Create source"
+  },
+  "undeletedBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
   },
   "undeletedAt": "2000-01-01T02:00:00.000Z",
   "type": "http",
@@ -28,10 +50,25 @@ definition/source/version/123/567/my-source/0000000001
   "projectId": 123,
   "branchId": 567,
   "sourceId": "my-source",
+  "createdAt": "2000-01-01T01:00:00.000Z",
+  "createdBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
+  },
   "version": {
     "number": 1,
     "hash": "419a32b072570054",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
     "description": "Create source"
   },
   "type": "http",
@@ -51,11 +88,33 @@ definition/source/version/123/567/my-source/0000000002
   "projectId": 123,
   "branchId": 567,
   "sourceId": "my-source",
+  "createdAt": "2000-01-01T02:00:00.000Z",
+  "createdBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
+  },
   "version": {
     "number": 2,
-    "hash": "e4c3bdf21511a0dc",
+    "hash": "cdb64fd7ae070284",
     "modifiedAt": "2000-01-01T02:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
     "description": "Create source"
+  },
+  "undeletedBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
   },
   "undeletedAt": "2000-01-01T02:00:00.000Z",
   "type": "http",

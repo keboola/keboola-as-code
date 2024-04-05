@@ -2,11 +2,13 @@ package branch
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"time"
 )
 
 func (r *Repository) SoftDelete(k key.BranchKey, now time.Time, by definition.By) *op.AtomicOp[definition.Branch] {

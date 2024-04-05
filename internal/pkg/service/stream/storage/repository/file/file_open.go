@@ -2,6 +2,8 @@ package file
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -10,7 +12,6 @@ import (
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"time"
 )
 
 func (r *Repository) openFileOnSinkActivation() {

@@ -3,11 +3,13 @@ package sink
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"time"
 )
 
 func (r *Repository) SoftDelete(k key.SinkKey, now time.Time, by definition.By) *op.AtomicOp[definition.Sink] {
@@ -26,7 +28,6 @@ func (r *Repository) deleteSinksOnSourceDelete() {
 	r.plugins.Collection().OnSourceDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) {
 		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(updated.SourceKey, now, by, true))
 	})
-
 }
 
 // softDeleteAllFrom the parent key.

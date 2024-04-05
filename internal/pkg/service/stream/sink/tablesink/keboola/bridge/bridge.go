@@ -72,7 +72,7 @@ package bridge
 //	}
 //}
 //
-//func (b *bridge) OnSinkSave(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sinks *[]definition.Sink, atomicOp *op.AtomicOpCore) {
+// func (b *bridge) OnSinkSave(rb rollback.Builder, now time.Time, parentKey fmt.Stringer, sinks *[]definition.Sink, atomicOp *op.AtomicOpCore) {
 //	// Load existing tokens
 //	var tokens []model.Token
 //	switch k := parentKey.(type) {

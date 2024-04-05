@@ -2,6 +2,7 @@ package branch
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"

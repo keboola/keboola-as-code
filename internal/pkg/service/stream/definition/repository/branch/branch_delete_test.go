@@ -2,17 +2,19 @@ package branch_test
 
 import (
 	"context"
+	"net/http"
+	"testing"
+
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"net/http"
-	"testing"
 )
 
 func TestBranchRepository_SoftDelete(t *testing.T) {

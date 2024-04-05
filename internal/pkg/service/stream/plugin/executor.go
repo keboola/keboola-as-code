@@ -2,9 +2,10 @@ package plugin
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"time"
 )
 
 type Executor struct {

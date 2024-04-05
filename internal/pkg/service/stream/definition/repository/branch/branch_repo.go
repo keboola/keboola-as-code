@@ -2,13 +2,15 @@ package branch
 
 import (
 	"context"
+	"time"
+
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	etcd "go.etcd.io/etcd/client/v3"
-	"time"
 )
 
 const (

@@ -1,7 +1,7 @@
 package slice
 
 //
-//import (
+// import (
 //	"context"
 //	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 //	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
