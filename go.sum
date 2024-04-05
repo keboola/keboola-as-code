@@ -387,8 +387,8 @@ github.com/keboola/go-jsonnet v0.19.1 h1:vdWv6lKNX2WdZl4R8PCOnOWINIjdcwmLqNssU7O
 github.com/keboola/go-jsonnet v0.19.1/go.mod h1:pSOb2+VoKZjVbIB4z58am8q15yWO/VTEp6n1GxW3x0I=
 github.com/keboola/go-mockoidc v0.0.0-20240315091712-13066a8eb680 h1:HSX36So5a78kcHtazHxDVQNr9Z7UrBRyvedffNn78rc=
 github.com/keboola/go-mockoidc v0.0.0-20240315091712-13066a8eb680/go.mod h1:eDjgYHYDJbPLBLsyZ6qRaugP0mX8vePOhZ5id1fdzJw=
-github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240308130428-bef2ac65f839 h1:hCwha8jQBecF1+7z08aJahie1dqqemDGGvcGb9aLtKw=
-github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240308130428-bef2ac65f839/go.mod h1:uPrZkzwsuFyIPP04hIt6TG2KvWujglvkOnUUnQJyIdw=
+github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240327093507-f9b5f906a4f4 h1:JfuF0y60I/8vskKmX76uWx09Z+ZWgal8Fb9foao6PEk=
+github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240327093507-f9b5f906a4f4/go.mod h1:uPrZkzwsuFyIPP04hIt6TG2KvWujglvkOnUUnQJyIdw=
 github.com/keboola/go-utils v0.8.6 h1:ggweyzQScWzLiqBBp+KUPZDHFyR1Es45Ygul6oXKel0=
 github.com/keboola/go-utils v0.8.6/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

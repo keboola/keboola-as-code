@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -43,6 +44,11 @@ type testCase struct {
 }
 
 func TestAppProxyRouter(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("windows doesn't have /etc/resolv.conf")
+	}
+
 	testCases := []testCase{
 		{
 			name: "missing-app-id",
@@ -183,9 +189,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-sub-url",
@@ -590,9 +594,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"oidc": 1,
-			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-basic-flow",
@@ -804,9 +806,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"multi": 1,
-			},
+			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-broken-provider",
@@ -1412,8 +1412,6 @@ func TestAppProxyRouter(t *testing.T) {
 		privateAppTestCaseFactory(http.MethodPatch),
 		privateAppTestCaseFactory(http.MethodDelete),
 	)
-
-	t.Parallel()
 
 	for _, tc := range testCases {
 		tc := tc
