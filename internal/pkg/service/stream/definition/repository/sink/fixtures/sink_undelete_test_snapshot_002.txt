@@ -6,11 +6,33 @@ definition/sink/active/123/567/my-source/my-sink
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink",
+  "createdAt": "2000-01-01T01:00:00.000Z",
+  "createdBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
+  },
   "version": {
     "number": 2,
-    "hash": "a27ee0719465fe15",
+    "hash": "7c6f12ee543385c9",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
     "description": "Undeleted to version \"1\"."
+  },
+  "undeletedBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
   },
   "undeletedAt": "2000-01-01T04:00:00.000Z",
   "type": "table",
@@ -51,11 +73,33 @@ definition/sink/version/123/567/my-source/my-sink/0000000002
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink",
+  "createdAt": "2000-01-01T01:00:00.000Z",
+  "createdBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
+  },
   "version": {
     "number": 2,
-    "hash": "a27ee0719465fe15",
+    "hash": "7c6f12ee543385c9",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
     "description": "Undeleted to version \"1\"."
+  },
+  "undeletedBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
   },
   "undeletedAt": "2000-01-01T04:00:00.000Z",
   "type": "table",

@@ -83,12 +83,12 @@ func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...As
 
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
-func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) {
+func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
 
-	AssertKVs(t, client, ParseDump(expected), ops...)
+	return AssertKVs(t, client, ParseDump(expected), ops...)
 }
 
 // AssertKVs dumps all KVs from an etcd database and compares them with the expected KVs.

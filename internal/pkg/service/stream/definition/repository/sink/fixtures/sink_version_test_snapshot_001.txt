@@ -6,10 +6,25 @@ definition/sink/active/123/567/my-source/my-sink
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink",
+  "createdAt": "2000-01-01T01:00:00.000Z",
+  "createdBy": {
+    "type": "user",
+    "tokenId": "111",
+    "tokenDesc": "some.user@company.com",
+    "userId": "222",
+    "userName": "Some User"
+  },
   "version": {
     "number": 4,
     "hash": "4e12b10212ca5a29",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
     "description": "Rollback to version \"2\"."
   },
   "type": "table",
