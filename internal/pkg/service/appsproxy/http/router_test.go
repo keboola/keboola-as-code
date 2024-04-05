@@ -1323,6 +1323,218 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
 		},
+		{
+			name: "public-app-wakeup",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				// Request to public app - fails because the app doesn't have a DNS record
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+
+				// Request to public app
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, `Hello, client`, string(body))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
+			expectedWakeUps: map[string]int{
+				"123": 1,
+			},
+		},
+		{
+			name: "public-app-wakeup-only",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				// Request to public app - fails because the app doesn't have a DNS record
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps: map[string]int{
+				"123": 1,
+			},
+		},
+		{
+			name: "private-app-wakeup",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Retry with provider cookie
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to private app (authorized but missing dns, triggers wakeup)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+
+				// Request to private app (authorized)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{
+				"oidc": 1,
+			},
+			expectedWakeUps: map[string]int{
+				"oidc": 1,
+			},
+		},
+		{
+			name: "private-app-wakeup-only",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Retry with provider cookie
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Request to private app (authorized but missing dns, triggers wakeup)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps: map[string]int{
+				"oidc": 1,
+			},
+		},
+		{
+			name: "private-app-no-wakeup",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// Request to private app (unauthorized)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Retry with provider cookie
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header["Location"][0]
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// Expect no notification or wakeup because there was never an authorized request to the app
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
