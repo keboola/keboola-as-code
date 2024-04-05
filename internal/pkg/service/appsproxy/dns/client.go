@@ -41,25 +41,20 @@ func NewClientFromEtc(dialer *net.Dialer) (*Client, error) {
 		dnsServer += ":53"
 	}
 
-	return NewClient(dialer, dnsServer)
+	return NewClient(dialer, dnsServer), nil
 }
 
-func NewClient(dialer *net.Dialer, dnsServer string) (*Client, error) {
-	// DNS client
-	client := &dns.Client{
-		Net:          "udp",
-		Dialer:       dialer,
-		DialTimeout:  DialTimeout,
-		ReadTimeout:  DNSReadTimeout,
-		WriteTimeout: DNSWriteTimeout,
-	}
-
-	c := &Client{
-		client:    client,
+func NewClient(dialer *net.Dialer, dnsServer string) *Client {
+	return &Client{
+		client: &dns.Client{
+			Net:          "udp",
+			Dialer:       dialer,
+			DialTimeout:  DialTimeout,
+			ReadTimeout:  DNSReadTimeout,
+			WriteTimeout: DNSWriteTimeout,
+		},
 		dnsServer: dnsServer,
 	}
-
-	return c, nil
 }
 
 func (c *Client) Resolve(ctx context.Context, host string) (string, error) {

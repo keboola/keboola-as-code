@@ -90,7 +90,7 @@ func (l *sandboxesServiceClient) Notify(ctx context.Context, appID string) error
 	// Send the notification
 	_, err := NotifyAppUsage(l.sender, appID, now).Send(ctx)
 	if err != nil {
-		l.logger.Errorf(ctx, `Failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
+		l.logger.Errorf(ctx, `failed notifying Sandboxes Service about a request to app "%s": %s`, appID, err.Error())
 
 		return err
 	}
@@ -101,7 +101,7 @@ func (l *sandboxesServiceClient) Notify(ctx context.Context, appID string) error
 func (l *sandboxesServiceClient) Wakeup(ctx context.Context, appID string) error {
 	_, err := WakeupApp(l.sender, appID).Send(ctx)
 	if err != nil {
-		l.logger.Errorf(ctx, `Failed sending wakeup request to Sandboxes Service about for app "%s": %s`, appID, err.Error())
+		l.logger.Errorf(ctx, `failed sending wakeup request to Sandboxes Service about for app "%s": %s`, appID, err.Error())
 
 		return err
 	}
