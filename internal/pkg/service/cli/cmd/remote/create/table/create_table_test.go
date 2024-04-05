@@ -15,12 +15,35 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
 func ColumnsInput() string {
 	return `[{"name": "id","definition": {"type": "INT"},"basetype": "NUMERIC"},{"name": "name","definition": {"type": "STRING"},"basetype": "STRING"}]`
+}
+
+// BigQuery options.
+func OptionsInput() string {
+	return `{ "timePartitioning": {
+        "type": "DAY",
+        "expirationMs": "864000000",
+        "field": "time"
+    },
+    "clustering": {
+        "fields": [
+            "id"
+        ]
+    },
+    "rangePartitioning": {
+        "field": "id",
+        "range": {
+            "start": "0",
+            "end": "10",
+            "interval": "1"
+        }
+    }}`
 }
 
 func TestGetCreateRequest(t *testing.T) {
@@ -71,6 +94,7 @@ func TestAskCreate(t *testing.T) {
 
 		d, console := dialog.NewForTest(t, true)
 
+		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 		wg := sync.WaitGroup{}
@@ -115,7 +139,7 @@ func TestAskCreate(t *testing.T) {
 			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
-		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{})
+		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{}, deps.ProjectBackends())
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -155,7 +179,7 @@ func TestAskCreate(t *testing.T) {
 		t.Parallel()
 
 		d, console := dialog.NewForTest(t, true)
-
+		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
@@ -203,7 +227,7 @@ func TestAskCreate(t *testing.T) {
 			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
-		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{})
+		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{}, deps.ProjectBackends())
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -233,7 +257,7 @@ func TestAskCreate(t *testing.T) {
 		t.Parallel()
 
 		d, console := dialog.NewForTest(t, true)
-
+		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
@@ -288,7 +312,7 @@ func TestAskCreate(t *testing.T) {
 		f := Flags{
 			ColumnsFrom: configmap.NewValueWithOrigin(filePath, configmap.SetByFlag),
 		}
-		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f)
+		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f, deps.ProjectBackends())
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -328,7 +352,7 @@ func TestAskCreate(t *testing.T) {
 		t.Parallel()
 
 		d, console := dialog.NewForTest(t, true)
-
+		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
@@ -368,7 +392,7 @@ func TestAskCreate(t *testing.T) {
 		f := Flags{
 			Columns: configmap.NewValueWithOrigin([]string{"id", "name"}, configmap.SetByFlag),
 		}
-		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f)
+		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f, deps.ProjectBackends())
 		assert.NoError(t, err)
 		wg.Wait()
 
@@ -504,4 +528,47 @@ func TestPossiblePrimaryKeys(t *testing.T) {
 		result := possiblePrimaryKeys(c.columns)
 		assert.Equal(t, c.exceptedResult, result)
 	}
+}
+
+func TestParseOptionsForBigQuery(t *testing.T) {
+	t.Parallel()
+	// Create a temporary directory
+	tempDir := t.TempDir()
+
+	// Create a temporary file within the temporary directory
+	tempFile, err := os.Create(filepath.Join(tempDir, "foo.json")) // nolint:forbidigo
+	require.NoError(t, err)
+
+	defer tempFile.Close()
+
+	// Write content to the temporary file
+	_, err = tempFile.Write([]byte(OptionsInput()))
+	require.NoError(t, err)
+
+	// Get the file path of the temporary file
+	filePath := tempFile.Name()
+
+	// Read and parse the content of the temporary file
+	res, err := parseOptionsFromFile(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, keboola.TableDefinition{
+		TimePartitioning: &keboola.TimePartitioning{
+			Type:         keboola.Day,
+			ExpirationMs: "864000000",
+			Field:        "time",
+		},
+		RangePartitioning: &keboola.RangePartitioning{
+			Field: "id",
+			Range: keboola.Range{
+				Start:    "0",
+				End:      "10",
+				Interval: "1",
+			},
+		},
+		Clustering: &keboola.Clustering{
+			Fields: []string{
+				"id",
+			},
+		},
+	}, res)
 }

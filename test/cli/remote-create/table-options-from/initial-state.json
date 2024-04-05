@@ -1,0 +1,16 @@
+{
+  "backend": {
+    "type": "bigquery"
+  },
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": []
+}
