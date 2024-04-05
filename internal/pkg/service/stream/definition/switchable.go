@@ -18,14 +18,21 @@ type SwitchableInterface interface {
 }
 
 type Switchable struct {
-	Disabled       bool             `json:"disabled,omitempty"`
-	DisabledBy     *By              `json:"disabledBy,omitempty" validate:"required_if=Disabled true,excluded_if=Disabled false"`
-	DisabledAt     *utctime.UTCTime `json:"disabledAt,omitempty"  validate:"required_if=Disabled true,excluded_if=Disabled false"`
-	DisabledReason string           `json:"disabledReason,omitempty"  validate:"required_if=Disabled true,excluded_if=Disabled false"`
+	Disabled *Disabled `json:"disabled" validate:"excluded_with=Enabled"`
+	Enabled  *Enabled  `json:"enabled" validate:"excluded_with=Disabled"`
+}
+
+type Disabled struct {
+	By     By              `json:"by" validate:"required"`
+	At     utctime.UTCTime `json:"at" validate:"required"`
+	Reason string          `json:"reason" validate:"required"`
 	// DisabledWithParent is true when the object has not been disabled directly but was disabled together with its parent.
-	DisabledWithParent bool             `json:"disabledWithParent,omitempty" validate:"excluded_if=Disabled false"`
-	EnabledBy          *By              `json:"enabledBy,omitempty" validate:"excluded_if=Disabled true"`
-	EnabledAt          *utctime.UTCTime `json:"enabledAt,omitempty"  validate:"excluded_if=Disabled true"`
+	DisabledWithParent bool `json:"disabledWithParent"`
+}
+
+type Enabled struct {
+	By By              `json:"by" validate:"required"`
+	At utctime.UTCTime `json:"at" validate:"required"`
 }
 
 func (v *Switchable) IsEnabled() bool {
