@@ -43,6 +43,7 @@ type testCase struct {
 	name                  string
 	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server)
 	expectedNotifications map[string]int
+	expectedWakeUps       map[string]int
 }
 
 func TestAppProxyRouter(t *testing.T) {
@@ -73,6 +74,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "unknown-app-id",
@@ -88,6 +90,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, `Application "unknown" not found.`, string(body))
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "broken-app",
@@ -103,6 +106,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "no-rule-app",
@@ -118,6 +122,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "wrong-rule-type-app",
@@ -133,6 +138,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "empty-providers-array-app",
@@ -148,6 +154,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "empty-allowed-roles-array-app",
@@ -163,6 +170,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "unknown-provider-app",
@@ -178,6 +186,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-app-down",
@@ -192,6 +201,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-app-sub-url",
@@ -221,6 +231,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "private-app-verified-email",
@@ -295,6 +306,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"oidc": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "private-app-unauthorized",
@@ -328,6 +340,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-missing-csrf-token",
@@ -387,6 +400,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-group-mismatch",
@@ -430,6 +444,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-unverified-email",
@@ -471,6 +486,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-oidc-down",
@@ -521,6 +537,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-down",
@@ -597,6 +614,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-basic-flow",
@@ -684,6 +702,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"multi": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "multi-app-selection-page-redirect",
@@ -710,6 +729,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "https://multi.hub.keboola.local/_proxy/selection", location)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-unverified-email",
@@ -758,6 +778,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-down",
@@ -809,6 +830,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "multi-app-broken-provider",
@@ -827,6 +849,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), `Application has invalid configuration.`)
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-app-websocket",
@@ -855,6 +878,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "private-app-websocket-unauthorized",
@@ -873,6 +897,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Contains(t, err.Error(), "failed to WebSocket dial: expected handshake response status code 101 but got 302")
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "private-app-websocket",
@@ -935,6 +960,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"oidc": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "multi-app-websocket",
@@ -1005,6 +1031,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"multi": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "prefix-app-no-auth",
@@ -1040,6 +1067,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "prefix-app-api-auth",
@@ -1089,6 +1117,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "prefix-app-web-auth",
@@ -1146,6 +1175,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "shared-provider",
@@ -1213,6 +1243,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"prefix": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "configuration-change",
@@ -1250,6 +1281,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		},
 		{
 			name: "concurrency-test",
@@ -1289,6 +1321,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, int64(100), counter.Load())
 			},
 			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 	}
 
@@ -1309,6 +1342,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"123": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		}
 	}
 
@@ -1403,6 +1437,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{
 				"oidc": 1,
 			},
+			expectedWakeUps: map[string]int{},
 		}
 	}
 
@@ -1470,6 +1505,7 @@ func TestAppProxyRouter(t *testing.T) {
 			router.Shutdown()
 
 			assert.Equal(t, tc.expectedNotifications, service.notifications)
+			assert.Equal(t, tc.expectedWakeUps, service.wakeUps)
 			assert.Equal(t, "", mocked.DebugLogger().ErrorMessages())
 		})
 	}
@@ -1707,6 +1743,7 @@ type sandboxesService struct {
 	*httptest.Server
 	apps          map[string]dataapps.AppProxyConfig
 	notifications map[string]int
+	wakeUps       map[string]int
 }
 
 func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandboxesService {
@@ -1715,6 +1752,7 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 	service := &sandboxesService{
 		apps:          make(map[string]dataapps.AppProxyConfig),
 		notifications: make(map[string]int),
+		wakeUps:       make(map[string]int),
 	}
 
 	for _, app := range apps {
@@ -1754,6 +1792,9 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 
 		if _, ok := data["lastRequestTimestamp"]; ok {
 			service.notifications[appID] += 1
+		}
+		if _, ok := data["desiredState"]; ok {
+			service.wakeUps[appID] += 1
 		}
 	})
 
