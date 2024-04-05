@@ -31,6 +31,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
@@ -39,7 +40,7 @@ import (
 
 type testCase struct {
 	name                  string
-	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService)
+	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server)
 	expectedNotifications map[string]int
 }
 
@@ -52,7 +53,7 @@ func TestAppProxyRouter(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "missing-app-id",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request without app id
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -74,7 +75,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "unknown-app-id",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to unknown app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://unknown.hub.keboola.local/health-check", nil)
 				require.NoError(t, err)
@@ -89,7 +90,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "broken-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to broken app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://broken.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -104,7 +105,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "no-rule-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with no path rules
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://norule.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -119,7 +120,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "wrong-rule-type-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid1.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -134,7 +135,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "empty-providers-array-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid2.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -149,7 +150,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "empty-allowed-roles-array-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid3.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -164,7 +165,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "unknown-provider-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to app with unknown provider
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid4.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -179,7 +180,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				// Request to public app
@@ -193,7 +194,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-sub-url",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				request.Header.Set("User-Agent", "Internet Exploder")
@@ -222,7 +223,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-verified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
@@ -296,7 +297,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-unauthorized",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -329,7 +330,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-missing-csrf-token",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -388,7 +389,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-group-mismatch",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "manager@keboola.com",
 					Groups: []string{"manager"},
@@ -431,7 +432,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-unverified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
@@ -472,7 +473,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-oidc-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -522,7 +523,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				m[0].QueueUser(&mockoidc.MockUser{
@@ -598,7 +599,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-basic-flow",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin", "manager"},
@@ -685,7 +686,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-selection-page-redirect",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -711,7 +712,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-unverified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(false),
@@ -759,7 +760,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				m[1].QueueUser(&mockoidc.MockUser{
@@ -810,7 +811,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-broken-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				appServer.Close()
 
 				// Provider selection
@@ -828,7 +829,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
 
@@ -856,7 +857,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-websocket-unauthorized",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
 
@@ -874,7 +875,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: pointer(true),
@@ -936,7 +937,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1006,7 +1007,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "prefix-app-no-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public part of the app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/public", nil)
 				require.NoError(t, err)
@@ -1041,7 +1042,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "prefix-app-api-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1090,7 +1091,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "prefix-app-web-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1147,7 +1148,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "shared-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1214,7 +1215,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "configuration-change",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1251,7 +1252,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "concurrency-test",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
@@ -1293,7 +1294,7 @@ func TestAppProxyRouter(t *testing.T) {
 	publicAppTestCaseFactory := func(method string) testCase {
 		return testCase{
 			name: "public-app-" + method,
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(context.Background(), method, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1322,7 +1323,7 @@ func TestAppProxyRouter(t *testing.T) {
 	privateAppTestCaseFactory := func(method string) testCase {
 		return testCase{
 			name: "private-app-oidc-" + method,
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *appServer, service *sandboxesService, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1427,6 +1428,9 @@ func TestAppProxyRouter(t *testing.T) {
 			m1 := startOIDCProviderServer(t)
 			defer m1.Shutdown()
 
+			dnsServer := startDNSServer(t)
+			defer dnsServer.Shutdown()
+
 			tsURL, err := url.Parse(appServer.URL)
 			require.NoError(t, err)
 
@@ -1450,7 +1454,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 			client := createHTTPClient(t, proxyURL)
 
-			tc.run(t, client, m, appServer, service)
+			tc.run(t, client, m, appServer, service, dnsServer)
 
 			router.Shutdown()
 
@@ -1758,6 +1762,16 @@ func startOIDCProviderServer(t *testing.T) *mockoidc.MockOIDC {
 	require.NoError(t, err)
 
 	return m
+}
+
+func startDNSServer(t *testing.T) *dnsmock.Server {
+	t.Helper()
+
+	server := dnsmock.New()
+	err := server.Start()
+	require.NoError(t, err)
+
+	return server
 }
 
 func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies.ServiceScope, dependencies.Mocked) {
