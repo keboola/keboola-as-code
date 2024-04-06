@@ -57,57 +57,73 @@ func TestSwitchable_Validation(t *testing.T) {
 	// Test cases
 	cases := testvalidation.TestCases[definition.Switchable]{
 		{
-			Name: "disabled = false",
+			Name: "disabled/enabled - nil",
 			Value: definition.Switchable{
-				Disabled: false,
+				Disabled: nil,
+				Enabled:  nil,
 			},
 		},
 		{
-			Name: "disabled = false, invalid",
+			Name: "disabled/enabled - both",
 			ExpectedError: `
-- "disabledAt" should not be set
-- "disabledReason" should not be set
-- "disabledWithParent" should not be set
+- "disabled" is an excluded field
+- "enabled" is an excluded field
 `,
 			Value: definition.Switchable{
-				Disabled:           false,
-				DisabledWithParent: true,
-				DisabledAt:         &now,
-				DisabledReason:     "some reason",
+				Disabled: &definition.Disabled{},
+				Enabled:  &definition.Enabled{},
 			},
 		},
 		{
-			Name: "disabled = true, disabledWithParent = true",
-			Value: definition.Switchable{
-				Disabled:           true,
-				DisabledWithParent: true,
-				DisabledBy:         &by,
-				DisabledAt:         &now,
-				DisabledReason:     "some reason",
-			},
-		},
-		{
-			Name: "disabled = true, disabledWithParent = true, invalid",
+			Name: "disabled - empty",
 			ExpectedError: `
-- "disabledBy" is a required field
-- "disabledAt" is a required field
-- "disabledReason" is a required field
+- "disabled.at" is a required field
+- "disabled.reason" is a required field
+- "disabled.by" is a required field
 `,
 			Value: definition.Switchable{
-				Disabled:           true,
-				DisabledWithParent: true,
+				Disabled: &definition.Disabled{},
 			},
 		},
 		{
-			Name: "disabled = true, disabledWithParent = false, invalid",
+			Name: "disabled , directly = true",
+			Value: definition.Switchable{
+				Disabled: &definition.Disabled{
+					Directly: true,
+					At:       now,
+					Reason:   "some reason",
+					By:       by,
+				},
+			},
+		},
+		{
+			Name: "disabled , directly = false",
+			Value: definition.Switchable{
+				Disabled: &definition.Disabled{
+					Directly: false,
+					At:       now,
+					Reason:   "some reason",
+					By:       by,
+				},
+			},
+		},
+		{
+			Name: "enabled - empty",
 			ExpectedError: `
-- "disabledBy" is a required field
-- "disabledAt" is a required field
-- "disabledReason" is a required field
+- "enabled.at" is a required field
+- "enabled.by" is a required field
 `,
 			Value: definition.Switchable{
-				Disabled:           true,
-				DisabledWithParent: false,
+				Enabled: &definition.Enabled{},
+			},
+		},
+		{
+			Name: "enabled , ok",
+			Value: definition.Switchable{
+				Enabled: &definition.Enabled{
+					At: now,
+					By: by,
+				},
 			},
 		},
 	}

@@ -29,7 +29,7 @@ package source
 //		for _, old := range allOld {
 //			old := old
 //
-//			if old.DeletedWithParent != undeletedWithParent {
+//			if old.ByParent != undeletedWithParent {
 //				continue
 //			}
 //

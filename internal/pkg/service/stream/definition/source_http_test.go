@@ -1,15 +1,12 @@
 package definition_test
 
 import (
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
+	"strings"
+	"testing"
 )
 
 func TestHTTPSource_Validation(t *testing.T) {
@@ -18,18 +15,6 @@ func TestHTTPSource_Validation(t *testing.T) {
 	sourceKey := key.SourceKey{
 		BranchKey: key.BranchKey{ProjectID: 123, BranchID: 456},
 		SourceID:  "my-source",
-	}
-	versioned := definition.Versioned{
-		Version: definition.Version{
-			Number:      1,
-			Hash:        "0123456789123456",
-			ModifiedAt:  utctime.From(time.Now()),
-			ModifiedBy:  test.ByUser(),
-			Description: "foo bar",
-		},
-	}
-	softDeletable := definition.SoftDeletable{
-		Deleted: false,
 	}
 
 	// Test cases
@@ -40,6 +25,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 - "projectId" is a required field
 - "branchId" is a required field
 - "sourceId" is a required field
+- "created.at" is a required field
+- "created.by" is a required field
 - "version.number" is a required field
 - "version.hash" is a required field
 - "version.modifiedAt" is a required field
@@ -54,8 +41,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"http" is a required field`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
@@ -66,8 +53,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"http.secret" is a required field`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
@@ -79,8 +66,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"http.secret" must be 48 characters in length`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",
@@ -94,8 +81,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
@@ -109,8 +96,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
 				Name:          strings.Repeat("a", 4096+1),
 				Description:   "My Description",
@@ -123,8 +110,8 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Name: "ok",
 			Value: definition.Source{
 				SourceKey:     sourceKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
 				Name:          "My Source",
 				Description:   "My Description",

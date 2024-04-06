@@ -16,7 +16,7 @@ func TestSoftDeletable(t *testing.T) {
 
 	var v definition.SoftDeletableInterface = &definition.SoftDeletable{}
 	assert.False(t, v.IsDeleted())
-	assert.False(t, v.WasDeletedWithParent())
+	assert.False(t, v.IsDeletedDirectly())
 	assert.Nil(t, v.EntityDeletedAt())
 
 	now := utctime.MustParse("2006-01-02T15:04:05.000Z").Time()
@@ -24,7 +24,7 @@ func TestSoftDeletable(t *testing.T) {
 
 	v.Delete(now, by, false)
 	assert.True(t, v.IsDeleted())
-	assert.False(t, v.WasDeletedWithParent())
+	assert.False(t, v.IsDeletedDirectly())
 	assert.Nil(t, v.EntityUndeletedBy())
 	assert.Nil(t, v.EntityUndeletedAt())
 	assert.Equal(t, &by, v.EntityDeletedBy())
@@ -32,7 +32,7 @@ func TestSoftDeletable(t *testing.T) {
 
 	v.Undelete(now, by)
 	assert.False(t, v.IsDeleted())
-	assert.False(t, v.WasDeletedWithParent())
+	assert.False(t, v.IsDeletedDirectly())
 	assert.Nil(t, v.EntityDeletedBy())
 	assert.Nil(t, v.EntityDeletedAt())
 	assert.Equal(t, &by, v.EntityUndeletedBy())
@@ -40,7 +40,7 @@ func TestSoftDeletable(t *testing.T) {
 
 	v.Delete(now, by, true)
 	assert.True(t, v.IsDeleted())
-	assert.True(t, v.WasDeletedWithParent())
+	assert.True(t, v.IsDeletedDirectly())
 	assert.Nil(t, v.EntityUndeletedBy())
 	assert.Nil(t, v.EntityUndeletedAt())
 	assert.Equal(t, &by, v.EntityDeletedBy())
@@ -56,52 +56,59 @@ func TestSoftDeletable_Validation(t *testing.T) {
 	// Test cases
 	cases := testvalidation.TestCases[definition.SoftDeletable]{
 		{
-			Name: "deleted = false",
+			Name: "deleted/undeleted - nil",
 			Value: definition.SoftDeletable{
-				Deleted: false,
+				Deleted:   nil,
+				Undeleted: nil,
 			},
 		},
 		{
-			Name: "deleted = false, invalid",
+			Name: "deleted/undeleted - both",
 			ExpectedError: `
-- "deletedAt" should not be set
-- "deletedWithParent" should not be set
+- "deleted" is an excluded field
+- "undeleted" is an excluded field
 `,
 			Value: definition.SoftDeletable{
-				Deleted:           false,
-				DeletedWithParent: true,
-				DeletedAt:         &now,
+				Deleted:   &definition.Deleted{},
+				Undeleted: &definition.Undeleted{},
 			},
 		},
 		{
-			Name: "deleted = true, deletedWithParent = true",
-			Value: definition.SoftDeletable{
-				Deleted:           true,
-				DeletedWithParent: true,
-				DeletedBy:         &by,
-				DeletedAt:         &now,
-			},
-		},
-		{
-			Name: "deleted = true, deletedWithParent = true, invalid",
+			Name: "deleted - empty",
 			ExpectedError: `
-- "deletedBy" is a required field
-- "deletedAt" is a required field
+- "deleted.at" is a required field
+- "deleted.by" is a required field
 `,
 			Value: definition.SoftDeletable{
-				Deleted:           true,
-				DeletedWithParent: true,
+				Deleted: &definition.Deleted{},
 			},
 		},
 		{
-			Name: "deleted = true, deletedWithParent = false, invalid",
+			Name: "deleted, directly = true",
+			Value: definition.SoftDeletable{
+				Deleted: &definition.Deleted{Directly: true, At: now, By: by},
+			},
+		},
+		{
+			Name: "deleted, directly = false",
+			Value: definition.SoftDeletable{
+				Deleted: &definition.Deleted{Directly: false, At: now, By: by},
+			},
+		},
+		{
+			Name: "undeleted - empty",
 			ExpectedError: `
-- "deletedBy" is a required field
-- "deletedAt" is a required field
+- "undeleted.at" is a required field
+- "undeleted.by" is a required field
 `,
 			Value: definition.SoftDeletable{
-				Deleted:           true,
-				DeletedWithParent: false,
+				Undeleted: &definition.Undeleted{},
+			},
+		},
+		{
+			Name: "undeleted, ok",
+			Value: definition.SoftDeletable{
+				Undeleted: &definition.Undeleted{At: now, By: by},
 			},
 		},
 	}

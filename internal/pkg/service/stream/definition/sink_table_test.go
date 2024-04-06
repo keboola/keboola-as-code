@@ -1,13 +1,10 @@
 package definition_test
 
 import (
+	"github.com/keboola/go-client/pkg/keboola"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -29,18 +26,6 @@ func TestTableSink_Validation(t *testing.T) {
 		},
 		SinkID: "my-sink",
 	}
-	versioned := definition.Versioned{
-		Version: definition.Version{
-			Number:      1,
-			Hash:        "0123456789123456",
-			ModifiedAt:  utctime.From(time.Now()),
-			ModifiedBy:  test.ByUser(),
-			Description: "foo bar",
-		},
-	}
-	softDeletable := definition.SoftDeletable{
-		Deleted: false,
-	}
 
 	// Test cases
 	cases := testvalidation.TestCases[definition.Sink]{
@@ -51,6 +36,8 @@ func TestTableSink_Validation(t *testing.T) {
 - "branchId" is a required field
 - "sourceId" is a required field
 - "sinkId" is a required field
+- "created.at" is a required field
+- "created.by" is a required field
 - "version.number" is a required field
 - "version.hash" is a required field
 - "version.modifiedAt" is a required field
@@ -65,8 +52,8 @@ func TestTableSink_Validation(t *testing.T) {
 			ExpectedError: `"table" is a required field`,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
@@ -80,8 +67,8 @@ func TestTableSink_Validation(t *testing.T) {
 `,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
@@ -93,8 +80,8 @@ func TestTableSink_Validation(t *testing.T) {
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
 				Name:          strings.Repeat("a", 40+1),
 				Description:   "My Description",
@@ -116,8 +103,8 @@ func TestTableSink_Validation(t *testing.T) {
 			ExpectedError: `"description" must be a maximum of 4,096 characters in length`,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   strings.Repeat("a", 4096+1),
@@ -138,8 +125,8 @@ func TestTableSink_Validation(t *testing.T) {
 			Name: "minimal",
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",
@@ -160,8 +147,8 @@ func TestTableSink_Validation(t *testing.T) {
 			Name: "with custom upload conditions",
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
-				Versioned:     versioned,
-				SoftDeletable: softDeletable,
+				Versioned:     test.Versioned(),
+				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
 				Name:          "My Source",
 				Description:   "My Description",

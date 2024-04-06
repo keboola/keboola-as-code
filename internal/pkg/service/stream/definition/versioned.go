@@ -20,9 +20,13 @@ type VersionedInterface interface {
 }
 
 type Versioned struct {
-	CreatedAt utctime.UTCTime `json:"createdAt" hash:"ignore" validate:"required"`
-	CreatedBy By              `json:"createdBy" hash:"ignore" validate:"required"`
-	Version   Version         `json:"version"`
+	Created Created `json:"created"`
+	Version Version `json:"version"`
+}
+
+type Created struct {
+	At utctime.UTCTime `json:"at" hash:"ignore" validate:"required"`
+	By By              `json:"by" hash:"ignore" validate:"required"`
 }
 
 type Version struct {
@@ -36,9 +40,9 @@ type Version struct {
 type VersionNumber int
 
 func (v *Versioned) IncrementVersion(s any, now time.Time, by By, description string) {
-	if v.CreatedAt.IsZero() {
-		v.CreatedAt = utctime.From(now)
-		v.CreatedBy = by
+	if v.Created.At.IsZero() {
+		v.Created.At = utctime.From(now)
+		v.Created.By = by
 	}
 	v.Version.ModifiedAt = utctime.From(now)
 	v.Version.ModifiedBy = by
@@ -48,11 +52,11 @@ func (v *Versioned) IncrementVersion(s any, now time.Time, by By, description st
 }
 
 func (v *Versioned) EntityCreatedAt() utctime.UTCTime {
-	return v.CreatedAt
+	return v.Created.At
 }
 
 func (v *Versioned) EntityCreatedBy() By {
-	return v.CreatedBy
+	return v.Created.By
 }
 
 func (v *Versioned) VersionNumber() VersionNumber {
