@@ -42,7 +42,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, 
 	r.plugins.Executor().OnBranchSave(ctx, now, by, old, updated)
 
 	saveTxn := op.Txn(r.client)
-	if updated.Deleted {
+	if updated.IsDeleted() {
 		// Move entity from the active prefix to the deleted prefix
 		saveTxn.Then(
 			// Delete entity from the active prefix
@@ -54,7 +54,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, 
 		// Save record to the "active" prefix
 		saveTxn.Then(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
 
-		if updated.UndeletedAt != nil && updated.UndeletedAt.Time().Equal(now) {
+		if updated.IsUndeleted() && updated.EntityUndeletedAt().Time().Equal(now) {
 			// Delete record from the "deleted" prefix, if needed
 			saveTxn.Then(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
 		}

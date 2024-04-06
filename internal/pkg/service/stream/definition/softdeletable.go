@@ -13,6 +13,8 @@ type SoftDeletableInterface interface {
 	Undelete(now time.Time, by By)
 	// IsDeleted returns true if the entity is marked as deleted.
 	IsDeleted() bool
+	// IsUndeleted returns true if the entity is marked as undeleted.
+	IsUndeleted() bool
 	// IsDeletedDirectly returns true if the entity has been deleted directly, not together with its parent.
 	IsDeletedDirectly() bool
 	EntityDeletedBy() *By
@@ -72,6 +74,10 @@ func (v *SoftDeletable) EntityDeletedAt() *utctime.UTCTime {
 	}
 	value := v.Deleted.At
 	return &value
+}
+
+func (v *SoftDeletable) IsUndeleted() bool {
+	return v.Undeleted != nil
 }
 
 func (v *SoftDeletable) EntityUndeletedBy() *By {
