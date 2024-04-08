@@ -93,7 +93,7 @@ definition/sink/deleted/123/567/my-source/my-sink-2
     "description": "Create sink"
   },
   "deleted": {
-    "directly": true,
+    "directly": false,
     "at": "2000-01-01T03:00:00.000Z",
     "by": {
       "type": "user",
@@ -103,7 +103,6 @@ definition/sink/deleted/123/567/my-source/my-sink-2
       "userName": "Some User"
     }
   },
-  "deletedWithParent": true,
   "type": "table",
   %A
 }
@@ -141,7 +140,7 @@ definition/sink/deleted/123/567/my-source/my-sink-3
     "description": "Create sink"
   },
   "deleted": {
-    "directly": true,
+    "directly": false,
     "at": "2000-01-01T03:00:00.000Z",
     "by": {
       "type": "user",
@@ -151,7 +150,6 @@ definition/sink/deleted/123/567/my-source/my-sink-3
       "userName": "Some User"
     }
   },
-  "deletedWithParent": true,
   "type": "table",
   %A
 }

@@ -100,7 +100,7 @@ definition/source/deleted/123/567/my-source-2
     "description": "Create source"
   },
   "deleted": {
-    "directly": true,
+    "directly": false,
     "at": "2000-01-01T03:00:00.000Z",
     "by": {
       "type": "user",
@@ -110,7 +110,6 @@ definition/source/deleted/123/567/my-source-2
       "userName": "Some User"
     }
   },
-  "deletedWithParent": true,
   "type": "http",
   "name": "My Source",
   "description": "My Description",
@@ -151,7 +150,7 @@ definition/source/deleted/123/567/my-source-3
     "description": "Create source"
   },
   "deleted": {
-    "directly": true,
+    "directly": false,
     "at": "2000-01-01T03:00:00.000Z",
     "by": {
       "type": "user",
@@ -161,7 +160,6 @@ definition/source/deleted/123/567/my-source-3
       "userName": "Some User"
     }
   },
-  "deletedWithParent": true,
   "type": "http",
   "name": "My Source",
   "description": "My Description",
