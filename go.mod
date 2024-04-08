@@ -80,7 +80,7 @@ require (
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.15.2
 	goa.design/plugins/v3 v3.15.2
-	golang.org/x/sync v0.6.0
+	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.63.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.62.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
