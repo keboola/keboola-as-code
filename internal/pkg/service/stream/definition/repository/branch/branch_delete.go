@@ -20,7 +20,7 @@ func (r *Repository) SoftDelete(k key.BranchKey, now time.Time, by definition.By
 		// Mark deleted
 		Write(func(ctx context.Context) op.Op {
 			updated = deepcopy.Copy(old).(definition.Branch)
-			updated.Delete(now, by, false)
+			updated.Delete(now, by, true)
 			return r.save(ctx, now, by, &old, &updated)
 		})
 }

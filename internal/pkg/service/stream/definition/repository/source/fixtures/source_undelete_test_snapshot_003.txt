@@ -37,7 +37,7 @@ definition/source/deleted/123/567/my-source-1
   },
   "version": {
     "number": 1,
-    "hash": "1ca196a1b1750482",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -87,7 +87,7 @@ definition/source/active/123/567/my-source-2
   },
   "version": {
     "number": 1,
-    "hash": "6d4bf0f4f0a1b502",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -136,7 +136,7 @@ definition/source/active/123/567/my-source-3
   },
   "version": {
     "number": 1,
-    "hash": "56cf5709745e921d",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",

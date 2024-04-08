@@ -17,7 +17,7 @@ definition/source/active/123/567/my-source
   },
   "version": {
     "number": 2,
-    "hash": "cdb64fd7ae070284",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -73,7 +73,7 @@ definition/source/version/123/567/my-source/0000000002
   },
   "version": {
     "number": 2,
-    "hash": "cdb64fd7ae070284",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
     "modifiedBy": {
       "type": "user",

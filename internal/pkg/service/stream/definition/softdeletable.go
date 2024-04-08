@@ -20,9 +20,9 @@ type SoftDeletableInterface interface {
 	// IsDeletedDirectly returns true if the entity has been deleted directly, not together with its parent.
 	IsDeletedDirectly() bool
 	DeletedBy() *By
-	DeletedAt() *utctime.UTCTime
+	DeletedAt() utctime.UTCTime
 	UndeletedBy() *By
-	UndeletedAt() *utctime.UTCTime
+	UndeletedAt() utctime.UTCTime
 }
 
 type SoftDeletable struct {
@@ -74,12 +74,11 @@ func (v *SoftDeletable) DeletedBy() *By {
 	return &value
 }
 
-func (v *SoftDeletable) DeletedAt() *utctime.UTCTime {
+func (v *SoftDeletable) DeletedAt() utctime.UTCTime {
 	if v.Deleted == nil {
-		return nil
+		return utctime.UTCTime{}
 	}
-	value := v.Deleted.At
-	return &value
+	return v.Deleted.At
 }
 
 func (v *SoftDeletable) IsUndeleted() bool {
@@ -98,10 +97,9 @@ func (v *SoftDeletable) UndeletedBy() *By {
 	return &value
 }
 
-func (v *SoftDeletable) UndeletedAt() *utctime.UTCTime {
+func (v *SoftDeletable) UndeletedAt() utctime.UTCTime {
 	if v.Undeleted == nil {
-		return nil
+		return utctime.UTCTime{}
 	}
-	value := v.Undeleted.At
-	return &value
+	return v.Undeleted.At
 }

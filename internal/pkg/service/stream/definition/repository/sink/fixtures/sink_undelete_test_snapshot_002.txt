@@ -18,7 +18,7 @@ definition/sink/active/123/567/my-source/my-sink
   },
   "version": {
     "number": 2,
-    "hash": "7c6f12ee543385c9",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -89,7 +89,7 @@ definition/sink/version/123/567/my-source/my-sink/0000000002
   },
   "version": {
     "number": 2,
-    "hash": "7c6f12ee543385c9",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T04:00:00.000Z",
     "modifiedBy": {
       "type": "user",

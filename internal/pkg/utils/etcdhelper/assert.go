@@ -20,12 +20,19 @@ import (
 type AssertOption func(*assertConfig)
 
 type assertConfig struct {
-	ignoredKeyPatterns []string
+	ignoredKeyPatterns    []string
+	expectedStateFromFile string
 }
 
 func WithIgnoredKeyPattern(v string) AssertOption {
 	return func(c *assertConfig) {
 		c.ignoredKeyPatterns = append(c.ignoredKeyPatterns, v)
+	}
+}
+
+func withExpectedStateFromFile(path string) AssertOption {
+	return func(c *assertConfig) {
+		c.expectedStateFromFile = path
 	}
 }
 
@@ -77,6 +84,7 @@ func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...As
 	data, err := os.ReadFile(path)
 	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
 		expected := string(data)
+		ops = append(ops, withExpectedStateFromFile(path))
 		AssertKVsString(t, client, expected, ops...)
 	}
 }
@@ -148,7 +156,12 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 					}
 					break
 				} else {
-					assert.Fail(t, fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\":\n%s", actual.Key, expected.Key, err))
+					msg := fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\"", actual.Key, expected.Key)
+					if c.expectedStateFromFile != "" {
+						msg += fmt.Sprintf("\ndefined in file\n\"%s\"", c.expectedStateFromFile)
+					}
+					msg += fmt.Sprintf("\n%s", err)
+					assert.Fail(t, msg)
 				}
 			}
 		}

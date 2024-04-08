@@ -45,7 +45,7 @@ definition/sink/deleted/123/567/my-source/my-sink-1
   },
   "version": {
     "number": 1,
-    "hash": "b206dd44f8c41367",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -92,7 +92,7 @@ definition/sink/deleted/123/567/my-source/my-sink-2
   },
   "version": {
     "number": 1,
-    "hash": "70be20d289e3c9ff",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -139,7 +139,7 @@ definition/sink/deleted/123/567/my-source/my-sink-3
   },
   "version": {
     "number": 1,
-    "hash": "13142897f48909e2",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
