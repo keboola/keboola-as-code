@@ -103,7 +103,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
+				assert.Contains(t, string(body), `Exception ID:`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -119,7 +120,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
+				assert.Contains(t, string(body), `Exception ID:`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -135,7 +137,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
+				assert.Contains(t, string(body), `Exception ID:`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -151,7 +154,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
+				assert.Contains(t, string(body), `Exception ID:`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -167,7 +171,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
+				assert.Contains(t, string(body), `Exception ID:`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -183,7 +188,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
+				assert.Contains(t, string(body), `Exception ID:`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -846,7 +852,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Empty(t, response.Cookies())
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), `Application has invalid configuration.`)
+				assert.Contains(t, string(body), `Sorry! Something went wrong.`)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},

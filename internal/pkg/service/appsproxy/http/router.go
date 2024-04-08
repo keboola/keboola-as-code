@@ -176,8 +176,6 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
 		w.WriteHeader(http.StatusForbidden)
 		getErrorPage(w, exceptionID)
-		// fmt.Fprintln(w, "Application has invalid configuration.")
-		// fmt.Fprintln(w, "Exception ID:", exceptionID)
 	})
 }
 
