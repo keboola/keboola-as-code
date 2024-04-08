@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"html/template"
@@ -51,9 +52,13 @@ type Router struct {
 	wg                sync.WaitGroup
 }
 
-const providerCookie = "_oauth2_provider"
+const (
+	providerCookie    = "_oauth2_provider"
+	selectionPagePath = "/_proxy/selection"
 
-const selectionPagePath = "/_proxy/selection"
+	errorPagePath = "template/error.html.tmpl"
+	faviconPath   = "template/favicon.ico"
+)
 
 //go:embed template/*
 var templates embed.FS
@@ -176,7 +181,8 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
 		appID, _ := req.Context().Value(AppIDCtxKey).(string)
 		w.WriteHeader(http.StatusForbidden)
-		r.getErrorPage(req.Context(), w, exceptionID, appID)
+		// Get error page.
+		r.getHTMLPage(req.Context(), w, faviconPath, errorPagePath, exceptionID, appID)
 	})
 }
 
@@ -716,17 +722,27 @@ func headerFromClaim(header, claim string) options.Header {
 	}
 }
 
-func (r *Router) getErrorPage(ctx context.Context, w http.ResponseWriter, exceptionID string, appID string) {
-	// Define a struct to pass data into the template
+func (r *Router) getHTMLPage(ctx context.Context, w http.ResponseWriter, imageFilePath string, htmlFilePath string, exceptionID string, appID string) {
+	// Encode the image data to Base64.
+	imageBase64, err := encodeImageDataToBase64(imageFilePath)
+	if err != nil {
+		r.logger.Error(ctx, "failed to encode image to base64")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Define a struct to pass data into the template.
 	data := struct {
 		ExceptionID string
 		AppID       string
+		DataBase64  string
 	}{
 		ExceptionID: exceptionID,
 		AppID:       appID,
+		DataBase64:  imageBase64,
 	}
 
-	html, err := templates.ReadFile("template/error.html.tmpl")
+	html, err := templates.ReadFile(htmlFilePath)
 	if err != nil {
 		r.logger.Error(ctx, "failed to read a file")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -748,4 +764,15 @@ func (r *Router) getErrorPage(ctx context.Context, w http.ResponseWriter, except
 		r.logger.Error(ctx, "failed to execute template")
 		return
 	}
+}
+
+func encodeImageDataToBase64(filePath string) (string, error) {
+	// Read file
+	dataBytes, err := templates.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the image data to Base64
+	return base64.StdEncoding.EncodeToString(dataBytes), nil
 }
