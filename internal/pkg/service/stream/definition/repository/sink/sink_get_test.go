@@ -123,7 +123,7 @@ func TestSinkRepository_GetDeleted(t *testing.T) {
 	// GetDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink.Deleted = &definition.Deleted{At: utctime.From(now), By: by}
+		sink.Deleted = &definition.Deleted{Directly: true, At: utctime.From(now), By: by}
 		result, err := repo.GetDeleted(sinkKey).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
 			assert.Equal(t, sink, result)

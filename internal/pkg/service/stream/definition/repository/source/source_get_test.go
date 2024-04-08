@@ -115,7 +115,7 @@ func TestSourceRepository_GetDeleted(t *testing.T) {
 	// GetDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		source.Deleted = &definition.Deleted{At: utctime.From(now), By: by}
+		source.Deleted = &definition.Deleted{Directly: true, At: utctime.From(now), By: by}
 		result, err := repo.GetDeleted(sourceKey).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
 			assert.Equal(t, source, result)

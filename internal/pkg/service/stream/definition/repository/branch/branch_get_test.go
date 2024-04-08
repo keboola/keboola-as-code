@@ -107,7 +107,7 @@ func TestBranchRepository_GetDeleted(t *testing.T) {
 	// GetDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		branch.Deleted = &definition.Deleted{At: utctime.From(now), By: by}
+		branch.Deleted = &definition.Deleted{Directly: true, At: utctime.From(now), By: by}
 		result, err := repo.GetDeleted(branchKey).Do(ctx).ResultOrErr()
 		if assert.NoError(t, err) {
 			assert.Equal(t, branch, result)

@@ -4,15 +4,17 @@ definition/branch/deleted/123/567
 {
   "projectId": 123,
   "branchId": 567,
-  "deleted": true,
-  "deletedBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "deleted": {
+    "directly": true,
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
-  "deletedAt": "2000-01-01T01:00:00.000Z",
   "isDefault": false
 }
 >>>>>
