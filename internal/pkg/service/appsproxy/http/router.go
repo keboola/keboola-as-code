@@ -174,8 +174,9 @@ func (r *Router) Shutdown() {
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
+		appID, _ := req.Context().Value(AppIDCtxKey).(string)
 		w.WriteHeader(http.StatusForbidden)
-		r.getErrorPage(req.Context(), w, exceptionID)
+		r.getErrorPage(req.Context(), w, exceptionID, appID)
 	})
 }
 
@@ -715,12 +716,14 @@ func headerFromClaim(header, claim string) options.Header {
 	}
 }
 
-func (r *Router) getErrorPage(ctx context.Context, w http.ResponseWriter, exceptionID string) {
+func (r *Router) getErrorPage(ctx context.Context, w http.ResponseWriter, exceptionID string, appID string) {
 	// Define a struct to pass data into the template
 	data := struct {
 		ExceptionID string
+		AppID       string
 	}{
 		ExceptionID: exceptionID,
+		AppID:       appID,
 	}
 
 	html, err := templates.ReadFile("template/error.html.tmpl")
@@ -743,7 +746,6 @@ func (r *Router) getErrorPage(ctx context.Context, w http.ResponseWriter, except
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		r.logger.Error(ctx, "failed to execute template")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
