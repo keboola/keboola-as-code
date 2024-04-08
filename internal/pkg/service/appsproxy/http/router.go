@@ -175,7 +175,7 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
 		w.WriteHeader(http.StatusForbidden)
-		getErrorPage(w, exceptionID)
+		r.getErrorPage(req.Context(), w, exceptionID)
 	})
 }
 
@@ -715,7 +715,7 @@ func headerFromClaim(header, claim string) options.Header {
 	}
 }
 
-func getErrorPage(w http.ResponseWriter, exceptionID string) {
+func (r *Router) getErrorPage(ctx context.Context, w http.ResponseWriter, exceptionID string) {
 	// Define a struct to pass data into the template
 	data := struct {
 		ExceptionID string
@@ -723,8 +723,9 @@ func getErrorPage(w http.ResponseWriter, exceptionID string) {
 		ExceptionID: exceptionID,
 	}
 
-	html, err := templates.ReadFile("template/error.html")
+	html, err := templates.ReadFile("template/error.html.tmpl")
 	if err != nil {
+		r.logger.Error(ctx, "failed to read a file")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -732,6 +733,7 @@ func getErrorPage(w http.ResponseWriter, exceptionID string) {
 	// Parse the HTML template
 	tmpl, err := template.New("error").Parse(string(html))
 	if err != nil {
+		r.logger.Error(ctx, "failed to parse template")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -740,6 +742,7 @@ func getErrorPage(w http.ResponseWriter, exceptionID string) {
 	// Execute the template, passing the data
 	err = tmpl.Execute(w, data)
 	if err != nil {
+		r.logger.Error(ctx, "failed to execute template")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
