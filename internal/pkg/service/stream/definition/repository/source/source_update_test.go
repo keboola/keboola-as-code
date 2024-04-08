@@ -103,7 +103,7 @@ func TestSourceRepository_Update(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		updateFn := func(source definition.Source) (definition.Source, error) {
-			source.Disabled = true
+			source.Disable(now, test.ByUser(), "some reason", true)
 			return source, nil
 		}
 		err := repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()
@@ -116,7 +116,7 @@ func TestSourceRepository_Update(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		updateFn := func(source definition.Source) (definition.Source, error) {
-			source.Deleted = true
+			source.Delete(now, test.ByUser(), true)
 			return source, nil
 		}
 		err := repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()

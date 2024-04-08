@@ -177,15 +177,15 @@ func TestSinkRepository_UndeleteSinksOnSourceUndelete_UndeleteSource(t *testing.
 		// Sink1 has been deleted before the Branch deletion, so it remains deleted.
 		sink1, err = repo.GetDeleted(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.Deleted)
+		assert.True(t, sink1.IsDeleted())
 
 		// Sink2 and Sink2
 		sink2, err = repo.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink2.Deleted)
+		assert.False(t, sink2.IsDeleted())
 		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink3.Deleted)
+		assert.False(t, sink3.IsDeleted())
 	}
 }
 
@@ -254,14 +254,14 @@ func TestSinkRepository_UndeleteSinksOnSourceUndelete_UndeleteBranch(t *testing.
 		// Sink1 has been deleted before the Branch deletion, so it remains deleted.
 		sink1, err = repo.GetDeleted(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.Deleted)
+		assert.True(t, sink1.IsDeleted())
 
 		// Sink2 and Sink2
 		sink2, err = repo.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink2.Deleted)
+		assert.False(t, sink2.IsDeleted())
 		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink3.Deleted)
+		assert.False(t, sink3.IsDeleted())
 	}
 }

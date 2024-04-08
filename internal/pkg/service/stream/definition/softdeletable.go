@@ -13,14 +13,16 @@ type SoftDeletableInterface interface {
 	Undelete(now time.Time, by By)
 	// IsDeleted returns true if the entity is marked as deleted.
 	IsDeleted() bool
+	IsDeletedAt(at time.Time) bool
 	// IsUndeleted returns true if the entity is marked as undeleted.
 	IsUndeleted() bool
+	IsUndeletedAt(at time.Time) bool
 	// IsDeletedDirectly returns true if the entity has been deleted directly, not together with its parent.
 	IsDeletedDirectly() bool
-	EntityDeletedBy() *By
-	EntityDeletedAt() *utctime.UTCTime
-	EntityUndeletedBy() *By
-	EntityUndeletedAt() *utctime.UTCTime
+	DeletedBy() *By
+	DeletedAt() *utctime.UTCTime
+	UndeletedBy() *By
+	UndeletedAt() *utctime.UTCTime
 }
 
 type SoftDeletable struct {
@@ -55,12 +57,16 @@ func (v *SoftDeletable) IsDeleted() bool {
 	return v.Deleted != nil
 }
 
+func (v *SoftDeletable) IsDeletedAt(at time.Time) bool {
+	return v.Deleted != nil && v.Deleted.At.Time().Equal(at)
+}
+
 // IsDeletedDirectly returns true if the object has been deleted directly, not together with its parent.
 func (v *SoftDeletable) IsDeletedDirectly() bool {
 	return v.Deleted != nil && v.Deleted.Directly
 }
 
-func (v *SoftDeletable) EntityDeletedBy() *By {
+func (v *SoftDeletable) DeletedBy() *By {
 	if v.Deleted == nil {
 		return nil
 	}
@@ -68,7 +74,7 @@ func (v *SoftDeletable) EntityDeletedBy() *By {
 	return &value
 }
 
-func (v *SoftDeletable) EntityDeletedAt() *utctime.UTCTime {
+func (v *SoftDeletable) DeletedAt() *utctime.UTCTime {
 	if v.Deleted == nil {
 		return nil
 	}
@@ -80,7 +86,11 @@ func (v *SoftDeletable) IsUndeleted() bool {
 	return v.Undeleted != nil
 }
 
-func (v *SoftDeletable) EntityUndeletedBy() *By {
+func (v *SoftDeletable) IsUndeletedAt(at time.Time) bool {
+	return v.Undeleted != nil && v.Undeleted.At.Time().Equal(at)
+}
+
+func (v *SoftDeletable) UndeletedBy() *By {
 	if v.Undeleted == nil {
 		return nil
 	}
@@ -88,7 +98,7 @@ func (v *SoftDeletable) EntityUndeletedBy() *By {
 	return &value
 }
 
-func (v *SoftDeletable) EntityUndeletedAt() *utctime.UTCTime {
+func (v *SoftDeletable) UndeletedAt() *utctime.UTCTime {
 	if v.Undeleted == nil {
 		return nil
 	}

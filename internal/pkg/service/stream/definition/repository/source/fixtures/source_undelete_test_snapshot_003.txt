@@ -4,14 +4,16 @@ definition/branch/active/123/567
 {
   "projectId": 123,
   "branchId": 567,
-  "undeletedBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "undeleted": {
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
-  "undeletedAt": "2000-01-01T04:00:00.000Z",
   "isDefault": false
 }
 >>>>>
@@ -23,13 +25,15 @@ definition/source/deleted/123/567/my-source-1
   "projectId": 123,
   "branchId": 567,
   "sourceId": "my-source-1",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 1,
@@ -69,13 +73,15 @@ definition/source/active/123/567/my-source-2
   "projectId": 123,
   "branchId": 567,
   "sourceId": "my-source-2",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 1,
@@ -90,14 +96,16 @@ definition/source/active/123/567/my-source-2
     },
     "description": "Create source"
   },
-  "undeletedBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "undeleted": {
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
-  "undeletedAt": "2000-01-01T04:00:00.000Z",
   "type": "http",
   "name": "My Source",
   "description": "My Description",
@@ -114,13 +122,15 @@ definition/source/active/123/567/my-source-3
   "projectId": 123,
   "branchId": 567,
   "sourceId": "my-source-3",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 1,
@@ -135,14 +145,16 @@ definition/source/active/123/567/my-source-3
     },
     "description": "Create source"
   },
-  "undeletedBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "undeleted": {
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
-  "undeletedAt": "2000-01-01T04:00:00.000Z",
   "type": "http",
   "name": "My Source",
   "description": "My Description",

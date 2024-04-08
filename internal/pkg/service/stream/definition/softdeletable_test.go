@@ -17,7 +17,7 @@ func TestSoftDeletable(t *testing.T) {
 	var v definition.SoftDeletableInterface = &definition.SoftDeletable{}
 	assert.False(t, v.IsDeleted())
 	assert.False(t, v.IsDeletedDirectly())
-	assert.Nil(t, v.EntityDeletedAt())
+	assert.Nil(t, v.DeletedAt())
 
 	now := utctime.MustParse("2006-01-02T15:04:05.000Z").Time()
 	by := test.ByUser()
@@ -25,26 +25,26 @@ func TestSoftDeletable(t *testing.T) {
 	v.Delete(now, by, false)
 	assert.True(t, v.IsDeleted())
 	assert.False(t, v.IsDeletedDirectly())
-	assert.Nil(t, v.EntityUndeletedBy())
-	assert.Nil(t, v.EntityUndeletedAt())
-	assert.Equal(t, &by, v.EntityDeletedBy())
-	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EntityDeletedAt().String())
+	assert.Nil(t, v.UndeletedBy())
+	assert.Nil(t, v.UndeletedAt())
+	assert.Equal(t, &by, v.DeletedBy())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.DeletedAt().String())
 
 	v.Undelete(now, by)
 	assert.False(t, v.IsDeleted())
 	assert.False(t, v.IsDeletedDirectly())
-	assert.Nil(t, v.EntityDeletedBy())
-	assert.Nil(t, v.EntityDeletedAt())
-	assert.Equal(t, &by, v.EntityUndeletedBy())
-	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EntityUndeletedAt().String())
+	assert.Nil(t, v.DeletedBy())
+	assert.Nil(t, v.DeletedAt())
+	assert.Equal(t, &by, v.UndeletedBy())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.UndeletedAt().String())
 
 	v.Delete(now, by, true)
 	assert.True(t, v.IsDeleted())
 	assert.True(t, v.IsDeletedDirectly())
-	assert.Nil(t, v.EntityUndeletedBy())
-	assert.Nil(t, v.EntityUndeletedAt())
-	assert.Equal(t, &by, v.EntityDeletedBy())
-	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EntityDeletedAt().String())
+	assert.Nil(t, v.UndeletedBy())
+	assert.Nil(t, v.UndeletedAt())
+	assert.Equal(t, &by, v.DeletedBy())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.DeletedAt().String())
 }
 
 func TestSoftDeletable_Validation(t *testing.T) {

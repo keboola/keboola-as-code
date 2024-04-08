@@ -17,16 +17,16 @@ type SwitchableInterface interface {
 	IsDisabled() bool
 	// IsDisabledDirectly returns true if the entity has been disabled directly, not together with its parent.
 	IsDisabledDirectly() bool
-	EntityDisabledBy() *By
-	EntityDisabledAt() *utctime.UTCTime
-	EntityDisabledReason() string
-	EntityEnabledBy() *By
-	EntityEnabledAt() *utctime.UTCTime
+	DisabledBy() *By
+	DisabledAt() *utctime.UTCTime
+	DisabledReason() string
+	EnabledBy() *By
+	EnabledAt() *utctime.UTCTime
 }
 
 type Switchable struct {
-	Disabled *Disabled `json:"disabled" validate:"excluded_with=Enabled"`
-	Enabled  *Enabled  `json:"enabled" validate:"excluded_with=Disabled"`
+	Disabled *Disabled `json:"disabled,omitempty" validate:"excluded_with=Enabled"`
+	Enabled  *Enabled  `json:"enabled,omitempty" validate:"excluded_with=Disabled"`
 }
 
 type Disabled struct {
@@ -65,7 +65,7 @@ func (v *Switchable) IsDisabledDirectly() bool {
 	return v.Disabled != nil && v.Disabled.Directly
 }
 
-func (v *Switchable) EntityDisabledBy() *By {
+func (v *Switchable) DisabledBy() *By {
 	if v.Disabled == nil {
 		return nil
 	}
@@ -73,7 +73,7 @@ func (v *Switchable) EntityDisabledBy() *By {
 	return &value
 }
 
-func (v *Switchable) EntityDisabledAt() *utctime.UTCTime {
+func (v *Switchable) DisabledAt() *utctime.UTCTime {
 	if v.Disabled == nil {
 		return nil
 	}
@@ -81,14 +81,14 @@ func (v *Switchable) EntityDisabledAt() *utctime.UTCTime {
 	return &value
 }
 
-func (v *Switchable) EntityDisabledReason() string {
+func (v *Switchable) DisabledReason() string {
 	if v.Disabled == nil {
 		return ""
 	}
 	return v.Disabled.Reason
 }
 
-func (v *Switchable) EntityEnabledBy() *By {
+func (v *Switchable) EnabledBy() *By {
 	if v.Enabled == nil {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (v *Switchable) EntityEnabledBy() *By {
 	return &value
 }
 
-func (v *Switchable) EntityEnabledAt() *utctime.UTCTime {
+func (v *Switchable) EnabledAt() *utctime.UTCTime {
 	if v.Enabled == nil {
 		return nil
 	}

@@ -21,7 +21,7 @@ func (r *Repository) Undelete(k key.SinkKey, now time.Time, by definition.By) *o
 		ReadOp(r.checkMaxSinksPerSource(k.SourceKey, 1)).
 		// Mark undeleted
 		AddFrom(r.
-			undeleteAllFrom(k, now, by, false).
+			undeleteAllFrom(k, now, by, true).
 			OnResult(func(r []definition.Sink) {
 				if len(r) == 1 {
 					undeleted = r[0]
@@ -31,12 +31,12 @@ func (r *Repository) Undelete(k key.SinkKey, now time.Time, by definition.By) *o
 
 func (r *Repository) undeleteSinksOnSourceUndelete() {
 	r.plugins.Collection().OnSourceUndelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) {
-		op.AtomicFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.SourceKey, now, by, true))
+		op.AtomicFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.SourceKey, now, by, false))
 	})
 }
 
 // undeleteAllFrom the parent key.
-func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, undeletedWithParent bool) *op.AtomicOp[[]definition.Sink] {
+func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, directly bool) *op.AtomicOp[[]definition.Sink] {
 	var allOld, allCreated []definition.Sink
 	atomicOp := op.Atomic(r.client, &allCreated)
 
@@ -53,7 +53,7 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by d
 		allCreated = nil
 		txn := op.Txn(r.client)
 		for _, old := range allOld {
-			if old.DeletedWithParent != undeletedWithParent {
+			if old.Deleted.Directly != directly {
 				continue
 			}
 
@@ -62,7 +62,7 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by d
 			created.Undelete(now, by)
 
 			// Create a new version record, if the entity has been undeleted manually
-			if !undeletedWithParent {
+			if directly {
 				versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
 				created.IncrementVersion(created, now, by, versionDescription)
 			}

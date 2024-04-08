@@ -31,13 +31,15 @@ definition/sink/deleted/123/567/my-source/my-sink-1
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink-1",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 1,
@@ -74,13 +76,15 @@ definition/sink/deleted/123/567/my-source/my-sink-2
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink-2",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 1,
@@ -118,13 +122,15 @@ definition/sink/deleted/123/567/my-source/my-sink-3
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink-3",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 1,

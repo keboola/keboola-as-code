@@ -23,29 +23,29 @@ func TestSwitchable(t *testing.T) {
 	// Disable
 	v.Disable(now.Time(), by, "some reason", false)
 	assert.False(t, v.IsEnabled())
-	assert.Nil(t, v.EntityEnabledBy())
-	assert.Nil(t, v.EntityEnabledAt())
-	assert.Equal(t, &by, v.EntityDisabledBy())
-	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EntityDisabledAt().String())
-	assert.Equal(t, "some reason", v.EntityDisabledReason())
+	assert.Nil(t, v.EnabledBy())
+	assert.Nil(t, v.EnabledAt())
+	assert.Equal(t, &by, v.DisabledBy())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.DisabledAt().String())
+	assert.Equal(t, "some reason", v.DisabledReason())
 
 	// Enable
 	v.Enable(now.Time(), by)
 	assert.True(t, v.IsEnabled())
-	assert.Equal(t, &by, v.EntityEnabledBy())
-	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EntityEnabledAt().String())
-	assert.Nil(t, v.EntityDisabledBy())
-	assert.Nil(t, v.EntityDisabledAt())
-	assert.Empty(t, v.EntityDisabledReason())
+	assert.Equal(t, &by, v.EnabledBy())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EnabledAt().String())
+	assert.Nil(t, v.DisabledBy())
+	assert.Nil(t, v.DisabledAt())
+	assert.Empty(t, v.DisabledReason())
 
 	// Disable
 	v.Disable(now.Time(), by, "some reason", true)
 	assert.False(t, v.IsEnabled())
-	assert.Nil(t, v.EntityEnabledBy())
-	assert.Nil(t, v.EntityEnabledAt())
-	assert.Equal(t, &by, v.EntityDisabledBy())
-	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.EntityDisabledAt().String())
-	assert.Equal(t, "some reason", v.EntityDisabledReason())
+	assert.Nil(t, v.EnabledBy())
+	assert.Nil(t, v.EnabledAt())
+	assert.Equal(t, &by, v.DisabledBy())
+	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.DisabledAt().String())
+	assert.Equal(t, "some reason", v.DisabledReason())
 }
 
 func TestSwitchable_Validation(t *testing.T) {

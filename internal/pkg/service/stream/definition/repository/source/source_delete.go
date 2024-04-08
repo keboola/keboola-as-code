@@ -16,7 +16,7 @@ func (r *Repository) SoftDelete(k key.SourceKey, now time.Time, by definition.By
 	var deleted definition.Source
 	return op.Atomic(r.client, &deleted).
 		AddFrom(r.
-			softDeleteAllFrom(k, now, by, false).
+			softDeleteAllFrom(k, now, by, true).
 			OnResult(func(r []definition.Source) {
 				if len(r) == 1 {
 					deleted = r[0]
@@ -26,12 +26,12 @@ func (r *Repository) SoftDelete(k key.SourceKey, now time.Time, by definition.By
 
 func (r *Repository) deleteSourcesOnBranchDelete() {
 	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
-		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(updated.BranchKey, now, by, true))
+		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(updated.BranchKey, now, by, false))
 	})
 }
 
 // softDeleteAllFrom the parent key.
-func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, deletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, directly bool) *op.AtomicOp[[]definition.Source] {
 	var allOld, allDeleted []definition.Source
 	atomicOp := op.Atomic(r.client, &allDeleted)
 
@@ -51,7 +51,7 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by
 
 			// Mark deleted
 			deleted := deepcopy.Copy(old).(definition.Source)
-			deleted.Delete(now, by, deletedWithParent)
+			deleted.Delete(now, by, directly)
 
 			// Save
 			txn.Merge(r.save(ctx, now, by, &old, &deleted))

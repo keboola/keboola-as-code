@@ -107,7 +107,7 @@ func TestSinkRepository_Update(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		updateFn := func(sink definition.Sink) (definition.Sink, error) {
-			sink.Disabled = true
+			sink.Disable(now, test.ByUser(), "some reason", true)
 			return sink, nil
 		}
 		err := repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()
@@ -120,7 +120,7 @@ func TestSinkRepository_Update(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		updateFn := func(sink definition.Sink) (definition.Sink, error) {
-			sink.Deleted = true
+			sink.Delete(now, test.ByUser(), true)
 			return sink, nil
 		}
 		err := repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()

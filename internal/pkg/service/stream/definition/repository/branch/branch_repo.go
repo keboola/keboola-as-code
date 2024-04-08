@@ -54,7 +54,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, 
 		// Save record to the "active" prefix
 		saveTxn.Then(r.schema.Active().ByKey(updated.BranchKey).Put(r.client, *updated))
 
-		if updated.IsUndeleted() && updated.EntityUndeletedAt().Time().Equal(now) {
+		if updated.IsUndeletedAt(now) {
 			// Delete record from the "deleted" prefix, if needed
 			saveTxn.Then(r.schema.Deleted().ByKey(updated.BranchKey).Delete(r.client))
 		}

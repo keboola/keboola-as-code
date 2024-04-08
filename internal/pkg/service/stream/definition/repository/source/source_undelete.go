@@ -21,7 +21,7 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time, by definition.By) 
 		ReadOp(r.checkMaxSourcesPerBranch(k.BranchKey, 1)).
 		// Mark undeleted
 		AddFrom(r.
-			undeleteAllFrom(k, now, by, false).
+			undeleteAllFrom(k, now, by, true).
 			OnResult(func(r []definition.Source) {
 				if len(r) == 1 {
 					undeleted = r[0]
@@ -31,12 +31,12 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time, by definition.By) 
 
 func (r *Repository) undeleteSourcesOnBranchUndelete() {
 	r.plugins.Collection().OnBranchUndelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
-		op.AtomicFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.BranchKey, now, by, true))
+		op.AtomicFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.BranchKey, now, by, false))
 	})
 }
 
 // undeleteAllFrom the parent key.
-func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, undeletedWithParent bool) *op.AtomicOp[[]definition.Source] {
+func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, directly bool) *op.AtomicOp[[]definition.Source] {
 	var allOld, allCreated []definition.Source
 	atomicOp := op.Atomic(r.client, &allCreated)
 
@@ -54,7 +54,7 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by d
 		for _, old := range allOld {
 			old := old
 
-			if old.DeletedWithParent != undeletedWithParent {
+			if old.Deleted.Directly != directly {
 				continue
 			}
 
@@ -62,8 +62,8 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by d
 			created := deepcopy.Copy(old).(definition.Source)
 			created.Undelete(now, by)
 
-			// Create a new version record, if the entity has been undeleted manually
-			if !undeletedWithParent {
+			// Create a new version record, if the entity has been undeleted directly
+			if directly {
 				versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
 				created.IncrementVersion(created, now, by, versionDescription)
 			}

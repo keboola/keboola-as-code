@@ -6,13 +6,15 @@ definition/sink/active/123/567/my-source/my-sink
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 2,
@@ -45,13 +47,15 @@ definition/sink/version/123/567/my-source/my-sink/0000000002
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink",
-  "createdAt": "2000-01-01T01:00:00.000Z",
-  "createdBy": {
-    "type": "user",
-    "tokenId": "111",
-    "tokenDesc": "some.user@company.com",
-    "userId": "222",
-    "userName": "Some User"
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "version": {
     "number": 2,

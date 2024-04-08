@@ -169,14 +169,14 @@ func TestSourceRepository_UndeleteSourcesOnBranchUndelete(t *testing.T) {
 		// Source1 has been deleted before the Branch deletion, so it remains deleted.
 		source1, err = repo.GetDeleted(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source1.Deleted)
+		assert.True(t, source1.IsDeleted())
 
 		// Source2 and Source2
 		source2, err = repo.Get(sourceKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, source2.Deleted)
+		assert.False(t, source2.IsDeleted())
 		source3, err = repo.Get(sourceKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, source3.Deleted)
+		assert.False(t, source3.IsDeleted())
 	}
 }

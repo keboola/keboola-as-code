@@ -129,8 +129,8 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 		var err error
 		source1, err = repo.SoftDelete(sourceKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source1.Deleted)
-		assert.Equal(t, now, source1.DeletedAt.Time())
+		assert.True(t, source1.IsDeleted())
+		assert.Equal(t, now, source1.DeletedAt())
 	}
 
 	// Delete Branch
@@ -144,15 +144,15 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 		var err error
 		source1, err = repo.GetDeleted(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source1.Deleted)
-		assert.False(t, source1.DeletedWithParent) // Source1 has been deleted before the Branch deletion.
+		assert.True(t, source1.IsDeleted())
+		assert.True(t, source1.IsDeletedDirectly()) // Source1 has been deleted directly, before the Branch deletion.
 		source2, err = repo.GetDeleted(sourceKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source2.Deleted)
-		assert.True(t, source2.DeletedWithParent)
+		assert.True(t, source2.IsDeleted())
+		assert.False(t, source2.IsDeletedDirectly())
 		source3, err = repo.GetDeleted(sourceKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source3.Deleted)
-		assert.True(t, source3.DeletedWithParent)
+		assert.True(t, source3.IsDeleted())
+		assert.False(t, source3.IsDeletedDirectly())
 	}
 }

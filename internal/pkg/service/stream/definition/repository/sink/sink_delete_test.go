@@ -137,8 +137,8 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 		var err error
 		sink1, err = repo.SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.Deleted)
-		assert.Equal(t, now, sink1.DeletedAt.Time())
+		assert.True(t, sink1.IsDeleted())
+		assert.Equal(t, now, sink1.DeletedAt())
 	}
 
 	// Delete Source
@@ -152,16 +152,16 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 		var err error
 		sink1, err = repo.GetDeleted(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.Deleted)
-		assert.False(t, sink1.DeletedWithParent) // Sink1 has been deleted before the Source deletion.
+		assert.True(t, sink1.IsDeleted())
+		assert.True(t, sink1.IsDeletedDirectly()) // Sink1 has been deleted directly, before the Source deletion.
 		sink2, err = repo.GetDeleted(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink2.Deleted)
-		assert.True(t, sink2.DeletedWithParent)
+		assert.True(t, sink2.IsDeleted())
+		assert.False(t, sink2.IsDeletedDirectly())
 		sink3, err = repo.GetDeleted(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink3.Deleted)
-		assert.True(t, sink3.DeletedWithParent)
+		assert.True(t, sink3.IsDeleted())
+		assert.False(t, sink3.IsDeletedDirectly())
 	}
 }
 
@@ -214,8 +214,8 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 		var err error
 		sink1, err = repo.SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.Deleted)
-		assert.Equal(t, now, sink1.DeletedAt.Time())
+		assert.True(t, sink1.IsDeleted())
+		assert.Equal(t, now, sink1.DeletedAt())
 	}
 
 	// Delete Branch
@@ -229,15 +229,15 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 		var err error
 		sink1, err = repo.GetDeleted(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.Deleted)
-		assert.False(t, sink1.DeletedWithParent) // Sink1 has been deleted before the Source deletion.
+		assert.True(t, sink1.IsDeleted())
+		assert.True(t, sink1.IsDeletedDirectly()) // Sink1 has been deleted directly, before the Source deletion.
 		sink2, err = repo.GetDeleted(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink2.Deleted)
-		assert.True(t, sink2.DeletedWithParent)
+		assert.True(t, sink2.IsDeleted())
+		assert.False(t, sink2.IsDeletedDirectly())
 		sink3, err = repo.GetDeleted(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink3.Deleted)
-		assert.True(t, sink3.DeletedWithParent)
+		assert.True(t, sink3.IsDeleted())
+		assert.False(t, sink3.IsDeletedDirectly())
 	}
 }

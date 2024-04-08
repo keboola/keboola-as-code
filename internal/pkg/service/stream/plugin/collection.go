@@ -104,12 +104,12 @@ func (c *Collection) OnSliceSave(fn onSliceSaveFn) {
 }
 
 func isDelete(now time.Time, old, updated definition.SoftDeletableInterface) bool {
-	at := updated.EntityDeletedAt()
+	at := updated.DeletedAt()
 	return at != nil && at.Time().Equal(now)
 }
 
 func isUndelete(now time.Time, old, updated definition.SoftDeletableInterface) bool {
-	at := updated.EntityUndeletedAt()
+	at := updated.UndeletedAt()
 	return at != nil && at.Time().Equal(now)
 }
 
@@ -123,7 +123,7 @@ func isActivation(now time.Time, old, updated definition.SwitchableInterface) bo
 
 	enabled := false
 	{
-		at := updated.EntityEnabledAt()
+		at := updated.EnabledAt()
 		enabled = at != nil && at.Time().Equal(now)
 	}
 
@@ -138,7 +138,7 @@ func isDeactivation(now time.Time, old, updated definition.SwitchableInterface) 
 
 	disabled := false
 	{
-		at := updated.EntityDisabledAt()
+		at := updated.DisabledAt()
 		disabled = at != nil && at.Time().Equal(now)
 	}
 
