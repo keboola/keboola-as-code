@@ -37,6 +37,8 @@ func NewRepository(d dependencies, branches *branch.Repository) *Repository {
 		branches: branches,
 	}
 
+	r.disableSourcesOnBranchDisable()
+	r.enableSourcesOnBranchEnable()
 	r.deleteSourcesOnBranchDelete()
 	r.undeleteSourcesOnBranchUndelete()
 	return r

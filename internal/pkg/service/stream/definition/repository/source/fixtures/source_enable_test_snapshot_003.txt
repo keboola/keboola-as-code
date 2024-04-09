@@ -99,6 +99,16 @@ definition/source/active/123/567/my-source-2
     },
     "description": "Create source"
   },
+  "enabled": {
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
   "type": "http",
   "name": "My Source",
   "description": "My Description",
@@ -137,6 +147,16 @@ definition/source/active/123/567/my-source-3
       "userName": "Some User"
     },
     "description": "Create source"
+  },
+  "enabled": {
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
   },
   "type": "http",
   "name": "My Source",

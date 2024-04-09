@@ -23,7 +23,7 @@ func (r *Repository) Disable(k key.SourceKey, now time.Time, by definition.By, r
 }
 
 func (r *Repository) disableSourcesOnBranchDisable() {
-	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
+	r.plugins.Collection().OnBranchSave(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
 		if updated.IsDisabledAt(now) {
 			reason := "Auto-disabled with the parent branch."
 			op.AtomicFromCtx(ctx).AddFrom(r.disableAllFrom(updated.BranchKey, now, by, reason, false))

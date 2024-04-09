@@ -134,6 +134,11 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 		}
 	}
 
+	// Dump actual state
+	if c.expectedStateFromFile != "" {
+		_ = os.WriteFile(c.expectedStateFromFile+".actual", []byte(KVsToString(actualKVs)), 0600)
+	}
+
 	// Compare expected and actual KVs
 	matchedExpected := make(map[int]bool)
 	matchedActual := make(map[int]bool)
