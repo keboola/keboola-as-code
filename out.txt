@@ -1,0 +1,274 @@
+--- FAIL: TestSourceRepository_DisabledSourcesOnBranchDisabled (0.38s)
+    assert.go:88: 
+        	Error Trace:	/code/internal/pkg/utils/etcdhelper/assert.go:195
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:99
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:88
+        	            				/code/internal/pkg/service/stream/definition/repository/source/source_disable_test.go:142
+        	Error:      	These keys are in actual but not expected ectd state.
+        	            	[000] definition/branch/active/123/567
+        	            	[001] definition/source/active/123/567/my-source-1
+        	            	[002] definition/source/active/123/567/my-source-2
+        	            	[003] definition/source/active/123/567/my-source-3
+        	            	Please, update the file:
+        	            	"fixtures/source_disable_test_snapshot_002.txt"
+        	Test:       	TestSourceRepository_DisabledSourcesOnBranchDisabled
+    source_disable_test.go:152: 
+        	Error Trace:	/code/internal/pkg/service/stream/definition/repository/source/source_disable_test.go:152
+        	Error:      	Should be true
+        	Test:       	TestSourceRepository_DisabledSourcesOnBranchDisabled
+    source_disable_test.go:156: 
+        	Error Trace:	/code/internal/pkg/service/stream/definition/repository/source/source_disable_test.go:156
+        	Error:      	Should be true
+        	Test:       	TestSourceRepository_DisabledSourcesOnBranchDisabled
+--- FAIL: TestSourceRepository_Enable (0.32s)
+    assert.go:88: 
+        	Error Trace:	/code/internal/pkg/utils/etcdhelper/assert.go:164
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:99
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:88
+        	            				/code/internal/pkg/service/stream/definition/repository/source/source_enable_test.go:79
+        	Error:      	Value of the actual key
+        	            	"definition/source/active/123/567/my-source"
+        	            	doesn't match the expected key
+        	            	"definition/source/active/123/567/my-source"
+        	            	defined in the file
+        	            	"fixtures/source_enable_test_snapshot_002.txt"
+        	            	Diff:
+        	            	-----
+        	            	@@ -17,2 +17,2 @@
+        	            	-␣␣␣␣"hash":␣"%s",
+        	            	-␣␣␣␣"modifiedAt":␣"2000-01-01T04:00:00.000Z",
+        	            	+␣␣␣␣"hash":␣"6447a7c4f6e7d67b",
+        	            	+␣␣␣␣"modifiedAt":␣"2000-01-01T03:00:00.000Z",
+        	            	@@ -29 +29 @@
+        	            	-␣␣␣␣"at":␣"2000-01-01T04:00:00.000Z",
+        	            	+␣␣␣␣"at":␣"2000-01-01T03:00:00.000Z",
+        	            	-----
+        	            	Actual:
+        	            	-----
+        	            	{
+        	            	  "projectId": 123,
+        	            	  "branchId": 567,
+        	            	  "sourceId": "my-source",
+        	            	  "created": {
+        	            	    "at": "2000-01-01T01:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "version": {
+        	            	    "number": 3,
+        	            	    "hash": "6447a7c4f6e7d67b",
+        	            	    "modifiedAt": "2000-01-01T03:00:00.000Z",
+        	            	    "modifiedBy": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    },
+        	            	    "description": "Enabled."
+        	            	  },
+        	            	  "enabled": {
+        	            	    "at": "2000-01-01T03:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "type": "http",
+        	            	  "name": "My Source",
+        	            	  "description": "My Description",
+        	            	  "http": {
+        	            	    "secret": "012345678901234567890123456789012345678912345678"
+        	            	  }
+        	            	}
+        	            	-----
+        	            	Expected:
+        	            	-----
+        	            	{
+        	            	  "projectId": 123,
+        	            	  "branchId": 567,
+        	            	  "sourceId": "my-source",
+        	            	  "created": {
+        	            	    "at": "2000-01-01T01:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "version": {
+        	            	    "number": 3,
+        	            	    "hash": "%s",
+        	            	    "modifiedAt": "2000-01-01T04:00:00.000Z",
+        	            	    "modifiedBy": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    },
+        	            	    "description": "Enabled."
+        	            	  },
+        	            	  "enabled": {
+        	            	    "at": "2000-01-01T04:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "type": "http",
+        	            	  "name": "My Source",
+        	            	  "description": "My Description",
+        	            	  "http": {
+        	            	    "secret": "012345678901234567890123456789012345678912345678"
+        	            	  }
+        	            	}
+        	            	-----
+        	Test:       	TestSourceRepository_Enable
+    assert.go:88: 
+        	Error Trace:	/code/internal/pkg/utils/etcdhelper/assert.go:164
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:99
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:88
+        	            				/code/internal/pkg/service/stream/definition/repository/source/source_enable_test.go:79
+        	Error:      	Value of the actual key
+        	            	"definition/source/version/123/567/my-source/0000000003"
+        	            	doesn't match the expected key
+        	            	"definition/source/version/123/567/my-source/0000000003"
+        	            	defined in the file
+        	            	"fixtures/source_enable_test_snapshot_002.txt"
+        	            	Diff:
+        	            	-----
+        	            	@@ -17,2 +17,2 @@
+        	            	-␣␣␣␣"hash":␣"%s",
+        	            	-␣␣␣␣"modifiedAt":␣"2000-01-01T04:00:00.000Z",
+        	            	+␣␣␣␣"hash":␣"6447a7c4f6e7d67b",
+        	            	+␣␣␣␣"modifiedAt":␣"2000-01-01T03:00:00.000Z",
+        	            	@@ -29 +29 @@
+        	            	-␣␣␣␣"at":␣"2000-01-01T04:00:00.000Z",
+        	            	+␣␣␣␣"at":␣"2000-01-01T03:00:00.000Z",
+        	            	-----
+        	            	Actual:
+        	            	-----
+        	            	{
+        	            	  "projectId": 123,
+        	            	  "branchId": 567,
+        	            	  "sourceId": "my-source",
+        	            	  "created": {
+        	            	    "at": "2000-01-01T01:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "version": {
+        	            	    "number": 3,
+        	            	    "hash": "6447a7c4f6e7d67b",
+        	            	    "modifiedAt": "2000-01-01T03:00:00.000Z",
+        	            	    "modifiedBy": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    },
+        	            	    "description": "Enabled."
+        	            	  },
+        	            	  "enabled": {
+        	            	    "at": "2000-01-01T03:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "type": "http",
+        	            	  "name": "My Source",
+        	            	  "description": "My Description",
+        	            	  "http": {
+        	            	    "secret": "012345678901234567890123456789012345678912345678"
+        	            	  }
+        	            	}
+        	            	-----
+        	            	Expected:
+        	            	-----
+        	            	{
+        	            	  "projectId": 123,
+        	            	  "branchId": 567,
+        	            	  "sourceId": "my-source",
+        	            	  "created": {
+        	            	    "at": "2000-01-01T01:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "version": {
+        	            	    "number": 3,
+        	            	    "hash": "%s",
+        	            	    "modifiedAt": "2000-01-01T04:00:00.000Z",
+        	            	    "modifiedBy": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    },
+        	            	    "description": "Enabled."
+        	            	  },
+        	            	  "enabled": {
+        	            	    "at": "2000-01-01T04:00:00.000Z",
+        	            	    "by": {
+        	            	      "type": "user",
+        	            	      "tokenId": "111",
+        	            	      "tokenDesc": "some.user@company.com",
+        	            	      "userId": "222",
+        	            	      "userName": "Some User"
+        	            	    }
+        	            	  },
+        	            	  "type": "http",
+        	            	  "name": "My Source",
+        	            	  "description": "My Description",
+        	            	  "http": {
+        	            	    "secret": "012345678901234567890123456789012345678912345678"
+        	            	  }
+        	            	}
+        	            	-----
+        	Test:       	TestSourceRepository_Enable
+--- FAIL: TestSourceRepository_Disable (0.30s)
+    assert.go:88: 
+        	Error Trace:	/code/internal/pkg/utils/etcdhelper/assert.go:195
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:99
+        	            				/code/internal/pkg/utils/etcdhelper/assert.go:88
+        	            				/code/internal/pkg/service/stream/definition/repository/source/source_disable_test.go:68
+        	Error:      	These keys are in actual but not expected ectd state.
+        	            	[000] definition/source/active/123/567/my-source
+        	            	[001] definition/source/version/123/567/my-source/0000000001
+        	            	[002] definition/source/version/123/567/my-source/0000000002
+        	            	Please, update the file:
+        	            	"fixtures/source_disable_test_snapshot_001.txt"
+        	Test:       	TestSourceRepository_Disable
+FAIL
+FAIL	github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source	0.909s
+ok  	github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema	(cached)
+FAIL

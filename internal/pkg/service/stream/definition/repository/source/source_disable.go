@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-func (r *Repository) Disable(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
+func (r *Repository) Disable(k key.SourceKey, now time.Time, by definition.By, reason string) *op.AtomicOp[definition.Source] {
 	var enabled definition.Source
 	return op.Atomic(r.client, &enabled).
 		AddFrom(r.
-			enableAllFrom(k, now, by, true).
+			disableAllFrom(k, now, by, reason, true).
 			OnResult(func(r []definition.Source) {
 				if len(r) == 1 {
 					enabled = r[0]
