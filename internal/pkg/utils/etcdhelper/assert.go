@@ -158,7 +158,7 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 				} else {
 					msg := fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\"", actual.Key, expected.Key)
 					if c.expectedStateFromFile != "" {
-						msg += fmt.Sprintf("\ndefined in file\n\"%s\"", c.expectedStateFromFile)
+						msg += fmt.Sprintf("\ndefined in the file\n\"%s\"", c.expectedStateFromFile)
 					}
 					msg += fmt.Sprintf("\n%s", err)
 					assert.Fail(t, msg)
@@ -174,7 +174,11 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 		}
 	}
 	if len(unmatchedExpected) > 0 {
-		assert.Fail(t, fmt.Sprintf("These keys are in expected but not actual ectd state:\n%s", strings.Join(unmatchedExpected, "\n")))
+		msg := fmt.Sprintf("These keys are in expected but not actual ectd state:\n%s\n", strings.Join(unmatchedExpected, "\n"))
+		if c.expectedStateFromFile != "" {
+			msg += fmt.Sprintf("Please, update the file:\n\"%s\"", c.expectedStateFromFile)
+		}
+		assert.Fail(t, msg)
 	}
 
 	var unmatchedActual []string
@@ -184,7 +188,11 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 		}
 	}
 	if len(unmatchedActual) > 0 {
-		assert.Fail(t, fmt.Sprintf("These keys are in actual but not expected ectd state:\n%s", strings.Join(unmatchedActual, "\n")))
+		msg := fmt.Sprintf("These keys are in actual but not expected ectd state.\n%s\n", strings.Join(unmatchedActual, "\n"))
+		if c.expectedStateFromFile != "" {
+			msg += fmt.Sprintf("Please, update the file:\n\"%s\"", c.expectedStateFromFile)
+		}
+		assert.Fail(t, msg)
 	}
 
 	return len(unmatchedExpected) == 0 && len(unmatchedActual) == 0

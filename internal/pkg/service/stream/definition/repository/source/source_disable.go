@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (r *Repository) Enable(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
+func (r *Repository) Disable(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
 	var enabled definition.Source
 	return op.Atomic(r.client, &enabled).
 		AddFrom(r.
@@ -22,18 +22,19 @@ func (r *Repository) Enable(k key.SourceKey, now time.Time, by definition.By) *o
 			}))
 }
 
-func (r *Repository) enableSourcesOnBranchEnable() {
+func (r *Repository) disableSourcesOnBranchDisable() {
 	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
-		if updated.IsEnabledAt(now) {
-			op.AtomicFromCtx(ctx).AddFrom(r.enableAllFrom(updated.BranchKey, now, by, false))
+		if updated.IsDisabledAt(now) {
+			reason := "Auto-disabled with the parent branch."
+			op.AtomicFromCtx(ctx).AddFrom(r.disableAllFrom(updated.BranchKey, now, by, reason, false))
 		}
 	})
 }
 
-// enableAllFrom the parent key.
-func (r *Repository) enableAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, directly bool) *op.AtomicOp[[]definition.Source] {
-	var allOriginal, allEnabled []definition.Source
-	atomicOp := op.Atomic(r.client, &allEnabled)
+// disableAllFrom the parent key.
+func (r *Repository) disableAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, reason string, directly bool) *op.AtomicOp[[]definition.Source] {
+	var allOriginal, allDisabled []definition.Source
+	atomicOp := op.Atomic(r.client, &allDisabled)
 
 	// Get or list
 	switch k := parentKey.(type) {
@@ -49,22 +50,22 @@ func (r *Repository) enableAllFrom(parentKey fmt.Stringer, now time.Time, by def
 		for _, original := range allOriginal {
 			original := original
 
-			if original.IsDisabledDirectly() != directly {
+			if original.IsDisabled() {
 				continue
 			}
 
-			// Mark enabled
-			enabled := deepcopy.Copy(original).(definition.Source)
-			enabled.Enable(now, by)
+			// Mark disabled
+			disabled := deepcopy.Copy(original).(definition.Source)
+			disabled.Disable(now, by, reason, directly)
 
-			// Create a new version record, if the entity has been enabled manually
+			// Create a new version record, if the entity has been disabled manually
 			if directly {
-				enabled.IncrementVersion(enabled, now, by, "Enabled.")
+				disabled.IncrementVersion(disabled, now, by, "Disabled.")
 			}
 
 			// Save
-			txn.Merge(r.save(ctx, now, by, &original, &enabled))
-			allEnabled = append(allEnabled, enabled)
+			txn.Merge(r.save(ctx, now, by, &original, &disabled))
+			allDisabled = append(allDisabled, disabled)
 		}
 		return txn
 	})

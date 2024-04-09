@@ -13,8 +13,10 @@ type SwitchableInterface interface {
 	Disable(now time.Time, by By, reason string, disabledWithParent bool)
 	// IsEnabled returns true if the entity is marked as enabled.
 	IsEnabled() bool
+	IsEnabledAt(at time.Time) bool
 	// IsDisabled returns true if the entity is marked as disabled.
 	IsDisabled() bool
+	IsDisabledAt(at time.Time) bool
 	// IsDisabledDirectly returns true if the entity has been disabled directly, not together with its parent.
 	IsDisabledDirectly() bool
 	DisabledBy() *By
@@ -56,8 +58,16 @@ func (v *Switchable) IsEnabled() bool {
 	return v.Disabled == nil
 }
 
+func (v *Switchable) IsEnabledAt(at time.Time) bool {
+	return v.Enabled != nil && v.Enabled.At.Time().Equal(at)
+}
+
 func (v *Switchable) IsDisabled() bool {
 	return v.Disabled != nil
+}
+
+func (v *Switchable) IsDisabledAt(at time.Time) bool {
+	return v.Disabled != nil && v.Disabled.At.Time().Equal(at)
 }
 
 // IsDisabledDirectly returns true if the entity has been disabled directly, not together with its parent.
