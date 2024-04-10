@@ -16,7 +16,7 @@ docker compose build
 
 Create `.env` file with definition of testing projects:
 ```
-TEST_KBC_PROJECTS="[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","backend":"snowflake/bigquery","token":"<token>"},...]"
+TEST_KBC_PROJECTS='[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","backend":"snowflake/bigquery","token":"<token>"},...]'
 ```
 
 Staging storage can be `s3`, `abs` or `gcs`, according to the stack.
