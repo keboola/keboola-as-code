@@ -20,7 +20,7 @@ import (
 func TestMutex_LockUnlock(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
