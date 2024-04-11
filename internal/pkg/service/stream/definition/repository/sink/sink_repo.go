@@ -37,6 +37,8 @@ func NewRepository(d dependencies, sources *source.Repository) *Repository {
 		sources: sources,
 	}
 
+	r.disableSinksOnSourceDisable()
+	r.enableSinksOnSourceEnable()
 	r.deleteSinksOnSourceDelete()
 	r.undeleteSinksOnSourceUndelete()
 	return r
