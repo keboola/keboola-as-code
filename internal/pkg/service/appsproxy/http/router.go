@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"embed"
-	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"html/template"
@@ -55,16 +54,15 @@ type Router struct {
 const (
 	providerCookie    = "_oauth2_provider"
 	selectionPagePath = "/_proxy/selection"
-
-	errorPagePath = "template/error.html.tmpl"
-	faviconPath   = "template/favicon.ico"
+	faviconPagePath   = "/_proxy/favicon.ico"
+	imagePagePath     = "/_proxy/rocket-flying.gif"
 )
 
-//go:embed template/*
-var templates embed.FS
+//go:embed template/* static/*
+var content embed.FS
 
 func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, error) {
-	html, err := templates.ReadFile("template/selection.html.tmpl")
+	html, err := content.ReadFile("template/selection.html.tmpl")
 	if err != nil {
 		return nil, errors.PrefixError(err, "selection template file not found")
 	}
@@ -179,10 +177,9 @@ func (r *Router) Shutdown() {
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
-		appID, _ := req.Context().Value(AppIDCtxKey).(string)
 		w.WriteHeader(http.StatusForbidden)
-		// Get error page.
-		r.getHTMLPage(req.Context(), w, faviconPath, errorPagePath, exceptionID, appID)
+		fmt.Fprintln(w, "Application has invalid configuration.")
+		fmt.Fprintln(w, "Exception ID:", exceptionID)
 	})
 }
 
@@ -212,6 +209,14 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 	mux := http.NewServeMux()
 
 	mux.Handle(selectionPagePath, r.createSelectionPageHandler(oauthProviders))
+
+	mux.HandleFunc(faviconPagePath, func(w http.ResponseWriter, req *http.Request) {
+		serveEmbeddedFile(req.Context(), w, r.logger, "static/favicon.ico", "image/x-icon")
+	})
+
+	mux.HandleFunc(imagePagePath, func(w http.ResponseWriter, req *http.Request) {
+		serveEmbeddedFile(req.Context(), w, r.logger, "static/rocket-flying.gif", "image/gif")
+	})
 
 	// Always send /_proxy/ requests to the correct provider.
 	// This is necessary for proxy callback url to work on an app with prefixed private parts.
@@ -722,57 +727,23 @@ func headerFromClaim(header, claim string) options.Header {
 	}
 }
 
-func (r *Router) getHTMLPage(ctx context.Context, w http.ResponseWriter, imageFilePath string, htmlFilePath string, exceptionID string, appID string) {
-	// Encode the image data to Base64.
-	imageBase64, err := encodeImageDataToBase64(imageFilePath)
+func serveEmbeddedFile(ctx context.Context, w http.ResponseWriter, logger log.Logger, filename string, contentType string) {
+	// Open the embedded file
+	file, err := content.Open(filename)
 	if err != nil {
-		r.logger.Error(ctx, "failed to encode image to base64")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Errorf(ctx, `file "%s" not found`, filename)
+		http.Error(w, "file not found", http.StatusNotFound)
 		return
 	}
+	defer file.Close()
 
-	// Define a struct to pass data into the template.
-	data := struct {
-		ExceptionID string
-		AppID       string
-		DataBase64  string
-	}{
-		ExceptionID: exceptionID,
-		AppID:       appID,
-		DataBase64:  imageBase64,
-	}
+	// Set the Content-Type header
+	w.Header().Set("Content-Type", contentType)
 
-	html, err := templates.ReadFile(htmlFilePath)
-	if err != nil {
-		r.logger.Error(ctx, "failed to read a file")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Copy the file data to the response writer
+	if _, err := io.Copy(w, file); err != nil {
+		logger.Errorf(ctx, `failed to serve file "%s"`, filename)
+		http.Error(w, "Failed to serve file", http.StatusInternalServerError)
 		return
 	}
-
-	// Parse the HTML template
-	tmpl, err := template.New("error").Parse(string(html))
-	if err != nil {
-		r.logger.Error(ctx, "failed to parse template")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusServiceUnavailable)
-	// Execute the template, passing the data
-	err = tmpl.Execute(w, data)
-	if err != nil {
-		r.logger.Error(ctx, "failed to execute template")
-		return
-	}
-}
-
-func encodeImageDataToBase64(filePath string) (string, error) {
-	// Read file
-	dataBytes, err := templates.ReadFile(filePath)
-	if err != nil {
-		return "", err
-	}
-
-	// Encode the image data to Base64
-	return base64.StdEncoding.EncodeToString(dataBytes), nil
 }
