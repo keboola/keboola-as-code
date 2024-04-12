@@ -2,16 +2,6 @@ run:
   timeout: 15m
   concurrency: 8
   tests: true # check test files
-  skip-files: [ ]
-  skip-dirs:
-    - build
-    - docs
-    - provisioning
-    - scripts
-    - target
-    - third_party
-    - vendor
-  skip-dirs-use-default: true
   modules-download-mode: mod
 
 output:
@@ -164,6 +154,17 @@ linters:
     #- gomnd
 
 issues:
+  exclude-files: []
+  exclude-dirs:
+    - build
+    - docs
+    - provisioning
+    - scripts
+    - target
+    - third_party
+    - vendor
+  exclude-dirs-use-default: true
+
   max-same-issues: 25
 
   # List of regexps of issue texts to exclude
