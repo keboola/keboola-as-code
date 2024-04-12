@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
-	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/app/pagewriter"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -18,18 +17,18 @@ type pageWriter struct {
 	dnsErrorHandler func(w http.ResponseWriter, req *http.Request)
 }
 
-func NewPageWriter(opts *options.Options, dnsErrorHandler func(w http.ResponseWriter, req *http.Request)) (pagewriter.Writer, error) {
+func NewPageWriter(dnsErrorHandler func(w http.ResponseWriter, req *http.Request)) (pagewriter.Writer, error) {
 	parentWriter, err := pagewriter.NewWriter(
 		pagewriter.Opts{
-			TemplatesPath:    opts.Templates.Path,
-			CustomLogo:       opts.Templates.CustomLogo,
-			ProxyPrefix:      opts.ProxyPrefix,
-			Footer:           opts.Templates.Footer,
+			TemplatesPath:    "template",
+			CustomLogo:       "",
+			ProxyPrefix:      "",
+			Footer:           "",
 			Version:          oauthproxy.VERSION,
-			Debug:            opts.Templates.Debug,
-			ProviderName:     opts.Providers[0].Name,
-			SignInMessage:    opts.Templates.Banner,
-			DisplayLoginForm: opts.Templates.DisplayLoginForm,
+			Debug:            false,
+			ProviderName:     "",
+			SignInMessage:    "",
+			DisplayLoginForm: false,
 		},
 	)
 	if err != nil {

@@ -6,8 +6,10 @@ import (
 	"embed"
 	"encoding/binary"
 	"fmt"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/app/pagewriter"
 	"html/template"
 	"io"
+	"io/fs"
 	"math/rand"
 	"net"
 	"net/http"
@@ -47,7 +49,9 @@ type Router struct {
 	transport         *http.Transport
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
+	errorTemplate     *template.Template
 	exceptionIDPrefix string
+	pageWriter        pagewriter.Writer
 	wg                sync.WaitGroup
 }
 
@@ -56,21 +60,27 @@ const (
 	selectionPagePath = "/_proxy/selection"
 	faviconPagePath   = "/_proxy/favicon.ico"
 	imagePagePath     = "/_proxy/rocket-flying.gif"
+
+	errorTemplatePath     = "template"
+	selectionTemplatePath = "template/selection.html.tmpl"
 )
 
-//go:embed template/* static/*
-var content embed.FS
+//go:embed template/*
+var templates embed.FS
+
+//go:embed static/*
+var static embed.FS
 
 func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, error) {
-	html, err := content.ReadFile("template/selection.html.tmpl")
-	if err != nil {
-		return nil, errors.PrefixError(err, "selection template file not found")
-	}
-
-	tmpl, err := template.New("selection template").Parse(string(html))
+	selectionTmpl, err := getHTMLTemplate(selectionTemplatePath, "selection template")
 	if err != nil {
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
+
+	//errorTmpl, err := getHTMLTemplate(errorTemplatePath, "error template")
+	//if err != nil {
+	//	return nil, errors.PrefixError(err, "could not parse error template")
+	//}
 
 	transport, err := NewReverseProxyHTTPTransport("")
 	if err != nil {
@@ -89,11 +99,16 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 				updateLock: &sync.RWMutex{},
 			}
 		}),
-		selectionTemplate: tmpl,
+		selectionTemplate: selectionTmpl,
+		//errorTemplate:     errorTmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 		wg:                sync.WaitGroup{},
 	}
 
+	router.pageWriter, err = NewPageWriter(router.dnsErrorHandler)
+	if err != nil {
+		return nil, err
+	}
 	return router, nil
 }
 
@@ -177,9 +192,14 @@ func (r *Router) Shutdown() {
 func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprintln(w, "Application has invalid configuration.")
-		fmt.Fprintln(w, "Exception ID:", exceptionID)
+
+		r.pageWriter.WriteErrorPage(w, pagewriter.ErrorPageOpts{
+			Status:      403,
+			RedirectURL: "",
+			RequestID:   exceptionID,
+			AppError:    "",
+			Messages:    nil,
+		})
 	})
 }
 
@@ -210,13 +230,10 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 
 	mux.Handle(selectionPagePath, r.createSelectionPageHandler(oauthProviders))
 
-	mux.HandleFunc(faviconPagePath, func(w http.ResponseWriter, req *http.Request) {
-		serveEmbeddedFile(req.Context(), w, r.logger, "static/favicon.ico", "image/x-icon")
-	})
+	staticDirFs, _ := fs.Sub(static, "static")
+	staticHandler := http.FileServer(http.FS(staticDirFs))
 
-	mux.HandleFunc(imagePagePath, func(w http.ResponseWriter, req *http.Request) {
-		serveEmbeddedFile(req.Context(), w, r.logger, "static/rocket-flying.gif", "image/gif")
-	})
+	mux.Handle("/_proxy/static/", http.StripPrefix("/_proxy/static/", staticHandler))
 
 	// Always send /_proxy/ requests to the correct provider.
 	// This is necessary for proxy callback url to work on an app with prefixed private parts.
@@ -428,6 +445,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthP
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
 	}
+
 	provider.proxyConfig = proxyConfig
 
 	// AllowedRoles nil means there is no role requirement. Empty array doesn't make sense.
@@ -444,15 +462,8 @@ func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthP
 	}
 	provider.proxyProvider = proxyProvider
 
-	// Create a page writer instance. This is necessary for triggering data app wakeup.
-	pageWriter, err := NewPageWriter(proxyConfig, r.dnsErrorHandler)
-	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create page writer for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
-		return provider
-	}
-
 	// Create the actual proxy instance. May fail on some runtime error.
-	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, pageWriter)
+	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, r.pageWriter)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
@@ -729,7 +740,7 @@ func headerFromClaim(header, claim string) options.Header {
 
 func serveEmbeddedFile(ctx context.Context, w http.ResponseWriter, logger log.Logger, filename string, contentType string) {
 	// Open the embedded file
-	file, err := content.Open(filename)
+	file, err := static.Open(filename)
 	if err != nil {
 		logger.Errorf(ctx, `file "%s" not found`, filename)
 		http.Error(w, "file not found", http.StatusNotFound)
@@ -746,4 +757,13 @@ func serveEmbeddedFile(ctx context.Context, w http.ResponseWriter, logger log.Lo
 		http.Error(w, "Failed to serve file", http.StatusInternalServerError)
 		return
 	}
+}
+
+func getHTMLTemplate(templatePath string, name string) (*template.Template, error) {
+	html, err := templates.ReadFile(templatePath)
+	if err != nil {
+		return nil, errors.PrefixError(err, "selection template file not found")
+	}
+
+	return template.New(name).Parse(string(html))
 }
