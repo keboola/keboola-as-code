@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/binary"
 	"fmt"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/app/pagewriter"
 	"html/template"
 	"io"
 	"math/rand"
@@ -45,6 +46,7 @@ type Router struct {
 	clock             clock.Clock
 	loader            dataapps.Client
 	transport         *http.Transport
+	pageWriter        pagewriter.Writer
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
@@ -92,6 +94,12 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 		wg:                sync.WaitGroup{},
+	}
+
+	// Create a page writer instance. This is necessary for triggering data app wakeup.
+	router.pageWriter, err = NewPageWriter(router.dnsErrorHandler)
+	if err != nil {
+		return nil, err
 	}
 
 	return router, nil
@@ -285,9 +293,13 @@ func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handl
 
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), err.Error())
-		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintln(w, "Unable to connect to application.")
-		fmt.Fprintln(w, "Exception ID:", exceptionID)
+		r.pageWriter.WriteErrorPage(w, pagewriter.ErrorPageOpts{
+			Status:      http.StatusBadGateway,
+			RedirectURL: "",
+			RequestID:   exceptionID,
+			AppError:    err.Error(),
+			Messages:    []any{err.Error()},
+		})
 	}
 
 	return chain.Then(proxy)
@@ -444,15 +456,8 @@ func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthP
 	}
 	provider.proxyProvider = proxyProvider
 
-	// Create a page writer instance. This is necessary for triggering data app wakeup.
-	pageWriter, err := NewPageWriter(proxyConfig, r.dnsErrorHandler)
-	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create page writer for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
-		return provider
-	}
-
 	// Create the actual proxy instance. May fail on some runtime error.
-	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, pageWriter)
+	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, r.pageWriter)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return provider
