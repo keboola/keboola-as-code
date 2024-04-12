@@ -1,0 +1,187 @@
+<<<<<
+definition/source/active/123/567/my-source
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "version": {
+    "number": 3,
+    "hash": "6447a7c4f6e7d67b",
+    "modifiedAt": "2000-01-01T03:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
+    "description": "Enabled."
+  },
+  "enabled": {
+    "at": "2000-01-01T03:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/123/567/my-source/0000000001
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "version": {
+    "number": 1,
+    "hash": "419a32b072570054",
+    "modifiedAt": "2000-01-01T01:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
+    "description": "Create source"
+  },
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/123/567/my-source/0000000002
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "version": {
+    "number": 2,
+    "hash": "24a81c5e9269546e",
+    "modifiedAt": "2000-01-01T02:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
+    "description": "Disabled."
+  },
+  "disabled": {
+    "directly": true,
+    "at": "2000-01-01T02:00:00.000Z",
+    "reason": "some reason",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/123/567/my-source/0000000003
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "version": {
+    "number": 3,
+    "hash": "6447a7c4f6e7d67b",
+    "modifiedAt": "2000-01-01T03:00:00.000Z",
+    "modifiedBy": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    },
+    "description": "Enabled."
+  },
+  "enabled": {
+    "at": "2000-01-01T03:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "type": "http",
+  "name": "My Source",
+  "description": "My Description",
+  "http": {
+    "secret": "012345678901234567890123456789012345678912345678"
+  }
+}
+>>>>>
