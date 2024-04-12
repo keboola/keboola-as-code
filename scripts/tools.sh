@@ -63,5 +63,5 @@ fi
 # goa - api by design library
 if ! command -v goa &> /dev/null
 then
-  go install goa.design/goa/v3/cmd/goa@v3.14.6
+  go install goa.design/goa/v3/cmd/goa@v3.16.0
 fi
