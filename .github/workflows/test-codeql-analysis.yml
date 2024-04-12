@@ -21,7 +21,7 @@ on:
     - cron: '40 21 * * 1'
 
 env:
-  GO_VERSION: 1.22.0
+  GO_VERSION: 1.22.2
 
 jobs:
   analyze:

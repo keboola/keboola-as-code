@@ -27,7 +27,7 @@ fi
 # golangci-lint
 if ! command -v golangci-lint &> /dev/null
 then
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.2
 fi
 
 # gci
@@ -63,5 +63,5 @@ fi
 # goa - api by design library
 if ! command -v goa &> /dev/null
 then
-  go install goa.design/goa/v3/cmd/goa@v3.14.6
+  go install goa.design/goa/v3/cmd/goa@v3.16.0
 fi
