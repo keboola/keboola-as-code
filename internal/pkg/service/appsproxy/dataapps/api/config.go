@@ -20,6 +20,7 @@ type AppProxyConfig struct {
 	AuthProviders  []AuthProvider `json:"authProviders"`
 	AuthRules      []AuthRule     `json:"authRules"`
 	eTag           string
+	modified       bool
 	maxAge         time.Duration
 }
 
@@ -45,10 +46,11 @@ type ProviderType string
 
 type RuleType string
 
-func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request.APIRequest[*AppProxyConfig] {
+// GetAppProxyConfig loads proxy configuration for the specified app.
+// eTag is used to detect modifications, if the eTag doesn't match, the AppProxyConfig.IsModified method returns true.
+func (a *API) GetAppProxyConfig(appID string, eTag string) request.APIRequest[*AppProxyConfig] {
 	result := &AppProxyConfig{}
-	req := request.NewHTTPRequest(sender).
-		WithError(&SandboxesError{}).
+	return request.NewAPIRequest(result, a.newRequest().
 		WithResult(result).
 		WithGet("apps/{appId}/proxy-config").
 		AndPathParam("appId", appID).
@@ -78,12 +80,17 @@ func GetAppProxyConfig(sender request.Sender, appID string, eTag string) request
 				return err
 			}
 
-			if cacheDirectives.NoStore || cacheDirectives.NoCache != nil {
-				return nil
+			if !cacheDirectives.NoStore && cacheDirectives.NoCache == nil {
+				result.maxAge = time.Second * time.Duration(cacheDirectives.MaxAge)
 			}
 
-			result.maxAge = time.Second * time.Duration(cacheDirectives.MaxAge)
+			result.modified = result.eTag != eTag
+
 			return nil
-		})
-	return request.NewAPIRequest(result, req)
+		}),
+	)
+}
+
+func (c *AppProxyConfig) IsModified() bool {
+	return c.modified
 }

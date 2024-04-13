@@ -6,18 +6,16 @@ import (
 	"github.com/keboola/go-client/pkg/request"
 )
 
-type NotifyBody struct {
+type notifyBody struct {
 	LastRequestTimestamp string `json:"lastRequestTimestamp"`
 }
 
-func NotifyAppUsage(sender request.Sender, appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
-	body := NotifyBody{
-		LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
-	}
-	req := request.NewHTTPRequest(sender).
-		WithError(&SandboxesError{}).
+func (a *API) NotifyAppUsage(appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
+	return request.NewAPIRequest(request.NoResult{}, a.newRequest().
 		WithPatch("apps/{appId}").
 		AndPathParam("appId", appID).
-		WithJSONBody(body)
-	return request.NewAPIRequest(request.NoResult{}, req)
+		WithJSONBody(notifyBody{
+			LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
+		}),
+	)
 }
