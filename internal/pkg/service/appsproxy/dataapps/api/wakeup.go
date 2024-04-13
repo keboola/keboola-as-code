@@ -1,4 +1,4 @@
-package dataapps
+package api
 
 import "github.com/keboola/go-client/pkg/request"
 
