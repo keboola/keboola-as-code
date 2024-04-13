@@ -9,11 +9,11 @@ import (
 )
 
 type AppProxyConfig struct {
-	ID             string         `json:"-"`
-	Name           string         `json:"name"`
-	UpstreamAppURL string         `json:"upstreamAppUrl"`
-	AuthProviders  []AuthProvider `json:"authProviders"`
-	AuthRules      []AuthRule     `json:"authRules"`
+	ID             string     `json:"-"`
+	Name           string     `json:"name"`
+	UpstreamAppURL string     `json:"upstreamAppUrl"`
+	AuthProviders  []Provider `json:"authProviders"`
+	AuthRules      []Rule     `json:"authRules"`
 	eTag           string
 	modified       bool
 	maxAge         time.Duration
@@ -31,13 +31,6 @@ func (a *API) GetAppProxyConfig(appID string, eTag string) request.APIRequest[*A
 		WithOnSuccess(func(ctx context.Context, response request.HTTPResponse) error {
 			// Add app id to the result
 			result.ID = appID
-
-			// Use provider id as fallback until name is added to Sandboxes API
-			for i, provider := range result.AuthProviders {
-				if provider.Name == "" {
-					result.AuthProviders[i].Name = provider.ID
-				}
-			}
 
 			// Add ETag to result
 			result.eTag = response.ResponseHeader().Get("ETag")
