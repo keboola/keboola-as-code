@@ -4,18 +4,20 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/request"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 type notifyBody struct {
-	LastRequestTimestamp string `json:"lastRequestTimestamp"`
+	LastRequestTimestamp utctime.UTCTime `json:"lastRequestTimestamp"`
 }
 
-func (a *API) NotifyAppUsage(appID string, lastRequestTimestamp time.Time) request.APIRequest[request.NoResult] {
+func (a *API) NotifyAppUsage(appID string, lastRequestAt time.Time) request.APIRequest[request.NoResult] {
 	return request.NewAPIRequest(request.NoResult{}, a.newRequest().
 		WithPatch("apps/{appId}").
 		AndPathParam("appId", appID).
 		WithJSONBody(notifyBody{
-			LastRequestTimestamp: lastRequestTimestamp.Format(time.RFC3339),
+			LastRequestTimestamp: utctime.From(lastRequestAt),
 		}),
 	)
 }
