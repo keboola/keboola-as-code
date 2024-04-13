@@ -1,6 +1,22 @@
 package api
 
+import (
+	"net/http"
+	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
 const (
+	// RulePathPrefix registers the Rule.Value as http.ServeMux pattern.
+	//
+	// Examples:
+	//   - "/" matches any request
+	//   - "/{$}" matches only "/"
+	//   - "/static/" matches request whose path begins with "/static/"
+	//   - "/index.html" matches the path "/index.html"
+	//
+	// For details see "Patterns" in https://pkg.go.dev/net/http#ServeMux
 	RulePathPrefix = RuleType("pathPrefix")
 )
 
@@ -13,4 +29,17 @@ type Rule struct {
 	Value        string       `json:"value"`
 	Auth         []ProviderID `json:"auth"`
 	AuthRequired *bool        `json:"authRequired"`
+}
+
+func (r *Rule) RegisterHandler(mux *http.ServeMux, handler http.Handler) error {
+	switch r.Type {
+	case RulePathPrefix:
+		if !strings.HasPrefix(r.Value, "/") {
+			return errors.Errorf(`rule "%s": value "%v" must start with "/"`, r.Type, r.Value)
+		}
+		mux.Handle(r.Value, handler)
+		return nil
+	default:
+		return errors.Errorf(`unexpected data app auth rule "%s"`, r.Type)
+	}
 }
