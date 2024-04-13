@@ -8,11 +8,6 @@ import (
 	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
-const (
-	OIDCProvider = ProviderType("oidc")
-	PathPrefix   = RuleType("pathPrefix")
-)
-
 type AppProxyConfig struct {
 	ID             string         `json:"-"`
 	Name           string         `json:"name"`
@@ -23,28 +18,6 @@ type AppProxyConfig struct {
 	modified       bool
 	maxAge         time.Duration
 }
-
-type AuthProvider struct {
-	ID           string       `json:"id"`
-	Name         string       `json:"name"`
-	Type         ProviderType `json:"type"`
-	ClientID     string       `json:"clientId"`
-	ClientSecret string       `json:"clientSecret"`
-	IssuerURL    string       `json:"issuerUrl"`
-	LogoutURL    string       `json:"logoutUrl"`
-	AllowedRoles *[]string    `json:"allowedRoles"`
-}
-
-type AuthRule struct {
-	Type         RuleType `json:"type"`
-	Value        string   `json:"value"`
-	Auth         []string `json:"auth"`
-	AuthRequired *bool    `json:"authRequired"`
-}
-
-type ProviderType string
-
-type RuleType string
 
 // GetAppProxyConfig loads proxy configuration for the specified app.
 // eTag is used to detect modifications, if the eTag doesn't match, the AppProxyConfig.IsModified method returns true.
