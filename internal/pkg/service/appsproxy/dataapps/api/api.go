@@ -7,12 +7,17 @@ import (
 
 type API struct {
 	sender request.Sender
+	apiURL string
+	token  string
 }
 
-func New(sender request.Sender) *API {
-	return &API{sender: sender}
+func New(sender request.Sender, apiURL, token string) *API {
+	return &API{sender: sender, apiURL: apiURL, token: token}
 }
 
 func (a *API) newRequest() request.HTTPRequest {
-	return request.NewHTTPRequest(a.sender).WithError(&Error{})
+	return request.NewHTTPRequest(a.sender).
+		WithError(&Error{}).
+		WithBaseURL(a.apiURL).
+		AndHeader("X-KBC-ManageApiToken", a.token)
 }
