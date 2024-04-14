@@ -41,5 +41,5 @@ func (v Base) Name() string {
 }
 
 func (v Base) Type() Type {
-	return v.Type
+	return v.Info.Type
 }

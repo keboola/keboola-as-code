@@ -4,6 +4,8 @@ package provider
 import (
 	"encoding/json"
 	"reflect"
+
+	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 )
 
 const (
@@ -24,6 +26,7 @@ type Provider interface {
 	ID() ID
 	Name() string
 	Type() Type
+	ToProxyProvider() (proxyOptions.Provider, error)
 }
 
 // UnmarshalJSON implements detection of the provider struct using the "type" field.
