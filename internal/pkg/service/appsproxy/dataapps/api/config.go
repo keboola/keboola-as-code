@@ -6,14 +6,16 @@ import (
 
 	"github.com/keboola/go-client/pkg/request"
 	"github.com/pquerna/cachecontrol/cacheobject"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 )
 
 type AppProxyConfig struct {
-	ID             string     `json:"-"`
-	Name           string     `json:"name"`
-	UpstreamAppURL string     `json:"upstreamAppUrl"`
-	AuthProviders  []Provider `json:"authProviders"`
-	AuthRules      []Rule     `json:"authRules"`
+	ID             string             `json:"-"`
+	Name           string             `json:"name"`
+	UpstreamAppURL string             `json:"upstreamAppUrl"`
+	AuthProviders  provider.Providers `json:"authProviders"`
+	AuthRules      []Rule             `json:"authRules"`
 	eTag           string
 	modified       bool
 	maxAge         time.Duration

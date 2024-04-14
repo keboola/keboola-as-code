@@ -1,4 +1,4 @@
-package api
+package provider
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOIDCProvider(t *testing.T) {
+func TestOIDC(t *testing.T) {
 	t.Parallel()
 
 	providerJSON := `
@@ -31,12 +31,12 @@ func TestOIDCProvider(t *testing.T) {
 
 	// Check content
 	provider := providers[0]
-	assert.Equal(t, OIDCProvider{
-		BaseProvider: BaseProvider{
-			ProviderInfo: ProviderInfo{
+	assert.Equal(t, OIDC{
+		Base: Base{
+			Info: Info{
 				ID:   "my-id",
 				Name: "My Name",
-				Type: ProviderTypeOIDC,
+				Type: TypeOIDC,
 			},
 		},
 		ClientID:     "6779ef20e75817b79602",

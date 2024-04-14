@@ -1,7 +1,7 @@
-package api
+package provider
 
-type OIDCProvider struct {
-	BaseProvider
+type OIDC struct {
+	Base
 	ClientID     string    `json:"clientId"`
 	ClientSecret string    `json:"clientSecret"`
 	IssuerURL    string    `json:"issuerUrl"`

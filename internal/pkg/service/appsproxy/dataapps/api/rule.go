@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -25,10 +26,10 @@ type RuleType string
 
 // Rule specifies which authentication Providers should be used for matched data app URLs.
 type Rule struct {
-	Type         RuleType     `json:"type"`
-	Value        string       `json:"value"`
-	Auth         []ProviderID `json:"auth"`
-	AuthRequired *bool        `json:"authRequired"`
+	Type         RuleType      `json:"type"`
+	Value        string        `json:"value"`
+	Auth         []provider.ID `json:"auth"`
+	AuthRequired *bool         `json:"authRequired"`
 }
 
 func (r *Rule) RegisterHandler(mux *http.ServeMux, handler http.Handler) error {
