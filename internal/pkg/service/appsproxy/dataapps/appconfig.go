@@ -58,18 +58,6 @@ func NewSandboxesServiceLoader(logger log.Logger, clock clock.Clock, client clie
 	}
 }
 
-
-func (l *sandboxesServiceClient) Wakeup(ctx context.Context, appID string) error {
-	_, err := WakeupApp(l.sender, appID).Send(ctx)
-	if err != nil {
-		l.logger.Errorf(ctx, `failed sending wakeup request to Sandboxes Service about for app "%s": %s`, appID, err.Error())
-
-		return err
-	}
-
-	return nil
-}
-
 // LoadConfig gets the current configuration from Sandboxes Service.
 // It handles local caching based on the Cache-Control and ETag headers.
 func (l *sandboxesServiceClient) LoadConfig(ctx context.Context, appID string) (out AppProxyConfig, modified bool, err error) {
