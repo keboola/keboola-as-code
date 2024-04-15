@@ -1,3 +1,4 @@
+// Package appconfig provides application configuration loading with cache and expiration handling.
 package appconfig
 
 import (
