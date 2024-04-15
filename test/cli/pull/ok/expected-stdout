@@ -22,8 +22,6 @@ Plan for "pull" operation:
   + B foo
   + C foo/extractor/ex-generic-v2/empty
   + C foo/extractor/ex-generic-v2/without-rows
-  + C foo/other/transformation/old-transformation
-  + R foo/other/transformation/old-transformation/rows/old-transformation-snfk
   + B main
   + C main/app/keboola.data-apps/data-app
   + C main/extractor/ex-generic-v2/empty
