@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // Config of the Apps Proxy.
@@ -53,8 +55,7 @@ func (c *Config) Normalize() {
 }
 
 func (c *Config) Validate() error {
-	errs := errors.NewMultiError()
-	return errs.ErrorOrNil()
+	return validator.New().Validate(context.Background(), c)
 }
 
 func (c *API) Normalize() {
