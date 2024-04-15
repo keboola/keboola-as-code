@@ -76,7 +76,7 @@ func (a *API) GetAppConfig(appID AppID, eTag string) request.APIRequest[*AppConf
 
 			// Add ETag to result
 			result.eTag = response.ResponseHeader().Get("ETag")
-			
+
 			// Add MaxAge
 			result.maxAge = maxAge
 
