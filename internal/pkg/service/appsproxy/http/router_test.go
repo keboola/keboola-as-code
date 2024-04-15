@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/miekg/dns"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -535,7 +537,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -2008,22 +2010,30 @@ func startSandboxesService(t *testing.T, apps []api.AppConfig) *sandboxesService
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /apps/{app}/proxy-config", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		appID := req.PathValue("app")
 
+		appID := req.PathValue("app")
 		app, ok := service.apps[api.AppID(appID)]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
-			io.WriteString(w, "{}")
+			fmt.Fprintln(w, "{}")
 			return
 		}
 
-		// Calculate ETag (in this test we simply use provider count)
-		w.Header().Set("ETag", fmt.Sprintf(`"%d"`, len(app.AuthProviders)))
-		w.WriteHeader(http.StatusOK)
+		expectedETag := strings.Trim(req.Header.Get("If-None-Match"), `"`)
+		actualETagInt, err := hashstructure.Hash(app, hashstructure.FormatV2, &hashstructure.HashOptions{})
+		assert.NoError(t, err)
+		actualETag := strconv.FormatUint(actualETagInt, 10)
 
+		w.Header().Set("ETag", fmt.Sprintf(`"%s"`, actualETag))
+		if expectedETag == actualETag {
+			w.WriteHeader(http.StatusNotModified)
+			fmt.Fprintln(w, "{}")
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 		jsonData, err := json.Encode(app, true)
 		assert.NoError(t, err)
-
 		w.Write(jsonData)
 	})
 	mux.HandleFunc("PATCH /apps/{app}", func(w http.ResponseWriter, req *http.Request) {
