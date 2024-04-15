@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
@@ -42,7 +43,7 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	}
 
 	// Validate config
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 
 	mock := &mocked{Mocked: commonMock, config: cfg}
 

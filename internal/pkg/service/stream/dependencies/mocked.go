@@ -133,7 +133,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	}
 
 	// Validate configuration
-	require.NoError(t, configmap.ValidateAndNormalize(cfg))
+	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 
 	return cfg
 }
