@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -921,7 +922,8 @@ func (tc *testCase) run(t *testing.T) {
 	fs := aferofs.NewMemoryFsFrom(inputDir)
 	envs := env.Empty()
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
-	testhelper.MustReplaceEnvsDir(ctx, fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(ctx, fs, `/`, envs)
+	require.NoError(t, err)
 
 	// Container
 	d := dependencies.NewMocked(t)

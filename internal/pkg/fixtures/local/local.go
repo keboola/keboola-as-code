@@ -20,9 +20,9 @@ func LoadFS(ctx context.Context, dirName string, envs testhelper.EnvProvider) (f
 
 	// Create Fs
 	fs := aferofs.NewMemoryFsFrom(stateDir)
-	testhelper.MustReplaceEnvsDir(ctx, fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(ctx, fs, `/`, envs)
 
-	return fs, nil
+	return fs, err
 }
 
 func LoadManifest(ctx context.Context, dirName string, envs testhelper.EnvProvider) (*manifest.Manifest, filesystem.Fs, error) {

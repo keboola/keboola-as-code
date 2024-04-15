@@ -143,14 +143,23 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.MustReplaceEnvsDir(ctx, prjState.Fs(), `/`, envProvider)
-	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, envProvider, "__")
+	err = testhelper.ReplaceEnvsDir(ctx, prjState.Fs(), `/`, envProvider)
+	if err != nil {
+		return err
+	}
+	err = testhelper.ReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, envProvider, "__")
+	if err != nil {
+		return err
+	}
 	// Replace secrets from env vars
 	osEnvs, err := env.FromOs()
 	if err != nil {
 		return err
 	}
-	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, osEnvs, "##")
+	err = testhelper.ReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, osEnvs, "##")
+	if err != nil {
+		return err
+	}
 
 	// Compare actual and expected dirs
 	return testhelper.DirectoryContentsSame(ctx, expectedDirFs, `/`, prjState.Fs(), `/`)
@@ -206,14 +215,23 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", prjState.MainBranch().ID.String())
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.MustReplaceEnvsDir(ctx, prjState.Fs(), `/`, envProvider)
-	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, envProvider, "__")
+	err = testhelper.ReplaceEnvsDir(ctx, prjState.Fs(), `/`, envProvider)
+	if err != nil {
+		return err
+	}
+	err = testhelper.ReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, envProvider, "__")
+	if err != nil {
+		return err
+	}
 	// Replace secrets from env vars
 	osEnvs, err := env.FromOs()
 	if err != nil {
 		return err
 	}
-	testhelper.MustReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, osEnvs, "##")
+	err = testhelper.ReplaceEnvsDirWithSeparator(ctx, expectedDirFs, `/`, osEnvs, "##")
+	if err != nil {
+		return err
+	}
 
 	// E2E test
 	// Push the project
