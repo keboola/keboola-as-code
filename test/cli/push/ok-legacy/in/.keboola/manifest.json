@@ -36,6 +36,10 @@
       "id": %%TEST_BRANCH_FOO_ID%%,
       "path": "foo"
     },
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
   ],
   "configurations": [
     {

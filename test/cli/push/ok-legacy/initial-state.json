@@ -2,9 +2,6 @@
   "backend": {
     "type": "snowflake"
   },
-  "allBranchesConfigs": [
-    "empty"
-  ],
   "branches": [
     {
       "branch": {
@@ -12,8 +9,9 @@
         "isDefault": false
       },
       "configs": [
-        "old-transformation",
+        "old-transformation"
       ]
     }
-  ]
+  ],
+  "envs": {}
 }
