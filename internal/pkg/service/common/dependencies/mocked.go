@@ -501,6 +501,9 @@ func defaultMockedResponses(cfg *MockedConfig) (client.Client, *httpmock.MockTra
 	}
 
 	httpClient, mockedHTTPTransport := client.NewMockedClient()
+
+	httpClient = httpClient.WithRetry(client.TestingRetry())
+
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
 		fmt.Sprintf("%s/v2/storage/", host),

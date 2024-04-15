@@ -22,11 +22,18 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+)
+
+const (
+	userAgent = "keboola-apps-proxy"
 )
 
 // ServiceScope interface provides dependencies for Apps Proxy server.
@@ -34,18 +41,25 @@ import (
 type ServiceScope interface {
 	dependencies.BaseScope
 	Config() config.Config
-	Loader() dataapps.Client
+	AppsAPI() *api.API
+	AppConfigLoader() *appconfig.Loader
+	NotifyManager() *notify.Manager
+	WakeupManager() *wakeup.Manager
 }
 
-const (
-	userAgent = "keboola-apps-proxy"
-)
+type Mocked interface {
+	dependencies.Mocked
+	TestConfig() config.Config
+}
 
 // serviceScope implements APIScope interface.
 type serviceScope struct {
 	parentScopes
-	config config.Config
-	loader dataapps.Client
+	config          config.Config
+	appsAPI         *api.API
+	appConfigLoader *appconfig.Loader
+	notifyManager   *notify.Manager
+	wakeupManager   *wakeup.Manager
 }
 
 type parentScopes interface {
@@ -65,11 +79,8 @@ func NewServiceScope(
 	stdout io.Writer,
 	stderr io.Writer,
 ) (v ServiceScope, err error) {
-	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
-	if err != nil {
-		return nil, err
-	}
-	return newServiceScope(ctx, parentSc, cfg)
+	parentScp := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
+	return newServiceScope(ctx, parentScp, cfg)
 }
 
 func newParentScopes(
@@ -80,9 +91,9 @@ func newParentScopes(
 	tel telemetry.Telemetry,
 	stdout io.Writer,
 	stderr io.Writer,
-) (v parentScopes, err error) {
+) (v parentScopes) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.appsproxy.dependencies.newParentScopes")
-	defer span.End(&err)
+	defer span.End(nil)
 
 	httpClient := httpclient.New(
 		httpclient.WithoutForcedHTTP2(), // We're currently unable to connect to Sandboxes Service using HTTP2.
@@ -99,10 +110,8 @@ func newParentScopes(
 	)
 
 	d := &parentScopesImpl{}
-
 	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
-
-	return d, nil
+	return d
 }
 
 func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Config) (v *serviceScope, err error) {
@@ -112,7 +121,10 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d := &serviceScope{}
 	d.parentScopes = parentScp
 	d.config = cfg
-	d.loader = dataapps.NewSandboxesServiceLoader(parentScp.Logger(), parentScp.Clock(), parentScp.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
+	d.appsAPI = api.New(d.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
+	d.appConfigLoader = appconfig.NewLoader(d)
+	d.notifyManager = notify.NewManager(d)
+	d.wakeupManager = wakeup.NewManager(d)
 
 	return d, nil
 }
@@ -121,6 +133,18 @@ func (v *serviceScope) Config() config.Config {
 	return v.config
 }
 
-func (v *serviceScope) Loader() dataapps.Client {
-	return v.loader
+func (v *serviceScope) AppsAPI() *api.API {
+	return v.appsAPI
+}
+
+func (v *serviceScope) AppConfigLoader() *appconfig.Loader {
+	return v.appConfigLoader
+}
+
+func (v *serviceScope) NotifyManager() *notify.Manager {
+	return v.notifyManager
+}
+
+func (v *serviceScope) WakeupManager() *wakeup.Manager {
+	return v.wakeupManager
 }
