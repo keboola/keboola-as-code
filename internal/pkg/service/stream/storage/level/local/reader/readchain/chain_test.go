@@ -274,6 +274,9 @@ func newChainTestCase(tb testing.TB) *chainTestCase {
 	tb.Helper()
 	logger := log.NewDebugLogger()
 	testFile := &testReadCloser{inner: strings.NewReader("foo bar"), Logger: logger, Name: "file"}
+	tb.Cleanup(func() {
+		_ = testFile.Close()
+	})
 	chain := New(logger, testFile)
 	return &chainTestCase{TB: tb, Logger: logger, Chain: chain}
 }

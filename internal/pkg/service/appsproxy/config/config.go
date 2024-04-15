@@ -52,11 +52,6 @@ func New() Config {
 func (c *Config) Normalize() {
 }
 
-func (c *Config) Validate() error {
-	errs := errors.NewMultiError()
-	return errs.ErrorOrNil()
-}
-
 func (c *API) Normalize() {
 	if c.PublicURL != nil {
 		c.PublicURL.Host = strhelper.NormalizeHost(c.PublicURL.Host)

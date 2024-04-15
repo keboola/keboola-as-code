@@ -56,6 +56,7 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	serviceScp := newServiceScope(mock)
 
 	mock.DebugLogger().Truncate()
+	mock.MockedHTTPTransport().Reset()
 	return serviceScp, mock
 }
 
@@ -132,7 +133,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	}
 
 	// Validate configuration
-	require.NoError(t, configmap.ValidateAndNormalize(cfg))
+	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 
 	return cfg
 }

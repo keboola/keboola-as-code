@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 )
@@ -44,8 +45,12 @@ func NewMockedAPIScope(t *testing.T, cfg config.Config, opts ...dependencies.Moc
 		}}
 	}
 
-	// Validate config
-	require.NoError(t, cfg.Validate())
+	if cfg.NodeID == "" {
+		cfg.NodeID = "my-node"
+	}
+
+	// Validate configuration
+	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 
 	apiScp, err := newAPIScope(mocked.TestContext(), mocked, cfg)
 	require.NoError(t, err)

@@ -30,7 +30,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -43,7 +47,9 @@ type Router struct {
 	telemetry         telemetry.Telemetry
 	config            config.Config
 	clock             clock.Clock
-	loader            dataapps.Client
+	loader            *appconfig.Loader
+	notifyManager     *notify.Manager
+	wakeupManager     *wakeup.Manager
 	transport         *http.Transport
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
@@ -75,12 +81,14 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 	}
 
 	router := &Router{
-		logger:    d.Logger(),
-		telemetry: d.Telemetry(),
-		config:    d.Config(),
-		clock:     d.Clock(),
-		loader:    d.Loader(),
-		transport: transport,
+		logger:        d.Logger(),
+		telemetry:     d.Telemetry(),
+		config:        d.Config(),
+		clock:         d.Clock(),
+		loader:        d.AppConfigLoader(),
+		notifyManager: d.NotifyManager(),
+		wakeupManager: d.WakeupManager(),
+		transport:     transport,
 		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
@@ -136,11 +144,11 @@ func (r *Router) CreateHandler() http.Handler {
 		}
 
 		// Load configuration for given app.
-		config, modified, err := r.loader.LoadConfig(req.Context(), appID)
+		cfg, modified, err := r.loader.GetConfig(req.Context(), api.AppID(appID))
 		if err != nil {
-			var sandboxesError *dataapps.SandboxesError
-			errors.As(err, &sandboxesError)
-			if sandboxesError != nil && sandboxesError.StatusCode() == http.StatusNotFound {
+			var apiErr *api.Error
+			errors.As(err, &apiErr)
+			if apiErr != nil && apiErr.StatusCode() == http.StatusNotFound {
 				r.logger.Infof(req.Context(), `application "%s" not found`, appID)
 				w.WriteHeader(http.StatusNotFound)
 				fmt.Fprintf(w, `Application "%s" not found.`, appID)
@@ -148,7 +156,7 @@ func (r *Router) CreateHandler() http.Handler {
 			}
 
 			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprintf(w, `Unable to load configuration for app "%s".`, appID)
+			fmt.Fprintf(w, `Unable to load configuration for app "%s":%s.`, appID, err)
 			return
 		}
 
@@ -158,7 +166,7 @@ func (r *Router) CreateHandler() http.Handler {
 
 		if modified || httpHandler == nil {
 			handler.setHTTPHandler(func() http.Handler {
-				httpHandler = r.createDataAppHandler(req.Context(), config)
+				httpHandler = r.createDataAppHandler(req.Context(), cfg)
 				return httpHandler
 			})
 		}
@@ -180,7 +188,7 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 	})
 }
 
-func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxyConfig) http.Handler {
+func (r *Router) createDataAppHandler(ctx context.Context, app api.AppConfig) http.Handler {
 	if len(app.AuthRules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
@@ -196,9 +204,9 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 
 	chain := alice.New(r.notifySandboxesServiceMiddleware(), r.dataAppTelemetryMiddleware())
 
-	oauthProviders := make(map[string]*oauthProvider)
+	oauthProviders := make(map[provider.ID]*oauthProvider)
 	for _, providerConfig := range app.AuthProviders {
-		oauthProviders[providerConfig.ID] = r.createProvider(ctx, providerConfig, app, chain)
+		oauthProviders[providerConfig.ID()] = r.createProvider(ctx, providerConfig, app, chain)
 	}
 
 	publicAppHandler := r.publicAppHandler(target, chain)
@@ -212,23 +220,22 @@ func (r *Router) createDataAppHandler(ctx context.Context, app dataapps.AppProxy
 	mux.Handle("/_proxy/", r.createMultiProviderHandler(oauthProviders, app))
 
 	for _, rule := range app.AuthRules {
-		mux.Handle(rule.Value, r.createRuleHandler(ctx, app, rule, publicAppHandler, oauthProviders))
+		err := rule.RegisterHandler(mux, r.createRuleHandler(ctx, app, rule, publicAppHandler, oauthProviders))
+		if err != nil {
+			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
+			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `invalid rule "%s" "%s": %s`, app.ID.String(), rule.Type, err)
+			return r.createConfigErrorHandler(exceptionID)
+		}
 	}
 
 	return mux
 }
 
-func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyConfig, rule dataapps.AuthRule, publicAppHandler http.Handler, oauthProviders map[string]*oauthProvider) http.Handler {
+func (r *Router) createRuleHandler(ctx context.Context, app api.AppConfig, rule api.Rule, publicAppHandler http.Handler, oauthProviders map[provider.ID]*oauthProvider) http.Handler {
 	// If AuthRequired is unset, use true by default
 	authRequired := true
 	if rule.AuthRequired != nil {
 		authRequired = *rule.AuthRequired
-	}
-
-	if rule.Type != dataapps.PathPrefix {
-		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected rule type "%s" for app "<proxy.appid>" "%s"`, rule.Type, app.Name)
-		return r.createConfigErrorHandler(exceptionID)
 	}
 
 	if !authRequired {
@@ -247,16 +254,16 @@ func (r *Router) createRuleHandler(ctx context.Context, app dataapps.AppProxyCon
 		return r.createConfigErrorHandler(exceptionID)
 	}
 
-	selectedProviders := make(map[string]*oauthProvider)
+	selectedProviders := make(map[provider.ID]*oauthProvider)
 	for _, id := range rule.Auth {
-		provider, found := oauthProviders[id]
+		authProvider, found := oauthProviders[id]
 		if !found {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
 			return r.createConfigErrorHandler(exceptionID)
 		}
 
-		selectedProviders[id] = provider
+		selectedProviders[id] = authProvider
 	}
 
 	return r.createMultiProviderHandler(selectedProviders, app)
@@ -306,7 +313,7 @@ func (r *Router) dnsErrorHandler(w http.ResponseWriter, req *http.Request) {
 		wakeupCtx = telemetry.ContextWithSpan(wakeupCtx, span)
 
 		// Error is already logged by the Wakeup method itself. We can ignore it here.
-		err := r.loader.Wakeup(wakeupCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+		err := r.wakeupManager.Wakeup(wakeupCtx, api.AppID(appID)) // nolint: contextcheck // intentionally creating new context for background operation
 		span.End(&err)
 	}()
 
@@ -343,7 +350,7 @@ func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
 						notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
 
 						// Error is already logged by the Notify method itself. We can ignore it here.
-						err := r.loader.Notify(notificationCtx, appID) // nolint: contextcheck // intentionally creating new context for background operation
+						err := r.notifyManager.Notify(notificationCtx, api.AppID(appID)) // nolint: contextcheck // intentionally creating new context for background operation
 						span.End(&err)
 					}()
 				},
@@ -374,7 +381,7 @@ type oauthProvider struct {
 	handler        http.Handler
 }
 
-func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthProvider, app dataapps.AppProxyConfig, chain alice.Chain) *oauthProvider {
+func (r *Router) createProvider(ctx context.Context, authProvider provider.Provider, app api.AppConfig, chain alice.Chain) *oauthProvider {
 	authValidator := func(email string) bool {
 		// No need to verify users, just groups which is done using AllowedGroups in provider configuration.
 		return true
@@ -382,73 +389,50 @@ func (r *Router) createProvider(ctx context.Context, authProvider dataapps.AuthP
 
 	exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
 
-	allowedRoles := []string{}
-	if authProvider.AllowedRoles != nil {
-		allowedRoles = *authProvider.AllowedRoles
-	}
-
-	providerConfig := options.Provider{
-		ID:                  authProvider.ID,
-		Type:                options.ProviderType(authProvider.Type),
-		Name:                authProvider.Name,
-		AllowedGroups:       allowedRoles,
-		CodeChallengeMethod: providers.CodeChallengeMethodS256,
-		ClientID:            authProvider.ClientID,
-		ClientSecret:        authProvider.ClientSecret,
-		OIDCConfig: options.OIDCOptions{
-			IssuerURL:      authProvider.IssuerURL,
-			EmailClaim:     options.OIDCEmailClaim,
-			GroupsClaim:    options.OIDCGroupsClaim,
-			AudienceClaims: options.OIDCAudienceClaims,
-			UserIDClaim:    options.OIDCEmailClaim,
-		},
-		BackendLogoutURL: authProvider.LogoutURL,
-	}
-
 	// Use error handler by default.
-	provider := &oauthProvider{
-		providerConfig: providerConfig,
-		handler:        r.createConfigErrorHandler(exceptionID),
+	out := &oauthProvider{
+		handler: r.createConfigErrorHandler(exceptionID),
 	}
+
+	providerConfig, err := authProvider.ToProxyProvider()
+	if err != nil {
+		r.logger.With(attribute.String("exceptionId", exceptionID)).Infof(ctx, `invalid provider configuration "%s" "%s": %s`, app.ID, app.Name, err)
+		return out
+	}
+	out.providerConfig = providerConfig
 
 	// Create a configuration for oauth2-proxy. This can cause a validation failure.
 	proxyConfig, err := r.authProxyConfig(app, providerConfig, chain)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
-		return provider
+		return out
 	}
-	provider.proxyConfig = proxyConfig
-
-	// AllowedRoles nil means there is no role requirement. Empty array doesn't make sense.
-	if authProvider.AllowedRoles != nil && len(allowedRoles) == 0 {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Infof(ctx, `empty array of allowed roles for app "%s" "%s"`, app.ID, app.Name)
-		return provider
-	}
+	out.proxyConfig = proxyConfig
 
 	// Create a provider instance. This may fail on invalid url, unknown provider type and various other reasons.
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
-		return provider
+		return out
 	}
-	provider.proxyProvider = proxyProvider
+	out.proxyProvider = proxyProvider
 
 	// Create a page writer instance. This is necessary for triggering data app wakeup.
 	pageWriter, err := NewPageWriter(proxyConfig, r.dnsErrorHandler)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create page writer for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
-		return provider
+		return out
 	}
 
 	// Create the actual proxy instance. May fail on some runtime error.
 	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, pageWriter)
 	if err != nil {
 		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
-		return provider
+		return out
 	}
-	provider.handler = proxy
+	out.handler = proxy
 
-	return provider
+	return out
 }
 
 type SelectionPageData struct {
@@ -460,10 +444,10 @@ type SelectionPageProvider struct {
 	URL  string
 }
 
-func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProvider) http.Handler {
+func (r *Router) createSelectionPageHandler(oauthProviders map[provider.ID]*oauthProvider) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		selection := request.URL.Query().Get("provider")
-		provider, ok := oauthProviders[selection]
+		provider, ok := oauthProviders[provider.ID(selection)]
 
 		if !ok {
 			// Render selection page
@@ -473,7 +457,7 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProv
 					Scheme:   r.config.API.PublicURL.Scheme,
 					Host:     request.Host,
 					Path:     selectionPagePath,
-					RawQuery: "provider=" + url.PathEscape(id),
+					RawQuery: "provider=" + url.PathEscape(id.String()),
 				}
 
 				data.Providers = append(data.Providers, SelectionPageProvider{
@@ -516,15 +500,15 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[string]*oauthProv
 // OAuth2 Proxy doesn't support multiple providers despite the possibility of setting them up in configuration.
 // So instead we're using separate proxy instance for each provider with a cookie to remember the selection.
 // See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
-func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProvider, app dataapps.AppProxyConfig) http.Handler {
+func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oauthProvider, app api.AppConfig) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		var provider *oauthProvider
+		var authProvider *oauthProvider
 		ok := false
 
 		// Identify the provider chosen by the user using a cookie
 		cookie, err := request.Cookie(providerCookie)
 		if err == nil {
-			provider, ok = oauthProviders[cookie.Value]
+			authProvider, ok = oauthProviders[provider.ID(cookie.Value)]
 		}
 
 		if !ok {
@@ -534,23 +518,23 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 				// The /_proxy/callback url would not work correctly without the cookie.
 
 				// Use maps.Keys() instead when possible: https://github.com/golang/go/issues/61900
-				var k string
+				var k provider.ID
 				for k = range oauthProviders {
 				}
-				provider := oauthProviders[k]
+				authProvider = oauthProviders[k]
 
-				if provider.proxyConfig != nil {
+				if authProvider.proxyConfig != nil {
 					http.SetCookie(writer, cookies.MakeCookieFromOptions(
 						request,
 						providerCookie,
-						provider.providerConfig.ID,
-						&provider.proxyConfig.Cookie,
-						provider.proxyConfig.Cookie.Expire,
+						authProvider.providerConfig.ID,
+						&authProvider.proxyConfig.Cookie,
+						authProvider.proxyConfig.Cookie.Expire,
 						r.clock.Now(),
 					))
 				}
 
-				provider.handler.ServeHTTP(writer, request)
+				authProvider.handler.ServeHTTP(writer, request)
 			} else {
 				// Clear the provider cookie in case it existed with an invalid value
 				opts := &options.NewOptions().Cookie
@@ -571,8 +555,8 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 			return
 		}
 
-		if provider.proxyProvider != nil {
-			loginURL := provider.proxyProvider.Data().LoginURL
+		if authProvider.proxyProvider != nil {
+			loginURL := authProvider.proxyProvider.Data().LoginURL
 
 			// If oauthproxy returns a redirect to login page, we instead redirect to provider selection page
 			writer = NewCallbackResponseWriter(writer, func(writer http.ResponseWriter, statusCode int) int {
@@ -610,7 +594,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[string]*oauthProv
 		}
 
 		// Authenticate the request by the provider selected in the cookie
-		provider.handler.ServeHTTP(writer, request)
+		authProvider.handler.ServeHTTP(writer, request)
 	})
 }
 
@@ -624,7 +608,7 @@ func (r *Router) redirectToProviderSelection(writer http.ResponseWriter, request
 	writer.Header().Set("Location", selectionPageURL.String())
 }
 
-func (r *Router) authProxyConfig(app dataapps.AppProxyConfig, provider options.Provider, chain alice.Chain) (*options.Options, error) {
+func (r *Router) authProxyConfig(app api.AppConfig, provider options.Provider, chain alice.Chain) (*options.Options, error) {
 	v := options.NewOptions()
 
 	domain := r.formatAppDomain(app)
@@ -653,7 +637,7 @@ func (r *Router) authProxyConfig(app dataapps.AppProxyConfig, provider options.P
 	v.UpstreamServers = options.UpstreamConfig{
 		Upstreams: []options.Upstream{
 			{
-				ID:        app.ID,
+				ID:        app.ID.String(),
 				Path:      "/",
 				URI:       app.UpstreamAppURL,
 				Transport: r.transport,
@@ -672,8 +656,8 @@ func (r *Router) authProxyConfig(app dataapps.AppProxyConfig, provider options.P
 	return v, nil
 }
 
-func (r *Router) formatAppDomain(app dataapps.AppProxyConfig) string {
-	domain := app.ID + "." + r.config.API.PublicURL.Host
+func (r *Router) formatAppDomain(app api.AppConfig) string {
+	domain := app.ID.String() + "." + r.config.API.PublicURL.Host
 	if app.Name != "" {
 		domain = app.Name + "-" + domain
 	}
@@ -684,13 +668,13 @@ func (r *Router) formatAppDomain(app dataapps.AppProxyConfig) string {
 // This is necessary because otherwise cookies created by provider A would also be valid in a section that requires provider B but not A.
 // To solve this we use the combination of the provider id and our cookie secret as a seed for the real cookie secret.
 // App ID is also used as part of the seed because cookies for app X cannot be valid for app Y even if they're using the same provider.
-func (r *Router) generateCookieSecret(app dataapps.AppProxyConfig, provider options.Provider) ([]byte, error) {
+func (r *Router) generateCookieSecret(app api.AppConfig, provider options.Provider) ([]byte, error) {
 	if r.config.CookieSecretSalt == "" {
 		return nil, errors.New("missing cookie secret salt")
 	}
 
 	h := sha256.New()
-	if _, err := io.WriteString(h, app.ID+"/"+provider.ID+"/"+r.config.CookieSecretSalt); err != nil {
+	if _, err := io.WriteString(h, app.ID.String()+"/"+provider.ID+"/"+r.config.CookieSecretSalt); err != nil {
 		return nil, err
 	}
 	seed := binary.BigEndian.Uint64(h.Sum(nil))

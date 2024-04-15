@@ -1,4 +1,4 @@
-package dataapps_test
+package appconfig_test
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type testCase struct {
 	name     string
-	appID    string
 	attempts []attempt
 }
 
@@ -30,15 +30,14 @@ type attempt struct {
 	delay             time.Duration
 	responses         []*http.Response
 	expectedErrorCode int
-	expectedConfig    dataapps.AppProxyConfig
+	expectedConfig    api.AppConfig
 	expectedModified  bool
 }
 
 func TestLoader_LoadConfig(t *testing.T) {
 	testCases := []testCase{
 		{
-			name:  "unknown",
-			appID: "1",
+			name: "not-found",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
@@ -49,8 +48,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name:  "server-error",
-			appID: "2",
+			name: "server-error",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
@@ -66,16 +64,15 @@ func TestLoader_LoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name:  "retry",
-			appID: "3",
+			name: "retry",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "3",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -83,37 +80,35 @@ func TestLoader_LoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name:  "cache-valid",
-			appID: "4",
+			name: "cache-valid",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "4",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
 				},
 				{
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "4",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
 			},
 		},
 		{
-			name:  "etag-match",
-			appID: "5",
+			name: "etag-match",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "5",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -124,14 +119,14 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "5",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
 				{
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "5",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -140,23 +135,22 @@ func TestLoader_LoadConfig(t *testing.T) {
 					responses: []*http.Response{
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "5",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
 			},
 		},
 		{
-			name:  "etag-mismatch",
-			appID: "6",
+			name: "etag-mismatch",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "6",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -166,30 +160,29 @@ func TestLoader_LoadConfig(t *testing.T) {
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://new-app.local"}, `"etag-new-value"`, "max-age=60"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "6",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://new-app.local",
 					},
 					expectedModified: true,
 				},
 				{
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "6",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://new-app.local",
 					},
 				},
 			},
 		},
 		{
-			name:  "etag-error",
-			appID: "7",
+			name: "etag-error",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "7",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
@@ -204,8 +197,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 						newResponse(t, 500, map[string]any{}, "", ""),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "7",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -224,23 +217,22 @@ func TestLoader_LoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name:  "max-expiration",
-			appID: "8",
+			name: "max-expiration",
 			attempts: []attempt{
 				{
 					responses: []*http.Response{
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=7200"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "8",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 					expectedModified: true,
 				},
 				{
 					delay: 59 * time.Minute,
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "8",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -249,8 +241,8 @@ func TestLoader_LoadConfig(t *testing.T) {
 					responses: []*http.Response{
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
-					expectedConfig: dataapps.AppProxyConfig{
-						ID:             "8",
+					expectedConfig: api.AppConfig{
+						ID:             "test",
 						UpstreamAppURL: "http://app.local",
 					},
 				},
@@ -265,43 +257,40 @@ func TestLoader_LoadConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			clk := clock.NewMock()
-			transport := httpmock.NewMockTransport()
+			d, mock := dependencies.NewMockedServiceScope(t, config.New(), commonDeps.WithClock(clk))
 
-			url := "https://sandboxes.keboola.com"
-
-			httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
-
-			loader := dataapps.NewSandboxesServiceLoader(log.NewDebugLogger(), clk, httpClient, url, "")
+			appID := api.AppID("test")
+			transport := mock.MockedHTTPTransport()
+			loader := d.AppConfigLoader()
 
 			for i, attempt := range tc.attempts {
 				t.Logf("attempt %d/%d", i+1, len(tc.attempts))
-				transport.Reset()
-
 				clk.Add(attempt.delay)
 
+				transport.Reset()
 				transport.RegisterResponder(
 					http.MethodGet,
-					fmt.Sprintf("%s/apps/%s/proxy-config", url, tc.appID),
+					fmt.Sprintf("%s/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
 					httpmock.ResponderFromMultipleResponses(attempt.responses, t.Log),
 				)
 
-				config, modified, err := loader.LoadConfig(context.Background(), tc.appID)
+				cfg, modified, err := loader.GetConfig(ctx, appID)
 				if attempt.expectedErrorCode != 0 {
 					require.Error(t, err)
-					var sandboxesError *dataapps.SandboxesError
-					errors.As(err, &sandboxesError)
-					assert.Equal(t, attempt.expectedErrorCode, sandboxesError.StatusCode())
+					var apiErr *api.Error
+					errors.As(err, &apiErr)
+					assert.Equal(t, attempt.expectedErrorCode, apiErr.StatusCode())
 				} else {
 					require.NoError(t, err)
-					assert.Equal(t, attempt.expectedConfig.ID, config.ID)
-					assert.Equal(t, attempt.expectedConfig.Name, config.Name)
-					assert.Equal(t, attempt.expectedConfig.UpstreamAppURL, config.UpstreamAppURL)
-					assert.Equal(t, attempt.expectedConfig.AuthProviders, config.AuthProviders)
-					assert.Equal(t, attempt.expectedConfig.AuthRules, config.AuthRules)
+					assert.Equal(t, attempt.expectedConfig.ID, cfg.ID)
+					assert.Equal(t, attempt.expectedConfig.Name, cfg.Name)
+					assert.Equal(t, attempt.expectedConfig.UpstreamAppURL, cfg.UpstreamAppURL)
+					assert.Equal(t, attempt.expectedConfig.AuthProviders, cfg.AuthProviders)
+					assert.Equal(t, attempt.expectedConfig.AuthRules, cfg.AuthRules)
 				}
 				assert.Equal(t, attempt.expectedModified, modified)
-
 				assert.Equal(t, len(attempt.responses), transport.GetTotalCallCount())
 			}
 		})
@@ -311,36 +300,22 @@ func TestLoader_LoadConfig(t *testing.T) {
 func TestLoader_LoadConfig_Race(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.NewMock()
-	transport := httpmock.NewMockTransport()
-
-	url := "https://sandboxes.keboola.com"
-
-	responses := []*http.Response{
-		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
-		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
-		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
-		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
-		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
-		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
-		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
-		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
-		newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://app.local"}, `"etag-value"`, "max-age=60"),
-		newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
-	}
-
-	transport.RegisterResponder(
-		http.MethodGet,
-		fmt.Sprintf("%s/apps/%s/proxy-config", url, "test"),
-		httpmock.ResponderFromMultipleResponses(responses, t.Log),
-	)
-
-	httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
-
-	loader := dataapps.NewSandboxesServiceLoader(log.NewDebugLogger(), clk, httpClient, url, "")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	clk := clock.NewMock()
+	d, mock := dependencies.NewMockedServiceScope(t, config.New(), commonDeps.WithClock(clk))
+
+	appID := api.AppID("test")
+
+	transport := mock.MockedHTTPTransport()
+	transport.RegisterResponder(
+		http.MethodGet,
+		fmt.Sprintf("%s/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
+		httpmock.ResponderFromResponse(newResponse(t, http.StatusOK, map[string]any{"upstreamAppUrl": "http://app.local"}, "", "")),
+	)
+
+	loader := d.AppConfigLoader()
 
 	wg := sync.WaitGroup{}
 	counter := atomic.NewInt64(0)
@@ -350,11 +325,9 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			config, _, err := loader.LoadConfig(ctx, "test")
+			cfg, _, err := loader.GetConfig(ctx, appID)
 			assert.NoError(t, err)
-
-			assert.Equal(t, "http://app.local", config.UpstreamAppURL)
-
+			assert.Equal(t, "http://app.local", cfg.UpstreamAppURL)
 			counter.Add(1)
 		}()
 	}
@@ -374,73 +347,4 @@ func newResponse(t *testing.T, code int, body map[string]any, eTag string, cache
 	response.Header.Set("ETag", eTag)
 	response.Header.Set("Cache-Control", cacheControl)
 	return response
-}
-
-func TestLoader_Notify(t *testing.T) {
-	t.Parallel()
-
-	clk := clock.NewMock()
-	transport := httpmock.NewMockTransport()
-
-	url := "https://sandboxes.keboola.com"
-	appID := "app"
-
-	transport.RegisterResponder(
-		http.MethodPatch,
-		fmt.Sprintf("%s/apps/%s", url, appID),
-		httpmock.NewStringResponder(http.StatusOK, ""),
-	)
-
-	loader := dataapps.NewSandboxesServiceLoader(log.NewDebugLogger(), clk, client.New().WithTransport(transport), url, "")
-	err := loader.Notify(context.Background(), appID)
-	assert.NoError(t, err)
-	err = loader.Notify(context.Background(), appID)
-	assert.NoError(t, err)
-
-	assert.Equal(t, 1, transport.GetTotalCallCount())
-}
-
-func TestLoader_Notify_Race(t *testing.T) {
-	t.Parallel()
-
-	clk := clock.NewMock()
-	transport := httpmock.NewMockTransport()
-
-	url := "https://sandboxes.keboola.com"
-
-	transport.RegisterResponder(
-		http.MethodPatch,
-		fmt.Sprintf("%s/apps/%s", url, "test"),
-		httpmock.NewStringResponder(http.StatusOK, "{}").Times(10, t.Log),
-	)
-
-	httpClient := client.NewTestClient().WithRetry(client.TestingRetry()).WithTransport(transport)
-
-	loader := dataapps.NewSandboxesServiceLoader(log.NewDebugLogger(), clk, httpClient, url, "")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	wg := sync.WaitGroup{}
-	counter := atomic.NewInt64(0)
-	// Load configuration 10x in parallel
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			err := loader.Notify(ctx, "test")
-			assert.NoError(t, err)
-
-			counter.Add(1)
-		}()
-	}
-
-	// Wait for all requests
-	wg.Wait()
-
-	// Check total requests count
-	assert.Equal(t, int64(10), counter.Load())
-
-	assert.Equal(t, 1, transport.GetTotalCallCount())
 }
