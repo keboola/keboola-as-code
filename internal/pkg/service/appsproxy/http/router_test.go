@@ -30,7 +30,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
@@ -534,7 +535,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusFound, response.StatusCode)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -1306,10 +1307,10 @@ func TestAppProxyRouter(t *testing.T) {
 						assert.NoError(t, err)
 
 						response, err := client.Do(request)
-						assert.NoError(t, err)
-
-						if assert.Equal(t, http.StatusFound, response.StatusCode) {
-							counter.Add(1)
+						if assert.NoError(t, err) {
+							if assert.Equal(t, http.StatusFound, response.StatusCode) {
+								counter.Add(1)
+							}
 						}
 					}()
 				}
@@ -1723,8 +1724,8 @@ func TestAppProxyRouter(t *testing.T) {
 	}
 }
 
-func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []dataapps.AppProxyConfig {
-	return []dataapps.AppProxyConfig{
+func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
+	return []api.AppConfig{
 		{
 			ID:             "norule",
 			UpstreamAppURL: tsURL.String(),
@@ -1733,9 +1734,9 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []dataapps.AppPro
 			ID:             "123",
 			Name:           "public",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:         dataapps.PathPrefix,
+					Type:         api.RulePathPrefix,
 					Value:        "/",
 					AuthRequired: pointer(false),
 				},
@@ -1744,7 +1745,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []dataapps.AppPro
 		{
 			ID:             "invalid1",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
 					Type:  "unknown",
 					Value: "/",
@@ -1755,155 +1756,188 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []dataapps.AppPro
 		{
 			ID:             "invalid2",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:         dataapps.PathPrefix,
+					Type:         api.RulePathPrefix,
 					Value:        "/",
 					AuthRequired: pointer(false),
-					Auth:         []string{"test"},
+					Auth:         []provider.ID{"test"},
 				},
 			},
 		},
 		{
 			ID:             "invalid3",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []dataapps.AuthProvider{
-				{
-					ID:           "oidc",
+			AuthProviders: provider.Providers{
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc"},
+					Auth:  []provider.ID{"oidc"},
 				},
 			},
 		},
 		{
 			ID:             "invalid4",
 			UpstreamAppURL: tsURL.String(),
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/",
-					Auth:  []string{"unknown"},
+					Auth:  []provider.ID{"unknown"},
 				},
 			},
 		},
 		{
 			ID:             "oidc",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []dataapps.AuthProvider{
-				{
-					ID:           "oidc",
+			AuthProviders: provider.Providers{
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc"},
+					Auth:  []provider.ID{"oidc"},
 				},
 			},
 		},
 		{
 			ID:             "multi",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []dataapps.AuthProvider{
-				{
-					ID:           "oidc0",
+			AuthProviders: provider.Providers{
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc0",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"manager"}),
 					IssuerURL:    m[0].Issuer(),
 				},
-				{
-					ID:           "oidc1",
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc1",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
-				{
-					ID: "oidc2",
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc2",
+							Type: provider.TypeOIDC,
+						},
+					},
 				},
 			},
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc0", "oidc1", "oidc2"},
+					Auth:  []provider.ID{"oidc0", "oidc1", "oidc2"},
 				},
 			},
 		},
 		{
 			ID:             "broken",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []dataapps.AuthProvider{
-				{
-					ID:           "oidc",
+			AuthProviders: provider.Providers{
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     "",
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/",
-					Auth:  []string{"oidc"},
+					Auth:  []provider.ID{"oidc"},
 				},
 			},
 		},
 		{
 			ID:             "prefix",
 			UpstreamAppURL: tsURL.String(),
-			AuthProviders: []dataapps.AuthProvider{
-				{
-					ID:           "oidc0",
+			AuthProviders: provider.Providers{
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc0",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
-				{
-					ID:           "oidc1",
+				provider.OIDC{
+					Base: provider.Base{
+						Info: provider.Info{
+							ID:   "oidc1",
+							Type: provider.TypeOIDC,
+						},
+					},
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					Type:         dataapps.OIDCProvider,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 			},
-			AuthRules: []dataapps.AuthRule{
+			AuthRules: []api.Rule{
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/api",
-					Auth:  []string{"oidc0"},
+					Auth:  []provider.ID{"oidc0"},
 				},
 				{
-					Type:  dataapps.PathPrefix,
+					Type:  api.RulePathPrefix,
 					Value: "/web",
-					Auth:  []string{"oidc0", "oidc1"},
+					Auth:  []provider.ID{"oidc0", "oidc1"},
 				},
 				{
-					Type:         dataapps.PathPrefix,
+					Type:         api.RulePathPrefix,
 					Value:        "/public",
 					AuthRequired: pointer(false),
 				},
@@ -1953,16 +1987,16 @@ func startAppServer(t *testing.T) *appServer {
 
 type sandboxesService struct {
 	*httptest.Server
-	apps          map[string]dataapps.AppProxyConfig
+	apps          map[api.AppID]api.AppConfig
 	notifications map[string]int
 	wakeUps       map[string]int
 }
 
-func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandboxesService {
+func startSandboxesService(t *testing.T, apps []api.AppConfig) *sandboxesService {
 	t.Helper()
 
 	service := &sandboxesService{
-		apps:          make(map[string]dataapps.AppProxyConfig),
+		apps:          make(map[api.AppID]api.AppConfig),
 		notifications: make(map[string]int),
 		wakeUps:       make(map[string]int),
 	}
@@ -1976,7 +2010,7 @@ func startSandboxesService(t *testing.T, apps []dataapps.AppProxyConfig) *sandbo
 		w.Header().Set("Content-Type", "application/json")
 		appID := req.PathValue("app")
 
-		app, ok := service.apps[appID]
+		app, ok := service.apps[api.AppID(appID)]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			io.WriteString(w, "{}")
@@ -2046,6 +2080,7 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 	require.NoError(t, err)
 
 	cfg := config.New()
+	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = string(secret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
