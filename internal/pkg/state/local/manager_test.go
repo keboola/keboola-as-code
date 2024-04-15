@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -135,7 +136,8 @@ func TestLocalLoadMapper(t *testing.T) {
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	require.NoError(t, err)
 
 	// Load objects
 	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)

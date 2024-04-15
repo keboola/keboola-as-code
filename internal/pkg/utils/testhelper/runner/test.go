@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
 	goValuate "gopkg.in/Knetic/govaluate.v3"
 
@@ -180,7 +181,8 @@ func (t *Test) Run(opts ...Options) {
 	}
 
 	// Replace all %%ENV_VAR%% in all files of the working directory.
-	testhelper.MustReplaceEnvsDir(t.ctx, t.workingDirFS, `/`, t.envProvider)
+	err := testhelper.ReplaceEnvsDir(t.ctx, t.workingDirFS, `/`, t.envProvider)
+	require.NoError(t.t, err)
 
 	if c.cliBinaryPath != "" {
 		// Run a CLI binary
@@ -619,7 +621,8 @@ func (t *Test) assertDirContent() {
 
 	// Copy expected state and replace ENVs
 	expectedDirFS := aferofs.NewMemoryFsFrom(filesystem.Join(t.testDirFS.BasePath(), expectedDir))
-	testhelper.MustReplaceEnvsDir(t.ctx, expectedDirFS, `/`, t.envProvider)
+	err := testhelper.ReplaceEnvsDir(t.ctx, expectedDirFS, `/`, t.envProvider)
+	require.NoError(t.t, err)
 
 	// Compare actual and expected dirs
 	testhelper.AssertDirectoryContentsSame(t.t, expectedDirFS, `/`, t.workingDirFS, `/`)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -206,7 +207,9 @@ func MinimalProjectFs(t *testing.T) filesystem.Fs {
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "123")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	require.NoError(t, err)
+
 	return fs
 }
 

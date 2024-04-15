@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -165,7 +166,8 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 
 	// Create Fs
 	fs := aferofs.NewMemoryFsFrom(stateDir)
-	testhelper.MustReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	require.NoError(t, err)
 
 	// Load manifest
 	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
