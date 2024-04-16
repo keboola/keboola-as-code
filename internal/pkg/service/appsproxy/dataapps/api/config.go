@@ -18,7 +18,8 @@ type AppID string
 
 type AppConfig struct {
 	ID             AppID              `json:"-"`
-	Name           string             `json:"name"`
+	Name           string             `json:"appName"`
+	ProjectID      string             `json:"projectId"`
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
 	AuthRules      []Rule             `json:"authRules"`
