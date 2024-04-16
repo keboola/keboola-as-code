@@ -179,9 +179,9 @@ func (r *Router) Shutdown() {
 	r.wg.Wait()
 }
 
-func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
+func (r *Router) createConfigErrorHandler(exceptionID string, cfg api.AppConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", cfg.ProjectID)).Warn(req.Context(), `application "<proxy.appid>" has misconfigured OAuth2 provider`)
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, "Application has invalid configuration.")
 		fmt.Fprintln(w, "Exception ID:", exceptionID)
@@ -191,15 +191,15 @@ func (r *Router) createConfigErrorHandler(exceptionID string) http.Handler {
 func (r *Router) createDataAppHandler(ctx context.Context, app api.AppConfig) http.Handler {
 	if len(app.AuthRules) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
-		return r.createConfigErrorHandler(exceptionID)
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `no rules defined for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID, app)
 	}
 
 	target, err := url.Parse(app.UpstreamAppURL)
 	if err != nil {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
-		return r.createConfigErrorHandler(exceptionID)
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unable to parse upstream url for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID, app)
 	}
 
 	chain := alice.New(r.notifySandboxesServiceMiddleware(), r.dataAppTelemetryMiddleware())
@@ -209,7 +209,7 @@ func (r *Router) createDataAppHandler(ctx context.Context, app api.AppConfig) ht
 		oauthProviders[providerConfig.ID()] = r.createProvider(ctx, providerConfig, app, chain)
 	}
 
-	publicAppHandler := r.publicAppHandler(target, chain)
+	publicAppHandler := r.publicAppHandler(app, target, chain)
 
 	mux := http.NewServeMux()
 
@@ -223,8 +223,8 @@ func (r *Router) createDataAppHandler(ctx context.Context, app api.AppConfig) ht
 		err := rule.RegisterHandler(mux, r.createRuleHandler(ctx, app, rule, publicAppHandler, oauthProviders))
 		if err != nil {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `invalid rule "%s" "%s": %s`, app.ID.String(), rule.Type, err)
-			return r.createConfigErrorHandler(exceptionID)
+			r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `invalid rule "%s" "%s": %s`, app.ID.String(), rule.Type, err)
+			return r.createConfigErrorHandler(exceptionID, app)
 		}
 	}
 
@@ -241,8 +241,8 @@ func (r *Router) createRuleHandler(ctx context.Context, app api.AppConfig, rule 
 	if !authRequired {
 		if len(rule.Auth) > 0 {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected auth while authRequired is false for app "<proxy.appid>" "%s"`, app.Name)
-			return r.createConfigErrorHandler(exceptionID)
+			r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unexpected auth while authRequired is false for app "<proxy.appid>" "%s"`, app.Name)
+			return r.createConfigErrorHandler(exceptionID, app)
 		}
 
 		return publicAppHandler
@@ -250,8 +250,8 @@ func (r *Router) createRuleHandler(ctx context.Context, app api.AppConfig, rule 
 
 	if len(rule.Auth) == 0 {
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `empty providers array for app "<proxy.appid>" "%s"`, app.Name)
-		return r.createConfigErrorHandler(exceptionID)
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `empty providers array for app "<proxy.appid>" "%s"`, app.Name)
+		return r.createConfigErrorHandler(exceptionID, app)
 	}
 
 	selectedProviders := make(map[provider.ID]*oauthProvider)
@@ -259,8 +259,8 @@ func (r *Router) createRuleHandler(ctx context.Context, app api.AppConfig, rule 
 		authProvider, found := oauthProviders[id]
 		if !found {
 			exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-			r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
-			return r.createConfigErrorHandler(exceptionID)
+			r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unexpected provider id "%s" for app "<proxy.appid>" "%s"`, id, app.Name)
+			return r.createConfigErrorHandler(exceptionID, app)
 		}
 
 		selectedProviders[id] = authProvider
@@ -269,7 +269,7 @@ func (r *Router) createRuleHandler(ctx context.Context, app api.AppConfig, rule 
 	return r.createMultiProviderHandler(selectedProviders, app)
 }
 
-func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handler {
+func (r *Router) publicAppHandler(app api.AppConfig, target *url.URL, chain alice.Chain) http.Handler {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = r.transport
 	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
@@ -280,7 +280,7 @@ func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handl
 		}
 
 		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warn(req.Context(), err.Error())
 		w.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintln(w, "Unable to connect to application.")
 		fmt.Fprintln(w, "Exception ID:", exceptionID)
@@ -391,12 +391,12 @@ func (r *Router) createProvider(ctx context.Context, authProvider provider.Provi
 
 	// Use error handler by default.
 	out := &oauthProvider{
-		handler: r.createConfigErrorHandler(exceptionID),
+		handler: r.createConfigErrorHandler(exceptionID, app),
 	}
 
 	providerConfig, err := authProvider.ToProxyProvider()
 	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Infof(ctx, `invalid provider configuration "%s" "%s": %s`, app.ID, app.Name, err)
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Infof(ctx, `invalid provider configuration "%s" "%s": %s`, app.ID, app.Name, err)
 		return out
 	}
 	out.providerConfig = providerConfig
@@ -404,7 +404,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider provider.Provi
 	// Create a configuration for oauth2-proxy. This can cause a validation failure.
 	proxyConfig, err := r.authProxyConfig(app, providerConfig, chain)
 	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unable to create oauth proxy config for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return out
 	}
 	out.proxyConfig = proxyConfig
@@ -412,7 +412,7 @@ func (r *Router) createProvider(ctx context.Context, authProvider provider.Provi
 	// Create a provider instance. This may fail on invalid url, unknown provider type and various other reasons.
 	proxyProvider, err := providers.NewProvider(providerConfig)
 	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unable to create oauth provider for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return out
 	}
 	out.proxyProvider = proxyProvider
@@ -420,14 +420,14 @@ func (r *Router) createProvider(ctx context.Context, authProvider provider.Provi
 	// Create a page writer instance. This is necessary for triggering data app wakeup.
 	pageWriter, err := NewPageWriter(proxyConfig, r.dnsErrorHandler)
 	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to create page writer for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unable to create page writer for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return out
 	}
 
 	// Create the actual proxy instance. May fail on some runtime error.
 	proxy, err := oauthproxy.NewOAuthProxyWithPageWriter(proxyConfig, authValidator, pageWriter)
 	if err != nil {
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
+		r.logger.With(attribute.String("exceptionId", exceptionID), attribute.String("projectId", app.ProjectID)).Warnf(ctx, `unable to start oauth proxy for app "%s" "%s": %s`, app.ID, app.Name, err.Error())
 		return out
 	}
 	out.handler = proxy
