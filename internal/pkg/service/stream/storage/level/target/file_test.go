@@ -12,6 +12,7 @@ import (
 )
 
 func TestFile_Validation(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name          string
 		ExpectedError string
@@ -42,10 +43,8 @@ func TestFile_Validation(t *testing.T) {
 		err := val.Validate(ctx, tc.Value)
 		if tc.ExpectedError == "" {
 			assert.NoError(t, err, tc.Name)
-		} else {
-			if assert.Error(t, err, tc.Name) {
-				assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
-			}
+		} else if assert.Error(t, err, tc.Name) {
+			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
 		}
 	}
 }
