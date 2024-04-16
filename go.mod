@@ -2,7 +2,7 @@ module github.com/keboola/keboola-as-code
 
 go 1.22.2
 
-replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
+replace github.com/google/go-jsonnet v0.20.0 => github.com/keboola/go-jsonnet v0.20.1-0.20240415122724-d526145c4cb8
 
 replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240404125540-ac0aff7a6c75
 
@@ -29,7 +29,7 @@ require (
 	github.com/go-resty/resty/v2 v2.12.0
 	github.com/gofrs/flock v0.8.1
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-jsonnet v0.19.1
+	github.com/google/go-jsonnet v0.20.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/joho/godotenv v1.5.1
