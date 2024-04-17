@@ -1,0 +1,17 @@
+{
+  "backend": {
+    "type": "snowflake"
+  },
+  "branches": [
+    {
+      "branch": {
+        "name": "foo",
+        "isDefault": false
+      },
+      "configs": [
+        "old-transformation"
+      ]
+    }
+  ],
+  "envs": {}
+}

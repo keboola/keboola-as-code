@@ -102,18 +102,6 @@
       "rows": []
     },
     {
-      "branchId": %%TEST_BRANCH_FOO_ID%%,
-      "componentId": "transformation",
-      "id": "%%TEST_BRANCH_FOO_CONFIG_OLD_TRANSFORMATION_ID%%",
-      "path": "other/transformation/old-transformation",
-      "rows": [
-        {
-          "id": "%%TEST_BRANCH_FOO_CONFIG_OLD_TRANSFORMATION_ROW_OLD_TRANSFORMATION_SNFK_ID%%",
-          "path": "rows/old-transformation-snfk"
-        }
-      ]
-    },
-    {
       "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "keboola.data-apps",
       "id": "%%TEST_BRANCH_MAIN_CONFIG_DATA_APP_ID%%",

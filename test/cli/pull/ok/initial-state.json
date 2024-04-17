@@ -21,7 +21,6 @@
         "isDefault": false
       },
       "configs": [
-        "old-transformation",
         "without-rows"
       ]
     },

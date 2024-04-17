@@ -1,0 +1,53 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.projectDescription": "Serves only for legacy support of push interaction with project."
+        }
+      },
+      "configs": []
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "transformation",
+          "name": "old-transformation",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [
+            {
+              "name": "old-transformation-snfk",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "backend": "snowflake",
+                "disabled": false,
+                "id": "717513586",
+                "input": [],
+                "name": "old-transformation-snfk",
+                "output": [],
+                "packages": [],
+                "phase": 1,
+                "queries": [
+                  "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+                ],
+                "requires": [],
+                "type": "simple"
+              }
+            }
+          ],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+%A
+DEBUG	Project state has been successfully loaded.
+%A
+Plan for "pull" operation:
+  + B foo
+  + C foo/other/transformation/old-transformation
+  + R foo/other/transformation/old-transformation/rows/old-transformation-snfk
+  + B main
+%A
+DEBUG	Saved ".keboola/manifest.json"
+%A
+INFO	Pull done.
+%A
+DEBUG	Sent "sync-pull" successful event id: "%s"
