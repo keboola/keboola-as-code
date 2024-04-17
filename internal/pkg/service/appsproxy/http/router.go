@@ -503,6 +503,33 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[provider.ID]*oaut
 // See https://github.com/oauth2-proxy/oauth2-proxy/issues/926
 func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oauthProvider, app api.AppConfig) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/_proxy/callback" {
+			csfrCookie, _ := request.Cookie("_oauth2_proxy_csrf")
+
+			if csfrCookie == nil || csfrCookie.Value == "" {
+				// Nastavení hlavičky Content-Type na text/html
+				writer.Header().Set("Content-Type", "text/html")
+				// Vytvoření HTML stránky s meta tagem pro přesměrování
+				html := fmt.Sprintf(`
+		  <!DOCTYPE html>
+		  <html lang="en">
+		  <head>
+		      <meta charset="UTF-8">
+		      <meta http-equiv="refresh" content="0;url=%s">
+		      <title>Redirecting...</title>
+		  </head>
+		  <body>
+		      <!-- Optional content here -->
+		      <p>Redirecting...</p>
+		  </body>
+		  </html>
+		`, request.URL.String())
+				writer.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(writer, html)
+				return
+			}
+		}
+
 		var authProvider *oauthProvider
 		ok := false
 
@@ -610,32 +637,6 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oaut
 			if authProvider.providerConfig.BackendLogoutURL != "" {
 				writer.Header().Set("Location", authProvider.providerConfig.BackendLogoutURL)
 				writer.WriteHeader(http.StatusFound)
-				return
-			}
-		}
-		if request.URL.Path == "/_proxy/callback" {
-			csfrCookie, _ := request.Cookie("_oauth2_proxy_csrf")
-
-			if csfrCookie == nil || csfrCookie.Value == "" {
-				// Nastavení hlavičky Content-Type na text/html
-				writer.Header().Set("Content-Type", "text/html")
-				// Vytvoření HTML stránky s meta tagem pro přesměrování
-				html := fmt.Sprintf(`
-		  <!DOCTYPE html>
-		  <html lang="en">
-		  <head>
-		      <meta charset="UTF-8">
-		      <meta http-equiv="refresh" content="0;url=%s">
-		      <title>Redirecting...</title>
-		  </head>
-		  <body>
-		      <!-- Optional content here -->
-		      <p>Redirecting...</p>
-		  </body>
-		  </html>
-		`, request.URL.String())
-				writer.WriteHeader(http.StatusForbidden)
-				fmt.Fprint(writer, html)
 				return
 			}
 		}
