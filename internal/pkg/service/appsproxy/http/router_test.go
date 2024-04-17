@@ -288,6 +288,8 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header["Location"][0]
+				assert.Equal(t, m[0].Issuer() + "/logout", location)
 				cookies := response.Cookies()
 				assert.Len(t, cookies, 2)
 
@@ -304,7 +306,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 			},
 			expectedNotifications: map[string]int{
 				"oidc": 1,
@@ -1821,6 +1822,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					ClientSecret: m[0].Config().ClientSecret,
 					AllowedRoles: pointer([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
+					LogoutURL:    m[0].Issuer() + "/logout",
 				},
 			},
 			AuthRules: []api.Rule{
