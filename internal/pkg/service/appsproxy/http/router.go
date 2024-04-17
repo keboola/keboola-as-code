@@ -592,6 +592,32 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oaut
 				r.clock.Now(),
 			))
 		}
+		if request.URL.Path == "/_proxy/callback" {
+			csfrCookie, _ := request.Cookie("_oauth2_proxy_csrf")
+
+			if csfrCookie == nil || csfrCookie.Value == "" {
+				// Nastavení hlavičky Content-Type na text/html
+				writer.Header().Set("Content-Type", "text/html")
+				// Vytvoření HTML stránky s meta tagem pro přesměrování
+				html := fmt.Sprintf(`
+		  <!DOCTYPE html>
+		  <html lang="en">
+		  <head>
+		      <meta charset="UTF-8">
+		      <meta http-equiv="refresh" content="0;url=%s">
+		      <title>Redirecting...</title>
+		  </head>
+		  <body>
+		      <!-- Optional content here -->
+		      <p>Redirecting...</p>
+		  </body>
+		  </html>
+		`, request.URL.String())
+				writer.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(writer, html)
+				return
+			}
+		}
 
 		// Authenticate the request by the provider selected in the cookie
 		authProvider.handler.ServeHTTP(writer, request)
@@ -620,7 +646,7 @@ func (r *Router) authProxyConfig(app api.AppConfig, provider options.Provider, c
 
 	v.Cookie.Secret = string(secret)
 	v.Cookie.Domains = []string{domain}
-	v.Cookie.SameSite = "lax"
+	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = "/_proxy"
 	v.RawRedirectURL = r.config.API.PublicURL.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
 
