@@ -304,7 +304,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 			},
 			expectedNotifications: map[string]int{
 				"oidc": 1,
@@ -393,7 +393,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				wildcards.Assert(t, "%ALogin Failed: Unable to find a valid CSRF token. Please try again.%A", string(body))
+				wildcards.Assert(t, "%Ameta http-equiv=\"refresh\"%A", string(body))
 
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://app-name-oidc.hub.keboola.local/", nil)
@@ -510,14 +510,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Shutdown provider server
 				m[0].Shutdown()
@@ -568,14 +568,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -600,14 +600,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to private app (authorized but down)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://app-name-oidc.hub.keboola.local/", nil)
@@ -662,14 +662,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-multi.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "app-name-multi.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1595,14 +1595,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteNoneMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1627,14 +1627,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[0].Domain)
 				assert.True(t, cookies[0].HttpOnly)
 				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 				assert.Equal(t, "/", cookies[1].Path)
 				assert.Equal(t, "app-name-oidc.hub.keboola.local", cookies[1].Domain)
 				assert.True(t, cookies[1].HttpOnly)
 				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+				assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), method, "https://app-name-oidc.hub.keboola.local/some/data/app/url?foo=bar", nil)
