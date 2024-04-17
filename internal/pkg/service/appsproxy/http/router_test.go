@@ -289,7 +289,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location = response.Header["Location"][0]
-				assert.Equal(t, m[0].Issuer() + "/logout", location)
+				assert.Equal(t, m[0].Issuer()+"/logout", location)
 				cookies := response.Cookies()
 				assert.Len(t, cookies, 2)
 
@@ -379,6 +379,12 @@ func TestAppProxyRouter(t *testing.T) {
 					[]*http.Cookie{
 						{
 							Name:   "_oauth2_proxy_csrf",
+							Value:  "",
+							Path:   "/",
+							Domain: "app-name-oidc.hub.keboola.local",
+						},
+						{
+							Name:   "_oauth2_provider",
 							Value:  "",
 							Path:   "/",
 							Domain: "app-name-oidc.hub.keboola.local",
