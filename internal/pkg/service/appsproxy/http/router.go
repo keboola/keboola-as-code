@@ -14,6 +14,7 @@ import (
 	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -591,6 +592,26 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oaut
 				time.Hour*-1,
 				r.clock.Now(),
 			))
+
+			var cookieNameRegex = regexp.MustCompile(fmt.Sprintf("^%s(_\\d+)?$", opts.Name))
+			for _, c := range request.Cookies() {
+				if cookieNameRegex.MatchString(c.Name) {
+					http.SetCookie(writer, cookies.MakeCookieFromOptions(
+						request,
+						c.Name,
+						"",
+						opts,
+						time.Hour*-1,
+						r.clock.Now(),
+					))
+				}
+			}
+
+			if authProvider.providerConfig.BackendLogoutURL != "" {
+				writer.Header().Set("Location", authProvider.providerConfig.BackendLogoutURL)
+				writer.WriteHeader(http.StatusFound)
+				return
+			}
 		}
 		if request.URL.Path == "/_proxy/callback" {
 			csfrCookie, _ := request.Cookie("_oauth2_proxy_csrf")
