@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Sign In</title>
+</head>
+<body>
+    {{range .Providers}}
+        <a href="{{.URL}}">{{.Name}}</a>
+    {{end}}
+</body>
+
+</html>
