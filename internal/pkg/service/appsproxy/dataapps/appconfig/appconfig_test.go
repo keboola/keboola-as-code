@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type testCase struct {
@@ -284,8 +283,9 @@ func TestLoader_LoadConfig(t *testing.T) {
 				if attempt.expectedErrorCode != 0 {
 					require.Error(t, err)
 					var apiErr *api.Error
-					errors.As(err, &apiErr)
-					assert.Equal(t, attempt.expectedErrorCode, apiErr.StatusCode())
+					if assert.ErrorAs(t, err, &apiErr) {
+						assert.Equal(t, attempt.expectedErrorCode, apiErr.StatusCode())
+					}
 				} else {
 					require.NoError(t, err)
 					assert.Equal(t, attempt.expectedConfig.ID, cfg.ID)
