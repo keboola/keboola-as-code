@@ -2,6 +2,8 @@ package errors
 
 import (
 	"net/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type BadRequestError struct {
@@ -29,5 +31,5 @@ func (e BadRequestError) Error() string {
 }
 
 func (e BadRequestError) ErrorUserMessage() string {
-	return e.Error()
+	return errors.Format(e.err, errors.FormatAsSentences())
 }

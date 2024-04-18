@@ -14,18 +14,18 @@ func WrapMultipleErrors(err error, httpCode int) WithStatusCode {
 	return multipleErrors{error: err, httpCode: httpCode}
 }
 
-func (w multipleErrors) Unwrap() error {
-	return w.error
+func (e multipleErrors) Unwrap() error {
+	return e.error
 }
 
-func (w multipleErrors) StatusCode() int {
-	return w.httpCode
+func (e multipleErrors) StatusCode() int {
+	return e.httpCode
 }
 
-func (w multipleErrors) ErrorName() string {
+func (e multipleErrors) ErrorName() string {
 	return "multipleErrors"
 }
 
-func (w multipleErrors) ErrorUserMessage() string {
-	return w.error.Error()
+func (e multipleErrors) ErrorUserMessage() string {
+	return errors.Format(e, errors.FormatAsSentences())
 }

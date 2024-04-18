@@ -3,6 +3,8 @@ package errors
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ResourceAlreadyExistsError struct {
@@ -28,5 +30,5 @@ func (e ResourceAlreadyExistsError) Error() string {
 }
 
 func (e ResourceAlreadyExistsError) ErrorUserMessage() string {
-	return e.Error()
+	return errors.Format(e, errors.FormatAsSentences())
 }

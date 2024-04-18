@@ -3,12 +3,15 @@ package errors
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ResourceNotFoundError struct {
 	what string
 	key  string
 	in   string
+	err  error
 }
 
 func NewResourceNotFoundError(what, key, in string) ResourceNotFoundError {
@@ -35,5 +38,14 @@ func (e ResourceNotFoundError) Error() string {
 }
 
 func (e ResourceNotFoundError) ErrorUserMessage() string {
-	return e.Error()
+	return errors.Format(e, errors.FormatAsSentences())
+}
+
+func (e ResourceNotFoundError) Wrap(err error) ResourceNotFoundError {
+	e.err = err
+	return e
+}
+
+func (e ResourceNotFoundError) Unwrap() error {
+	return e.err
 }
