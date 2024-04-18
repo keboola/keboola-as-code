@@ -104,7 +104,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`Application "broken" "" has invalid configuration for authentication provider "oidc".`))
+				assert.Contains(t, string(body), html.EscapeString(`Application "broken" has invalid configuration for authentication provider "oidc".`))
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -168,7 +168,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`Application "invalid3" "" has invalid configuration for authentication provider "oidc".`))
+				assert.Contains(t, string(body), html.EscapeString(`Application "invalid3" has invalid configuration for authentication provider "oidc".`))
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -937,7 +937,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`Application "multi" "" has invalid configuration for authentication provider "oidc2".`))
+				assert.Contains(t, string(body), html.EscapeString(`Application "multi" has invalid configuration for authentication provider "oidc2".`))
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},

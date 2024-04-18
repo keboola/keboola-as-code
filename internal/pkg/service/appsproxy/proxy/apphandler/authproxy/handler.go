@@ -123,6 +123,6 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 
 func wrapHandlerInitErr(app api.AppConfig, auth provider.Provider, err error) error {
 	return svcErrors.
-		NewServiceUnavailableError(errors.PrefixErrorf(err, `application "%s" "%s" has invalid configuration for authentication provider "%s"`, app.ID, app.Name, auth.ID())).
-		WithUserMessage(fmt.Sprintf(`Application "%s" "%s" has invalid configuration for authentication provider "%s".`, app.ID, app.Name, auth.ID()))
+		NewServiceUnavailableError(errors.PrefixErrorf(err, `application "%s" has invalid configuration for authentication provider "%s"`, app.IdAndName(), auth.ID())).
+		WithUserMessage(fmt.Sprintf(`Application "%s" has invalid configuration for authentication provider "%s".`, app.IdAndName(), auth.ID()))
 }

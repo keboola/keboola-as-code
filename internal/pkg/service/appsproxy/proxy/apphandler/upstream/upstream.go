@@ -96,7 +96,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	target, err := url.Parse(app.UpstreamAppURL)
 	if err != nil {
 		return nil, svcErrors.NewServiceUnavailableError(errors.PrefixErrorf(err,
-			`unable to parse upstream url for app "%s" "%s"`, app.ID, app.Name,
+			`unable to parse upstream url for app "%s"`, app.IdAndName(),
 		))
 	}
 

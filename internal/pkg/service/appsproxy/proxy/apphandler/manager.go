@@ -90,7 +90,7 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 	handler, err := newAppHandler(m, app, appUpstream, authHandlers)
 	if err != nil {
 		err = svcErrors.NewServiceUnavailableError(errors.NewNestedError(
-			errors.Errorf(`application "%s" "%s" has invalid configuration`, app.ID, app.Name),
+			errors.Errorf(`application "%s" has invalid configuration`, app.IdAndName()),
 			err,
 		))
 		return m.newErrorHandler(err)
