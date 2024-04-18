@@ -41,7 +41,7 @@ func NewManager(d dependencies) *Manager {
 		clock:  d.Clock(),
 		logger: d.Logger(),
 		api:    d.AppsAPI(),
-		stateMap: syncmap.New[api.AppID, state](func() *state {
+		stateMap: syncmap.New[api.AppID, state](func(api.AppID) *state {
 			return &state{lock: &sync.Mutex{}}
 		}),
 	}

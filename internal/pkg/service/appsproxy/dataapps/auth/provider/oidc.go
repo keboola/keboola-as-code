@@ -41,7 +41,7 @@ func (v OIDC) ToProxyProvider() (proxyOptions.Provider, error) {
 
 	// AllowedRoles empty array doesn't make sense
 	if v.AllowedRoles != nil && len(*v.AllowedRoles) == 0 {
-		return proxyOptions.Provider{}, errors.Errorf(`empty array of allowed roles for app "%s" "%s"`, v.ID(), v.Name())
+		return proxyOptions.Provider{}, errors.Errorf(`unexpected empty array of allowed roles for app "%s" "%s"`, v.ID(), v.Name())
 	}
 
 	return p, nil

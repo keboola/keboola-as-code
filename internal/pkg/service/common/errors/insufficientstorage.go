@@ -2,6 +2,8 @@ package errors
 
 import (
 	"net/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type InsufficientStorageError struct {
@@ -26,7 +28,7 @@ func (e InsufficientStorageError) Error() string {
 }
 
 func (e InsufficientStorageError) ErrorUserMessage() string {
-	return e.Error()
+	return errors.Format(e, errors.FormatAsSentences())
 }
 
 func (e InsufficientStorageError) ErrorLogEnabled() bool {

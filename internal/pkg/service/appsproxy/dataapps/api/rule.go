@@ -32,15 +32,20 @@ type Rule struct {
 	AuthRequired *bool         `json:"authRequired"`
 }
 
-func (r *Rule) RegisterHandler(mux *http.ServeMux, handler http.Handler) error {
+func (r *Rule) Match(req *http.Request) (bool, error) {
 	switch r.Type {
 	case RulePathPrefix:
 		if !strings.HasPrefix(r.Value, "/") {
-			return errors.Errorf(`rule "%s": value "%v" must start with "/"`, r.Type, r.Value)
+			return false, errors.Errorf(`rule "%s": value "%v" must start with "/"`, r.Type, r.Value)
 		}
-		mux.Handle(r.Value, handler)
-		return nil
+		if strings.HasSuffix(r.Value, "/") {
+			// Rule ends with "/", do prefix match
+			return strings.HasPrefix(req.URL.Path, r.Value), nil
+		} else {
+			// Rule doesn't end with "/", do exact match
+			return req.URL.Path == r.Value, nil
+		}
 	default:
-		return errors.Errorf(`unexpected data app auth rule "%s"`, r.Type)
+		return false, errors.Errorf(`unexpected data app auth rule "%s"`, r.Type)
 	}
 }

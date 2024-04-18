@@ -9,7 +9,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dnsmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 )
 
 func TestFakeDNSMultipleTXTRecords(t *testing.T) {
