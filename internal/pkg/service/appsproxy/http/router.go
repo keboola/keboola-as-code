@@ -50,7 +50,6 @@ type Router struct {
 	loader            *appconfig.Loader
 	notifyManager     *notify.Manager
 	wakeupManager     *wakeup.Manager
-	transport         *http.Transport
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
@@ -75,11 +74,6 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		return nil, errors.PrefixError(err, "could not parse selection template")
 	}
 
-	transport, err := NewReverseProxyHTTPTransport("")
-	if err != nil {
-		return nil, errors.PrefixError(err, "could not create http transport")
-	}
-
 	router := &Router{
 		logger:        d.Logger(),
 		telemetry:     d.Telemetry(),
@@ -88,7 +82,6 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 		loader:        d.AppConfigLoader(),
 		notifyManager: d.NotifyManager(),
 		wakeupManager: d.WakeupManager(),
-		transport:     transport,
 		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
 			return &appHandler{
 				updateLock: &sync.RWMutex{},
