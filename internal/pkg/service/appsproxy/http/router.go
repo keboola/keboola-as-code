@@ -512,7 +512,6 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oaut
 		if request.URL.Path == "/_proxy/callback" {
 			csrfCookie, _ := request.Cookie("_oauth2_proxy_csrf")
 			if csrfCookie == nil || csrfCookie.Value == "" {
-				writer.Header().Set("Content-Type", "text/html")
 				data := struct {
 					URL     string
 					AppName string
@@ -620,7 +619,7 @@ func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oaut
 				r.clock.Now(),
 			))
 
-			var cookieNameRegex = regexp.MustCompile(fmt.Sprintf("^%s(_\\d+)?$", opts.Name))
+			cookieNameRegex := regexp.MustCompile(fmt.Sprintf("^%s(_\\d+)?$", opts.Name))
 			for _, c := range request.Cookies() {
 				if cookieNameRegex.MatchString(c.Name) {
 					http.SetCookie(writer, cookies.MakeCookieFromOptions(
