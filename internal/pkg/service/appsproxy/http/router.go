@@ -2,10 +2,10 @@ package http
 
 import (
 	"embed"
+	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -57,12 +57,4 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 
 func (r *Router) Shutdown() {
 	r.wg.Wait()
-}
-
-func (r *Router) formatAppDomain(app api.AppConfig) string {
-	domain := app.ID.String() + "." + r.config.API.PublicURL.Host
-	if app.Name != "" {
-		domain = app.Name + "-" + domain
-	}
-	return domain
 }
