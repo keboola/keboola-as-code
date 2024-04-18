@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -23,9 +22,6 @@ import (
 
 func TestManager_Wakeup(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("windows doesn't have /etc/resolv.conf")
-	}
 
 	ctx := context.Background()
 	clk := clock.NewMock()

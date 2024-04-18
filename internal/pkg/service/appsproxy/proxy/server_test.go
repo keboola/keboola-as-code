@@ -30,17 +30,21 @@ func TestAppProxyHandler(t *testing.T) {
 	appServer := testutil.StartAppServer(t)
 	defer appServer.Close()
 
-	// Start DNS server
-	dnsServer := testutil.StartDNSServer(t)
-	defer func() {
-		assert.NoError(t, dnsServer.Shutdown())
-	}()
-
-	// Register app DNS record
-	appURL := testutil.AddAppDNSRecord(t, appServer, dnsServer)
-
 	// Start api
-	appsAPI := testutil.StartDataAppsAPI(t, []api.AppConfig{
+	appsAPI := testutil.StartDataAppsAPI(t)
+	defer appsAPI.Close()
+
+	// Configure proxy
+	cfg := config.New()
+	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
+	cfg.SandboxesAPI.URL = appsAPI.URL
+
+	// Create dependencies
+	d, mocked := proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
+
+	// Register apps
+	appURL := testutil.AddAppDNSRecord(t, appServer, mocked.TestDNSServer())
+	appsAPI.Register([]api.AppConfig{
 		{
 			ID:             "123",
 			Name:           "public",
@@ -54,16 +58,8 @@ func TestAppProxyHandler(t *testing.T) {
 			},
 		},
 	})
-	defer appsAPI.Close()
 
-	// Configure proxy
-	cfg := config.New()
-	cfg.DNSServer = dnsServer.Addr()
-	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
-	cfg.SandboxesAPI.URL = appsAPI.URL
-
-	d, mocked := proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
-
+	// Create proxy handler
 	handler := proxy.NewHandler(d)
 
 	// Get robots.txt

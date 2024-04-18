@@ -23,17 +23,13 @@ type DataAppsAPI struct {
 	WakeUps       map[string]int
 }
 
-func StartDataAppsAPI(t *testing.T, apps []api.AppConfig) *DataAppsAPI {
+func StartDataAppsAPI(t *testing.T) *DataAppsAPI {
 	t.Helper()
 
 	service := &DataAppsAPI{
 		Apps:          make(map[api.AppID]api.AppConfig),
 		Notifications: make(map[string]int),
 		WakeUps:       make(map[string]int),
-	}
-
-	for _, app := range apps {
-		service.Apps[app.ID] = app
 	}
 
 	mux := http.NewServeMux()
@@ -90,4 +86,10 @@ func StartDataAppsAPI(t *testing.T, apps []api.AppConfig) *DataAppsAPI {
 	service.Server = ts
 
 	return service
+}
+
+func (v *DataAppsAPI) Register(apps []api.AppConfig) {
+	for _, app := range apps {
+		v.Apps[app.ID] = app
+	}
 }

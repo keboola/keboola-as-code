@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -36,9 +35,6 @@ type attempt struct {
 
 func TestLoader_LoadConfig(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("windows doesn't have /etc/resolv.conf")
-	}
 
 	testCases := []testCase{
 		{
@@ -303,9 +299,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 
 func TestLoader_LoadConfig_Race(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("windows doesn't have /etc/resolv.conf")
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

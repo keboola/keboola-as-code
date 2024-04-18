@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
@@ -14,11 +15,16 @@ import (
 // mocked implements Mocked interface.
 type mocked struct {
 	dependencies.Mocked
-	config config.Config
+	config    config.Config
+	dnsServer *dnsmock.Server
 }
 
 func (v *mocked) TestConfig() config.Config {
 	return v.config
+}
+
+func (v *mocked) TestDNSServer() *dnsmock.Server {
+	return v.dnsServer
 }
 
 func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
@@ -42,10 +48,21 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 		cfg.SandboxesAPI.Token = "my-token"
 	}
 
+	var dnsServer *dnsmock.Server
+	if cfg.DNSServer == "" {
+		dnsServer = dnsmock.New()
+		require.NoError(t, dnsServer.Start())
+		t.Cleanup(func() {
+			_ = dnsServer.Shutdown()
+		})
+
+		cfg.DNSServer = dnsServer.Addr()
+	}
+
 	// Validate config
 	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 
-	mock := &mocked{Mocked: commonMock, config: cfg}
+	mock := &mocked{Mocked: commonMock, config: cfg, dnsServer: dnsServer}
 
 	scope, err := newServiceScope(mock.TestContext(), mock, cfg)
 	require.NoError(t, err)

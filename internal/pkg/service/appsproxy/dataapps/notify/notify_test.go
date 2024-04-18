@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -23,9 +22,6 @@ import (
 
 func TestManager_Notify(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("windows doesn't have /etc/resolv.conf")
-	}
 
 	ctx := context.Background()
 	clk := clock.NewMock()
@@ -62,9 +58,6 @@ func TestManager_Notify(t *testing.T) {
 
 func TestManager_Notify_Race(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("windows doesn't have /etc/resolv.conf")
-	}
 
 	ctx := context.Background()
 	clk := clock.NewMock()

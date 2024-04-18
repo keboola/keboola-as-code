@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -50,9 +49,6 @@ type testCase struct {
 
 func TestAppProxyRouter(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("windows doesn't have /etc/resolv.conf")
-	}
 
 	testCases := []testCase{
 		{
@@ -1825,67 +1821,83 @@ func TestAppProxyRouter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			// Create testing apps API
+			appsAPI := testutil.StartDataAppsAPI(t)
+			t.Cleanup(func() {
+				appsAPI.Close()
+			})
+
+			// Create testing app upstream
 			appServer := testutil.StartAppServer(t)
-			defer appServer.Close()
+			t.Cleanup(func() {
+				appServer.Close()
+			})
 
-			m0 := testutil.StartOIDCProviderServer(t)
-			defer func() {
-				assert.NoError(t, m0.Shutdown())
-			}()
+			// Create dependencies
+			d, mocked := createDependencies(t, appsAPI.URL)
+			dnsServer := mocked.TestDNSServer()
 
-			m1 := testutil.StartOIDCProviderServer(t)
-			defer func() {
-				assert.NoError(t, m1.Shutdown())
-			}()
+			// Create test OIDC providers
+			providers := testAuthProviders(t)
 
-			m := []*mockoidc.MockOIDC{m0, m1}
-
-			dnsServer := testutil.StartDNSServer(t)
-			defer func() {
-				assert.NoError(t, dnsServer.Shutdown())
-			}()
-
+			// Register data apps
 			appURL := testutil.AddAppDNSRecord(t, appServer, dnsServer)
-			apps := configureDataApps(appURL, m)
+			appsAPI.Register(testDataApps(appURL, providers))
 
-			service := testutil.StartDataAppsAPI(t, apps)
-			defer service.Close()
-
-			d, mocked := createDependencies(t, dnsServer.Addr(), service.URL)
+			// Create proxy handler
 			handler := createProxyHandler(d)
 
+			// Create a test server for the proxy handler
 			proxySrv := httptest.NewUnstartedServer(handler)
 			proxySrv.EnableHTTP2 = true
 			proxySrv.StartTLS()
-			defer proxySrv.Close()
+			t.Cleanup(func() {
+				proxySrv.Close()
+			})
 
 			proxyURL, err := url.Parse(proxySrv.URL)
 			require.NoError(t, err)
 
 			client := createHTTPClient(t, proxyURL)
 
-			tc.run(t, client, m, appServer, service, dnsServer)
+			tc.run(t, client, providers, appServer, appsAPI, dnsServer)
 
 			d.Process().Shutdown(context.Background(), errors.New("bye bye"))
 			d.Process().WaitForShutdown()
 
-			assert.Equal(t, tc.expectedNotifications, service.Notifications)
-			assert.Equal(t, tc.expectedWakeUps, service.WakeUps)
+			assert.Equal(t, tc.expectedNotifications, appsAPI.Notifications)
+			assert.Equal(t, tc.expectedWakeUps, appsAPI.WakeUps)
 			assert.Equal(t, "", mocked.DebugLogger().ErrorMessages())
 		})
 	}
 }
 
-func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
+func testAuthProviders(t *testing.T) []*mockoidc.MockOIDC {
+	t.Helper()
+
+	oidc0 := testutil.StartOIDCProviderServer(t)
+	t.Cleanup(func() {
+		assert.NoError(t, oidc0.Shutdown())
+	})
+
+	oidc1 := testutil.StartOIDCProviderServer(t)
+	t.Cleanup(func() {
+		assert.NoError(t, oidc1.Shutdown())
+	})
+
+	return []*mockoidc.MockOIDC{oidc0, oidc1}
+}
+
+func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	return []api.AppConfig{
 		{
 			ID:             "norule",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 		},
 		{
 			ID:             "123",
 			Name:           "public",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:         api.RulePathPrefix,
@@ -1896,7 +1908,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid1",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:  "unknown",
@@ -1907,7 +1919,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid2",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:         api.RulePathPrefix,
@@ -1919,7 +1931,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid3",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
 					Base: provider.Base{
@@ -1944,7 +1956,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid4",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:  api.RulePathPrefix,
@@ -1955,7 +1967,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "oidc",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
 					Base: provider.Base{
@@ -1980,7 +1992,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "multi",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
 					Base: provider.Base{
@@ -2025,7 +2037,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "broken",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
 					Base: provider.Base{
@@ -2050,7 +2062,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "prefix",
-			UpstreamAppURL: tsURL.String(),
+			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
 					Base: provider.Base{
@@ -2098,7 +2110,7 @@ func configureDataApps(tsURL *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	}
 }
 
-func createDependencies(t *testing.T, dnsServer, sandboxesAPIURL string) (proxyDependencies.ServiceScope, dependencies.Mocked) {
+func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -2108,7 +2120,6 @@ func createDependencies(t *testing.T, dnsServer, sandboxesAPIURL string) (proxyD
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = string(secret)
-	cfg.DNSServer = dnsServer
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
 	return proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
