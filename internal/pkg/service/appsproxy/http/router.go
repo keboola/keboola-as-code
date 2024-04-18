@@ -54,26 +54,31 @@ type Router struct {
 	transport         *http.Transport
 	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
+	redirectTemplate  *template.Template
 	exceptionIDPrefix string
 	wg                sync.WaitGroup
 }
 
-const providerCookie = "_oauth2_provider"
+const (
+	providerCookie    = "_oauth2_provider"
+	selectionPagePath = "/_proxy/selection"
 
-const selectionPagePath = "/_proxy/selection"
+	redirectTemplatePath  = "template/redirect.html.tmpl"
+	selectionTemplatePath = "template/selection.html.tmpl"
+)
 
 //go:embed template/*
 var templates embed.FS
 
 func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, error) {
-	html, err := templates.ReadFile("template/selection.html.tmpl")
+	selectionTmpl, err := getTemplate(selectionTemplatePath, "selection template")
 	if err != nil {
-		return nil, errors.PrefixError(err, "selection template file not found")
+		return nil, err
 	}
 
-	tmpl, err := template.New("selection template").Parse(string(html))
+	redirectTmpl, err := getTemplate(redirectTemplatePath, "redirect template")
 	if err != nil {
-		return nil, errors.PrefixError(err, "could not parse selection template")
+		return nil, err
 	}
 
 	transport, err := NewReverseProxyHTTPTransport("")
@@ -95,7 +100,8 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 				updateLock: &sync.RWMutex{},
 			}
 		}),
-		selectionTemplate: tmpl,
+		selectionTemplate: selectionTmpl,
+		redirectTemplate:  redirectTmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 		wg:                sync.WaitGroup{},
 	}
@@ -504,28 +510,22 @@ func (r *Router) createSelectionPageHandler(oauthProviders map[provider.ID]*oaut
 func (r *Router) createMultiProviderHandler(oauthProviders map[provider.ID]*oauthProvider, app api.AppConfig) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/_proxy/callback" {
-			csfrCookie, _ := request.Cookie("_oauth2_proxy_csrf")
-
-			if csfrCookie == nil || csfrCookie.Value == "" {
-				// Nastavení hlavičky Content-Type na text/html
+			csrfCookie, _ := request.Cookie("_oauth2_proxy_csrf")
+			if csrfCookie == nil || csrfCookie.Value == "" {
 				writer.Header().Set("Content-Type", "text/html")
-				// Vytvoření HTML stránky s meta tagem pro přesměrování
-				html := fmt.Sprintf(`
-		  <!DOCTYPE html>
-		  <html lang="en">
-		  <head>
-		      <meta charset="UTF-8">
-		      <meta http-equiv="refresh" content="0;url=%s">
-		      <title>Redirecting...</title>
-		  </head>
-		  <body>
-		      <!-- Optional content here -->
-		      <p>Redirecting...</p>
-		  </body>
-		  </html>
-		`, request.URL.String())
+				data := struct {
+					URL     string
+					AppName string
+				}{
+					URL:     request.URL.String(),
+					AppName: app.Name,
+				}
+
 				writer.WriteHeader(http.StatusForbidden)
-				fmt.Fprint(writer, html)
+				err := r.redirectTemplate.Execute(writer, data)
+				if err != nil {
+					r.logger.Error(request.Context(), "could not execute redirect template")
+				}
 				return
 			}
 		}
@@ -746,4 +746,17 @@ func headerFromClaim(header, claim string) options.Header {
 			},
 		},
 	}
+}
+
+func getTemplate(templatePath string, name string) (*template.Template, error) {
+	html, err := templates.ReadFile(templatePath)
+	if err != nil {
+		return nil, errors.PrefixError(err, "selection template file not found")
+	}
+
+	tmpl, err := template.New(name).Parse(string(html))
+	if err != nil {
+		return nil, errors.PrefixError(err, "could not parse selection template")
+	}
+	return tmpl, nil
 }

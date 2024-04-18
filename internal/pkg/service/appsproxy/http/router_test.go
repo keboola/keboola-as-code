@@ -401,6 +401,7 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				wildcards.Assert(t, "%Ameta http-equiv=\"refresh\"%A", string(body))
+				wildcards.Assert(t, "%ARedirecting...%A", string(body))
 
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://app-name-oidc.hub.keboola.local/", nil)
