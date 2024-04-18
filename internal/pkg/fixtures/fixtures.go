@@ -112,13 +112,14 @@ type BackendDefinition struct {
 }
 
 type StateFile struct {
-	Backend            *BackendDefinition `json:"backend,omitempty"`
-	AllBranchesConfigs []string           `json:"allBranchesConfigs" validate:"required"`
-	Branches           []*BranchState     `json:"branches" validate:"required"`
-	Buckets            []*Bucket          `json:"buckets,omitempty"`
-	Sandboxes          []*Sandbox         `json:"sandboxes,omitempty"`
-	Files              []*File            `json:"files,omitempty"`
-	Envs               map[string]string  `json:"envs,omitempty"` // additional ENVs
+	Backend              *BackendDefinition `json:"backend,omitempty"`
+	LegacyTransformation bool               `json:"legacyTransformation,omitempty"`
+	AllBranchesConfigs   []string           `json:"allBranchesConfigs" validate:"required"`
+	Branches             []*BranchState     `json:"branches" validate:"required"`
+	Buckets              []*Bucket          `json:"buckets,omitempty"`
+	Sandboxes            []*Sandbox         `json:"sandboxes,omitempty"`
+	Files                []*File            `json:"files,omitempty"`
+	Envs                 map[string]string  `json:"envs,omitempty"` // additional ENVs
 }
 
 // ToAPI maps fixture to model.Branch.

@@ -12,14 +12,18 @@ cd keboola-as-code
 docker compose build
 ```
 
+It is possible when you do development on local environment and use `docker dev` image for `lint/build/test` there could be problem with `/vendor` file.
+
+Call `make fix` or `go mod vendor` to fix the `vendor` packages. Also when rebasing and there are adjustements in `go.mod`.
+
 ### Setup ENV
 
 Create `.env` file with definition of testing projects:
 ```
-TEST_KBC_PROJECTS='[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","backend":"snowflake/bigquery","token":"<token>"},...]'
+TEST_KBC_PROJECTS='[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","backend":"snowflake/bigquery","token":"<token>", "legacyTransformation": "false/true"},...]'
 ```
 
-Staging storage can be `s3`, `abs` or `gcs`, according to the stack.
+Staging storage can be `s3`, `abs` or `gcs`, according to the stack. LegacyTransformations are support only on stacks different than `gcp`.
 
 ### Start Dev Container
 
@@ -37,6 +41,29 @@ In case you're using Docker Desktop on Linux remove the `-u "$UID:$GID"`. It can
 Run `sudo chown -R <user>:<group> ./` to reset owner on all files.
 
 Run `docker volume ls` and `docker volume rm <volume>` to delete the named cache volume.
+
+When you want to use `replace github.com/your/module => /newpath` in `go.mod`, there has to be adjusted `docker-compose.yml`.
+
+```yml
+services:
+    dev:
+    ...
+    volumes:
+        -./:/code:z
+        - cache:/tmp/cache
+        - /path/in/your/system/module:/newpath
+    ...
+```
+
+This breaks usually the editor as the replace cannot be found in `/newpath`. Therefore be carefull that this works only with docker image and on local you could face issues.
+
+When in `.env` file there are multiple `TEST_KBC_PROJECTS` set up and you switch between the stacks, make sure that you rerun the 
+
+```
+docker compose run --rm -u "$UID:$GID" --service-ports dev bash
+```
+
+as this command automatically fetches the `.env` file and sets up `TEST_KBC_PROJECTS` instead of you.
 
 ### Run Tests
 

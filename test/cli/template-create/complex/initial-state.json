@@ -2,6 +2,7 @@
   "backend": {
     "type": "snowflake"
   },
+  "legacyTransformation": true,
   "allBranchesConfigs": [
     "empty"
   ],

@@ -1,7 +1,8 @@
 {
   "backend": {
-        "type": "snowflake"
-    },
+    "type": "snowflake"
+  },
+  "legacyTransformation": true,
   "allBranchesConfigs": [
     "empty"
   ],

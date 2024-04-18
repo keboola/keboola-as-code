@@ -67,6 +67,8 @@ Contain a snapshot of a project before or after the operations run in the test.
 - `buckets` - List of all buckets and their tables in the project.
 - `sandboxes` - List of all workspaces.
 - `schedules` - List of all schedules.
+- `backend` - Backend that the tests should run on only. Test fails when backend in TEST_KBC_PROJECTS has incompatible backend.
+- `legacyTransformation` - Boolean indication that the stack supports legacyTransformation. For `gcp` stack the legacyTransformation has to be set always to `false`.
 - `branches/.../configs` - List of all configs (by filename without extension) available in a branch. They are created from fixtures defined in [internal/pkg/fixtures/configs](https://github.com/keboola/keboola-as-code/tree/main/internal/pkg/fixtures/configs). The `name` field of the fixture is used to generate an environment variable which contains the ID of the config, e.g. `%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%` where `MAIN` is the branch, and `EMPTY` is the name.
   - You can get a list of the generated environment variables by running the test with `TEST_VERBOSE=true`, e.g. `TEST_VERBOSE=true TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E/job`
 
@@ -74,6 +76,10 @@ Example:
 
 ```json
 {
+  "backend": {
+    "type": "snowflake"
+  },
+  "legacyTransformation": true,
   "branches": [
     {
       "branch": {

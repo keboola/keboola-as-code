@@ -71,6 +71,10 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 		backendOptions = append(backendOptions, GetBackendOption(t, state.Backend))
 	}
 
+	if state.LegacyTransformation {
+		backendOptions = append(backendOptions, tp.WithLegacyTransformation())
+	}
+
 	project := testproject.GetTestProjectForTest(t, backendOptions...)
 	// Create context with timeout.
 	// Acquiring a test project and setting it up is not part of the timeout.

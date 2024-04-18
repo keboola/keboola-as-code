@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -116,6 +117,7 @@ func GetTestProject(envs *env.Map, options ...testproject.Option) (*Project, Unl
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
 	p.setEnv(`TEST_KBC_PROJECT_BACKEND`, p.Project.Backend())
+	p.setEnv(`TEST_KBC_PROJECT_LEGACY_TRANSFORMATION`, strconv.FormatBool(p.Project.LegacyTransformation()))
 	p.logf(`■ ️Initialization done.`)
 
 	// Remove all objects
