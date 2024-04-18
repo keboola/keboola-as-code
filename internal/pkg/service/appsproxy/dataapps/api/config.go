@@ -49,17 +49,15 @@ func (c AppID) String() string {
 func (c AppConfig) IdAndName() string {
 	if c.Name == "" {
 		return c.ID.String()
-	} else {
-		return c.Name + "-" + c.ID.String()
 	}
+	return c.Name + "-" + c.ID.String()
 }
 
 func (c AppConfig) Domain() string {
 	if c.Name == "" {
 		return c.ID.String()
-	} else {
-		return c.Name + "-" + c.ID.String()
 	}
+	return c.Name + "-" + c.ID.String()
 }
 
 func (c AppConfig) ETag() string {

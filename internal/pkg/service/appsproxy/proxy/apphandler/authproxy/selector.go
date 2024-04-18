@@ -56,7 +56,7 @@ func (s *Selector) ServeHTTPOrError(handlers map[provider.ID]*Handler, w http.Re
 		s.clearCookie(w, req)
 	}
 
-	// Shortcut, if there is only one provider
+	// Skip selector page, if there is only one provider
 	if len(handlers) == 1 {
 		for _, handler := range handlers {
 			// Set cookie if needed
@@ -172,8 +172,10 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 	}
 
 	if expires > 0 {
+		// If there is an expiration, set it
 		v.Expires = s.clock.Now().Add(expires)
 	} else {
+		// Otherwise clear the cookie
 		v.MaxAge = -1
 	}
 

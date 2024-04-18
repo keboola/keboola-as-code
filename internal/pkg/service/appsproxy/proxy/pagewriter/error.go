@@ -24,10 +24,9 @@ func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, er
 	if errors.As(err, &dnsError) {
 		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
 		pw.WriteSpinnerPage(w, req)
-	} else {
-		err = svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed.")
-		pw.WriteError(w, req, err)
 	}
+
+	pw.WriteError(w, req, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
 }
 
 func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, err error) {

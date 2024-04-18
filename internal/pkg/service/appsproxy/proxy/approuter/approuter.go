@@ -69,7 +69,7 @@ func (r *Router) parseAppID(req *http.Request) (api.AppID, bool) {
 	lastDash := strings.LastIndexByte(subdomain, '-')
 	if lastDash >= 0 {
 		return api.AppID(subdomain[lastDash+1:]), true
-	} else {
-		return api.AppID(subdomain), true
 	}
+
+	return api.AppID(subdomain), true
 }
