@@ -13,8 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/http"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/entrypoint"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -26,9 +26,8 @@ import (
 )
 
 const (
-	ServiceName       = "apps-proxy"
-	ENVPrefix         = "APPS_PROXY_"
-	ExceptionIDPrefix = "keboola-appsproxy-"
+	ServiceName = "apps-proxy"
+	ENVPrefix   = "APPS_PROXY_"
 )
 
 func main() {
@@ -91,18 +90,14 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 	oautproxylogger.SetErrOutput(loggerWriter)
 
 	// Create dependencies
-	scope, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
+	d, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
 
 	logger.Infof(ctx, "starting Apps Proxy server, listen-address=%s", cfg.API.Listen)
-	router, err := http.NewRouter(scope, ExceptionIDPrefix)
-	if err != nil {
-		return err
-	}
 
-	err = http.StartServer(ctx, scope, router.CreateHandler())
+	err = proxy.StartServer(ctx, d)
 	if err != nil {
 		return err
 	}
