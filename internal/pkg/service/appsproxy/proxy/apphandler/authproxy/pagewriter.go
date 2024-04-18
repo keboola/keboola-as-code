@@ -70,7 +70,7 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 		}
 	}
 
-	pw.pageWriter.WriteErrorPage(w, req, opts.Status, messages, "")
+	pw.pageWriter.WriteErrorPage(w, req, opts.Status, messages, "", opts.RequestID)
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {

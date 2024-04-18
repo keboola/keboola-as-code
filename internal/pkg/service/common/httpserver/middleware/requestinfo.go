@@ -40,3 +40,7 @@ func RequestInfo() Middleware {
 		})
 	}
 }
+
+func RequestIDFromContext(ctx context.Context) string {
+	return ctx.Value(RequestIDCtxKey).(string)
+}

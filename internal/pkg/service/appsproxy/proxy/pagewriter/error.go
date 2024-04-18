@@ -80,6 +80,15 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, err error
 		}
 	}
 
+	// ExceptionID
+	var exceptionID string
+	var exceptionIDProvider svcerrors.WithExceptionID
+	if errors.As(err, &exceptionIDProvider) {
+		exceptionID = exceptionIDProvider.ErrorExceptionId()
+	} else {
+		exceptionID = svcerrors.GenerateExceptionID()
+	}
+
 	// Log
 	if status == http.StatusInternalServerError {
 		pw.logger.Error(req.Context(), logMessage)
@@ -88,14 +97,15 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, err error
 	}
 
 	// Render page
-	pw.WriteErrorPage(w, req, status, userMessages, details)
+	pw.WriteErrorPage(w, req, status, userMessages, details, exceptionID)
 }
 
-func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, status int, messages []string, details string) {
+func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, status int, messages []string, details, exceptionID string) {
 	pw.writePage(w, req, "error.gohtml", status, &errorPageData{
-		Status:     status,
-		StatusText: http.StatusText(status),
-		Messages:   messages,
-		Details:    details,
+		Status:      status,
+		StatusText:  http.StatusText(status),
+		Messages:    messages,
+		Details:     details,
+		ExceptionID: exceptionID,
 	})
 }
