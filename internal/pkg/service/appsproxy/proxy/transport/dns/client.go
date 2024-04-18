@@ -15,9 +15,9 @@ import (
 
 const DialTimeout = 2 * time.Second
 
-const DNSReadTimeout = 2 * time.Second
+const ReadTimeout = 2 * time.Second
 
-const DNSWriteTimeout = 2 * time.Second
+const WriteTimeout = 2 * time.Second
 
 type Client struct {
 	client    *dns.Client
@@ -50,8 +50,8 @@ func NewClient(dialer *net.Dialer, dnsServer string) *Client {
 			Net:          "udp",
 			Dialer:       dialer,
 			DialTimeout:  DialTimeout,
-			ReadTimeout:  DNSReadTimeout,
-			WriteTimeout: DNSWriteTimeout,
+			ReadTimeout:  ReadTimeout,
+			WriteTimeout: WriteTimeout,
 		},
 		dnsServer: dnsServer,
 	}

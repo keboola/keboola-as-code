@@ -1,5 +1,6 @@
 // Based on https://github.com/kuritka/go-fake-dns
 // License: MIT
+
 package dnsmock_test
 
 import (
@@ -9,10 +10,10 @@ import (
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dnsmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 )
 
-func TestFakeDNSMultipleTXTRecords(t *testing.T) {
+func TestMultipleTXTRecords(t *testing.T) {
 	t.Parallel()
 
 	dnsMock := dnsmock.New()
@@ -49,7 +50,7 @@ func TestFakeDNSMultipleTXTRecords(t *testing.T) {
 	require.Equal(t, "8", a.Answer[0].(*dns.TXT).Txt[2])
 }
 
-func TestFakeDNS(t *testing.T) {
+func TestSimple(t *testing.T) {
 	t.Parallel()
 
 	dnsMock := dnsmock.New()
