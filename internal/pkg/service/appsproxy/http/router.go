@@ -9,10 +9,7 @@ import (
 	"html/template"
 	"io"
 	"math/rand"
-	"net"
 	"net/http"
-	"net/http/httptrace"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"sync"
@@ -33,11 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -48,9 +41,6 @@ type Router struct {
 	config            config.Config
 	clock             clock.Clock
 	loader            *appconfig.Loader
-	notifyManager     *notify.Manager
-	wakeupManager     *wakeup.Manager
-	appHandlers       *syncmap.SyncMap[string, appHandler]
 	selectionTemplate *template.Template
 	exceptionIDPrefix string
 	wg                sync.WaitGroup
@@ -75,41 +65,17 @@ func NewRouter(d dependencies.ServiceScope, exceptionIDPrefix string) (*Router, 
 	}
 
 	router := &Router{
-		logger:        d.Logger(),
-		telemetry:     d.Telemetry(),
-		config:        d.Config(),
-		clock:         d.Clock(),
-		loader:        d.AppConfigLoader(),
-		notifyManager: d.NotifyManager(),
-		wakeupManager: d.WakeupManager(),
-		appHandlers: syncmap.New[string, appHandler](func() *appHandler {
-			return &appHandler{
-				updateLock: &sync.RWMutex{},
-			}
-		}),
+		logger:            d.Logger(),
+		telemetry:         d.Telemetry(),
+		config:            d.Config(),
+		clock:             d.Clock(),
+		loader:            d.AppConfigLoader(),
 		selectionTemplate: tmpl,
 		exceptionIDPrefix: exceptionIDPrefix,
 		wg:                sync.WaitGroup{},
 	}
 
 	return router, nil
-}
-
-type appHandler struct {
-	httpHandler http.Handler
-	updateLock  *sync.RWMutex
-}
-
-func (h *appHandler) getHTTPHandler() http.Handler {
-	h.updateLock.RLock()
-	defer h.updateLock.RUnlock()
-	return h.httpHandler
-}
-
-func (h *appHandler) setHTTPHandler(handlerFactory func() http.Handler) {
-	h.updateLock.Lock()
-	defer h.updateLock.Unlock()
-	h.httpHandler = handlerFactory()
 }
 
 func (r *Router) CreateHandler() http.Handler {
@@ -260,99 +226,6 @@ func (r *Router) createRuleHandler(ctx context.Context, app api.AppConfig, rule 
 	}
 
 	return r.createMultiProviderHandler(selectedProviders, app)
-}
-
-func (r *Router) publicAppHandler(target *url.URL, chain alice.Chain) http.Handler {
-	proxy := httputil.NewSingleHostReverseProxy(target)
-	proxy.Transport = r.transport
-	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
-		var dnsErr *net.DNSError
-		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
-			r.dnsErrorHandler(w, req)
-			return
-		}
-
-		exceptionID := r.exceptionIDPrefix + idgenerator.RequestID()
-		r.logger.With(attribute.String("exceptionId", exceptionID)).Warn(req.Context(), err.Error())
-		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintln(w, "Unable to connect to application.")
-		fmt.Fprintln(w, "Exception ID:", exceptionID)
-	}
-
-	return chain.Then(proxy)
-}
-
-func (r *Router) dnsErrorHandler(w http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-
-	appID, ok := ctx.Value(AppIDCtxKey).(string)
-	if !ok {
-		// App ID should always be defined when the request gets here.
-		w.WriteHeader(http.StatusBadGateway)
-		return
-	}
-
-	r.wg.Add(1)
-	// Current request should not wait for the wakeup request
-	go func() {
-		defer r.wg.Done()
-
-		wakeupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		wakeupCtx = ctxattr.ContextWith(wakeupCtx, attribute.String(attrAppID, appID))
-
-		_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.wakeup")
-		wakeupCtx = telemetry.ContextWithSpan(wakeupCtx, span)
-
-		// Error is already logged by the Wakeup method itself. We can ignore it here.
-		err := r.wakeupManager.Wakeup(wakeupCtx, api.AppID(appID)) // nolint: contextcheck // intentionally creating new context for background operation
-		span.End(&err)
-	}()
-
-	w.WriteHeader(http.StatusServiceUnavailable)
-	fmt.Fprintln(w, "Starting...")
-}
-
-func (r *Router) notifySandboxesServiceMiddleware() alice.Constructor {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			ctx := req.Context()
-
-			appID, ok := ctx.Value(AppIDCtxKey).(string)
-			if !ok {
-				// App ID should always be defined when the request gets to this middleware.
-				w.WriteHeader(http.StatusBadGateway)
-				return
-			}
-
-			trace := &httptrace.ClientTrace{
-				// Send notification only if a connection to the app was made successfully.
-				GotConn: func(connInfo httptrace.GotConnInfo) {
-					r.wg.Add(1)
-					// Current request should not wait for the notification
-					go func() {
-						defer r.wg.Done()
-
-						notificationCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-						defer cancel()
-
-						notificationCtx = ctxattr.ContextWith(notificationCtx, attribute.String(attrAppID, appID))
-
-						_, span := r.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.app.notify")
-						notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
-
-						// Error is already logged by the Notify method itself. We can ignore it here.
-						err := r.notifyManager.Notify(notificationCtx, api.AppID(appID)) // nolint: contextcheck // intentionally creating new context for background operation
-						span.End(&err)
-					}()
-				},
-			}
-			req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-
-			next.ServeHTTP(w, req)
-		})
-	}
 }
 
 func (r *Router) dataAppTelemetryMiddleware() alice.Constructor {
