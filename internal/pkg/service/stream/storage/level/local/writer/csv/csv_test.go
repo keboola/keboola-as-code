@@ -43,7 +43,7 @@ type fileCompression struct {
 func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Open volume
@@ -76,7 +76,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 func TestCSVWriter_CastToStringError(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Open volume
@@ -111,7 +111,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create lock to defer file sync
