@@ -59,10 +59,10 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 
 	if len(messages) == 0 {
 		switch opts.Status {
-		case http.StatusForbidden:
-			messages = []string{"You do not have permission to access this resource."}
 		case http.StatusUnauthorized:
 			messages = []string{"You need to be logged in to access this resource."}
+		case http.StatusForbidden:
+			messages = []string{"You do not have permission to access this resource."}
 		case http.StatusInternalServerError:
 			messages = []string{"Internal Server Error Oops! Something went wrong."}
 		default:
