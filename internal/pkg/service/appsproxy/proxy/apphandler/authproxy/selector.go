@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/requtil"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -154,7 +154,7 @@ func (s *Selector) redirect(w http.ResponseWriter, req *http.Request, path strin
 }
 
 func (s *Selector) url(req *http.Request, path string, query url.Values) *url.URL {
-	return &url.URL{Scheme: s.config.API.PublicURL.Scheme, Host: requtil.HostPort(req), Path: path, RawQuery: query.Encode()}
+	return &url.URL{Scheme: s.config.API.PublicURL.Scheme, Host: req.Host, Path: path, RawQuery: query.Encode()}
 }
 
 func (s *Selector) providerIDFromCookie(req *http.Request) provider.ID {
@@ -173,11 +173,16 @@ func (s *Selector) setCookie(w http.ResponseWriter, req *http.Request, handler *
 }
 
 func (s *Selector) cookie(req *http.Request, value string, expires time.Duration) *http.Cookie {
+	host, _ := util.SplitHostPort(req.Host)
+	if host == "" {
+		panic(errors.New("host cannot be empty"))
+	}
+
 	v := &http.Cookie{
 		Name:     providerCookie,
 		Value:    value,
 		Path:     "/",
-		Domain:   requtil.Host(req),
+		Domain:   host,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
