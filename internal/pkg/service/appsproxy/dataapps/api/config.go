@@ -17,6 +17,7 @@ import (
 const (
 	// maxCacheExpiration is the maximum duration for which an old AppConfig of a data app is cached.
 	maxCacheExpiration = time.Hour
+	attrProjectID      = "proxy.app.projectId"
 	attrAppID          = "proxy.app.id"
 	attrAppName        = "proxy.app.name"
 	attrAppUpstream    = "proxy.app.upstream"
@@ -27,6 +28,7 @@ type AppID string
 type AppConfig struct {
 	ID             AppID              `json:"-"`
 	Name           string             `json:"name"`
+	ProjectID      string             `json:"projectId"`
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
 	AuthRules      []Rule             `json:"authRules"`
@@ -70,6 +72,7 @@ func (c AppConfig) MaxAge() time.Duration {
 
 func (c AppConfig) Telemetry() []attribute.KeyValue {
 	return []attribute.KeyValue{
+		attribute.String(attrProjectID, c.ProjectID),
 		attribute.String(attrAppID, c.ID.String()),
 		attribute.String(attrAppName, c.Name),
 		attribute.String(attrAppUpstream, c.UpstreamAppURL),
