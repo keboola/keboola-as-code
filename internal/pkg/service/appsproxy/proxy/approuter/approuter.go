@@ -47,7 +47,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r.pageWriter.WriteError(w, req, svcErrors.NewBadRequestError(errors.Errorf(`unexpected domain, missing application ID`)))
+	r.pageWriter.WriteError(w, req, nil, svcErrors.NewBadRequestError(errors.Errorf(`unexpected domain, missing application ID`)))
 }
 
 func (r *Router) parseAppID(req *http.Request) (api.AppID, bool) {

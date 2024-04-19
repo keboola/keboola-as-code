@@ -118,7 +118,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 func (u *AppUpstream) newProxy() *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandler
+	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -135,7 +135,7 @@ func (u *AppUpstream) newProxy() *chain.Chain {
 func (u *AppUpstream) newWebsocketProxy() *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandler
+	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {

@@ -63,7 +63,7 @@ func (m *Manager) HandlerFor(ctx context.Context, appID api.AppID) http.Handler 
 	// Load configuration for the app
 	app, modified, err := m.configLoader.GetConfig(ctx, appID)
 	if err != nil {
-		return m.newErrorHandler(ctx, err)
+		return m.newErrorHandler(ctx, api.AppConfig{ID: appID}, err)
 	}
 
 	// Create a new handler, if needed
@@ -78,13 +78,13 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 	// Create upstream reverse proxy without authentication
 	appUpstream, err := m.upstreamManager.NewUpstream(ctx, app)
 	if err != nil {
-		return m.newErrorHandler(ctx, err)
+		return m.newErrorHandler(ctx, app, err)
 	}
 
 	// Create authentication handlers
 	authHandlers, err := m.authProxyManager.NewHandlers(app, appUpstream)
 	if err != nil {
-		return m.newErrorHandler(ctx, err)
+		return m.newErrorHandler(ctx, app, err)
 	}
 
 	// Create root handler for application
@@ -94,15 +94,15 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 			errors.Errorf(`application "%s" has invalid configuration`, app.IdAndName()),
 			err,
 		))
-		return m.newErrorHandler(ctx, err)
+		return m.newErrorHandler(ctx, app, err)
 	}
 
 	return handler
 }
 
-func (m *Manager) newErrorHandler(ctx context.Context, err error) http.Handler {
+func (m *Manager) newErrorHandler(ctx context.Context, app api.AppConfig, err error) http.Handler {
 	err = svcErrors.WrapWithExceptionID(middleware.RequestIDFromContext(ctx), err)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		m.pageWriter.WriteError(w, req, err)
+		m.pageWriter.WriteError(w, req, &app, err)
 	})
 }
