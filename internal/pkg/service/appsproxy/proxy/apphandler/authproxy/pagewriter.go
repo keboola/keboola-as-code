@@ -15,6 +15,7 @@ import (
 
 type proxyPageWriter proxypw.Writer
 
+// pageWriter is adapter between common page writer and OAuth2Proxy specific page writer.
 type pageWriter struct {
 	proxyPageWriter
 	app          api.AppConfig
@@ -70,11 +71,11 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 		}
 	}
 
-	pw.pageWriter.WriteErrorPage(w, req, opts.Status, messages, "", opts.RequestID)
+	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, messages, "", opts.RequestID)
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {
-	pw.pageWriter.ProxyErrorHandler(w, req, err)
+	pw.pageWriter.ProxyErrorHandler(w, req, pw.app, err)
 }
 
 func (pw *pageWriter) WriteRobotsTxt(w http.ResponseWriter, req *http.Request) {

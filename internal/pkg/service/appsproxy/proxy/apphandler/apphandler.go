@@ -86,7 +86,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 
 func (h *appHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err := h.serveHTTPOrError(w, req); err != nil {
-		h.manager.pageWriter.WriteError(w, req, err)
+		h.manager.pageWriter.WriteError(w, req, &h.app, err)
 	}
 }
 
@@ -116,7 +116,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 
 	// Route internal URLs
 	if strings.HasPrefix(req.URL.Path, internalPathPrefix) && len(h.authHandlers) > 0 {
-		return h.manager.authProxyManager.ProviderSelector().ServeHTTPOrError(h.authHandlers, w, req)
+		return h.manager.authProxyManager.ProviderSelector().ServeHTTPOrError(h.app, h.authHandlers, w, req)
 	}
 
 	// Find the matching rule
@@ -141,5 +141,5 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 	}
 
 	// There must be at least one auth provider, if the auth is required
-	return h.manager.authProxyManager.ProviderSelector().ServeHTTPOrError(authHandlers, w, req)
+	return h.manager.authProxyManager.ProviderSelector().ServeHTTPOrError(h.app, authHandlers, w, req)
 }
