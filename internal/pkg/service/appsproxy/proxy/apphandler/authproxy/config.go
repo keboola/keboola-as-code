@@ -37,7 +37,7 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider,
 		}
 	})
 
-	// Render the selector page, if login is needed, it is not an internal URL, and there are multiple providers
+	// Render the selector page, if login is needed, it is not an internal URL
 	v.OnNeedsLogin = func(w http.ResponseWriter, req *http.Request) (stop bool) {
 		if !strings.HasPrefix(v.ProxyPrefix, req.URL.Path) && m.providerSelector.providerIDFromCookie(req) != "" {
 			m.providerSelector.clearCookie(w, req)
