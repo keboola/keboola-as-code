@@ -1892,10 +1892,12 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	return []api.AppConfig{
 		{
 			ID:             "norule",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 		},
 		{
 			ID:             "123",
+			ProjectID:      "123",
 			Name:           "public",
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
@@ -1908,6 +1910,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid1",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
@@ -1919,6 +1922,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid2",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
@@ -1931,6 +1935,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid3",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
@@ -1956,6 +1961,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "invalid4",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
@@ -1967,6 +1973,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "oidc",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
@@ -1992,6 +1999,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "multi",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
@@ -2037,6 +2045,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "broken",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
@@ -2062,6 +2071,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 		},
 		{
 			ID:             "prefix",
+			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
 			AuthProviders: provider.Providers{
 				provider.OIDC{
