@@ -42,8 +42,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Health check is served only if there is not appID
 	if req.URL.Path == "/health-check" {
-		_, _ = fmt.Fprintln(w, "OK")
 		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintln(w, "OK")
 		return
 	}
 
