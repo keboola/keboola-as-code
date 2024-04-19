@@ -10,6 +10,7 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/requtil"
@@ -45,7 +46,7 @@ func newSelector(d dependencies) *Selector {
 // The selector page is rendered:
 // 1. If it is accessed directly using selectionPagePath, the status code is StatusOK.
 // 2. If no handler is selected and the path requires authorization, the status code is StatusForbidden.
-func (s *Selector) ServeHTTPOrError(handlers map[provider.ID]*Handler, w http.ResponseWriter, req *http.Request) error {
+func (s *Selector) ServeHTTPOrError(app api.AppConfig, handlers map[provider.ID]*Handler, w http.ResponseWriter, req *http.Request) error {
 	// Validate handlers count
 	if len(handlers) == 0 {
 		return svcErrors.NewServiceUnavailableError(errors.New(`no authentication provider found`))
@@ -69,7 +70,7 @@ func (s *Selector) ServeHTTPOrError(handlers map[provider.ID]*Handler, w http.Re
 
 	// Render selector page, if it is accessed directly
 	if req.URL.Path == selectionPagePath {
-		return s.writeSelectorPage(w, req, http.StatusOK, handlers)
+		return s.writeSelectorPage(w, req, http.StatusOK, app, handlers)
 	}
 
 	// Identify the chosen provider by the cookie
@@ -78,10 +79,10 @@ func (s *Selector) ServeHTTPOrError(handlers map[provider.ID]*Handler, w http.Re
 	}
 
 	// No matching handler found
-	return s.writeSelectorPage(w, req, http.StatusUnauthorized, handlers)
+	return s.writeSelectorPage(w, req, http.StatusUnauthorized, app, handlers)
 }
 
-func (s *Selector) writeSelectorPage(w http.ResponseWriter, req *http.Request, status int, handlers map[provider.ID]*Handler) error {
+func (s *Selector) writeSelectorPage(w http.ResponseWriter, req *http.Request, status int, app api.AppConfig, handlers map[provider.ID]*Handler) error {
 	id := provider.ID(req.URL.Query().Get(providerQueryParam))
 	if selected, found := handlers[id]; found {
 		// Set cookie with the same expiration as other provider cookies
@@ -100,11 +101,11 @@ func (s *Selector) writeSelectorPage(w http.ResponseWriter, req *http.Request, s
 	}
 
 	// Render the page, if there is no cookie or the value is invalid
-	s.pageWriter.WriteSelectorPage(w, req, status, s.selectorPageData(req, handlers))
+	s.pageWriter.WriteSelectorPage(w, req, status, s.selectorPageData(req, app, handlers))
 	return nil
 }
 
-func (s *Selector) selectorPageData(req *http.Request, handlers map[provider.ID]*Handler) *pagewriter.SelectorPageData {
+func (s *Selector) selectorPageData(req *http.Request, app api.AppConfig, handlers map[provider.ID]*Handler) *pagewriter.SelectorPageData {
 	// Pass link back to the current page, if reasonable, otherwise the user will be redirected to /
 	var callback string
 	if req.Method == http.MethodGet {
@@ -115,7 +116,7 @@ func (s *Selector) selectorPageData(req *http.Request, handlers map[provider.ID]
 	pageURL := s.url(req, selectionPagePath, nil)
 
 	// Generate link for each providers
-	data := &pagewriter.SelectorPageData{}
+	data := &pagewriter.SelectorPageData{App: pagewriter.NewAppData(&app)}
 	for _, handler := range handlers {
 		query := make(url.Values)
 		query.Set(providerQueryParam, handler.ID().String())

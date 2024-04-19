@@ -33,7 +33,7 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider,
 	// Connect to the app upstream
 	v.UpstreamHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if err := upstream.ServeHTTPOrError(w, req); err != nil {
-			m.pageWriter.WriteError(w, req, err)
+			m.pageWriter.WriteError(w, req, &app, err)
 		}
 	})
 
