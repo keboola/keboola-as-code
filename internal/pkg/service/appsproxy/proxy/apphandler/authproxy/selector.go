@@ -154,7 +154,7 @@ func (s *Selector) redirect(w http.ResponseWriter, req *http.Request, path strin
 }
 
 func (s *Selector) url(req *http.Request, path string, query url.Values) *url.URL {
-	return &url.URL{Scheme: s.config.API.PublicURL.Scheme, Host: requtil.HostPort(req), Path: path, RawQuery: query.Encode()}
+	return &url.URL{Scheme: s.config.API.PublicURL.Scheme, Host: req.URL.Host, Path: path, RawQuery: query.Encode()}
 }
 
 func (s *Selector) providerIDFromCookie(req *http.Request) provider.ID {

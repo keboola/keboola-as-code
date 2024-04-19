@@ -6,18 +6,10 @@ import (
 )
 
 func Host(req *http.Request) string {
-	hostPort := HostPort(req)
+	hostPort := req.URL.Host
 	host, _, _ := net.SplitHostPort(hostPort)
 	if host == "" {
 		host = hostPort
-	}
-	return host
-}
-
-func HostPort(req *http.Request) string {
-	host := req.Header.Get("X-Forwarded-For")
-	if host == "" {
-		host = req.Host
 	}
 	return host
 }
