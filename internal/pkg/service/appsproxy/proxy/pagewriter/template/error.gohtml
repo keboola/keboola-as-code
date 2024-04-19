@@ -6,6 +6,13 @@
     <title>Error</title>
 </head>
 <body>
+    {{ if .App }}
+        ProjectID: {{.App.ProjectID}}<br>
+        AppID: {{.App.ID}}<br>
+        AppName: {{.App.Name}}<br>
+        AppIDAndName: {{.App.IDAndName}}<br>
+    {{ end }}
+
     Status: {{.Status}}<br>
     Status: {{.StatusText}}<br>
     Details: {{.Details}}<br>
