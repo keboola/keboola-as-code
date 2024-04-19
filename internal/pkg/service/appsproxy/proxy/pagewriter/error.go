@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -12,6 +13,7 @@ import (
 const ExceptionIDPrefix = "keboola-appsproxy-"
 
 type errorPageData struct {
+	App         *AppData
 	Status      int
 	StatusText  string
 	Messages    []string
@@ -19,17 +21,23 @@ type errorPageData struct {
 	ExceptionID string
 }
 
-func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {
+func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWriter, req *http.Request, err error) {
+	return func(w http.ResponseWriter, req *http.Request, err error) {
+		pw.ProxyErrorHandler(w, req, app, err)
+	}
+}
+
+func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, err error) {
 	var dnsError *net.DNSError
 	if errors.As(err, &dnsError) {
 		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
-		pw.WriteSpinnerPage(w, req)
+		pw.WriteSpinnerPage(w, req, app)
 	}
 
-	pw.WriteError(w, req, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
+	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
 }
 
-func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, err error) {
+func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.AppConfig, err error) {
 	// Status code, by default 500
 	status := http.StatusInternalServerError
 	var statusProvider svcerrors.WithStatusCode
@@ -103,15 +111,23 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, err error
 	}
 
 	// Render page
-	pw.WriteErrorPage(w, req, status, userMessages, details, exceptionID)
+	pw.WriteErrorPage(w, req, app, status, userMessages, details, exceptionID)
 }
 
-func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, status int, messages []string, details, exceptionID string) {
-	pw.writePage(w, req, "error.gohtml", status, &errorPageData{
+func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, messages []string, details, exceptionID string) {
+	data := &errorPageData{
 		Status:      status,
 		StatusText:  http.StatusText(status),
 		Messages:    messages,
 		Details:     details,
 		ExceptionID: exceptionID,
-	})
+	}
+
+	// App info is filled in for requests/errors related to an app, otherwise it is empty
+	if app != nil {
+		appData := NewAppData(app)
+		data.App = &appData
+	}
+
+	pw.writePage(w, req, "error.gohtml", status, data)
 }
