@@ -32,6 +32,12 @@ type Selector struct {
 	pageWriter *pagewriter.Writer
 }
 
+type SelectorForAppRule struct {
+	*Selector
+	app      api.AppConfig
+	handlers map[provider.ID]*Handler
+}
+
 func newSelector(d dependencies) *Selector {
 	return &Selector{
 		clock:      d.Clock(),
@@ -40,26 +46,31 @@ func newSelector(d dependencies) *Selector {
 	}
 }
 
+func (s *Selector) For(app api.AppConfig, handlers map[provider.ID]*Handler) (*SelectorForAppRule, error) {
+	// Validate handlers count
+	if len(handlers) == 0 {
+		return nil, svcErrors.NewServiceUnavailableError(errors.New(`no authentication provider found`))
+	}
+
+	return &SelectorForAppRule{Selector: s, app: app, handlers: handlers}, nil
+}
+
 // ServeHTTPOrError renders selector page if there is more than one authentication handler,
 // and no handler is selected, or the selected handler is not allowed for the requested path (see api.AuthRule).
 //
 // The selector page is rendered:
 // 1. If it is accessed directly using selectionPagePath, the status code is StatusOK.
 // 2. If no handler is selected and the path requires authorization, the status code is StatusForbidden.
-func (s *Selector) ServeHTTPOrError(app api.AppConfig, handlers map[provider.ID]*Handler, w http.ResponseWriter, req *http.Request) error {
-	// Validate handlers count
-	if len(handlers) == 0 {
-		return svcErrors.NewServiceUnavailableError(errors.New(`no authentication provider found`))
-	}
-
+func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
 	// Clear cookie on logout
 	if req.URL.Path == signOutPath {
 		s.clearCookie(w, req)
 	}
 
 	// Skip selector page, if there is only one provider
-	if len(handlers) == 1 {
-		for _, handler := range handlers {
+	if len(s.handlers) == 1 {
+		// The handlers variable is a map, use the first handler via a for cycle
+		for _, handler := range s.handlers {
 			// Set cookie if needed
 			if providerID := s.providerIDFromCookie(req); providerID != handler.Provider().ID() {
 				s.setCookie(w, req, handler)
@@ -70,21 +81,21 @@ func (s *Selector) ServeHTTPOrError(app api.AppConfig, handlers map[provider.ID]
 
 	// Render selector page, if it is accessed directly
 	if req.URL.Path == selectionPagePath {
-		return s.writeSelectorPage(w, req, http.StatusOK, app, handlers)
+		return s.writeSelectorPage(w, req, http.StatusOK)
 	}
 
 	// Identify the chosen provider by the cookie
-	if handler := handlers[s.providerIDFromCookie(req)]; handler != nil {
+	if handler := s.handlers[s.providerIDFromCookie(req)]; handler != nil {
 		return handler.ServeHTTPOrError(w, req)
 	}
 
 	// No matching handler found
-	return s.writeSelectorPage(w, req, http.StatusUnauthorized, app, handlers)
+	return s.writeSelectorPage(w, req, http.StatusUnauthorized)
 }
 
-func (s *Selector) writeSelectorPage(w http.ResponseWriter, req *http.Request, status int, app api.AppConfig, handlers map[provider.ID]*Handler) error {
+func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.Request, status int) error {
 	id := provider.ID(req.URL.Query().Get(providerQueryParam))
-	if selected, found := handlers[id]; found {
+	if selected, found := s.handlers[id]; found {
 		// Set cookie with the same expiration as other provider cookies
 		s.setCookie(w, req, selected)
 
@@ -101,11 +112,11 @@ func (s *Selector) writeSelectorPage(w http.ResponseWriter, req *http.Request, s
 	}
 
 	// Render the page, if there is no cookie or the value is invalid
-	s.pageWriter.WriteSelectorPage(w, req, status, s.selectorPageData(req, app, handlers))
+	s.pageWriter.WriteSelectorPage(w, req, status, s.selectorPageData(req))
 	return nil
 }
 
-func (s *Selector) selectorPageData(req *http.Request, app api.AppConfig, handlers map[provider.ID]*Handler) *pagewriter.SelectorPageData {
+func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.SelectorPageData {
 	// Pass link back to the current page, if reasonable, otherwise the user will be redirected to /
 	var callback string
 	if req.Method == http.MethodGet {
@@ -116,8 +127,8 @@ func (s *Selector) selectorPageData(req *http.Request, app api.AppConfig, handle
 	pageURL := s.url(req, selectionPagePath, nil)
 
 	// Generate link for each providers
-	data := &pagewriter.SelectorPageData{App: pagewriter.NewAppData(&app)}
-	for _, handler := range handlers {
+	data := &pagewriter.SelectorPageData{App: pagewriter.NewAppData(&s.app)}
+	for _, handler := range s.handlers {
 		query := make(url.Values)
 		query.Set(providerQueryParam, handler.ID().String())
 		if callback != "" {

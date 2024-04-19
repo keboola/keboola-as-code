@@ -23,24 +23,32 @@ const (
 )
 
 type appHandler struct {
-	manager             *Manager
-	app                 api.AppConfig
-	attrs               []attribute.KeyValue
-	upstream            chain.Handler
-	authHandlers        map[provider.ID]*authproxy.Handler
-	authHandlersPerRule map[ruleIndex]map[provider.ID]*authproxy.Handler
+	manager            *Manager
+	app                api.AppConfig
+	attrs              []attribute.KeyValue
+	upstream           chain.Handler
+	allAuthHandlers    chain.Handler
+	authHandlerPerRule map[ruleIndex]chain.Handler
 }
 
 type ruleIndex int
 
 func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]*authproxy.Handler) (http.Handler, error) {
 	handler := &appHandler{
-		manager:             manager,
-		app:                 app,
-		attrs:               app.Telemetry(),
-		upstream:            appUpstream,
-		authHandlers:        authHandlers,
-		authHandlersPerRule: make(map[ruleIndex]map[provider.ID]*authproxy.Handler),
+		manager:            manager,
+		app:                app,
+		attrs:              app.Telemetry(),
+		upstream:           appUpstream,
+		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
+	}
+
+	// Create handler with all auth handlers, to route internal URLs
+	if len(authHandlers) > 0 {
+		if h, err := manager.authProxyManager.ProviderSelector().For(app, authHandlers); err == nil {
+			handler.allAuthHandlers = h
+		} else {
+			return nil, err
+		}
 	}
 
 	// There must be at lest one auth rule
@@ -78,7 +86,12 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 			}
 		}
 
-		handler.authHandlersPerRule[index] = authHandlersPerRule
+		// Merge authentication handlers for the rule to one selector handler
+		if h, err := manager.authProxyManager.ProviderSelector().For(app, authHandlersPerRule); err == nil {
+			handler.authHandlerPerRule[index] = h
+		} else {
+			return nil, err
+		}
 	}
 
 	return handler, nil
@@ -114,9 +127,9 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	// Route internal URLs
-	if strings.HasPrefix(req.URL.Path, internalPathPrefix) && len(h.authHandlers) > 0 {
-		return h.manager.authProxyManager.ProviderSelector().ServeHTTPOrError(h.app, h.authHandlers, w, req)
+	// Route internal URLs if there is at least one auth handler
+	if strings.HasPrefix(req.URL.Path, internalPathPrefix) && h.allAuthHandlers != nil {
+		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}
 
 	// Find the matching rule
@@ -133,13 +146,11 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 }
 
 func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index ruleIndex) error {
-	authHandlers := h.authHandlersPerRule[index]
-
-	// Serve the request without authentication
-	if authHandlers == nil {
-		return h.upstream.ServeHTTPOrError(w, req)
+	// Use auth handler if the request requires authentication
+	if authHandler := h.authHandlerPerRule[index]; authHandler != nil {
+		return authHandler.ServeHTTPOrError(w, req)
 	}
 
-	// There must be at least one auth provider, if the auth is required
-	return h.manager.authProxyManager.ProviderSelector().ServeHTTPOrError(h.app, authHandlers, w, req)
+	// Serve the request without authentication
+	return h.upstream.ServeHTTPOrError(w, req)
 }
