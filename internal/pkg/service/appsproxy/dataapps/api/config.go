@@ -26,8 +26,8 @@ const (
 type AppID string
 
 type AppConfig struct {
-	ID             AppID              `json:"-"`
-	Name           string             `json:"name"`
+	ID             AppID              `json:"appId"`
+	Name           string             `json:"appName"`
 	ProjectID      string             `json:"projectId"`
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
@@ -103,9 +103,6 @@ func (a *API) GetAppConfig(appID AppID, eTag string) request.APIRequest[*AppConf
 			if response.StatusCode() == http.StatusNotModified {
 				return NotModifiedError{MaxAge: maxAge}
 			}
-
-			// Add app id to the result
-			result.ID = appID
 
 			// Add ETag to result
 			result.eTag = response.ResponseHeader().Get("ETag")
