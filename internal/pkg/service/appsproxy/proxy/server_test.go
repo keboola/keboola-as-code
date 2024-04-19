@@ -48,6 +48,7 @@ func TestAppProxyHandler(t *testing.T) {
 		{
 			ID:             "123",
 			Name:           "public",
+			ProjectID:      "456",
 			UpstreamAppURL: appURL.String(),
 			AuthRules: []api.Rule{
 				{
@@ -182,6 +183,13 @@ func TestAppProxyHandler(t *testing.T) {
               "Value": {
                 "Type": "STRING",
                 "Value": "public"
+              }
+            },
+            {
+              "Key": "proxy.app.projectId",
+              "Value": {
+                "Type": "STRING",
+                "Value": "456"
               }
             },
             {
@@ -345,6 +353,13 @@ func TestAppProxyHandler(t *testing.T) {
               }
             },
             {
+              "Key": "proxy.app.projectId",
+              "Value": {
+                "Type": "STRING",
+                "Value": "456"
+              }
+            },
+            {
               "Key": "proxy.app.upstream",
               "Value": {
                 "Type": "STRING",
@@ -502,6 +517,13 @@ func TestAppProxyHandler(t *testing.T) {
               "Value": {
                 "Type": "STRING",
                 "Value": "public"
+              }
+            },
+            {
+              "Key": "proxy.app.projectId",
+              "Value": {
+                "Type": "STRING",
+                "Value": "456"
               }
             },
             {
