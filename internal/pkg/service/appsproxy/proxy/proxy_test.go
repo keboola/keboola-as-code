@@ -220,6 +220,21 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps:       map[string]int{},
 		},
 		{
+			name: "redirect-to-canonical-host",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Redirect to the canonical URL (match cookies domain)
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://foo-bar-123.hub.keboola.local/some/data/app/url?foo=bar", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusPermanentRedirect, response.StatusCode)
+				location := response.Header.Get("Location")
+				assert.Equal(t, location, "https://public-123.hub.keboola.local/some/data/app/url")
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "public-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				appServer.Close()
@@ -636,22 +651,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				cookies = response.Cookies()
-				assert.Len(t, cookies, 2)
+				if assert.Len(t, cookies, 2) {
+					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+					assert.Equal(t, "", cookies[0].Value)
+					assert.Equal(t, "/", cookies[0].Path)
+					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
+					assert.True(t, cookies[0].HttpOnly)
+					assert.True(t, cookies[0].Secure)
+					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
-				assert.Equal(t, "", cookies[0].Value)
-				assert.Equal(t, "/", cookies[0].Path)
-				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
-				assert.True(t, cookies[0].HttpOnly)
-				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
-
-				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
-				assert.Equal(t, "/", cookies[1].Path)
-				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
-				assert.True(t, cookies[1].HttpOnly)
-				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
+					assert.Equal(t, "/", cookies[1].Path)
+					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
+					assert.True(t, cookies[1].HttpOnly)
+					assert.True(t, cookies[1].Secure)
+					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+				}
 
 				// Request to private app (authorized but down)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
@@ -1773,22 +1788,22 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				cookies = response.Cookies()
-				assert.Len(t, cookies, 2)
+				if assert.Len(t, cookies, 2) {
+					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+					assert.Equal(t, "", cookies[0].Value)
+					assert.Equal(t, "/", cookies[0].Path)
+					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
+					assert.True(t, cookies[0].HttpOnly)
+					assert.True(t, cookies[0].Secure)
+					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
 
-				assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
-				assert.Equal(t, "", cookies[0].Value)
-				assert.Equal(t, "/", cookies[0].Path)
-				assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
-				assert.True(t, cookies[0].HttpOnly)
-				assert.True(t, cookies[0].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
-
-				assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
-				assert.Equal(t, "/", cookies[1].Path)
-				assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
-				assert.True(t, cookies[1].HttpOnly)
-				assert.True(t, cookies[1].Secure)
-				assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
+					assert.Equal(t, "/", cookies[1].Path)
+					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
+					assert.True(t, cookies[1].HttpOnly)
+					assert.True(t, cookies[1].Secure)
+					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+				}
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), method, "https://oidc.hub.keboola.local/some/data/app/url?foo=bar", nil)
