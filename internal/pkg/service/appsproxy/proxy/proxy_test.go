@@ -27,6 +27,7 @@ import (
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
@@ -1858,7 +1859,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Create a test server for the proxy handler
 			proxySrv := httptest.NewUnstartedServer(handler)
-			proxySrv.EnableHTTP2 = true
+			proxySrv.Config.ErrorLog = log.NewStdErrorLogger(d.Logger())
 			proxySrv.StartTLS()
 			t.Cleanup(func() {
 				proxySrv.Close()
