@@ -3,7 +3,7 @@ tmp_dir = "target/.watcher"
 
 [build]
   bin = "./target/apps-proxy/proxy"
-  args_bin = []
+  args_bin = ["--sandboxes-api-url",  "http://localhost:1234", "--sandboxes-api-token", "my-token", "--api-public-url", "http://localhost:8000"]
   cmd = "make build-apps-proxy"
   delay = 2000
   exclude_dir = []
@@ -13,7 +13,7 @@ tmp_dir = "target/.watcher"
   follow_symlink = false
   full_bin = ""
   include_dir = ["api", "cmd", "internal", "pkg"]
-  include_ext = ["go"]
+  include_ext = ["go", "gohtml"]
   kill_delay = 500
   log = "build-errors.log"
   send_interrupt = true
