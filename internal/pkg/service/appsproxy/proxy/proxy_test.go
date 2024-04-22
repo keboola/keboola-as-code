@@ -345,7 +345,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 					assert.Equal(t, "", cookies[1].Value)
@@ -353,7 +353,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
 					assert.True(t, cookies[1].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 			},
 			expectedNotifications: map[string]int{
@@ -567,7 +567,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
@@ -626,7 +626,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
@@ -718,7 +718,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "multi.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 				}
 
 				// Redirect to the provider sing in page
@@ -1763,7 +1763,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
