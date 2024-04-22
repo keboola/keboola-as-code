@@ -32,6 +32,7 @@ func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, ap
 	if errors.As(err, &dnsError) {
 		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
 		pw.WriteSpinnerPage(w, req, app)
+		return
 	}
 
 	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
@@ -53,7 +54,6 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	} else {
 		errName = "internal"
 	}
-
 	// User message, internal errors are masked by default
 	var userMessages []string
 	var userMsgProvider svcerrors.WithUserMessage
