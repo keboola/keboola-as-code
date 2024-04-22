@@ -7,10 +7,11 @@ import (
 )
 
 type SpinnerPageData struct {
-	App       AppData
-	Providers []ProviderData
+	App AppData
 }
 
 func (pw *Writer) WriteSpinnerPage(w http.ResponseWriter, req *http.Request, app api.AppConfig) {
-	pw.writePage(w, req, "spinner.gohtml", http.StatusServiceUnavailable, SpinnerPageData{})
+	pw.writePage(w, req, "spinner.gohtml", http.StatusServiceUnavailable, SpinnerPageData{
+		App: NewAppData(&app),
+	})
 }
