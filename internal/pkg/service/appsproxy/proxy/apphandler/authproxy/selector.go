@@ -1,6 +1,7 @@
 package authproxy
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"slices"
@@ -19,12 +20,16 @@ import (
 )
 
 const (
-	providerCookie     = "_oauth2_provider"
-	providerQueryParam = "provider"
-	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
-	selectionPagePath  = "/_proxy/selection"
-	signOutPath        = "/_proxy/sign_out"
+	providerCookie             = "_oauth2_provider"
+	providerQueryParam         = "provider"
+	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
+	selectionPagePath          = "/_proxy/selection"
+	signOutPath                = "/_proxy/sign_out"
+	ignoreProviderCookieCtxKey = ctxKey("ignoreProviderCookieCtxKey")
+	selectorHandlerCtxKey      = ctxKey("selectorHandlerCtxKey")
 )
+
+type ctxKey string
 
 type Selector struct {
 	clock      clock.Clock
@@ -62,6 +67,11 @@ func (s *Selector) For(app api.AppConfig, handlers map[provider.ID]*Handler) (*S
 // 1. If it is accessed directly using selectionPagePath, the status code is StatusOK.
 // 2. If no handler is selected and the path requires authorization, the status code is StatusForbidden.
 func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
+	// Store the selector to the context.
+	// It is used by the OnNeedsLogin callback, to render the selector page, if the provider needs login.
+	// Internal paths (it includes sing in) pages are bypassed, see Manager.proxyConfig for details.
+	req = req.WithContext(context.WithValue(req.Context(), selectorHandlerCtxKey, s))
+
 	// Clear cookie on logout
 	if req.URL.Path == signOutPath {
 		s.clearCookie(w, req)
@@ -84,8 +94,14 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 		return s.writeSelectorPage(w, req, http.StatusOK)
 	}
 
+	// Ignore cookie if we have already tried this provider, but the provider requires login.
+	providerID := s.providerIDFromCookie(req)
+	if ignore, _ := req.Context().Value(ignoreProviderCookieCtxKey).(bool); ignore {
+		providerID = ""
+	}
+
 	// Identify the chosen provider by the cookie
-	if handler := s.handlers[s.providerIDFromCookie(req)]; handler != nil {
+	if handler := s.handlers[providerID]; handler != nil {
 		return handler.ServeHTTPOrError(w, req)
 	}
 

@@ -1,6 +1,7 @@
 package authproxy
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -39,13 +40,32 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider,
 
 	// Render the selector page, if login is needed, it is not an internal URL
 	v.OnNeedsLogin = func(w http.ResponseWriter, req *http.Request) (stop bool) {
-		if !strings.HasPrefix(v.ProxyPrefix, req.URL.Path) && m.providerSelector.providerIDFromCookie(req) != "" {
-			m.providerSelector.clearCookie(w, req)
-			w.Header().Set("Location", req.URL.Path)
-			w.WriteHeader(http.StatusFound)
+		// Bypass internal paths
+		if strings.HasPrefix(req.URL.Path, v.ProxyPrefix) {
+			return false
+		}
+
+		// Determine, if we should render the selector page using the selector instance from the context
+		if selector, ok := req.Context().Value(selectorHandlerCtxKey).(*SelectorForAppRule); ok {
+			// If there is only one provider, continue to the sing in page
+			if len(selector.handlers) <= 1 {
+				return false
+			}
+
+			// Go back and render the selector page, ignore the cookie value
+			req = req.WithContext(context.WithValue(req.Context(), ignoreProviderCookieCtxKey, true))
+			if err := selector.ServeHTTPOrError(w, req); err != nil {
+				m.pageWriter.WriteError(w, req, &app, err)
+			}
 			return true
 		}
-		return false
+
+		// Fallback, the selector instance is not found, it shouldn't happen.
+		// Clear the cookie and redirect to the same path, so the selector page is rendered.
+		m.providerSelector.clearCookie(w, req)
+		w.Header().Set("Location", req.URL.Path)
+		w.WriteHeader(http.StatusFound)
+		return true
 	}
 
 	// Setup
