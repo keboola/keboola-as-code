@@ -160,7 +160,7 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "123.hub.keboola.local"
+                "Value": "public-123.hub.keboola.local"
               }
             },
             {
@@ -213,38 +213,6 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "http.status_code",
               "Value": {
                 "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
                 "Value": 400
               }
             },
@@ -252,7 +220,7 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "123.foo.bar.local"
+                "Value": "public-123.foo.bar.local"
               }
             }
           ],
@@ -327,7 +295,7 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "123.hub.keboola.local"
+                "Value": "public-123.hub.keboola.local"
               }
             },
             {
@@ -380,38 +348,6 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "http.status_code",
               "Value": {
                 "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
                 "Value": 400
               }
             },
@@ -419,7 +355,7 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "123.foo.bar.local"
+                "Value": "public-123.foo.bar.local"
               }
             }
           ],
@@ -494,7 +430,7 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "123.hub.keboola.local"
+                "Value": "public-123.hub.keboola.local"
               }
             },
             {
@@ -548,39 +484,6 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "http.status_code",
               "Value": {
                 "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
-              }
-            }
-          ],
-          "Count": 1,
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
                 "Value": 400
               }
             },
@@ -588,7 +491,7 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "123.foo.bar.local"
+                "Value": "public-123.foo.bar.local"
               }
             }
           ],
