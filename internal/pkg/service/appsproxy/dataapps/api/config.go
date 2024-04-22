@@ -3,22 +3,32 @@ package api
 import (
 	"context"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-client/pkg/request"
 	"github.com/pquerna/cachecontrol/cacheobject"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 )
 
-// maxCacheExpiration is the maximum duration for which an old AppConfig of a data app is cached.
-const maxCacheExpiration = time.Hour
+const (
+	// maxCacheExpiration is the maximum duration for which an old AppConfig of a data app is cached.
+	maxCacheExpiration = time.Hour
+	attrProjectID      = "proxy.app.projectId"
+	attrAppID          = "proxy.app.id"
+	attrAppName        = "proxy.app.name"
+	attrAppUpstream    = "proxy.app.upstream"
+)
 
 type AppID string
 
 type AppConfig struct {
-	ID             AppID              `json:"-"`
-	Name           string             `json:"name"`
+	ID             AppID              `json:"appId"`
+	Name           string             `json:"appName"`
+	ProjectID      string             `json:"projectId"`
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
 	AuthRules      []Rule             `json:"authRules"`
@@ -38,12 +48,35 @@ func (c AppID) String() string {
 	return string(c)
 }
 
+func (c AppConfig) IdAndName() string {
+	if c.Name == "" {
+		return c.ID.String()
+	}
+	return c.Name + "-" + c.ID.String()
+}
+
+func (c AppConfig) Domain() string {
+	if c.Name == "" {
+		return c.ID.String()
+	}
+	return c.Name + "-" + c.ID.String()
+}
+
 func (c AppConfig) ETag() string {
 	return c.eTag
 }
 
 func (c AppConfig) MaxAge() time.Duration {
 	return c.maxAge
+}
+
+func (c AppConfig) Telemetry() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String(attrProjectID, c.ProjectID),
+		attribute.String(attrAppID, c.ID.String()),
+		attribute.String(attrAppName, c.Name),
+		attribute.String(attrAppUpstream, c.UpstreamAppURL),
+	}
 }
 
 // GetAppConfig loads proxy configuration for the specified app.
@@ -71,14 +104,16 @@ func (a *API) GetAppConfig(appID AppID, eTag string) request.APIRequest[*AppConf
 				return NotModifiedError{MaxAge: maxAge}
 			}
 
-			// Add app id to the result
-			result.ID = appID
-
 			// Add ETag to result
 			result.eTag = response.ResponseHeader().Get("ETag")
 
 			// Add MaxAge
 			result.maxAge = maxAge
+
+			// Sort rules, longest value/path first
+			slices.SortStableFunc(result.AuthRules, func(a, b Rule) int {
+				return strings.Compare(b.Value, a.Value)
+			})
 
 			return nil
 		}),

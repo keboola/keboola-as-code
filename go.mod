@@ -4,7 +4,7 @@ go 1.22.2
 
 replace github.com/google/go-jsonnet v0.20.0 => github.com/keboola/go-jsonnet v0.20.1-0.20240415122724-d526145c4cb8
 
-replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240404125540-ac0aff7a6c75
+replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562
 
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
@@ -34,7 +34,6 @@ require (
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/justinas/alice v1.2.0
 	github.com/keboola/go-client v1.26.2
 	github.com/keboola/go-utils v0.9.0
 	github.com/klauspost/compress v1.17.8
@@ -223,6 +222,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/justinas/alice v1.2.0 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.10 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect

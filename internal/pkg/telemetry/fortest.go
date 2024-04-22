@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/umisama/go-regexpcache"
 	"go.opentelemetry.io/otel/attribute"
 	export "go.opentelemetry.io/otel/exporters/prometheus"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 )
 
@@ -37,6 +39,7 @@ type ForTest interface {
 	AddMetricFilter(f TestMetricFilter) ForTest
 	Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs
 	Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics
+	MetricsJSONString(t *testing.T, opts ...TestMeterOption) string
 	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption)
 	AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics, opts ...TestMeterOption)
 }
@@ -181,6 +184,18 @@ func (v *forTest) Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStub
 func (v *forTest) Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics {
 	t.Helper()
 	return getActualMetrics(t, context.Background(), v.metricExporter, opts...)
+}
+
+func (v *forTest) MetricsJSONString(t *testing.T, opts ...TestMeterOption) string {
+	t.Helper()
+
+	// To JSON
+	str := json.MustEncodeString(v.Metrics(t, opts...), true)
+
+	// Simplify
+	str = regexpcache.MustCompile(`(?m)[\n]+^.*(Time|Min|Max|Sum|BucketCounts).*$`).ReplaceAllString(str, "")
+	str = regexpcache.MustCompile(`(?m)[\n]+^.*"Bounds": \[[\s\n\d,]+\].*$`).ReplaceAllString(str, "")
+	return str
 }
 
 func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption) {

@@ -1,18 +1,19 @@
-package http
+package proxy
 
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"time"
 
+	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/logging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/approuter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -21,13 +22,15 @@ const (
 	gracefulShutdownTimeout = 30 * time.Second
 )
 
-func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.Handler) error {
-	logger, tel, cfg := d.Logger(), d.Telemetry(), d.Config()
+func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
+	logger := d.Logger()
+	cfg := d.Config()
 
-	handler := newHandler(logger, tel, router, cfg.API.PublicURL)
+	handler := NewHandler(d)
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.API.Listen, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
+	srv.ErrorLog = log.NewStdErrorLogger(d.Logger().WithComponent("http-server"))
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
@@ -53,25 +56,40 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope, router http.H
 	return nil
 }
 
-func newHandler(logger log.Logger, tel telemetry.Telemetry, router http.Handler, publicURL *url.URL) http.Handler {
+func NewHandler(d dependencies.ServiceScope) http.Handler {
+	// Setup OAuth2Proxy singleton global logger
+	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	oautproxylogger.SetOutput(loggerWriter)
+	// Cannot separate errors from info because oauthproxy will override its error writer with either
+	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created
+	oautproxylogger.SetErrOutput(loggerWriter)
+
+	mux := http.NewServeMux()
+
+	// Register static assets
+	d.PageWriter().MountAssets(mux)
+
+	// Register applications router
+	mux.Handle("/", approuter.New(d))
+
+	// Wrap handler with middlewares
 	middlewareCfg := middleware.NewConfig(
 		middleware.WithPropagators(propagation.TraceContext{}),
 		// Ignore health checks
 		middleware.WithFilter(func(req *http.Request) bool {
-			return req.URL.Path != "/health-check"
+			return req.URL.Path != "/health-check" && req.URL.Path != "/robots.txt"
 		}),
 	)
-
-	handler := middleware.Wrap(
-		router,
+	return middleware.Wrap(
+		mux,
 		middleware.ContextTimout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
-		appIDMiddleware(publicURL),
-		middleware.Logger(logger),
-		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
-		appIDOtelMiddleware(),
+		middleware.Logger(d.Logger()),
+		middleware.OpenTelemetry(
+			d.Telemetry().TracerProvider(),
+			d.Telemetry().MeterProvider(),
+			middlewareCfg,
+		),
 	)
-
-	return handler
 }

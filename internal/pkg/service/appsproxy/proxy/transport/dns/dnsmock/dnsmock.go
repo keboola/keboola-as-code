@@ -1,5 +1,6 @@
 // Based on https://github.com/kuritka/go-fake-dns
 // License: MIT
+
 package dnsmock
 
 import (

@@ -2,6 +2,8 @@ package errors
 
 import (
 	"net/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ForbiddenError struct {
@@ -29,5 +31,5 @@ func (e ForbiddenError) Error() string {
 }
 
 func (e ForbiddenError) ErrorUserMessage() string {
-	return e.Error()
+	return errors.Format(e, errors.FormatAsSentences())
 }

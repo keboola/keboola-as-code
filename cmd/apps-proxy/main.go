@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 
-	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -13,8 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/http"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/logging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/entrypoint"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -26,9 +24,8 @@ import (
 )
 
 const (
-	ServiceName       = "apps-proxy"
-	ENVPrefix         = "APPS_PROXY_"
-	ExceptionIDPrefix = "keboola-appsproxy-"
+	ServiceName = "apps-proxy"
+	ENVPrefix   = "APPS_PROXY_"
 )
 
 func main() {
@@ -84,25 +81,15 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 		return err
 	}
 
-	loggerWriter := logging.NewLoggerWriter(logger, "info")
-	oautproxylogger.SetOutput(loggerWriter)
-	// Cannot separate errors from info because oauthproxy will override its error writer with either
-	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created
-	oautproxylogger.SetErrOutput(loggerWriter)
-
 	// Create dependencies
-	scope, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
+	d, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
 	if err != nil {
 		return err
 	}
 
 	logger.Infof(ctx, "starting Apps Proxy server, listen-address=%s", cfg.API.Listen)
-	router, err := http.NewRouter(scope, ExceptionIDPrefix)
-	if err != nil {
-		return err
-	}
 
-	err = http.StartServer(ctx, scope, router.CreateHandler())
+	err = proxy.StartServer(ctx, d)
 	if err != nil {
 		return err
 	}

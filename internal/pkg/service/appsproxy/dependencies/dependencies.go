@@ -17,6 +17,7 @@ package dependencies
 import (
 	"context"
 	"io"
+	"net/http"
 
 	"github.com/benbjohnson/clock"
 
@@ -26,6 +27,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -42,7 +49,12 @@ type ServiceScope interface {
 	dependencies.BaseScope
 	Config() config.Config
 	AppsAPI() *api.API
+	AppHandlers() *apphandler.Manager
 	AppConfigLoader() *appconfig.Loader
+	UpstreamTransport() http.RoundTripper
+	UpstreamManager() *upstream.Manager
+	AuthProxyManager() *authproxy.Manager
+	PageWriter() *pagewriter.Writer
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 }
@@ -50,16 +62,22 @@ type ServiceScope interface {
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
+	TestDNSServer() *dnsmock.Server
 }
 
 // serviceScope implements APIScope interface.
 type serviceScope struct {
 	parentScopes
-	config          config.Config
-	appsAPI         *api.API
-	appConfigLoader *appconfig.Loader
-	notifyManager   *notify.Manager
-	wakeupManager   *wakeup.Manager
+	config            config.Config
+	appsAPI           *api.API
+	appHandlers       *apphandler.Manager
+	upstreamTransport http.RoundTripper
+	upstreamManager   *upstream.Manager
+	authProxyManager  *authproxy.Manager
+	pageWriter        *pagewriter.Writer
+	appConfigLoader   *appconfig.Loader
+	notifyManager     *notify.Manager
+	wakeupManager     *wakeup.Manager
 }
 
 type parentScopes interface {
@@ -121,10 +139,24 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d := &serviceScope{}
 	d.parentScopes = parentScp
 	d.config = cfg
+
+	d.upstreamTransport, err = transport.New(d, cfg.DNSServer)
+	if err != nil {
+		return nil, err
+	}
+
+	d.pageWriter, err = pagewriter.New(d)
+	if err != nil {
+		return nil, err
+	}
+
 	d.appsAPI = api.New(d.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
 	d.appConfigLoader = appconfig.NewLoader(d)
 	d.notifyManager = notify.NewManager(d)
 	d.wakeupManager = wakeup.NewManager(d)
+	d.authProxyManager = authproxy.NewManager(d)
+	d.upstreamManager = upstream.NewManager(d)
+	d.appHandlers = apphandler.NewManager(d)
 
 	return d, nil
 }
@@ -137,8 +169,28 @@ func (v *serviceScope) AppsAPI() *api.API {
 	return v.appsAPI
 }
 
+func (v *serviceScope) AppHandlers() *apphandler.Manager {
+	return v.appHandlers
+}
+
 func (v *serviceScope) AppConfigLoader() *appconfig.Loader {
 	return v.appConfigLoader
+}
+
+func (v *serviceScope) UpstreamTransport() http.RoundTripper {
+	return v.upstreamTransport
+}
+
+func (v *serviceScope) UpstreamManager() *upstream.Manager {
+	return v.upstreamManager
+}
+
+func (v *serviceScope) AuthProxyManager() *authproxy.Manager {
+	return v.authProxyManager
+}
+
+func (v *serviceScope) PageWriter() *pagewriter.Writer {
+	return v.pageWriter
 }
 
 func (v *serviceScope) NotifyManager() *notify.Manager {

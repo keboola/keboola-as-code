@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type EndpointNotFoundError struct {
@@ -31,5 +33,5 @@ func (EndpointNotFoundError) ErrorName() string {
 }
 
 func (e EndpointNotFoundError) ErrorUserMessage() string {
-	return e.Error()
+	return errors.Format(e, errors.FormatAsSentences())
 }

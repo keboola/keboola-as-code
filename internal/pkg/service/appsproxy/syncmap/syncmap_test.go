@@ -15,7 +15,7 @@ type testStruct struct{}
 func TestSyncMap_GetOrInit(t *testing.T) {
 	t.Parallel()
 
-	m := syncmap.New[string, testStruct](func() *testStruct {
+	m := syncmap.New[string, testStruct](func(string) *testStruct {
 		return &testStruct{}
 	})
 
@@ -27,7 +27,7 @@ func TestSyncMap_GetOrInit_Race(t *testing.T) {
 	t.Parallel()
 
 	initCounter := atomic.NewInt64(0)
-	m := syncmap.New[string, testStruct](func() *testStruct {
+	m := syncmap.New[string, testStruct](func(string) *testStruct {
 		initCounter.Add(1)
 		return &testStruct{}
 	})

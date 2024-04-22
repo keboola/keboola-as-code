@@ -49,6 +49,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}
+	srv.ErrorLog = log.NewStdErrorLogger(d.Logger().WithComponent("http-server"))
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
