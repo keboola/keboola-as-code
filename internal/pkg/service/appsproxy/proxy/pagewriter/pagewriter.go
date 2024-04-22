@@ -53,7 +53,7 @@ func New(d dependencies) (*Writer, error) {
 
 func (pw *Writer) MountAssets(mux *http.ServeMux) {
 	mux.Handle(robotsPath, http.HandlerFunc(pw.WriteRobotsTxt))
-	mux.Handle(assetsPath, http.StripPrefix(assetsPath, http.FileServer(http.FS(pw.assetsFS))))
+	mux.Handle(assetsPath, http.StripPrefix(assetsPath, http.FileServerFS(pw.assetsFS)))
 }
 
 func (pw *Writer) writePage(w http.ResponseWriter, req *http.Request, page string, status int, data any) {
