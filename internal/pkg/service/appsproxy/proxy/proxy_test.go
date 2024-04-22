@@ -1507,7 +1507,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting ...")
+				assert.Contains(t, string(body), "Starting your application...")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
@@ -1631,7 +1631,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting ...")
+				assert.Contains(t, string(body), "Starting your application...")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
