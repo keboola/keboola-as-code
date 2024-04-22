@@ -65,11 +65,11 @@ func (s *Selector) For(app api.AppConfig, handlers map[provider.ID]*Handler) (*S
 //
 // The selector page is rendered:
 // 1. If it is accessed directly using selectionPagePath, the status code is StatusOK.
-// 2. If no handler is selected and the path requires authorization, the status code is StatusForbidden.
+// 2. If no handler is selected and the path requires authorization, the status code is StatusUnauthorized.
 func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
 	// Store the selector to the context.
 	// It is used by the OnNeedsLogin callback, to render the selector page, if the provider needs login.
-	// Internal paths (it includes sing in) pages are bypassed, see Manager.proxyConfig for details.
+	// Internal paths (it includes sing in) are bypassed, see Manager.proxyConfig for details.
 	req = req.WithContext(context.WithValue(req.Context(), selectorHandlerCtxKey, s))
 
 	// Clear cookie on logout

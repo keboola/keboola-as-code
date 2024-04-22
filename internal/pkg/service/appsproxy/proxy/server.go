@@ -75,7 +75,7 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 	// Wrap handler with middlewares
 	middlewareCfg := middleware.NewConfig(
 		middleware.WithPropagators(propagation.TraceContext{}),
-		// Ignore health checks
+		// Ignore health checks and robots
 		middleware.WithFilter(func(req *http.Request) bool {
 			return req.URL.Path != "/health-check" && req.URL.Path != "/robots.txt"
 		}),
