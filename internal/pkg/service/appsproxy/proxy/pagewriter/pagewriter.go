@@ -8,12 +8,13 @@ import (
 	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
 	robotsPath = "/robots.txt"
-	assetsPath = "/_proxy/assets/"
+	assetsPath = config.InternalPrefix + "/assets/"
 )
 
 type Writer struct {

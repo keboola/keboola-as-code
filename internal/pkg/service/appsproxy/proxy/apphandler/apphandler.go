@@ -18,10 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const (
-	internalPathPrefix = "/_proxy/"
-)
-
 type appHandler struct {
 	manager            *Manager
 	app                api.AppConfig
@@ -128,7 +124,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Route internal URLs if there is at least one auth handler
-	if strings.HasPrefix(req.URL.Path, internalPathPrefix) && h.allAuthHandlers != nil {
+	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}
 

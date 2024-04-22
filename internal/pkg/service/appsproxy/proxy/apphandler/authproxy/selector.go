@@ -23,8 +23,8 @@ const (
 	providerCookie             = "_oauth2_provider"
 	providerQueryParam         = "provider"
 	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
-	selectionPagePath          = "/_proxy/selection"
-	signOutPath                = "/_proxy/sign_out"
+	selectionPagePath          = config.InternalPrefix + "/selection"
+	signOutPath                = config.InternalPrefix + "/sign_out"
 	ignoreProviderCookieCtxKey = ctxKey("ignoreProviderCookieCtxKey")
 	selectorHandlerCtxKey      = ctxKey("selectorHandlerCtxKey")
 )
