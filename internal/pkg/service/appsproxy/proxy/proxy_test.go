@@ -152,7 +152,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps:       map[string]int{},
 		},
 		{
-			name: "not-empty-providers-auth-required-false",
+			name: "missing-referenced-provider",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid2.hub.keboola.local/", nil)
@@ -162,7 +162,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`no authentication provider is expected for "/"`))
+				assert.Contains(t, string(body), html.EscapeString(`authentication provider "test" not found for "/"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
 			expectedNotifications: map[string]int{},
@@ -197,6 +197,23 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), html.EscapeString(`authentication provider "unknown" not found for "/"`))
+				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
+			name: "not-empty-providers-auth-required-false",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Request to app with invalid rule type
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://invalid5.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), html.EscapeString(`no authentication provider is expected for "/"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
 			expectedNotifications: map[string]int{},
@@ -1938,7 +1955,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: pointer(false),
+					AuthRequired: pointer(true),
 					Auth:         []provider.ID{"test"},
 				},
 			},
@@ -1978,6 +1995,19 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					Type:  api.RulePathPrefix,
 					Value: "/",
 					Auth:  []provider.ID{"unknown"},
+				},
+			},
+		},
+		{
+			ID:             "invalid5",
+			ProjectID:      "123",
+			UpstreamAppURL: upstream.String(),
+			AuthRules: []api.Rule{
+				{
+					Type:         api.RulePathPrefix,
+					Value:        "/",
+					AuthRequired: pointer(false),
+					Auth:         []provider.ID{"test"},
 				},
 			},
 		},
