@@ -72,6 +72,23 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	// Internal paths (it includes sing in) are bypassed, see Manager.proxyConfig for details.
 	req = req.WithContext(context.WithValue(req.Context(), selectorHandlerCtxKey, s))
 
+	if req.URL.Path == "/_proxy/callback" {
+		csrfCookie, _ := req.Cookie("_oauth2_proxy_csrf")
+		if csrfCookie == nil || csrfCookie.Value == "" {
+			w.WriteHeader(http.StatusForbidden)
+			s.pageWriter.WriteRedirectPage(w, req, http.StatusForbidden, &pagewriter.RedirectPageData{
+				AppData: &pagewriter.AppData{
+					ProjectID: s.app.ProjectID,
+					ID:        s.app.ID.String(),
+					Name:      s.app.Name,
+					IDAndName: s.app.IdAndName(),
+				},
+				URL: req.URL.String(),
+			})
+			return nil
+		}
+	}
+
 	// Clear cookie on logout
 	if req.URL.Path == signOutPath {
 		s.clearCookie(w, req)
@@ -201,7 +218,7 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 		Domain:   host,
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	if expires > 0 {
