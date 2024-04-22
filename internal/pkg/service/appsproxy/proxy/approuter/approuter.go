@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/requtil"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -42,8 +41,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Health check is served only if there is not appID
 	if req.URL.Path == "/health-check" {
-		_, _ = fmt.Fprintln(w, "OK")
 		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintln(w, "OK")
 		return
 	}
 
@@ -52,7 +51,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (r *Router) parseAppID(req *http.Request) (api.AppID, bool) {
 	// Request domain must match expected public domain
-	domain := requtil.Host(req)
+	domain := req.Host // not req.URL.Host, see URL field docs "For most requests, fields other than Path and RawQuery will be empty."
 	if !strings.HasSuffix(domain, "."+r.config.API.PublicURL.Host) {
 		return "", false
 	}

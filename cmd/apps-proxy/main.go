@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 
-	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -14,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/entrypoint"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -82,12 +80,6 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 	if err != nil {
 		return err
 	}
-
-	loggerWriter := logging.NewLoggerWriter(logger, "info")
-	oautproxylogger.SetOutput(loggerWriter)
-	// Cannot separate errors from info because oauthproxy will override its error writer with either
-	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created
-	oautproxylogger.SetErrOutput(loggerWriter)
 
 	// Create dependencies
 	d, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
