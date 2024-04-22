@@ -52,6 +52,22 @@ func TestAppProxyRouter(t *testing.T) {
 
 	testCases := []testCase{
 		{
+			name: "health-check",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Request to health-check endpoint
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://hub.keboola.local/health-check", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, "OK\n", string(body))
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "missing-app-id",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Request without app id
@@ -63,13 +79,6 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Unexpected domain, missing application ID.")
-
-				// Request to health-check endpoint
-				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://hub.keboola.local/health-check", nil)
-				require.NoError(t, err)
-				response, err = client.Do(request)
-				require.NoError(t, err)
-				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
