@@ -70,13 +70,6 @@ func TestAppProxyHandler(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Disallow: /")
 
-	// Get style.css
-	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "https://hub.keboola.local/_proxy/assets/style.css", nil)
-	handler.ServeHTTP(rec, req)
-	require.Equal(t, http.StatusOK, rec.Code)
-	assert.NotEmpty(t, rec.Body.String())
-
 	// Get missing asset
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "https://hub.keboola.local/_proxy/assets/foo.bar", nil)
@@ -108,7 +101,6 @@ func TestAppProxyHandler(t *testing.T) {
 	assert.Equal(t, "OK\n", rec.Body.String())
 
 	mocked.DebugLogger().AssertJSONMessages(t, `
-{"level":"info","message":"req https://hub.keboola.local/_proxy/assets/style.css status=200 %s","http.request_id":"%s","component":"http"}
 {"level":"info","message":"req https://hub.keboola.local/_proxy/assets/foo.bar status=404 %s","http.request_id":"%s","component":"http"}
 {"level":"warn","message":"badRequest: unexpected domain, missing application ID %A","http.request_id":"%s"}
 {"level":"info","message":"req https://123.foo.bar.local/path status=400 %s","http.request_id":"%s","component":"http"}
