@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
@@ -18,6 +19,7 @@ import (
 )
 
 type Manager struct {
+	config           config.Config
 	telemetry        telemetry.Telemetry
 	configLoader     *appconfig.Loader
 	upstreamManager  *upstream.Manager
@@ -32,6 +34,7 @@ type appHandlerWrapper struct {
 }
 
 type dependencies interface {
+	Config() config.Config
 	Telemetry() telemetry.Telemetry
 	PageWriter() *pagewriter.Writer
 	UpstreamManager() *upstream.Manager
@@ -41,6 +44,7 @@ type dependencies interface {
 
 func NewManager(d dependencies) *Manager {
 	return &Manager{
+		config:           d.Config(),
 		telemetry:        d.Telemetry(),
 		configLoader:     d.AppConfigLoader(),
 		upstreamManager:  d.UpstreamManager(),

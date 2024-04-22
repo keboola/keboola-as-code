@@ -4,11 +4,13 @@ package apphandler
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
@@ -21,6 +23,7 @@ import (
 type appHandler struct {
 	manager            *Manager
 	app                api.AppConfig
+	baseURL            *url.URL
 	attrs              []attribute.KeyValue
 	upstream           chain.Handler
 	allAuthHandlers    chain.Handler
@@ -33,6 +36,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 	handler := &appHandler{
 		manager:            manager,
 		app:                app,
+		baseURL:            app.BaseURL(manager.config.API.PublicURL),
 		attrs:              app.Telemetry(),
 		upstream:           appUpstream,
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
