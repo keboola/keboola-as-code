@@ -4,7 +4,7 @@ go 1.22.2
 
 replace github.com/google/go-jsonnet v0.20.0 => github.com/keboola/go-jsonnet v0.20.1-0.20240415122724-d526145c4cb8
 
-replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240417071248-54508b5ecd19
+replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562
 
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
