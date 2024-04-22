@@ -58,7 +58,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
 
 func NewHandler(d dependencies.ServiceScope) http.Handler {
 	// Setup OAuth2Proxy singleton global logger
-	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	loggerWriter := logging.NewLoggerWriter(d.Logger().WithComponent("oauth2proxy"), "info")
 	oautproxylogger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because oauthproxy will override its error writer with either
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created
