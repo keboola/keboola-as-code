@@ -9,6 +9,7 @@ import (
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
@@ -19,6 +20,7 @@ import (
 )
 
 type Manager struct {
+	logger           log.Logger
 	config           config.Config
 	pageWriter       *pagewriter.Writer
 	providerSelector *Selector
@@ -32,6 +34,7 @@ type Handler struct {
 }
 
 type dependencies interface {
+	Logger() log.Logger
 	Clock() clock.Clock
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
@@ -39,6 +42,7 @@ type dependencies interface {
 
 func NewManager(d dependencies) *Manager {
 	return &Manager{
+		logger:           d.Logger(),
 		config:           d.Config(),
 		pageWriter:       d.PageWriter(),
 		providerSelector: newSelector(d),
@@ -69,7 +73,7 @@ func (m *Manager) newHandler(app api.AppConfig, auth provider.Provider, upstream
 	}
 
 	// Create proxy page writer adapter
-	pw, err := m.newPageWriter(app, auth, handler.proxyConfig)
+	pw, err := m.newPageWriter(m.logger, app, auth, handler.proxyConfig)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
@@ -117,6 +121,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return h.initErr
 	}
 
+	// Pass request to OAuth2Proxy
 	h.proxyHandler.ServeHTTP(w, req) // errors are handled by the page writer
 	return nil
 }

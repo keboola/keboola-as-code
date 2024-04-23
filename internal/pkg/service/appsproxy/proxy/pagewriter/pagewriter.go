@@ -45,7 +45,7 @@ func New(d dependencies) (*Writer, error) {
 	}
 
 	return &Writer{
-		logger:    d.Logger(),
+		logger:    d.Logger().WithComponent("page-writer"),
 		assetsFS:  assets,
 		templates: templates,
 	}, nil

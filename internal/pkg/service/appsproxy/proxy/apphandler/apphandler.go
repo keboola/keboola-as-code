@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -127,9 +128,14 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		}
 	}
 
+	// Add request ID header, for OAuth2Proxy internals and app itself
+	if id := middleware.RequestIDFromContext(req.Context()); id != "" { //nolint:contextcheck // false positive
+		req.Header.Set(config.RequestIDHeader, id)
+	}
+
 	// Redirect request to canonical host to match cookies domain
 	if req.Host != h.baseURL.Host {
-		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path}).String())
+		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: req.URL.RawQuery}).String())
 		w.WriteHeader(http.StatusPermanentRedirect)
 		return nil
 	}

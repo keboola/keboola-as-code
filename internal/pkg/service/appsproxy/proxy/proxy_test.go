@@ -229,7 +229,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusPermanentRedirect, response.StatusCode)
 				location := response.Header.Get("Location")
-				assert.Equal(t, location, "https://public-123.hub.keboola.local/some/data/app/url")
+				assert.Equal(t, "https://public-123.hub.keboola.local/some/data/app/url?foo=bar", location)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -274,6 +274,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
 				assert.Equal(t, "Internet Exploder", appRequest.Header.Get("User-Agent"))
 				assert.Equal(t, "application/json", appRequest.Header.Get("Content-Type"))
+				assert.NotEmpty(t, appRequest.Header.Get("X-Request-ID"))
 				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
 				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-User-Email"))
 			},
