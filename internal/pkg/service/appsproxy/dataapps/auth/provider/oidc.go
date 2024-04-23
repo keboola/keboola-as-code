@@ -25,6 +25,14 @@ func (v OIDC) ToProxyProvider() (proxyOptions.Provider, error) {
 		ClientID:            v.ClientID,
 		ClientSecret:        v.ClientSecret,
 		BackendLogoutURL:    v.LogoutURL,
+		LoginURLParameters: []proxyOptions.LoginURLParameter{
+			{
+				// https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+				// See "prompt" options: none, login, consent, select_account
+				Name:    "prompt", // the user can choose a different account on each login attempt
+				Default: []string{"select_account"},
+			},
+		},
 		OIDCConfig: proxyOptions.OIDCOptions{
 			IssuerURL:      v.IssuerURL,
 			EmailClaim:     proxyOptions.OIDCEmailClaim,
