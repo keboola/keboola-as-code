@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/_proxy/assets/favicon.ico">
 
     <title>Keboola</title>
     <style>
@@ -113,17 +113,14 @@
         <circle cx="24" cy="24" r="24" class="icon-primary" />
         <path d="M20.5714 14.5714C20.5714 13.1518 21.7232 12 23.1429 12H24.8571C26.2768 12 27.4286 13.1518 27.4286 14.5714V33.4286C27.4286 34.8482 26.2768 36 24.8571 36H23.1429C21.7232 36 20.5714 34.8482 20.5714 33.4286V14.5714ZM12 24.8571C12 23.4375 13.1518 22.2857 14.5714 22.2857H16.2857C17.7054 22.2857 18.8571 23.4375 18.8571 24.8571V33.4286C18.8571 34.8482 17.7054 36 16.2857 36H14.5714C13.1518 36 12 34.8482 12 33.4286V24.8571ZM31.7143 15.4286H33.4286C34.8482 15.4286 36 16.5804 36 18V33.4286C36 34.8482 34.8482 36 33.4286 36H31.7143C30.2946 36 29.1429 34.8482 29.1429 33.4286V18C29.1429 16.5804 30.2946 15.4286 31.7143 15.4286Z" fill="white"/>
     </svg>
-    <h1>{{.App.IDAndName}}</h1>
+    <h1>Application {{.App.IDAndName}}</h1>
+    <h2>Project {{.App.ProjectID}}</h2>
 </header>
 <main>
-    <img src="./rocket.gif" alt="Loading ilustration" />
+    <img src="/_proxy/assets/rocket.gif" alt="Loading ilustration" />
     <h2>Starting your application...</h2>
-    ProjectID: {{.App.ProjectID}}<br>
-    AppID: {{.App.ID}}<br>
-    AppName: {{.App.Name}}<br>
-    AppIDAndName: {{.App.IDAndName}}<br>
     <br>
-    <p>Please wait. It may take up to few minutes to set up your infrastructure.</p>
+    <p>Please wait. It may take up to few minutes.</p>
 </main>
 <footer>
     <p>Powered By</p>

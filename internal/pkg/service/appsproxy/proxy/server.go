@@ -58,7 +58,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
 
 func NewHandler(d dependencies.ServiceScope) http.Handler {
 	// Setup OAuth2Proxy singleton global logger
-	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	loggerWriter := logging.NewLoggerWriter(d.Logger().WithComponent("oauth2proxy"), "info")
 	oautproxylogger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because oauthproxy will override its error writer with either
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created
@@ -75,7 +75,7 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 	// Wrap handler with middlewares
 	middlewareCfg := middleware.NewConfig(
 		middleware.WithPropagators(propagation.TraceContext{}),
-		// Ignore health checks
+		// Ignore health checks and robots
 		middleware.WithFilter(func(req *http.Request) bool {
 			return req.URL.Path != "/health-check" && req.URL.Path != "/robots.txt"
 		}),

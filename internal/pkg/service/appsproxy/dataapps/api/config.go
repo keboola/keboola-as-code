@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -60,6 +61,20 @@ func (c AppConfig) Domain() string {
 		return c.ID.String()
 	}
 	return c.Name + "-" + c.ID.String()
+}
+
+// CookieDomain without port for cookies.
+func (c AppConfig) CookieDomain(publicURL *url.URL) string {
+	return c.Domain() + "." + publicURL.Hostname()
+}
+
+// BaseURL of the app.
+func (c AppConfig) BaseURL(publicURL *url.URL) *url.URL {
+	return &url.URL{
+		Scheme: publicURL.Scheme,
+		Host:   c.Domain() + "." + publicURL.Host,
+		Path:   "/",
+	}
 }
 
 func (c AppConfig) ETag() string {

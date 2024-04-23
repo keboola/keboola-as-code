@@ -4,11 +4,13 @@ package apphandler
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
@@ -18,13 +20,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const (
-	internalPathPrefix = "/_proxy/"
-)
-
 type appHandler struct {
 	manager            *Manager
 	app                api.AppConfig
+	baseURL            *url.URL
 	attrs              []attribute.KeyValue
 	upstream           chain.Handler
 	allAuthHandlers    chain.Handler
@@ -37,6 +36,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 	handler := &appHandler{
 		manager:            manager,
 		app:                app,
+		baseURL:            app.BaseURL(manager.config.API.PublicURL),
 		attrs:              app.Telemetry(),
 		upstream:           appUpstream,
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
@@ -127,8 +127,15 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		}
 	}
 
+	// Redirect request to canonical host to match cookies domain
+	if req.Host != h.baseURL.Host {
+		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path}).String())
+		w.WriteHeader(http.StatusPermanentRedirect)
+		return nil
+	}
+
 	// Route internal URLs if there is at least one auth handler
-	if strings.HasPrefix(req.URL.Path, internalPathPrefix) && h.allAuthHandlers != nil {
+	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}
 

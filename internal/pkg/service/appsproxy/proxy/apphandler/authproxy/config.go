@@ -10,6 +10,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
@@ -69,12 +70,13 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider,
 	}
 
 	// Setup
-	domain := app.Domain() + "." + m.config.API.PublicURL.Host
+	domain := app.CookieDomain(m.config.API.PublicURL)
+	redirectURL := m.config.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "lax"
-	v.ProxyPrefix = "/_proxy"
-	v.RawRedirectURL = m.config.API.PublicURL.Scheme + "://" + domain + v.ProxyPrefix + "/callback"
+	v.ProxyPrefix = config.InternalPrefix
+	v.RawRedirectURL = redirectURL
 	v.Providers = options.Providers{proxyProvider}
 	v.SkipProviderButton = true
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}

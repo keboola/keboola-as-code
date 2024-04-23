@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -20,10 +21,11 @@ import (
 const staleCacheFallbackDuration = time.Hour
 
 type Loader struct {
-	clock  clock.Clock
-	logger log.Logger
-	api    *api.API
-	cache  *syncmap.SyncMap[api.AppID, cachedAppProxyConfig]
+	clock     clock.Clock
+	logger    log.Logger
+	telemetry telemetry.Telemetry
+	api       *api.API
+	cache     *syncmap.SyncMap[api.AppID, cachedAppProxyConfig]
 }
 
 type cachedAppProxyConfig struct {
@@ -35,14 +37,16 @@ type cachedAppProxyConfig struct {
 type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
+	Telemetry() telemetry.Telemetry
 	AppsAPI() *api.API
 }
 
 func NewLoader(d dependencies) *Loader {
 	return &Loader{
-		clock:  d.Clock(),
-		logger: d.Logger(),
-		api:    d.AppsAPI(),
+		clock:     d.Clock(),
+		logger:    d.Logger(),
+		api:       d.AppsAPI(),
+		telemetry: d.Telemetry(),
 		cache: syncmap.New[api.AppID, cachedAppProxyConfig](func(api.AppID) *cachedAppProxyConfig {
 			return &cachedAppProxyConfig{lock: &sync.Mutex{}}
 		}),
@@ -52,6 +56,9 @@ func NewLoader(d dependencies) *Loader {
 // GetConfig gets the AppConfig by the ID from Sandboxes Service.
 // It handles local caching based on the Cache-Control and ETag headers.
 func (l *Loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppConfig, modified bool, err error) {
+	ctx, span := l.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.appconfig.Loader.GetConfig")
+	defer span.End(&err)
+
 	// Get cache item or init an empty item
 	item := l.cache.GetOrInit(appID)
 
