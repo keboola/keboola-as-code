@@ -3,10 +3,11 @@ package pagewriter
 import (
 	"bytes"
 	"embed"
-	"github.com/benbjohnson/clock"
 	"html/template"
 	"io/fs"
 	"net/http"
+
+	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
