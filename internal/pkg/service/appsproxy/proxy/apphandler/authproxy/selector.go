@@ -73,7 +73,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	req = req.WithContext(context.WithValue(req.Context(), selectorHandlerCtxKey, s))
 
 	if req.URL.Path == "/_proxy/callback" {
-		csrfCookie, _ := req.Cookie("_oauth2_proxy_csrf")
+		csrfCookie, _ := req.Cookie("_oauth2_proxy_0")
 		if csrfCookie == nil || csrfCookie.Value == "" {
 			s.pageWriter.WriteRedirectPage(w, req, http.StatusForbidden, &pagewriter.RedirectPageData{
 				AppData: &pagewriter.AppData{
