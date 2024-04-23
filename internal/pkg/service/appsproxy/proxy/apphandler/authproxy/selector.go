@@ -74,7 +74,10 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 
 	if req.URL.Path == "/_proxy/callback" {
 		csrfCookie, _ := req.Cookie("_oauth2_proxy_0")
-		if csrfCookie == nil || csrfCookie.Value == "" {
+		query := req.URL.Query()
+		if (csrfCookie == nil || csrfCookie.Value == "") && query.Get("foo") != "bar" {
+			query.Set("foo", "bar")
+			redirectURL := req.URL.ResolveReference(&url.URL{RawQuery: query.Encode(), Path: req.URL.Path})
 			s.pageWriter.WriteRedirectPage(w, req, http.StatusForbidden, &pagewriter.RedirectPageData{
 				AppData: &pagewriter.AppData{
 					ProjectID: s.app.ProjectID,
@@ -82,7 +85,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 					Name:      s.app.Name,
 					IDAndName: s.app.IdAndName(),
 				},
-				URL: req.URL.String(),
+				URL: redirectURL.String(),
 			})
 			return nil
 		}
