@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/net/http2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns"
@@ -64,6 +65,8 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		dnsClient = dns.NewClient(dialer, dnsServerAddress)
 	}
 
+	tel := d.Telemetry()
+
 	dialContext := func(ctx context.Context, network, address string) (net.Conn, error) {
 		host, port, err := net.SplitHostPort(address)
 		if err != nil {
@@ -78,6 +81,11 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		trace := httptrace.ContextClientTrace(ctx)
 
 		// Trace DNSStart
+		ctx, dnsSpan := tel.Tracer().Start(ctx, "keboola.go.apps-proxy.transport.dns.resolve")
+		dnsSpan.SetAttributes(
+			attribute.String("transport.dns.resolve.host", host),
+			attribute.String("transport.dns.resolve.server", dnsServerAddress),
+		)
 		if trace != nil && trace.DNSStart != nil {
 			trace.DNSStart(httptrace.DNSStartInfo{Host: host})
 		}
@@ -100,11 +108,21 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		}
 
 		// Handle DNS error
+		dnsSpan.End(&err)
 		if err != nil {
 			return nil, err
 		}
 
-		return dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+		// Dial
+		ctx, dialSpan := tel.Tracer().Start(ctx, "keboola.go.apps-proxy.transport.dial")
+		dialSpan.SetAttributes(
+			attribute.String("transport.dial.network", network),
+			attribute.String("transport.dial.ip", ip),
+			attribute.String("transport.dial.port", port),
+		)
+		conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+		dialSpan.End(&err)
+		return conn, err
 	}
 
 	httpTransport := &http.Transport{
