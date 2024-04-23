@@ -129,7 +129,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 
 	// Redirect request to canonical host to match cookies domain
 	if req.Host != h.baseURL.Host {
-		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path}).String())
+		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: req.URL.RawQuery}).String())
 		w.WriteHeader(http.StatusPermanentRedirect)
 		return nil
 	}
