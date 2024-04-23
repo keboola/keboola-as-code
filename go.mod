@@ -42,7 +42,7 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/miekg/dns v1.1.58
+	github.com/miekg/dns v1.1.59
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/oauth2-proxy/mockoidc v0.0.0-20220308204021-b9169deeb282
 	github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0
@@ -77,14 +77,14 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/zap v1.27.0
-	goa.design/goa/v3 v3.16.0
-	goa.design/plugins/v3 v3.16.0
+	goa.design/goa/v3 v3.16.1
+	goa.design/plugins/v3 v3.16.1
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.63.2
-	gopkg.in/DataDog/dd-trace-go.v1 v1.62.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.63.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	nhooyr.io/websocket v1.8.11
-	v.io/x/lib v0.1.19
+	v.io/x/lib v0.1.20
 )
 
 require (
@@ -151,7 +151,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/DataDog/appsec-internal-go v1.5.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
-	github.com/DataDog/go-libddwaf/v2 v2.3.2 // indirect
+	github.com/DataDog/go-libddwaf/v2 v2.4.2 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
 	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
