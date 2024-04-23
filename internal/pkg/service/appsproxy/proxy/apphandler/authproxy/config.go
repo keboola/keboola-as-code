@@ -75,7 +75,7 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider,
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
-	v.Cookie.SameSite = "lax"
+	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = config.InternalPrefix
 	v.RawRedirectURL = redirectURL
 	v.Providers = options.Providers{proxyProvider}
