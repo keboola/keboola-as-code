@@ -5,7 +5,11 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -99,9 +103,18 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	}
 
 	// Add exception id prefix (if the error is not from another service)
-	if !strings.Contains(exceptionID, "-") {
+	if !strings.Contains(exceptionID, "keboola") {
 		exceptionID = ExceptionIDPrefix + exceptionID
 	}
+
+	// Add attributes
+	req = req.WithContext(ctxattr.ContextWith(
+		req.Context(),
+		semconv.HTTPStatusCode(status),
+		attribute.String("exceptionId", exceptionID),
+		attribute.String("error.userMessages", strings.Join(userMessages, "\n")),
+		attribute.String("error.details", details),
+	))
 
 	// Log
 	if status == http.StatusInternalServerError {

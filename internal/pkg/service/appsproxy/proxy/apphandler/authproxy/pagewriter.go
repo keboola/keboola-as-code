@@ -2,15 +2,20 @@ package authproxy
 
 import (
 	"net/http"
+	"strings"
 
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	proxypw "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/app/pagewriter"
 	"github.com/spf13/cast"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
 
 type proxyPageWriter proxypw.Writer
@@ -18,12 +23,13 @@ type proxyPageWriter proxypw.Writer
 // pageWriter is adapter between common page writer and OAuth2Proxy specific page writer.
 type pageWriter struct {
 	proxyPageWriter
+	logger       log.Logger
 	app          api.AppConfig
 	authProvider provider.Provider
 	pageWriter   *pagewriter.Writer
 }
 
-func (m *Manager) newPageWriter(app api.AppConfig, authProvider provider.Provider, opts *options.Options) (*pageWriter, error) {
+func (m *Manager) newPageWriter(logger log.Logger, app api.AppConfig, authProvider provider.Provider, opts *options.Options) (*pageWriter, error) {
 	parent, err := proxypw.NewWriter(
 		proxypw.Opts{
 			TemplatesPath:    opts.Templates.Path,
@@ -42,6 +48,7 @@ func (m *Manager) newPageWriter(app api.AppConfig, authProvider provider.Provide
 	}
 
 	return &pageWriter{
+		logger:          logger.WithComponent("oauth2proxy.pw"),
 		proxyPageWriter: parent,
 		app:             app,
 		authProvider:    authProvider,
@@ -58,6 +65,7 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 		}
 	}
 
+	// Default messages
 	if len(messages) == 0 {
 		switch opts.Status {
 		case http.StatusUnauthorized:
@@ -65,13 +73,28 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 		case http.StatusForbidden:
 			messages = []string{"You do not have permission to access this resource."}
 		case http.StatusInternalServerError:
-			messages = []string{"Internal Server Error Oops! Something went wrong."}
+			messages = []string{"Oops! Something went wrong."}
 		default:
 			messages = []string{opts.AppError}
 		}
 	}
 
-	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, messages, "", opts.RequestID)
+	// Exception ID
+	exceptionID := pagewriter.ExceptionIDPrefix + opts.RequestID
+
+	// Add attributes
+	req = req.WithContext(ctxattr.ContextWith(
+		req.Context(),
+		semconv.HTTPStatusCode(opts.Status),
+		attribute.String("exceptionId", exceptionID),
+		attribute.String("error.userMessages", strings.Join(messages, "\n")),
+		attribute.String("error.details", opts.AppError),
+	))
+
+	// Log warning
+	pw.logger.Warn(req.Context(), strings.Join(messages, "\n")) //nolint:contextcheck // false positive
+
+	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, messages, "", exceptionID)
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {
