@@ -73,6 +73,7 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider,
 	domain := app.CookieDomain(m.config.API.PublicURL)
 	redirectURL := m.config.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
 	v.Logging.RequestIDHeader = config.RequestIDHeader
+	v.Logging.RequestEnabled = false // we have log middleware for all requests
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
