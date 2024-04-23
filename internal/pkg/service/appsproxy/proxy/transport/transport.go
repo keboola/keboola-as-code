@@ -84,7 +84,7 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		ctx, dnsSpan := tel.Tracer().Start(ctx, "keboola.go.apps-proxy.transport.dns.resolve")
 		dnsSpan.SetAttributes(
 			attribute.String("transport.dns.resolve.host", host),
-			attribute.String("transport.dns.resolve.server", dnsServerAddress),
+			attribute.String("transport.dns.resolve.server", dnsClient.DNSServer()),
 		)
 		if trace != nil && trace.DNSStart != nil {
 			trace.DNSStart(httptrace.DNSStartInfo{Host: host})

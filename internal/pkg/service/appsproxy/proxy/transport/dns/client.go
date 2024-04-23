@@ -57,6 +57,10 @@ func NewClient(dialer *net.Dialer, dnsServer string) *Client {
 	}
 }
 
+func (c *Client) DNSServer() string {
+	return c.dnsServer
+}
+
 func (c *Client) Resolve(ctx context.Context, host string) (string, error) {
 	msg := &dns.Msg{}
 	msg.SetQuestion(dns.Fqdn(host), dns.TypeA)
