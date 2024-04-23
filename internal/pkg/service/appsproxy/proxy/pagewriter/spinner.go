@@ -19,6 +19,8 @@ type SpinnerPageData struct {
 }
 
 func (pw *Writer) WriteSpinnerPage(w http.ResponseWriter, req *http.Request, app api.AppConfig) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
+	w.Header().Set("pragma", "no-cache")
 	w.Header().Set("Retry-After", pw.clock.Now().Add(spinnerRetryAfter).UTC().Format(http.TimeFormat))
 	pw.writePage(w, req, "spinner.gohtml", http.StatusServiceUnavailable, SpinnerPageData{
 		App:                   NewAppData(&app),
