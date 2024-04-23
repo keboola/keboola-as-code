@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"net/http"
 
+	"github.com/benbjohnson/clock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -18,12 +20,14 @@ const (
 )
 
 type Writer struct {
+	clock     clock.Clock
 	logger    log.Logger
 	assetsFS  fs.FS
 	templates *template.Template
 }
 
 type dependencies interface {
+	Clock() clock.Clock
 	Logger() log.Logger
 }
 
@@ -45,6 +49,7 @@ func New(d dependencies) (*Writer, error) {
 	}
 
 	return &Writer{
+		clock:     d.Clock(),
 		logger:    d.Logger().WithComponent("page-writer"),
 		assetsFS:  assets,
 		templates: templates,

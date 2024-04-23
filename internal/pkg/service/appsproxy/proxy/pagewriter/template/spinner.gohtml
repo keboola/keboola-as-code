@@ -6,7 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="/_proxy/assets/favicon.ico">
 
-    <title>Keboola</title>
+    <title>Starting</title>
+    
+    <noscript>
+        <meta http-equiv="refresh" content="{{.MetaRefreshSeconds}}">
+    </noscript>
+    <script>
+        setInterval(function() {
+            fetch(window.location.href).then(function (response) {
+                // Refresh the page, if the app is started
+                if (response.status !== 503) {
+                    window.location.reload();
+                }
+            })
+        }, {{.JSRefreshMilliseconds}})
+    </script>
+
     <style>
         :root {
             --background: #f2f4f7;

@@ -128,6 +128,9 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 }
 
 func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, messages []string, details, exceptionID string) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
+	w.Header().Set("pragma", "no-cache")
+
 	data := &errorPageData{
 		Status:      status,
 		StatusText:  http.StatusText(status),
