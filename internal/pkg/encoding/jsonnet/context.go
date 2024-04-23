@@ -117,13 +117,7 @@ func (c *Context) NativeFunctionWithAlias(f *NativeFunction) {
 
 	// Register a shortcut: FN_NAME(...)
 	// as an alternative to the standard: std.native("FN_NAME")(...)
-	c.GlobalBinding(f.Name, &ast.Apply{
-		Target: &ast.Index{
-			Target: &ast.Var{Id: "std"},
-			Index:  &ast.LiteralString{Value: "native"},
-		},
-		Arguments: ast.Arguments{Positional: []ast.CommaSeparatedExpr{{Expr: &ast.LiteralString{Value: f.Name}}}},
-	})
+	c.GlobalBinding(f.Name, Alias(f.Name))
 }
 
 func (c *Context) GlobalBinding(identifier string, body ast.Node) {
