@@ -16,9 +16,10 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 	reqCtx := &receivectx.Context{Body: body, Headers: header}
+	renderer := column.NewRenderer()
 
 	for i := 0; i < b.N; i++ {
-		val, err := c.CSVValue(reqCtx)
+		val, err := renderer.CSVValue(c, reqCtx)
 		assert.NoError(b, err)
 		assert.Equal(b, `"val3"`, val)
 	}

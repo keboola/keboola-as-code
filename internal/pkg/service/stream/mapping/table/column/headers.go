@@ -1,10 +1,5 @@
 package column
 
-import (
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
-)
-
 const (
 	columnHeadersType Type = "headers"
 )
@@ -24,8 +19,4 @@ func (v Headers) ColumnName() string {
 
 func (v Headers) IsPrimaryKey() bool {
 	return v.PrimaryKey
-}
-
-func (Headers) CSVValue(ctx *receivectx.Context) (string, error) {
-	return json.EncodeString(ctx.HeadersMap(), false)
 }

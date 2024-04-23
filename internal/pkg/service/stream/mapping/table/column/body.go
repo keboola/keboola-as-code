@@ -1,9 +1,5 @@
 package column
 
-import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
-)
-
 const (
 	columnBodyType Type = "body"
 )
@@ -23,8 +19,4 @@ func (v Body) ColumnName() string {
 
 func (v Body) IsPrimaryKey() bool {
 	return v.PrimaryKey
-}
-
-func (Body) CSVValue(ctx *receivectx.Context) (string, error) {
-	return ctx.Body, nil
 }

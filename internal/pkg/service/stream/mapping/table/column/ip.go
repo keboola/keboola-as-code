@@ -1,9 +1,5 @@
 package column
 
-import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
-)
-
 const (
 	columnIPType Type = "ip"
 )
@@ -23,8 +19,4 @@ func (v IP) ColumnName() string {
 
 func (v IP) IsPrimaryKey() bool {
 	return v.PrimaryKey
-}
-
-func (IP) CSVValue(ctx *receivectx.Context) (string, error) {
-	return ctx.IP.String(), nil
 }

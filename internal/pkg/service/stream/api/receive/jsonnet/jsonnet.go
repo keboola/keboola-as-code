@@ -1,4 +1,4 @@
-// Package jsonnet provides Jsonnet functions used by the Buffer API import endpoint.
+// Package jsonnet provides Jsonnet functions used by the Stream API import endpoint.
 //
 // # Jsonnet Functions
 //
@@ -39,19 +39,18 @@ const (
 	bodyPathFnName      = "_bodyPath"
 )
 
-var pool = jsonnet.NewPool(
-	func(vm *jsonnet.VM) *jsonnetLib.VM {
-		realVM := jsonnetLib.MakeVM()
-		realVM.Importer(jsonnet.NewNopImporter())
-		RegisterFunctions(realVM, vm)
-		return realVM
-	},
-)
+func NewPool() *jsonnet.Pool {
+	return jsonnet.NewPool(
+		func(vm *jsonnet.VM) *jsonnetLib.VM {
+			realVM := jsonnetLib.MakeVM()
+			realVM.Importer(jsonnet.NewNopImporter())
+			RegisterFunctions(realVM, vm)
+			return realVM
+		},
+	)
+}
 
-func Evaluate(reqCtx *receivectx.Context, template string) (string, error) {
-	vm := pool.Get()
-	defer pool.Put(vm)
-
+func Evaluate(vm *jsonnet.VM, reqCtx *receivectx.Context, template string) (string, error) {
 	out, err := vm.Evaluate(template, reqCtx)
 	if err != nil {
 		var jsonnetErr jsonnetLib.RuntimeError

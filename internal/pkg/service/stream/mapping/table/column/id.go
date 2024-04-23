@@ -1,9 +1,5 @@
 package column
 
-import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
-)
-
 const (
 	IDPlaceholder      = "<<~~id~~>>"
 	columnIDType  Type = "id"
@@ -24,8 +20,4 @@ func (v ID) ColumnName() string {
 
 func (v ID) IsPrimaryKey() bool {
 	return v.PrimaryKey
-}
-
-func (ID) CSVValue(_ *receivectx.Context) (string, error) {
-	return IDPlaceholder, nil
 }
