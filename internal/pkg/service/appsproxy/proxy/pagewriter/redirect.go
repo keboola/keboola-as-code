@@ -3,11 +3,10 @@ package pagewriter
 import "net/http"
 
 type RedirectPageData struct {
-	AppData *AppData
-	URL     string
+	URL string
 }
 
-func (pw *Writer) WriteRedirectPage(w http.ResponseWriter, req *http.Request, status int, data *RedirectPageData) {
+func (pw *Writer) WriteRedirectPage(w http.ResponseWriter, req *http.Request, status int, url string) {
 	// Render page
-	pw.writePage(w, req, "redirect.gohtml", status, data)
+	pw.writePage(w, req, "redirect.gohtml", status, RedirectPageData{URL: url})
 }
