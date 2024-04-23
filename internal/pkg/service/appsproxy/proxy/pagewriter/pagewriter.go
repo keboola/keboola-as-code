@@ -3,6 +3,7 @@ package pagewriter
 import (
 	"bytes"
 	"embed"
+	"github.com/benbjohnson/clock"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -18,12 +19,14 @@ const (
 )
 
 type Writer struct {
+	clock     clock.Clock
 	logger    log.Logger
 	assetsFS  fs.FS
 	templates *template.Template
 }
 
 type dependencies interface {
+	Clock() clock.Clock
 	Logger() log.Logger
 }
 
@@ -45,6 +48,7 @@ func New(d dependencies) (*Writer, error) {
 	}
 
 	return &Writer{
+		clock:     d.Clock(),
 		logger:    d.Logger().WithComponent("page-writer"),
 		assetsFS:  assets,
 		templates: templates,
