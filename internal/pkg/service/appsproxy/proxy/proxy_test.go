@@ -446,7 +446,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				wildcards.Assert(t, "%ALogin Failed: Unable to find a valid CSRF token. Please try again.%A", string(body))
+				wildcards.Assert(t, "%ARedirecting...%A", string(body))
 
 				// Request to private app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
@@ -659,14 +659,14 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
 					assert.True(t, cookies[1].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 
 				// Request to private app (authorized but down)
@@ -1796,14 +1796,14 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
 					assert.True(t, cookies[1].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 
 				// Request to private app (authorized)
