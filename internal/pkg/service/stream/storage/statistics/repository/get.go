@@ -93,8 +93,6 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 	var result statistics.Aggregated
 	txn := op.TxnWithResult(r.client, &result)
 	for _, level := range level.AllLevels() {
-		level := level
-
 		// Get stats prefix for the slice state
 		pfx := r.schema.InLevel(level).InObject(objectKey)
 
