@@ -4,6 +4,7 @@ package proxy_test
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"html"
 	"io"
 	"net"
@@ -745,9 +746,9 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0&rd=%2Fsome%2Fpath`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1&rd=%2Fsome%2Fpath`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2&rd=%2Fsome%2Fpath`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0&rd=%2Fsome%2Fpath`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1&rd=%2Fsome%2Fpath`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2&rd=%2Fsome%2Fpath`))
 
 				// Select provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/_proxy/selection?provider=oidc1&rd=%2Fsome%2Fpath", nil)
@@ -860,9 +861,9 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -954,9 +955,9 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
 
 				// Provider selection
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/_proxy/selection?provider=oidc1", nil)
@@ -1178,9 +1179,9 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
-				assert.Contains(t, string(body), html.EscapeString(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc0`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
 
 				// Provider selection
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://multi.hub.keboola.local/_proxy/selection?provider=oidc1", nil)
@@ -1370,8 +1371,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`https://prefix.hub.keboola.local/_proxy/selection?provider=oidc0&rd=%2Fweb`))
-				assert.Contains(t, string(body), html.EscapeString(`https://prefix.hub.keboola.local/_proxy/selection?provider=oidc1&rd=%2Fweb`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://prefix.hub.keboola.local/_proxy/selection?provider=oidc0&rd=%2Fweb`))
+				assert.Contains(t, string(body), htmlLinkTo(`https://prefix.hub.keboola.local/_proxy/selection?provider=oidc1&rd=%2Fweb`))
 
 				// Provider selection
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/_proxy/selection?provider=oidc1&rd=%2Fweb", nil)
