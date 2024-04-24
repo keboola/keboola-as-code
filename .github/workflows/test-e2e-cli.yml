@@ -12,10 +12,11 @@ env:
   TEST_PARALLELISM: 8
   TEST_PARALLELISM_PKG: 1
   # Temporary removed project: https://keboolaglobal.slack.com/archives/C055HSMKX51/p1714024266416349
-  # {"host":"connection.north-europe.azure.keboola.com","project":10892,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10892_TOKEN }}", "legacyTransformation": true}
 #  { "host": "connection.north-europe.azure.keboola.com","project": 10890,"stagingStorage": "abs","backend": "snowflake","token": "${{ secrets.TEST_KBC_PROJECT_10890_TOKEN }}", "legacyTransformation": true },
 #  { "host": "connection.north-europe.azure.keboola.com","project": 10891,"stagingStorage": "abs","backend": "snowflake","token": "${{ secrets.TEST_KBC_PROJECT_10891_TOKEN }}", "legacyTransformation": true }
-  TEST_PROJECTS_LINUX: |
+#  { "host":"connection.north-europe.azure.keboola.com","project":10892,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10892_TOKEN }}", "legacyTransformation": true}
+#  {"host":"connection.north-europe.azure.keboola.com","project":10898,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10898_TOKEN }}", "legacyTransformation": true},
+  TEST_KBC_PROJECTS: |
     [
       {"host":"connection.keboola.com","project":8764,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8764_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.keboola.com","project":8765,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8765_TOKEN }}", "legacyTransformation": true},
@@ -24,9 +25,6 @@ env:
       {"host":"connection.europe-west3.gcp.keboola.com","project":46,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_46_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":20473,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_20473_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.north-europe.azure.keboola.com","project":20474,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_20474_TOKEN }}", "legacyTransformation": true}
-    ]
-  TEST_PROJECTS_MACOS: |
-    [
       {"host":"connection.keboola.com","project":8771,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8771_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.keboola.com","project":8772,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8772_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.keboola.com","project":8773,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8773_TOKEN }}", "legacyTransformation": true},
@@ -36,9 +34,6 @@ env:
       {"host":"connection.north-europe.azure.keboola.com","project":10896,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10896_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.north-europe.azure.keboola.com","project":10897,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10897_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.north-europe.azure.keboola.com","project":20469,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_20469_TOKEN }}", "legacyTransformation": true}
-    ]
-  TEST_PROJECTS_WINDOWS: |
-    [
       {"host":"connection.keboola.com","project":8778,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8778_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.keboola.com","project":8779,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8779_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.keboola.com","project":8780,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8780_TOKEN }}", "legacyTransformation": true},
@@ -63,13 +58,10 @@ jobs:
         include:
           - name: linux
             os: ubuntu-latest
-            projects: TEST_PROJECTS_LINUX
           - name: mac-os
             os: macos-latest
-            projects: TEST_PROJECTS_MACOS
           - name: windows
             os: windows-2022
-            projects: TEST_PROJECTS_WINDOWS
     runs-on: ${{ matrix.os }}
     steps:
       - name: Setup line endings
@@ -98,4 +90,3 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
-          TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
