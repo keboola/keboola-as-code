@@ -189,6 +189,11 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 		}).(*file)
 	}
 
+	// Replace main branch in the filter, with branch ID, if needed
+	if content.AllowTargetENV && len(content.AllowedBranches) == 1 && content.AllowedBranches[0] == model.MainBranchDef && len(content.Branches) == 1 {
+		content.AllowedBranches[0] = model.AllowedBranch(content.Branches[0].ID.String())
+	}
+
 	// Save file
 	if err := saveFile(ctx, fs, content); err != nil {
 		return err

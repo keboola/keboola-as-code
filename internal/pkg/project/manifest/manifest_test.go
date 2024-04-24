@@ -243,7 +243,7 @@ func allowTargetEnvJSON() string {
     "dataAppConfig": "app/{component_id}/{config_id}-{config_name}"
   },
   "allowedBranches": [
-    "__main__"
+    "456"
   ],
   "ignoredComponents": [],
   "templates": {
