@@ -18,7 +18,7 @@
     "dataAppConfig": "app/{component_id}/{config_name}"
   },
   "allowedBranches": [
-    "__main__"
+    "2"
   ],
   "ignoredComponents": [],
   "templates": {
@@ -33,13 +33,13 @@
   },
   "branches": [
     {
-      "id": 1,
+      "id": 2,
       "path": "main"
     }
   ],
   "configurations": [
     {
-      "branchId": 1,
+      "branchId": 2,
       "componentId": "keboola.data-apps",
       "id": "%%TEST_BRANCH_MAIN_CONFIG_DATA_APP_ID%%",
       "path": "app/keboola.data-apps/data-app",
