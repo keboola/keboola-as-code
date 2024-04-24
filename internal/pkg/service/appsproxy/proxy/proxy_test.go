@@ -1656,6 +1656,22 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "private-one-provider-selector",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Request provider selector page - no auth provider
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://oidc.hub.keboola.local/_proxy/selection", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), htmlLinkTo(`https://oidc.hub.keboola.local/_proxy/selection?provider=oidc`))
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "private-app-wakeup",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
@@ -2377,4 +2393,8 @@ func extractMetaRefreshTag(t *testing.T, body []byte) string {
 	m := regexpcache.MustCompile(`<meta http-equiv="refresh" content="0;URL='(.+)'">`).FindStringSubmatch(string(body))
 	require.NotNil(t, m)
 	return html.UnescapeString(m[1])
+}
+
+func htmlLinkTo(url string) string {
+	return fmt.Sprintf(`<a href="%s"`, html.EscapeString(url))
 }
