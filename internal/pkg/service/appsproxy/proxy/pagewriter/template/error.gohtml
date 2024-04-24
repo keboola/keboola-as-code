@@ -101,6 +101,53 @@
         .icon-primary {
             fill: var(--icon);
         }
+
+        ul.message {
+            list-style-type: none;
+            text-align: left;
+        }
+
+        pre {
+            text-align: left;
+            white-space: break-spaces;
+        }
+
+        .collapsible {
+            margin-top: 24px;
+        }
+
+        .collapsible input {
+            display: none;
+        }
+
+        .collapsible label{
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        input:not(:checked) ~ label::before {
+            content: "▸ ";
+        }
+
+        input:checked ~ label::before {
+            content: "▾ ";
+        }
+
+        input:checked ~ .collapsible-content {
+            max-height: 100%;
+        }
+
+
+        small {
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -146,14 +193,26 @@
     <br>
 
     {{ if eq (len .Messages) 1 }}
-        <p>{{index .Messages 0 }}</p>
+        <p class="message">{{index .Messages 0 }}</p>
     {{ else }}
-        <ul>
+        <ul class="message">
             {{range .Messages}}
                 <li>{{.}}</li>
             {{end}}
         </ul>
     {{ end }}
+
+    {{ if .Details }}
+        <div class="collapsible">
+            <input type="checkbox" id="more">
+            <label for="more">More info</label>
+            <div class="collapsible-content">
+                <pre>{{ .Details }}</pre>
+            </div>
+        </div>
+    {{ end}}
+
+    <br>
 
     <p>
     <small>

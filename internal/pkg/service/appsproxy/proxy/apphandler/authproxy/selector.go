@@ -91,6 +91,11 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 		s.clearCookie(w, req)
 	}
 
+	// Render selector page, if it is accessed directly
+	if req.URL.Path == selectionPagePath {
+		return s.writeSelectorPage(w, req, http.StatusOK)
+	}
+
 	// Skip selector page, if there is only one provider
 	if len(s.handlers) == 1 {
 		// The handlers variable is a map, use the first handler via a for cycle
@@ -101,11 +106,6 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 			}
 			return handler.ServeHTTPOrError(w, req)
 		}
-	}
-
-	// Render selector page, if it is accessed directly
-	if req.URL.Path == selectionPagePath {
-		return s.writeSelectorPage(w, req, http.StatusOK)
 	}
 
 	// Ignore cookie if we have already tried this provider, but the provider requires login.
@@ -124,6 +124,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 }
 
 func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.Request, status int) error {
+	// Mark provider selected
 	id := provider.ID(req.URL.Query().Get(providerQueryParam))
 	if selected, found := s.handlers[id]; found {
 		// Set cookie with the same expiration as other provider cookies
@@ -132,7 +133,7 @@ func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.
 		// Get path for redirect after sign in, it must not refer to an external URL
 		query := make(url.Values)
 		callback := req.URL.Query().Get(callbackQueryParam)
-		if callback != "" && strings.HasPrefix(callback, "/") {
+		if isAcceptedCallbackURL(callback) {
 			query.Set(callbackQueryParam, callback)
 		}
 
@@ -161,7 +162,7 @@ func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.Sel
 	for _, handler := range s.handlers {
 		query := make(url.Values)
 		query.Set(providerQueryParam, handler.ID().String())
-		if callback != "" {
+		if isAcceptedCallbackURL(callback) {
 			query.Set(callbackQueryParam, callback)
 		}
 		data.Providers = append(data.Providers, pagewriter.ProviderData{
@@ -227,4 +228,8 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 	}
 
 	return v
+}
+
+func isAcceptedCallbackURL(callback string) bool {
+	return callback != "" && callback != "/" && callback != selectionPagePath && strings.HasPrefix(callback, "/")
 }

@@ -89,7 +89,7 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	if status != http.StatusInternalServerError && userMsgProvider != nil {
 		details = errors.Format(err, errors.FormatAsSentences())
 		if errName != "" {
-			details = errName + ": " + details
+			details = errName + ":\n" + details
 		}
 	}
 

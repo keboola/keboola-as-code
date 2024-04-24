@@ -67,5 +67,11 @@ func TestOIDC(t *testing.T) {
 			AudienceClaims: []string{"aud"},
 			UserIDClaim:    "email",
 		},
+		LoginURLParameters: []proxyOptions.LoginURLParameter{
+			{
+				Name:    "prompt",
+				Default: []string{"select_account"},
+			},
+		},
 	}, oAuth2ProxyProvider)
 }

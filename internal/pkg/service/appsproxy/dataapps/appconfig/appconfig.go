@@ -3,6 +3,7 @@ package appconfig
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -109,9 +110,13 @@ func (l *Loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppCon
 		//  - It is not found error.
 		//  - There is no cached version.
 		//  - The staleCacheFallbackDuration has been exceeded.
-		return api.AppConfig{}, false, svcErrors.NewServiceUnavailableError(errors.PrefixErrorf(err,
-			`unable to load configuration for application "%s"`, appID,
-		))
+		return api.AppConfig{}, false, svcErrors.
+			NewServiceUnavailableError(errors.PrefixErrorf(err,
+				`unable to load configuration for application "%s"`, appID,
+			)).
+			WithUserMessage(fmt.Sprintf(
+				`Unable to load configuration for application "%s".`, appID,
+			))
 	}
 
 	// Cache the loaded configuration
