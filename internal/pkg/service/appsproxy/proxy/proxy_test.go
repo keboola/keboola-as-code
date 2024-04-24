@@ -23,6 +23,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/umisama/go-regexpcache"
 	"go.uber.org/atomic"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
@@ -322,6 +323,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Request to private app (authorized)
@@ -345,7 +355,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 					assert.Equal(t, "", cookies[1].Value)
@@ -353,7 +363,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
 					assert.True(t, cookies[1].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 			},
 			expectedNotifications: map[string]int{
@@ -438,13 +448,22 @@ func TestAppProxyRouter(t *testing.T) {
 					},
 				)
 
-				// Request to proxy callback (fails because of missing CSRF token)
+				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback (fails because of missing CSRF token)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				wildcards.Assert(t, "%ALogin Failed: Unable to find a valid CSRF token. Please try again.%A", string(body))
 
@@ -484,13 +503,22 @@ func TestAppProxyRouter(t *testing.T) {
 				location = response.Header.Get("Location")
 				assert.Contains(t, location, "https://oidc.hub.keboola.local/_proxy/callback?")
 
-				// Request to proxy callback (fails because of missing group)
+				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback (fails because of missing group) - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				wildcards.Assert(t, "%AYou do not have permission to access this resource.%A", string(body))
 
@@ -531,8 +559,17 @@ func TestAppProxyRouter(t *testing.T) {
 				location = response.Header.Get("Location")
 				assert.Contains(t, location, "https://oidc.hub.keboola.local/_proxy/callback?")
 
-				// Request to proxy callback (fails because of unverified email)
+				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback (fails because of unverified email) - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -567,7 +604,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
@@ -626,7 +663,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
@@ -650,7 +687,17 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
+
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 2) {
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
@@ -659,14 +706,14 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
 					assert.True(t, cookies[1].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 
 				// Request to private app (authorized but down)
@@ -675,7 +722,7 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusBadGateway, response.StatusCode)
-				body, err := io.ReadAll(response.Body)
+				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Request to application failed.`)
 			},
@@ -718,7 +765,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "multi.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 				}
 
 				// Redirect to the provider sing in page
@@ -753,7 +800,17 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
+
 				location = response.Header.Get("Location")
 				assert.Equal(t, "/some/path", location)
 
@@ -853,8 +910,17 @@ func TestAppProxyRouter(t *testing.T) {
 				location = response.Header.Get("Location")
 				assert.Contains(t, location, "https://multi.hub.keboola.local/_proxy/callback?")
 
-				// Request to proxy callback (fails because of unverified email)
+				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback (fails because of unverified email)
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -921,6 +987,15 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -1046,6 +1121,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Websocket request
@@ -1127,6 +1211,15 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -1229,6 +1322,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location = response.Header.Get("Location")
 				assert.Equal(t, location, "/api")
@@ -1303,6 +1405,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Request to private part (authorized)
@@ -1362,6 +1473,15 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -1575,6 +1695,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Request to private app (authorized but missing dns, triggers wakeup)
@@ -1640,6 +1769,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Request to private app (authorized but missing dns, triggers wakeup)
@@ -1648,7 +1786,7 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
-				body, err := io.ReadAll(response.Body)
+				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Starting your application...")
 
@@ -1696,6 +1834,15 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Request to proxy callback
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -1763,7 +1910,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
@@ -1787,6 +1934,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 2) {
@@ -1796,14 +1952,14 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
 					assert.True(t, cookies[0].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
 					assert.True(t, cookies[1].Secure)
-					assert.Equal(t, http.SameSiteLaxMode, cookies[1].SameSite)
+					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 
 				// Request to private app (authorized)
@@ -2215,4 +2371,10 @@ func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
 
 func pointer[T any](d T) *T {
 	return &d
+}
+
+func extractMetaRefreshTag(t *testing.T, body []byte) string {
+	m := regexpcache.MustCompile(`<meta http-equiv="refresh" content="0;URL='(.+)'">`).FindStringSubmatch(string(body))
+	require.NotNil(t, m)
+	return html.UnescapeString(m[1])
 }
