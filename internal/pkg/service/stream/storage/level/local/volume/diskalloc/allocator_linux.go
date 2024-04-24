@@ -31,5 +31,6 @@ func Allocated(path string) (datasize.ByteSize, error) {
 	}
 
 	// Note: Blksize is in bits not bytes
-	return datasize.ByteSize((sysStat.Blksize / 8) * sysStat.Blocks), nil
+	// Note: using type int64 for arm64 (MacOS)
+	return datasize.ByteSize((int64(sysStat.Blksize / 8)) * int64(sysStat.Blocks)), nil // nolint:unconvert
 }
