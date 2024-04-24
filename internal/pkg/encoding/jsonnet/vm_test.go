@@ -8,7 +8,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidate_Simple(t *testing.T) {
+func TestVM_Evaluate(t *testing.T) {
+	t.Parallel()
+
+	pool := NewPool(
+		func(vm *VM) *jsonnet.VM {
+			realVM := jsonnet.MakeVM()
+			realVM.Importer(NewNopImporter())
+
+			return realVM
+		},
+	)
+
+	vm := pool.Get()
+
+	out, err := vm.Evaluate("local test = 0; {a: test}", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"a":0}`, out)
+
+	_, err = vm.Evaluate("{a: test}", nil)
+	assert.EqualError(t, err, "1:5-9 Unknown variable: test")
+}
+
+func TestVM_Validate_Simple(t *testing.T) {
 	t.Parallel()
 
 	pool := NewPool(
@@ -28,7 +50,7 @@ func TestValidate_Simple(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestValidate_ShadowedGlobal(t *testing.T) {
+func TestVM_Validate_ShadowedGlobal(t *testing.T) {
 	t.Parallel()
 
 	pool := NewPool(
