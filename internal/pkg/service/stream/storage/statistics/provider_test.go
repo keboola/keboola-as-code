@@ -1,4 +1,4 @@
-package cache_test
+package statistics_test
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -40,7 +39,7 @@ func TestCaches(t *testing.T) {
 	require.NoError(t, err)
 	defer l1Cache.Stop()
 
-	l2Config := statistics.NewConfig().Cache.L2
+	l2Config := NewConfig().Cache.L2
 	l2Cache, err := cache.NewL2Cache(d.Logger(), clk, l1Cache, l2Config)
 	require.NoError(t, err)
 	defer l2Cache.Stop()
@@ -62,10 +61,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Add record (1)",
 			Prepare: func() {
-				require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, repo.Put(ctx, []PerSlice{
 					{
 						SliceKey: sliceKey1,
-						Value: statistics.Value{
+						Value: Value{
 							SlicesCount:      1,
 							FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 							LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
@@ -79,8 +78,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Local: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Local: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
@@ -88,7 +87,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 1,
 						CompressedSize:   1,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
@@ -102,10 +101,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Add record (2)",
 			Prepare: func() {
-				require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, repo.Put(ctx, []PerSlice{
 					{
 						SliceKey: sliceKey2,
-						Value: statistics.Value{
+						Value: Value{
 							SlicesCount:      1,
 							FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 							LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -119,8 +118,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Local: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Local: Value{
 						SlicesCount:      2,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -128,7 +127,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 11,
 						CompressedSize:   11,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      2,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -147,8 +146,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Local: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Local: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
@@ -156,7 +155,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 1,
 						CompressedSize:   1,
 					},
-					Staging: statistics.Value{
+					Staging: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -164,7 +163,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 10,
 						CompressedSize:   10,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      2,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -178,10 +177,10 @@ func TestCaches(t *testing.T) {
 		{
 			Description: "Add record (3)",
 			Prepare: func() {
-				require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, repo.Put(ctx, []PerSlice{
 					{
 						SliceKey: sliceKey3,
-						Value: statistics.Value{
+						Value: Value{
 							SlicesCount:      1,
 							FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 							LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -195,8 +194,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Local: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Local: Value{
 						SlicesCount:      2,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -204,7 +203,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 101,
 						CompressedSize:   101,
 					},
-					Staging: statistics.Value{
+					Staging: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -212,7 +211,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 10,
 						CompressedSize:   10,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      3,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -231,8 +230,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Local: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Local: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
@@ -240,7 +239,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 1,
 						CompressedSize:   1,
 					},
-					Staging: statistics.Value{
+					Staging: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -248,7 +247,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 10,
 						CompressedSize:   10,
 					},
-					Target: statistics.Value{
+					Target: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -256,7 +255,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 100,
 						CompressedSize:   100,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      3,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -275,8 +274,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Staging: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Staging: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
@@ -284,7 +283,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 10,
 						CompressedSize:   10,
 					},
-					Target: statistics.Value{
+					Target: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -292,7 +291,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 100,
 						CompressedSize:   100,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      2,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -311,8 +310,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Target: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Target: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -320,7 +319,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 100,
 						CompressedSize:   100,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -339,8 +338,8 @@ func TestCaches(t *testing.T) {
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
 				require.NoError(t, err)
-				assert.Equal(t, statistics.Aggregated{
-					Target: statistics.Value{
+				assert.Equal(t, Aggregated{
+					Target: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
@@ -348,7 +347,7 @@ func TestCaches(t *testing.T) {
 						UncompressedSize: 100,
 						CompressedSize:   100,
 					},
-					Total: statistics.Value{
+					Total: Value{
 						SlicesCount:      1,
 						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
