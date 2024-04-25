@@ -103,8 +103,8 @@ func (r *Repository) AggregateInterval(sinkKey key.SinkKey, since, until utctime
 			pfx.
 				GetAll(
 					r.client,
-					iterator.WithStartOffset(sinkKey.String()+"/"+since.String()),
-					iterator.WithStartOffset(sinkKey.String()+"/"+until.String()),
+					iterator.WithStartOffset(since.String()),
+					iterator.WithEndOffset(until.String()),
 				).
 				ForEach(func(v statistics.Value, header *iterator.Header) error {
 					aggregate.AggregateIntervalGroup(level, v, since, duration, &result)

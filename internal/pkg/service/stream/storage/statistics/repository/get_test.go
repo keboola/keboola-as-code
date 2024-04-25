@@ -451,6 +451,7 @@ func TestRepository_AggregateInterval(t *testing.T) {
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
 	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
+	sliceKey4 := test.NewSliceKeyOpenedAt("2000-01-02T01:00:00.000Z")
 
 	// Empty
 	v, err := repo.ProjectStats(ctx, sliceKey1.ProjectID)
@@ -504,6 +505,17 @@ func TestRepository_AggregateInterval(t *testing.T) {
 				CompressedSize:   100,
 			},
 		},
+		{
+			SliceKey: sliceKey4,
+			Value: statistics.Value{
+				SlicesCount:      2,
+				FirstRecordAt:    utctime.MustParse("2000-01-02T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-02T02:00:00.000Z"),
+				RecordsCount:     2,
+				UncompressedSize: 2,
+				CompressedSize:   2,
+			},
+		},
 	}))
 	assert.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
 	assert.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
@@ -514,6 +526,7 @@ func TestRepository_AggregateInterval(t *testing.T) {
 	result, err := repo.AggregateInterval(sliceKey1.SinkKey, since, until, time.Hour).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 
+	// Total
 	expectedTotal := statistics.Interval{
 		Since: since,
 		Until: until,
