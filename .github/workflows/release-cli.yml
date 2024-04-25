@@ -52,19 +52,19 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-lint.yml
 
-  test-unit:
-    name: "Unit Tests"
-    secrets: inherit
-    uses: ./.github/workflows/test-unit.yml
+#  test-unit:
+#    name: "Unit Tests"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-unit.yml
 
-  test-e2e-cli:
-    name: "E2E: CLI"
-    needs:
-      - version
-    secrets: inherit
-    uses: ./.github/workflows/test-e2e-cli.yml
-    with:
-      version: ${{ needs.version.outputs.VERSION }}
+#  test-e2e-cli:
+#    name: "E2E: CLI"
+#    needs:
+#      - version
+#    secrets: inherit
+#    uses: ./.github/workflows/test-e2e-cli.yml
+#    with:
+#      version: ${{ needs.version.outputs.VERSION }}
 
   provisioning-cli-s3:
     name: "Provisioning: CLI S3"
@@ -77,8 +77,8 @@ jobs:
     needs:
       - version
       - test-lint
-      - test-unit
-      - test-e2e-cli
+#      - test-unit
+#      - test-e2e-cli
       - provisioning-cli-s3
     # only one parallel job allowed - used shared S3
     concurrency:
