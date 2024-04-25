@@ -11,6 +11,8 @@ env:
   GO_VERSION: 1.22.2
   TEST_PARALLELISM: 8
   TEST_PARALLELISM_PKG: 1
+  # Temporary removed project: https://keboolaglobal.slack.com/archives/C055HSMKX51/p1714024266416349
+  # {"host":"connection.north-europe.azure.keboola.com","project":10892,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10892_TOKEN }}", "legacyTransformation": true}
   TEST_PROJECTS_LINUX: |
     [
       {"host":"connection.keboola.com","project":8764,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8764_TOKEN }}", "legacyTransformation": true},
@@ -19,8 +21,7 @@ env:
       {"host":"connection.europe-west3.gcp.keboola.com","project":45,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_45_TOKEN }}"},
       {"host":"connection.europe-west3.gcp.keboola.com","project":46,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_46_TOKEN }}"},
       {"host":"connection.north-europe.azure.keboola.com","project":10890,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10890_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.north-europe.azure.keboola.com","project":10891,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10891_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.north-europe.azure.keboola.com","project":10892,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10892_TOKEN }}", "legacyTransformation": true}
+      {"host":"connection.north-europe.azure.keboola.com","project":10891,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10891_TOKEN }}", "legacyTransformation": true}
     ]
   TEST_PROJECTS_MACOS: |
     [

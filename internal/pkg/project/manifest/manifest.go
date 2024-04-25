@@ -110,13 +110,24 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 
 		if branchIDStr != "" {
 			if branchIDInt, err := strconv.Atoi(branchIDStr); err == nil {
-				branchID := keboola.BranchID(branchIDInt)
-				if branchID != content.Branches[0].ID {
-					logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, branchID)
+				originalBranchID := content.Branches[0].ID
+				replacedBranchID := keboola.BranchID(branchIDInt)
+				if replacedBranchID != content.Branches[0].ID {
+					logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, replacedBranchID)
+					// Map branch ID in all objects
 					mapping = append(mapping, mappingItem{
-						ManifestValue: content.Branches[0].ID,
-						MemoryValue:   branchID,
+						ManifestValue: originalBranchID,
+						MemoryValue:   replacedBranchID,
 					})
+					// Map allowed branches filter
+					mapping = append(mapping, mappingItem{
+						ManifestValue: model.AllowedBranch(originalBranchID.String()),
+						MemoryValue:   model.AllowedBranch(replacedBranchID.String()),
+					})
+				}
+				// Replace main branch in the filter, with branch ID, if needed
+				if len(content.AllowedBranches) == 1 && content.AllowedBranches[0] == model.MainBranchDef {
+					content.AllowedBranches[0] = model.AllowedBranch(replacedBranchID.String())
 				}
 			} else {
 				return nil, errors.Errorf(`env %s=%s is not valid branch ID`, BranchIDOverrideENV, branchIDStr)
@@ -176,6 +187,11 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 				}
 			}
 		}).(*file)
+	}
+
+	// Replace main branch in the filter, with branch ID, if needed
+	if content.AllowTargetENV && len(content.AllowedBranches) == 1 && content.AllowedBranches[0] == model.MainBranchDef && len(content.Branches) == 1 {
+		content.AllowedBranches[0] = model.AllowedBranch(content.Branches[0].ID.String())
 	}
 
 	// Save file
