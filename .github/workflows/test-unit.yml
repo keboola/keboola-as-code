@@ -33,9 +33,6 @@ env:
 jobs:
   test:
     name: ${{ matrix.name }}
-    concurrency:
-      group: tests-unit-${{ matrix.name }}
-      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -80,6 +77,8 @@ jobs:
         run: make tests-unit
         shell: bash
         env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           DATADOG_ENABLED: false
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
           UNIT_ETCD_ENDPOINT: etcd:2379

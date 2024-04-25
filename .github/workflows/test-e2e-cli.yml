@@ -49,9 +49,6 @@ env:
 jobs:
   test:
     name: ${{ matrix.name }}
-    concurrency:
-      group: tests-e2e-cli-${{ matrix.name }}
-      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -66,6 +63,9 @@ jobs:
     steps:
       - name: Setup line endings
         run: git config --global core.autocrlf false
+
+      - name: Evaluate environment
+        run: echo "TEST_KBC_PROJECTS=$(echo $TEST_KBC_PROJECTS | envsubst)" >> $GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -90,3 +90,5 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}

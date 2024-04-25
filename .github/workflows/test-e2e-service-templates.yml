@@ -20,9 +20,6 @@ env:
 jobs:
   test:
     name: test
-    concurrency:
-      group: tests-e2e-service-templates
-      cancel-in-progress: false
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
@@ -58,6 +55,8 @@ jobs:
         run: make tests-templates-api
         shell: bash
         env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEMPLATES_ETCD_ENDPOINT: etcd:2379
           TEMPLATES_ETCD_USERNAME: root
           TEMPLATES_ETCD_PASSWORD: toor
