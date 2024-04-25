@@ -2,6 +2,9 @@
 package aggregate
 
 import (
+	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -22,4 +25,10 @@ func Aggregate(l level.Level, partial statistics.Value, out *statistics.Aggregat
 	default:
 		panic(errors.Errorf(`unexpected statistics level "%v"`, l))
 	}
+}
+
+func AggregateIntervalGroup(l level.Level, partial statistics.Value, since utctime.UTCTime, duration time.Duration, out *statistics.IntervalGroup) {
+	i := partial.FirstRecordAt.Time().Sub(since.Time()) / duration
+	Aggregate(l, partial, &out.Intervals[i].Levels)
+	Aggregate(l, partial, &out.Total.Levels)
 }

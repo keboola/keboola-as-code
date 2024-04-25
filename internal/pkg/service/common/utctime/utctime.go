@@ -29,6 +29,10 @@ func (v UTCTime) Time() time.Time {
 	return time.Time(v)
 }
 
+func (v UTCTime) Before(target UTCTime) bool {
+	return v.Time().Before(time.Time(target))
+}
+
 func (v UTCTime) After(target UTCTime) bool {
 	return v.Time().After(time.Time(target))
 }

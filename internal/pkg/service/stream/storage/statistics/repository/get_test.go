@@ -437,3 +437,213 @@ func TestRepository_MaxUsedDiskSizeBySliceIn(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, datasize.ByteSize(500), result)
 }
+
+func TestRepository_AggregateInterval(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	d, _ := dependencies.NewMockedTableSinkScope(t)
+	repo := d.StatisticsRepository()
+
+	// Fixtures
+	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
+	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
+	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
+
+	// Empty
+	v, err := repo.ProjectStats(ctx, sliceKey1.ProjectID)
+	assert.Empty(t, v)
+	assert.NoError(t, err)
+	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
+	assert.Empty(t, v)
+	assert.NoError(t, err)
+	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
+	assert.Empty(t, v)
+	assert.NoError(t, err)
+	v, err = repo.FileStats(ctx, sliceKey1.FileKey)
+	assert.Empty(t, v)
+	assert.NoError(t, err)
+	v, err = repo.SliceStats(ctx, sliceKey1)
+	assert.Empty(t, v)
+	assert.NoError(t, err)
+
+	// Add some statistics
+	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+		{
+			SliceKey: sliceKey1,
+			Value: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+			},
+		},
+		{
+			SliceKey: sliceKey2,
+			Value: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				RecordsCount:     10,
+				UncompressedSize: 10,
+				CompressedSize:   10,
+			},
+		},
+		{
+			SliceKey: sliceKey3,
+			Value: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+				RecordsCount:     100,
+				UncompressedSize: 100,
+				CompressedSize:   100,
+			},
+		},
+	}))
+	assert.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
+	assert.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
+
+	// Aggregate interval
+	since := utctime.MustParse("2000-01-01T00:00:00.000Z")
+	until := utctime.MustParse("2000-01-02T00:00:00.000Z")
+	result, err := repo.AggregateInterval(sliceKey1.SinkKey, since, until, time.Hour).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+
+	expectedTotal := statistics.Interval{
+		Since: since,
+		Until: until,
+		Levels: statistics.Aggregated{
+			Local: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+			},
+			Staging: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				RecordsCount:     10,
+				UncompressedSize: 10,
+				CompressedSize:   10,
+			},
+			Target: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+				RecordsCount:     100,
+				UncompressedSize: 100,
+				CompressedSize:   100,
+			},
+			Total: statistics.Value{
+				SlicesCount:      3,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+				RecordsCount:     111,
+				UncompressedSize: 111,
+				CompressedSize:   111,
+			},
+		},
+	}
+
+	assert.Equal(t, expectedTotal, result.Total)
+	require.Len(t, result.Intervals, 24)
+
+	// First hour
+	expectedInterval := statistics.Interval{
+		Since: since,
+		Until: until.Add(time.Duration(-23) * time.Hour),
+	}
+	assert.Equal(t, expectedInterval, result.Intervals[0])
+
+	// Second hour
+	expectedInterval = statistics.Interval{
+		Since: since.Add(time.Duration(1) * time.Hour),
+		Until: until.Add(time.Duration(-22) * time.Hour),
+		Levels: statistics.Aggregated{
+			Local: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+			},
+			Total: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+			},
+		},
+	}
+	assert.Equal(t, expectedInterval, result.Intervals[1])
+
+	// Third hour
+	expectedInterval = statistics.Interval{
+		Since: since.Add(time.Duration(2) * time.Hour),
+		Until: until.Add(time.Duration(-21) * time.Hour),
+		Levels: statistics.Aggregated{
+			Staging: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				RecordsCount:     10,
+				UncompressedSize: 10,
+				CompressedSize:   10,
+			},
+			Total: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				RecordsCount:     10,
+				UncompressedSize: 10,
+				CompressedSize:   10,
+			},
+		},
+	}
+	assert.Equal(t, expectedInterval, result.Intervals[2])
+
+	// Fourth hour
+	expectedInterval = statistics.Interval{
+		Since: since.Add(time.Duration(3) * time.Hour),
+		Until: until.Add(time.Duration(-20) * time.Hour),
+		Levels: statistics.Aggregated{
+			Target: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+				RecordsCount:     100,
+				UncompressedSize: 100,
+				CompressedSize:   100,
+			},
+			Total: statistics.Value{
+				SlicesCount:      1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+				RecordsCount:     100,
+				UncompressedSize: 100,
+				CompressedSize:   100,
+			},
+		},
+	}
+	assert.Equal(t, expectedInterval, result.Intervals[3])
+
+	// Remaining hours
+	for i := 4; i < 23; i++ {
+		expectedInterval = statistics.Interval{
+			Since: since.Add(time.Duration(i) * time.Hour),
+			Until: until.Add(time.Duration(i-23) * time.Hour),
+		}
+		assert.Equal(t, expectedInterval, result.Intervals[i])
+	}
+}

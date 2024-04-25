@@ -7,6 +7,8 @@
 package statistics
 
 import (
+	"time"
+
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -52,6 +54,17 @@ type Aggregated struct {
 	Total Value
 }
 
+type IntervalGroup struct {
+	Total     Interval
+	Intervals []Interval
+}
+
+type Interval struct {
+	Since  utctime.UTCTime
+	Until  utctime.UTCTime
+	Levels Aggregated
+}
+
 func (v Value) Add(v2 Value) Value {
 	v.SlicesCount += v2.SlicesCount
 	v.RecordsCount += v2.RecordsCount
@@ -65,4 +78,22 @@ func (v Value) Add(v2 Value) Value {
 		v.LastRecordAt = v2.LastRecordAt
 	}
 	return v
+}
+
+func NewIntervalGroup(since, until utctime.UTCTime, d time.Duration) IntervalGroup {
+	group := IntervalGroup{
+		Total: Interval{
+			Since: since,
+			Until: until,
+		},
+	}
+	for since.Before(until) {
+		next := since.Add(d)
+		group.Intervals = append(group.Intervals, Interval{
+			Since: since,
+			Until: next,
+		})
+		since = next
+	}
+	return group
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -84,6 +86,31 @@ func (r *Repository) MaxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int)
 					}
 					return nil
 				}))
+	}
+	return txn
+}
+
+// AggregateInterval statistics from the database for given time interval.
+func (r *Repository) AggregateInterval(sinkKey key.SinkKey, since, until utctime.UTCTime, duration time.Duration) *op.TxnOp[statistics.IntervalGroup] {
+	result := statistics.NewIntervalGroup(since, until, duration)
+	txn := op.TxnWithResult(r.client, &result)
+	for _, level := range level.AllLevels() {
+		// Get stats prefix for the slice state
+		pfx := r.schema.InLevel(level).InObject(sinkKey)
+
+		// Sum
+		txn.Then(
+			pfx.
+				GetAll(
+					r.client,
+					iterator.WithStartOffset(sinkKey.String()+"/"+since.String()),
+					iterator.WithStartOffset(sinkKey.String()+"/"+until.String()),
+				).
+				ForEach(func(v statistics.Value, header *iterator.Header) error {
+					aggregate.AggregateIntervalGroup(level, v, since, duration, &result)
+					return nil
+				}),
+		)
 	}
 	return txn
 }
