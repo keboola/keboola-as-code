@@ -11,7 +11,7 @@ import (
 func TestVM_Evaluate(t *testing.T) {
 	t.Parallel()
 
-	pool := NewPool[any](
+	pool := NewVMPool[any](
 		func(vm *VM[any]) *jsonnet.VM {
 			realVM := jsonnet.MakeVM()
 			realVM.Importer(NewNopImporter())
@@ -33,7 +33,7 @@ func TestVM_Evaluate(t *testing.T) {
 func TestVM_Validate_Simple(t *testing.T) {
 	t.Parallel()
 
-	pool := NewPool[any](
+	pool := NewVMPool[any](
 		func(vm *VM[any]) *jsonnet.VM {
 			realVM := jsonnet.MakeVM()
 			realVM.Importer(NewNopImporter())
@@ -53,7 +53,7 @@ func TestVM_Validate_Simple(t *testing.T) {
 func TestVM_Validate_ShadowedGlobal(t *testing.T) {
 	t.Parallel()
 
-	pool := NewPool[any](
+	pool := NewVMPool[any](
 		func(vm *VM[any]) *jsonnet.VM {
 			realVM := jsonnet.MakeVM()
 			realVM.Importer(NewNopImporter())

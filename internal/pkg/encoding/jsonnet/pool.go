@@ -6,12 +6,12 @@ import (
 	"github.com/google/go-jsonnet"
 )
 
-type Pool[T any] struct {
+type VMPool[T any] struct {
 	pool *sync.Pool
 }
 
-func NewPool[T any](factory func(*VM[T]) *jsonnet.VM) *Pool[T] {
-	return &Pool[T]{
+func NewVMPool[T any](factory func(*VM[T]) *jsonnet.VM) *VMPool[T] {
+	return &VMPool[T]{
 		pool: &sync.Pool{
 			New: func() any {
 				vm := &VM[T]{
@@ -27,10 +27,10 @@ func NewPool[T any](factory func(*VM[T]) *jsonnet.VM) *Pool[T] {
 	}
 }
 
-func (p *Pool[T]) Get() *VM[T] {
+func (p *VMPool[T]) Get() *VM[T] {
 	return p.pool.Get().(*VM[T])
 }
 
-func (p *Pool[T]) Put(vm *VM[T]) {
+func (p *VMPool[T]) Put(vm *VM[T]) {
 	p.pool.Put(vm)
 }

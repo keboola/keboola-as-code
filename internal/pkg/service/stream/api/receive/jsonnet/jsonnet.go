@@ -39,8 +39,8 @@ const (
 	bodyPathFnName      = "_bodyPath"
 )
 
-func NewPool() *jsonnet.Pool[*receivectx.Context] {
-	return jsonnet.NewPool(
+func NewPool() *jsonnet.VMPool[*receivectx.Context] {
+	return jsonnet.NewVMPool(
 		func(vm *jsonnet.VM[*receivectx.Context]) *jsonnetLib.VM {
 			realVM := jsonnetLib.MakeVM()
 			realVM.Importer(jsonnet.NewNopImporter())
