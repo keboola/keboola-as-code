@@ -11,7 +11,7 @@ import (
 )
 
 type Renderer struct {
-	jsonnetPool *jsonnetWrapper.VMPool[*receivectx.Context]
+	jsonnetPool *jsonnetWrapper.VMPool[receivectx.Context]
 }
 
 func NewRenderer() *Renderer {
