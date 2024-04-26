@@ -44,7 +44,7 @@ func NewPool() *jsonnet.VMPool[*receivectx.Context] {
 		func(vm *jsonnet.VM[*receivectx.Context]) *jsonnetLib.VM {
 			realVM := jsonnetLib.MakeVM()
 			realVM.Importer(jsonnet.NewNopImporter())
-			RegisterFunctions(realVM, vm)
+			registerFunctions(realVM, vm)
 			return realVM
 		},
 	)
@@ -62,7 +62,7 @@ func Evaluate(vm *jsonnet.VM[*receivectx.Context], reqCtx *receivectx.Context, t
 	return out, err
 }
 
-func RegisterFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM[*receivectx.Context]) {
+func registerFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM[*receivectx.Context]) {
 	// Global functions
 	realVM.NativeFunction(ipFn("Ip", vm))
 	realVM.NativeFunction(headerStrFn("HeaderStr", vm))
