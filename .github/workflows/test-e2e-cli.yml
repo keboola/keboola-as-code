@@ -33,7 +33,7 @@ env:
       {"host":"connection.north-europe.azure.keboola.com","project":10893,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10893_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.north-europe.azure.keboola.com","project":10896,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10896_TOKEN }}", "legacyTransformation": true},
       {"host":"connection.north-europe.azure.keboola.com","project":10897,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10897_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.north-europe.azure.keboola.com","project":10898,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10898_TOKEN }}", "legacyTransformation": true}
+      {"host":"connection.north-europe.azure.keboola.com","project":20469,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_20469_TOKEN }}", "legacyTransformation": true}
     ]
   TEST_PROJECTS_WINDOWS: |
     [
