@@ -98,6 +98,7 @@ Aliases:
   template             t
   template repository  r, repo
   remote table         table
+  remote create table  create-table
 
 Flags:
   -h, --help                 print help for command

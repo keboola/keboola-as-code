@@ -83,6 +83,7 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 		"r",
 		"repo",
 		"table",
+		"create-table",
 	}, names)
 }
 
