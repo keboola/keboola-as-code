@@ -12,20 +12,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type VM struct {
+type VM[T any] struct {
 	lock    sync.Mutex
 	vm      *jsonnet.VM
 	err     error
-	payload any
+	payload T
 }
 
 // GetPayload returns the payload of the current evaluation.
 // Can be used by custom functions for request specific values.
-func (vm *VM) GetPayload() any {
+func (vm *VM[T]) GetPayload() T {
 	return vm.payload
 }
 
-func (vm *VM) Evaluate(code string, payload any) (jsonOut string, err error) {
+func (vm *VM[T]) Evaluate(code string, payload T) (jsonOut string, err error) {
 	if vm.err != nil {
 		return "", vm.err
 	}
@@ -63,7 +63,7 @@ func (vm *VM) Evaluate(code string, payload any) (jsonOut string, err error) {
 	return out.String(), nil
 }
 
-func (vm *VM) Validate(code string) error {
+func (vm *VM[T]) Validate(code string) error {
 	_, err := parser.SnippetToAst(code, "", vm.vm.GlobalVars()...)
 	return err
 }

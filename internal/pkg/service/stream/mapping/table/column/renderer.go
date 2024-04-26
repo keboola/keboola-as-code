@@ -11,7 +11,7 @@ import (
 )
 
 type Renderer struct {
-	jsonnetPool *jsonnetWrapper.Pool
+	jsonnetPool *jsonnetWrapper.Pool[*receivectx.Context]
 }
 
 func NewRenderer() *Renderer {

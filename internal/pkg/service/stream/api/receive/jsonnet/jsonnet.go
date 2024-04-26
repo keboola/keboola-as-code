@@ -39,9 +39,9 @@ const (
 	bodyPathFnName      = "_bodyPath"
 )
 
-func NewPool() *jsonnet.Pool {
+func NewPool() *jsonnet.Pool[*receivectx.Context] {
 	return jsonnet.NewPool(
-		func(vm *jsonnet.VM) *jsonnetLib.VM {
+		func(vm *jsonnet.VM[*receivectx.Context]) *jsonnetLib.VM {
 			realVM := jsonnetLib.MakeVM()
 			realVM.Importer(jsonnet.NewNopImporter())
 			RegisterFunctions(realVM, vm)
@@ -50,7 +50,7 @@ func NewPool() *jsonnet.Pool {
 	)
 }
 
-func Evaluate(vm *jsonnet.VM, reqCtx *receivectx.Context, template string) (string, error) {
+func Evaluate(vm *jsonnet.VM[*receivectx.Context], reqCtx *receivectx.Context, template string) (string, error) {
 	out, err := vm.Evaluate(template, reqCtx)
 	if err != nil {
 		var jsonnetErr jsonnetLib.RuntimeError
@@ -62,7 +62,7 @@ func Evaluate(vm *jsonnet.VM, reqCtx *receivectx.Context, template string) (stri
 	return out, err
 }
 
-func RegisterFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM) {
+func RegisterFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM[*receivectx.Context]) {
 	// Global functions
 	realVM.NativeFunction(ipFn("Ip", vm))
 	realVM.NativeFunction(headerStrFn("HeaderStr", vm))
@@ -84,7 +84,7 @@ func RegisterFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM) {
 	realVM.NativeFunction(bodyPathInternalFn(vm))
 }
 
-func ipFn(fnName string, vm *jsonnet.VM) *jsonnet.NativeFunction {
+func ipFn(fnName string, vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
 		Func: func(params []any) (any, error) {
@@ -92,13 +92,13 @@ func ipFn(fnName string, vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			return jsonnet.ValueToJSONType(reqCtx.IP.String()), nil
 		},
 	}
 }
 
-func headerStrFn(fnName string, vm *jsonnet.VM) *jsonnet.NativeFunction {
+func headerStrFn(fnName string, vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
 		Func: func(params []any) (any, error) {
@@ -106,13 +106,13 @@ func headerStrFn(fnName string, vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			return jsonnet.ValueToJSONType(reqCtx.HeadersStr()), nil
 		},
 	}
 }
 
-func bodyStrFn(fnName string, vm *jsonnet.VM) *jsonnet.NativeFunction {
+func bodyStrFn(fnName string, vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
 		Func: func(params []any) (any, error) {
@@ -120,7 +120,7 @@ func bodyStrFn(fnName string, vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			return jsonnet.ValueToJSONType(reqCtx.Body), nil
 		},
 	}
@@ -182,7 +182,7 @@ func bodyFn() ast.Node {
 	return node
 }
 
-func nowInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
+func nowInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   nowFnName,
 		Params: ast.Identifiers{"format"},
@@ -201,13 +201,13 @@ func nowInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.Errorf(`datetime format "%s" is invalid: %w`, format, err)
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			return jsonnet.ValueToJSONType(formatter.FormatString(reqCtx.Now.UTC())), nil
 		},
 	}
 }
 
-func headersMapInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
+func headersMapInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: headersMapFnName,
 		Func: func(params []any) (any, error) {
@@ -215,13 +215,13 @@ func headersMapInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			return jsonnet.ValueToJSONType(reqCtx.HeadersMap()), nil
 		},
 	}
 }
 
-func headerValueInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
+func headerValueInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   headerFnName,
 		Params: ast.Identifiers{"path", "default"},
@@ -236,7 +236,7 @@ func headerValueInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.New("parameter must be a string")
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			value := reqCtx.Headers.Get(name)
 			if value == "" {
 				if defaultVal == ThrowErrOnUndefined {
@@ -250,7 +250,7 @@ func headerValueInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 	}
 }
 
-func bodyMapInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
+func bodyMapInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: bodyMapFnName,
 		Func: func(params []any) (any, error) {
@@ -258,7 +258,7 @@ func bodyMapInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			bodyMap, err := reqCtx.BodyMap()
 			if err != nil {
 				return nil, err
@@ -268,7 +268,7 @@ func bodyMapInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 	}
 }
 
-func bodyPathInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
+func bodyPathInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   bodyPathFnName,
 		Params: ast.Identifiers{"path", "default"},
@@ -283,7 +283,7 @@ func bodyPathInternalFn(vm *jsonnet.VM) *jsonnet.NativeFunction {
 				return nil, errors.New("first parameter must be a string")
 			}
 
-			reqCtx := vm.GetPayload().(*receivectx.Context)
+			reqCtx := vm.GetPayload()
 			bodyMap, err := reqCtx.BodyMap()
 			if err != nil {
 				return nil, err
