@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
@@ -382,6 +383,21 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("SinkStatistics", func() {
+		Meta("openapi:summary", "Sink statistics")
+		Description("Get statistics of the sink.")
+		Result(SinkStatisticsResult)
+		Payload(GetSinkStatisticsRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+			MaximumIntervalLengthExceededError()
+		})
+	})
+
 	// Task endpoints --------------------------------------------------------------------------------------------------
 
 	Method("GetTask", func() {
@@ -458,6 +474,27 @@ var SinkKeyRequest = func() {
 	SourceKeyRequest()
 	Attribute("sinkId", SinkID)
 	Required("sinkId")
+}
+
+var StatisticsRequest = func() {
+	Attribute("since", String, func() {
+		Description("Starting date and time of the statistics.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("since")
+	Attribute("until", String, func() {
+		Description("Ending date and time of the statistics.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("until")
+	Attribute("duration", Int64, func() {
+		Description("Duration of each interval in milliseconds.")
+		Example(123456789)
+		Minimum(int64(time.Hour))
+	})
+	Required("duration")
 }
 
 // Keys for responses --------------------------------------------------------------------------------------------------
@@ -775,6 +812,42 @@ var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
 	Attribute("settings", SettingsPatch)
 })
 
+var GetSinkStatisticsRequest = Type("GetSinkStatisticsRequest", func() {
+	SinkKeyRequest()
+	StatisticsRequest()
+})
+
+var SinkStatisticsResult = Type("SinkStatisticsResult", func() {
+	Attribute("total", Interval)
+	Attribute("intervals", Intervals)
+})
+
+var Intervals = Type("Intervals", ArrayOf(Interval))
+
+var Interval = Type("Interval", func() {
+	Attribute("since", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("until", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("levels", Levels)
+})
+
+var Levels = Type("Levels", func() {
+	Attribute("local", Level)
+	Attribute("staging", Level)
+	Attribute("target", Level)
+	Attribute("total", Level)
+})
+
+var Level = Type("Level", func() {
+	Attribute("recordsCount", Int)
+	Attribute("uncompressedSize", Int)
+})
+
 var SinkFieldsRW = func() {
 	Attribute("type", SinkType)
 	Attribute("name", String, func() {
@@ -1055,6 +1128,10 @@ func TaskNotFoundError() {
 
 func ForbiddenProtectedSettingError() {
 	GenericError(StatusNotFound, "forbidden", "Modification of protected settings is forbidden.", `Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".`)
+}
+
+func MaximumIntervalLengthExceededError() {
+	GenericError(StatusUnprocessableEntity, "maximumIntervalLengthExceeded", "Interval length exceeded.", fmt.Sprintf(`Maximum interval length is %s.`, (24*time.Hour).String()))
 }
 
 func fieldValidationRule(targetStruct any, fieldName string, ruleName string) string {
