@@ -288,6 +288,13 @@ type UpdateSinkResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// SinkStatisticsResponseBody is the type of the "stream" service
+// "SinkStatistics" endpoint HTTP response body.
+type SinkStatisticsResponseBody struct {
+	Total     *IntervalResponseBody   `form:"total,omitempty" json:"total,omitempty" xml:"total,omitempty"`
+	Intervals []*IntervalResponseBody `form:"intervals,omitempty" json:"intervals,omitempty" xml:"intervals,omitempty"`
+}
+
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
@@ -599,6 +606,42 @@ type DeleteSinkStreamAPISinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// SinkStatisticsStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SinkStatistics" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SinkStatisticsStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkStatisticsStreamAPISinkNotFoundResponseBody is the type of the "stream"
+// service "SinkStatistics" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type SinkStatisticsStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody is the type
+// of the "stream" service "SinkStatistics" endpoint HTTP response body for the
+// "stream.api.maximumIntervalLengthExceeded" error.
+type SinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetTaskStreamAPITaskNotFoundResponseBody is the type of the "stream" service
 // "GetTask" endpoint HTTP response body for the "stream.api.taskNotFound"
 // error.
@@ -771,6 +814,27 @@ type SettingResultResponseBody struct {
 	Protected bool `form:"protected" json:"protected" xml:"protected"`
 	// Validation rules as a string definition.
 	Validation *string `form:"validation,omitempty" json:"validation,omitempty" xml:"validation,omitempty"`
+}
+
+// IntervalResponseBody is used to define fields on response body types.
+type IntervalResponseBody struct {
+	Since  *string             `form:"since,omitempty" json:"since,omitempty" xml:"since,omitempty"`
+	Until  *string             `form:"until,omitempty" json:"until,omitempty" xml:"until,omitempty"`
+	Levels *LevelsResponseBody `form:"levels,omitempty" json:"levels,omitempty" xml:"levels,omitempty"`
+}
+
+// LevelsResponseBody is used to define fields on response body types.
+type LevelsResponseBody struct {
+	Local   *LevelResponseBody `form:"local,omitempty" json:"local,omitempty" xml:"local,omitempty"`
+	Staging *LevelResponseBody `form:"staging,omitempty" json:"staging,omitempty" xml:"staging,omitempty"`
+	Target  *LevelResponseBody `form:"target,omitempty" json:"target,omitempty" xml:"target,omitempty"`
+	Total   *LevelResponseBody `form:"total,omitempty" json:"total,omitempty" xml:"total,omitempty"`
+}
+
+// LevelResponseBody is used to define fields on response body types.
+type LevelResponseBody struct {
+	RecordsCount     *int `form:"recordsCount,omitempty" json:"recordsCount,omitempty" xml:"recordsCount,omitempty"`
+	UncompressedSize *int `form:"uncompressedSize,omitempty" json:"uncompressedSize,omitempty" xml:"uncompressedSize,omitempty"`
 }
 
 // SettingPatchRequestBody is used to define fields on request body types.
@@ -1099,6 +1163,22 @@ func NewUpdateSinkResponseBody(res *stream.Task) *UpdateSinkResponseBody {
 	return body
 }
 
+// NewSinkStatisticsResponseBody builds the HTTP response body from the result
+// of the "SinkStatistics" endpoint of the "stream" service.
+func NewSinkStatisticsResponseBody(res *stream.SinkStatisticsResult) *SinkStatisticsResponseBody {
+	body := &SinkStatisticsResponseBody{}
+	if res.Total != nil {
+		body.Total = marshalStreamIntervalToIntervalResponseBody(res.Total)
+	}
+	if res.Intervals != nil {
+		body.Intervals = make([]*IntervalResponseBody, len(res.Intervals))
+		for i, val := range res.Intervals {
+			body.Intervals[i] = marshalStreamIntervalToIntervalResponseBody(val)
+		}
+	}
+	return body
+}
+
 // NewGetTaskResponseBody builds the HTTP response body from the result of the
 // "GetTask" endpoint of the "stream" service.
 func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
@@ -1396,6 +1476,42 @@ func NewDeleteSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *D
 	return body
 }
 
+// NewSinkStatisticsStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatistics" endpoint of the
+// "stream" service.
+func NewSinkStatisticsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsStreamAPISourceNotFoundResponseBody {
+	body := &SinkStatisticsStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkStatisticsStreamAPISinkNotFoundResponseBody builds the HTTP response
+// body from the result of the "SinkStatistics" endpoint of the "stream"
+// service.
+func NewSinkStatisticsStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsStreamAPISinkNotFoundResponseBody {
+	body := &SinkStatisticsStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody builds
+// the HTTP response body from the result of the "SinkStatistics" endpoint of
+// the "stream" service.
+func NewSinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody(res *stream.GenericError) *SinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody {
+	body := &SinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -1616,6 +1732,21 @@ func NewDeleteSinkPayload(branchID string, sourceID string, sinkID string, stora
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSinkStatisticsPayload builds a stream service SinkStatistics endpoint
+// payload.
+func NewSinkStatisticsPayload(branchID string, sourceID string, sinkID string, since string, until string, intervalDuration int64, storageAPIToken string) *stream.SinkStatisticsPayload {
+	v := &stream.SinkStatisticsPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.Since = since
+	v.Until = until
+	v.IntervalDuration = intervalDuration
 	v.StorageAPIToken = storageAPIToken
 
 	return v

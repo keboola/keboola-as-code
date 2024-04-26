@@ -59,6 +59,8 @@ type Service interface {
 	UpdateSink(context.Context, dependencies.SinkRequestScope, *UpdateSinkPayload) (res *Task, err error)
 	// Delete the sink.
 	DeleteSink(context.Context, dependencies.SinkRequestScope, *DeleteSinkPayload) (err error)
+	// Get statistics of the sink.
+	SinkStatistics(context.Context, dependencies.SinkRequestScope, *SinkStatisticsPayload) (res *SinkStatisticsResult, err error)
 	// Get details of a task.
 	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 }
@@ -83,7 +85,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [19]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "GetTask"}
+var MethodNames = [20]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatistics", "GetTask"}
 
 // ID of the branch.
 type BranchID = keboola.BranchID
@@ -225,6 +227,26 @@ type HTTPSource struct {
 	URL string
 }
 
+type Interval struct {
+	Since  *string
+	Until  *string
+	Levels *Levels
+}
+
+type Intervals []*Interval
+
+type Level struct {
+	RecordsCount     *int
+	UncompressedSize *int
+}
+
+type Levels struct {
+	Local   *Level
+	Staging *Level
+	Target  *Level
+	Total   *Level
+}
+
 // ListSinksPayload is the payload type of the stream service ListSinks method.
 type ListSinksPayload struct {
 	StorageAPIToken string
@@ -334,6 +356,28 @@ type Sink struct {
 
 // Unique ID of the sink.
 type SinkID = key.SinkID
+
+// SinkStatisticsPayload is the payload type of the stream service
+// SinkStatistics method.
+type SinkStatisticsPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
+	// Starting date and time of the statistics.
+	Since string
+	// Ending date and time of the statistics.
+	Until string
+	// Duration of each interval in milliseconds.
+	IntervalDuration int64
+}
+
+// SinkStatisticsResult is the result type of the stream service SinkStatistics
+// method.
+type SinkStatisticsResult struct {
+	Total     *Interval
+	Intervals Intervals
+}
 
 type SinkType = definition.SinkType
 

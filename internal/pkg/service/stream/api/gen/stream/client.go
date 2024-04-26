@@ -34,11 +34,12 @@ type Client struct {
 	ListSinksEndpoint            goa.Endpoint
 	UpdateSinkEndpoint           goa.Endpoint
 	DeleteSinkEndpoint           goa.Endpoint
+	SinkStatisticsEndpoint       goa.Endpoint
 	GetTaskEndpoint              goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, refreshSourceTokens, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, getTask goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, refreshSourceTokens, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatistics, getTask goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:         aPIRootIndex,
 		APIVersionIndexEndpoint:      aPIVersionIndex,
@@ -58,6 +59,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		ListSinksEndpoint:            listSinks,
 		UpdateSinkEndpoint:           updateSink,
 		DeleteSinkEndpoint:           deleteSink,
+		SinkStatisticsEndpoint:       sinkStatistics,
 		GetTaskEndpoint:              getTask,
 	}
 }
@@ -284,6 +286,21 @@ func (c *Client) UpdateSink(ctx context.Context, p *UpdateSinkPayload) (res *Tas
 func (c *Client) DeleteSink(ctx context.Context, p *DeleteSinkPayload) (err error) {
 	_, err = c.DeleteSinkEndpoint(ctx, p)
 	return
+}
+
+// SinkStatistics calls the "SinkStatistics" endpoint of the "stream" service.
+// SinkStatistics may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - "stream.api.maximumIntervalLengthExceeded" (type *GenericError): Interval length exceeded.
+//   - error: internal error
+func (c *Client) SinkStatistics(ctx context.Context, p *SinkStatisticsPayload) (res *SinkStatisticsResult, err error) {
+	var ires any
+	ires, err = c.SinkStatisticsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SinkStatisticsResult), nil
 }
 
 // GetTask calls the "GetTask" endpoint of the "stream" service.

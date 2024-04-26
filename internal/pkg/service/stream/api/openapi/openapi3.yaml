@@ -1227,6 +1227,138 @@ paths:
                                 message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics:
+        get:
+            tags:
+                - configuration
+            summary: Sink statistics
+            description: Get statistics of the sink.
+            operationId: SinkStatistics
+            parameters:
+                - name: since
+                  in: query
+                  description: Starting date and time of the statistics.
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: Starting date and time of the statistics.
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                  example: "2022-04-28T14:20:04.000Z"
+                - name: until
+                  in: query
+                  description: Ending date and time of the statistics.
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: Ending date and time of the statistics.
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                  example: "2022-04-28T14:20:04.000Z"
+                - name: intervalDuration
+                  in: query
+                  description: Duration of each interval in milliseconds.
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: integer
+                    description: Duration of each interval in milliseconds.
+                    example: 123456789
+                    format: int64
+                    minimum: 3.6e+12
+                  example: 123456789
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SinkStatisticsResult'
+                            example:
+                                total:
+                                    since: "2022-04-28T14:20:04.000Z"
+                                    until: "2022-04-28T14:20:04.000Z"
+                                    levels:
+                                        local:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        staging:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        target:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        total:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                intervals:
+                                    - since: "2022-04-28T14:20:04.000Z"
+                                      until: "2022-04-28T14:20:04.000Z"
+                                      levels:
+                                        local:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        staging:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        target:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        total:
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+                "422":
+                    description: 'stream.api.maximumIntervalLengthExceeded: Interval length exceeded.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 422
+                                error: stream.api.maximumIntervalLengthExceeded
+                                message: Maximum interval length is 24h0m0s.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
         post:
             tags:
@@ -1640,6 +1772,73 @@ components:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             required:
                 - url
+        Interval:
+            type: object
+            properties:
+                levels:
+                    $ref: '#/components/schemas/Levels'
+                since:
+                    type: string
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                until:
+                    type: string
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+            example:
+                since: "2022-04-28T14:20:04.000Z"
+                until: "2022-04-28T14:20:04.000Z"
+                levels:
+                    local:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    staging:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    target:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    total:
+                        recordsCount: 1
+                        uncompressedSize: 1
+        Level:
+            type: object
+            properties:
+                recordsCount:
+                    type: integer
+                    example: 1
+                    format: int64
+                uncompressedSize:
+                    type: integer
+                    example: 1
+                    format: int64
+            example:
+                recordsCount: 1
+                uncompressedSize: 1
+        Levels:
+            type: object
+            properties:
+                local:
+                    $ref: '#/components/schemas/Level'
+                staging:
+                    $ref: '#/components/schemas/Level'
+                target:
+                    $ref: '#/components/schemas/Level'
+                total:
+                    $ref: '#/components/schemas/Level'
+            example:
+                local:
+                    recordsCount: 1
+                    uncompressedSize: 1
+                staging:
+                    recordsCount: 1
+                    uncompressedSize: 1
+                target:
+                    recordsCount: 1
+                    uncompressedSize: 1
+                total:
+                    recordsCount: 1
+                    uncompressedSize: 1
         PaginatedResponse:
             type: object
             properties:
@@ -1891,6 +2090,64 @@ components:
                 - version
                 - name
                 - description
+        SinkStatisticsResult:
+            type: object
+            properties:
+                intervals:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Interval'
+                    example:
+                        - since: "2022-04-28T14:20:04.000Z"
+                          until: "2022-04-28T14:20:04.000Z"
+                          levels:
+                            local:
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            staging:
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            target:
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            total:
+                                recordsCount: 1
+                                uncompressedSize: 1
+                total:
+                    $ref: '#/components/schemas/Interval'
+            example:
+                total:
+                    since: "2022-04-28T14:20:04.000Z"
+                    until: "2022-04-28T14:20:04.000Z"
+                    levels:
+                        local:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        staging:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        target:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        total:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                intervals:
+                    - since: "2022-04-28T14:20:04.000Z"
+                      until: "2022-04-28T14:20:04.000Z"
+                      levels:
+                        local:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        staging:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        target:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        total:
+                            recordsCount: 1
+                            uncompressedSize: 1
         SinksList:
             type: object
             properties:

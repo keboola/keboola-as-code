@@ -667,6 +667,72 @@ paths:
                 - https
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics:
+        get:
+            tags:
+                - configuration
+            summary: Sink statistics
+            description: Get statistics of the sink.
+            operationId: SinkStatistics
+            parameters:
+                - name: since
+                  in: query
+                  description: Starting date and time of the statistics.
+                  required: true
+                  type: string
+                  format: date-time
+                - name: until
+                  in: query
+                  description: Ending date and time of the statistics.
+                  required: true
+                  type: string
+                  format: date-time
+                - name: intervalDuration
+                  in: query
+                  description: Duration of each interval in milliseconds.
+                  required: true
+                  type: integer
+                  minimum: 3.6e+12
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+                - name: sinkId
+                  in: path
+                  description: Unique ID of the sink.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/StreamSinkStatisticsResponseBody'
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamSinkStatisticsStreamAPISinkNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+                "422":
+                    description: Unprocessable Entity response.
+                    schema:
+                        $ref: '#/definitions/StreamSinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
         post:
             tags:
@@ -899,6 +965,76 @@ definitions:
             url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
         required:
             - url
+    IntervalResponseBody:
+        title: IntervalResponseBody
+        type: object
+        properties:
+            levels:
+                $ref: '#/definitions/LevelsResponseBody'
+            since:
+                type: string
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            until:
+                type: string
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+        example:
+            since: "2022-04-28T14:20:04.000Z"
+            until: "2022-04-28T14:20:04.000Z"
+            levels:
+                local:
+                    recordsCount: 1
+                    uncompressedSize: 1
+                staging:
+                    recordsCount: 1
+                    uncompressedSize: 1
+                target:
+                    recordsCount: 1
+                    uncompressedSize: 1
+                total:
+                    recordsCount: 1
+                    uncompressedSize: 1
+    LevelResponseBody:
+        title: LevelResponseBody
+        type: object
+        properties:
+            recordsCount:
+                type: integer
+                example: 1
+                format: int64
+            uncompressedSize:
+                type: integer
+                example: 1
+                format: int64
+        example:
+            recordsCount: 1
+            uncompressedSize: 1
+    LevelsResponseBody:
+        title: LevelsResponseBody
+        type: object
+        properties:
+            local:
+                $ref: '#/definitions/LevelResponseBody'
+            staging:
+                $ref: '#/definitions/LevelResponseBody'
+            target:
+                $ref: '#/definitions/LevelResponseBody'
+            total:
+                $ref: '#/definitions/LevelResponseBody'
+        example:
+            local:
+                recordsCount: 1
+                uncompressedSize: 1
+            staging:
+                recordsCount: 1
+                uncompressedSize: 1
+            target:
+                recordsCount: 1
+                uncompressedSize: 1
+            total:
+                recordsCount: 1
+                uncompressedSize: 1
     PaginatedResponseResponseBody:
         title: PaginatedResponseResponseBody
         type: object
@@ -2860,6 +2996,143 @@ definitions:
             - sinks
     StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody:
         title: StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Source not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sourceNotFound
+            message: Source "github-pull-requests" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamSinkStatisticsResponseBody:
+        title: StreamSinkStatisticsResponseBody
+        type: object
+        properties:
+            intervals:
+                type: array
+                items:
+                    $ref: '#/definitions/IntervalResponseBody'
+                example:
+                    - since: "2022-04-28T14:20:04.000Z"
+                      until: "2022-04-28T14:20:04.000Z"
+                      levels:
+                        local:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        staging:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        target:
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        total:
+                            recordsCount: 1
+                            uncompressedSize: 1
+            total:
+                $ref: '#/definitions/IntervalResponseBody'
+        example:
+            total:
+                since: "2022-04-28T14:20:04.000Z"
+                until: "2022-04-28T14:20:04.000Z"
+                levels:
+                    local:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    staging:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    target:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    total:
+                        recordsCount: 1
+                        uncompressedSize: 1
+            intervals:
+                - since: "2022-04-28T14:20:04.000Z"
+                  until: "2022-04-28T14:20:04.000Z"
+                  levels:
+                    local:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    staging:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    target:
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    total:
+                        recordsCount: 1
+                        uncompressedSize: 1
+    StreamSinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody:
+        title: StreamSinkStatisticsStreamAPIMaximumIntervalLengthExceededResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Interval length exceeded.
+        example:
+            statusCode: 422
+            error: stream.api.maximumIntervalLengthExceeded
+            message: Maximum interval length is 24h0m0s.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamSinkStatisticsStreamAPISinkNotFoundResponseBody:
+        title: StreamSinkStatisticsStreamAPISinkNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Sink not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sinkNotFound
+            message: Sink "github-changed-files" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamSinkStatisticsStreamAPISourceNotFoundResponseBody:
+        title: StreamSinkStatisticsStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
