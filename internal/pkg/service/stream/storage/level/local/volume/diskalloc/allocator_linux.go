@@ -30,6 +30,8 @@ func Allocated(path string) (datasize.ByteSize, error) {
 		return 0, nil
 	}
 
-	// Note: Blksize is in bits not bytes
-	return datasize.ByteSize((sysStat.Blksize / 8) * sysStat.Blocks), nil
+	// Notes:
+	// 1. "/ 8": Blksize is in bits not bytes
+	// 2. The type of fields can vary depending on the architecture (int32/int64), so retyping it to int64 is necessary.
+	return datasize.ByteSize((int64(sysStat.Blksize / 8)) * int64(sysStat.Blocks)), nil // nolint:unconvert
 }
