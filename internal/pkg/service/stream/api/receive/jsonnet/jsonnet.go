@@ -92,7 +92,7 @@ func ipFn(fnName string, vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFun
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			return jsonnet.ValueToJSONType(reqCtx.IP.String()), nil
 		},
 	}
@@ -106,7 +106,7 @@ func headerStrFn(fnName string, vm *jsonnet.VM[*receivectx.Context]) *jsonnet.Na
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			return jsonnet.ValueToJSONType(reqCtx.HeadersStr()), nil
 		},
 	}
@@ -120,7 +120,7 @@ func bodyStrFn(fnName string, vm *jsonnet.VM[*receivectx.Context]) *jsonnet.Nati
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			return jsonnet.ValueToJSONType(reqCtx.Body), nil
 		},
 	}
@@ -201,7 +201,7 @@ func nowInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunction 
 				return nil, errors.Errorf(`datetime format "%s" is invalid: %w`, format, err)
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			return jsonnet.ValueToJSONType(formatter.FormatString(reqCtx.Now.UTC())), nil
 		},
 	}
@@ -215,7 +215,7 @@ func headersMapInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFu
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			return jsonnet.ValueToJSONType(reqCtx.HeadersMap()), nil
 		},
 	}
@@ -236,7 +236,7 @@ func headerValueInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeF
 				return nil, errors.New("parameter must be a string")
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			value := reqCtx.Headers.Get(name)
 			if value == "" {
 				if defaultVal == ThrowErrOnUndefined {
@@ -258,7 +258,7 @@ func bodyMapInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunct
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			bodyMap, err := reqCtx.BodyMap()
 			if err != nil {
 				return nil, err
@@ -283,7 +283,7 @@ func bodyPathInternalFn(vm *jsonnet.VM[*receivectx.Context]) *jsonnet.NativeFunc
 				return nil, errors.New("first parameter must be a string")
 			}
 
-			reqCtx := vm.GetPayload()
+			reqCtx := vm.Payload()
 			bodyMap, err := reqCtx.BodyMap()
 			if err != nil {
 				return nil, err

@@ -19,9 +19,9 @@ type VM[T any] struct {
 	payload T
 }
 
-// GetPayload returns the payload of the current evaluation.
+// Payload returns the payload of the current evaluation.
 // Can be used by custom functions for request specific values.
-func (vm *VM[T]) GetPayload() T {
+func (vm *VM[T]) Payload() T {
 	return vm.payload
 }
 
