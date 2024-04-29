@@ -3,6 +3,7 @@ package table
 import (
 	"github.com/spf13/cobra"
 
+	createTable "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/detail"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/download"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/import"
@@ -20,6 +21,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/long`),
 	}
 	cmd.AddCommand(
+		createTable.Command(p),
 		detail.Command(p),
 		_import.Command(p),
 		preview.Command(p),
