@@ -21,6 +21,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set TEST_KBC_PROJECTS
+        uses: ./.github/actions/export-kbc-projects
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          projects: ${{ vars.TEST_KBC_PROJECTS }}
+
       - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:

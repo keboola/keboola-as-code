@@ -11,12 +11,6 @@ env:
   GO_VERSION: 1.22.2
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
-  # Temporary removed project: https://keboolaglobal.slack.com/archives/C055HSMKX51/p1714024266416349
-#  { "host": "connection.north-europe.azure.keboola.com","project": 10890,"stagingStorage": "abs","backend": "snowflake","token": "$TEST_KBC_PROJECT_10890_TOKEN", "legacyTransformation": true },
-#  { "host": "connection.north-europe.azure.keboola.com","project": 10891,"stagingStorage": "abs","backend": "snowflake","token": "$TEST_KBC_PROJECT_10891_TOKEN", "legacyTransformation": true }
-#  { "host":"connection.north-europe.azure.keboola.com","project":10892,"stagingStorage":"abs","backend":"snowflake","token":"$TEST_KBC_PROJECT_10892_TOKEN", "legacyTransformation": true}
-#  {"host":"connection.north-europe.azure.keboola.com","project":10898,"stagingStorage":"abs","backend":"snowflake","token":"$TEST_KBC_PROJECT_10898_TOKEN", "legacyTransformation": true},
-
 jobs:
   test:
     name: ${{ matrix.name }}
@@ -34,12 +28,15 @@ jobs:
     steps:
       - name: Setup line endings
         run: git config --global core.autocrlf false
-
-      - name: Evaluate environment
-        run: echo "TEST_KBC_PROJECTS=$(echo $TEST_KBC_PROJECTS | envsubst)" >> $GITHUB_ENV
-
+      
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set TEST_KBC_PROJECTS
+        uses: ./.github/actions/export-kbc-projects
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          projects: ${{ vars.TEST_KBC_PROJECTS }}
 
       - name: Load Go cache
         uses: ./.github/actions/go-cache
@@ -63,3 +60,4 @@ jobs:
           VERSION: ${{ inputs.version }}
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS: ${{ env.TEST_KBC_PROJECTS }}
