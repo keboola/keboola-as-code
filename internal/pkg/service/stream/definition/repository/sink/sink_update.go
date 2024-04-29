@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Update a Branch, if the entity changes between Read and Write phase, then the operation is retried.
 func (r *Repository) Update(k key.SinkKey, now time.Time, by definition.By, versionDescription string, updateFn func(definition.Sink) (definition.Sink, error)) *op.AtomicOp[definition.Sink] {
 	return r.update(k, now, by, versionDescription, func(sink definition.Sink) (definition.Sink, error) {
 		// Store old state

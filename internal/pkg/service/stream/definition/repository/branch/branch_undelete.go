@@ -9,6 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
+// Undelete a soft-deleted Branch and cascade undelete all nested Sources and Sinks,
+// if they were deleted in cascade with the Branch (SoftDeletable.Deleted.Directly == false).
 func (r *Repository) Undelete(k key.BranchKey, now time.Time, by definition.By) *op.AtomicOp[definition.Branch] {
 	// Move entity from the deleted to the active prefix
 	var created definition.Branch

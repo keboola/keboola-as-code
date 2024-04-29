@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
+// Undelete a soft-deleted Source and cascade undelete all nested Sinks,
+// if they were deleted in cascade with the Source (SoftDeletable.Deleted.Directly == false).
 func (r *Repository) Undelete(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
 	var undeleted definition.Source
 	return op.Atomic(r.client, &undeleted).

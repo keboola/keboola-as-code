@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
+// Undelete a soft-deleted Sink.
 func (r *Repository) Undelete(k key.SinkKey, now time.Time, by definition.By) *op.AtomicOp[definition.Sink] {
 	var undeleted definition.Sink
 	return op.Atomic(r.client, &undeleted).

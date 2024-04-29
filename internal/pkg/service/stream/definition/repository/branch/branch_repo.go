@@ -35,7 +35,7 @@ func NewRepository(d dependencies) *Repository {
 	}
 }
 
-// save Branch on create or update, trigger connected plugins to enrich the operation.
+// save Branch on create or update, triggers connected plugins to enrich the operation.
 func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) op.Op {
 	// Call plugins
 	r.plugins.Executor().OnBranchSave(ctx, now, by, old, updated)
