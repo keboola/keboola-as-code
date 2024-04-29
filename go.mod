@@ -67,15 +67,15 @@ require (
 	go.etcd.io/etcd/tests/v3 v3.5.13
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0
-	go.opentelemetry.io/otel v1.25.0
+	go.opentelemetry.io/otel v1.26.0
 	go.opentelemetry.io/otel/bridge/opencensus v1.25.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0
-	go.opentelemetry.io/otel/metric v1.25.0
+	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/sdk v1.25.0
 	go.opentelemetry.io/otel/sdk/metric v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.16.1
 	goa.design/plugins/v3 v3.16.1
