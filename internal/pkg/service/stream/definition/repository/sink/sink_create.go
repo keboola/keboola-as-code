@@ -11,6 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
+// Create a new stream Sink.
+// - If there is a deleted Sink with the same key, the Undelete operation is performed.
+// - If the Sink already exists, the ResourceAlreadyExistsError is returned.
+// - If the MaxSinksPerSource limit is exceeded, the CountLimitReachedError is returned.
+// - If the MaxSinkVersionsPerSink limit is exceeded, the CountLimitReachedError is returned.
 func (r *Repository) Create(input *definition.Sink, now time.Time, by definition.By, versionDescription string) *op.AtomicOp[definition.Sink] {
 	k := input.SinkKey
 	var created definition.Sink

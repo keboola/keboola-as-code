@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
-// Create a branch that already exists in the Storage API and in the Stream Service database.
+// Create a branch (that already exists in the Storage API) in the Stream Service database.
 // - If there is a deleted Branch with the same key, the Undelete operation is performed.
 // - If the Branch already exists, the ResourceAlreadyExistsError is returned.
 // - If the MaxBranchesPerProject limit is exceeded, the CountLimitReachedError is returned.
@@ -40,7 +40,7 @@ func (r *Repository) Create(input *definition.Branch, now time.Time, by definiti
 			// Save
 			return r.save(ctx, now, by, nil, &created)
 		}).
-		// Update the input entity after a successful operation
+		// Update the input entity, it the operation is successful
 		OnResult(func(entity definition.Branch) {
 			*input = entity
 		})

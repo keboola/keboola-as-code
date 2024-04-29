@@ -4,6 +4,16 @@ definition/branch/active/123/567
 {
   "projectId": 123,
   "branchId": 567,
+  "undeleted": {
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
   "isDefault": false
 }
 >>>>>
@@ -222,9 +232,9 @@ definition/source/active/123/567/my-source
     }
   },
   "version": {
-    "number": 2,
-    "hash": "5e5f72638d0103fa",
-    "modifiedAt": "2000-01-01T04:00:00.000Z",
+    "number": 1,
+    "hash": "419a32b072570054",
+    "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
       "tokenId": "111",
@@ -232,7 +242,7 @@ definition/source/active/123/567/my-source
       "userId": "222",
       "userName": "Some User"
     },
-    "description": "Undeleted to version \"1\"."
+    "description": "Create source"
   },
   "undeleted": {
     "at": "2000-01-01T04:00:00.000Z",

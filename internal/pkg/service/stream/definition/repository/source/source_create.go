@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
-// Create a new Source.
+// Create a new stream Source.
 // - If there is a deleted Source with the same key, the Undelete operation is performed.
 // - If the Source already exists, the ResourceAlreadyExistsError is returned.
 // - If the MaxSourcesPerBranch limit is exceeded, the CountLimitReachedError is returned.
@@ -28,7 +28,7 @@ func (r *Repository) Create(input *definition.Source, now time.Time, by definiti
 		ReadOp(r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error {
 			return serviceError.NewResourceAlreadyExistsError("source", k.SourceID.String(), "branch")
 		})).
-		// Get deleted entity, if any, to undelete it.
+		// Get deleted entity, if any, to undelete it
 		ReadOp(r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)).
 		// Create
 		Write(func(ctx context.Context) op.Op {

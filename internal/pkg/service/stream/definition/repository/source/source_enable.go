@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Enable Source, and cascade enable all nested Sinks, if they were disabled in cascade with the Source (Switchable.Disabled.Directly == false).
 func (r *Repository) Enable(k key.SourceKey, now time.Time, by definition.By) *op.AtomicOp[definition.Source] {
 	var enabled definition.Source
 	return op.Atomic(r.client, &enabled).

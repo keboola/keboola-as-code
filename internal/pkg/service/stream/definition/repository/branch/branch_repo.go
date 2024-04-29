@@ -15,10 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 )
 
-const (
-	MaxBranchesPerProject = 100
-)
-
 type Repository struct {
 	client  etcd.KV
 	plugins *plugin.Plugins
@@ -39,6 +35,7 @@ func NewRepository(d dependencies) *Repository {
 	}
 }
 
+// save Branch on create or update, trigger connected plugins to enrich the operation.
 func (r *Repository) save(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) op.Op {
 	// Call plugins
 	r.plugins.Executor().OnBranchSave(ctx, now, by, old, updated)

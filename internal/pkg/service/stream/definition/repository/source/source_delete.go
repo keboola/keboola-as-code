@@ -25,28 +25,28 @@ func (r *Repository) SoftDelete(k key.SourceKey, now time.Time, by definition.By
 }
 
 func (r *Repository) deleteSourcesOnBranchDelete() {
-	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
-		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(updated.BranchKey, now, by, false))
+	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, original, deleted *definition.Branch) {
+		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(deleted.BranchKey, now, by, false))
 	})
 }
 
 // softDeleteAllFrom the parent key.
 func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, directly bool) *op.AtomicOp[[]definition.Source] {
-	var allOld, allDeleted []definition.Source
+	var allOriginal, allDeleted []definition.Source
 	atomicOp := op.Atomic(r.client, &allDeleted)
 
 	// Get or list
 	switch k := parentKey.(type) {
 	case key.SourceKey:
-		atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Source) { allOld = []definition.Source{entity} }))
+		atomicOp.ReadOp(r.Get(k).WithOnResult(func(entity definition.Source) { allOriginal = []definition.Source{entity} }))
 	default:
-		atomicOp.ReadOp(r.List(parentKey).WithAllTo(&allOld))
+		atomicOp.ReadOp(r.List(parentKey).WithAllTo(&allOriginal))
 	}
 
 	// Iterate all
 	atomicOp.Write(func(ctx context.Context) op.Op {
 		txn := op.Txn(r.client)
-		for _, old := range allOld {
+		for _, old := range allOriginal {
 			old := old
 
 			// Mark deleted

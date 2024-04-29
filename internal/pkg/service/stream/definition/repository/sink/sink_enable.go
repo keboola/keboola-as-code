@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Enable Sink.
 func (r *Repository) Enable(k key.SinkKey, now time.Time, by definition.By) *op.AtomicOp[definition.Sink] {
 	var enabled definition.Sink
 	return op.Atomic(r.client, &enabled).

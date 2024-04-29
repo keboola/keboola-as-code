@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Disable Sink.
 func (r *Repository) Disable(k key.SinkKey, now time.Time, by definition.By, reason string) *op.AtomicOp[definition.Sink] {
 	var enabled definition.Sink
 	return op.Atomic(r.client, &enabled).
@@ -23,7 +24,7 @@ func (r *Repository) Disable(k key.SinkKey, now time.Time, by definition.By, rea
 }
 
 func (r *Repository) disableSinksOnSourceDisable() {
-	r.plugins.Collection().OnSourceSave(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) {
+	r.plugins.Collection().OnSourceSave(func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) {
 		if updated.IsDisabledAt(now) {
 			reason := "Auto-disabled with the parent source."
 			op.AtomicFromCtx(ctx).AddFrom(r.disableAllFrom(updated.SourceKey, now, by, reason, false))

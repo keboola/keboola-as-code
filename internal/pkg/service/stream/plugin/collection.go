@@ -17,24 +17,24 @@ type Collection struct {
 	onSliceSave  fnList[onSliceSaveFn]
 }
 
-type onBranchSaveFn func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch)
+type onBranchSaveFn func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Branch)
 
-type onSourceSaveFn func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source)
+type onSourceSaveFn func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source)
 
-type onSinkSaveFn func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink)
+type onSinkSaveFn func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink)
 
-type onFileSaveFn func(ctx context.Context, now time.Time, old, updated *storage.File)
+type onFileSaveFn func(ctx context.Context, now time.Time, original, updated *storage.File)
 
-type onSliceSaveFn func(ctx context.Context, now time.Time, old, updated *storage.Slice)
+type onSliceSaveFn func(ctx context.Context, now time.Time, original, updated *storage.Slice)
 
 func (c *Collection) OnBranchSave(fn onBranchSaveFn) {
 	c.onBranchSave = append(c.onBranchSave, fn)
 }
 
 func (c *Collection) OnBranchDelete(fn onBranchSaveFn) {
-	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
-		if isDelete(now, old, updated) {
-			fn(ctx, now, by, old, updated)
+	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, original, deleted *definition.Branch) {
+		if isDelete(now, original, deleted) {
+			fn(ctx, now, by, original, deleted)
 		}
 	})
 }

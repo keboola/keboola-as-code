@@ -7,6 +7,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
+const (
+	MaxBranchesPerProject = 100
+)
+
 func (r *Repository) checkMaxBranchesPerProject(k keboola.ProjectID, newCount int64) op.Op {
 	return r.schema.
 		Active().InProject(k).Count(r.client).

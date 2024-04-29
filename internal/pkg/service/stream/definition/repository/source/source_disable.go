@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Disable Source, and cascade disable all nested Sinks.
 func (r *Repository) Disable(k key.SourceKey, now time.Time, by definition.By, reason string) *op.AtomicOp[definition.Source] {
 	var enabled definition.Source
 	return op.Atomic(r.client, &enabled).
@@ -23,7 +24,7 @@ func (r *Repository) Disable(k key.SourceKey, now time.Time, by definition.By, r
 }
 
 func (r *Repository) disableSourcesOnBranchDisable() {
-	r.plugins.Collection().OnBranchSave(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
+	r.plugins.Collection().OnBranchSave(func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Branch) {
 		if updated.IsDisabledAt(now) {
 			reason := "Auto-disabled with the parent branch."
 			op.AtomicFromCtx(ctx).AddFrom(r.disableAllFrom(updated.BranchKey, now, by, reason, false))
