@@ -391,6 +391,9 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics")
 			Meta("openapi:tag:configuration")
+			Param("since")
+			Param("until")
+			Param("intervalDuration")
 			Response(StatusOK)
 			SourceNotFoundError()
 			SinkNotFoundError()
@@ -489,12 +492,12 @@ var StatisticsRequest = func() {
 		Example("2022-04-28T14:20:04.000Z")
 	})
 	Required("until")
-	Attribute("duration", Int64, func() {
+	Attribute("intervalDuration", Int64, func() {
 		Description("Duration of each interval in milliseconds.")
 		Example(123456789)
 		Minimum(int64(time.Hour))
 	})
-	Required("duration")
+	Required("intervalDuration")
 }
 
 // Keys for responses --------------------------------------------------------------------------------------------------
