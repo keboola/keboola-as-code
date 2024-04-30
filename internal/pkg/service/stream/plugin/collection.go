@@ -40,9 +40,9 @@ func (c *Collection) OnBranchDelete(fn onBranchSaveFn) {
 }
 
 func (c *Collection) OnBranchUndelete(fn onBranchSaveFn) {
-	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) {
-		if isUndelete(now, old, updated) {
-			fn(ctx, now, by, old, updated)
+	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Branch) {
+		if isUndelete(now, original, updated) {
+			fn(ctx, now, by, original, updated)
 		}
 	})
 }
@@ -52,17 +52,17 @@ func (c *Collection) OnSourceSave(fn onSourceSaveFn) {
 }
 
 func (c *Collection) OnSourceDelete(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) {
-		if isDelete(now, old, updated) {
-			fn(ctx, now, by, old, updated)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) {
+		if isDelete(now, original, updated) {
+			fn(ctx, now, by, original, updated)
 		}
 	})
 }
 
 func (c *Collection) OnSourceUndelete(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) {
-		if isUndelete(now, old, updated) {
-			fn(ctx, now, by, old, updated)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) {
+		if isUndelete(now, original, updated) {
+			fn(ctx, now, by, original, updated)
 		}
 	})
 }
@@ -72,17 +72,17 @@ func (c *Collection) OnSinkSave(fn onSinkSaveFn) {
 }
 
 func (c *Collection) OnSinkActivation(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) {
-		if isActivation(now, old, updated) {
-			fn(ctx, now, by, old, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) {
+		if isActivation(now, original, updated) {
+			fn(ctx, now, by, original, updated)
 		}
 	})
 }
 
 func (c *Collection) OnSinkDeactivation(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) {
-		if isDeactivation(now, old, updated) {
-			fn(ctx, now, by, old, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) {
+		if isDeactivation(now, original, updated) {
+			fn(ctx, now, by, original, updated)
 		}
 	})
 }

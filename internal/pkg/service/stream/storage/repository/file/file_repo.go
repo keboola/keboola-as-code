@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
@@ -22,6 +23,7 @@ import (
 // Repository provides database operations with the model.File entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
+	logger     log.Logger
 	client     etcd.KV
 	schema     schema.File
 	config     level.Config
@@ -34,6 +36,7 @@ type Repository struct {
 }
 
 type dependencies interface {
+	Logger() log.Logger
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
@@ -42,6 +45,7 @@ type dependencies interface {
 
 func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff, volumes *volumeRepo.Repository) *Repository {
 	r := &Repository{
+		logger:     d.Logger().WithComponent("file.repository"),
 		client:     d.EtcdClient(),
 		schema:     schema.ForFile(d.EtcdSerde()),
 		config:     cfg,
@@ -52,9 +56,10 @@ func NewRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff,
 		sinkTypes:  make(map[definition.SinkType]bool),
 	}
 
-	// r.openFileOnSinkActivation()
-	// r.closeFileOnSinkDeactivation()
-	// r.rotateFileOnSinkModification()
+	r.openFileOnSinkActivation()
+	r.closeFileOnSinkDeactivation()
+	r.rotateFileOnSinkModification()
+
 	return r
 }
 
@@ -133,6 +138,6 @@ func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.
 //	r.sinkTypes[v] = true
 //}
 
-func (r *Repository) isSinkWithLocalStorage(sink definition.Sink) bool {
+func (r *Repository) isSinkWithLocalStorage(sink *definition.Sink) bool {
 	return sink.Type == definition.SinkTypeTable && sink.Table.Type == definition.TableTypeKeboola
 }

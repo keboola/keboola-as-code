@@ -1,6 +1,11 @@
 package volume
 
 import (
+	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"sync"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -16,25 +21,54 @@ import (
 // Repository provides database operations with the storage.Metadata entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
-	client etcd.KV
-	schema schema.Volume
+	process *servicectx.Process
+	logger  log.Logger
+	client  *etcd.Client
+	schema  schema.Volume
+	volumes *etcdop.Mirror[volume.Metadata, volume.Metadata]
 }
 
 type dependencies interface {
+	Logger() log.Logger
+	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 }
 
-func NewRepository(d dependencies) *Repository {
-	return &Repository{
-		client: d.EtcdClient(),
-		schema: schema.New(d.EtcdSerde()),
+func NewRepository(d dependencies) (*Repository, error) {
+	r := &Repository{
+		process: d.Process(),
+		logger:  d.Logger().WithComponent("volume.repository"),
+		client:  d.EtcdClient(),
+		schema:  schema.New(d.EtcdSerde()),
 	}
+
+	if err := r.watchVolumes(); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+func (r *Repository) watchVolumes() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	r.process.OnShutdown(func(ctx context.Context) {
+		cancel()
+		r.logger.Info(ctx, "closing volumes stream")
+		wg.Wait()
+		r.logger.Info(ctx, "closed volumes stream")
+	})
+
+	var errCh <-chan error
+	r.volumes, errCh = etcdop.SetupFullMirror(r.logger, r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).StartMirroring(ctx, wg)
+
+	return <-errCh
 }
 
 // AssignVolumes assigns volumes to a new file.
-func (r *Repository) AssignVolumes(allVolumes []volume.Metadata, cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
-	return assignment.VolumesFor(allVolumes, cfg, fileOpenedAt.UnixNano())
+func (r *Repository) AssignVolumes(cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
+	return assignment.VolumesFor(r.volumes.All(), cfg, fileOpenedAt.UnixNano())
 }
 
 // ListWriterVolumes lists volumes opened by writers.

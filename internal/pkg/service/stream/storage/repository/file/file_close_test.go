@@ -22,10 +22,11 @@ import (
 
 func TestFileRepository_CloseAllIn(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
+	ctx := context.Background()
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	by := test.ByUser()
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -58,11 +59,11 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	// Create sink
 	// -----------------------------------------------------------------------------------------------------------------
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+	require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
+	require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 	sink := test.NewSink(sinkKey)
-	require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
+	require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 
 	// Create 2 files, with 2 slices
 	// -----------------------------------------------------------------------------------------------------------------
@@ -70,12 +71,12 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	clk.Add(time.Hour)
 	require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
-	// Close the last file
+	// Disable Sink, it triggers file closing
 	// -----------------------------------------------------------------------------------------------------------------
 	clk.Add(time.Hour)
 	etcdLogs.Reset()
-	require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
-	closeAllInEtcdLogs := etcdLogs.String()
+	require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "test reason").Do(ctx).Err())
+	closeEtcdLogs := etcdLogs.String()
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
@@ -115,7 +116,7 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
   003 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
   004 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
 ✔️  TXN | succeeded: true
-`, closeAllInEtcdLogs)
+`, closeEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
@@ -182,10 +183,5 @@ storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/m
 }
 >>>>>
 `
-	etcdhelper.AssertKVsString(t, client, expectedEtcdState, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
-
-	// Call CloseAllIn again - no change
-	clk.Add(time.Hour)
-	require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, expectedEtcdState, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }
