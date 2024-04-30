@@ -54,7 +54,8 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	mock := &mocked{Mocked: commonMock, config: cfg}
 
 	backoff := model.NoRandomizationBackoff()
-	serviceScp := newServiceScope(mock, cfg, backoff)
+	serviceScp, err := newServiceScope(mock, cfg, backoff)
+	require.NoError(t, err)
 
 	mock.DebugLogger().Truncate()
 	mock.MockedHTTPTransport().Reset()

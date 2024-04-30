@@ -20,7 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
-func TestFileRepository_CloseAllIn(t *testing.T) {
+func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -32,14 +32,14 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
 
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
-	fileRepo := storageRepo.File()
 	volumeRepo := storageRepo.Volume()
 
 	// Log etcd operations
@@ -56,132 +56,34 @@ func TestFileRepository_CloseAllIn(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create sink
+	// Create sinks, it triggers files creation
 	// -----------------------------------------------------------------------------------------------------------------
-	branch := test.NewBranch(branchKey)
-	require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
-	source := test.NewSource(sourceKey)
-	require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-	sink := test.NewSink(sinkKey)
-	require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
+		sink1 := test.NewSink(sinkKey1)
+		require.NoError(t, defRepo.Sink().Create(&sink1, clk.Now(), by, "Create sink").Do(ctx).Err())
+		sink2 := test.NewSink(sinkKey2)
+		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), by, "Create sink").Do(ctx).Err())
+	}
 
-	// Create 2 files, with 2 slices
+	// Disable Source, it in cascade disables Sinks, it triggers files closing
 	// -----------------------------------------------------------------------------------------------------------------
-	require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
-	clk.Add(time.Hour)
-	require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
+	var closeEtcdLogs string
+	{
+		clk.Add(time.Hour)
+		etcdLogs.Reset()
+		require.NoError(t, defRepo.Source().Disable(sourceKey, clk.Now(), by, "test reason").Do(ctx).Err())
+		closeEtcdLogs = etcdLogs.String()
+	}
 
-	// Disable Sink, it triggers file closing
+	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	clk.Add(time.Hour)
-	etcdLogs.Reset()
-	require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "test reason").Do(ctx).Err())
-	closeEtcdLogs := etcdLogs.String()
+	etcdlogger.Assert(t, ``, closeEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdlogger.Assert(t, `
-// CloseAllIn - AtomicOp - Read Phase
-➡️  TXN
-  ➡️  THEN:
-  // Sink
-  001 ➡️  GET "definition/sink/active/123/456/my-source/my-sink-1"
-  // Local files
-  002 ➡️  GET ["storage/file/level/local/123/456/my-source/my-sink-1/", "storage/file/level/local/123/456/my-source/my-sink-10")
-  // Local slices
-  003 ➡️  GET ["storage/slice/level/local/123/456/my-source/my-sink-1/", "storage/slice/level/local/123/456/my-source/my-sink-10")
-✔️  TXN | succeeded: true
-
-// CloseAllIn - AtomicOp - Write Phase
-➡️  TXN
-  ➡️  IF:
-  // Sink
-  001 "definition/sink/active/123/456/my-source/my-sink-1" MOD GREATER 0
-  002 "definition/sink/active/123/456/my-source/my-sink-1" MOD LESS %d
-  // Local files
-  003 ["storage/file/level/local/123/456/my-source/my-sink-1/", "storage/file/level/local/123/456/my-source/my-sink-10") MOD GREATER 0
-  004 ["storage/file/level/local/123/456/my-source/my-sink-1/", "storage/file/level/local/123/456/my-source/my-sink-10") MOD LESS %d
-  005 "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  006 "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z" MOD GREATER 0
-  // Local slices
-  007 ["storage/slice/level/local/123/456/my-source/my-sink-1/", "storage/slice/level/local/123/456/my-source/my-sink-10") MOD GREATER 0
-  008 ["storage/slice/level/local/123/456/my-source/my-sink-1/", "storage/slice/level/local/123/456/my-source/my-sink-10") MOD LESS %d
-  009 "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  010 "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z" MOD GREATER 0
-  ➡️  THEN:
-  // Save closed file - in two copies, in "all" and <level> prefix
-  001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z"
-  002 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z"
-  // Save closed slice - in two copies, in "all" and <level> prefix
-  003 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
-  004 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z"
-✔️  TXN | succeeded: true
-`, closeEtcdLogs)
-
-	// Check etcd state
-	// -----------------------------------------------------------------------------------------------------------------
-	expectedEtcdState := `
-<<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z
------
-{
-  %A
-  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
-  %A
-  "state": "closing",
-  "closingAt": "2000-01-01T02:00:00.000Z",
-  %A
-}
->>>>>
-
-<<<<<
-storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z
------
-{
-  %A
-  "fileOpenedAt": "2000-01-01T02:00:00.000Z",
-  %A
-  "state": "closing",
-  "closingAt": "2000-01-01T03:00:00.000Z",
-  %A
-}
->>>>>
-
-<<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 456,
-  "sourceId": "my-source",
-  "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
-  "volumeId": "my-volume-1",
-  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
-  "type": "csv",
-  "state": "closing",
-  "closingAt": "2000-01-01T02:00:00.000Z",
-  %A
-}
->>>>>
-
-<<<<<
-storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 456,
-  "sourceId": "my-source",
-  "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T02:00:00.000Z",
-  "volumeId": "my-volume-1",
-  "sliceOpenedAt": "2000-01-01T02:00:00.000Z",
-  "type": "csv",
-  "state": "closing",
-  "closingAt": "2000-01-01T03:00:00.000Z",
-  %A
-}
->>>>>
-`
-	etcdhelper.AssertKVsString(t, client, expectedEtcdState, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_close_test_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }

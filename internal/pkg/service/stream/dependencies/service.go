@@ -62,7 +62,7 @@ func NewServiceScope(
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentScp, cfg, model.DefaultBackoff()), nil
+	return newServiceScope(parentScp, cfg, model.DefaultBackoff())
 }
 
 func newParentScopes(
@@ -113,7 +113,9 @@ func newParentScopes(
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff model.RetryBackoff) ServiceScope {
+func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
+	var err error
+
 	d := &serviceScope{}
 
 	d.parentScopes = parentScp
@@ -124,9 +126,12 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 
-	d.storageRepository = storageRepo.New(cfg.Storage.Level, d, storageBackoff)
+	d.storageRepository, err = storageRepo.New(cfg.Storage.Level, d, storageBackoff)
+	if err != nil {
+		return nil, err
+	}
 
-	return d
+	return d, nil
 }
 
 func (v *serviceScope) Plugins() *plugin.Plugins {

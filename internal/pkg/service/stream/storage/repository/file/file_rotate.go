@@ -42,6 +42,7 @@ func (r *Repository) rotate(now time.Time, k key.SinkKey, source *definition.Sou
 
 	// Load Sink entity, if needed
 	if sink == nil {
+		sink = &definition.Sink{}
 		atomicOp.Read(func(ctx context.Context) op.Op {
 			return r.definition.Sink().Get(k).WithResultTo(sink)
 		})

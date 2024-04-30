@@ -21,8 +21,8 @@ import (
 // Repository provides database operations with the storage.Metadata entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
-	process *servicectx.Process
 	logger  log.Logger
+	process *servicectx.Process
 	client  *etcd.Client
 	schema  schema.Volume
 	volumes *etcdop.Mirror[volume.Metadata, volume.Metadata]
@@ -37,8 +37,8 @@ type dependencies interface {
 
 func NewRepository(d dependencies) (*Repository, error) {
 	r := &Repository{
-		process: d.Process(),
 		logger:  d.Logger().WithComponent("volume.repository"),
+		process: d.Process(),
 		client:  d.EtcdClient(),
 		schema:  schema.New(d.EtcdSerde()),
 	}

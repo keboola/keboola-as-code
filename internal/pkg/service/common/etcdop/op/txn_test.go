@@ -347,7 +347,7 @@ func TestTxnOp_Then_CalledWithTxn_1(t *testing.T) {
 	t.Parallel()
 
 	client := etcd.KV(nil)
-	assert.PanicsWithError(t, `invalid operation[0]: op is a transaction, use ThenTxn, not Then`, func() {
+	assert.PanicsWithError(t, `invalid operation[0]: op is a transaction, use Merge or ThenTxn, not Then`, func() {
 		Txn(client).Then(Txn(client)).Op(context.Background())
 	})
 }
@@ -372,7 +372,7 @@ func TestTxnOp_Then_CalledWithTxn_2(t *testing.T) {
 
 	_, err := Txn(client).Then(txnOp).Op(context.Background())
 	if assert.Error(t, err) {
-		assert.Equal(t, "cannot create operation [then][0]: operation is a transaction, use ThenTxn, not Then", err.Error())
+		assert.Equal(t, "cannot create operation [then][0]: operation is a transaction, use Merge or ThenTxn, not Then", err.Error())
 	}
 }
 
@@ -794,13 +794,13 @@ func TestTxnOp_Merge_RealExample(t *testing.T) {
 				etcd.OpPut("key/txn/succeeded", "false"),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
+					[]etcd.Op{},                                               // Then
+					[]etcd.Op{},                                               // Else
 				),
 				etcd.OpTxn(
 					[]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
+					[]etcd.Op{},                                                   // Then
+					[]etcd.Op{},                                                   // Else
 				),
 			},
 		), lowLevel.Op)

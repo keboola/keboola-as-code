@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -14,6 +16,8 @@ import (
 )
 
 type dependencies interface {
+	Logger() log.Logger
+	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
@@ -27,12 +31,20 @@ type Repository struct {
 	slice  *slice.Repository
 }
 
-func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) *Repository {
+func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) (*Repository, error) {
 	r := &Repository{}
-	r.volume = volume.NewRepository(d)
+
+	if vr, err := volume.NewRepository(d); err == nil {
+		r.volume = vr
+	} else {
+		return nil, err
+	}
+
 	r.file = file.NewRepository(cfg, d, backoff, r.volume)
+
 	r.slice = slice.NewRepository(d, backoff, r.file)
-	return r
+
+	return r, nil
 }
 
 func (r *Repository) Volume() *volume.Repository {

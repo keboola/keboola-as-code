@@ -32,6 +32,7 @@ func (r *Repository) openSink(now time.Time, source *definition.Source, sink def
 
 	// Load Source entity, if needed
 	if source == nil {
+		source = &definition.Source{}
 		atomicOp.Read(func(ctx context.Context) op.Op {
 			return r.definition.Source().Get(sink.SourceKey).WithResultTo(source)
 		})

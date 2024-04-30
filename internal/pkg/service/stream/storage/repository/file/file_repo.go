@@ -80,7 +80,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, old, updated *mode
 	} else {
 		if old == nil {
 			// Entity should not exist
-			saveTxn.Then(op.Txn(r.client).
+			saveTxn.Merge(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
 					r.AddErr(serviceError.NewResourceAlreadyExistsError("file", updated.FileKey.String(), "sink"))
@@ -88,7 +88,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, old, updated *mode
 			)
 		} else {
 			// Entity should exist
-			saveTxn.Then(op.Txn(r.client).
+			saveTxn.Merge(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
 					r.AddErr(serviceError.NewResourceNotFoundError("file", updated.FileKey.String(), "sink"))
