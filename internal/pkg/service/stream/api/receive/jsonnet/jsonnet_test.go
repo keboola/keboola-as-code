@@ -172,8 +172,12 @@ func TestBufferJsonnetFunctions(t *testing.T) {
 		},
 	}
 
+	pool := NewPool()
+
 	for _, tc := range cases {
-		res, err := Evaluate(tc.reqCtx, tc.template)
+		vm := pool.Get()
+
+		res, err := Evaluate(vm, tc.reqCtx, tc.template)
 		if tc.err == "" {
 			res = strings.TrimRight(res, "\n")
 			assert.Equal(t, tc.result, res, tc.name)
@@ -181,6 +185,8 @@ func TestBufferJsonnetFunctions(t *testing.T) {
 		} else if assert.Error(t, err) {
 			assert.Equal(t, tc.err, err.Error(), tc.name)
 		}
+
+		pool.Put(vm)
 	}
 }
 
@@ -190,7 +196,11 @@ func TestBufferJsonnet_InfiniteRecursion(t *testing.T) {
 	local someFn(x) = x + someFn(x+1);
 	{recursion: someFn(1)}
 `
-	_, err := Evaluate(&receivectx.Context{}, template)
+	pool := NewPool()
+	vm := pool.Get()
+	defer pool.Put(vm)
+
+	_, err := Evaluate(vm, &receivectx.Context{}, template)
 	assert.Error(t, err)
 	assert.Equal(t, "max stack frames exceeded.", err.Error())
 }

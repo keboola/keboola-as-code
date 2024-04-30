@@ -2,7 +2,7 @@ module github.com/keboola/keboola-as-code
 
 go 1.22.2
 
-replace github.com/google/go-jsonnet v0.20.0 => github.com/keboola/go-jsonnet v0.20.1-0.20240415122724-d526145c4cb8
+replace github.com/google/go-jsonnet v0.20.0 => github.com/keboola/go-jsonnet v0.20.1-0.20240430105602-71646d8d4fa9
 
 replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562
 

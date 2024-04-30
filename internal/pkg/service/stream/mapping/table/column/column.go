@@ -10,7 +10,6 @@
 package column
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -21,7 +20,6 @@ type Column interface {
 	ColumnName() string
 	ColumnType() Type
 	IsPrimaryKey() bool
-	CSVValue(ctx *receivectx.Context) (string, error)
 }
 
 func MakeColumn(typ Type, name string, primaryKey bool) (Column, error) {
