@@ -20,10 +20,9 @@ runs:
           ~\go\pkg
           ~/go/bin
           ~\go\bin
-          ~/.cache/golangci-lint
           ~/.cache/go-build
-          ~/Library/Caches/golangci-lint
-          ~\AppData\Local\golangci-lint
+          ~/Library/Caches/go-build
+          ~\AppData\Local\go-build
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-
