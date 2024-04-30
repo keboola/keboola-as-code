@@ -8,7 +8,7 @@ import (
 )
 
 func Command(p dependencies.Provider) *cobra.Command {
-	// TODO backward compatibility
+	// maintaining backward compatibility for 'remote table create' and 'remote create table'
 	cmd := create.Command(p)
 	cmd.Use = "table [table]"
 	return cmd

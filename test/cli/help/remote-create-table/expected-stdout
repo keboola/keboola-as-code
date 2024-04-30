@@ -1,4 +1,4 @@
-Command "remote create table"
+Command "remote table create"
 
 The CLI command creates a new storage table, and the table can be defined either by specifying the full table ID in the argument or by using the --bucket and --name flags.
 In addition, you can specify column names and specify the primary key using the appropriate flags.
