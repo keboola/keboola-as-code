@@ -256,9 +256,28 @@ Wildcards can be used in `/expected-stdout`, `/expected-stderr` and `/out/*.*` f
 Inspired by [PhpUnit](https://docs.phpunit.de/en/11.0/assertions.html#assertstringmatchesformat).
 
 ## Environment Placeholders
+
 Environment placeholders can be used in `/expected-stdout`, `/expected-stderr`, `/in/*.*` and `/out/*.*`.
 
 E.g. `%%TEST_STORAGE_API_HOST%%` will be replaced with a value of the ENV variable `TEST_STORAGE_API_HOST`.
+
+## Project locking
+
+Currently there is implemented project locking using `flock`.
+
+When environment variables are set, it can be change into locking mechanism using `redis`.
+
+```
+TEST_KBC_PROJECTS_LOCK_HOST=redis://redis:6379
+TEST_KBC_PROJECTS_LOCK_PASSWORD=password
+```
+
+This is sample example how to setup environment variables to turn on `redis` locking within the project. Current configuration is without TLS, but it is expected to use TLS in production.
+
+To enable tls use the `TEST_KBC_PROJECTS_LOCK_HOST` with `+tls`.
+```
+TEST_KBC_PROJECTS_LOCK_HOST=redis+tls://redis:6380
+```
 
 ## Generate new unique ID
 

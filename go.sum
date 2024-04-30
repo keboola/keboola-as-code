@@ -389,8 +389,8 @@ github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6 h1:HcvX1VQkiav
 github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6/go.mod h1:eDjgYHYDJbPLBLsyZ6qRaugP0mX8vePOhZ5id1fdzJw=
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562 h1:EiwSnkbGt2i6XxvjDMrWx6/bGlQjVs+yq1mDJ5b3U1U=
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562/go.mod h1:uPrZkzwsuFyIPP04hIt6TG2KvWujglvkOnUUnQJyIdw=
-github.com/keboola/go-utils v0.9.0 h1:1d/DQd7+c2+4mUFF+3cQqWxXgugityHCTYlV435LlQ0=
-github.com/keboola/go-utils v0.9.0/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
+github.com/keboola/go-utils v0.10.0 h1:RS+h+OW7jkTaImySYrFBatUfuLaxUPSppwGu2wm9U0c=
+github.com/keboola/go-utils v0.10.0/go.mod h1:p+AIGpqlL7c0X+MWNOLdkAt2rMM5JXlycWwkOKmlrps=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.17.8 h1:YcnTYrq7MikUT7k0Yb5eceMmALQPYBW/Xltxn0NAMnU=
@@ -520,8 +520,8 @@ github.com/prometheus/common v0.48.0 h1:QO8U2CdOzSn1BBsmXJXduaaW+dY/5QLjfB8svtSz
 github.com/prometheus/common v0.48.0/go.mod h1:0/KsvlIEfPQCQ5I2iNSAWKPZziNCvRs5EC6ILDTlAPc=
 github.com/prometheus/procfs v0.12.0 h1:jluTpSng7V9hY0O2R9DzzJHYb2xULk9VTR1V1R/k6Bo=
 github.com/prometheus/procfs v0.12.0/go.mod h1:pcuDEFsWDnvcgNzo4EEweacyhjeA9Zk3cnaOZAZEfOo=
-github.com/redis/go-redis/v9 v9.4.0 h1:Yzoz33UZw9I/mFhx4MNrB6Fk+XHO1VukNcCa1+lwyKk=
-github.com/redis/go-redis/v9 v9.4.0/go.mod h1:hdY0cQFCN4fnSYT6TkisLufl/4W5UIXyv0b/CLO2V2M=
+github.com/redis/go-redis/v9 v9.5.1 h1:H1X4D3yHPaYrkL5X06Wh6xNVM/pX0Ft4RV0vMGvLBh8=
+github.com/redis/go-redis/v9 v9.5.1/go.mod h1:hdY0cQFCN4fnSYT6TkisLufl/4W5UIXyv0b/CLO2V2M=
 github.com/relvacode/iso8601 v1.4.0 h1:GsInVSEJfkYuirYFxa80nMLbH2aydgZpIf52gYZXUJs=
 github.com/relvacode/iso8601 v1.4.0/go.mod h1:FlNp+jz+TXpyRqgmM7tnzHHzBnz776kmAH2h3sZCn0I=
 github.com/richardartoul/molecule v1.0.1-0.20221107223329-32cfee06a052 h1:Qp27Idfgi6ACvFQat5+VJvlYToylpM/hcyLBI3WaKPA=
