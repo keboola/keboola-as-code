@@ -61,6 +61,8 @@ type ServiceScope interface {
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
 	DefinitionRepository() *definitionRepo.Repository
+	StatisticsRepository() *statsRepo.Repository
+	StorageRepository() *storageRepo.Repository
 }
 
 type APIScope interface {
@@ -99,10 +101,8 @@ type TableSinkScope interface {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
-	StatisticsRepository() *statsRepo.Repository
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
-	StorageRepository() *storageRepo.Repository
 }
 
 type Mocked interface {

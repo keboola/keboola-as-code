@@ -53,7 +53,8 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	// Create service mocked dependencies
 	mock := &mocked{Mocked: commonMock, config: cfg}
 
-	serviceScp := newServiceScope(mock)
+	backoff := model.NoRandomizationBackoff()
+	serviceScp := newServiceScope(mock, cfg, backoff)
 
 	mock.DebugLogger().Truncate()
 	mock.MockedHTTPTransport().Reset()
@@ -104,12 +105,11 @@ func NewMockedTableSinkScopeWithConfig(t *testing.T, modifyConfig func(*config.C
 	t.Helper()
 	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
 	cfg := mock.TestConfig()
-	backoff := model.NoRandomizationBackoff()
 	d, err := newTableSinkScope(tableSinkParentScopesImpl{
 		ServiceScope:         svcScp,
 		DistributionScope:    mock,
 		DistributedLockScope: mock,
-	}, cfg, backoff)
+	}, cfg)
 	require.NoError(t, err)
 	return d, mock
 }

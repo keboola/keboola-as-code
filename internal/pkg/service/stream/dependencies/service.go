@@ -12,6 +12,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -23,6 +26,8 @@ const (
 type serviceScope struct {
 	parentScopes
 	definitionRepository *definitionRepo.Repository
+	storageRepository    *storageRepo.Repository
+	statisticsRepository *statsRepo.Repository
 }
 
 type parentScopes interface {
@@ -55,7 +60,7 @@ func NewServiceScope(
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentSc), nil
+	return newServiceScope(parentSc, cfg, model.DefaultBackoff()), nil
 }
 
 func newParentScopes(
@@ -106,16 +111,28 @@ func newParentScopes(
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes) ServiceScope {
+func newServiceScope(parentScp parentScopes, cfg config.Config, backoff model.RetryBackoff) ServiceScope {
 	d := &serviceScope{}
 
 	d.parentScopes = parentScp
 
 	d.definitionRepository = definitionRepo.New(d)
 
+	d.statisticsRepository = statsRepo.New(d)
+
+	d.storageRepository = storageRepo.New(cfg.Storage.Level, d, backoff)
+
 	return d
 }
 
 func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {
 	return v.definitionRepository
+}
+
+func (v *serviceScope) StatisticsRepository() *statsRepo.Repository {
+	return v.statisticsRepository
+}
+
+func (v *serviceScope) StorageRepository() *storageRepo.Repository {
+	return v.storageRepository
 }
