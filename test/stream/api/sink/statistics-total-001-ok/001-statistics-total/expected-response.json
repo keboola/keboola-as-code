@@ -1,0 +1,28 @@
+{
+  "total": {
+    "firstRecordAt": "2000-01-20T00:00:00.000Z",
+    "lastRecordAt": "2000-01-21T00:00:00.000Z",
+    "recordsCount": 1,
+    "uncompressedSize": 1
+  },
+  "levels": {
+    "local": {
+      "firstRecordAt": "2000-01-20T00:00:00.000Z",
+      "lastRecordAt": "2000-01-21T00:00:00.000Z",
+      "recordsCount": 1,
+      "uncompressedSize": 1
+    },
+    "staging": {
+      "firstRecordAt": "0001-01-01T00:00:00.000Z",
+      "lastRecordAt": "0001-01-01T00:00:00.000Z",
+      "recordsCount": 0,
+      "uncompressedSize": 0
+    },
+    "target": {
+      "firstRecordAt": "0001-01-01T00:00:00.000Z",
+      "lastRecordAt": "0001-01-01T00:00:00.000Z",
+      "recordsCount": 0,
+      "uncompressedSize": 0
+    }
+  }
+}
