@@ -2,17 +2,17 @@ package volume
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"sync"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume/schema"

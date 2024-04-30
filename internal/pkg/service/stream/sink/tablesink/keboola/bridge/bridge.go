@@ -126,7 +126,7 @@ package bridge
 //	})
 //}
 //
-//func (b *bridge) newPlugin(ctx context.Context, rb rollback.Builder, now time.Time) (context.Context, *tableSinkPlugin) {
+// func (b *bridge) newPlugin(ctx context.Context, rb rollback.Builder, now time.Time) (context.Context, *tableSinkPlugin) {
 //	// Create parallel error group
 //	grp, ctx := errgroup.WithContext(ctx)
 //	grp.SetLimit(parallelOperationsLimit)

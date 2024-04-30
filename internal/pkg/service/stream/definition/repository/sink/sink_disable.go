@@ -3,11 +3,13 @@ package sink
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"time"
 )
 
 // Disable Sink.

@@ -80,13 +80,14 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 
 // AssertKVsFromFile dumps all KVs from an etcd database and compares them with content of the file.
 // In the file, a wildcards can be used, see the wildcards package.
-func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...AssertOption) {
+func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...AssertOption) bool {
 	data, err := os.ReadFile(path)
 	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
 		expected := string(data)
 		ops = append(ops, withExpectedStateFromFile(path))
-		AssertKVsString(t, client, expected, ops...)
+		return AssertKVsString(t, client, expected, ops...)
 	}
+	return false
 }
 
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
@@ -136,7 +137,7 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 
 	// Dump actual state
 	if c.expectedStateFromFile != "" {
-		_ = os.WriteFile(c.expectedStateFromFile+".actual", []byte(KVsToString(actualKVs)), 0600)
+		_ = os.WriteFile(c.expectedStateFromFile+".actual", []byte(KVsToString(actualKVs)), 0o600)
 	}
 
 	// Compare expected and actual KVs

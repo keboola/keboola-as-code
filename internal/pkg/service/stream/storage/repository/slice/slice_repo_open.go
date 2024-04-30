@@ -11,7 +11,7 @@ package slice
 //	"time"
 //)
 //
-//func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
+// func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
 //	var newSlices []model.Slice
 //	return op.Atomic(r.client, &newSlices).
 //		WriteOrErr(func(ctx context.Context) (op.Op, error) {

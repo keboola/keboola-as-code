@@ -11,7 +11,7 @@ package slice
 //	"time"
 //)
 //
-//func (r *Repository) closeSlicesInFile(k model.FileKey, now time.Time) *op.AtomicOp[op.NoResult] {
+// func (r *Repository) closeSlicesInFile(k model.FileKey, now time.Time) *op.AtomicOp[op.NoResult] {
 //	var oldSlices []model.Slice
 //	return op.Atomic(r.client, &op.NoResult{}).
 //		// Load slices.

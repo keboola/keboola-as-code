@@ -68,7 +68,7 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 		//}
 		//
 		//// On update
-		//if old.State != updated.State {
+		// if old.State != updated.State {
 		//	switch updated.State {
 		//	case model.FileClosing:
 		//		// Close slices

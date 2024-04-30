@@ -2,13 +2,13 @@ package file
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

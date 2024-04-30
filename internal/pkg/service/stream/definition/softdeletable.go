@@ -45,7 +45,6 @@ type Undeleted struct {
 func (v *SoftDeletable) Delete(now time.Time, by By, directly bool) {
 	v.Deleted = &Deleted{By: by, At: utctime.From(now), Directly: directly}
 	v.Undeleted = nil
-
 }
 
 func (v *SoftDeletable) Undelete(now time.Time, by By) {

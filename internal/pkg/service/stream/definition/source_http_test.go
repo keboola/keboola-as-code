@@ -1,12 +1,13 @@
 package definition_test
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
-	"strings"
-	"testing"
 )
 
 func TestHTTPSource_Validation(t *testing.T) {

@@ -1,9 +1,10 @@
 package definition_test
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
 	"strings"
 	"testing"
+
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"

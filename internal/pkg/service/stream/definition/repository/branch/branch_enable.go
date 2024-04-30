@@ -1,10 +1,11 @@
 package branch
 
 import (
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"time"
 )
 
 // Enable Branch and cascade enable all nested Sources and Sinks,
@@ -14,5 +15,4 @@ func (r *Repository) Enable(key key.BranchKey, now time.Time, by definition.By) 
 		branch.Enable(now, by)
 		return branch, nil
 	})
-
 }

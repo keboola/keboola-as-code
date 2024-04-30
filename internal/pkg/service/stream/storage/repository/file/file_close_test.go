@@ -81,7 +81,7 @@ func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
 
 	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdlogger.Assert(t, ``, closeEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_close_test_ops_001.txt`, closeEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------

@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
