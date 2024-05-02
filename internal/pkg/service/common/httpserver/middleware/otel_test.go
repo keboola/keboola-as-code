@@ -339,7 +339,7 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				attribute.String("endpoint.name", "MyEndpoint"),
 				attribute.String("endpoint.name_full", "MyService.MyEndpoint"),
 				attribute.String("http.response.header.x-request-id", "<dynamic>"),
-				attribute.Int("http.wrote_bytes", len(responseContent)),
+				attribute.Int("http.response_content_length", len(responseContent)),
 				attribute.Int("http.status_code", http.StatusInternalServerError),
 			},
 		},
