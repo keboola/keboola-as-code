@@ -1,4 +1,4 @@
-package cache_test
+package statistics_test
 
 import (
 	"context"
@@ -19,13 +19,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-type testCase struct {
+type providerTestCase struct {
 	Description string
 	Prepare     func()
 	Assert      func(repository.Provider)
 }
 
-func TestCaches(t *testing.T) {
+// TestStatisticsProviders - repository, L1 and L2 cache.
+func TestStatisticsProviders(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -50,7 +51,7 @@ func TestCaches(t *testing.T) {
 	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
 
 	// Define test cases
-	cases := []testCase{
+	cases := []providerTestCase{
 		{
 			Description: "Empty",
 			Assert: func(provider repository.Provider) {
@@ -371,6 +372,9 @@ func TestCaches(t *testing.T) {
 			header := etcdhelper.ExpectModification(t, client, tc.Prepare)
 			expectedRevision = header.Revision
 		}
+
+		// Test repository
+		tc.Assert(repo)
 
 		// Wait for cache sync
 		if expectedRevision > 0 {
