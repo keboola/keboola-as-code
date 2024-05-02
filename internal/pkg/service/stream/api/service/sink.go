@@ -35,3 +35,12 @@ func (s *service) GetSinkSettings(context.Context, dependencies.SinkRequestScope
 func (s *service) UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *stream.UpdateSinkSettingsPayload) (res *stream.SettingsResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }
+
+func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRequestScope, payload *stream.SinkStatisticsTotalPayload) (res *stream.SinkStatisticsTotalResult, err error) {
+	stats, err := d.StatisticsRepository().SinkStats(ctx, d.SinkKey())
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewSinkStatisticsTotalResponse(stats), nil
+}

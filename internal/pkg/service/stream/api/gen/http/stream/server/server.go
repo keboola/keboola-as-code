@@ -39,6 +39,7 @@ type Server struct {
 	ListSinks            http.Handler
 	UpdateSink           http.Handler
 	DeleteSink           http.Handler
+	SinkStatisticsTotal  http.Handler
 	GetTask              http.Handler
 	CORS                 http.Handler
 	OpenapiJSON          http.Handler
@@ -113,6 +114,7 @@ func New(
 			{"ListSinks", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"UpdateSink", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"DeleteSink", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
+			{"SinkStatisticsTotal", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/v1"},
@@ -124,6 +126,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
@@ -154,6 +157,7 @@ func New(
 		ListSinks:            NewListSinksHandler(e.ListSinks, mux, decoder, encoder, errhandler, formatter),
 		UpdateSink:           NewUpdateSinkHandler(e.UpdateSink, mux, decoder, encoder, errhandler, formatter),
 		DeleteSink:           NewDeleteSinkHandler(e.DeleteSink, mux, decoder, encoder, errhandler, formatter),
+		SinkStatisticsTotal:  NewSinkStatisticsTotalHandler(e.SinkStatisticsTotal, mux, decoder, encoder, errhandler, formatter),
 		GetTask:              NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
 		CORS:                 NewCORSHandler(),
 		OpenapiJSON:          http.FileServer(fileSystemOpenapiJSON),
@@ -187,6 +191,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.ListSinks = m(s.ListSinks)
 	s.UpdateSink = m(s.UpdateSink)
 	s.DeleteSink = m(s.DeleteSink)
+	s.SinkStatisticsTotal = m(s.SinkStatisticsTotal)
 	s.GetTask = m(s.GetTask)
 	s.CORS = m(s.CORS)
 }
@@ -214,6 +219,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountListSinksHandler(mux, h.ListSinks)
 	MountUpdateSinkHandler(mux, h.UpdateSink)
 	MountDeleteSinkHandler(mux, h.DeleteSink)
+	MountSinkStatisticsTotalHandler(mux, h.SinkStatisticsTotal)
 	MountGetTaskHandler(mux, h.GetTask)
 	MountCORSHandler(mux, h.CORS)
 	MountOpenapiJSON(mux, goahttp.Replace("", "/openapi.json", h.OpenapiJSON))
@@ -1111,6 +1117,57 @@ func NewDeleteSinkHandler(
 	})
 }
 
+// MountSinkStatisticsTotalHandler configures the mux to serve the "stream"
+// service "SinkStatisticsTotal" endpoint.
+func MountSinkStatisticsTotalHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total", f)
+}
+
+// NewSinkStatisticsTotalHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "SinkStatisticsTotal" endpoint.
+func NewSinkStatisticsTotalHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeSinkStatisticsTotalRequest(mux, decoder)
+		encodeResponse = EncodeSinkStatisticsTotalResponse(encoder)
+		encodeError    = EncodeSinkStatisticsTotalError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "SinkStatisticsTotal")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountGetTaskHandler configures the mux to serve the "stream" service
 // "GetTask" endpoint.
 func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1207,6 +1264,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)

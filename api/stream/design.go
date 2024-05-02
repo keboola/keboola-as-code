@@ -382,6 +382,20 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("SinkStatisticsTotal", func() {
+		Meta("openapi:summary", "Sink statistics total")
+		Description("Get total statistics of the sink.")
+		Result(SinkStatisticsTotalResult)
+		Payload(GetSinkStatisticsTotalRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
 	// Task endpoints --------------------------------------------------------------------------------------------------
 
 	Method("GetTask", func() {
@@ -773,6 +787,43 @@ var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
 var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
 	SinkKeyRequest()
 	Attribute("settings", SettingsPatch)
+})
+
+var GetSinkStatisticsTotalRequest = Type("GetSinkStatisticsTotalRequest", func() {
+	SinkKeyRequest()
+})
+
+var SinkStatisticsTotalResult = Type("SinkStatisticsTotalResult", func() {
+	Attribute("total", Level)
+	Required("total")
+	Attribute("levels", Levels)
+	Required("levels")
+})
+
+var Levels = Type("Levels", func() {
+	Attribute("local", Level)
+	Required("local")
+	Attribute("staging", Level)
+	Required("staging")
+	Attribute("target", Level)
+	Required("target")
+})
+
+var Level = Type("Level", func() {
+	Attribute("firstRecordAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("firstRecordAt")
+	Attribute("lastRecordAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("lastRecordAt")
+	Attribute("recordsCount", UInt64)
+	Required("recordsCount")
+	Attribute("uncompressedSize", UInt64)
+	Required("uncompressedSize")
 })
 
 var SinkFieldsRW = func() {
