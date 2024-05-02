@@ -1,0 +1,22 @@
+name: 'Export kbc projects with secrets'
+description: 'Exports kbc projects from repository environments including secrets'
+inputs:
+  secrets:
+    description: workflow secrets
+    required: true
+  projects:
+    description: test KBC projects environment variable
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Export all secrets to env variables
+      uses: oNaiPs/secrets-to-env-action@v1.5
+      with: 
+        secrets: ${{ inputs.secrets }}
+        include: TEST_KBC_PROJECT*
+
+    - name: Evaluate and set projects environment variable
+      shell: bash
+      run: echo "TEST_KBC_PROJECTS=$(echo '${{ inputs.projects }}' | envsubst)" >> $GITHUB_ENV
+

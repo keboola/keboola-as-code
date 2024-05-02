@@ -5,56 +5,22 @@ on:
 
 env:
   GO_VERSION: 1.22.2
-  TEST_PARALLELISM: 6
+  TEST_PARALLELISM: 12
   TEST_PARALLELISM_PKG: 6
-  TEST_PROJECTS_LINUX: |
-    [
-      {"host":"connection.keboola.com","project":8763,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}", "legacyTransformation": true},  
-      {"host":"connection.europe-west3.gcp.keboola.com","project":35,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_35_TOKEN }}"},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":36,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_36_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10889,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10889_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.north-europe.azure.keboola.com","project":10911,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10911_TOKEN }}", "legacyTransformation": true}
-    ]
-  TEST_PROJECTS_MACOS: |
-    [
-      {"host":"connection.keboola.com","project":8770,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.keboola.com","project":9432,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9432_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":37,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_37_TOKEN }}"},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":38,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_38_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10895,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10895_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.north-europe.azure.keboola.com","project":10912,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10912_TOKEN }}", "legacyTransformation": true}
-    ]
-  TEST_PROJECTS_WINDOWS: |
-    [
-      {"host":"connection.keboola.com","project":8777,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.keboola.com","project":9433,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9433_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.keboola.com","project":9431,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_9431_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.keboola.com","project":8781,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":39,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_39_TOKEN }}"},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":40,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_40_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10901,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10901_TOKEN }}", "legacyTransformation": true},
-      {"host":"connection.north-europe.azure.keboola.com","project":10913,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10913_TOKEN }}", "legacyTransformation": true}
-    ]
 
 jobs:
   test:
     name: ${{ matrix.name }}
-    concurrency:
-      group: tests-unit-${{ matrix.name }}
-      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: linux
             os: ubuntu-latest
-            projects: TEST_PROJECTS_LINUX
           - name: mac-os
             os: macos-latest
-            projects: TEST_PROJECTS_MACOS
           - name: windows
             os: windows-2022
-            projects: TEST_PROJECTS_WINDOWS
     runs-on: ${{ matrix.os }}
     steps:
       - name: Setup line endings
@@ -62,6 +28,12 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Set TEST_KBC_PROJECTS
+        uses: ./.github/actions/export-kbc-projects
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          projects: ${{ vars.TEST_KBC_PROJECTS }}
 
       - name: Load Go cache
         uses: ./.github/actions/go-cache
@@ -89,8 +61,9 @@ jobs:
         run: make tests-unit
         shell: bash
         env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           DATADOG_ENABLED: false
-          TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
           UNIT_ETCD_ENDPOINT: etcd:2379
           UNIT_ETCD_USERNAME: root
