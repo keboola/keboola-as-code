@@ -1,13 +1,5 @@
 package column
 
-import (
-	"strings"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-)
-
 const (
 	TemplateLanguageJsonnet      = "jsonnet"
 	columnTemplateType      Type = "template"
@@ -30,15 +22,4 @@ func (v Template) ColumnName() string {
 
 func (v Template) IsPrimaryKey() bool {
 	return v.PrimaryKey
-}
-
-func (v Template) CSVValue(reqCtx *receivectx.Context) (string, error) {
-	if v.Language == TemplateLanguageJsonnet {
-		res, err := jsonnet.Evaluate(reqCtx, v.Content)
-		if err != nil {
-			return "", err
-		}
-		return strings.TrimRight(res, "\n"), nil
-	}
-	return "", errors.Errorf(`unsupported language "%s", only "jsonnet" is supported`, v.Language)
 }

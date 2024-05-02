@@ -7,6 +7,7 @@ services:
       dockerfile: ./provisioning/dev/docker/Dockerfile
     links:
       - etcd
+      - redis
     volumes:
       - ./:/code:z
       - ../go-client:/go-client:z
@@ -14,6 +15,8 @@ services:
     environment:
       # For all
       - TEST_KBC_PROJECTS
+      - TEST_KBC_PROJECTS_LOCK_HOST
+      - TEST_KBC_PROJECTS_LOCK_PASSWORD
       # For Templates API
       - TEMPLATES_STORAGE_API_HOST=connection.keboola.com
       - TEMPLATES_API_LISTEN_ADDRESS=0.0.0.0:8000
@@ -61,6 +64,17 @@ services:
       - "9002:9002" # metrics
       # Go docs
       - "6060:6060"
+  # To store locks for TEST_KBC_PROJECTS when testing.
+  redis:
+      image: redis
+      hostname: redis
+      command: ["redis-server", "/etc/redis/redis.conf"]
+      ports:
+        - "6379:6379"
+      volumes:
+        - ./redis.conf:/etc/redis/redis.conf
+      environment:
+        REDIS_PORT: 6379
   # Same etcd is used for all services, but with different namespace
   etcd:
     hostname: etcd

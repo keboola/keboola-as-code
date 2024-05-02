@@ -4,6 +4,7 @@ Usage:
   kbc remote table [command]
 
 Available Commands:
+  remote table create    Create a new table.
   remote table detail    Print details of a table.
   remote table import    Import data to a table.
   remote table preview   Preview a table's data.

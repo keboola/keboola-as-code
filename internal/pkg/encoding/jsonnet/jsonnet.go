@@ -111,3 +111,13 @@ func DefaultOptions() formatter.Options {
 		CommentStyle:     formatter.CommentStyleSlash,
 	}
 }
+
+func Alias(name string) *ast.Apply {
+	return &ast.Apply{
+		Target: &ast.Index{
+			Target: &ast.Var{Id: "std"},
+			Index:  &ast.LiteralString{Value: "native"},
+		},
+		Arguments: ast.Arguments{Positional: []ast.CommaSeparatedExpr{{Expr: &ast.LiteralString{Value: name}}}},
+	}
+}

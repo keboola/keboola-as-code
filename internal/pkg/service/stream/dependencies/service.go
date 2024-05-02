@@ -124,12 +124,12 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 
 	d.definitionRepository = definitionRepo.New(d)
 
-	d.storageStatisticsRepository = statsRepo.New(d)
-
 	d.storageRepository, err = storageRepo.New(cfg.Storage.Level, d, storageBackoff)
 	if err != nil {
 		return nil, err
 	}
+
+	d.storageStatisticsRepository = statsRepo.New(d)
 
 	return d, nil
 }
