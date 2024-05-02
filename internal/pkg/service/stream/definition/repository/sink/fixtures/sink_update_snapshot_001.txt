@@ -29,7 +29,7 @@ definition/sink/active/123/567/my-source/my-sink
     },
     "description": "Update sink"
   },
-  "type": "table",
+  "type": "test",
   %A
 >>>>>
 
@@ -70,6 +70,6 @@ definition/sink/version/123/567/my-source/my-sink/0000000002
     },
     "description": "Update sink"
   },
-  "type": "table",
+  "type": "test",
   %A
 >>>>>

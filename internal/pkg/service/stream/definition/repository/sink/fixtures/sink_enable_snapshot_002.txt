@@ -18,7 +18,7 @@ definition/sink/active/123/567/my-source/my-sink
   },
   "version": {
     "number": 3,
-    "hash": "bc547f48b77c97fc",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T03:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -39,27 +39,9 @@ definition/sink/active/123/567/my-source/my-sink
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   "name": "My Sink",
-  "description": "My Description",
-  "table": {
-    "type": "keboola",
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
+  "description": "My Description"
 }
 >>>>>
 

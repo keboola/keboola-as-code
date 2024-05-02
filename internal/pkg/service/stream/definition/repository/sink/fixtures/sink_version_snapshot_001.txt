@@ -29,7 +29,7 @@ definition/sink/active/123/567/my-source/my-sink
     },
     "description": "Rollback to version \"2\"."
   },
-  "type": "table",
+  "type": "test",
   %A
 }
 >>>>>

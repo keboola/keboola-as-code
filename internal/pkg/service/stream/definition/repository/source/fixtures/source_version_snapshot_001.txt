@@ -28,7 +28,7 @@ definition/source/active/123/567/my-source
     },
     "description": "Rollback to version \"2\"."
   },
-  "type": "http",
+  "type": "test",
   %A
 }
 >>>>>

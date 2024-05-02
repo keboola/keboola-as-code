@@ -18,7 +18,7 @@ definition/sink/active/123/567/my-source/my-sink
   },
   "version": {
     "number": 2,
-    "hash": "b04c536f261fc807",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -41,27 +41,9 @@ definition/sink/active/123/567/my-source/my-sink
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   "name": "My Sink",
-  "description": "My Description",
-  "table": {
-    "type": "keboola",
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
+  "description": "My Description"
 }
 >>>>>
 
@@ -85,7 +67,7 @@ definition/sink/version/123/567/my-source/my-sink/0000000001
   },
   "version": {
     "number": 1,
-    "hash": "ecdcc2a5257106ce",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -96,27 +78,9 @@ definition/sink/version/123/567/my-source/my-sink/0000000001
     },
     "description": "Create sink"
   },
-  "type": "table",
+  "type": "test",
   "name": "My Sink",
-  "description": "My Description",
-  "table": {
-    "type": "keboola",
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
+  "description": "My Description"
 }
 >>>>>
 
@@ -140,7 +104,7 @@ definition/sink/version/123/567/my-source/my-sink/0000000002
   },
   "version": {
     "number": 2,
-    "hash": "b04c536f261fc807",
+    "hash": "%s",
     "modifiedAt": "2000-01-01T01:00:00.000Z",
     "modifiedBy": {
       "type": "user",
@@ -163,26 +127,8 @@ definition/sink/version/123/567/my-source/my-sink/0000000002
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   "name": "My Sink",
-  "description": "My Description",
-  "table": {
-    "type": "keboola",
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
+  "description": "My Description"
 }
 >>>>>

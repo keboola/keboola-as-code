@@ -59,12 +59,9 @@ definition/source/deleted/123/567/my-source-1
       "userName": "Some User"
     }
   },
-  "type": "http",
+  "type": "test",
   "name": "My Source",
-  "description": "My Description",
-  "http": {
-    "secret": "012345678901234567890123456789012345678912345678"
-  }
+  "description": "My Description"
 }
 >>>>>
 
@@ -108,12 +105,9 @@ definition/source/active/123/567/my-source-2
       "userName": "Some User"
     }
   },
-  "type": "http",
+  "type": "test",
   "name": "My Source",
-  "description": "My Description",
-  "http": {
-    "secret": "012345678901234567890123456789012345678912345678"
-  }
+  "description": "My Description"
 }
 >>>>>
 
@@ -157,11 +151,8 @@ definition/source/active/123/567/my-source-3
       "userName": "Some User"
     }
   },
-  "type": "http",
+  "type": "test",
   "name": "My Source",
-  "description": "My Description",
-  "http": {
-    "secret": "012345678901234567890123456789012345678912345678"
-  }
+  "description": "My Description"
 }
 >>>>>

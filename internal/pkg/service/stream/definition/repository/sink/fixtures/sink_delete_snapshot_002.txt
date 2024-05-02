@@ -56,7 +56,7 @@ definition/sink/deleted/123/567/my-source/my-sink-1
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   %A
 }
 >>>>>
@@ -103,7 +103,7 @@ definition/sink/deleted/123/567/my-source/my-sink-2
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   %A
 }
 >>>>>
@@ -150,7 +150,7 @@ definition/sink/deleted/123/567/my-source/my-sink-3
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   %A
 }
 >>>>>

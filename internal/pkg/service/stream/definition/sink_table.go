@@ -15,7 +15,7 @@ type TableType string
 
 // TableSink configures destination table.
 type TableSink struct {
-	Type    TableType     `json:"type" validate:"oneof=keboola"`
+	Type    TableType     `json:"type" validate:"required,oneof=keboola"`
 	Keboola *KeboolaTable `json:"keboola" validate:"required_if=Type keboola"`
 
 	Mapping table.Mapping `json:"mapping"`

@@ -40,27 +40,9 @@ definition/sink/deleted/123/567/my-source/my-sink
       "userName": "Some User"
     }
   },
-  "type": "table",
+  "type": "test",
   "name": "My Sink",
-  "description": "My Description",
-  "table": {
-    "type": "keboola",
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
+  "description": "My Description"
 }
 >>>>>
 
@@ -95,26 +77,8 @@ definition/sink/version/123/567/my-source/my-sink/0000000001
     },
     "description": "Create sink"
   },
-  "type": "table",
+  "type": "test",
   "name": "My Sink",
-  "description": "My Description",
-  "table": {
-    "type": "keboola",
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
+  "description": "My Description"
 }
 >>>>>
