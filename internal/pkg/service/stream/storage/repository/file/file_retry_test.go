@@ -3,25 +3,24 @@ package file_test
 import (
 	"bytes"
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"testing"
-	"time"
-
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/stretchr/testify/require"
-	"go.etcd.io/etcd/client/v3/concurrency"
-
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
+	"testing"
+	"time"
 )
 
-func TestFileRepository_StateTransition(t *testing.T) {
+func TestFileRepository_IncrementRetry(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -57,7 +56,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source and sink (with the first file)
+	// Create parent branch, source and sink (with the file)
 	// -----------------------------------------------------------------------------------------------------------------
 	var fileKey model.FileKey
 	{
@@ -84,6 +83,34 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		require.NoError(t, fileRepo.StateTransition(fileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
 	}
 
+	// Import failed, increment retry attempt
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		file, err := fileRepo.IncrementRetryAttempt(fileKey, clk.Now(), "some reason 1").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		require.NotEmpty(t, file)
+		assert.Equal(t, model.FileImporting, file.State)
+	}
+
+	// Import failed again, increment retry attempt
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		file, err := fileRepo.IncrementRetryAttempt(fileKey, clk.Now(), "some reason 2").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		require.NotEmpty(t, file)
+		assert.Equal(t, model.FileImporting, file.State)
+	}
+
+	// Check etcd logs
+	// -----------------------------------------------------------------------------------------------------------------
+	// etcdlogger.AssertFromFile(t, `fixtures/file_retry_test_ops_001.txt`, deleteEtcdLogs)
+
+	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_test_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+
 	// Switch file to the Imported state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -91,11 +118,8 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		require.NoError(t, fileRepo.StateTransition(fileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
 	}
 
-	// Check etcd logs
+	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_test_ops_001.txt`, deleteEtcdLogs)
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_test_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 
-	// Check etcd state - there is no file
-	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_state_test_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 }

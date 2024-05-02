@@ -36,19 +36,11 @@ func (r *Repository) rotate(now time.Time, k key.SinkKey, source *definition.Sou
 	var openedFile model.File
 	atomicOp := op.Atomic(r.client, &openedFile)
 
-	// Load Sink entity, if needed
-	if sink == nil {
-		sink = &definition.Sink{}
-		atomicOp.Read(func(ctx context.Context) op.Op {
-			return r.definition.Sink().Get(k).WithResultTo(sink)
-		})
-	}
-
 	// Open a new file
-	atomicOp.AddFrom(r.openSink(now, source, *sink).SetResultTo(&openedFile))
+	atomicOp.AddFrom(r.openSink(now, k, source, sink).SetResultTo(&openedFile))
 
 	// Close active files
-	atomicOp.AddFrom(r.closeSink(now, *sink))
+	atomicOp.AddFrom(r.closeSink(now, k))
 
 	return atomicOp
 }

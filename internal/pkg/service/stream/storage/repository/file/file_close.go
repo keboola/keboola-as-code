@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -17,17 +18,17 @@ func (r *Repository) closeFileOnSinkDeactivation() {
 		}
 
 		// Close active file, if any
-		op.AtomicFromCtx(ctx).AddFrom(r.closeSink(now, *sink))
+		op.AtomicFromCtx(ctx).AddFrom(r.closeSink(now, sink.SinkKey))
 	})
 }
 
-func (r *Repository) closeSink(now time.Time, sink definition.Sink) *op.AtomicOp[[]model.File] {
+func (r *Repository) closeSink(now time.Time, k key.SinkKey) *op.AtomicOp[[]model.File] {
 	var closedFiles []model.File
 	atomicOp := op.Atomic(r.client, &closedFiles)
 
 	// Load active files in the model.FileWriting state.
 	var activeFiles []model.File
-	atomicOp.ReadOp(r.ListInState(sink.SinkKey, model.FileWriting).WithAllTo(&activeFiles))
+	atomicOp.ReadOp(r.ListInState(k, model.FileWriting).WithAllTo(&activeFiles))
 
 	// Close active files
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
@@ -35,7 +36,7 @@ func (r *Repository) closeSink(now time.Time, sink definition.Sink) *op.AtomicOp
 		// Log error and close all found files.
 		filesCount := len(activeFiles)
 		if filesCount > 1 {
-			r.logger.Errorf(ctx, `unexpected state, found %d opened files in the sink "%s"`, filesCount, sink.SinkKey)
+			r.logger.Errorf(ctx, `unexpected state, found %d opened files in the sink "%s"`, filesCount, k)
 		}
 
 		// Close

@@ -61,7 +61,7 @@ func TestSinkRepository_Create(t *testing.T) {
 		assert.Equal(t, sink, result)
 		assert.Equal(t, now, sink.VersionModifiedAt().Time())
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_create_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_create_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
@@ -93,7 +93,7 @@ func TestSinkRepository_Create(t *testing.T) {
 		result, err := repo.Create(&sink, now.Add(time.Hour), by, "Create sink").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, sink, result)
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_create_test_snapshot_002.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_create_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok

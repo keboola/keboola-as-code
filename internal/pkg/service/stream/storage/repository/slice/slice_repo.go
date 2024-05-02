@@ -117,7 +117,7 @@ func (r *Repository) Get(k model.SliceKey) op.WithResult[model.Slice] {
 // Retry is reset on StateTransition.
 func (r *Repository) IncrementRetry(now time.Time, sliceKey model.SliceKey, reason string) *op.AtomicOp[model.Slice] {
 	return r.updateOne(sliceKey, now, func(slice model.Slice) (model.Slice, error) {
-		slice.IncrementRetry(r.backoff, now, reason)
+		slice.IncrementRetryAttempt(r.backoff, now, reason)
 		return slice, nil
 	})
 }

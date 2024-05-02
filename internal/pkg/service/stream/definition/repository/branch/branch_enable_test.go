@@ -64,7 +64,7 @@ func TestBranchRepository_Enable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, repo.Enable(branchKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_enable_test_snapshot_001.txt")
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_enable_snapshot_001.txt")
 	}
 
 	// Get - ok

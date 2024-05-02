@@ -74,7 +74,7 @@ func TestSourceRepository_Update(t *testing.T) {
 		source, err = repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_update_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_update_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok

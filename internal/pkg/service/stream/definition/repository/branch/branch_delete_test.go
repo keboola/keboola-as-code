@@ -58,7 +58,7 @@ func TestBranchRepository_SoftDelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		assert.NoError(t, repo.SoftDelete(branchKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_delete_test_snapshot_001.txt")
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_delete_snapshot_001.txt")
 	}
 
 	// Get - not found

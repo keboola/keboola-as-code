@@ -68,7 +68,7 @@ func TestSourceRepository_Enable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		assert.NoError(t, repo.Disable(sourceKey, now, by, "some reason").Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Enable - ok
@@ -76,7 +76,7 @@ func TestSourceRepository_Enable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, repo.Enable(sourceKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_test_snapshot_002.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
@@ -146,7 +146,7 @@ func TestSourceRepository_EnableSourcesOnBranchEnable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Branch().Enable(branchKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_test_snapshot_003.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_snapshot_003.txt", ignoredEtcdKeys)
 	}
 	{
 		var err error

@@ -78,7 +78,7 @@ func TestSinkRepository_Update(t *testing.T) {
 		sink, err = repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_update_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_update_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok

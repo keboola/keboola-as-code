@@ -57,7 +57,7 @@ func TestSourceRepository_Create(t *testing.T) {
 		assert.Equal(t, source, result)
 		assert.Equal(t, now, source.VersionModifiedAt().Time())
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
@@ -89,7 +89,7 @@ func TestSourceRepository_Create(t *testing.T) {
 		result, err := repo.Create(&source, now.Add(time.Hour), by, "Create source").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, source, result)
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_test_snapshot_002.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_create_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok

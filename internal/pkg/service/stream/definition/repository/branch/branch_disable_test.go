@@ -58,7 +58,7 @@ func TestBranchRepository_Disable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		assert.NoError(t, repo.Disable(branchKey, now, by, "some reason").Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_disable_test_snapshot_001.txt")
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_disable_snapshot_001.txt")
 	}
 
 	// Get - ok

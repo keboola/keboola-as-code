@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
 	"os"
+	"path/filepath"
 )
 
 type tHelper interface {
@@ -33,10 +34,17 @@ func Assert(t assert.TestingT, expected, actual string) bool {
 // AssertFromFile logs captured by the KVLogWrapper.
 // Comments "// ..." and empty lines are ignored.
 func AssertFromFile(t assert.TestingT, path, actual string) bool {
+	result := false
 	data, err := os.ReadFile(path)
 	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
 		expected := string(data)
-		return Assert(t, expected, actual)
+		result = Assert(t, expected, actual)
 	}
-	return false
+
+	outDir := filepath.Join(filepath.Dir(path), ".out")
+	filePath := filepath.Join(outDir, filepath.Base(path)+".actual")
+	assert.NoError(t, os.MkdirAll(outDir, 0o750))
+	assert.NoError(t, os.WriteFile(filePath, []byte(actual), 0o600))
+
+	return result
 }

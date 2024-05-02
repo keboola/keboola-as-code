@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
@@ -140,4 +141,29 @@ func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.
 
 func (r *Repository) isSinkWithLocalStorage(sink *definition.Sink) bool {
 	return sink.Type == definition.SinkTypeTable && sink.Table.Type == definition.TableTypeKeboola
+}
+
+// loadSourceIfNil - if the source pointer is nil, a new value is allocated and later loaded,
+// it will be available after the atomic operation Read phase.
+func (r *Repository) loadSourceIfNil(atomicOp *op.AtomicOpCore, k key.SourceKey, source *definition.Source) *definition.Source {
+	// Load Source entity, if needed
+	if source == nil {
+		source = &definition.Source{}
+		atomicOp.Read(func(ctx context.Context) op.Op {
+			return r.definition.Source().Get(k).WithResultTo(source)
+		})
+	}
+	return source
+}
+
+// loadSinkIfNil - if the sink pointer is nil, a new value is allocated and later loaded,
+// it will be available after the atomic operation Read phase.
+func (r *Repository) loadSinkIfNil(atomicOp *op.AtomicOpCore, k key.SinkKey, sink *definition.Sink) *definition.Sink {
+	if sink == nil {
+		sink = &definition.Sink{}
+		atomicOp.Read(func(ctx context.Context) op.Op {
+			return r.definition.Sink().Get(k).WithResultTo(sink)
+		})
+	}
+	return sink
 }

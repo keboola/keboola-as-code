@@ -3,25 +3,23 @@ package file_test
 import (
 	"bytes"
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"testing"
-	"time"
-
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/stretchr/testify/require"
-	"go.etcd.io/etcd/client/v3/concurrency"
-
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
+	"testing"
+	"time"
 )
 
-func TestFileRepository_StateTransition(t *testing.T) {
+func TestFileRepository_List(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -59,7 +57,6 @@ func TestFileRepository_StateTransition(t *testing.T) {
 
 	// Create parent branch, source and sink (with the first file)
 	// -----------------------------------------------------------------------------------------------------------------
-	var fileKey model.FileKey
 	{
 		branch := test.NewBranch(branchKey)
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
@@ -67,35 +64,24 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
-		fileKey = model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.From(clk.Now())}}
 	}
 
-	// Create the second file, the first file is switched to the Closing state
+	// Create the second file
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
-	// Switch file to the Importing state
+	// List files
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(fileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
+		files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, files, 2)
+		require.NotEmpty(t, files[0])
+		require.NotEmpty(t, files[1])
+		assert.Equal(t, model.FileClosing, files[0].State)
+		assert.Equal(t, model.FileWriting, files[1].State)
 	}
-
-	// Switch file to the Imported state
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(fileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
-	}
-
-	// Check etcd logs
-	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_test_ops_001.txt`, deleteEtcdLogs)
-
-	// Check etcd state - there is no file
-	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_state_test_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 }

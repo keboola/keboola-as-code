@@ -72,7 +72,7 @@ func TestSinkRepository_Enable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		assert.NoError(t, repo.Disable(sinkKey, now, by, "some reason").Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Enable - ok
@@ -80,7 +80,7 @@ func TestSinkRepository_Enable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, repo.Enable(sinkKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_test_snapshot_002.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_002.txt", ignoredEtcdKeys)
 	}
 
 	// Get - ok
@@ -154,7 +154,7 @@ func TestSinkRepository_EnableSinksOnBranchEnable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Branch().Enable(branchKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_test_snapshot_003.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_003.txt", ignoredEtcdKeys)
 	}
 	{
 		var err error
@@ -235,7 +235,7 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Source().Enable(sourceKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_test_snapshot_004.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_004.txt", ignoredEtcdKeys)
 	}
 	{
 		var err error

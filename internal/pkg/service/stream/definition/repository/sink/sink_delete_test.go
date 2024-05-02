@@ -69,7 +69,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		assert.NoError(t, repo.SoftDelete(sinkKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
 	// Get - not found
@@ -146,7 +146,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Source().SoftDelete(sourceKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_002.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_snapshot_002.txt", ignoredEtcdKeys)
 	}
 	{
 		var err error
@@ -223,7 +223,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		require.NoError(t, d.DefinitionRepository().Branch().SoftDelete(branchKey, now, by).Do(ctx).Err())
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_test_snapshot_003.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_delete_snapshot_003.txt", ignoredEtcdKeys)
 	}
 	{
 		var err error

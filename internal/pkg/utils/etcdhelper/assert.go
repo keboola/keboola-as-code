@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -137,7 +138,10 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 
 	// Dump actual state
 	if c.expectedStateFromFile != "" {
-		_ = os.WriteFile(c.expectedStateFromFile+".actual", []byte(KVsToString(actualKVs)), 0o600)
+		outDir := filepath.Join(filepath.Dir(c.expectedStateFromFile), ".out")
+		filePath := filepath.Join(outDir, filepath.Base(c.expectedStateFromFile)+".actual")
+		assert.NoError(t, os.MkdirAll(outDir, 0o750))
+		assert.NoError(t, os.WriteFile(filePath, []byte(KVsToString(actualKVs)), 0o600))
 	}
 
 	// Compare expected and actual KVs

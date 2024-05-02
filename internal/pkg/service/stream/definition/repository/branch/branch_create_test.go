@@ -41,7 +41,7 @@ func TestBranchRepository_Create(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, branch, result)
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_001.txt")
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_snapshot_001.txt")
 	}
 
 	// Get - ok
@@ -74,7 +74,7 @@ func TestBranchRepository_Create(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, branch, result)
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_test_snapshot_002.txt")
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/branch_create_snapshot_002.txt")
 	}
 
 	// Get - ok

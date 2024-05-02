@@ -148,6 +148,6 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// Check database state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_version_test_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_version_snapshot_001.txt", ignoredEtcdKeys)
 	}
 }
