@@ -65,8 +65,9 @@ func TestFileRepository_Delete(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-		sink := test.NewSink(sinkKey)
+		sink := test.NewKeboolaTableSink(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		fileKey1 = model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.From(clk.Now())}}
 	}
 
 	// Create the second file
@@ -92,7 +93,7 @@ func TestFileRepository_Delete(t *testing.T) {
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_delete_test_ops_001.txt`, deleteEtcdLogs)
+	// etcdlogger.AssertFromFile(t, `fixtures/file_delete_ops_001.txt`, deleteEtcdLogs)
 
 	// Check etcd state - there is no file
 	// -----------------------------------------------------------------------------------------------------------------

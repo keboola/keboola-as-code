@@ -63,7 +63,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-		sink := test.NewSink(sinkKey)
+		sink := test.NewKeboolaTableSink(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
@@ -83,9 +83,9 @@ func TestFileRepository_Rotate(t *testing.T) {
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_test_ops_001.txt`, deleteEtcdLogs)
+	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_ops_001.txt`, deleteEtcdLogs)
 
 	// Check etcd state - there is no file
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_rotate_test_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_rotate_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 }

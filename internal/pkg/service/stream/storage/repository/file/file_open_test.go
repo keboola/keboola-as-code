@@ -61,9 +61,9 @@ func TestFileRepository_OpenFileOnSinkActivation(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-		sink1 := test.NewSink(sinkKey1)
+		sink1 := test.NewKeboolaTableSink(sinkKey1)
 		require.NoError(t, defRepo.Sink().Create(&sink1, clk.Now(), by, "Create sink").Do(ctx).Err())
-		sink2 := test.NewSink(sinkKey2)
+		sink2 := test.NewKeboolaTableSink(sinkKey2)
 		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
@@ -86,9 +86,9 @@ func TestFileRepository_OpenFileOnSinkActivation(t *testing.T) {
 
 	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	//etcdlogger.AssertFromFile(t, `fixtures/file_open_test_ops_001.txt`, openEtcdLogs)
+	//etcdlogger.AssertFromFile(t, `fixtures/file_open_ops_001.txt`, openEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_open_test_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_open_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }

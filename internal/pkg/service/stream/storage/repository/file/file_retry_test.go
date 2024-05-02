@@ -64,7 +64,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-		sink := test.NewSink(sinkKey)
+		sink := test.NewKeboolaTableSink(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 		fileKey = model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.From(clk.Now())}}
 	}
@@ -105,11 +105,11 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_retry_test_ops_001.txt`, deleteEtcdLogs)
+	// etcdlogger.AssertFromFile(t, `fixtures/file_retry_ops_001.txt`, deleteEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_test_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 
 	// Switch file to the Imported state
 	// -----------------------------------------------------------------------------------------------------------------
@@ -120,6 +120,6 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_test_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 
 }
