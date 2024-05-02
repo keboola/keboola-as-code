@@ -9,7 +9,7 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 v7.6.0 => github.com/keboola/go-
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
-	ariga.io/atlas v0.21.1
+	ariga.io/atlas v0.22.0
 	entgo.io/ent v0.13.1
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -25,7 +25,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.19.0
+	github.com/go-playground/validator/v10 v10.20.0
 	github.com/go-resty/resty/v2 v2.12.0
 	github.com/gofrs/flock v0.8.1
 	github.com/google/go-cmp v0.6.0
@@ -66,22 +66,22 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.13
 	go.etcd.io/etcd/tests/v3 v3.5.13
 	go.nhat.io/aferocopy/v2 v2.0.1
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0
-	go.opentelemetry.io/contrib/propagators/b3 v1.25.0
-	go.opentelemetry.io/otel v1.25.0
-	go.opentelemetry.io/otel/bridge/opencensus v1.25.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.47.0
-	go.opentelemetry.io/otel/metric v1.25.0
-	go.opentelemetry.io/otel/sdk v1.25.0
-	go.opentelemetry.io/otel/sdk/metric v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.26.0
+	go.opentelemetry.io/otel v1.26.0
+	go.opentelemetry.io/otel/bridge/opencensus v1.26.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.48.0
+	go.opentelemetry.io/otel/metric v1.26.0
+	go.opentelemetry.io/otel/sdk v1.26.0
+	go.opentelemetry.io/otel/sdk/metric v1.26.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.16.1
 	goa.design/plugins/v3 v3.16.1
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.63.2
-	gopkg.in/DataDog/dd-trace-go.v1 v1.63.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.63.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	nhooyr.io/websocket v1.8.11
 	v.io/x/lib v0.1.20
