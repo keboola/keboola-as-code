@@ -28,9 +28,7 @@ TBD
 In most cases, it is enough to run the service locally via Docker.
 ```sh
 docker compose run --rm -u "$UID:$GID" --service-ports dev base
-make run-buffer-api
-# OR
-make run-buffer-worker
+make run-stream-service
 ```
 
 Read more in [`docs/DEVELOPMENT.md`](../../docs/development.md).
