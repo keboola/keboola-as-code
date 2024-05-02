@@ -63,7 +63,7 @@ func TestTableSink_Validation(t *testing.T) {
 		{
 			Name: "empty table section",
 			ExpectedError: `
-- "table.type" must be one of [keboola]
+- "table.type" is a required field
 - "table.mapping.columns" is a required field
 `,
 			Value: definition.Sink{

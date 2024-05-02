@@ -19,5 +19,5 @@ type Source struct {
 
 	// Source type specific fields
 
-	HTTP *HTTPSource `json:"http,omitempty"" validate:"required_if=Type http"`
+	HTTP *HTTPSource `json:"http,omitempty" validate:"required_if=Type http"`
 }
