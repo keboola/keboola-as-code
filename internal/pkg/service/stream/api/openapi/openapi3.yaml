@@ -1233,6 +1233,83 @@ paths:
                                 message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total:
+        get:
+            tags:
+                - configuration
+            summary: Sink statistics total
+            description: Get total statistics of the sink.
+            operationId: SinkStatisticsTotal
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SinkStatisticsTotalResult'
+                            example:
+                                total:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                levels:
+                                    local:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    staging:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    target:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
         post:
             tags:
@@ -1636,6 +1713,39 @@ components:
                 - statusCode
                 - error
                 - message
+        GetVersion:
+            type: object
+            properties:
+                description:
+                    type: string
+                    description: Description of the change.
+                    example: The reason for the last change was...
+                hash:
+                    type: string
+                    description: Hash of the entity state.
+                    example: f43e93acd97eceb3
+                modifiedAt:
+                    type: string
+                    description: Date and time of the modification.
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                number:
+                    type: integer
+                    description: GetVersion number counted from 1.
+                    example: 3
+                    format: int64
+                    minimum: 1
+            description: GetVersion of the entity.
+            example:
+                number: 3
+                hash: f43e93acd97eceb3
+                modifiedAt: "2022-04-28T14:20:04.000Z"
+                description: The reason for the last change was...
+            required:
+                - number
+                - hash
+                - modifiedAt
+                - description
         HTTPSource:
             type: object
             properties:
@@ -1648,6 +1758,64 @@ components:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             required:
                 - url
+        Level:
+            type: object
+            properties:
+                firstRecordAt:
+                    type: string
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                lastRecordAt:
+                    type: string
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                recordsCount:
+                    type: integer
+                    example: 1
+                    format: int64
+                uncompressedSize:
+                    type: integer
+                    example: 1
+                    format: int64
+            example:
+                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                recordsCount: 1
+                uncompressedSize: 1
+            required:
+                - firstRecordAt
+                - lastRecordAt
+                - recordsCount
+                - uncompressedSize
+        Levels:
+            type: object
+            properties:
+                local:
+                    $ref: '#/components/schemas/Level'
+                staging:
+                    $ref: '#/components/schemas/Level'
+                target:
+                    $ref: '#/components/schemas/Level'
+            example:
+                local:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                staging:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                target:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+            required:
+                - local
+                - staging
+                - target
         PaginatedResponse:
             type: object
             properties:
@@ -1842,7 +2010,7 @@ components:
                     enum:
                         - table
                 version:
-                    $ref: '#/components/schemas/Version'
+                    $ref: '#/components/schemas/GetVersion'
             description: A mapping from imported data to a destination table.
             example:
                 projectId: 123
@@ -1901,6 +2069,38 @@ components:
                 - name
                 - description
                 - version
+        SinkStatisticsTotalResult:
+            type: object
+            properties:
+                levels:
+                    $ref: '#/components/schemas/Levels'
+                total:
+                    $ref: '#/components/schemas/Level'
+            example:
+                total:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                levels:
+                    local:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    staging:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    target:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+            required:
+                - total
+                - levels
         SinksList:
             type: object
             properties:
@@ -2125,7 +2325,7 @@ components:
                     enum:
                         - http
                 version:
-                    $ref: '#/components/schemas/Version'
+                    $ref: '#/components/schemas/GetVersion'
             description: Source of data for further processing, start of the stream, max 100 sources per a branch.
             example:
                 projectId: 123
@@ -2756,39 +2956,6 @@ components:
                 settings:
                     - key: some.service.limit
                       value: 1m20s
-        Version:
-            type: object
-            properties:
-                description:
-                    type: string
-                    description: Description of the change.
-                    example: The reason for the last change was...
-                hash:
-                    type: string
-                    description: Hash of the entity state.
-                    example: f43e93acd97eceb3
-                modifiedAt:
-                    type: string
-                    description: Date and time of the modification.
-                    example: "2022-04-28T14:20:04.000Z"
-                    format: date-time
-                number:
-                    type: integer
-                    description: Version number counted from 1.
-                    example: 3
-                    format: int64
-                    minimum: 1
-            description: Version of the entity.
-            example:
-                number: 3
-                hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
-                description: The reason for the last change was...
-            required:
-                - number
-                - hash
-                - modifiedAt
-                - description
     securitySchemes:
         storage-api-token:
             type: apiKey

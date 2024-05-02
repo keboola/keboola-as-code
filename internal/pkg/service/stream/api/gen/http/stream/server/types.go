@@ -164,7 +164,7 @@ type GetSourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Version  *GetVersionResponseBody     `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
@@ -195,7 +195,7 @@ type RefreshSourceTokensResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Version  *GetVersionResponseBody     `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
@@ -238,7 +238,7 @@ type GetSinkResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// Table sink configuration for "type" = "table".
 	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Version  *GetVersionResponseBody     `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
@@ -286,6 +286,13 @@ type UpdateSinkResponseBody struct {
 	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
 	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
+// SinkStatisticsTotalResponseBody is the type of the "stream" service
+// "SinkStatisticsTotal" endpoint HTTP response body.
+type SinkStatisticsTotalResponseBody struct {
+	Total  *LevelResponseBody  `form:"total" json:"total" xml:"total"`
+	Levels *LevelsResponseBody `form:"levels" json:"levels" xml:"levels"`
 }
 
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
@@ -599,6 +606,30 @@ type DeleteSinkStreamAPISinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// SinkStatisticsTotalStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SinkStatisticsTotal" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SinkStatisticsTotalStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkStatisticsTotalStreamAPISinkNotFoundResponseBody is the type of the
+// "stream" service "SinkStatisticsTotal" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type SinkStatisticsTotalStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetTaskStreamAPITaskNotFoundResponseBody is the type of the "stream" service
 // "GetTask" endpoint HTTP response body for the "stream.api.taskNotFound"
 // error.
@@ -650,7 +681,7 @@ type SourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Version  *GetVersionResponseBody     `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
@@ -662,8 +693,8 @@ type HTTPSourceResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 }
 
-// VersionResponseBody is used to define fields on response body types.
-type VersionResponseBody struct {
+// GetVersionResponseBody is used to define fields on response body types.
+type GetVersionResponseBody struct {
 	// GetVersion number counted from 1.
 	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
 	// Hash of the entity state.
@@ -717,7 +748,7 @@ type SinkResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// Table sink configuration for "type" = "table".
 	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Version  *GetVersionResponseBody     `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
@@ -772,6 +803,21 @@ type SettingResultResponseBody struct {
 	Protected bool `form:"protected" json:"protected" xml:"protected"`
 	// Validation rules as a string definition.
 	Validation *string `form:"validation,omitempty" json:"validation,omitempty" xml:"validation,omitempty"`
+}
+
+// LevelResponseBody is used to define fields on response body types.
+type LevelResponseBody struct {
+	FirstRecordAt    string `form:"firstRecordAt" json:"firstRecordAt" xml:"firstRecordAt"`
+	LastRecordAt     string `form:"lastRecordAt" json:"lastRecordAt" xml:"lastRecordAt"`
+	RecordsCount     uint64 `form:"recordsCount" json:"recordsCount" xml:"recordsCount"`
+	UncompressedSize uint64 `form:"uncompressedSize" json:"uncompressedSize" xml:"uncompressedSize"`
+}
+
+// LevelsResponseBody is used to define fields on response body types.
+type LevelsResponseBody struct {
+	Local   *LevelResponseBody `form:"local" json:"local" xml:"local"`
+	Staging *LevelResponseBody `form:"staging" json:"staging" xml:"staging"`
+	Target  *LevelResponseBody `form:"target" json:"target" xml:"target"`
 }
 
 // SettingPatchRequestBody is used to define fields on request body types.
@@ -902,7 +948,7 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
 	}
 	if res.Version != nil {
-		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
+		body.Version = marshalStreamGetVersionToGetVersionResponseBody(res.Version)
 	}
 	if res.Deleted != nil {
 		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
@@ -962,7 +1008,7 @@ func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokens
 		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
 	}
 	if res.Version != nil {
-		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
+		body.Version = marshalStreamGetVersionToGetVersionResponseBody(res.Version)
 	}
 	if res.Deleted != nil {
 		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
@@ -1018,7 +1064,7 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
 	}
 	if res.Version != nil {
-		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
+		body.Version = marshalStreamGetVersionToGetVersionResponseBody(res.Version)
 	}
 	if res.Deleted != nil {
 		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
@@ -1094,6 +1140,19 @@ func NewUpdateSinkResponseBody(res *stream.Task) *UpdateSinkResponseBody {
 	}
 	if res.Outputs != nil {
 		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
+// NewSinkStatisticsTotalResponseBody builds the HTTP response body from the
+// result of the "SinkStatisticsTotal" endpoint of the "stream" service.
+func NewSinkStatisticsTotalResponseBody(res *stream.SinkStatisticsTotalResult) *SinkStatisticsTotalResponseBody {
+	body := &SinkStatisticsTotalResponseBody{}
+	if res.Total != nil {
+		body.Total = marshalStreamLevelToLevelResponseBody(res.Total)
+	}
+	if res.Levels != nil {
+		body.Levels = marshalStreamLevelsToLevelsResponseBody(res.Levels)
 	}
 	return body
 }
@@ -1395,6 +1454,30 @@ func NewDeleteSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *D
 	return body
 }
 
+// NewSinkStatisticsTotalStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatisticsTotal" endpoint of the
+// "stream" service.
+func NewSinkStatisticsTotalStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsTotalStreamAPISourceNotFoundResponseBody {
+	body := &SinkStatisticsTotalStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkStatisticsTotalStreamAPISinkNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatisticsTotal" endpoint of the
+// "stream" service.
+func NewSinkStatisticsTotalStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsTotalStreamAPISinkNotFoundResponseBody {
+	body := &SinkStatisticsTotalStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -1612,6 +1695,18 @@ func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID
 // NewDeleteSinkPayload builds a stream service DeleteSink endpoint payload.
 func NewDeleteSinkPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.DeleteSinkPayload {
 	v := &stream.DeleteSinkPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSinkStatisticsTotalPayload builds a stream service SinkStatisticsTotal
+// endpoint payload.
+func NewSinkStatisticsTotalPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsTotalPayload {
+	v := &stream.SinkStatisticsTotalPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)

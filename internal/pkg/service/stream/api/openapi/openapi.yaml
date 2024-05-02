@@ -668,6 +668,49 @@ paths:
                 - https
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total:
+        get:
+            tags:
+                - configuration
+            summary: Sink statistics total
+            description: Get total statistics of the sink.
+            operationId: SinkStatisticsTotal
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+                - name: sinkId
+                  in: path
+                  description: Unique ID of the sink.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/StreamSinkStatisticsTotalResponseBody'
+                        required:
+                            - total
+                            - levels
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamSinkStatisticsTotalStreamAPISinkNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
         post:
             tags:
@@ -887,6 +930,40 @@ definitions:
             - at
             - by
             - reason
+    GetVersionResponseBody:
+        title: GetVersionResponseBody
+        type: object
+        properties:
+            description:
+                type: string
+                description: Description of the change.
+                example: The reason for the last change was...
+            hash:
+                type: string
+                description: Hash of the entity state.
+                example: f43e93acd97eceb3
+            modifiedAt:
+                type: string
+                description: Date and time of the modification.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            number:
+                type: integer
+                description: GetVersion number counted from 1.
+                example: 3
+                format: int64
+                minimum: 1
+        description: GetVersion of the entity.
+        example:
+            number: 3
+            hash: f43e93acd97eceb3
+            modifiedAt: "2022-04-28T14:20:04.000Z"
+            description: The reason for the last change was...
+        required:
+            - number
+            - hash
+            - modifiedAt
+            - description
     HTTPSourceResponseBody:
         title: HTTPSourceResponseBody
         type: object
@@ -900,6 +977,66 @@ definitions:
             url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
         required:
             - url
+    LevelResponseBody:
+        title: LevelResponseBody
+        type: object
+        properties:
+            firstRecordAt:
+                type: string
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            lastRecordAt:
+                type: string
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            recordsCount:
+                type: integer
+                example: 1
+                format: int64
+            uncompressedSize:
+                type: integer
+                example: 1
+                format: int64
+        example:
+            firstRecordAt: "2022-04-28T14:20:04.000Z"
+            lastRecordAt: "2022-04-28T14:20:04.000Z"
+            recordsCount: 1
+            uncompressedSize: 1
+        required:
+            - firstRecordAt
+            - lastRecordAt
+            - recordsCount
+            - uncompressedSize
+    LevelsResponseBody:
+        title: LevelsResponseBody
+        type: object
+        properties:
+            local:
+                $ref: '#/definitions/LevelResponseBody'
+            staging:
+                $ref: '#/definitions/LevelResponseBody'
+            target:
+                $ref: '#/definitions/LevelResponseBody'
+        example:
+            local:
+                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                recordsCount: 1
+                uncompressedSize: 1
+            staging:
+                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                recordsCount: 1
+                uncompressedSize: 1
+            target:
+                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                recordsCount: 1
+                uncompressedSize: 1
+        required:
+            - local
+            - staging
+            - target
     PaginatedResponseResponseBody:
         title: PaginatedResponseResponseBody
         type: object
@@ -1055,7 +1192,7 @@ definitions:
                 enum:
                     - table
             version:
-                $ref: '#/definitions/VersionResponseBody'
+                $ref: '#/definitions/GetVersionResponseBody'
         description: A mapping from imported data to a destination table.
         example:
             projectId: 123
@@ -1206,7 +1343,7 @@ definitions:
                 enum:
                     - http
             version:
-                $ref: '#/definitions/VersionResponseBody'
+                $ref: '#/definitions/GetVersionResponseBody'
         description: Source of data for further processing, start of the stream, max 100 sources per a branch.
         example:
             projectId: 123
@@ -1803,7 +1940,7 @@ definitions:
                 enum:
                     - table
             version:
-                $ref: '#/definitions/VersionResponseBody'
+                $ref: '#/definitions/GetVersionResponseBody'
         example:
             projectId: 123
             branchId: 345
@@ -2084,7 +2221,7 @@ definitions:
                 enum:
                     - http
             version:
-                $ref: '#/definitions/VersionResponseBody'
+                $ref: '#/definitions/GetVersionResponseBody'
         example:
             projectId: 123
             branchId: 345
@@ -2787,7 +2924,7 @@ definitions:
                 enum:
                     - http
             version:
-                $ref: '#/definitions/VersionResponseBody'
+                $ref: '#/definitions/GetVersionResponseBody'
         example:
             projectId: 123
             branchId: 345
@@ -2876,6 +3013,91 @@ definitions:
             - sinks
     StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody:
         title: StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Source not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sourceNotFound
+            message: Source "github-pull-requests" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamSinkStatisticsTotalResponseBody:
+        title: StreamSinkStatisticsTotalResponseBody
+        type: object
+        properties:
+            levels:
+                $ref: '#/definitions/LevelsResponseBody'
+            total:
+                $ref: '#/definitions/LevelResponseBody'
+        example:
+            total:
+                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                recordsCount: 1
+                uncompressedSize: 1
+            levels:
+                local:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                staging:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                target:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+        required:
+            - total
+            - levels
+    StreamSinkStatisticsTotalStreamAPISinkNotFoundResponseBody:
+        title: StreamSinkStatisticsTotalStreamAPISinkNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Sink not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sinkNotFound
+            message: Sink "github-changed-files" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamSinkStatisticsTotalStreamAPISourceNotFoundResponseBody:
+        title: StreamSinkStatisticsTotalStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:
@@ -3748,40 +3970,6 @@ definitions:
             branchId: 345
             sourceId: github-webhook-source
             sinkId: github-pr-table-sink
-    VersionResponseBody:
-        title: VersionResponseBody
-        type: object
-        properties:
-            description:
-                type: string
-                description: Description of the change.
-                example: The reason for the last change was...
-            hash:
-                type: string
-                description: Hash of the entity state.
-                example: f43e93acd97eceb3
-            modifiedAt:
-                type: string
-                description: Date and time of the modification.
-                example: "2022-04-28T14:20:04.000Z"
-                format: date-time
-            number:
-                type: integer
-                description: Version number counted from 1.
-                example: 3
-                format: int64
-                minimum: 1
-        description: Version of the entity.
-        example:
-            number: 3
-            hash: f43e93acd97eceb3
-            modifiedAt: "2022-04-28T14:20:04.000Z"
-            description: The reason for the last change was...
-        required:
-            - number
-            - hash
-            - modifiedAt
-            - description
 securityDefinitions:
     storage-api-token:
         type: apiKey

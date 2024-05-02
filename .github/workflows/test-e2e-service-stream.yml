@@ -5,33 +5,27 @@ on:
 
 env:
   GO_VERSION: 1.22.2
-  TEST_PARALLELISM: 4
+  TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
-  TEST_KBC_PROJECTS: |
-    [
-      {"host":"connection.keboola.com","project":8769,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }}"},
-      {"host":"connection.keboola.com","project":8775,"stagingStorage":"s3","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }}"},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":43,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_43_TOKEN }}"},
-      {"host":"connection.europe-west3.gcp.keboola.com","project":44,"stagingStorage":"gcs","backend":"bigquery","token":"${{ secrets.TEST_KBC_PROJECT_44_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10900,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10900_TOKEN }}"},
-      {"host":"connection.north-europe.azure.keboola.com","project":10906,"stagingStorage":"abs","backend":"snowflake","token":"${{ secrets.TEST_KBC_PROJECT_10906_TOKEN }}"}
-    ]
 
 jobs:
   test:
     name: test
-    concurrency:
-      group: tests-e2e-service-buffer
-      cancel-in-progress: false
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: Setup line endings
         run: git config --global core.autocrlf false
-
+      
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set TEST_KBC_PROJECTS
+        uses: ./.github/actions/export-kbc-projects
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          projects: ${{ vars.TEST_KBC_PROJECTS }}
 
       - name: Load Go cache
         uses: ./.github/actions/go-cache
@@ -58,6 +52,8 @@ jobs:
         run: make tests-stream-api
         shell: bash
         env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           STREAM_ETCD_ENDPOINT: etcd:2379
           STREAM_ETCD_USERNAME: root
           STREAM_ETCD_PASSWORD: toor
