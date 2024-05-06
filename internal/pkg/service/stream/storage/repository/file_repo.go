@@ -94,6 +94,11 @@ func (r *FileRepository) Get(fileKey model.FileKey) op.WithResult[model.File] {
 	})
 }
 
+// GetLimitedList retrieves a limited number of files from the repository.
+func (r *FileRepository) GetLimitedList(limit int) iterator.DefinitionT[model.File] {
+	return r.schema.GetAll(r.client, iterator.WithSort(etcd.SortAscend), iterator.WithLimit(limit))
+}
+
 // Rotate closes the opened file, if present, and opens a new file in the table sink.
 //   - The old file, if present, is switched from the model.FileWriting state to the model.FileClosing state.
 //   - New file in the model.FileWriting is created.
