@@ -396,6 +396,20 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("SinkStatisticsFiles", func() {
+		Meta("openapi:summary", "Sink files statistics")
+		Description("Get files statistics of the sink.")
+		Result(SinkStatisticsFilesResult)
+		Payload(GetSinkStatisticsFilesRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
 	// Task endpoints --------------------------------------------------------------------------------------------------
 
 	Method("GetTask", func() {
@@ -823,6 +837,54 @@ var Level = Type("Level", func() {
 	Required("recordsCount")
 	Attribute("uncompressedSize", UInt64)
 	Required("uncompressedSize")
+})
+
+var GetSinkStatisticsFilesRequest = Type("GetSinkStatisticsFilesRequest", func() {
+	SinkKeyRequest()
+})
+
+var SinkStatisticsFilesResult = Type("SinkStatisticsFilesResult", func() {
+	Attribute("files", SinkFiles)
+	Required("files")
+})
+
+var SinkFiles = Type("SinkFiles", ArrayOf(SinkFile), func() {
+	Description(fmt.Sprintf("List of recent sink files."))
+})
+
+var SinkFile = Type("SinkFile", func() {
+	Attribute("openedAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("openedAt")
+	Attribute("closingAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("importingAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("importedAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("state", FileState)
+	Attribute("statistics", SinkFileStatistics)
+})
+
+var SinkFileStatistics = Type("SinkFileStatistics", func() {
+	Attribute("total", Level)
+	Required("total")
+	Attribute("levels", Levels)
+	Required("levels")
+})
+
+var FileState = Type("FileState", String, func() {
+	// Meta("struct:field:type", "= definition.FileState", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
+	// Enum(definition.FileStateOpen.String())
+	// Example(definition.FileStateOpen.String())
 })
 
 var SinkFieldsRW = func() {
