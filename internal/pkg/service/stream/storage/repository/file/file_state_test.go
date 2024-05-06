@@ -3,6 +3,7 @@ package file_test
 import (
 	"bytes"
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
+	sliceRepo := storageRepo.Slice()
 	volumeRepo := storageRepo.Volume()
 
 	// Log etcd operations
@@ -77,6 +79,24 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
+	// Mark all slices as Uploading
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
+			return sliceRepo.SwitchToUploading(s.SliceKey, clk.Now()).Do(ctx).Err()
+		}).Do(ctx).Err())
+	}
+
+	// Mark all slices as Uploading
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
+			return sliceRepo.SwitchToUploaded(s.SliceKey, clk.Now()).Do(ctx).Err()
+		}).Do(ctx).Err())
+	}
+
 	// Switch file to the Importing state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -97,5 +117,5 @@ func TestFileRepository_StateTransition(t *testing.T) {
 
 	// Check etcd state - there is no file
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume"))
 }

@@ -26,6 +26,16 @@ func (r *Repository) updateSlicesOnFileImport() {
 	})
 }
 
+func (r *Repository) validateSlicesOnFileStateTransition() {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
+		if original != nil && original.State != updated.State && updated.State != model.FileClosing && updated.State != model.FileImported {
+			// FileClosing state is handled by the closeSliceOnFileClose method.
+			// FileImported state is handled by the updateSlicesOnFileImport method.
+			op.AtomicFromCtx(ctx).AddFrom(r.validateSliceStates(*updated))
+		}
+	})
+}
+
 func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to model.SliceState) *op.AtomicOp[model.Slice] {
 	var file model.File
 	var old, updated model.Slice
@@ -79,6 +89,22 @@ func (r *Repository) switchSlicesToImported(now time.Time, file model.File) *op.
 		// Close slices
 		Write(func(ctx context.Context) op.Op {
 			return r.switchStateInBatch(ctx, file.State, slices, now, model.SliceUploaded, model.SliceImported).SetResultTo(&updated)
+		})
+}
+
+func (r *Repository) validateSliceStates(file model.File) *op.AtomicOp[[]model.Slice] {
+	var slices, updated []model.Slice
+	return op.Atomic(r.client, &updated).
+		// Load slices
+		ReadOp(r.ListIn(file.FileKey).WithAllTo(&slices)).
+		// Validate slices states
+		OnWriteOrErr(func(ctx context.Context) error {
+			for _, slice := range slices {
+				if err := validateFileAndSliceState(file.State, slice.State); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 }
 

@@ -52,6 +52,7 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 	r.deleteSlicesOnFileDelete()
 	r.closeSliceOnFileClose()
 	r.updateSlicesOnFileImport()
+	r.validateSlicesOnFileStateTransition()
 
 	return r
 }

@@ -3,6 +3,7 @@ package file_test
 import (
 	"bytes"
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
+	sliceRepo := storageRepo.Slice()
 	volumeRepo := storageRepo.Volume()
 
 	// Log etcd operations
@@ -78,6 +80,24 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
+	// Mark all slices as Uploading
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
+			return sliceRepo.SwitchToUploading(s.SliceKey, clk.Now()).Do(ctx).Err()
+		}).Do(ctx).Err())
+	}
+
+	// Mark all slices as Uploading
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
+			return sliceRepo.SwitchToUploaded(s.SliceKey, clk.Now()).Do(ctx).Err()
+		}).Do(ctx).Err())
+	}
+
 	// Switch file to the Importing state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -93,6 +113,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, file)
 		assert.Equal(t, model.FileImporting, file.State)
+		assert.Equal(t, 1, file.RetryAttempt)
 	}
 
 	// Import failed again, increment retry attempt
@@ -103,6 +124,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, file)
 		assert.Equal(t, model.FileImporting, file.State)
+		assert.Equal(t, 2, file.RetryAttempt)
 	}
 
 	// Check etcd logs
@@ -111,16 +133,19 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume"))
 
 	// Switch file to the Imported state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.SwitchToImported(fileKey, clk.Now()).Do(ctx).Err())
+		file, err := fileRepo.SwitchToImported(fileKey, clk.Now()).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, model.FileImported, file.State)
+		assert.Equal(t, 0, file.RetryAttempt)
 	}
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume"))
 }

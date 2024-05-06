@@ -106,5 +106,5 @@ func TestSliceRepository_Rotate(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_rotate_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_rotate_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/|storage/volume"))
 }

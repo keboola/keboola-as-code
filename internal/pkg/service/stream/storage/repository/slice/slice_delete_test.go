@@ -97,5 +97,5 @@ func TestSliceRepository_DeleteSliceOnFileDelete(t *testing.T) {
 
 	// Check etcd state - there is no file
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsString(t, client, ``, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsString(t, client, ``, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/secret/|storage/volume"))
 }

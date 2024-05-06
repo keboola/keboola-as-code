@@ -101,6 +101,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 		slice, err := sliceRepo.IncrementRetry(clk.Now(), sliceKey, "some reason 1").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice.State)
+		assert.Equal(t, 1, slice.RetryAttempt)
 	}
 
 	// Upload failed again, increment retry attempt
@@ -111,6 +112,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 		slice, err := sliceRepo.IncrementRetry(clk.Now(), sliceKey, "some reason 2").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice.State)
+		assert.Equal(t, 2, slice.RetryAttempt)
 	}
 
 	// Check etcd logs
@@ -119,5 +121,19 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_retry_snapshot_002.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_retry_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/|storage/volume"))
+
+	// Switch slice to the Uploaded state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		slice, err := sliceRepo.SwitchToUploaded(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, model.SliceUploaded, slice.State)
+		assert.Equal(t, 0, slice.RetryAttempt)
+	}
+
+	// Check etcd state
+	// -----------------------------------------------------------------------------------------------------------------
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/slice_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/|storage/volume"))
 }

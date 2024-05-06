@@ -119,6 +119,9 @@ func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 // AddError - all static errors are returned when the low level txn is composed.
 // It makes error handling easier and move it to one place.
 func (v *TxnOp[R]) AddError(errs ...error) *TxnOp[R] {
+	if v.errs == nil {
+		v.errs = errors.NewMultiError()
+	}
 	v.errs.Append(errs...)
 	return v
 }
@@ -206,7 +209,9 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	errs := errors.NewMultiError()
 
 	// Copy init errors
-	errs.Append(v.errs.WrappedErrors()...)
+	if v.errs != nil {
+		errs.Append(v.errs.WrappedErrors()...)
+	}
 
 	// Copy IFs
 	out.ifs = make([]etcd.Cmp, len(v.ifs))

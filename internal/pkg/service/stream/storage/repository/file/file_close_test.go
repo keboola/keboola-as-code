@@ -85,7 +85,7 @@ func TestFileRepository_CloseFileOnSourceDeactivation(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_close_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_close_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume/"))
 }
 
 func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
@@ -150,5 +150,5 @@ func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_close_snapshot_002.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_close_snapshot_002.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume/"))
 }
