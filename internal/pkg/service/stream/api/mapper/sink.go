@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
@@ -18,9 +19,19 @@ func (m *Mapper) NewSinkStatisticsTotalResponse(result statistics.Aggregated) (r
 
 func mapValueToLevel(value statistics.Value) *stream.Level {
 	return &stream.Level{
-		FirstRecordAt:    value.FirstRecordAt.String(),
-		LastRecordAt:     value.LastRecordAt.String(),
+		FirstRecordAt:    timeValueToPointer(value.FirstRecordAt),
+		LastRecordAt:     timeValueToPointer(value.LastRecordAt),
 		RecordsCount:     value.RecordsCount,
 		UncompressedSize: uint64(value.UncompressedSize),
 	}
+}
+
+func timeValueToPointer(time utctime.UTCTime) *string {
+	var result *string
+	if !time.IsZero() {
+		value := time.String()
+		result = &value
+	}
+
+	return result
 }

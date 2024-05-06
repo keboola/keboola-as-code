@@ -814,12 +814,10 @@ var Level = Type("Level", func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Required("firstRecordAt")
 	Attribute("lastRecordAt", String, func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Required("lastRecordAt")
 	Attribute("recordsCount", UInt64)
 	Required("recordsCount")
 	Attribute("uncompressedSize", UInt64)
