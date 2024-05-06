@@ -37,6 +37,11 @@ func (s *service) UpdateSinkSettings(context.Context, dependencies.SinkRequestSc
 }
 
 func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRequestScope, payload *stream.SinkStatisticsTotalPayload) (res *stream.SinkStatisticsTotalResult, err error) {
+	err = s.repo.Sink().ExistsOrErr(d.SinkKey()).Do(ctx).Err()
+	if err != nil {
+		return nil, err
+	}
+
 	stats, err := d.StatisticsRepository().SinkStats(ctx, d.SinkKey())
 	if err != nil {
 		return nil, err
