@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
@@ -17,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"

@@ -4,10 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 

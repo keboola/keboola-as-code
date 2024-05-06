@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"

@@ -7,6 +7,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
+
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -14,9 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.etcd.io/etcd/client/v3/concurrency"
 )
 
 func TestFileRepository_Get(t *testing.T) {

@@ -1,12 +1,14 @@
 package etcdlogger
 
 import (
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/umisama/go-regexpcache"
 	"os"
 	"path/filepath"
+
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type tHelper interface {
