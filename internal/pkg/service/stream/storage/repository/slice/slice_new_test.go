@@ -48,7 +48,7 @@ func TestNewSlice_InvalidCompressionType(t *testing.T) {
 
 	// Create file
 	cfg := level.NewConfig()
-	file, err := fileRepo.NewFile(cfg, fileKey, sink)
+	file, err := fileRepo.newFile(cfg, fileKey, sink)
 	require.NoError(t, err)
 
 	// Set unsupported compression type

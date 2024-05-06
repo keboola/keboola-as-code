@@ -5,20 +5,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/state"
 	"time"
 )
 
-func (r *Repository) openSlicesOnFileCreation() {
+func (r *Repository) openSlicesOnFileCreate() {
 	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
 		if original == nil {
-			// Open slices
-			op.AtomicFromCtx(ctx).AddFrom(r.openSlicesInFile(now, *updated))
+			op.AtomicFromCtx(ctx).AddFrom(r.openSlicesForFile(now, *updated))
 		}
 	})
 }
 
-func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
+func (r *Repository) openSlicesForFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
 	var newSlices []model.Slice
 	return op.Atomic(r.client, &newSlices).
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
@@ -28,12 +26,10 @@ func (r *Repository) openSlicesInFile(now time.Time, file model.File) *op.Atomic
 					txn.Merge(t.OnSucceeded(func(r *op.TxnResult[model.Slice]) {
 						newSlices = append(newSlices, r.Result())
 					}))
-
 				} else {
 					return nil, err
 				}
 			}
-
 			return txn, nil
 		})
 }
@@ -46,7 +42,7 @@ func (r *Repository) openSlice(ctx context.Context, now time.Time, file model.Fi
 	}
 
 	// Validate file state
-	if err := state.ValidateFileAndSliceState(file.State, newSlice.State); err != nil {
+	if err := validateFileAndSliceState(file.State, newSlice.State); err != nil {
 		return nil, err
 	}
 

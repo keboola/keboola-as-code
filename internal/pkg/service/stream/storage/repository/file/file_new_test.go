@@ -49,7 +49,7 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 	cfg.Local.Compression.Type = compression.TypeZSTD
 
 	// Assert
-	_, err := NewFile(cfg, fileKey, sink)
+	_, err := newFile(cfg, fileKey, sink)
 	require.Error(t, err)
 	assert.Equal(t, `file compression type "zstd" is not supported`, err.Error())
 }

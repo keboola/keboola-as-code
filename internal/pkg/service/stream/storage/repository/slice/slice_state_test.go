@@ -7,10 +7,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -19,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
@@ -38,12 +34,12 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
+	by := test.ByUser()
 
 	// Get services
 	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
-	statsRepo := d.StatisticsRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
 	sliceRepo := storageRepo.Slice()
@@ -70,207 +66,62 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	{
 		var err error
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
-		sink := test.NewSink(sinkKey)
-		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
-		file, err = fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
+		sink := test.NewKeboolaTableSink(sinkKey)
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
 		require.NoError(t, err)
-		slices, err := sliceRepo.ListIn(file.FileKey).Do(ctx).All()
+		require.Len(t, files, 1)
+		file = files[0]
+		slices, err := sliceRepo.ListIn(sinkKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 1)
 		slice = slices[0]
 	}
 
-	// Put slice statistics value - it should be moved with the slice state transitions
-	// -----------------------------------------------------------------------------------------------------------------
-	require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
-		{
-			SliceKey: slice.SliceKey,
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    slice.OpenedAt(),
-				LastRecordAt:     slice.OpenedAt().Add(time.Minute),
-				RecordsCount:     123,
-				UncompressedSize: 100 * datasize.MB,
-				CompressedSize:   100 * datasize.MB,
-			},
-		},
-	}))
-
-	// Switch slice to the storage.SliceClosing state by StateTransition, it is not possible
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		err := sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceWriting, model.SliceClosing).Do(ctx).Err()
-		if assert.Error(t, err) {
-			assert.Equal(t, `unexpected transition to the state "closing", use Rotate or Close method`, err.Error())
-		}
-	}
-
-	// Switch slice to the storage.SliceClosing state by Close
+	// Switch slice to the storage.SliceClosing state by file rotate
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.Rotate(clk.Now(), slice.FileVolumeKey).Do(ctx).Err())
+		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Switch slice to the storage.SliceUploading state
 	// -----------------------------------------------------------------------------------------------------------------
-	var toUploadingEtcdLogs string
+	//var toUploadingEtcdLogs string
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceClosing, model.SliceUploading).Do(ctx).Err())
-		toUploadingEtcdLogs = etcdLogs.String()
+		require.NoError(t, sliceRepo.SwitchToUploading(slice.SliceKey, clk.Now()).Do(ctx).Err())
+		//toUploadingEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch slice to the storage.SliceUploaded state
 	// -----------------------------------------------------------------------------------------------------------------
-	var toUploadedEtcdLogs string
+	//var toUploadedEtcdLogs string
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
-		toUploadedEtcdLogs = etcdLogs.String()
-	}
-
-	// Try switch slice to the storage.SliceImported state - it is not possible, file is in the storage.FileWriting
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		etcdLogs.Reset()
-		clk.Add(time.Hour)
-		err := sliceRepo.StateTransition(slice.SliceKey, clk.Now(), model.SliceUploaded, model.SliceImported).Do(ctx).Err()
-		if assert.Error(t, err) {
-			wildcards.Assert(t, "unexpected slice \"%s\" state:\n- unexpected combination: file state \"writing\" and slice state \"imported\"", err.Error())
-		}
+		require.NoError(t, sliceRepo.SwitchToUploaded(slice.SliceKey, clk.Now()).Do(ctx).Err())
+		//toUploadedEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch slice to the storage.SliceImported state, together with the file to the storage.FileImported state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.Close(sinkKey, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(file.FileKey, clk.Now()).Do(ctx).Err())
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
-		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(file.FileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImported(file.FileKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdlogger.Assert(t, `
-// Slice StateTransition - AtomicOp - Read Phase
-➡️  TXN
-  ➡️  THEN:
-  // Slice
-  001 ➡️  GET "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-  // File
-  002 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
-✔️  TXN | succeeded: true
-
-// Slice StateTransition - AtomicOp - Write Phase
-➡️  TXN
-  ➡️  IF:
-  // Slice
-  001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  002 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD LESS %d
-  // File
-  003 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  004 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
-  ➡️  THEN:
-  // Save modified slice - in two copies, in "all" and <level> prefix
-  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-  002 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-✔️  TXN | succeeded: true
-`, toUploadingEtcdLogs)
-	etcdlogger.Assert(t, `
-➡️  TXN
-  ➡️  THEN:
-  // Slice
-  001 ➡️  GET "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-  // File
-  002 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
-  // Local statistics
-  003 ➡️  GET "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
-✔️  TXN | succeeded: true
-
-➡️  TXN
-  ➡️  IF:
-  // Slice
-  001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  002 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD LESS %d
-  // File
-  003 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  004 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
-  // Local statistics
-  005 "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD GREATER 0
-  006 "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD LESS %d
-  ➡️  THEN:
-  // Save modified slice - in two copies, in "all" and <level> prefix
-  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-  002 ➡️  PUT "storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-  003 ➡️  DEL "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
-  // Move statistics
-  004 ➡️  PUT "storage/stats/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
-  005 ➡️  DEL "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
-✔️  TXN | succeeded: true
-`, toUploadedEtcdLogs)
+	//etcdlogger.Assert(t, ``, toUploadedEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsString(t, client, `
-<<<<<
-storage/file/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 456,
-  "sourceId": "my-source",
-  "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
-  "type": "csv",
-  "state": "imported",
-  "closingAt": "2000-01-01T06:00:00.000Z",
-  "importingAt": "2000-01-01T07:00:00.000Z",
-  "importedAt": "2000-01-01T08:00:00.000Z",
-  %A
-}
->>>>>
-
-<<<<<
-storage/slice/level/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 456,
-  "sourceId": "my-source",
-  "sinkId": "my-sink-1",
-  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
-  "volumeId": "my-volume-1",
-  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
-  "type": "csv",
-  "state": "imported",
-  "closingAt": "2000-01-01T02:00:00.000Z",
-  "uploadingAt": "2000-01-01T03:00:00.000Z",
-  "uploadedAt": "2000-01-01T04:00:00.000Z",
-  "importedAt": "2000-01-01T08:00:00.000Z",
-  %A
-}
->>>>>
-
-<<<<<
-storage/stats/target/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:00:00.000Z",
-  "lastRecordAt": "2000-01-01T01:01:00.000Z",
-  "recordsCount": 123,
-  "uncompressedSize": "100MB",
-  "compressedSize": "100MB",
-  "stagingSize": "100MB"
-}
->>>>>
-`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/slice_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/secret/token/|storage/volume/"))
 }

@@ -80,7 +80,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(fileKey, clk.Now(), model.FileClosing, model.FileImporting).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(fileKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Import failed, increment retry attempt
@@ -115,7 +115,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.StateTransition(fileKey, clk.Now(), model.FileImporting, model.FileImported).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImported(fileKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Check etcd state

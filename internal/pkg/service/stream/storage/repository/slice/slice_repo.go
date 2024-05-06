@@ -2,9 +2,10 @@ package slice
 
 import (
 	"context"
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/deepcopy"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -20,6 +21,7 @@ import (
 // Repository provides database operations with the storage.Slice entity.
 // The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
+	logger     log.Logger
 	client     etcd.KV
 	schema     schema.Slice
 	backoff    model.RetryBackoff
@@ -29,6 +31,7 @@ type Repository struct {
 }
 
 type dependencies interface {
+	Logger() log.Logger
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
@@ -37,6 +40,7 @@ type dependencies interface {
 
 func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.Repository) *Repository {
 	r := &Repository{
+		logger:     d.Logger(),
 		client:     d.EtcdClient(),
 		schema:     schema.New(d.EtcdSerde()),
 		backoff:    backoff,
@@ -45,30 +49,12 @@ func NewRepository(d dependencies, backoff model.RetryBackoff, files *fileRepo.R
 		plugins:    d.Plugins(),
 	}
 
-	r.openSlicesOnFileCreation()
-	r.stateTransitionWithFile()
+	r.openSlicesOnFileCreate()
+	r.deleteSlicesOnFileDelete()
+	r.closeSliceOnFileClose()
+	r.updateSlicesOnFileImport()
 
 	return r
-}
-
-// update reads the slice, applies updateFn and save modified value.
-func (r *Repository) update(k model.SliceKey, now time.Time, updateFn func(model.Slice) (model.Slice, error)) *op.AtomicOp[model.Slice] {
-	var old, updated model.Slice
-	return op.Atomic(r.client, &updated).
-		// Read entity for modification
-		ReadOp(r.Get(k).WithResultTo(&old)).
-		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
-			// Update
-			updated = deepcopy.Copy(old).(model.Slice)
-			updated, err = updateFn(updated)
-			if err != nil {
-				return nil, err
-			}
-
-			// Save
-			return r.save(ctx, now, &old, &updated), nil
-		})
 }
 
 func (r *Repository) save(ctx context.Context, now time.Time, old, updated *model.Slice) *op.TxnOp[model.Slice] {
@@ -119,4 +105,36 @@ func (r *Repository) save(ctx context.Context, now time.Time, old, updated *mode
 	}
 
 	return saveTxn
+}
+
+// update reads the slice, applies updateFn and save modified value.
+func (r *Repository) update(k model.SliceKey, now time.Time, updateFn func(model.Slice) (model.Slice, error)) *op.AtomicOp[model.Slice] {
+	var old, updated model.Slice
+	return op.Atomic(r.client, &updated).
+		// Read entity for modification
+		ReadOp(r.Get(k).WithResultTo(&old)).
+		// Update the entity
+		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
+			// Update
+			updated = deepcopy.Copy(old).(model.Slice)
+			updated, err = updateFn(updated)
+			if err != nil {
+				return nil, err
+			}
+
+			// Save
+			return r.save(ctx, now, &old, &updated), nil
+		})
+}
+
+// loadFileIfNil - if the file pointer is nil, a new value is allocated and later loaded,
+// it will be available after the atomic operation Read phase.
+func (r *Repository) loadFileIfNil(atomicOp *op.AtomicOpCore, k model.FileKey, file *model.File) *model.File {
+	if file == nil {
+		file = &model.File{}
+		atomicOp.Read(func(ctx context.Context) op.Op {
+			return r.files.Get(k).WithResultTo(file)
+		})
+	}
+	return file
 }

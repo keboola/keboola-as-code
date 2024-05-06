@@ -146,7 +146,6 @@ func (r *Repository) isSinkWithLocalStorage(sink *definition.Sink) bool {
 // loadSourceIfNil - if the source pointer is nil, a new value is allocated and later loaded,
 // it will be available after the atomic operation Read phase.
 func (r *Repository) loadSourceIfNil(atomicOp *op.AtomicOpCore, k key.SourceKey, source *definition.Source) *definition.Source {
-	// Load Source entity, if needed
 	if source == nil {
 		source = &definition.Source{}
 		atomicOp.Read(func(ctx context.Context) op.Op {

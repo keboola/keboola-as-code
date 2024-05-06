@@ -23,13 +23,13 @@ func (r *Repository) openFileOnSinkActivation() {
 		}
 
 		// Open a new file
-		op.AtomicFromCtx(ctx).AddFrom(r.openSink(now, sink.SinkKey, plugin.SourceFromContext(ctx), sink))
+		op.AtomicFromCtx(ctx).AddFrom(r.openFileForSink(now, sink.SinkKey, plugin.SourceFromContext(ctx), sink))
 	})
 }
 
-func (r *Repository) openSink(now time.Time, k key.SinkKey, source *definition.Source, sink *definition.Sink) *op.AtomicOp[model.File] {
-	var newFile model.File
-	atomicOp := op.Atomic(r.client, &newFile)
+func (r *Repository) openFileForSink(now time.Time, k key.SinkKey, source *definition.Source, sink *definition.Sink) *op.AtomicOp[model.File] {
+	var file model.File
+	atomicOp := op.Atomic(r.client, &file)
 
 	source = r.loadSourceIfNil(atomicOp.Core(), k.SourceKey, source)
 	sink = r.loadSinkIfNil(atomicOp.Core(), k, sink)
@@ -49,21 +49,21 @@ func (r *Repository) openSink(now time.Time, k key.SinkKey, source *definition.S
 		// Create file entity
 		var err error
 		fileKey := model.FileKey{SinkKey: sink.SinkKey, FileID: model.FileID{OpenedAt: utctime.From(now)}}
-		newFile, err = NewFile(cfg, fileKey, *sink)
+		file, err = newFile(cfg, fileKey, *sink)
 		if err != nil {
 			return nil, err
 		}
 
 		// Assign volumes
-		newFile.Assignment = r.volumes.AssignVolumes(cfg.Local.Volume.Assignment, newFile.OpenedAt().Time())
+		file.Assignment = r.volumes.AssignVolumes(cfg.Local.Volume.Assignment, file.OpenedAt().Time())
 
 		// At least one volume must be assigned
-		if len(newFile.Assignment.Volumes) == 0 {
+		if len(file.Assignment.Volumes) == 0 {
 			return nil, errors.New(`no volume is available for the file`)
 		}
 
 		// Save new file
-		return r.save(ctx, now, nil, &newFile), nil
+		return r.save(ctx, now, nil, &file), nil
 	})
 
 	return atomicOp

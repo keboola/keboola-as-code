@@ -18,11 +18,11 @@ func (r *Repository) closeFileOnSinkDeactivation() {
 		}
 
 		// Close active file, if any
-		op.AtomicFromCtx(ctx).AddFrom(r.closeSink(now, sink.SinkKey))
+		op.AtomicFromCtx(ctx).AddFrom(r.closeFileInSink(now, sink.SinkKey))
 	})
 }
 
-func (r *Repository) closeSink(now time.Time, k key.SinkKey) *op.AtomicOp[[]model.File] {
+func (r *Repository) closeFileInSink(now time.Time, k key.SinkKey) *op.AtomicOp[[]model.File] {
 	var closedFiles []model.File
 	atomicOp := op.Atomic(r.client, &closedFiles)
 
@@ -34,8 +34,7 @@ func (r *Repository) closeSink(now time.Time, k key.SinkKey) *op.AtomicOp[[]mode
 	atomicOp.WriteOrErr(func(ctx context.Context) (op.Op, error) {
 		// There should be a maximum of one old file in the model.FileWriting state per each table sink.
 		// Log error and close all found files.
-		filesCount := len(activeFiles)
-		if filesCount > 1 {
+		if filesCount := len(activeFiles); filesCount > 1 {
 			r.logger.Errorf(ctx, `unexpected state, found %d opened files in the sink "%s"`, filesCount, k)
 		}
 

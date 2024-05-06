@@ -3,15 +3,8 @@ package slice_test
 import (
 	"bytes"
 	"context"
-	"testing"
-	"time"
-
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.etcd.io/etcd/client/v3/concurrency"
-
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -20,9 +13,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
+	"testing"
+	"time"
 )
 
-func TestSliceRepository_Rotate(t *testing.T) {
+func TestSliceRepository_IncrementRetry(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -78,26 +76,39 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		sliceKey = slice.SliceKey
 	}
 
-	// Rotate (1)
+	// Rotate
 	// -----------------------------------------------------------------------------------------------------------------
 	// var rotateEtcdLogs string
 	{
-		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		slice2, err := sliceRepo.Rotate(clk.Now(), sliceKey).Do(ctx).ResultOrErr()
-		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), slice2.OpenedAt().Time())
-		// rotateEtcdLogs = etcdLogs.String()
+		require.NoError(t, sliceRepo.Rotate(clk.Now(), sliceKey).Do(ctx).Err())
 	}
 
-	// Rotate (2)
+	// Switch the slice to the Uploading state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		clk.Add(time.Hour)
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey, clk.Now()).Do(ctx).Err())
+	}
+
+	// Upload failed, increment retry attempt
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		var err error
 		clk.Add(time.Hour)
-		slice3, err := sliceRepo.Rotate(clk.Now(), sliceKey).Do(ctx).ResultOrErr()
+		slice, err := sliceRepo.IncrementRetry(clk.Now(), sliceKey, "some reason 1").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, clk.Now(), slice3.OpenedAt().Time())
+		assert.Equal(t, model.SliceUploading, slice.State)
+	}
+
+	// Upload failed again, increment retry attempt
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		var err error
+		clk.Add(time.Hour)
+		slice, err := sliceRepo.IncrementRetry(clk.Now(), sliceKey, "some reason 2").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, model.SliceUploading, slice.State)
 	}
 
 	// Check etcd logs
@@ -109,5 +120,5 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	//   - Other slices per file and volume are in the storage.SlicesClosing state.
 	//   - AllocatedDiskSpace of the slice5 is 330MB it is 110% of the slice3.
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_rotate_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_retry_snapshot_002.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
 }
