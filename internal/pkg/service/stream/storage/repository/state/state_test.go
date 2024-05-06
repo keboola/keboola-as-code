@@ -26,6 +26,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	by := test.ByUser()
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -55,12 +56,12 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(3, []string{"default"}))
-		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
 	// Create file (the first rotate) - with 3 slices, see Sink config above
@@ -83,7 +84,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// INVALID: SliceUploading - invalid transition
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceWriting, model.SliceUploading).Do(ctx).Err()
+		err := sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceWriting, model.SliceUploading).Do(ctx).Err()
 		require.Error(t, err)
 		assert.Equal(t, `unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" state transition from "writing" to "uploading"`, err.Error())
 	}
@@ -124,7 +125,7 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// INVALID: from argument doesn't match
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceWriting, model.SliceUploading).Do(ctx).Err()
+		err := sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceWriting, model.SliceUploading).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, `slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" is in "closing" state, expected "writing"`, err.Error())
 		}
@@ -133,8 +134,8 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// VALID: SliceUploading
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceClosing, model.SliceUploading).Do(ctx).Err())
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), sliceKey2, model.SliceClosing, model.SliceUploading).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceClosing, model.SliceUploading).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(sliceKey2, clk.Now(), model.SliceClosing, model.SliceUploading).Do(ctx).Err())
 		slice1KV, err := sliceRepo.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice1KV.State)
@@ -146,8 +147,8 @@ func TestRepository_FileAndSliceStateTransitions(t *testing.T) {
 	// VALID: SliceUploaded
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), sliceKey1, model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), sliceKey2, model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(sliceKey1, clk.Now(), model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(sliceKey2, clk.Now(), model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
 		slice1KV, err := sliceRepo.Get(sliceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploaded, slice1KV.State)
@@ -170,7 +171,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5
 	// VALID: SliceUploading
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), sliceKey3, model.SliceClosing, model.SliceUploading).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(sliceKey3, clk.Now(), model.SliceClosing, model.SliceUploading).Do(ctx).Err())
 		slice1KV, err := sliceRepo.Get(sliceKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice1KV.State)
@@ -190,7 +191,7 @@ unexpected slice "123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-5
 	// VALID: SliceUploaded
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, sliceRepo.StateTransition(clk.Now(), sliceKey3, model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
+		require.NoError(t, sliceRepo.StateTransition(sliceKey3, clk.Now(), model.SliceUploading, model.SliceUploaded).Do(ctx).Err())
 		slice1KV, err := sliceRepo.Get(sliceKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploaded, slice1KV.State)
