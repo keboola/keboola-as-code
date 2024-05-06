@@ -3,6 +3,9 @@ package slice_test
 import (
 	"bytes"
 	"context"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -15,8 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"testing"
-	"time"
 )
 
 func TestSliceRepository_CloseSliceOnFileClose(t *testing.T) {
@@ -54,7 +55,7 @@ func TestSliceRepository_CloseSliceOnFileClose(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 4)
 	}
 
-	// Create files, it triggers files creation
+	// Create sink, it triggers file creation, it triggers slices creation
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
@@ -66,7 +67,7 @@ func TestSliceRepository_CloseSliceOnFileClose(t *testing.T) {
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
-	// Disable Source, it in cascade disables Sink, it triggers file closing, it triggers slice closing
+	// Disable Source, it in cascade disables Sink, it triggers file closing, it triggers slices closing
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
@@ -75,7 +76,7 @@ func TestSliceRepository_CloseSliceOnFileClose(t *testing.T) {
 
 	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	//etcdlogger.AssertFromFile(t, `fixtures/slice_close_ops_001.txt`, openEtcdLogs)
+	// etcdlogger.AssertFromFile(t, `fixtures/slice_close_ops_001.txt`, openEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------

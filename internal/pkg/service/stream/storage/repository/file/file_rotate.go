@@ -11,10 +11,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
-// Rotate closes the opened file, if present, and opens a new file for the table sink.
-//   - The old file, if present, is switched from the model.FileWriting state to the model.FileClosing state.
+// Rotate closes the active file, if present, and opens a new file for the sink.
+//   - The old active file, if present, is switched from the model.FileWriting state to the model.FileClosing state.
 //   - New file in the model.FileWriting state is created.
-//   - This method is used to rotate files when the import conditions are met.
+//   - This method is used to rotate file when the import conditions are met.
 func (r *Repository) Rotate(k key.SinkKey, now time.Time) *op.AtomicOp[model.File] {
 	return r.rotate(now, k, nil, nil) // load source and sink from database
 }
@@ -40,7 +40,7 @@ func (r *Repository) rotate(now time.Time, k key.SinkKey, source *definition.Sou
 	atomicOp.AddFrom(r.openFileForSink(now, k, source, sink).SetResultTo(&openedFile))
 
 	// Close active files
-	atomicOp.AddFrom(r.closeFileInSink(now, k))
+	atomicOp.AddFrom(r.closeFilesInSink(now, k))
 
 	return atomicOp
 }

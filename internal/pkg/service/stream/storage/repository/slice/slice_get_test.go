@@ -3,6 +3,8 @@ package slice_test
 import (
 	"bytes"
 	"context"
+	"testing"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -15,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"testing"
 )
 
 func TestSliceRepository_Get(t *testing.T) {
@@ -54,7 +55,7 @@ func TestSliceRepository_Get(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source and sink (with the file)
+	// Create parent branch, source, sink, file, slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var sliceKey model.SliceKey
 	{

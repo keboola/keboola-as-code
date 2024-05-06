@@ -2,10 +2,11 @@ package slice
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"time"
 )
 
 func (r *Repository) openSlicesOnFileCreate() {
@@ -16,36 +17,33 @@ func (r *Repository) openSlicesOnFileCreate() {
 	})
 }
 
+// openSlicesForFile creates new Slices, in the FileWriting state, for each assigned volume in the Sink.
 func (r *Repository) openSlicesForFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
 	var newSlices []model.Slice
 	return op.Atomic(r.client, &newSlices).
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
 			txn := op.Txn(r.client)
 			for _, volumeID := range file.Assignment.Volumes {
-				if t, err := r.openSlice(ctx, now, file, volumeID); err == nil {
-					txn.Merge(t.OnSucceeded(func(r *op.TxnResult[model.Slice]) {
-						newSlices = append(newSlices, r.Result())
-					}))
-				} else {
-					return nil, err
-				}
+				txn.Merge(r.openSlice(ctx, now, file, volumeID).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
+					newSlices = append(newSlices, r.Result())
+				}))
 			}
 			return txn, nil
 		})
 }
 
-func (r *Repository) openSlice(ctx context.Context, now time.Time, file model.File, volumeID volume.ID) (*op.TxnOp[model.Slice], error) {
+func (r *Repository) openSlice(ctx context.Context, now time.Time, file model.File, volumeID volume.ID) *op.TxnOp[model.Slice] {
 	// Create slice entity
-	newSlice, err := NewSlice(now, file, volumeID)
+	newSlice, err := r.newSlice(now, file, volumeID)
 	if err != nil {
-		return nil, err
+		return op.TxnWithError[model.Slice](err)
 	}
 
 	// Validate file state
 	if err := validateFileAndSliceState(file.State, newSlice.State); err != nil {
-		return nil, err
+		return op.TxnWithError[model.Slice](err)
 	}
 
 	// Save new slice
-	return r.save(ctx, now, nil, &newSlice), nil
+	return r.save(ctx, now, nil, &newSlice)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // Delete the file.
-// This operation deletes only the metadata, the file resource in the staging storage is unaffected.
+// This operation deletes only the metadata, the file resources in the local or staging storage are unaffected.
 func (r *Repository) Delete(k model.FileKey, now time.Time) *op.AtomicOp[model.File] {
 	return r.update(k, now, func(file model.File) (model.File, error) {
 		file.Deleted = true

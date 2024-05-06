@@ -2,10 +2,10 @@ package slice
 
 import (
 	"context"
-	"github.com/keboola/go-utils/pkg/deepcopy"
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"time"
 )
 
 func (r *Repository) deleteSlicesOnFileDelete() {
@@ -16,24 +16,16 @@ func (r *Repository) deleteSlicesOnFileDelete() {
 	})
 }
 
-// Delete all slices from the file.
-// This operation deletes only the metadata, the file resource in the staging storage is unaffected.
+// deleteAll slices from the file.
+// This operation deletes only the metadata, the file resources in the local or staging storage are unaffected.
 func (r *Repository) deleteAll(k model.FileKey, now time.Time) *op.AtomicOp[[]model.Slice] {
-	var allOld, allDeleted []model.Slice
-	return op.Atomic(r.client, &allDeleted).
-		ReadOp(r.ListIn(k).WithAllTo(&allOld)).
+	var slices, deleted []model.Slice
+	return op.Atomic(r.client, &deleted).
+		ReadOp(r.ListIn(k).WithAllTo(&slices)).
 		Write(func(ctx context.Context) op.Op {
-			txn := op.Txn(r.client)
-			for _, old := range allOld {
-				// Mark deleted
-				deleted := deepcopy.Copy(old).(model.Slice)
-				deleted.Deleted = true
-
-				// Save
-				txn.Merge(r.save(ctx, now, &old, &deleted).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
-					allDeleted = append(allDeleted, r.Result())
-				}))
-			}
-			return txn
+			return r.updateAll(ctx, now, slices, func(slice model.Slice) (model.Slice, error) {
+				slice.Deleted = true
+				return slice, nil
+			})
 		})
 }

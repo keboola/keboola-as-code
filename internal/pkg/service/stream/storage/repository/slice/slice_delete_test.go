@@ -3,6 +3,9 @@ package slice_test
 import (
 	"bytes"
 	"context"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -15,8 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"testing"
-	"time"
 )
 
 func TestSliceRepository_DeleteSliceOnFileDelete(t *testing.T) {
@@ -56,7 +57,7 @@ func TestSliceRepository_DeleteSliceOnFileDelete(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source and sink (with the first file)
+	// Create parent branch, source and sink, file, slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var fileKey model.FileKey
 	var sliceKey1 model.SliceKey
@@ -83,10 +84,10 @@ func TestSliceRepository_DeleteSliceOnFileDelete(t *testing.T) {
 
 	// Delete file, it in cascade deletes both slices
 	// -----------------------------------------------------------------------------------------------------------------
-	//var deleteEtcdLogs string
+	// var deleteEtcdLogs string
 	{
 		require.NoError(t, fileRepo.Delete(fileKey, clk.Now()).Do(ctx).Err())
-		//deleteEtcdLogs = etcdLogs.String()
+		// deleteEtcdLogs = etcdLogs.String()
 	}
 
 	// Check etcd logs

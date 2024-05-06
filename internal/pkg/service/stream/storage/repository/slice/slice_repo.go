@@ -2,9 +2,10 @@ package slice
 
 import (
 	"context"
+	"time"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -18,8 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
 )
 
-// Repository provides database operations with the storage.Slice entity.
-// The orchestration of these database operations with other parts of the platform is handled by an upper facade.
+// Repository provides database operations with the model.Slice entity.
 type Repository struct {
 	logger     log.Logger
 	client     etcd.KV
@@ -116,8 +116,7 @@ func (r *Repository) update(k model.SliceKey, now time.Time, updateFn func(model
 		// Update the entity
 		WriteOrErr(func(ctx context.Context) (op op.Op, err error) {
 			// Update
-			updated = deepcopy.Copy(old).(model.Slice)
-			updated, err = updateFn(updated)
+			updated, err = updateFn(deepcopy.Copy(old).(model.Slice))
 			if err != nil {
 				return nil, err
 			}
@@ -125,6 +124,23 @@ func (r *Repository) update(k model.SliceKey, now time.Time, updateFn func(model
 			// Save
 			return r.save(ctx, now, &old, &updated), nil
 		})
+}
+
+func (r *Repository) updateAll(ctx context.Context, now time.Time, slices []model.Slice, updateFn func(model.Slice) (model.Slice, error)) *op.TxnOp[[]model.Slice] {
+	var updated []model.Slice
+	txn := op.TxnWithResult(r.client, &updated)
+	for _, old := range slices {
+		// Update
+		item, err := updateFn(deepcopy.Copy(old).(model.Slice))
+		if err != nil {
+			return op.TxnWithError[[]model.Slice](err)
+		}
+		// Save
+		txn.Merge(r.save(ctx, now, &old, &item).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
+			updated = append(updated, r.Result())
+		}))
+	}
+	return txn
 }
 
 // loadFileIfNil - if the file pointer is nil, a new value is allocated and later loaded,

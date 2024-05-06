@@ -3,9 +3,10 @@ package file_test
 import (
 	"bytes"
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -57,7 +58,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source and sink (with the first file)
+	// Create parent branch, source, sink, file, slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var fileKey model.FileKey
 	{

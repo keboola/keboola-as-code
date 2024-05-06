@@ -12,7 +12,11 @@ import (
 )
 
 // newFile creates file entity.
-func newFile(cfg level.Config, k model.FileKey, sink definition.Sink) (f model.File, err error) {
+func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.Sink) (f model.File, err error) {
+	if !r.isSinkWithLocalStorage(&sink) {
+		return model.File{}, errors.Errorf(`sink type "%s" has no local storage support`, sink.Type)
+	}
+
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.

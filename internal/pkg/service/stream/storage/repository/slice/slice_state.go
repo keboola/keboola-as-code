@@ -2,11 +2,12 @@ package slice
 
 import (
 	"context"
+	"time"
+
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"time"
 )
 
 func (r *Repository) SwitchToUploading(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
@@ -25,17 +26,6 @@ func (r *Repository) updateSlicesOnFileImport() {
 	})
 }
 
-func (r *Repository) switchSlicesToImported(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
-	var original, updated []model.Slice
-	return op.Atomic(r.client, &updated).
-		// Load slices
-		ReadOp(r.ListIn(file.FileKey).WithAllTo(&original)).
-		// Close slices
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			return r.switchStateInBatch(ctx, file.State, original, now, model.SliceUploaded, model.SliceImported)
-		})
-}
-
 func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to model.SliceState) *op.AtomicOp[model.Slice] {
 	var file model.File
 	var old, updated model.Slice
@@ -45,50 +35,51 @@ func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to m
 		// Read entity for modification
 		ReadOp(r.Get(k).WithResultTo(&old)).
 		// Update the entity
-		WriteOrErr(func(ctx context.Context) (op.Op, error) {
-			txn, err := r.switchState(ctx, file.State, old, now, from, to)
-			if err != nil {
-				return nil, err
-			}
-			return txn.OnSucceeded(func(r *op.TxnResult[model.Slice]) {
-				updated = r.Result()
-			}), nil
+		Write(func(ctx context.Context) op.Op {
+			return r.switchState(ctx, file.State, old, now, from, to).SetResultTo(&updated)
 		})
 }
 
-func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState) (*op.TxnOp[model.Slice], error) {
+func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState) *op.TxnOp[model.Slice] {
 	// Validate from state
 	if oldValue.State != from {
-		return nil, errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, oldValue.SliceKey, oldValue.State, from)
+		return op.TxnWithError[model.Slice](errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, oldValue.SliceKey, oldValue.State, from))
 	}
 
 	// Validate file and slice state combination
 	if err := validateFileAndSliceState(fileState, to); err != nil {
-		return nil, errors.PrefixErrorf(err, `unexpected slice "%s" state:`, oldValue.SliceKey)
+		return op.TxnWithError[model.Slice](errors.PrefixErrorf(err, `unexpected slice "%s" state:`, oldValue.SliceKey))
 	}
 
 	// Switch slice state
 	newValue, err := oldValue.WithState(now, to)
 	if err != nil {
-		return nil, err
+		return op.TxnWithError[model.Slice](err)
 	}
 
-	return r.save(ctx, now, &oldValue, &newValue), nil
+	return r.save(ctx, now, &oldValue, &newValue)
 }
 
-func (r *Repository) switchStateInBatch(ctx context.Context, fState model.FileState, original []model.Slice, now time.Time, from, to model.SliceState) (*op.TxnOp[[]model.Slice], error) {
+func (r *Repository) switchStateInBatch(ctx context.Context, fState model.FileState, original []model.Slice, now time.Time, from, to model.SliceState) *op.TxnOp[[]model.Slice] {
 	var updated []model.Slice
 	txn := op.TxnWithResult(r.client, &updated)
 	for _, slice := range original {
-		if t, err := r.switchState(ctx, fState, slice, now, from, to); err == nil {
-			txn.Merge(t.OnSucceeded(func(r *op.TxnResult[model.Slice]) {
-				updated = append(updated, r.Result())
-			}))
-		} else {
-			return nil, err
-		}
+		txn.Merge(r.switchState(ctx, fState, slice, now, from, to).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
+			updated = append(updated, r.Result())
+		}))
 	}
-	return txn, nil
+	return txn
+}
+
+func (r *Repository) switchSlicesToImported(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
+	var slices, updated []model.Slice
+	return op.Atomic(r.client, &updated).
+		// Load slices
+		ReadOp(r.ListIn(file.FileKey).WithAllTo(&slices)).
+		// Close slices
+		Write(func(ctx context.Context) op.Op {
+			return r.switchStateInBatch(ctx, file.State, slices, now, model.SliceUploaded, model.SliceImported).SetResultTo(&updated)
+		})
 }
 
 // ValidateFileAndSliceState validates combination of file and slice state.

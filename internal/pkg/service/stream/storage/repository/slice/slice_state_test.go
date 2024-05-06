@@ -59,7 +59,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, file and slice
+	// Create parent branch, source, sink, file, slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var file model.File
 	var slice model.Slice
@@ -90,22 +90,22 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 
 	// Switch slice to the storage.SliceUploading state
 	// -----------------------------------------------------------------------------------------------------------------
-	//var toUploadingEtcdLogs string
+	// var toUploadingEtcdLogs string
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(slice.SliceKey, clk.Now()).Do(ctx).Err())
-		//toUploadingEtcdLogs = etcdLogs.String()
+		// toUploadingEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch slice to the storage.SliceUploaded state
 	// -----------------------------------------------------------------------------------------------------------------
-	//var toUploadedEtcdLogs string
+	// var toUploadedEtcdLogs string
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploaded(slice.SliceKey, clk.Now()).Do(ctx).Err())
-		//toUploadedEtcdLogs = etcdLogs.String()
+		// toUploadedEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch slice to the storage.SliceImported state, together with the file to the storage.FileImported state
@@ -119,7 +119,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	//etcdlogger.Assert(t, ``, toUploadedEtcdLogs)
+	// etcdlogger.Assert(t, ``, toUploadedEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------

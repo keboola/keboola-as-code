@@ -27,6 +27,7 @@ type TxnOp[R any] struct {
 	result     *R
 	client     etcd.KV
 	processors []func(ctx context.Context, r *TxnResult[R])
+	errs       errors.MultiError
 	ifs        []etcd.Cmp
 	thenOps    []Op
 	thenTxnOps []Op // thenTxnOps are separated from thenOps to avoid confusing between Then and Merge
@@ -58,6 +59,12 @@ func Txn(client etcd.KV) *TxnOp[NoResult] {
 // TxnWithResult creates an empty transaction with the result.
 func TxnWithResult[R any](client etcd.KV, result *R) *TxnOp[R] {
 	return &TxnOp[R]{client: client, result: result}
+}
+
+// TxnWithError wraps a composition error.
+// It makes error handling easier and move it to one place.
+func TxnWithError[R any](err error) *TxnOp[R] {
+	return TxnWithResult[R](nil, nil).AddError(err)
 }
 
 // MergeToTxn merges listed operations into a transaction using And method.
@@ -109,6 +116,13 @@ func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 	return v
 }
 
+// AddError - all static errors are returned when the low level txn is composed.
+// It makes error handling easier and move it to one place.
+func (v *TxnOp[R]) AddError(errs ...error) *TxnOp[R] {
+	v.errs.Append(errs...)
+	return v
+}
+
 // Merge merges the transaction with one or more other transactions.
 // If comparisons from all transactions are merged.
 // The processors from all transactions are preserved and executed.
@@ -134,6 +148,21 @@ func (v *TxnOp[R]) OnResult(fn func(result *TxnResult[R])) *TxnOp[R] {
 			fn(r)
 		}
 	})
+}
+
+// SetResultTo is a shortcut for the AddProcessor.
+// If no error occurred, the result of the operation is written to the target pointer,
+// otherwise an empty value is written.
+func (v *TxnOp[R]) SetResultTo(ptr *R) *TxnOp[R] {
+	v.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
+		if r.Err() == nil {
+			*ptr = r.Result()
+		} else {
+			var empty R
+			*ptr = empty
+		}
+	})
+	return v
 }
 
 // OnFailed is a shortcut for the AddProcessor.
@@ -175,6 +204,9 @@ func (v *TxnOp[R]) Op(ctx context.Context) (LowLevelOp, error) {
 func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	out := &lowLevelTxn[R]{result: v.result, client: v.client, thenOps: make([]etcd.Op, 0), elseOps: make([]etcd.Op, 0)}
 	errs := errors.NewMultiError()
+
+	// Copy init errors
+	errs.Append(v.errs.WrappedErrors()...)
 
 	// Copy IFs
 	out.ifs = make([]etcd.Cmp, len(v.ifs))

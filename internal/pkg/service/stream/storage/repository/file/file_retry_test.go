@@ -3,6 +3,9 @@ package file_test
 import (
 	"bytes"
 	"context"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -16,8 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"testing"
-	"time"
 )
 
 func TestFileRepository_IncrementRetry(t *testing.T) {
@@ -56,7 +57,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source and sink (with the file)
+	// Create parent branch, source, sink, file, slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var fileKey model.FileKey
 	{
@@ -121,5 +122,4 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
-
 }

@@ -1,8 +1,9 @@
 package table_test
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"testing"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"

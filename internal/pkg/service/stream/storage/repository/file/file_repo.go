@@ -2,8 +2,9 @@ package file
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -22,7 +23,6 @@ import (
 )
 
 // Repository provides database operations with the model.File entity.
-// The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
 	logger     log.Logger
 	client     etcd.KV

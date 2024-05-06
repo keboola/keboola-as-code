@@ -3,6 +3,9 @@ package slice_test
 import (
 	"bytes"
 	"context"
+	"testing"
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -16,8 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"testing"
-	"time"
 )
 
 func TestSliceRepository_IncrementRetry(t *testing.T) {
@@ -57,7 +58,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, token, file and slice1
+	// Create parent branch, source, sink, file and slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var sliceKey model.SliceKey
 	{
@@ -76,7 +77,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 		sliceKey = slice.SliceKey
 	}
 
-	// Rotate
+	// Create the second slice
 	// -----------------------------------------------------------------------------------------------------------------
 	// var rotateEtcdLogs string
 	{
@@ -116,9 +117,6 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	// etcdlogger.Assert(t, ``, rotateEtcdLogs)
 
 	// Check etcd state
-	//   - Only the last slice per file and volume is in the storage.SliceWriting state.
-	//   - Other slices per file and volume are in the storage.SlicesClosing state.
-	//   - AllocatedDiskSpace of the slice5 is 330MB it is 110% of the slice3.
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_retry_snapshot_002.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
 }

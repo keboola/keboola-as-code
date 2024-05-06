@@ -56,7 +56,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source and sink (with the first file)
+	// Create parent branch, source and sink, file, slice
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
@@ -85,7 +85,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_ops_001.txt`, deleteEtcdLogs)
 
-	// Check etcd state - there is no file
+	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_rotate_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/secret/token/|storage/volume"))
 }

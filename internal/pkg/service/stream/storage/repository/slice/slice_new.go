@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// NewSlice creates slice definition.
-func NewSlice(now time.Time, file model.File, volumeID volume.ID) (s model.Slice, err error) {
+// newSlice creates slice entity.
+func (r *Repository) newSlice(now time.Time, file model.File, volumeID volume.ID) (s model.Slice, err error) {
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.

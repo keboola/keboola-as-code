@@ -2,8 +2,9 @@ package file
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -17,21 +18,19 @@ import (
 
 func (r *Repository) openFileOnSinkActivation() {
 	r.plugins.Collection().OnSinkActivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) {
-		// Check is the sink type has support for files
-		if !r.isSinkWithLocalStorage(sink) {
-			return
+		if r.isSinkWithLocalStorage(sink) {
+			op.AtomicFromCtx(ctx).AddFrom(r.openFileForSink(now, sink.SinkKey, plugin.SourceFromContext(ctx), sink))
 		}
-
-		// Open a new file
-		op.AtomicFromCtx(ctx).AddFrom(r.openFileForSink(now, sink.SinkKey, plugin.SourceFromContext(ctx), sink))
 	})
 }
 
+// openFileForSink creates a new File in the FileWriting state, in the Sink.
 func (r *Repository) openFileForSink(now time.Time, k key.SinkKey, source *definition.Source, sink *definition.Sink) *op.AtomicOp[model.File] {
 	var file model.File
 	atomicOp := op.Atomic(r.client, &file)
 
 	source = r.loadSourceIfNil(atomicOp.Core(), k.SourceKey, source)
+
 	sink = r.loadSinkIfNil(atomicOp.Core(), k, sink)
 
 	// Open a new file
@@ -49,7 +48,7 @@ func (r *Repository) openFileForSink(now time.Time, k key.SinkKey, source *defin
 		// Create file entity
 		var err error
 		fileKey := model.FileKey{SinkKey: sink.SinkKey, FileID: model.FileID{OpenedAt: utctime.From(now)}}
-		file, err = newFile(cfg, fileKey, *sink)
+		file, err = r.newFile(cfg, fileKey, *sink)
 		if err != nil {
 			return nil, err
 		}

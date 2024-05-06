@@ -59,7 +59,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, token, file and slice1
+	// Create parent branch, source, sink, token, file and slice
 	// -----------------------------------------------------------------------------------------------------------------
 	var sliceKey model.SliceKey
 	{
@@ -78,7 +78,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		sliceKey = slice.SliceKey
 	}
 
-	// Rotate (1)
+	// Create the second slice
 	// -----------------------------------------------------------------------------------------------------------------
 	// var rotateEtcdLogs string
 	{
@@ -90,7 +90,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 		// rotateEtcdLogs = etcdLogs.String()
 	}
 
-	// Rotate (2)
+	// Create the third file
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		var err error
@@ -105,9 +105,6 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	// etcdlogger.Assert(t, ``, rotateEtcdLogs)
 
 	// Check etcd state
-	//   - Only the last slice per file and volume is in the storage.SliceWriting state.
-	//   - Other slices per file and volume are in the storage.SlicesClosing state.
-	//   - AllocatedDiskSpace of the slice5 is 330MB it is 110% of the slice3.
 	// -----------------------------------------------------------------------------------------------------------------
 	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_rotate_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/stats/|storage/secret/token/|storage/volume"))
 }

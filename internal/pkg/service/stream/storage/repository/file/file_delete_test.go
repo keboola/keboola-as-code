@@ -82,13 +82,13 @@ func TestFileRepository_Delete(t *testing.T) {
 
 	// Delete both files
 	// -----------------------------------------------------------------------------------------------------------------
-	//var deleteEtcdLogs string
+	// var deleteEtcdLogs string
 	{
 		require.NoError(t, fileRepo.Delete(fileKey1, clk.Now()).Do(ctx).Err())
 
 		etcdLogs.Reset()
 		require.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(ctx).Err())
-		//deleteEtcdLogs = etcdLogs.String()
+		// deleteEtcdLogs = etcdLogs.String()
 	}
 
 	// Check etcd logs
