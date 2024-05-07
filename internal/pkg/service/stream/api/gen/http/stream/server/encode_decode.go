@@ -1617,6 +1617,108 @@ func EncodeSinkStatisticsTotalError(encoder func(context.Context, http.ResponseW
 	}
 }
 
+// EncodeSinkStatisticsFilesResponse returns an encoder for responses returned
+// by the stream SinkStatisticsFiles endpoint.
+func EncodeSinkStatisticsFilesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.SinkStatisticsFilesResult)
+		enc := encoder(ctx, w)
+		body := NewSinkStatisticsFilesResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeSinkStatisticsFilesRequest returns a decoder for requests sent to the
+// stream SinkStatisticsFiles endpoint.
+func DecodeSinkStatisticsFilesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			sinkID          string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		sinkID = params["sinkId"]
+		if utf8.RuneCountInString(sinkID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 1, true))
+		}
+		if utf8.RuneCountInString(sinkID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 48, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewSinkStatisticsFilesPayload(branchID, sourceID, sinkID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeSinkStatisticsFilesError returns an encoder for errors returned by the
+// SinkStatisticsFiles stream endpoint.
+func EncodeSinkStatisticsFilesError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSinkStatisticsFilesStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "stream.api.sinkNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSinkStatisticsFilesStreamAPISinkNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeGetTaskResponse returns an encoder for responses returned by the
 // stream GetTask endpoint.
 func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -2058,6 +2160,38 @@ func marshalStreamLevelsToLevelsResponseBody(v *stream.Levels) *LevelsResponseBo
 	}
 	if v.Target != nil {
 		res.Target = marshalStreamLevelToLevelResponseBody(v.Target)
+	}
+
+	return res
+}
+
+// marshalStreamSinkFileToSinkFileResponseBody builds a value of type
+// *SinkFileResponseBody from a value of type *stream.SinkFile.
+func marshalStreamSinkFileToSinkFileResponseBody(v *stream.SinkFile) *SinkFileResponseBody {
+	res := &SinkFileResponseBody{
+		State:       string(v.State),
+		OpenedAt:    v.OpenedAt,
+		ClosingAt:   v.ClosingAt,
+		ImportingAt: v.ImportingAt,
+		ImportedAt:  v.ImportedAt,
+	}
+	if v.Statistics != nil {
+		res.Statistics = marshalStreamSinkFileStatisticsToSinkFileStatisticsResponseBody(v.Statistics)
+	}
+
+	return res
+}
+
+// marshalStreamSinkFileStatisticsToSinkFileStatisticsResponseBody builds a
+// value of type *SinkFileStatisticsResponseBody from a value of type
+// *stream.SinkFileStatistics.
+func marshalStreamSinkFileStatisticsToSinkFileStatisticsResponseBody(v *stream.SinkFileStatistics) *SinkFileStatisticsResponseBody {
+	res := &SinkFileStatisticsResponseBody{}
+	if v.Total != nil {
+		res.Total = marshalStreamLevelToLevelResponseBody(v.Total)
+	}
+	if v.Levels != nil {
+		res.Levels = marshalStreamLevelsToLevelsResponseBody(v.Levels)
 	}
 
 	return res

@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"goa.design/goa/v3/security"
 )
 
@@ -61,6 +62,8 @@ type Service interface {
 	DeleteSink(context.Context, dependencies.SinkRequestScope, *DeleteSinkPayload) (err error)
 	// Get total statistics of the sink.
 	SinkStatisticsTotal(context.Context, dependencies.SinkRequestScope, *SinkStatisticsTotalPayload) (res *SinkStatisticsTotalResult, err error)
+	// Get files statistics of the sink.
+	SinkStatisticsFiles(context.Context, dependencies.SinkRequestScope, *SinkStatisticsFilesPayload) (res *SinkStatisticsFilesResult, err error)
 	// Get details of a task.
 	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 }
@@ -85,7 +88,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [20]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "GetTask"}
+var MethodNames = [21]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask"}
 
 // ID of the branch.
 type BranchID = keboola.BranchID
@@ -172,6 +175,8 @@ type DisabledEntity struct {
 	// Why was the entity disabled?
 	Reason string
 }
+
+type FileState = model.FileState
 
 // Generic error.
 type GenericError struct {
@@ -347,8 +352,40 @@ type Sink struct {
 	Disabled *DisabledEntity
 }
 
+type SinkFile struct {
+	State       FileState
+	OpenedAt    string
+	ClosingAt   *string
+	ImportingAt *string
+	ImportedAt  *string
+	Statistics  *SinkFileStatistics
+}
+
+type SinkFileStatistics struct {
+	Total  *Level
+	Levels *Levels
+}
+
+// List of recent sink files.
+type SinkFiles []*SinkFile
+
 // Unique ID of the sink.
 type SinkID = key.SinkID
+
+// SinkStatisticsFilesPayload is the payload type of the stream service
+// SinkStatisticsFiles method.
+type SinkStatisticsFilesPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
+}
+
+// SinkStatisticsFilesResult is the result type of the stream service
+// SinkStatisticsFiles method.
+type SinkStatisticsFilesResult struct {
+	Files SinkFiles
+}
 
 // SinkStatisticsTotalPayload is the payload type of the stream service
 // SinkStatisticsTotal method.

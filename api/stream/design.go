@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
 const (
@@ -849,15 +850,15 @@ var SinkStatisticsFilesResult = Type("SinkStatisticsFilesResult", func() {
 })
 
 var SinkFiles = Type("SinkFiles", ArrayOf(SinkFile), func() {
-	Description(fmt.Sprintf("List of recent sink files."))
+	Description("List of recent sink files.")
 })
 
 var SinkFile = Type("SinkFile", func() {
+	Attribute("state", FileState)
 	Attribute("openedAt", String, func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Required("openedAt")
 	Attribute("closingAt", String, func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
@@ -870,7 +871,7 @@ var SinkFile = Type("SinkFile", func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Attribute("state", FileState)
+	Required("state", "openedAt", "statistics")
 	Attribute("statistics", SinkFileStatistics)
 })
 
@@ -882,9 +883,9 @@ var SinkFileStatistics = Type("SinkFileStatistics", func() {
 })
 
 var FileState = Type("FileState", String, func() {
-	// Meta("struct:field:type", "= definition.FileState", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
-	// Enum(definition.FileStateOpen.String())
-	// Example(definition.FileStateOpen.String())
+	Meta("struct:field:type", "= model.FileState", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model")
+	Enum(model.FileWriting.String(), model.FileClosing.String(), model.FileImporting.String(), model.FileImported.String())
+	Example(model.FileWriting.String())
 })
 
 var SinkFieldsRW = func() {

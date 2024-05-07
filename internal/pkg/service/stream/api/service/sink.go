@@ -44,3 +44,7 @@ func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRe
 
 	return s.mapper.NewSinkStatisticsTotalResponse(stats), nil
 }
+
+func (s *service) SinkStatisticsFiles(context.Context, dependencies.SinkRequestScope, *stream.SinkStatisticsFilesPayload) (res *stream.SinkStatisticsFilesResult, err error) {
+	return nil, errors.NewNotImplementedError()
+}
