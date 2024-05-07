@@ -643,8 +643,7 @@ var Source = Type("Source", func() {
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Attribute("sinks", Sinks)
-	Required("version", "type", "name", "description", "type", "sinks")
+	Required("version", "type", "name", "description", "type")
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {

@@ -167,7 +167,6 @@ type GetSourceResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // GetSourceSettingsResponseBody is the type of the "stream" service
@@ -198,7 +197,6 @@ type RefreshSourceTokensResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
@@ -684,7 +682,6 @@ type SourceResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
 // HTTPSourceResponseBody is used to define fields on response body types.
@@ -735,22 +732,24 @@ type DisabledEntityResponseBody struct {
 	Reason string `form:"reason" json:"reason" xml:"reason"`
 }
 
-// SinkResponseBody is used to define fields on response body types.
-type SinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// Human readable name of the sink.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Description of the source.
+// SettingResultResponseBody is used to define fields on response body types.
+type SettingResultResponseBody struct {
+	// Key path.
+	Key string `form:"key" json:"key" xml:"key"`
+	// Value type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// Key description.
 	Description string `form:"description" json:"description" xml:"description"`
-	// Table sink configuration for "type" = "table".
-	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	// Actual value.
+	Value any `form:"value" json:"value" xml:"value"`
+	// Default value.
+	DefaultValue any `form:"defaultValue" json:"defaultValue" xml:"defaultValue"`
+	// True, if the default value is locally overwritten.
+	Overwritten bool `form:"overwritten" json:"overwritten" xml:"overwritten"`
+	// True, if only a super admin can modify the key.
+	Protected bool `form:"protected" json:"protected" xml:"protected"`
+	// Validation rules as a string definition.
+	Validation *string `form:"validation,omitempty" json:"validation,omitempty" xml:"validation,omitempty"`
 }
 
 // TableSinkResponseBody is used to define fields on response body types.
@@ -784,24 +783,22 @@ type TableColumnTemplateResponseBody struct {
 	Content  string `form:"content" json:"content" xml:"content"`
 }
 
-// SettingResultResponseBody is used to define fields on response body types.
-type SettingResultResponseBody struct {
-	// Key path.
-	Key string `form:"key" json:"key" xml:"key"`
-	// Value type.
-	Type string `form:"type" json:"type" xml:"type"`
-	// Key description.
+// SinkResponseBody is used to define fields on response body types.
+type SinkResponseBody struct {
+	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Human readable name of the sink.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
-	// Actual value.
-	Value any `form:"value" json:"value" xml:"value"`
-	// Default value.
-	DefaultValue any `form:"defaultValue" json:"defaultValue" xml:"defaultValue"`
-	// True, if the default value is locally overwritten.
-	Overwritten bool `form:"overwritten" json:"overwritten" xml:"overwritten"`
-	// True, if only a super admin can modify the key.
-	Protected bool `form:"protected" json:"protected" xml:"protected"`
-	// Validation rules as a string definition.
-	Validation *string `form:"validation,omitempty" json:"validation,omitempty" xml:"validation,omitempty"`
+	// Table sink configuration for "type" = "table".
+	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // LevelResponseBody is used to define fields on response body types.
@@ -954,14 +951,6 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
 	}
-	if res.Sinks != nil {
-		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
-		for i, val := range res.Sinks {
-			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
-	} else {
-		body.Sinks = []*SinkResponseBody{}
-	}
 	return body
 }
 
@@ -1013,14 +1002,6 @@ func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokens
 	}
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
-	}
-	if res.Sinks != nil {
-		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
-		for i, val := range res.Sinks {
-			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
-	} else {
-		body.Sinks = []*SinkResponseBody{}
 	}
 	return body
 }

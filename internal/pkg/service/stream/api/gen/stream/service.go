@@ -395,7 +395,6 @@ type Source struct {
 	Version  *Version
 	Deleted  *DeletedEntity
 	Disabled *DisabledEntity
-	Sinks    Sinks
 }
 
 // Unique ID of the source.
