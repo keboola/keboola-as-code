@@ -40,6 +40,12 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           projects: ${{ vars.TEST_KBC_PROJECTS }}
 
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
       - name: Load Go build cache
         uses: ./.github/actions/go-cache
         with:
@@ -52,17 +58,6 @@ jobs:
 
       - name: Load Go tools cache
         uses: ./.github/actions/go-tools-cache
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
-
-      - name: Load Go build cache
-        uses: ./.github/actions/go-cache
-        with:
-          key: unit-${{ matrix.name }}
 
       - name: Start etcd database (only on linux)
         if: matrix.name == 'linux'
