@@ -13,14 +13,10 @@
       "uncompressedSize": 1
     },
     "staging": {
-      "firstRecordAt": "0001-01-01T00:00:00.000Z",
-      "lastRecordAt": "0001-01-01T00:00:00.000Z",
       "recordsCount": 0,
       "uncompressedSize": 0
     },
     "target": {
-      "firstRecordAt": "0001-01-01T00:00:00.000Z",
-      "lastRecordAt": "0001-01-01T00:00:00.000Z",
       "recordsCount": 0,
       "uncompressedSize": 0
     }

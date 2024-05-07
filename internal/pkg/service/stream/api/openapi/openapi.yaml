@@ -966,8 +966,6 @@ definitions:
             recordsCount: 1
             uncompressedSize: 1
         required:
-            - firstRecordAt
-            - lastRecordAt
             - recordsCount
             - uncompressedSize
     LevelsResponseBody:
