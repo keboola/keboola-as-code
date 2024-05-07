@@ -28,20 +28,14 @@ jobs:
             --exclude '^https://community.chocolatey.org/.*'
             --exclude '^https://packages.debian.org/$'
 
-      - name: Load Go cache
-        uses: ./.github/actions/go-cache
-        with:
-          key: lint
-
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
 
-      - name: Install tools
-        run: ./scripts/tools.sh
-        shell: bash
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
 
       - name: Run code linters
         run: make lint

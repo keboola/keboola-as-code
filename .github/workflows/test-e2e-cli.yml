@@ -11,6 +11,8 @@ env:
   GO_VERSION: 1.22.2
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
+  TEST_COVERAGE: false
+
 jobs:
   test:
     name: ${{ matrix.name }}
@@ -28,7 +30,11 @@ jobs:
     steps:
       - name: Setup line endings
         run: git config --global core.autocrlf false
-      
+
+      - name: Change default TEST_COVERAGE when on main branch
+        if: github.ref == 'refs/heads/main'
+        run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -38,20 +44,19 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           projects: ${{ vars.TEST_KBC_PROJECTS }}
 
-      - name: Load Go cache
-        uses: ./.github/actions/go-cache
-        with:
-          key: e2e
-
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
 
-      - name: Install tools
-        run: . ./scripts/tools.sh
-        shell: bash
+      - name: Load Go build cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: e2e-cli
+
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
 
       - name: Run tests
         run: make tests-cli
