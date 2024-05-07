@@ -736,6 +736,86 @@ func EncodeRefreshSourceTokensError(encoder func(context.Context, http.ResponseW
 	}
 }
 
+// EncodeTestSourceResponse returns an encoder for responses returned by the
+// stream TestSource endpoint.
+func EncodeTestSourceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.TestResult)
+		enc := encoder(ctx, w)
+		body := NewTestSourceResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeTestSourceRequest returns a decoder for requests sent to the stream
+// TestSource endpoint.
+func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewTestSourcePayload(branchID, sourceID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeTestSourceError returns an encoder for errors returned by the
+// TestSource stream endpoint.
+func EncodeTestSourceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewTestSourceStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeCreateSinkResponse returns an encoder for responses returned by the
 // stream CreateSink endpoint.
 func EncodeCreateSinkResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -1859,6 +1939,54 @@ func unmarshalSettingPatchRequestBodyToStreamSettingPatch(v *SettingPatchRequest
 	}
 	res := &stream.SettingPatch{
 		Key:   *v.Key,
+		Value: v.Value,
+	}
+
+	return res
+}
+
+// marshalStreamTestResultTableToTestResultTableResponseBody builds a value of
+// type *TestResultTableResponseBody from a value of type
+// *stream.TestResultTable.
+func marshalStreamTestResultTableToTestResultTableResponseBody(v *stream.TestResultTable) *TestResultTableResponseBody {
+	res := &TestResultTableResponseBody{
+		SinkID:  string(v.SinkID),
+		TableID: string(v.TableID),
+	}
+	if v.Rows != nil {
+		res.Rows = make([]*TestResultRowResponseBody, len(v.Rows))
+		for i, val := range v.Rows {
+			res.Rows[i] = marshalStreamTestResultRowToTestResultRowResponseBody(val)
+		}
+	} else {
+		res.Rows = []*TestResultRowResponseBody{}
+	}
+
+	return res
+}
+
+// marshalStreamTestResultRowToTestResultRowResponseBody builds a value of type
+// *TestResultRowResponseBody from a value of type *stream.TestResultRow.
+func marshalStreamTestResultRowToTestResultRowResponseBody(v *stream.TestResultRow) *TestResultRowResponseBody {
+	res := &TestResultRowResponseBody{}
+	if v.Columns != nil {
+		res.Columns = make([]*TestResultColumnResponseBody, len(v.Columns))
+		for i, val := range v.Columns {
+			res.Columns[i] = marshalStreamTestResultColumnToTestResultColumnResponseBody(val)
+		}
+	} else {
+		res.Columns = []*TestResultColumnResponseBody{}
+	}
+
+	return res
+}
+
+// marshalStreamTestResultColumnToTestResultColumnResponseBody builds a value
+// of type *TestResultColumnResponseBody from a value of type
+// *stream.TestResultColumn.
+func marshalStreamTestResultColumnToTestResultColumnResponseBody(v *stream.TestResultColumn) *TestResultColumnResponseBody {
+	res := &TestResultColumnResponseBody{
+		Name:  v.Name,
 		Value: v.Value,
 	}
 
