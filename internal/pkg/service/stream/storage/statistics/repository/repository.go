@@ -27,20 +27,12 @@
 package repository
 
 import (
-	"context"
 	"fmt"
-	"time"
-
-	"github.com/c2h5oh/datasize"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -81,75 +73,9 @@ func New(d dependencies) *Repository {
 	// Setup Provider interface
 	r._provider = NewProvider(r.aggregate)
 
-	// Connect to file/slice events
-	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, old, updated *model.File) {
-		atomicOp := op.AtomicFromCtx(ctx)
-
-		// On file deletion: delete/rollup statistics
-		if updated.Deleted {
-			atomicOp.AddFrom(r.Delete(updated.FileKey))
-			return
-		}
-
-		// On file creation: nop
-		if old == nil {
-			return
-		}
-
-		// On file modification: move statistics to the target storage level, if needed
-		fromLevel := old.State.Level()
-		toLevel := updated.State.Level()
-		if fromLevel != toLevel {
-			atomicOp.AddFrom(r.MoveAll(updated.FileKey, fromLevel, toLevel, func(value *statistics.Value) {
-				// There is actually no additional compression, when uploading slice to the staging storage
-				if toLevel == level.Staging {
-					value.StagingSize = value.CompressedSize
-				}
-			}))
-		}
-	})
-	r.plugins.Collection().OnSliceSave(func(ctx context.Context, now time.Time, old, updated *model.Slice) {
-		atomicOp := op.AtomicFromCtx(ctx)
-
-		// On slice deletion: delete/rollup statistics
-		if updated.Deleted {
-			atomicOp.AddFrom(r.Delete(updated.SliceKey))
-			return
-		}
-
-		// On slice creation: calculate pre-allocated disk space from the size of previous slices
-		if old == nil {
-			atomicOp.AddFrom(op.Atomic(nil, &op.NoResult{}).
-				Read(func(ctx context.Context) op.Op {
-					// Get disk allocation config
-					cfg, ok := diskalloc.ConfigFromContext(ctx)
-					if !ok {
-						return nil
-					}
-
-					// Calculate pre-allocated size
-					return r.
-						MaxUsedDiskSizeBySliceIn(updated.SinkKey, recordsForSliceDiskSizeCalc).
-						OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
-							updated.LocalStorage.AllocatedDiskSpace = cfg.ForNextSlice(r.Result())
-						})
-				}),
-			)
-			return
-		}
-
-		// On slice modification: move statistics to the target storage level, if needed
-		fromLevel := old.State.Level()
-		toLevel := updated.State.Level()
-		if fromLevel != toLevel {
-			atomicOp.AddFrom(r.Move(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
-				// There is actually no additional compression, when uploading slice to the staging storage
-				if toLevel == level.Staging {
-					value.StagingSize = value.CompressedSize
-				}
-			}))
-		}
-	})
+	r.moveStatisticsOnSliceUpdate()
+	r.rollupStatisticsOnFileDelete()
+	r.estimateSliceSizeOnSliceCreate()
 
 	return r
 }

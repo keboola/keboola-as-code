@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
-	etcd "go.etcd.io/etcd/client/v3"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -63,29 +60,6 @@ func (v *provider) FileStats(ctx context.Context, k model.FileKey) (statistics.A
 
 func (v *provider) SliceStats(ctx context.Context, k model.SliceKey) (statistics.Aggregated, error) {
 	return v.fn(ctx, k)
-}
-
-// MaxUsedDiskSizeBySliceIn scans the statistics in the parentKey, scanned are:
-//   - The last <limit> slices in level.Staging (uploaded slices).
-//   - The last <limit> slices in level.Target  (imported slices).
-func (r *Repository) MaxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int) *op.TxnOp[datasize.ByteSize] {
-	var maxSize datasize.ByteSize
-	txn := op.TxnWithResult(r.client, &maxSize)
-	for _, l := range []level.Level{level.Staging, level.Target} {
-		// Get maximum
-		txn.Then(
-			r.schema.
-				InLevel(l).InObject(parentKey).
-				GetAll(r.client, iterator.WithLimit(limit), iterator.WithSort(etcd.SortDescend)).
-				ForEach(func(v statistics.Value, header *iterator.Header) error {
-					// Ignore sums
-					if v.SlicesCount == 1 && v.CompressedSize > maxSize {
-						maxSize = v.CompressedSize
-					}
-					return nil
-				}))
-	}
-	return txn
 }
 
 // AggregateIn statistics from the database.

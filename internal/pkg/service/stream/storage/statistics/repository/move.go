@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -15,16 +16,26 @@ import (
 // TransformFn transforms statistics value, for example to set StagingSize after the upload.
 type TransformFn func(value *statistics.Value)
 
-// Move moves slice statistics to a different storage level.
-// This operation should not be used separately but atomically together with changing the slice state.
-func (r *Repository) Move(sliceKey model.SliceKey, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
-	return r.MoveAll(sliceKey, from, to, transform...)
+func (r *Repository) moveStatisticsOnSliceUpdate() {
+	r.plugins.Collection().OnSliceSave(func(ctx context.Context, now time.Time, original, updated *model.Slice) {
+		if original != nil {
+			fromLevel := original.State.Level()
+			toLevel := updated.State.Level()
+			if fromLevel != toLevel {
+				op.AtomicFromCtx(ctx).AddFrom(r.moveAll(updated.FileKey, fromLevel, toLevel, func(value *statistics.Value) {
+					// There is actually no additional compression, when uploading slice to the staging storage
+					if toLevel == level.Staging {
+						value.StagingSize = value.CompressedSize
+					}
+				}))
+			}
+		}
+	})
 }
 
-// MoveAll moves all statistics in the parentKey to a different storage level.
+// moveAll moves all statistics in the parentKey to a different storage level.
 // Returned value is sum of all slices statistics.
-// This operation should not be used separately but atomically together with changing the slice state.
-func (r *Repository) MoveAll(parentKey fmt.Stringer, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
+func (r *Repository) moveAll(parentKey fmt.Stringer, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
 	if from == to {
 		panic(errors.Errorf(`"from" and "to" storage levels are same and equal to "%s"`, to))
 	}

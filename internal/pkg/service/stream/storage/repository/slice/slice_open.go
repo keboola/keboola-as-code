@@ -2,6 +2,7 @@ package slice
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -43,6 +44,9 @@ func (r *Repository) openSlice(ctx context.Context, now time.Time, file model.Fi
 	if err := validateFileAndSliceState(file.State, newSlice.State); err != nil {
 		return op.TxnWithError[model.Slice](err)
 	}
+
+	// Pass allocation config to the statistics package, to estimate size of the new slice
+	ctx = diskalloc.ContextWithConfig(ctx, file.LocalStorage.DiskAllocation)
 
 	// Save new slice
 	return r.save(ctx, now, nil, &newSlice)

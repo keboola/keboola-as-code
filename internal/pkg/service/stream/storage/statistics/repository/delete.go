@@ -3,16 +3,25 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
-// Delete returns an etcd operation to delete all statistics associated with the object key.
+func (r *Repository) rollupStatisticsOnFileDelete() {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
+		if updated.Deleted {
+			op.AtomicFromCtx(ctx).AddFrom(r.deleteOrRollup(updated.FileKey))
+		}
+	})
+}
+
+// deleteOrRollup returns an etcd operation to delete all statistics associated with the object key.
 // Statistics for the level.Target are not deleted but are rolled up to the parent object.
-// This operation should not be used separately but atomically together with the deletion of the object.
-func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
+func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 	ops := op.Atomic(r.client, &op.NoResult{})
 	for _, inLevel := range level.AllLevels() {
 		// Object prefix contains all statistics related to the object
