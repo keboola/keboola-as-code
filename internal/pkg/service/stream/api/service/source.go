@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -138,5 +139,9 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 }
 
 func (s *service) RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *api.RefreshSourceTokensPayload) (res *api.Source, err error) {
+	return nil, errors.NewNotImplementedError()
+}
+
+func (s *service) TestSource(context.Context, dependencies.SourceRequestScope, *api.TestSourcePayload, io.ReadCloser) (res *api.TestResult, err error) {
 	return nil, errors.NewNotImplementedError()
 }

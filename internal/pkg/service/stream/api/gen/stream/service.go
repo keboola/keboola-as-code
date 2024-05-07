@@ -10,6 +10,7 @@ package stream
 
 import (
 	"context"
+	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -46,6 +47,8 @@ type Service interface {
 	// Each sink uses its own token scoped to the target bucket, this endpoint
 	// refreshes all of those tokens.
 	RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
+	// Tests configured mapping of the source and its sinks.
+	TestSource(context.Context, dependencies.SourceRequestScope, *TestSourcePayload, io.ReadCloser) (res *TestResult, err error)
 	// Create a new sink in the source.
 	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
@@ -88,7 +91,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [21]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask"}
+var MethodNames = [22]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "TestSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask"}
 
 // ID of the branch.
 type BranchID = keboola.BranchID
@@ -522,6 +525,45 @@ type TaskOutputs struct {
 	SourceID *SourceID
 	// ID of the created/updated sink.
 	SinkID *SinkID
+}
+
+// TestResult is the result type of the stream service TestSource method.
+type TestResult struct {
+	ProjectID ProjectID
+	BranchID  BranchID
+	SourceID  SourceID
+	// Table for each configured sink.
+	Tables []*TestResultTable
+}
+
+// Generated table column value, part of the test result.
+type TestResultColumn struct {
+	// Column name.
+	Name string
+	// Column value.
+	Value string
+}
+
+// Generated table row, part of the test result.
+type TestResultRow struct {
+	// Generated columns.
+	Columns []*TestResultColumn
+}
+
+// Generated table rows, part of the test result.
+type TestResultTable struct {
+	SinkID  SinkID
+	TableID TableID
+	// Generated rows.
+	Rows []*TestResultRow
+}
+
+// TestSourcePayload is the payload type of the stream service TestSource
+// method.
+type TestSourcePayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 }
 
 // UpdateSinkPayload is the payload type of the stream service UpdateSink
