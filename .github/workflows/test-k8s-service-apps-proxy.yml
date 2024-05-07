@@ -86,9 +86,8 @@ jobs:
           emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
           echo -e "Found empty replica sets:"
           echo "$emptyReplicaSets"
-          echo "-------------------------" 
+          echo "-------------------------"
           echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
-          
           # Wait for pod startup/termination
           sleep 10
           # Dump objects
@@ -159,7 +158,7 @@ jobs:
       - name: Dump logs
         if: always()
         run: |
-          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts && 
+          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts &&
           /tmp/latest-scripts/k8s/logs.sh /tmp/artifacts
 
       - name: Upload artifacts

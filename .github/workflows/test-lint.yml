@@ -19,11 +19,11 @@ jobs:
         with:
           fail: true
           args: |
-            './**/*.md' 
+            './**/*.md'
             --verbose
-            --exclude-path 'vendor' 
-            --exclude-path 'test' 
-            --exclude '^http://localhost.*' 
+            --exclude-path 'vendor'
+            --exclude-path 'test'
+            --exclude '^http://localhost.*'
             --exclude '^https://app.datadoghq.eu/.*'
             --exclude '^https://community.chocolatey.org/.*'
             --exclude '^https://packages.debian.org/$'

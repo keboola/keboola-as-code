@@ -88,9 +88,9 @@ jobs:
           emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
           echo -e "Found empty replica sets:"
           echo "$emptyReplicaSets"
-          echo "-------------------------" 
+          echo "-------------------------"
           echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
-          
+
           # Wait for pod startup/termination
           sleep 10
           # Dump objects
@@ -184,10 +184,8 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
-          
           # Create a job from the cron job
           kubectl create job "--from=cronjob/${ETCD_RELEASE_NAME}-defrag" test-defrag-job
-          
           # Wait for the job
           if kubectl wait --for=condition=complete --timeout=30s job/test-defrag-job; then
             echo "The job succeed, logs:"
@@ -203,16 +201,13 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
-          
           # Diff JSON states
           /tmp/latest-scripts/k8s/diff.sh \
             /tmp/artifacts/test-k8s-state.old.json \
             /tmp/artifacts/test-k8s-state.new.json \
             /tmp/artifacts/test-k8s-state.diff
-          
           # Remove ANSI sequences
           sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
-          
           # Prepare PR comment message
           echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
@@ -223,7 +218,7 @@ jobs:
       - name: Dump logs
         if: always()
         run: |
-          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts && 
+          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts &&
           /tmp/latest-scripts/k8s/logs.sh /tmp/artifacts
 
       - name: Upload artifacts
