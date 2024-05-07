@@ -13,6 +13,5 @@
     "hash": "%s",
     "modifiedAt": "%s",
     "description": "Super cool modification."
-  },
-  "sinks": []
+  }
 }

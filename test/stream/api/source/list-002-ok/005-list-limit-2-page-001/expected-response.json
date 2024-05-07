@@ -23,8 +23,7 @@
         "hash": "%s",
         "modifiedAt": "%s",
         "description": "New source."
-      },
-      "sinks": []
+      }
     },
     {
       "projectId": %%TEST_KBC_PROJECT_ID%%,
