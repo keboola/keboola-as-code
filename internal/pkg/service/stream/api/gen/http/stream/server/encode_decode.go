@@ -1755,14 +1755,6 @@ func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBo
 	if v.Disabled != nil {
 		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
 	}
-	if v.Sinks != nil {
-		res.Sinks = make([]*SinkResponseBody, len(v.Sinks))
-		for i, val := range v.Sinks {
-			res.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
-	} else {
-		res.Sinks = []*SinkResponseBody{}
-	}
 
 	return res
 }
@@ -1834,108 +1826,6 @@ func marshalStreamDisabledEntityToDisabledEntityResponseBody(v *stream.DisabledE
 	}
 	if v.By != nil {
 		res.By = marshalStreamByToByResponseBody(v.By)
-	}
-
-	return res
-}
-
-// marshalStreamSinkToSinkResponseBody builds a value of type *SinkResponseBody
-// from a value of type *stream.Sink.
-func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
-	res := &SinkResponseBody{
-		ProjectID:   int(v.ProjectID),
-		BranchID:    int(v.BranchID),
-		SourceID:    string(v.SourceID),
-		SinkID:      string(v.SinkID),
-		Name:        v.Name,
-		Description: v.Description,
-	}
-	if v.Type != nil {
-		type_ := string(*v.Type)
-		res.Type = &type_
-	}
-	if v.Table != nil {
-		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
-	}
-	if v.Version != nil {
-		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
-	}
-	if v.Deleted != nil {
-		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
-	}
-	if v.Disabled != nil {
-		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
-	}
-
-	return res
-}
-
-// marshalStreamTableSinkToTableSinkResponseBody builds a value of type
-// *TableSinkResponseBody from a value of type *stream.TableSink.
-func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSinkResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &TableSinkResponseBody{}
-	if v.Mapping != nil {
-		res.Mapping = marshalStreamTableMappingToTableMappingResponseBody(v.Mapping)
-	}
-
-	return res
-}
-
-// marshalStreamTableMappingToTableMappingResponseBody builds a value of type
-// *TableMappingResponseBody from a value of type *stream.TableMapping.
-func marshalStreamTableMappingToTableMappingResponseBody(v *stream.TableMapping) *TableMappingResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &TableMappingResponseBody{
-		TableID: string(v.TableID),
-	}
-	if v.Columns != nil {
-		res.Columns = make([]*TableColumnResponseBody, len(v.Columns))
-		for i, val := range v.Columns {
-			res.Columns[i] = marshalStreamTableColumnToTableColumnResponseBody(val)
-		}
-	} else {
-		res.Columns = []*TableColumnResponseBody{}
-	}
-
-	return res
-}
-
-// marshalStreamTableColumnToTableColumnResponseBody builds a value of type
-// *TableColumnResponseBody from a value of type *stream.TableColumn.
-func marshalStreamTableColumnToTableColumnResponseBody(v *stream.TableColumn) *TableColumnResponseBody {
-	res := &TableColumnResponseBody{
-		PrimaryKey: v.PrimaryKey,
-		Type:       v.Type,
-		Name:       v.Name,
-	}
-	{
-		var zero bool
-		if res.PrimaryKey == zero {
-			res.PrimaryKey = false
-		}
-	}
-	if v.Template != nil {
-		res.Template = marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v.Template)
-	}
-
-	return res
-}
-
-// marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody builds a
-// value of type *TableColumnTemplateResponseBody from a value of type
-// *stream.TableColumnTemplate.
-func marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v *stream.TableColumnTemplate) *TableColumnTemplateResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &TableColumnTemplateResponseBody{
-		Language: v.Language,
-		Content:  v.Content,
 	}
 
 	return res
@@ -2036,6 +1926,108 @@ func unmarshalTableColumnTemplateRequestBodyToStreamTableColumnTemplate(v *Table
 	res := &stream.TableColumnTemplate{
 		Language: *v.Language,
 		Content:  *v.Content,
+	}
+
+	return res
+}
+
+// marshalStreamTableSinkToTableSinkResponseBody builds a value of type
+// *TableSinkResponseBody from a value of type *stream.TableSink.
+func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSinkResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TableSinkResponseBody{}
+	if v.Mapping != nil {
+		res.Mapping = marshalStreamTableMappingToTableMappingResponseBody(v.Mapping)
+	}
+
+	return res
+}
+
+// marshalStreamTableMappingToTableMappingResponseBody builds a value of type
+// *TableMappingResponseBody from a value of type *stream.TableMapping.
+func marshalStreamTableMappingToTableMappingResponseBody(v *stream.TableMapping) *TableMappingResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TableMappingResponseBody{
+		TableID: string(v.TableID),
+	}
+	if v.Columns != nil {
+		res.Columns = make([]*TableColumnResponseBody, len(v.Columns))
+		for i, val := range v.Columns {
+			res.Columns[i] = marshalStreamTableColumnToTableColumnResponseBody(val)
+		}
+	} else {
+		res.Columns = []*TableColumnResponseBody{}
+	}
+
+	return res
+}
+
+// marshalStreamTableColumnToTableColumnResponseBody builds a value of type
+// *TableColumnResponseBody from a value of type *stream.TableColumn.
+func marshalStreamTableColumnToTableColumnResponseBody(v *stream.TableColumn) *TableColumnResponseBody {
+	res := &TableColumnResponseBody{
+		PrimaryKey: v.PrimaryKey,
+		Type:       v.Type,
+		Name:       v.Name,
+	}
+	{
+		var zero bool
+		if res.PrimaryKey == zero {
+			res.PrimaryKey = false
+		}
+	}
+	if v.Template != nil {
+		res.Template = marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v.Template)
+	}
+
+	return res
+}
+
+// marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody builds a
+// value of type *TableColumnTemplateResponseBody from a value of type
+// *stream.TableColumnTemplate.
+func marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v *stream.TableColumnTemplate) *TableColumnTemplateResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TableColumnTemplateResponseBody{
+		Language: v.Language,
+		Content:  v.Content,
+	}
+
+	return res
+}
+
+// marshalStreamSinkToSinkResponseBody builds a value of type *SinkResponseBody
+// from a value of type *stream.Sink.
+func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
+	res := &SinkResponseBody{
+		ProjectID:   int(v.ProjectID),
+		BranchID:    int(v.BranchID),
+		SourceID:    string(v.SourceID),
+		SinkID:      string(v.SinkID),
+		Name:        v.Name,
+		Description: v.Description,
+	}
+	if v.Type != nil {
+		type_ := string(*v.Type)
+		res.Type = &type_
+	}
+	if v.Table != nil {
+		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
+	}
+	if v.Version != nil {
+		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Deleted != nil {
+		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
+	}
+	if v.Disabled != nil {
+		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
 	}
 
 	return res
