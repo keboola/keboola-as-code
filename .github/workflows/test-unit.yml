@@ -40,6 +40,19 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           projects: ${{ vars.TEST_KBC_PROJECTS }}
 
+      - name: Load Go build cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: unit
+
+      - name: Change modtime of files to 1 unix timestamp
+        shell: bash
+        run: |
+          find . -type f,d -exec touch -r {} -d '1970-01-01T00:00:01' {} \; || true
+
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
