@@ -10,6 +10,7 @@ package stream
 
 import (
 	"context"
+	"io"
 
 	goa "goa.design/goa/v3/pkg"
 )
@@ -27,6 +28,7 @@ type Client struct {
 	GetSourceSettingsEndpoint    goa.Endpoint
 	UpdateSourceSettingsEndpoint goa.Endpoint
 	RefreshSourceTokensEndpoint  goa.Endpoint
+	TestSourceEndpoint           goa.Endpoint
 	CreateSinkEndpoint           goa.Endpoint
 	GetSinkEndpoint              goa.Endpoint
 	GetSinkSettingsEndpoint      goa.Endpoint
@@ -40,7 +42,7 @@ type Client struct {
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, refreshSourceTokens, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, getTask goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, refreshSourceTokens, testSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, getTask goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:         aPIRootIndex,
 		APIVersionIndexEndpoint:      aPIVersionIndex,
@@ -53,6 +55,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		GetSourceSettingsEndpoint:    getSourceSettings,
 		UpdateSourceSettingsEndpoint: updateSourceSettings,
 		RefreshSourceTokensEndpoint:  refreshSourceTokens,
+		TestSourceEndpoint:           testSource,
 		CreateSinkEndpoint:           createSink,
 		GetSinkEndpoint:              getSink,
 		GetSinkSettingsEndpoint:      getSinkSettings,
@@ -192,6 +195,19 @@ func (c *Client) RefreshSourceTokens(ctx context.Context, p *RefreshSourceTokens
 		return
 	}
 	return ires.(*Source), nil
+}
+
+// TestSource calls the "TestSource" endpoint of the "stream" service.
+// TestSource may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - error: internal error
+func (c *Client) TestSource(ctx context.Context, p *TestSourcePayload, req io.ReadCloser) (res *TestResult, err error) {
+	var ires any
+	ires, err = c.TestSourceEndpoint(ctx, &TestSourceRequestData{Payload: p, Body: req})
+	if err != nil {
+		return
+	}
+	return ires.(*TestResult), nil
 }
 
 // CreateSink calls the "CreateSink" endpoint of the "stream" service.

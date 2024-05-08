@@ -199,6 +199,16 @@ type RefreshSourceTokensResponseBody struct {
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
+// TestSourceResponseBody is the type of the "stream" service "TestSource"
+// endpoint HTTP response body.
+type TestSourceResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	// Table for each configured sink.
+	Tables []*TestResultTableResponseBody `form:"tables" json:"tables" xml:"tables"`
+}
+
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
 // endpoint HTTP response body.
 type CreateSinkResponseBody struct {
@@ -422,6 +432,18 @@ type UpdateSourceSettingsStreamAPIForbiddenResponseBody struct {
 // "stream" service "RefreshSourceTokens" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type RefreshSourceTokensStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// TestSourceStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "TestSource" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type TestSourceStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -782,6 +804,28 @@ type SettingResultResponseBody struct {
 	Validation *string `form:"validation,omitempty" json:"validation,omitempty" xml:"validation,omitempty"`
 }
 
+// TestResultTableResponseBody is used to define fields on response body types.
+type TestResultTableResponseBody struct {
+	SinkID  string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	TableID string `form:"tableId" json:"tableId" xml:"tableId"`
+	// Generated rows.
+	Rows []*TestResultRowResponseBody `form:"rows" json:"rows" xml:"rows"`
+}
+
+// TestResultRowResponseBody is used to define fields on response body types.
+type TestResultRowResponseBody struct {
+	// Generated columns.
+	Columns []*TestResultColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
+}
+
+// TestResultColumnResponseBody is used to define fields on response body types.
+type TestResultColumnResponseBody struct {
+	// Column name.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Column value.
+	Value string `form:"value" json:"value" xml:"value"`
+}
+
 // TableSinkResponseBody is used to define fields on response body types.
 type TableSinkResponseBody struct {
 	Mapping *TableMappingResponseBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
@@ -1053,6 +1097,25 @@ func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokens
 	return body
 }
 
+// NewTestSourceResponseBody builds the HTTP response body from the result of
+// the "TestSource" endpoint of the "stream" service.
+func NewTestSourceResponseBody(res *stream.TestResult) *TestSourceResponseBody {
+	body := &TestSourceResponseBody{
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+		SourceID:  string(res.SourceID),
+	}
+	if res.Tables != nil {
+		body.Tables = make([]*TestResultTableResponseBody, len(res.Tables))
+		for i, val := range res.Tables {
+			body.Tables[i] = marshalStreamTestResultTableToTestResultTableResponseBody(val)
+		}
+	} else {
+		body.Tables = []*TestResultTableResponseBody{}
+	}
+	return body
+}
+
 // NewCreateSinkResponseBody builds the HTTP response body from the result of
 // the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkResponseBody(res *stream.Task) *CreateSinkResponseBody {
@@ -1320,6 +1383,17 @@ func NewUpdateSourceSettingsStreamAPIForbiddenResponseBody(res *stream.GenericEr
 // "stream" service.
 func NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *RefreshSourceTokensStreamAPISourceNotFoundResponseBody {
 	body := &RefreshSourceTokensStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewTestSourceStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "TestSource" endpoint of the "stream" service.
+func NewTestSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *TestSourceStreamAPISourceNotFoundResponseBody {
+	body := &TestSourceStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1657,6 +1731,16 @@ func NewUpdateSourceSettingsPayload(body *UpdateSourceSettingsRequestBody, branc
 // endpoint payload.
 func NewRefreshSourceTokensPayload(branchID string, sourceID string, storageAPIToken string) *stream.RefreshSourceTokensPayload {
 	v := &stream.RefreshSourceTokensPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewTestSourcePayload builds a stream service TestSource endpoint payload.
+func NewTestSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.TestSourcePayload {
+	v := &stream.TestSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken

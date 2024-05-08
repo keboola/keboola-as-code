@@ -1294,6 +1294,62 @@ paths:
                                 message: Sink "github-changed-files" not found.
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/test:
+        post:
+            tags:
+                - test
+            summary: Test source payload mapping.
+            description: Tests configured mapping of the source and its sinks.
+            operationId: TestSource
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TestResult'
+                            example:
+                                projectId: 123
+                                branchId: 345
+                                sourceId: github-webhook-source
+                                tables:
+                                    - sinkId: github-pr-table-sink
+                                      tableId: in.c-bucket.table
+                                      rows:
+                                        - columns:
+                                            - name: id
+                                              value: "12345"
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
         post:
             tags:
@@ -2664,6 +2720,118 @@ components:
                 branchId: 345
                 sourceId: github-webhook-source
                 sinkId: github-pr-table-sink
+        TestResult:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    example: 345
+                    format: int64
+                projectId:
+                    type: integer
+                    example: 123
+                    format: int64
+                sourceId:
+                    type: string
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                tables:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TestResultTable'
+                    description: Table for each configured sink.
+                    example:
+                        - sinkId: github-pr-table-sink
+                          tableId: in.c-bucket.table
+                          rows:
+                            - columns:
+                                - name: id
+                                  value: "12345"
+            example:
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                tables:
+                    - sinkId: github-pr-table-sink
+                      tableId: in.c-bucket.table
+                      rows:
+                        - columns:
+                            - name: id
+                              value: "12345"
+            required:
+                - projectId
+                - branchId
+                - sourceId
+                - tables
+        TestResultColumn:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Column name.
+                    example: id
+                value:
+                    type: string
+                    description: Column value.
+                    example: "12345"
+            description: Generated table column value, part of the test result.
+            example:
+                name: id
+                value: "12345"
+            required:
+                - name
+                - value
+        TestResultRow:
+            type: object
+            properties:
+                columns:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TestResultColumn'
+                    description: Generated columns.
+                    example:
+                        - name: id
+                          value: "12345"
+            description: Generated table row, part of the test result.
+            example:
+                columns:
+                    - name: id
+                      value: "12345"
+            required:
+                - columns
+        TestResultTable:
+            type: object
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TestResultRow'
+                    description: Generated rows.
+                    example:
+                        - columns:
+                            - name: id
+                              value: "12345"
+                sinkId:
+                    type: string
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                tableId:
+                    type: string
+                    example: in.c-bucket.table
+            description: Generated table rows, part of the test result.
+            example:
+                sinkId: github-pr-table-sink
+                tableId: in.c-bucket.table
+                rows:
+                    - columns:
+                        - name: id
+                          value: "12345"
+            required:
+                - sinkId
+                - tableId
+                - rows
         UpdateSinkRequestBody:
             type: object
             properties:

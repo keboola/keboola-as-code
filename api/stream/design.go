@@ -281,6 +281,20 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("TestSource", func() {
+		Meta("openapi:summary", "Test source payload mapping.")
+		Description("Tests configured mapping of the source and its sinks.")
+		Result(TestResult)
+		Payload(TestSourceRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/test")
+			Meta("openapi:tag:test")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SkipRequestBodyEncodeDecode()
+		})
+	})
+
 	// Sink endpoints --------------------------------------------------------------------------------------------------
 
 	Method("CreateSink", func() {
@@ -696,6 +710,50 @@ var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 		Description("Description of the modification, description of the version.")
 		Example("Renamed.")
 	})
+})
+
+var TestSourceRequest = Type("TestSourceRequest", func() {
+	SourceKeyRequest()
+})
+
+var TestResult = Type("TestResult", func() {
+	Description("Result of the test endpoint.")
+	SourceKeyResponse()
+	Attribute("tables", ArrayOf(TestResultTable), func() {
+		Description("Table for each configured sink.")
+	})
+	Required("tables")
+})
+
+var TestResultTable = Type("TestResultTable", func() {
+	Description("Generated table rows, part of the test result.")
+	Attribute("sinkId", SinkID)
+	Attribute("tableId", TableID)
+	Attribute("rows", ArrayOf(TestResultRow), func() {
+		Description("Generated rows.")
+	})
+	Required("sinkId", "tableId", "rows")
+})
+
+var TestResultRow = Type("TestResultRow", func() {
+	Description("Generated table row, part of the test result.")
+	Attribute("columns", ArrayOf(TestResultColumn), func() {
+		Description("Generated columns.")
+	})
+	Required("columns")
+})
+
+var TestResultColumn = Type("TestResultColumn", func() {
+	Description("Generated table column value, part of the test result.")
+	Attribute("name", String, func() {
+		Description("Column name.")
+		Example("id")
+	})
+	Attribute("value", String, func() {
+		Description("Column value.")
+		Example("12345")
+	})
+	Required("name", "value")
 })
 
 var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
