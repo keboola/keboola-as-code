@@ -33,7 +33,7 @@ func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.
 	f.State = model.FileWriting
 	f.Columns = sink.Table.Mapping.Columns
 	f.LocalStorage = local.NewFile(localDir, cfg.Local)
-	f.StagingStorage = staging.NewFile(f.LocalStorage)
+	f.StagingStorage = staging.NewFile(f.LocalStorage, k.OpenedAt().Time())
 	f.TargetStorage = target.New()
 	f.Assignment.Config = cfg.Local.Volume.Assignment
 
