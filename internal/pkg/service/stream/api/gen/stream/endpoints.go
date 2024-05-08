@@ -39,6 +39,7 @@ type Endpoints struct {
 	UpdateSink           goa.Endpoint
 	DeleteSink           goa.Endpoint
 	SinkStatisticsTotal  goa.Endpoint
+	SinkStatisticsFiles  goa.Endpoint
 	GetTask              goa.Endpoint
 }
 
@@ -76,6 +77,7 @@ func NewEndpoints(s Service) *Endpoints {
 		UpdateSink:           NewUpdateSinkEndpoint(s, a.APIKeyAuth),
 		DeleteSink:           NewDeleteSinkEndpoint(s, a.APIKeyAuth),
 		SinkStatisticsTotal:  NewSinkStatisticsTotalEndpoint(s, a.APIKeyAuth),
+		SinkStatisticsFiles:  NewSinkStatisticsFilesEndpoint(s, a.APIKeyAuth),
 		GetTask:              NewGetTaskEndpoint(s, a.APIKeyAuth),
 	}
 }
@@ -102,6 +104,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpdateSink = m(e.UpdateSink)
 	e.DeleteSink = m(e.DeleteSink)
 	e.SinkStatisticsTotal = m(e.SinkStatisticsTotal)
+	e.SinkStatisticsFiles = m(e.SinkStatisticsFiles)
 	e.GetTask = m(e.GetTask)
 }
 
@@ -469,6 +472,26 @@ func NewSinkStatisticsTotalEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyF
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.SinkStatisticsTotal(ctx, deps, p)
+	}
+}
+
+// NewSinkStatisticsFilesEndpoint returns an endpoint function that calls the
+// method "SinkStatisticsFiles" of service "stream".
+func NewSinkStatisticsFilesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*SinkStatisticsFilesPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return s.SinkStatisticsFiles(ctx, deps, p)
 	}
 }
 

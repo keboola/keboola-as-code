@@ -37,11 +37,12 @@ type Client struct {
 	UpdateSinkEndpoint           goa.Endpoint
 	DeleteSinkEndpoint           goa.Endpoint
 	SinkStatisticsTotalEndpoint  goa.Endpoint
+	SinkStatisticsFilesEndpoint  goa.Endpoint
 	GetTaskEndpoint              goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, refreshSourceTokens, testSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, getTask goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, refreshSourceTokens, testSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, getTask goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:         aPIRootIndex,
 		APIVersionIndexEndpoint:      aPIVersionIndex,
@@ -63,6 +64,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		UpdateSinkEndpoint:           updateSink,
 		DeleteSinkEndpoint:           deleteSink,
 		SinkStatisticsTotalEndpoint:  sinkStatisticsTotal,
+		SinkStatisticsFilesEndpoint:  sinkStatisticsFiles,
 		GetTaskEndpoint:              getTask,
 	}
 }
@@ -317,6 +319,21 @@ func (c *Client) SinkStatisticsTotal(ctx context.Context, p *SinkStatisticsTotal
 		return
 	}
 	return ires.(*SinkStatisticsTotalResult), nil
+}
+
+// SinkStatisticsFiles calls the "SinkStatisticsFiles" endpoint of the "stream"
+// service.
+// SinkStatisticsFiles may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - error: internal error
+func (c *Client) SinkStatisticsFiles(ctx context.Context, p *SinkStatisticsFilesPayload) (res *SinkStatisticsFilesResult, err error) {
+	var ires any
+	ires, err = c.SinkStatisticsFilesEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SinkStatisticsFilesResult), nil
 }
 
 // GetTask calls the "GetTask" endpoint of the "stream" service.
