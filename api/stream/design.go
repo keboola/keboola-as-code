@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
 const (
@@ -403,6 +404,20 @@ var _ = Service("stream", func() {
 		Payload(GetSinkStatisticsTotalRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("SinkStatisticsFiles", func() {
+		Meta("openapi:summary", "Sink files statistics")
+		Description("Get files statistics of the sink.")
+		Result(SinkStatisticsFilesResult)
+		Payload(GetSinkStatisticsFilesRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -879,6 +894,54 @@ var Level = Type("Level", func() {
 	Required("recordsCount")
 	Attribute("uncompressedSize", UInt64)
 	Required("uncompressedSize")
+})
+
+var GetSinkStatisticsFilesRequest = Type("GetSinkStatisticsFilesRequest", func() {
+	SinkKeyRequest()
+})
+
+var SinkStatisticsFilesResult = Type("SinkStatisticsFilesResult", func() {
+	Attribute("files", SinkFiles)
+	Required("files")
+})
+
+var SinkFiles = Type("SinkFiles", ArrayOf(SinkFile), func() {
+	Description("List of recent sink files.")
+})
+
+var SinkFile = Type("SinkFile", func() {
+	Attribute("state", FileState)
+	Attribute("openedAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("closingAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("importingAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("importedAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Required("state", "openedAt", "statistics")
+	Attribute("statistics", SinkFileStatistics)
+})
+
+var SinkFileStatistics = Type("SinkFileStatistics", func() {
+	Attribute("total", Level)
+	Required("total")
+	Attribute("levels", Levels)
+	Required("levels")
+})
+
+var FileState = Type("FileState", String, func() {
+	Meta("struct:field:type", "= model.FileState", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model")
+	Enum(model.FileWriting.String(), model.FileClosing.String(), model.FileImporting.String(), model.FileImported.String())
+	Example(model.FileWriting.String())
 })
 
 var SinkFieldsRW = func() {

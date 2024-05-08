@@ -303,6 +303,12 @@ type SinkStatisticsTotalResponseBody struct {
 	Levels *LevelsResponseBody `form:"levels" json:"levels" xml:"levels"`
 }
 
+// SinkStatisticsFilesResponseBody is the type of the "stream" service
+// "SinkStatisticsFiles" endpoint HTTP response body.
+type SinkStatisticsFilesResponseBody struct {
+	Files []*SinkFileResponseBody `form:"files" json:"files" xml:"files"`
+}
+
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
@@ -650,6 +656,30 @@ type SinkStatisticsTotalStreamAPISinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// SinkStatisticsFilesStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SinkStatisticsFiles" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SinkStatisticsFilesStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkStatisticsFilesStreamAPISinkNotFoundResponseBody is the type of the
+// "stream" service "SinkStatisticsFiles" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type SinkStatisticsFilesStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetTaskStreamAPITaskNotFoundResponseBody is the type of the "stream" service
 // "GetTask" endpoint HTTP response body for the "stream.api.taskNotFound"
 // error.
@@ -858,6 +888,23 @@ type LevelsResponseBody struct {
 	Local   *LevelResponseBody `form:"local" json:"local" xml:"local"`
 	Staging *LevelResponseBody `form:"staging" json:"staging" xml:"staging"`
 	Target  *LevelResponseBody `form:"target" json:"target" xml:"target"`
+}
+
+// SinkFileResponseBody is used to define fields on response body types.
+type SinkFileResponseBody struct {
+	State       string                          `form:"state" json:"state" xml:"state"`
+	OpenedAt    string                          `form:"openedAt" json:"openedAt" xml:"openedAt"`
+	ClosingAt   *string                         `form:"closingAt,omitempty" json:"closingAt,omitempty" xml:"closingAt,omitempty"`
+	ImportingAt *string                         `form:"importingAt,omitempty" json:"importingAt,omitempty" xml:"importingAt,omitempty"`
+	ImportedAt  *string                         `form:"importedAt,omitempty" json:"importedAt,omitempty" xml:"importedAt,omitempty"`
+	Statistics  *SinkFileStatisticsResponseBody `form:"statistics" json:"statistics" xml:"statistics"`
+}
+
+// SinkFileStatisticsResponseBody is used to define fields on response body
+// types.
+type SinkFileStatisticsResponseBody struct {
+	Total  *LevelResponseBody  `form:"total" json:"total" xml:"total"`
+	Levels *LevelsResponseBody `form:"levels" json:"levels" xml:"levels"`
 }
 
 // SettingPatchRequestBody is used to define fields on request body types.
@@ -1202,6 +1249,21 @@ func NewSinkStatisticsTotalResponseBody(res *stream.SinkStatisticsTotalResult) *
 	return body
 }
 
+// NewSinkStatisticsFilesResponseBody builds the HTTP response body from the
+// result of the "SinkStatisticsFiles" endpoint of the "stream" service.
+func NewSinkStatisticsFilesResponseBody(res *stream.SinkStatisticsFilesResult) *SinkStatisticsFilesResponseBody {
+	body := &SinkStatisticsFilesResponseBody{}
+	if res.Files != nil {
+		body.Files = make([]*SinkFileResponseBody, len(res.Files))
+		for i, val := range res.Files {
+			body.Files[i] = marshalStreamSinkFileToSinkFileResponseBody(val)
+		}
+	} else {
+		body.Files = []*SinkFileResponseBody{}
+	}
+	return body
+}
+
 // NewGetTaskResponseBody builds the HTTP response body from the result of the
 // "GetTask" endpoint of the "stream" service.
 func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
@@ -1534,6 +1596,30 @@ func NewSinkStatisticsTotalStreamAPISinkNotFoundResponseBody(res *stream.Generic
 	return body
 }
 
+// NewSinkStatisticsFilesStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatisticsFiles" endpoint of the
+// "stream" service.
+func NewSinkStatisticsFilesStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsFilesStreamAPISourceNotFoundResponseBody {
+	body := &SinkStatisticsFilesStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkStatisticsFilesStreamAPISinkNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatisticsFiles" endpoint of the
+// "stream" service.
+func NewSinkStatisticsFilesStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsFilesStreamAPISinkNotFoundResponseBody {
+	body := &SinkStatisticsFilesStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -1773,6 +1859,18 @@ func NewDeleteSinkPayload(branchID string, sourceID string, sinkID string, stora
 // endpoint payload.
 func NewSinkStatisticsTotalPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsTotalPayload {
 	v := &stream.SinkStatisticsTotalPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSinkStatisticsFilesPayload builds a stream service SinkStatisticsFiles
+// endpoint payload.
+func NewSinkStatisticsFilesPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsFilesPayload {
+	v := &stream.SinkStatisticsFilesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)
