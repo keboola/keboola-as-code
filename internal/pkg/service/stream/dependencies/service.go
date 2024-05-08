@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -25,9 +26,10 @@ const (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
-	definitionRepository *definitionRepo.Repository
-	storageRepository    *storageRepo.Repository
-	statisticsRepository *statsRepo.Repository
+	plugins                     *plugin.Plugins
+	definitionRepository        *definitionRepo.Repository
+	storageRepository           *storageRepo.Repository
+	storageStatisticsRepository *statsRepo.Repository
 }
 
 type parentScopes interface {
@@ -56,11 +58,11 @@ func NewServiceScope(
 ) (v ServiceScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewServiceScope")
 	defer span.End(&err)
-	parentSc, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
+	parentScp, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentSc, cfg, model.DefaultBackoff()), nil
+	return newServiceScope(parentScp, cfg, model.DefaultBackoff())
 }
 
 func newParentScopes(
@@ -111,18 +113,29 @@ func newParentScopes(
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes, cfg config.Config, backoff model.RetryBackoff) ServiceScope {
+func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
+	var err error
+
 	d := &serviceScope{}
 
 	d.parentScopes = parentScp
 
+	d.plugins = plugin.New()
+
 	d.definitionRepository = definitionRepo.New(d)
 
-	d.statisticsRepository = statsRepo.New(d)
+	d.storageRepository, err = storageRepo.New(cfg.Storage.Level, d, storageBackoff)
+	if err != nil {
+		return nil, err
+	}
 
-	d.storageRepository = storageRepo.New(cfg.Storage.Level, d, backoff)
+	d.storageStatisticsRepository = statsRepo.New(d)
 
-	return d
+	return d, nil
+}
+
+func (v *serviceScope) Plugins() *plugin.Plugins {
+	return v.plugins
 }
 
 func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {
@@ -130,7 +143,7 @@ func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {
 }
 
 func (v *serviceScope) StatisticsRepository() *statsRepo.Repository {
-	return v.statisticsRepository
+	return v.storageStatisticsRepository
 }
 
 func (v *serviceScope) StorageRepository() *storageRepo.Repository {

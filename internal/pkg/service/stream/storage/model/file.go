@@ -23,6 +23,7 @@ const (
 type File struct {
 	FileKey
 	Retryable
+	Deleted        bool                  `json:"-"` // internal field to mark field for deletion
 	Type           FileType              `json:"type" validate:"required,oneof=csv"`
 	State          FileState             `json:"state" validate:"required,oneof=writing closing importing imported"`
 	ClosingAt      *utctime.UTCTime      `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State importing,required_if=State imported"`

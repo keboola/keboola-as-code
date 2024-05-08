@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -15,6 +14,8 @@ import (
 
 func TestFile_Validation(t *testing.T) {
 	t.Parallel()
+
+	expiration := utctime.MustParse("2006-01-02T15:04:05.000Z")
 
 	cases := []struct {
 		Name          string
@@ -31,9 +32,8 @@ func TestFile_Validation(t *testing.T) {
 		{
 			Name: "ok",
 			Value: File{
-				Compression:                 compression.NewConfig(),
-				UploadCredentials:           &keboola.FileUploadCredentials{},
-				UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
+				Compression: compression.NewConfig(),
+				Expiration:  &expiration,
 			},
 		},
 	}

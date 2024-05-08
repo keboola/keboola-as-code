@@ -167,6 +167,7 @@ type GetSourceResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Sinks    []*SinkResponseBody         `form:"sinks,omitempty" json:"sinks,omitempty" xml:"sinks,omitempty"`
 }
 
 // GetSourceSettingsResponseBody is the type of the "stream" service
@@ -197,6 +198,7 @@ type RefreshSourceTokensResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Sinks    []*SinkResponseBody         `form:"sinks,omitempty" json:"sinks,omitempty" xml:"sinks,omitempty"`
 }
 
 // TestSourceResponseBody is the type of the "stream" service "TestSource"
@@ -235,11 +237,11 @@ type CreateSinkResponseBody struct {
 // GetSinkResponseBody is the type of the "stream" service "GetSink" endpoint
 // HTTP response body.
 type GetSinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
@@ -734,6 +736,7 @@ type SourceResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Sinks    []*SinkResponseBody         `form:"sinks,omitempty" json:"sinks,omitempty" xml:"sinks,omitempty"`
 }
 
 // HTTPSourceResponseBody is used to define fields on response body types.
@@ -784,6 +787,56 @@ type DisabledEntityResponseBody struct {
 	Reason string `form:"reason" json:"reason" xml:"reason"`
 }
 
+// SinkResponseBody is used to define fields on response body types.
+type SinkResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
+	// Human readable name of the sink.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
+	Description string `form:"description" json:"description" xml:"description"`
+	// Table sink configuration for "type" = "table".
+	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+}
+
+// TableSinkResponseBody is used to define fields on response body types.
+type TableSinkResponseBody struct {
+	Type    string                    `form:"type" json:"type" xml:"type"`
+	TableID string                    `form:"tableId" json:"tableId" xml:"tableId"`
+	Mapping *TableMappingResponseBody `form:"mapping" json:"mapping" xml:"mapping"`
+}
+
+// TableMappingResponseBody is used to define fields on response body types.
+type TableMappingResponseBody struct {
+	Columns []*TableColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
+}
+
+// TableColumnResponseBody is used to define fields on response body types.
+type TableColumnResponseBody struct {
+	// Sets this column as a part of the primary key of the destination table.
+	PrimaryKey bool `form:"primaryKey" json:"primaryKey" xml:"primaryKey"`
+	// Column mapping type. This represents a static mapping (e.g. `body` or
+	// `headers`), or a custom mapping using a template language (`template`).
+	Type column.Type `form:"type" json:"type" xml:"type"`
+	// Column name.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Template mapping details. Only for "type" = "template".
+	Template *TableColumnTemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
+}
+
+// TableColumnTemplateResponseBody is used to define fields on response body
+// types.
+type TableColumnTemplateResponseBody struct {
+	Language string `form:"language" json:"language" xml:"language"`
+	Content  string `form:"content" json:"content" xml:"content"`
+}
+
 // SettingResultResponseBody is used to define fields on response body types.
 type SettingResultResponseBody struct {
 	// Key path.
@@ -824,55 +877,6 @@ type TestResultColumnResponseBody struct {
 	Name string `form:"name" json:"name" xml:"name"`
 	// Column value.
 	Value string `form:"value" json:"value" xml:"value"`
-}
-
-// TableSinkResponseBody is used to define fields on response body types.
-type TableSinkResponseBody struct {
-	Mapping *TableMappingResponseBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
-}
-
-// TableMappingResponseBody is used to define fields on response body types.
-type TableMappingResponseBody struct {
-	TableID string                     `form:"tableId" json:"tableId" xml:"tableId"`
-	Columns []*TableColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
-}
-
-// TableColumnResponseBody is used to define fields on response body types.
-type TableColumnResponseBody struct {
-	// Sets this column as a part of the primary key of the destination table.
-	PrimaryKey bool `form:"primaryKey" json:"primaryKey" xml:"primaryKey"`
-	// Column mapping type. This represents a static mapping (e.g. `body` or
-	// `headers`), or a custom mapping using a template language (`template`).
-	Type column.Type `form:"type" json:"type" xml:"type"`
-	// Column name.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Template mapping details. Only for "type" = "template".
-	Template *TableColumnTemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
-}
-
-// TableColumnTemplateResponseBody is used to define fields on response body
-// types.
-type TableColumnTemplateResponseBody struct {
-	Language string `form:"language" json:"language" xml:"language"`
-	Content  string `form:"content" json:"content" xml:"content"`
-}
-
-// SinkResponseBody is used to define fields on response body types.
-type SinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// Human readable name of the sink.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// Table sink configuration for "type" = "table".
-	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // LevelResponseBody is used to define fields on response body types.
@@ -917,12 +921,13 @@ type SettingPatchRequestBody struct {
 
 // TableSinkRequestBody is used to define fields on request body types.
 type TableSinkRequestBody struct {
+	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
 }
 
 // TableMappingRequestBody is used to define fields on request body types.
 type TableMappingRequestBody struct {
-	TableID *string                   `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Columns []*TableColumnRequestBody `form:"columns,omitempty" json:"columns,omitempty" xml:"columns,omitempty"`
 }
 
@@ -1042,6 +1047,12 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
 	}
+	if res.Sinks != nil {
+		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
+		for i, val := range res.Sinks {
+			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
+		}
+	}
 	return body
 }
 
@@ -1094,6 +1105,12 @@ func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokens
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
 	}
+	if res.Sinks != nil {
+		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
+		for i, val := range res.Sinks {
+			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
+		}
+	}
 	return body
 }
 
@@ -1145,12 +1162,9 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 		BranchID:    int(res.BranchID),
 		SourceID:    string(res.SourceID),
 		SinkID:      string(res.SinkID),
+		Type:        string(res.Type),
 		Name:        res.Name,
 		Description: res.Description,
-	}
-	if res.Type != nil {
-		type_ := string(*res.Type)
-		body.Type = &type_
 	}
 	if res.Table != nil {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
@@ -2079,6 +2093,20 @@ func ValidateSettingPatchRequestBody(body *SettingPatchRequestBody, errContext [
 // ValidateTableSinkRequestBody runs the validations defined on
 // TableSinkRequestBody
 func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []string) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
+	}
+	if body.TableID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
+	}
+	if body.Mapping == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", strings.Join(errContext, ".")))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "keboola") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"keboola"}))
+		}
+	}
 	if body.Mapping != nil {
 		if err2 := ValidateTableMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -2090,9 +2118,6 @@ func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []strin
 // ValidateTableMappingRequestBody runs the validations defined on
 // TableMappingRequestBody
 func ValidateTableMappingRequestBody(body *TableMappingRequestBody, errContext []string) (err error) {
-	if body.TableID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
-	}
 	if body.Columns == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("columns", strings.Join(errContext, ".")))
 	}

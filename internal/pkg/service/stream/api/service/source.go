@@ -8,13 +8,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
-func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (res *api.Task, err error) {
+//nolint:dupl // CreateSink method is similar
+func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (res *api.Task, err error) {
 	source, err := s.mapper.NewSourceEntity(d.BranchKey(), payload)
 	if err != nil {
 		return nil, err
@@ -27,7 +29,7 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 		ProjectID: d.ProjectID(),
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.repo.Source().Create(s.clock.Now(), "New source.", &source).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Create(&source, s.clock.Now(), "New source.").Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been created successfully.")
 				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
 				return result
@@ -43,7 +45,7 @@ func (s *service) CreateSource(_ context.Context, d dependencies.BranchRequestSc
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) UpdateSource(_ context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (res *api.Task, err error) {
+func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (res *api.Task, err error) {
 	// Get the change description
 	var changeDesc string
 	if payload.ChangeDescription == nil {
@@ -65,7 +67,7 @@ func (s *service) UpdateSource(_ context.Context, d dependencies.SourceRequestSc
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.repo.Source().Update(s.clock.Now(), d.SourceKey(), changeDesc, update).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), changeDesc, update).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been updated successfully.")
 				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
 				return result
@@ -93,11 +95,11 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.NewSourceResponse(source), nil
+	return s.mapper.NewSourceResponse(source)
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (err error) {
-	return s.repo.Source().SoftDelete(s.clock.Now(), d.SourceKey()).Do(ctx).Err()
+	return s.repo.Source().SoftDelete(d.SourceKey(), s.clock.Now()).Do(ctx).Err()
 }
 
 func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (res *api.SettingsResult, err error) {
@@ -109,6 +111,9 @@ func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRe
 }
 
 func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (res *api.SettingsResult, err error) {
+	rb := rollback.New(d.Logger())
+	defer rb.InvokeIfErr(ctx, &err)
+
 	// Get the change description
 	var changeDesc string
 	if payload.ChangeDescription == nil {
@@ -130,7 +135,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	}
 
 	// Save changes
-	source, err := s.repo.Source().Update(s.clock.Now(), d.SourceKey(), changeDesc, update).Do(ctx).ResultOrErr()
+	source, err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), changeDesc, update).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}

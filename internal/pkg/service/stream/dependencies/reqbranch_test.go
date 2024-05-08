@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -20,6 +21,10 @@ func TestBranchRequestScope_DefaultBranch_String(t *testing.T) {
 
 	d, mock := NewMockedProjectRequestScope(t)
 	client := mock.EtcdClient()
+
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx := context.WithValue(mock.TestContext(), KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
 	transport := mock.MockedHTTPTransport()
@@ -41,7 +46,7 @@ func TestBranchRequestScope_DefaultBranch_String(t *testing.T) {
 
 	// The first attempt is successful, the branch is loaded from the API
 	transport.ZeroCallCounters()
-	branchReqScp, err := newBranchRequestScope(mock.TestContext(), d, branchInput)
+	branchReqScp, err := newBranchRequestScope(ctx, d, branchInput)
 	require.NoError(t, err)
 	assert.Equal(t, 1, transport.GetTotalCallCount())
 	assert.Equal(t, 1, transport.GetCallCountInfo()["GET https://connection.keboola.local/v2/storage/dev-branches"])
@@ -63,7 +68,7 @@ definition/branch/active/12345/456
 
 	// The second attempt is successful, the branch is loaded from the database
 	transport.ZeroCallCounters()
-	branchReqScp, err = newBranchRequestScope(mock.TestContext(), d, branchInput)
+	branchReqScp, err = newBranchRequestScope(ctx, d, branchInput)
 	require.NoError(t, err)
 	assert.Equal(t, keboola.BranchID(456), branchReqScp.Branch().BranchID)
 	assert.True(t, branchReqScp.Branch().IsDefault)
@@ -90,6 +95,10 @@ func TestBranchRequestScope_DefaultBranch_Int(t *testing.T) {
 	d, mock := NewMockedProjectRequestScope(t)
 	client := mock.EtcdClient()
 
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx := context.WithValue(mock.TestContext(), KeboolaProjectAPICtxKey, api)
+
 	// Mock the Storage API call
 	transport := mock.MockedHTTPTransport()
 	transport.RegisterResponder(
@@ -108,7 +117,7 @@ func TestBranchRequestScope_DefaultBranch_Int(t *testing.T) {
 
 	// The first attempt is successful, the branch is loaded from the API
 	transport.ZeroCallCounters()
-	branchReqScp, err := newBranchRequestScope(mock.TestContext(), d, branchInput)
+	branchReqScp, err := newBranchRequestScope(ctx, d, branchInput)
 	require.NoError(t, err)
 	assert.Equal(t, 1, transport.GetTotalCallCount())
 	assert.Equal(t, 1, transport.GetCallCountInfo()["GET https://connection.keboola.local/v2/storage/dev-branches/456"])
@@ -130,7 +139,7 @@ definition/branch/active/12345/456
 
 	// The second attempt is successful, the branch is loaded from the database
 	transport.ZeroCallCounters()
-	branchReqScp, err = newBranchRequestScope(mock.TestContext(), d, branchInput)
+	branchReqScp, err = newBranchRequestScope(ctx, d, branchInput)
 	require.NoError(t, err)
 	assert.Equal(t, keboola.BranchID(456), branchReqScp.Branch().BranchID)
 	assert.True(t, branchReqScp.Branch().IsDefault)
@@ -156,6 +165,10 @@ func TestBranchRequestScope_NotDefaultBranch(t *testing.T) {
 
 	d, mock := NewMockedProjectRequestScope(t)
 
+	// Simulate that the operation is running in an API request authorized by a token
+	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	ctx := context.WithValue(mock.TestContext(), KeboolaProjectAPICtxKey, api)
+
 	// Mock the Storage API call
 	transport := mock.MockedHTTPTransport()
 	transport.RegisterResponder(
@@ -171,7 +184,7 @@ func TestBranchRequestScope_NotDefaultBranch(t *testing.T) {
 
 	// Currently, only the default branch can be used
 	transport.ZeroCallCounters()
-	_, err := newBranchRequestScope(mock.TestContext(), d, branchInput)
+	_, err := newBranchRequestScope(ctx, d, branchInput)
 	if assert.Error(t, err) {
 		assert.Equal(t, "currently only default branch is supported, branch \"456\" is not default", err.Error())
 	}

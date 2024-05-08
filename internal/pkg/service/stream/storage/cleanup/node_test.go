@@ -12,7 +12,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -39,16 +38,14 @@ func TestNode(t *testing.T) {
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|runtime/`)
 
 	// Get services
-	d, mocked := dependencies.NewMockedTableSinkScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 
 	logger := mocked.DebugLogger()
 	client := mocked.TestEtcdClient()
-	rb := rollback.New(d.Logger())
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
 	sliceRepo := storageRepo.Slice()
-	tokenRepo := storageRepo.Token()
 	volumeRepo := storageRepo.Volume()
 
 	// Setup cleanup interval
@@ -72,10 +69,6 @@ func TestNode(t *testing.T) {
 		}, 2*time.Second, 100*time.Millisecond)
 	}
 
-	// Mock file API calls
-	transport := mocked.MockedHTTPTransport()
-	test.MockCreateFilesStorageAPICalls(t, clk, branchKey, transport)
-
 	// Register active volumes
 	// -----------------------------------------------------------------------------------------------------------------
 	{
@@ -89,13 +82,12 @@ func TestNode(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
-		require.NoError(t, defRepo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now()).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
-		require.NoError(t, defRepo.Source().Create(clk.Now(), "Create source", &source).Do(ctx).Err())
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), "Create source").Do(ctx).Err())
 		sink := test.NewSink(sinkKey)
 		sink.Config = sink.Config.With(testconfig.LocalVolumeConfig(2, []string{"default"}))
-		require.NoError(t, defRepo.Sink().Create(clk.Now(), "Create sink", &sink).Do(ctx).Err())
-		require.NoError(t, tokenRepo.Put(sink.SinkKey, keboola.Token{Token: "my-token"}).Do(ctx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), "Create sink").Do(ctx).Err())
 	}
 
 	// Create 5 files
@@ -104,7 +96,7 @@ func TestNode(t *testing.T) {
 	slices := make(map[model.FileKey][]model.SliceKey)
 	for i := 0; i < 4; i++ {
 		clk.Add(time.Hour)
-		file, err := fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
+		file, err := fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		files = append(files, file.FileKey)
 		fileSlices, err := sliceRepo.ListIn(file.FileKey).Do(ctx).All()

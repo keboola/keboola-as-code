@@ -9,6 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
+const (
+	SinkType = definition.SinkType("test")
+)
+
 func NewSinkKey() key.SinkKey {
 	return key.SinkKey{
 		SourceKey: key.SourceKey{
@@ -25,11 +29,21 @@ func NewSinkKey() key.SinkKey {
 func NewSink(k key.SinkKey) definition.Sink {
 	return definition.Sink{
 		SinkKey:     k,
+		Type:        SinkType,
+		Name:        "My Sink",
+		Description: "My Description",
+	}
+}
+
+func NewKeboolaTableSink(k key.SinkKey) definition.Sink {
+	return definition.Sink{
+		SinkKey:     k,
 		Type:        definition.SinkTypeTable,
 		Name:        "My Sink",
 		Description: "My Description",
 		Table: &definition.TableSink{
-			Keboola: definition.TableSinkKeboola{
+			Type: definition.TableTypeKeboola,
+			Keboola: &definition.KeboolaTable{
 				TableID: keboola.MustParseTableID("in.bucket.table"),
 			},
 			Mapping: table.Mapping{

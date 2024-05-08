@@ -126,6 +126,54 @@ paths:
                                             userId: "578621"
                                             userDescription: user@company.com
                                         reason: Disabled for recurring problems.
+                                      sinks:
+                                        - projectId: 123
+                                          branchId: 345
+                                          sourceId: github-webhook-source
+                                          sinkId: github-pr-table-sink
+                                          type: table
+                                          name: Raw Data Sink
+                                          description: The sink stores records to a table.
+                                          table:
+                                            type: keboola
+                                            tableId: in.c-bucket.table
+                                            mapping:
+                                                columns:
+                                                    - type: id
+                                                      name: id-col
+                                                      primaryKey: true
+                                                    - type: datetime
+                                                      name: datetime-col
+                                                    - type: ip
+                                                      name: ip-col
+                                                    - type: headers
+                                                      name: headers-col
+                                                    - type: body
+                                                      name: body-col
+                                                    - type: template
+                                                      name: template-col
+                                                      language: jsonnet
+                                                      content: body.foo + "-" + body.bar
+                                          version:
+                                            number: 3
+                                            hash: f43e93acd97eceb3
+                                            modifiedAt: "2022-04-28T14:20:04.000Z"
+                                            description: The reason for the last change was...
+                                          deleted:
+                                            at: "2022-04-28T14:20:04.000Z"
+                                            by:
+                                                type: user
+                                                tokenId: "896455"
+                                                userId: "578621"
+                                                userDescription: user@company.com
+                                          disabled:
+                                            at: "2022-04-28T14:20:04.000Z"
+                                            by:
+                                                type: user
+                                                tokenId: "896455"
+                                                userId: "578621"
+                                                userDescription: user@company.com
+                                            reason: Disabled for recurring problems.
             security:
                 - storage-api-token: []
         post:
@@ -302,6 +350,54 @@ paths:
                                         userId: "578621"
                                         userDescription: user@company.com
                                     reason: Disabled for recurring problems.
+                                sinks:
+                                    - projectId: 123
+                                      branchId: 345
+                                      sourceId: github-webhook-source
+                                      sinkId: github-pr-table-sink
+                                      type: table
+                                      name: Raw Data Sink
+                                      description: The sink stores records to a table.
+                                      table:
+                                        type: keboola
+                                        tableId: in.c-bucket.table
+                                        mapping:
+                                            columns:
+                                                - type: id
+                                                  name: id-col
+                                                  primaryKey: true
+                                                - type: datetime
+                                                  name: datetime-col
+                                                - type: ip
+                                                  name: ip-col
+                                                - type: headers
+                                                  name: headers-col
+                                                - type: body
+                                                  name: body-col
+                                                - type: template
+                                                  name: template-col
+                                                  language: jsonnet
+                                                  content: body.foo + "-" + body.bar
+                                      version:
+                                        number: 3
+                                        hash: f43e93acd97eceb3
+                                        modifiedAt: "2022-04-28T14:20:04.000Z"
+                                        description: The reason for the last change was...
+                                      deleted:
+                                        at: "2022-04-28T14:20:04.000Z"
+                                        by:
+                                            type: user
+                                            tokenId: "896455"
+                                            userId: "578621"
+                                            userDescription: user@company.com
+                                      disabled:
+                                        at: "2022-04-28T14:20:04.000Z"
+                                        by:
+                                            type: user
+                                            tokenId: "896455"
+                                            userId: "578621"
+                                            userDescription: user@company.com
+                                        reason: Disabled for recurring problems.
                 "404":
                     description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
@@ -580,8 +676,9 @@ paths:
                                       name: Raw Data Sink
                                       description: The sink stores records to a table.
                                       table:
+                                        type: keboola
+                                        tableId: in.c-bucket.table
                                         mapping:
-                                            tableId: in.c-bucket.table
                                             columns:
                                                 - type: id
                                                   name: id-col
@@ -667,8 +764,9 @@ paths:
                             name: Raw Data Sink
                             description: The sink stores records to a table.
                             table:
+                                type: keboola
+                                tableId: in.c-bucket.table
                                 mapping:
-                                    tableId: in.c-bucket.table
                                     columns:
                                         - type: id
                                           name: id-col
@@ -843,8 +941,9 @@ paths:
                                 name: Raw Data Sink
                                 description: The sink stores records to a table.
                                 table:
+                                    type: keboola
+                                    tableId: in.c-bucket.table
                                     mapping:
-                                        tableId: in.c-bucket.table
                                         columns:
                                             - type: id
                                               name: id-col
@@ -939,8 +1038,9 @@ paths:
                             name: Raw Data Sink
                             description: The sink stores records to a table.
                             table:
+                                type: keboola
+                                tableId: in.c-bucket.table
                                 mapping:
-                                    tableId: in.c-bucket.table
                                     columns:
                                         - type: id
                                           name: id-col
@@ -1412,6 +1512,54 @@ paths:
                                         userId: "578621"
                                         userDescription: user@company.com
                                     reason: Disabled for recurring problems.
+                                sinks:
+                                    - projectId: 123
+                                      branchId: 345
+                                      sourceId: github-webhook-source
+                                      sinkId: github-pr-table-sink
+                                      type: table
+                                      name: Raw Data Sink
+                                      description: The sink stores records to a table.
+                                      table:
+                                        type: keboola
+                                        tableId: in.c-bucket.table
+                                        mapping:
+                                            columns:
+                                                - type: id
+                                                  name: id-col
+                                                  primaryKey: true
+                                                - type: datetime
+                                                  name: datetime-col
+                                                - type: ip
+                                                  name: ip-col
+                                                - type: headers
+                                                  name: headers-col
+                                                - type: body
+                                                  name: body-col
+                                                - type: template
+                                                  name: template-col
+                                                  language: jsonnet
+                                                  content: body.foo + "-" + body.bar
+                                      version:
+                                        number: 3
+                                        hash: f43e93acd97eceb3
+                                        modifiedAt: "2022-04-28T14:20:04.000Z"
+                                        description: The reason for the last change was...
+                                      deleted:
+                                        at: "2022-04-28T14:20:04.000Z"
+                                        by:
+                                            type: user
+                                            tokenId: "896455"
+                                            userId: "578621"
+                                            userDescription: user@company.com
+                                      disabled:
+                                        at: "2022-04-28T14:20:04.000Z"
+                                        by:
+                                            type: user
+                                            tokenId: "896455"
+                                            userId: "578621"
+                                            userDescription: user@company.com
+                                        reason: Disabled for recurring problems.
                 "404":
                     description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
@@ -1577,8 +1725,9 @@ components:
                 name: Raw Data Sink
                 description: The sink stores records to a table.
                 table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col
@@ -1967,6 +2116,7 @@ components:
                         - table
                 version:
                     $ref: '#/components/schemas/Version'
+            description: A mapping from imported data to a destination table.
             example:
                 projectId: 123
                 branchId: 345
@@ -1976,8 +2126,9 @@ components:
                 name: Raw Data Sink
                 description: The sink stores records to a table.
                 table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col
@@ -2019,9 +2170,10 @@ components:
                 - branchId
                 - sourceId
                 - sinkId
-                - version
+                - type
                 - name
                 - description
+                - version
         SinkFile:
             type: object
             properties:
@@ -2207,8 +2359,9 @@ components:
                           name: Raw Data Sink
                           description: The sink stores records to a table.
                           table:
+                            type: keboola
+                            tableId: in.c-bucket.table
                             mapping:
-                                tableId: in.c-bucket.table
                                 columns:
                                     - type: id
                                       name: id-col
@@ -2268,8 +2421,9 @@ components:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: id
                                   name: id-col
@@ -2340,6 +2494,58 @@ components:
                     type: integer
                     example: 123
                     format: int64
+                sinks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Sink'
+                    example:
+                        - projectId: 123
+                          branchId: 345
+                          sourceId: github-webhook-source
+                          sinkId: github-pr-table-sink
+                          type: table
+                          name: Raw Data Sink
+                          description: The sink stores records to a table.
+                          table:
+                            type: keboola
+                            tableId: in.c-bucket.table
+                            mapping:
+                                columns:
+                                    - type: id
+                                      name: id-col
+                                      primaryKey: true
+                                    - type: datetime
+                                      name: datetime-col
+                                    - type: ip
+                                      name: ip-col
+                                    - type: headers
+                                      name: headers-col
+                                    - type: body
+                                      name: body-col
+                                    - type: template
+                                      name: template-col
+                                      language: jsonnet
+                                      content: body.foo + "-" + body.bar
+                          version:
+                            number: 3
+                            hash: f43e93acd97eceb3
+                            modifiedAt: "2022-04-28T14:20:04.000Z"
+                            description: The reason for the last change was...
+                          deleted:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                userId: "578621"
+                                userDescription: user@company.com
+                          disabled:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                userId: "578621"
+                                userDescription: user@company.com
+                            reason: Disabled for recurring problems.
                 sourceId:
                     type: string
                     example: github-webhook-source
@@ -2382,14 +2588,62 @@ components:
                         userId: "578621"
                         userDescription: user@company.com
                     reason: Disabled for recurring problems.
+                sinks:
+                    - projectId: 123
+                      branchId: 345
+                      sourceId: github-webhook-source
+                      sinkId: github-pr-table-sink
+                      type: table
+                      name: Raw Data Sink
+                      description: The sink stores records to a table.
+                      table:
+                        type: keboola
+                        tableId: in.c-bucket.table
+                        mapping:
+                            columns:
+                                - type: id
+                                  name: id-col
+                                  primaryKey: true
+                                - type: datetime
+                                  name: datetime-col
+                                - type: ip
+                                  name: ip-col
+                                - type: headers
+                                  name: headers-col
+                                - type: body
+                                  name: body-col
+                                - type: template
+                                  name: template-col
+                                  language: jsonnet
+                                  content: body.foo + "-" + body.bar
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        modifiedAt: "2022-04-28T14:20:04.000Z"
+                        description: The reason for the last change was...
+                      deleted:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            userId: "578621"
+                            userDescription: user@company.com
+                      disabled:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            userId: "578621"
+                            userDescription: user@company.com
+                        reason: Disabled for recurring problems.
             required:
                 - projectId
                 - branchId
                 - sourceId
-                - version
                 - type
                 - name
                 - description
+                - version
         SourcesList:
             type: object
             properties:
@@ -2436,6 +2690,54 @@ components:
                                 userId: "578621"
                                 userDescription: user@company.com
                             reason: Disabled for recurring problems.
+                          sinks:
+                            - projectId: 123
+                              branchId: 345
+                              sourceId: github-webhook-source
+                              sinkId: github-pr-table-sink
+                              type: table
+                              name: Raw Data Sink
+                              description: The sink stores records to a table.
+                              table:
+                                type: keboola
+                                tableId: in.c-bucket.table
+                                mapping:
+                                    columns:
+                                        - type: id
+                                          name: id-col
+                                          primaryKey: true
+                                        - type: datetime
+                                          name: datetime-col
+                                        - type: ip
+                                          name: ip-col
+                                        - type: headers
+                                          name: headers-col
+                                        - type: body
+                                          name: body-col
+                                        - type: template
+                                          name: template-col
+                                          language: jsonnet
+                                          content: body.foo + "-" + body.bar
+                              version:
+                                number: 3
+                                hash: f43e93acd97eceb3
+                                modifiedAt: "2022-04-28T14:20:04.000Z"
+                                description: The reason for the last change was...
+                              deleted:
+                                at: "2022-04-28T14:20:04.000Z"
+                                by:
+                                    type: user
+                                    tokenId: "896455"
+                                    userId: "578621"
+                                    userDescription: user@company.com
+                              disabled:
+                                at: "2022-04-28T14:20:04.000Z"
+                                by:
+                                    type: user
+                                    tokenId: "896455"
+                                    userId: "578621"
+                                    userDescription: user@company.com
+                                reason: Disabled for recurring problems.
             example:
                 projectId: 123
                 branchId: 345
@@ -2473,6 +2775,54 @@ components:
                             userId: "578621"
                             userDescription: user@company.com
                         reason: Disabled for recurring problems.
+                      sinks:
+                        - projectId: 123
+                          branchId: 345
+                          sourceId: github-webhook-source
+                          sinkId: github-pr-table-sink
+                          type: table
+                          name: Raw Data Sink
+                          description: The sink stores records to a table.
+                          table:
+                            type: keboola
+                            tableId: in.c-bucket.table
+                            mapping:
+                                columns:
+                                    - type: id
+                                      name: id-col
+                                      primaryKey: true
+                                    - type: datetime
+                                      name: datetime-col
+                                    - type: ip
+                                      name: ip-col
+                                    - type: headers
+                                      name: headers-col
+                                    - type: body
+                                      name: body-col
+                                    - type: template
+                                      name: template-col
+                                      language: jsonnet
+                                      content: body.foo + "-" + body.bar
+                          version:
+                            number: 3
+                            hash: f43e93acd97eceb3
+                            modifiedAt: "2022-04-28T14:20:04.000Z"
+                            description: The reason for the last change was...
+                          deleted:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                userId: "578621"
+                                userDescription: user@company.com
+                          disabled:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                userId: "578621"
+                                userDescription: user@company.com
+                            reason: Disabled for recurring problems.
             required:
                 - projectId
                 - branchId
@@ -2559,12 +2909,8 @@ components:
                           content: body.foo + "-" + body.bar
                     minItems: 1
                     maxItems: 100
-                tableId:
-                    type: string
-                    example: in.c-bucket.table
             description: Table mapping definition.
             example:
-                tableId: in.c-bucket.table
                 columns:
                     - type: id
                       name: id-col
@@ -2582,17 +2928,25 @@ components:
                       language: jsonnet
                       content: body.foo + "-" + body.bar
             required:
-                - tableId
                 - columns
         TableSink:
             type: object
             properties:
                 mapping:
                     $ref: '#/components/schemas/TableMapping'
+                tableId:
+                    type: string
+                    example: in.c-bucket.table
+                type:
+                    type: string
+                    example: keboola
+                    enum:
+                        - keboola
             description: Table sink definition.
             example:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: id
                           name: id-col
@@ -2609,6 +2963,10 @@ components:
                           name: template-col
                           language: jsonnet
                           content: body.foo + "-" + body.bar
+            required:
+                - type
+                - tableId
+                - mapping
         Task:
             type: object
             properties:
@@ -2860,8 +3218,9 @@ components:
                 name: Raw Data Sink
                 description: The sink stores records to a table.
                 table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: id
                               name: id-col

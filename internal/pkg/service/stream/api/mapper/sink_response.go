@@ -1,0 +1,79 @@
+package mapper
+
+import (
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
+	out := &api.Sink{
+		ProjectID:   entity.ProjectID,
+		BranchID:    entity.BranchID,
+		SourceID:    entity.SourceID,
+		SinkID:      entity.SinkID,
+		Name:        entity.Name,
+		Description: entity.Description,
+		Version:     m.NewVersionResponse(entity.Version),
+		Deleted:     m.NewDeletedResponse(entity.SoftDeletable),
+		Disabled:    m.NewDisabledResponse(entity.Switchable),
+	}
+
+	// Type
+	out.Type = entity.Type
+	switch out.Type {
+	case definition.SinkTypeTable:
+		tableResponse, err := m.newTableSinkResponse(entity.Table)
+		if err != nil {
+			return nil, err
+		}
+		out.Table = &tableResponse
+	default:
+		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
+	}
+
+	return out, nil
+}
+
+func (m *Mapper) newTableSinkResponse(entity *definition.TableSink) (out api.TableSink, err error) {
+	// Common table mapping
+	mapping := m.newTableMappingResponse(entity.Mapping)
+	out.Mapping = &mapping
+
+	// Type
+	out.Type = entity.Type
+	switch out.Type {
+	case definition.TableTypeKeboola:
+		// Keboola table
+		out.TableID = api.TableID(entity.Keboola.TableID.String())
+	default:
+		return api.TableSink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "table.type" "%s"`, out.Type.String()))
+	}
+
+	return out, nil
+}
+
+func (m *Mapper) newTableMappingResponse(entity table.Mapping) (out api.TableMapping) {
+	out.Columns = make(api.TableColumns, 0, len(entity.Columns))
+	for _, input := range entity.Columns {
+		output := &api.TableColumn{
+			Type:       input.ColumnType(),
+			Name:       input.ColumnName(),
+			PrimaryKey: input.IsPrimaryKey(),
+		}
+
+		if v, ok := input.(column.Template); ok {
+			output.Template = &api.TableColumnTemplate{
+				Language: v.Language,
+				Content:  v.Content,
+			}
+		}
+
+		out.Columns = append(out.Columns, output)
+	}
+
+	return out
+}

@@ -25,7 +25,8 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -663,7 +664,7 @@ var DisabledEntity = Type("DisabledEntity", func() {
 // Source -------------------------------------------------------------------------------------------------------------
 
 var Source = Type("Source", func() {
-	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
 	SourceFieldsRW()
 	Attribute("http", HTTPSource, func() {
@@ -672,11 +673,12 @@ var Source = Type("Source", func() {
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Required("version", "type", "name", "description", "type")
+	Attribute("sinks", Sinks)
+	Required("type", "name", "description", "version")
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
-	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
 })
 
 var SourceType = Type("SourceType", String, func() {
@@ -766,7 +768,7 @@ var SourceSettingsPatch = Type("SourceSettingsPatch", func() {
 })
 
 var SourcesList = Type("SourcesList", func() {
-	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	BranchKeyResponse()
 	Attribute("page", PaginatedResponse)
 	Attribute("sources", Sources)
@@ -808,11 +810,11 @@ var Sink = Type("Sink", func() {
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Required("version", "name", "description")
+	Required("type", "name", "description", "version")
 })
 
 var Sinks = Type("Sinks", ArrayOf(Sink), func() {
-	Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", repository.MaxSinksPerSource))
+	Description(fmt.Sprintf("List of sinks, max %d sinks per a source.", sink.MaxSinksPerSource))
 })
 
 var SinkType = Type("SinkType", String, func() {
@@ -822,7 +824,7 @@ var SinkType = Type("SinkType", String, func() {
 })
 
 var SinksList = Type("SinksList", func() {
-	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("List of sources, max %d sinks per a source.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
 	Attribute("page", PaginatedResponse)
 	Attribute("sinks", Sinks)
@@ -966,18 +968,26 @@ var SinkFieldsRW = func() {
 
 var TableSink = Type("TableSink", func() {
 	Description("Table sink definition.")
+	Attribute("type", TableType)
+	Attribute("tableId", TableID)
 	Attribute("mapping", TableMapping)
+	Required("type", "tableId", "mapping")
 })
 
-var TableMapping = Type("TableMapping", func() {
-	Description("Table mapping definition.")
-	Attribute("tableId", TableID)
-	Attribute("columns", TableColumns)
-	Required("tableId", "columns")
+var TableType = Type("TableType", String, func() {
+	Meta("struct:field:type", "= definition.TableType", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
+	Enum(definition.TableTypeKeboola.String())
+	Example(definition.TableTypeKeboola.String())
 })
 
 var TableID = Type("TableID", String, func() {
 	Example("in.c-bucket.table")
+})
+
+var TableMapping = Type("TableMapping", func() {
+	Description("Table mapping definition.")
+	Attribute("columns", TableColumns)
+	Required("columns")
 })
 
 var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
@@ -1215,7 +1225,7 @@ func SinkAlreadyExistsError() {
 }
 
 func ResourceCountLimitReachedError() {
-	GenericError(StatusUnprocessableEntity, "resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, repository.MaxSourcesPerBranch))
+	GenericError(StatusUnprocessableEntity, "resourceLimitReached", "Resource limit reached.", fmt.Sprintf(`Maximum number of sources per project is %d.`, source.MaxSourcesPerBranch))
 }
 
 func TaskNotFoundError() {

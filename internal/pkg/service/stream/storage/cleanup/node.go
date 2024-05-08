@@ -175,7 +175,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 	}()
 
 	// Delete the file
-	if err = n.storage.File().Delete(file.FileKey).RequireLock(mutex).Do(ctx).Err(); err != nil {
+	if err = n.storage.File().Delete(file.FileKey, n.clock.Now()).RequireLock(mutex).Do(ctx).Err(); err != nil {
 		err = errors.PrefixErrorf(err, `cannot delete expired file "%s"`, file.FileKey)
 		n.logger.Error(ctx, err.Error())
 		return err, false

@@ -11,17 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
-func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
-	_, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
-	if err != nil {
-		return "", err
-	}
-
-	kvs, err := DumpAll(ctx, client)
-	if err != nil {
-		return "", err
-	}
-
+func KVsToString(kvs []KV) string {
 	var b strings.Builder
 	for i, kv := range kvs {
 		// Start
@@ -51,7 +41,21 @@ func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
 		b.WriteString(">>>>>\n")
 	}
 
-	return b.String(), nil
+	return b.String()
+}
+
+func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
+	_, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	if err != nil {
+		return "", err
+	}
+
+	kvs, err := DumpAll(ctx, client)
+	if err != nil {
+		return "", err
+	}
+
+	return KVsToString(kvs), nil
 }
 
 func DumpAllKeys(ctx context.Context, client etcd.KV) (keys []string, err error) {
