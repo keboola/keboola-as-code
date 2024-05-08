@@ -15,24 +15,24 @@ func (m *Mapper) NewVersionResponse(entity definition.Version) *api.Version {
 }
 
 func (m *Mapper) NewDeletedResponse(entity definition.SoftDeletable) *api.DeletedEntity {
-	if !entity.Deleted {
+	if !entity.IsDeleted() {
 		return nil
 	}
 
 	return &api.DeletedEntity{
-		At: entity.DeletedAt.String(),
+		At: entity.DeletedAt().String(),
 		By: nil,
 	}
 }
 
 func (m *Mapper) NewDisabledResponse(entity definition.Switchable) *api.DisabledEntity {
-	if !entity.Disabled {
+	if !entity.IsDisabled() {
 		return nil
 	}
 
 	return &api.DisabledEntity{
-		At:     entity.DisabledAt.String(),
-		Reason: entity.DisabledReason,
+		At:     entity.DisabledAt().String(),
+		Reason: entity.DisabledReason(),
 		By:     nil,
 	}
 }

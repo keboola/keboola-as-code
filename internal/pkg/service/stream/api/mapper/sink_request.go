@@ -98,9 +98,9 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 				return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" is missing template`, columnPayload.Name))
 			}
 
-			if err := m.jsonnetValidator.Validate(columnPayload.Template.Content); err != nil {
-				return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, columnPayload.Name, err))
-			}
+			//if err := m.jsonnetValidator.Validate(columnPayload.Template.Content); err != nil {
+			//	return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, columnPayload.Name, err))
+			//}
 
 			tmplColumn.Language = columnPayload.Template.Language
 			tmplColumn.Content = columnPayload.Template.Content
