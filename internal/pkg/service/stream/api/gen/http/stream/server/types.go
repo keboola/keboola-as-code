@@ -877,10 +877,10 @@ type SinkResponseBody struct {
 
 // LevelResponseBody is used to define fields on response body types.
 type LevelResponseBody struct {
-	FirstRecordAt    string `form:"firstRecordAt" json:"firstRecordAt" xml:"firstRecordAt"`
-	LastRecordAt     string `form:"lastRecordAt" json:"lastRecordAt" xml:"lastRecordAt"`
-	RecordsCount     uint64 `form:"recordsCount" json:"recordsCount" xml:"recordsCount"`
-	UncompressedSize uint64 `form:"uncompressedSize" json:"uncompressedSize" xml:"uncompressedSize"`
+	FirstRecordAt    *string `form:"firstRecordAt,omitempty" json:"firstRecordAt,omitempty" xml:"firstRecordAt,omitempty"`
+	LastRecordAt     *string `form:"lastRecordAt,omitempty" json:"lastRecordAt,omitempty" xml:"lastRecordAt,omitempty"`
+	RecordsCount     uint64  `form:"recordsCount" json:"recordsCount" xml:"recordsCount"`
+	UncompressedSize uint64  `form:"uncompressedSize" json:"uncompressedSize" xml:"uncompressedSize"`
 }
 
 // LevelsResponseBody is used to define fields on response body types.

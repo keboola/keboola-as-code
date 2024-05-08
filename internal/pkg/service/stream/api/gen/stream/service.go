@@ -236,8 +236,8 @@ type HTTPSource struct {
 }
 
 type Level struct {
-	FirstRecordAt    string
-	LastRecordAt     string
+	FirstRecordAt    *string
+	LastRecordAt     *string
 	RecordsCount     uint64
 	UncompressedSize uint64
 }
