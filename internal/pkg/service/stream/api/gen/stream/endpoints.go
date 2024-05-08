@@ -10,6 +10,7 @@ package stream
 
 import (
 	"context"
+	"io"
 
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	goa "goa.design/goa/v3/pkg"
@@ -29,6 +30,7 @@ type Endpoints struct {
 	GetSourceSettings    goa.Endpoint
 	UpdateSourceSettings goa.Endpoint
 	RefreshSourceTokens  goa.Endpoint
+	TestSource           goa.Endpoint
 	CreateSink           goa.Endpoint
 	GetSink              goa.Endpoint
 	GetSinkSettings      goa.Endpoint
@@ -38,6 +40,15 @@ type Endpoints struct {
 	DeleteSink           goa.Endpoint
 	SinkStatisticsTotal  goa.Endpoint
 	GetTask              goa.Endpoint
+}
+
+// TestSourceRequestData holds both the payload and the HTTP request body
+// reader of the "TestSource" method.
+type TestSourceRequestData struct {
+	// Payload is the method payload.
+	Payload *TestSourcePayload
+	// Body streams the HTTP request body.
+	Body io.ReadCloser
 }
 
 // NewEndpoints wraps the methods of the "stream" service with endpoints.
@@ -56,6 +67,7 @@ func NewEndpoints(s Service) *Endpoints {
 		GetSourceSettings:    NewGetSourceSettingsEndpoint(s, a.APIKeyAuth),
 		UpdateSourceSettings: NewUpdateSourceSettingsEndpoint(s, a.APIKeyAuth),
 		RefreshSourceTokens:  NewRefreshSourceTokensEndpoint(s, a.APIKeyAuth),
+		TestSource:           NewTestSourceEndpoint(s, a.APIKeyAuth),
 		CreateSink:           NewCreateSinkEndpoint(s, a.APIKeyAuth),
 		GetSink:              NewGetSinkEndpoint(s, a.APIKeyAuth),
 		GetSinkSettings:      NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
@@ -81,6 +93,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetSourceSettings = m(e.GetSourceSettings)
 	e.UpdateSourceSettings = m(e.UpdateSourceSettings)
 	e.RefreshSourceTokens = m(e.RefreshSourceTokens)
+	e.TestSource = m(e.TestSource)
 	e.CreateSink = m(e.CreateSink)
 	e.GetSink = m(e.GetSink)
 	e.GetSinkSettings = m(e.GetSinkSettings)
@@ -276,6 +289,26 @@ func NewRefreshSourceTokensEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyF
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.RefreshSourceTokens(ctx, deps, p)
+	}
+}
+
+// NewTestSourceEndpoint returns an endpoint function that calls the method
+// "TestSource" of service "stream".
+func NewTestSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		ep := req.(*TestSourceRequestData)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, ep.Payload.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.TestSource(ctx, deps, ep.Payload, ep.Body)
 	}
 }
 
