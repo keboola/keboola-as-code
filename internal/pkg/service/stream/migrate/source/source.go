@@ -8,13 +8,11 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/migrate/httperror"
 )
 
 const (
@@ -68,28 +66,25 @@ type RequestConfig struct {
 	token  string
 	path   string
 	body   io.Reader
-	logger log.Logger
 }
 
-func New(method string, host string, token string, path string, body io.Reader, l log.Logger) RequestConfig {
+func New(method string, host string, token string, path string, body io.Reader) RequestConfig {
 	return RequestConfig{
 		method: method,
 		host:   host,
 		token:  token,
 		body:   body,
 		path:   path,
-		logger: l,
 	}
 }
 
-func FetchBufferReceivers(ctx context.Context, host string, token string, logger log.Logger) (*Receivers, error) {
+func FetchBufferReceivers(ctx context.Context, host string, token string) (*Receivers, error) {
 	return fetchDataFromBuffer(ctx, New(
 		"GET",
-		"https://"+host,
+		host,
 		token,
 		receiversBufferPath,
 		nil,
-		logger,
 	))
 }
 
@@ -102,7 +97,7 @@ func fetchDataFromBuffer(ctx context.Context, reqConfig RequestConfig) (*Receive
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf(`unexpected status code %d from %s`, resp.StatusCode, reqConfig.host)
+		return nil, httperror.Parser(resp.Body)
 	}
 
 	var result *Receivers
@@ -115,25 +110,20 @@ func fetchDataFromBuffer(ctx context.Context, reqConfig RequestConfig) (*Receive
 	return result, nil
 }
 
-func (r *Receiver) CreateSource(ctx context.Context, token string, host string, wg *sync.WaitGroup, l log.Logger) error {
-	defer wg.Done()
-
+func (r *Receiver) CreateSource(ctx context.Context, token string, host string) error {
 	// Set a payload to create source
 	body, err := r.createSourcePayload()
 	if err != nil {
 		return err
 	}
 
-	streamHost := strings.Replace(host, bufferPrefix, streamPrefix, 1)
-
 	// Request to create source
 	resp, err := newHTTPRequest(ctx, RequestConfig{
 		token:  token,
 		method: "POST",
 		path:   createSourcePath,
-		host:   "https://" + streamHost,
+		host:   substituteHost(host, bufferPrefix, streamPrefix),
 		body:   body,
-		logger: l,
 	})
 	if err != nil {
 		return err
@@ -141,21 +131,15 @@ func (r *Receiver) CreateSource(ctx context.Context, token string, host string, 
 
 	defer resp.Body.Close()
 
-	switch resp.StatusCode {
-	case http.StatusAccepted:
-		l.Infof(ctx, `Source %s created`, r.Name)
-	case http.StatusConflict:
-		l.Infof(ctx, `Source "%s" already exists in the branch\n`, r.Name)
-	case http.StatusUnprocessableEntity:
-		l.Infof(ctx, `Maximum number of sources per project is 100.`)
-	default:
-		l.Infof(ctx, "Unexpected status code: %v for source %s.", resp.StatusCode, r.ID)
+	if resp.StatusCode != http.StatusAccepted {
+		return httperror.Parser(resp.Body)
 	}
+
 	return nil
 }
 
 func newHTTPRequest(ctx context.Context, c RequestConfig) (*http.Response, error) {
-	url := fmt.Sprintf("%s%s", c.host, c.path)
+	url := fmt.Sprintf("https://%s%s", c.host, c.path)
 
 	request, err := http.NewRequestWithContext(ctx, c.method, url, c.body)
 	if err != nil {
@@ -187,4 +171,8 @@ func (r *Receiver) createSourcePayload() (*bytes.Buffer, error) {
 		return nil, err
 	}
 	return payloadBuf, nil
+}
+
+func substituteHost(host, bufferPrefix, streamPrefix string) string {
+	return strings.Replace(host, bufferPrefix, streamPrefix, 1)
 }
