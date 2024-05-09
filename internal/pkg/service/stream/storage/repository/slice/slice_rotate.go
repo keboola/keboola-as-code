@@ -12,7 +12,7 @@ import (
 //   - The old active slice, if present, is switched from the model.SliceWriting state to the model.SliceClosing state.
 //   - New slice in the model.SliceWriting state is created.
 //   - This method is used to rotate slice when the upload conditions are met.
-func (r *Repository) Rotate(now time.Time, k model.SliceKey) *op.AtomicOp[model.Slice] {
+func (r *Repository) Rotate(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
 	// Create atomic operation
 	var opened model.Slice
 	atomicOp := op.Atomic(r.client, &opened)

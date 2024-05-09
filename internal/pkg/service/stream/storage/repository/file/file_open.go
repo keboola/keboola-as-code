@@ -18,13 +18,13 @@ import (
 func (r *Repository) openFileOnSinkActivation() {
 	r.plugins.Collection().OnSinkActivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) {
 		if r.isSinkWithLocalStorage(sink) {
-			op.AtomicFromCtx(ctx).AddFrom(r.openFileForSink(now, sink.SinkKey, plugin.SourceFromContext(ctx), sink))
+			op.AtomicFromCtx(ctx).AddFrom(r.openFileForSink(sink.SinkKey, now, plugin.SourceFromContext(ctx), sink))
 		}
 	})
 }
 
 // openFileForSink creates a new File in the FileWriting state, in the Sink.
-func (r *Repository) openFileForSink(now time.Time, k key.SinkKey, source *definition.Source, sink *definition.Sink) *op.AtomicOp[model.File] {
+func (r *Repository) openFileForSink(k key.SinkKey, now time.Time, source *definition.Source, sink *definition.Sink) *op.AtomicOp[model.File] {
 	var file model.File
 	atomicOp := op.Atomic(r.client, &file)
 
@@ -59,6 +59,9 @@ func (r *Repository) openFileForSink(now time.Time, k key.SinkKey, source *defin
 		if len(file.Assignment.Volumes) == 0 {
 			return nil, errors.New(`no volume is available for the file`)
 		}
+
+		// Call plugins
+		r.plugins.Executor().OnFileOpen(ctx, now, *sink, &file)
 
 		// Save new file
 		return r.save(ctx, now, nil, &file), nil

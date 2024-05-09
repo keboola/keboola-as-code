@@ -35,13 +35,13 @@ type CreateSourceRequestBody struct {
 // UpdateSourceRequestBody is the type of the "stream" service "UpdateSource"
 // endpoint HTTP request body.
 type UpdateSourceRequestBody struct {
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Type              *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Human readable name of the source.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	// Description of the modification, description of the version.
-	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
 }
 
 // UpdateSourceSettingsRequestBody is the type of the "stream" service
@@ -62,29 +62,29 @@ type CreateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	// Table sink configuration for "type" = "table".
-	Table *TableSinkRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
 
 // UpdateSinkSettingsRequestBody is the type of the "stream" service
 // "UpdateSinkSettings" endpoint HTTP request body.
 type UpdateSinkSettingsRequestBody struct {
-	Settings []*SettingPatchRequestBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string                    `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Settings          []*SettingPatchRequestBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
 }
 
 // UpdateSinkRequestBody is the type of the "stream" service "UpdateSink"
 // endpoint HTTP request body.
 type UpdateSinkRequestBody struct {
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Type              *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	// Table sink configuration for "type" = "table".
-	Table *TableSinkRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	// Description of the modification, description of the version.
-	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
 
 // APIVersionIndexResponseBody is the type of the "stream" service
@@ -167,7 +167,6 @@ type GetSourceResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks,omitempty" json:"sinks,omitempty" xml:"sinks,omitempty"`
 }
 
 // GetSourceSettingsResponseBody is the type of the "stream" service
@@ -198,7 +197,6 @@ type RefreshSourceTokensResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks,omitempty" json:"sinks,omitempty" xml:"sinks,omitempty"`
 }
 
 // TestSourceResponseBody is the type of the "stream" service "TestSource"
@@ -245,12 +243,11 @@ type GetSinkResponseBody struct {
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// Table sink configuration for "type" = "table".
-	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Description string                      `form:"description" json:"description" xml:"description"`
+	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled    *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // GetSinkSettingsResponseBody is the type of the "stream" service
@@ -736,7 +733,6 @@ type SourceResponseBody struct {
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Sinks    []*SinkResponseBody         `form:"sinks,omitempty" json:"sinks,omitempty" xml:"sinks,omitempty"`
 }
 
 // HTTPSourceResponseBody is used to define fields on response body types.
@@ -787,56 +783,6 @@ type DisabledEntityResponseBody struct {
 	Reason string `form:"reason" json:"reason" xml:"reason"`
 }
 
-// SinkResponseBody is used to define fields on response body types.
-type SinkResponseBody struct {
-	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      string `form:"type" json:"type" xml:"type"`
-	// Human readable name of the sink.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// Table sink configuration for "type" = "table".
-	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-}
-
-// TableSinkResponseBody is used to define fields on response body types.
-type TableSinkResponseBody struct {
-	Type    string                    `form:"type" json:"type" xml:"type"`
-	TableID string                    `form:"tableId" json:"tableId" xml:"tableId"`
-	Mapping *TableMappingResponseBody `form:"mapping" json:"mapping" xml:"mapping"`
-}
-
-// TableMappingResponseBody is used to define fields on response body types.
-type TableMappingResponseBody struct {
-	Columns []*TableColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
-}
-
-// TableColumnResponseBody is used to define fields on response body types.
-type TableColumnResponseBody struct {
-	// Sets this column as a part of the primary key of the destination table.
-	PrimaryKey bool `form:"primaryKey" json:"primaryKey" xml:"primaryKey"`
-	// Column mapping type. This represents a static mapping (e.g. `body` or
-	// `headers`), or a custom mapping using a template language (`template`).
-	Type column.Type `form:"type" json:"type" xml:"type"`
-	// Column name.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Template mapping details. Only for "type" = "template".
-	Template *TableColumnTemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
-}
-
-// TableColumnTemplateResponseBody is used to define fields on response body
-// types.
-type TableColumnTemplateResponseBody struct {
-	Language string `form:"language" json:"language" xml:"language"`
-	Content  string `form:"content" json:"content" xml:"content"`
-}
-
 // SettingResultResponseBody is used to define fields on response body types.
 type SettingResultResponseBody struct {
 	// Key path.
@@ -879,6 +825,55 @@ type TestResultColumnResponseBody struct {
 	Value string `form:"value" json:"value" xml:"value"`
 }
 
+// TableSinkResponseBody is used to define fields on response body types.
+type TableSinkResponseBody struct {
+	Type    string                    `form:"type" json:"type" xml:"type"`
+	TableID string                    `form:"tableId" json:"tableId" xml:"tableId"`
+	Mapping *TableMappingResponseBody `form:"mapping" json:"mapping" xml:"mapping"`
+}
+
+// TableMappingResponseBody is used to define fields on response body types.
+type TableMappingResponseBody struct {
+	Columns []*TableColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
+}
+
+// TableColumnResponseBody is used to define fields on response body types.
+type TableColumnResponseBody struct {
+	// Sets this column as a part of the primary key of the destination table.
+	PrimaryKey bool `form:"primaryKey" json:"primaryKey" xml:"primaryKey"`
+	// Column mapping type. This represents a static mapping (e.g. `body` or
+	// `headers`), or a custom mapping using a template language (`template`).
+	Type column.Type `form:"type" json:"type" xml:"type"`
+	// Column name.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Template mapping details. Only for "type" = "template".
+	Template *TableColumnTemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
+}
+
+// TableColumnTemplateResponseBody is used to define fields on response body
+// types.
+type TableColumnTemplateResponseBody struct {
+	Language string `form:"language" json:"language" xml:"language"`
+	Content  string `form:"content" json:"content" xml:"content"`
+}
+
+// SinkResponseBody is used to define fields on response body types.
+type SinkResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
+	// Human readable name of the sink.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
+	Description string                      `form:"description" json:"description" xml:"description"`
+	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled    *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+}
+
 // LevelResponseBody is used to define fields on response body types.
 type LevelResponseBody struct {
 	FirstRecordAt    *string `form:"firstRecordAt,omitempty" json:"firstRecordAt,omitempty" xml:"firstRecordAt,omitempty"`
@@ -919,8 +914,8 @@ type SettingPatchRequestBody struct {
 	Value any `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
 }
 
-// TableSinkRequestBody is used to define fields on request body types.
-type TableSinkRequestBody struct {
+// TableSinkCreateRequestBody is used to define fields on request body types.
+type TableSinkCreateRequestBody struct {
 	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
@@ -949,6 +944,13 @@ type TableColumnRequestBody struct {
 type TableColumnTemplateRequestBody struct {
 	Language *string `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
 	Content  *string `form:"content,omitempty" json:"content,omitempty" xml:"content,omitempty"`
+}
+
+// TableSinkUpdateRequestBody is used to define fields on request body types.
+type TableSinkUpdateRequestBody struct {
+	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
+	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
 }
 
 // NewAPIVersionIndexResponseBody builds the HTTP response body from the result
@@ -1047,12 +1049,6 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
 	}
-	if res.Sinks != nil {
-		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
-		for i, val := range res.Sinks {
-			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
-	}
 	return body
 }
 
@@ -1104,12 +1100,6 @@ func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokens
 	}
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
-	}
-	if res.Sinks != nil {
-		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
-		for i, val := range res.Sinks {
-			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
-		}
 	}
 	return body
 }
@@ -1665,9 +1655,9 @@ func NewCreateSourcePayload(body *CreateSourceRequestBody, branchID string, stor
 // NewUpdateSourcePayload builds a stream service UpdateSource endpoint payload.
 func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sourceID string, storageAPIToken string) *stream.UpdateSourcePayload {
 	v := &stream.UpdateSourcePayload{
+		ChangeDescription: body.ChangeDescription,
 		Name:              body.Name,
 		Description:       body.Description,
-		ChangeDescription: body.ChangeDescription,
 	}
 	if body.Type != nil {
 		type_ := stream.SourceType(*body.Type)
@@ -1774,7 +1764,7 @@ func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID
 		v.SinkID = &sinkID
 	}
 	if body.Table != nil {
-		v.Table = unmarshalTableSinkRequestBodyToStreamTableSink(body.Table)
+		v.Table = unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate(body.Table)
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
@@ -1809,7 +1799,9 @@ func NewGetSinkSettingsPayload(branchID string, sourceID string, sinkID string, 
 // NewUpdateSinkSettingsPayload builds a stream service UpdateSinkSettings
 // endpoint payload.
 func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UpdateSinkSettingsPayload {
-	v := &stream.UpdateSinkSettingsPayload{}
+	v := &stream.UpdateSinkSettingsPayload{
+		ChangeDescription: body.ChangeDescription,
+	}
 	if body.Settings != nil {
 		v.Settings = make([]*stream.SettingPatch, len(body.Settings))
 		for i, val := range body.Settings {
@@ -1839,16 +1831,16 @@ func NewListSinksPayload(branchID string, sourceID string, sinceID string, limit
 // NewUpdateSinkPayload builds a stream service UpdateSink endpoint payload.
 func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UpdateSinkPayload {
 	v := &stream.UpdateSinkPayload{
+		ChangeDescription: body.ChangeDescription,
 		Name:              body.Name,
 		Description:       body.Description,
-		ChangeDescription: body.ChangeDescription,
 	}
 	if body.Type != nil {
 		type_ := stream.SinkType(*body.Type)
 		v.Type = &type_
 	}
 	if body.Table != nil {
-		v.Table = unmarshalTableSinkRequestBodyToStreamTableSink(body.Table)
+		v.Table = unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(body.Table)
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
@@ -2024,7 +2016,7 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 		}
 	}
 	if body.Table != nil {
-		if err2 := ValidateTableSinkRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+		if err2 := ValidateTableSinkCreateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -2069,7 +2061,7 @@ func ValidateUpdateSinkRequestBody(body *UpdateSinkRequestBody, errContext []str
 		}
 	}
 	if body.Table != nil {
-		if err2 := ValidateTableSinkRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+		if err2 := ValidateTableSinkUpdateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -2090,9 +2082,9 @@ func ValidateSettingPatchRequestBody(body *SettingPatchRequestBody, errContext [
 	return
 }
 
-// ValidateTableSinkRequestBody runs the validations defined on
-// TableSinkRequestBody
-func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []string) (err error) {
+// ValidateTableSinkCreateRequestBody runs the validations defined on
+// TableSinkCreateRequestBody
+func ValidateTableSinkCreateRequestBody(body *TableSinkCreateRequestBody, errContext []string) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
 	}
@@ -2182,6 +2174,22 @@ func ValidateTableColumnTemplateRequestBody(body *TableColumnTemplateRequestBody
 	if body.Content != nil {
 		if utf8.RuneCountInString(*body.Content) > 4096 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "content"), "."), *body.Content, utf8.RuneCountInString(*body.Content), 4096, false))
+		}
+	}
+	return
+}
+
+// ValidateTableSinkUpdateRequestBody runs the validations defined on
+// TableSinkUpdateRequestBody
+func ValidateTableSinkUpdateRequestBody(body *TableSinkUpdateRequestBody, errContext []string) (err error) {
+	if body.Type != nil {
+		if !(*body.Type == "keboola") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"keboola"}))
+		}
+	}
+	if body.Mapping != nil {
+		if err2 := ValidateTableMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return

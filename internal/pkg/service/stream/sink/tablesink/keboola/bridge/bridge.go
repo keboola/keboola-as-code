@@ -194,7 +194,7 @@ package bridge
 //	})
 //}
 //
-//func (p *tableSinkPlugin) OnTableSinkDeactivation(ctx context.Context, sink definition.Sink, token *model.Token) {
+// func (p *tableSinkPlugin) OnTableSinkDeactivation(ctx context.Context, sink definition.Sink, token *model.Token) {
 //	// Cleanup: delete token from the DB and finally from the Storage API.
 //	if token != nil {
 //		p.MergeOp(p.storage.Token().Delete(sink.SinkKey))
@@ -205,7 +205,7 @@ package bridge
 //}
 //
 //// MergeOp adds a database operation to the transaction.
-//func (p *tableSinkPlugin) MergeOp(operation op.Op) {
+// func (p *tableSinkPlugin) MergeOp(operation op.Op) {
 //	p.lock.Lock()
 //	defer p.lock.Unlock()
 //	p.txn.Merge(operation)

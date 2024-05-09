@@ -30,6 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -39,24 +40,29 @@ const (
 	MinPaginationLimit     = 1
 	DefaultPaginationLimit = 100
 	MaxPaginationLimit     = 100
+	OpRead                 = OperationType("read")
+	OpCreate               = OperationType("create")
+	OpUpdate               = OperationType("update")
 )
+
+type OperationType string
 
 // API definition
 
-// nolint: gochecknoinits
+// nolint: init
 func init() {
 	dependenciesType := func(method *service.MethodData) string {
 		if dependencies.HasSecurityScheme("APIKey", method) {
 			// Note: SourceID/SinkID may be a pointer - optional field, these cases are ignored.
-			branch := regexpcache.MustCompile(`\tBranchID +BranchID`).MatchString(method.PayloadDef)
-			source := branch && regexpcache.MustCompile(`\tSourceID +SourceID`).MatchString(method.PayloadDef)
-			sink := source && regexpcache.MustCompile(`\tSinkID +SinkID`).MatchString(method.PayloadDef)
+			branchScoped := regexpcache.MustCompile(`\tBranchID +BranchID`).MatchString(method.PayloadDef)
+			sourceScoped := branchScoped && regexpcache.MustCompile(`\tSourceID +SourceID`).MatchString(method.PayloadDef)
+			sinkScoped := sourceScoped && regexpcache.MustCompile(`\tSinkID +SinkID`).MatchString(method.PayloadDef)
 			switch {
-			case sink:
+			case sinkScoped:
 				return "dependencies.SinkRequestScope"
-			case source:
+			case sourceScoped:
 				return "dependencies.SourceRequestScope"
-			case branch:
+			case branchScoped:
 				return "dependencies.BranchRequestScope"
 			default:
 				return "dependencies.ProjectRequestScope"
@@ -666,15 +672,11 @@ var DisabledEntity = Type("DisabledEntity", func() {
 var Source = Type("Source", func() {
 	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
-	SourceFieldsRW()
-	Attribute("http", HTTPSource, func() {
-		Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
-	})
+	SourceFields(OpRead)
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Attribute("sinks", Sinks)
-	Required("type", "name", "description", "version")
+	Required("version")
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
@@ -689,11 +691,7 @@ var SourceType = Type("SourceType", String, func() {
 
 var CreateSourceRequest = Type("CreateSourceRequest", func() {
 	BranchKeyRequest()
-	Attribute("sourceId", SourceID, func() {
-		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
-	})
-	SourceFieldsRW()
-	Required("type", "name")
+	SourceFields(OpCreate)
 })
 
 var GetSourceRequest = Type("GetSourceRequest", func() {
@@ -707,11 +705,7 @@ var ListSourcesRequest = Type("ListSourcesRequest", func() {
 
 var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 	SourceKeyRequest()
-	SourceFieldsRW()
-	Attribute("changeDescription", String, func() {
-		Description("Description of the modification, description of the version.")
-		Example("Renamed.")
-	})
+	SourceFields(OpUpdate)
 })
 
 var TestSourceRequest = Type("TestSourceRequest", func() {
@@ -775,7 +769,20 @@ var SourcesList = Type("SourcesList", func() {
 	Required("page", "sources")
 })
 
-var SourceFieldsRW = func() {
+var SourceFields = func(op OperationType) {
+	if op == OpCreate {
+		Attribute("sourceId", SourceID, func() {
+			Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
+		})
+	}
+
+	if op == OpUpdate {
+		Attribute("changeDescription", String, func() {
+			Description("Description of the modification, description of the version.")
+			Example("Renamed.")
+		})
+	}
+
 	Attribute("type", SourceType)
 	Attribute("name", String, func() {
 		Description("Human readable name of the source.")
@@ -788,6 +795,23 @@ var SourceFieldsRW = func() {
 		MaxLength(cast.ToInt(fieldValidationRule(definition.Sink{}, "Description", "max")))
 		Example("The source receives events from Github.")
 	})
+
+	// HTTP - sub-definition - read-only
+	if op == OpRead {
+		Attribute("http", HTTPSource, func() {
+			Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
+		})
+	}
+
+	// Required fields
+	switch op {
+	case OpRead:
+		Required("type", "name", "description")
+	case OpCreate:
+		Required("type", "name")
+	default:
+		// no required field
+	}
 }
 
 // HTTP Source----------------------------------------------------------------------------------------------------------
@@ -806,11 +830,11 @@ var HTTPSource = Type("HTTPSource", func() {
 var Sink = Type("Sink", func() {
 	Description("A mapping from imported data to a destination table.")
 	SinkKeyResponse()
-	SinkFieldsRW()
+	SinkFields(OpRead)
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Required("type", "name", "description", "version")
+	Required("version")
 })
 
 var Sinks = Type("Sinks", ArrayOf(Sink), func() {
@@ -833,11 +857,7 @@ var SinksList = Type("SinksList", func() {
 
 var CreateSinkRequest = Type("CreateSinkRequest", func() {
 	SourceKeyRequest()
-	Attribute("sinkId", SinkID, func() {
-		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
-	})
-	SinkFieldsRW()
-	Required("type", "name")
+	SinkFields(OpCreate)
 })
 
 var GetSinkRequest = Type("GetSinkRequest", func() {
@@ -851,15 +871,15 @@ var ListSinksRequest = Type("ListSinksRequest", func() {
 
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
 	SinkKeyRequest()
-	SinkFieldsRW()
-	Attribute("changeDescription", String, func() {
-		Description("Description of the modification, description of the version.")
-		Example("Renamed.")
-	})
+	SinkFields(OpUpdate)
 })
 
 var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
 	SinkKeyRequest()
+	Attribute("changeDescription", String, func() {
+		Description("Description of the modification, description of the version.")
+		Example("Updated settings.")
+	})
 	Attribute("settings", SettingsPatch)
 })
 
@@ -946,7 +966,20 @@ var FileState = Type("FileState", String, func() {
 	Example(model.FileWriting.String())
 })
 
-var SinkFieldsRW = func() {
+var SinkFields = func(op OperationType) {
+	if op == OpCreate {
+		Attribute("sinkId", SinkID, func() {
+			Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
+		})
+	}
+
+	if op == OpUpdate {
+		Attribute("changeDescription", String, func() {
+			Description("Description of the modification, description of the version.")
+			Example("Renamed.")
+		})
+	}
+
 	Attribute("type", SinkType)
 	Attribute("name", String, func() {
 		Description("Human readable name of the sink.")
@@ -959,20 +992,52 @@ var SinkFieldsRW = func() {
 		MaxLength(cast.ToInt(fieldValidationRule(definition.Sink{}, "Description", "max")))
 		Example("The sink stores records to a table.")
 	})
-	Attribute("table", TableSink, func() {
-		Description(fmt.Sprintf(`Table sink configuration for "type" = "%s".`, definition.SinkTypeTable))
-	})
+
+	// Table sub-definition
+	switch op {
+	case OpRead:
+		Attribute("table", TableSink)
+	case OpCreate:
+		Attribute("table", TableSinkCreateRequest)
+	case OpUpdate:
+		Attribute("table", TableSinkUpdateRequest)
+	default:
+		panic(errors.Errorf(`unexpected operation type "%v"`, op))
+	}
+
+	// Required fields
+	switch op {
+	case OpRead:
+		Required("type", "name", "description")
+	case OpCreate:
+		Required("type", "name")
+	default:
+		// no required field
+	}
 }
 
 // Table Sink ----------------------------------------------------------------------------------------------------------
 
 var TableSink = Type("TableSink", func() {
-	Description("Table sink definition.")
+	TableSinkFieldsRW()
+	Required("type", "tableId", "mapping")
+})
+
+var TableSinkCreateRequest = Type("TableSinkCreate", func() {
+	TableSinkFieldsRW()
+	Required("type", "tableId", "mapping")
+})
+
+var TableSinkUpdateRequest = Type("TableSinkUpdate", func() {
+	TableSinkFieldsRW()
+})
+
+var TableSinkFieldsRW = func() {
+	Description(fmt.Sprintf(`Table sink configuration for "type" = "%s".`, definition.SinkTypeTable))
 	Attribute("type", TableType)
 	Attribute("tableId", TableID)
 	Attribute("mapping", TableMapping)
-	Required("type", "tableId", "mapping")
-})
+}
 
 var TableType = Type("TableType", String, func() {
 	Meta("struct:field:type", "= definition.TableType", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")

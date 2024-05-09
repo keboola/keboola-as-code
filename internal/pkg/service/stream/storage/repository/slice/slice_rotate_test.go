@@ -84,7 +84,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	{
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
-		slice2, err := sliceRepo.Rotate(clk.Now(), sliceKey).Do(ctx).ResultOrErr()
+		slice2, err := sliceRepo.Rotate(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), slice2.OpenedAt().Time())
 		// rotateEtcdLogs = etcdLogs.String()
@@ -95,7 +95,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	{
 		var err error
 		clk.Add(time.Hour)
-		slice3, err := sliceRepo.Rotate(clk.Now(), sliceKey).Do(ctx).ResultOrErr()
+		slice3, err := sliceRepo.Rotate(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), slice3.OpenedAt().Time())
 	}

@@ -11,35 +11,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
 func (r *Repository) estimateSliceSizeOnSliceCreate() {
-	r.plugins.Collection().OnSliceSave(func(ctx context.Context, now time.Time, original, updated *model.Slice) {
-		if original == nil {
-			if err := r.estimateSliceSize(updated).Do(ctx).Err(); err != nil {
-				// Error is not fatal
-				r.logger.Errorf(ctx, `cannot calculate slice pre-allocated size: %s`, err)
-			}
+	r.plugins.Collection().OnSliceOpen(func(ctx context.Context, now time.Time, file model.File, slice *model.Slice) {
+		if err := r.estimateSliceSize(file, slice).Do(ctx).Err(); err != nil {
+			// Error is not fatal
+			r.logger.Errorf(ctx, `cannot calculate slice pre-allocated size: %s`, err)
 		}
 	})
 }
 
-func (r *Repository) estimateSliceSize(slice *model.Slice) *op.AtomicOp[op.NoResult] {
+func (r *Repository) estimateSliceSize(file model.File, slice *model.Slice) *op.AtomicOp[op.NoResult] {
 	return op.Atomic(r.client, &op.NoResult{}).Read(func(ctx context.Context) op.Op {
-		// Get disk allocation config
-		cfg, ok := diskalloc.ConfigFromContext(ctx)
-		if !ok {
-			return nil
-		}
-
 		// Calculate pre-allocated size
 		return r.
 			maxUsedDiskSizeBySliceIn(slice.SinkKey, recordsForSliceDiskSizeCalc).
 			OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
-				slice.LocalStorage.AllocatedDiskSpace = cfg.ForNextSlice(r.Result())
+				slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.DiskAllocation.ForNextSlice(r.Result())
 			})
 	})
 }

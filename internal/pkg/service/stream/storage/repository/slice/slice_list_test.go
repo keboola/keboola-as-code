@@ -79,7 +79,7 @@ func TestSliceRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.Rotate(clk.Now(), sliceKey1).Do(ctx).Err())
+		require.NoError(t, sliceRepo.Rotate(sliceKey1, clk.Now()).Do(ctx).Err())
 	}
 
 	// List slices

@@ -1,9 +1,15 @@
 package mapper
 
 import (
+	"context"
+
+	etcd "go.etcd.io/etcd/client/v3"
+
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -36,6 +42,27 @@ func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 	}
 
 	return out, nil
+}
+
+func (m *Mapper) NewSinksResponse(
+	ctx context.Context,
+	k key.SourceKey,
+	sinceId string,
+	limit int,
+	list func(...iterator.Option) iterator.DefinitionT[definition.Sink],
+) (*api.SinksList, error) {
+	sinks, page, err := loadPage(ctx, sinceId, limit, etcd.SortAscend, list, m.NewSinkResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.SinksList{
+		ProjectID: k.ProjectID,
+		BranchID:  k.BranchID,
+		SourceID:  k.SourceID,
+		Page:      page,
+		Sinks:     sinks,
+	}, nil
 }
 
 func (m *Mapper) newTableSinkResponse(entity *definition.TableSink) (out api.TableSink, err error) {

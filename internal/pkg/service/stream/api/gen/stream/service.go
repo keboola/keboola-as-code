@@ -125,8 +125,7 @@ type CreateSinkPayload struct {
 	Name string
 	// Description of the source.
 	Description *string
-	// Table sink configuration for "type" = "table".
-	Table *TableSink
+	Table       *TableSinkCreate
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -348,11 +347,10 @@ type Sink struct {
 	Name string
 	// Description of the source.
 	Description string
-	// Table sink configuration for "type" = "table".
-	Table    *TableSink
-	Version  *Version
-	Deleted  *DeletedEntity
-	Disabled *DisabledEntity
+	Table       *TableSink
+	Version     *Version
+	Deleted     *DeletedEntity
+	Disabled    *DisabledEntity
 }
 
 type SinkFile struct {
@@ -435,7 +433,6 @@ type Source struct {
 	Version  *Version
 	Deleted  *DeletedEntity
 	Disabled *DisabledEntity
-	Sinks    Sinks
 }
 
 // Unique ID of the source.
@@ -483,10 +480,24 @@ type TableMapping struct {
 	Columns TableColumns
 }
 
-// Table sink definition.
+// Table sink configuration for "type" = "table".
 type TableSink struct {
 	Type    TableType
 	TableID TableID
+	Mapping *TableMapping
+}
+
+// Table sink configuration for "type" = "table".
+type TableSinkCreate struct {
+	Type    TableType
+	TableID TableID
+	Mapping *TableMapping
+}
+
+// Table sink configuration for "type" = "table".
+type TableSinkUpdate struct {
+	Type    *TableType
+	TableID *TableID
 	Mapping *TableMapping
 }
 
@@ -577,15 +588,14 @@ type UpdateSinkPayload struct {
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
-	Type            *SinkType
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Type              *SinkType
 	// Human readable name of the sink.
 	Name *string
 	// Description of the source.
 	Description *string
-	// Table sink configuration for "type" = "table".
-	Table *TableSink
-	// Description of the modification, description of the version.
-	ChangeDescription *string
+	Table       *TableSinkUpdate
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service
@@ -595,7 +605,9 @@ type UpdateSinkSettingsPayload struct {
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
-	Settings        SettingsPatch
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Settings          SettingsPatch
 }
 
 // UpdateSourcePayload is the payload type of the stream service UpdateSource
@@ -604,13 +616,13 @@ type UpdateSourcePayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
-	Type            *SourceType
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Type              *SourceType
 	// Human readable name of the source.
 	Name *string
 	// Description of the source.
 	Description *string
-	// Description of the modification, description of the version.
-	ChangeDescription *string
 }
 
 // UpdateSourceSettingsPayload is the payload type of the stream service

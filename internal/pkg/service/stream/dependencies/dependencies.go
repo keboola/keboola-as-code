@@ -82,6 +82,7 @@ type PublicRequestScope interface {
 type ProjectRequestScope interface {
 	PublicRequestScope
 	dependencies.ProjectScope
+	RequestUser() definition.By
 }
 
 type BranchRequestScope interface {

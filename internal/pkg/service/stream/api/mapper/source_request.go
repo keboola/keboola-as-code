@@ -56,19 +56,20 @@ func (m *Mapper) UpdateSourceEntity(entity definition.Source, payload *api.Updat
 
 	// Type
 	if payload.Type != nil {
-		// Type
 		entity.Type = *payload.Type
-		switch entity.Type {
-		case definition.SourceTypeHTTP:
-			if entity.HTTP == nil {
-				entity.HTTP = &definition.HTTPSource{}
-			}
-			if entity.HTTP.Secret == "" {
-				entity.HTTP.Secret = idgenerator.StreamHTTPSourceSecret()
-			}
-		default:
-			return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
+	}
+
+	// Type specific updates
+	switch entity.Type {
+	case definition.SourceTypeHTTP:
+		if entity.HTTP == nil {
+			entity.HTTP = &definition.HTTPSource{}
 		}
+		if entity.HTTP.Secret == "" {
+			entity.HTTP.Secret = idgenerator.StreamHTTPSourceSecret()
+		}
+	default:
+		return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
 	}
 
 	return entity, nil

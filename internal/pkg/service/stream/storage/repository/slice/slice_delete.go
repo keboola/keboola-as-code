@@ -9,9 +9,9 @@ import (
 )
 
 func (r *Repository) deleteSlicesOnFileDelete() {
-	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
-		if updated.Deleted {
-			op.AtomicFromCtx(ctx).AddFrom(r.deleteAll(updated.FileKey, now))
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, file *model.File) {
+		if file.Deleted {
+			op.AtomicFromCtx(ctx).AddFrom(r.deleteAll(file.FileKey, now))
 		}
 	})
 }

@@ -9,7 +9,7 @@ import (
 	"goa.design/goa/v3/eval"
 )
 
-// nolint: gochecknoinits
+// nolint: init
 func init() {
 	codegen.RegisterPluginFirst("genericerror", "gen", nil, generate)
 }

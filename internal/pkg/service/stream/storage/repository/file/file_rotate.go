@@ -37,10 +37,10 @@ func (r *Repository) rotate(now time.Time, k key.SinkKey, source *definition.Sou
 	atomicOp := op.Atomic(r.client, &openedFile)
 
 	// Open a new file
-	atomicOp.AddFrom(r.openFileForSink(now, k, source, sink).SetResultTo(&openedFile))
+	atomicOp.AddFrom(r.openFileForSink(k, now, source, sink).SetResultTo(&openedFile))
 
 	// Close active files
-	atomicOp.AddFrom(r.closeFilesInSink(now, k))
+	atomicOp.AddFrom(r.closeFilesInSink(k, now))
 
 	return atomicOp
 }

@@ -13,7 +13,7 @@ import (
 func (r *Repository) closeFileOnSinkDeactivation() {
 	r.plugins.Collection().OnSinkDeactivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) {
 		if r.isSinkWithLocalStorage(sink) {
-			op.AtomicFromCtx(ctx).AddFrom(r.closeFilesInSink(now, sink.SinkKey))
+			op.AtomicFromCtx(ctx).AddFrom(r.closeFilesInSink(sink.SinkKey, now))
 		}
 	})
 }
@@ -21,7 +21,7 @@ func (r *Repository) closeFileOnSinkDeactivation() {
 // closeFilesInSink - closes active files, in the FileWriting state, in the sink.
 // There should be at most one active file in each sink.
 // Files are switched to the FileClosing state.
-func (r *Repository) closeFilesInSink(now time.Time, k key.SinkKey) *op.AtomicOp[[]model.File] {
+func (r *Repository) closeFilesInSink(k key.SinkKey, now time.Time) *op.AtomicOp[[]model.File] {
 	var files, closedFiles []model.File
 	return op.Atomic(r.client, &closedFiles).
 		// Load active files

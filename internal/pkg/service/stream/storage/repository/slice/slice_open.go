@@ -5,21 +5,20 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
 func (r *Repository) openSlicesOnFileCreate() {
-	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, file *model.File) {
 		if original == nil {
-			op.AtomicFromCtx(ctx).AddFrom(r.openSlicesForFile(now, *updated))
+			op.AtomicFromCtx(ctx).AddFrom(r.openSlicesForFile(*file, now))
 		}
 	})
 }
 
 // openSlicesForFile creates new Slices, in the FileWriting state, for each assigned volume in the Sink.
-func (r *Repository) openSlicesForFile(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
+func (r *Repository) openSlicesForFile(file model.File, now time.Time) *op.AtomicOp[[]model.Slice] {
 	var newSlices []model.Slice
 	return op.Atomic(r.client, &newSlices).
 		WriteOrErr(func(ctx context.Context) (op.Op, error) {
@@ -45,8 +44,8 @@ func (r *Repository) openSlice(ctx context.Context, now time.Time, file model.Fi
 		return op.TxnWithError[model.Slice](err)
 	}
 
-	// Pass allocation config to the statistics package, to estimate size of the new slice
-	ctx = diskalloc.ContextWithConfig(ctx, file.LocalStorage.DiskAllocation)
+	// Call plugins
+	r.plugins.Executor().OnSliceOpen(ctx, now, file, &newSlice)
 
 	// Save new slice
 	return r.save(ctx, now, nil, &newSlice)

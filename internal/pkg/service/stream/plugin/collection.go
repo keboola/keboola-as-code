@@ -13,7 +13,9 @@ type Collection struct {
 	onBranchSave fnList[onBranchSaveFn]
 	onSourceSave fnList[onSourceSaveFn]
 	onSinkSave   fnList[onSinkSaveFn]
+	onFileOpen   fnList[onFileOpenFn]
 	onFileSave   fnList[onFileSaveFn]
+	onSliceOpen  fnList[onSliceOpenFn]
 	onSliceSave  fnList[onSliceSaveFn]
 }
 
@@ -23,7 +25,11 @@ type onSourceSaveFn func(ctx context.Context, now time.Time, by definition.By, o
 
 type onSinkSaveFn func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink)
 
+type onFileOpenFn func(ctx context.Context, now time.Time, sink definition.Sink, file *storage.File)
+
 type onFileSaveFn func(ctx context.Context, now time.Time, original, updated *storage.File)
+
+type onSliceOpenFn func(ctx context.Context, now time.Time, file storage.File, slice *storage.Slice)
 
 type onSliceSaveFn func(ctx context.Context, now time.Time, original, updated *storage.Slice)
 
@@ -95,8 +101,16 @@ func (c *Collection) OnSinkModification(fn onSinkSaveFn) {
 	})
 }
 
+func (c *Collection) OnFileOpen(fn onFileOpenFn) {
+	c.onFileOpen = append(c.onFileOpen, fn)
+}
+
 func (c *Collection) OnFileSave(fn onFileSaveFn) {
 	c.onFileSave = append(c.onFileSave, fn)
+}
+
+func (c *Collection) OnSliceOpen(fn onSliceOpenFn) {
+	c.onSliceOpen = append(c.onSliceOpen, fn)
 }
 
 func (c *Collection) OnSliceSave(fn onSliceSaveFn) {

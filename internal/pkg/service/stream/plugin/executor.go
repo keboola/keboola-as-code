@@ -33,10 +33,24 @@ func (e *Executor) OnSinkSave(ctx context.Context, now time.Time, by definition.
 	})
 }
 
-func (e *Executor) OnFileSave(ctx context.Context, now time.Time, old, updated *storage.File) {
+func (e *Executor) OnFileOpen(ctx context.Context, now time.Time, sink definition.Sink, file *storage.File) {
+	ctx = context.WithValue(ctx, UpdatedFile, file)
+	e.collection.onFileOpen.forEach(func(fn onFileOpenFn) {
+		fn(ctx, now, sink, file)
+	})
+}
+
+func (e *Executor) OnFileSave(ctx context.Context, now time.Time, original, updated *storage.File) {
 	ctx = context.WithValue(ctx, UpdatedFile, updated)
 	e.collection.onFileSave.forEach(func(fn onFileSaveFn) {
-		fn(ctx, now, old, updated)
+		fn(ctx, now, original, updated)
+	})
+}
+
+func (e *Executor) OnSliceOpen(ctx context.Context, now time.Time, file storage.File, slice *storage.Slice) {
+	ctx = context.WithValue(ctx, UpdatedSlice, slice)
+	e.collection.onSliceOpen.forEach(func(fn onSliceOpenFn) {
+		fn(ctx, now, file, slice)
 	})
 }
 

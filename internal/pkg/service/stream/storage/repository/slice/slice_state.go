@@ -19,19 +19,19 @@ func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time) *op.Atomi
 }
 
 func (r *Repository) updateSlicesOnFileImport() {
-	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
-		if original != nil && original.State != updated.State && updated.State == model.FileImported {
-			op.AtomicFromCtx(ctx).AddFrom(r.switchSlicesToImported(now, *updated))
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, file *model.File) {
+		if original != nil && original.State != file.State && file.State == model.FileImported {
+			op.AtomicFromCtx(ctx).AddFrom(r.switchSlicesToImported(*file, now))
 		}
 	})
 }
 
 func (r *Repository) validateSlicesOnFileStateTransition() {
-	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) {
-		if original != nil && original.State != updated.State && updated.State != model.FileClosing && updated.State != model.FileImported {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, file *model.File) {
+		if original != nil && original.State != file.State && file.State != model.FileClosing && file.State != model.FileImported {
 			// FileClosing state is handled by the closeSliceOnFileClose method.
 			// FileImported state is handled by the updateSlicesOnFileImport method.
-			op.AtomicFromCtx(ctx).AddFrom(r.validateSliceStates(*updated))
+			op.AtomicFromCtx(ctx).AddFrom(r.validateSliceStates(*file))
 		}
 	})
 }
@@ -81,7 +81,7 @@ func (r *Repository) switchStateInBatch(ctx context.Context, fState model.FileSt
 	return txn
 }
 
-func (r *Repository) switchSlicesToImported(now time.Time, file model.File) *op.AtomicOp[[]model.Slice] {
+func (r *Repository) switchSlicesToImported(file model.File, now time.Time) *op.AtomicOp[[]model.Slice] {
 	var slices, updated []model.Slice
 	return op.Atomic(r.client, &updated).
 		// Load slices

@@ -29,7 +29,7 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 		ProjectID: d.ProjectID(),
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.repo.Source().Create(&source, s.clock.Now(), "New source.").Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Create(&source, s.clock.Now(), d.RequestUser(), "New source.").Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been created successfully.")
 				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
 				return result
@@ -67,7 +67,7 @@ func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequest
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), changeDesc, update).Do(ctx).Err(); err == nil {
+			if err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Source has been updated successfully.")
 				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
 				return result
@@ -99,7 +99,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (err error) {
-	return s.repo.Source().SoftDelete(d.SourceKey(), s.clock.Now()).Do(ctx).Err()
+	return s.repo.Source().SoftDelete(d.SourceKey(), s.clock.Now(), d.RequestUser()).Do(ctx).Err()
 }
 
 func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (res *api.SettingsResult, err error) {
@@ -135,7 +135,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	}
 
 	// Save changes
-	source, err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), changeDesc, update).Do(ctx).ResultOrErr()
+	source, err := s.repo.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}

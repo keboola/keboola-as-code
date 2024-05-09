@@ -1,11 +1,11 @@
 package staging
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
 
 func TestFile_Validation(t *testing.T) {
