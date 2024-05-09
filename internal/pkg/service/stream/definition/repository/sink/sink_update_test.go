@@ -96,8 +96,7 @@ func TestSinkRepository_Update(t *testing.T) {
 			return definition.Sink{}, errors.New("some error")
 		}
 
-		var err error
-		err = repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()
+		err := repo.Update(sinkKey, now, by, "Update sink", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, "some error", err.Error())
 		}

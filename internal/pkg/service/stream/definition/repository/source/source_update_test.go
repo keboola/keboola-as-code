@@ -92,8 +92,7 @@ func TestSourceRepository_Update(t *testing.T) {
 			return definition.Source{}, errors.New("some error")
 		}
 
-		var err error
-		err = repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()
+		err := repo.Update(sourceKey, now, by, "Update source", updateFn).Do(ctx).Err()
 		if assert.Error(t, err) {
 			assert.Equal(t, "some error", err.Error())
 		}

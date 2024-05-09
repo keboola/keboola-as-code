@@ -84,7 +84,7 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 // AssertKVsFromFile dumps all KVs from an etcd database and compares them with content of the file.
 // In the file, a wildcards can be used, see the wildcards package.
 func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...AssertOption) bool {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:forbidigo // no virtual FS
 	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
 		expected := string(data)
 		ops = append(ops, withExpectedStateFromFile(path))
@@ -140,10 +140,10 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 
 	// Dump actual state
 	if c.expectedStateFromFile != "" {
-		outDir := filepath.Join(filepath.Dir(c.expectedStateFromFile), ".out")
-		filePath := filepath.Join(outDir, filepath.Base(c.expectedStateFromFile)+".actual")
-		assert.NoError(t, os.MkdirAll(outDir, 0o750))
-		assert.NoError(t, os.WriteFile(filePath, []byte(KVsToString(actualKVs)), 0o600))
+		outDir := filepath.Join(filepath.Dir(c.expectedStateFromFile), ".out")              //nolint:forbidigo // no virtual FS
+		filePath := filepath.Join(outDir, filepath.Base(c.expectedStateFromFile)+".actual") //nolint:forbidigo // no virtual FS
+		assert.NoError(t, os.MkdirAll(outDir, 0o750))                                       //nolint:forbidigo // no virtual FS
+		assert.NoError(t, os.WriteFile(filePath, []byte(KVsToString(actualKVs)), 0o600))    //nolint:forbidigo // no virtual FS
 	}
 
 	// Compare expected and actual KVs

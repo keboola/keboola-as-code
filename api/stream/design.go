@@ -49,7 +49,7 @@ type OperationType string
 
 // API definition
 
-// nolint: init
+//nolint:gochecknoinits
 func init() {
 	dependenciesType := func(method *service.MethodData) string {
 		if dependencies.HasSecurityScheme("APIKey", method) {

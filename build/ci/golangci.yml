@@ -23,6 +23,13 @@ linters-settings:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 10
 
+  gosec:
+    excludes:
+      - G601 # Implicit memory aliasing of items from a range statement (Go 1.22)
+
+  dupl:
+    threshold: 200
+
   # Forbidden constructions
   forbidigo:
     # Instead of matching the literal source code, use real package name.
@@ -120,7 +127,6 @@ linters:
     - importas
     - ineffassign
     - makezero
-    - misspell
     - nakedret
     - nilerr
     - noctx
@@ -144,6 +150,7 @@ linters:
     #- gofmt # replaced with gofumpt
     #- nolintlint # strange behavior
     #- gomoddirectives # allow replace directive in go.mod
+    #- misspell - broken, rewrites code
     # TODO
     #- funlen
     #- gocyclo

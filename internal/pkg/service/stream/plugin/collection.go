@@ -38,17 +38,17 @@ func (c *Collection) OnBranchSave(fn onBranchSaveFn) {
 }
 
 func (c *Collection) OnBranchDelete(fn onBranchSaveFn) {
-	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, original, deleted *definition.Branch) {
-		if isDelete(now, original, deleted) {
-			fn(ctx, now, by, original, deleted)
+	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Branch) {
+		if isDelete(now, branch) {
+			fn(ctx, now, by, original, branch)
 		}
 	})
 }
 
 func (c *Collection) OnBranchUndelete(fn onBranchSaveFn) {
-	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Branch) {
-		if isUndelete(now, original, updated) {
-			fn(ctx, now, by, original, updated)
+	c.onBranchSave = append(c.onBranchSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Branch) {
+		if isUndelete(now, branch) {
+			fn(ctx, now, by, original, branch)
 		}
 	})
 }
@@ -58,17 +58,17 @@ func (c *Collection) OnSourceSave(fn onSourceSaveFn) {
 }
 
 func (c *Collection) OnSourceDelete(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) {
-		if isDelete(now, original, updated) {
-			fn(ctx, now, by, original, updated)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) {
+		if isDelete(now, branch) {
+			fn(ctx, now, by, original, branch)
 		}
 	})
 }
 
 func (c *Collection) OnSourceUndelete(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) {
-		if isUndelete(now, original, updated) {
-			fn(ctx, now, by, original, updated)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) {
+		if isUndelete(now, branch) {
+			fn(ctx, now, by, original, branch)
 		}
 	})
 }
@@ -87,7 +87,7 @@ func (c *Collection) OnSinkActivation(fn onSinkSaveFn) {
 
 func (c *Collection) OnSinkDeactivation(fn onSinkSaveFn) {
 	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) {
-		if isDeactivation(now, original, updated) {
+		if isDeactivation(now, updated) {
 			fn(ctx, now, by, original, updated)
 		}
 	})
@@ -95,7 +95,7 @@ func (c *Collection) OnSinkDeactivation(fn onSinkSaveFn) {
 
 func (c *Collection) OnSinkModification(fn onSinkSaveFn) {
 	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Sink) {
-		if !isActivation(now, old, updated) && !isDeactivation(now, old, updated) && !reflect.DeepEqual(old, updated) {
+		if !isActivation(now, old, updated) && !isDeactivation(now, updated) && !reflect.DeepEqual(old, updated) {
 			fn(ctx, now, by, old, updated)
 		}
 	})
@@ -117,23 +117,23 @@ func (c *Collection) OnSliceSave(fn onSliceSaveFn) {
 	c.onSliceSave = append(c.onSliceSave, fn)
 }
 
-func isDelete(now time.Time, old, updated definition.SoftDeletableInterface) bool {
+func isDelete(now time.Time, updated definition.SoftDeletableInterface) bool {
 	return updated.DeletedAt().Time().Equal(now)
 }
 
-func isUndelete(now time.Time, old, updated definition.SoftDeletableInterface) bool {
+func isUndelete(now time.Time, updated definition.SoftDeletableInterface) bool {
 	return updated.UndeletedAt().Time().Equal(now)
 }
 
 func isActivation(now time.Time, old, updated definition.SwitchableInterface) bool {
 	created := old == nil
 
-	undeleted := false
+	var undeleted bool
 	if v, ok := updated.(definition.SoftDeletableInterface); ok {
-		undeleted = isUndelete(now, old.(definition.SoftDeletableInterface), v)
+		undeleted = isUndelete(now, v)
 	}
 
-	enabled := false
+	var enabled bool
 	{
 		at := updated.EnabledAt()
 		enabled = at != nil && at.Time().Equal(now)
@@ -142,13 +142,13 @@ func isActivation(now time.Time, old, updated definition.SwitchableInterface) bo
 	return created || undeleted || enabled
 }
 
-func isDeactivation(now time.Time, old, updated definition.SwitchableInterface) bool {
-	deleted := false
+func isDeactivation(now time.Time, updated definition.SwitchableInterface) bool {
+	var deleted bool
 	if v, ok := updated.(definition.SoftDeletableInterface); ok {
-		deleted = isDelete(now, old.(definition.SoftDeletableInterface), v)
+		deleted = isDelete(now, v)
 	}
 
-	disabled := false
+	var disabled bool
 	{
 		at := updated.DisabledAt()
 		disabled = at != nil && at.Time().Equal(now)

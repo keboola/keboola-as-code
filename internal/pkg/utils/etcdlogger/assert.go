@@ -39,16 +39,16 @@ func Assert(t assert.TestingT, expected, actual string) bool {
 // Comments "// ..." and empty lines are ignored.
 func AssertFromFile(t assert.TestingT, path, actual string) bool {
 	result := false
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:forbidigo // no virtual FS
 	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
 		expected := string(data)
 		result = Assert(t, expected, actual)
 	}
 
-	outDir := filepath.Join(filepath.Dir(path), ".out")
-	filePath := filepath.Join(outDir, filepath.Base(path)+".actual")
-	assert.NoError(t, os.MkdirAll(outDir, 0o750))
-	assert.NoError(t, os.WriteFile(filePath, []byte(actual), 0o600))
+	outDir := filepath.Join(filepath.Dir(path), ".out")              //nolint:forbidigo // no virtual FS
+	filePath := filepath.Join(outDir, filepath.Base(path)+".actual") //nolint:forbidigo // no virtual FS
+	assert.NoError(t, os.MkdirAll(outDir, 0o750))                    //nolint:forbidigo // no virtual FS
+	assert.NoError(t, os.WriteFile(filePath, []byte(actual), 0o600)) //nolint:forbidigo // no virtual FS
 
 	return result
 }

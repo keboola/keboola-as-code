@@ -212,13 +212,13 @@ package bridge
 //}
 //
 //// AddFinalizer adds a finalizer function, it is called after the transaction, if succeeded.
-//func (p *tableSinkPlugin) AddFinalizer(fn func(context.Context) error) {
+// func (p *tableSinkPlugin) AddFinalizer(fn func(context.Context) error) {
 //	p.lock.Lock()
 //	defer p.lock.Unlock()
 //	p.finalizers = append(p.finalizers, fn)
 //}
 //
-//func (p *tableSinkPlugin) ensureBucketExists(ctx context.Context, rb rollback.Builder, bucketKey keboola.BucketKey) error {
+// func (p *tableSinkPlugin) ensureBucketExists(ctx context.Context, rb rollback.Builder, bucketKey keboola.BucketKey) error {
 //	// Check if the bucket exists
 //	if _, err := p.getBucket(ctx, bucketKey); err != nil {
 //		var apiErr *keboola.StorageError

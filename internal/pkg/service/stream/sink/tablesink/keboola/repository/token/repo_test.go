@@ -1,3 +1,5 @@
+//nolint:gocritic
+
 package token_test
 
 //
@@ -168,9 +170,9 @@ package token_test
 //	}
 //}
 //
-//func expectedTokenEtcdState() string {
+// func expectedTokenEtcdState() string {
 //	return `
-//<<<<<
+// <<<<<
 //storage/secret/token/123/456/my-source/my-sink-1
 //-----
 //{

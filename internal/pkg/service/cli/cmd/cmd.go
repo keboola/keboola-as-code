@@ -49,7 +49,7 @@ func DefaultRootFlags() RootFlags {
 	return RootFlags{}
 }
 
-// nolint: init
+//nolint:gochecknoinits
 func init() {
 	// Disable commands auto-sorting
 	cobra.EnableCommandSorting = false

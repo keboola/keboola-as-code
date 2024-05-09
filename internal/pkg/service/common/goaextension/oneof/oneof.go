@@ -30,7 +30,7 @@ const (
 	oneOfFieldName     = "oneOf"
 )
 
-// nolint: init
+//nolint:gochecknoinits
 func init() {
 	codegen.RegisterPluginLast("one-of", "gen", nil, generate)
 }
