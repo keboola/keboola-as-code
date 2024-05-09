@@ -7,6 +7,7 @@ env:
   GO_VERSION: 1.22.2
   TEST_PARALLELISM: 12
   TEST_PARALLELISM_PKG: 6
+  TEST_COVERAGE: false
 
 jobs:
   test:
@@ -26,19 +27,18 @@ jobs:
       - name: Setup line endings
         run: git config --global core.autocrlf false
 
+      - name: Change default TEST_COVERAGE when on main branch
+        if: github.ref == 'refs/heads/main'
+        run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set TEST_KBC_PROJECTS
         uses: ./.github/actions/export-kbc-projects
         with:
           secrets: ${{ toJSON(secrets) }}
           projects: ${{ vars.TEST_KBC_PROJECTS }}
-
-      - name: Load Go cache
-        uses: ./.github/actions/go-cache
-        with:
-          key: unit-${{ matrix.name }}
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -46,9 +46,18 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: false
 
-      - name: Install tools
-        run: . ./scripts/tools.sh
+      - name: Load Go build cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: unit
+
+      - name: Change modtime of files to 1 unix timestamp
         shell: bash
+        run: |
+          find . -type f,d -exec touch -r {} -d '1970-01-01T00:00:01' {} \; || true
+
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
 
       - name: Start etcd database (only on linux)
         if: matrix.name == 'linux'
@@ -69,3 +78,4 @@ jobs:
           UNIT_ETCD_USERNAME: root
           UNIT_ETCD_PASSWORD: toor
           UNIT_ETCD_NAMESPACE: buffer
+

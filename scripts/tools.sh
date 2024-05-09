@@ -10,7 +10,10 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR"
 
 # go-licenses
-go install github.com/google/go-licenses@latest
+if ! command -v go-licenses &> /dev/null
+then
+  go install github.com/google/go-licenses@latest
+fi
 
 # gotestsum
 if ! command -v gotestsum &> /dev/null
