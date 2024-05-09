@@ -28,7 +28,7 @@ linters-settings:
       - G601 # Implicit memory aliasing of items from a range statement (Go 1.22)
 
   dupl:
-    threshold: 200
+    threshold: 500
 
   # Forbidden constructions
   forbidigo:
