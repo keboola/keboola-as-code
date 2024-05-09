@@ -173,7 +173,7 @@ package token_test
 // func expectedTokenEtcdState() string {
 //	return `
 // <<<<<
-//storage/secret/token/123/456/my-source/my-sink-1
+// storage/secret/token/123/456/my-source/my-sink-1
 //-----
 //{
 //  "projectId": 123,
@@ -185,6 +185,6 @@ package token_test
 //    %A
 //  }
 //}
-//>>>>>
+// >>>>>
 //`
 //}

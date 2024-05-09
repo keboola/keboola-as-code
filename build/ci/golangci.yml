@@ -112,7 +112,7 @@ linters:
     - forbidigo
     - gci
     - gochecknoglobals
-    - gochecknoinits
+    #- gochecknoinits - temporary disabled https://github.com/golangci/golangci-lint/issues/4697
     - goconst
     - gocritic
     - godot

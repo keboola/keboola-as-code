@@ -237,7 +237,7 @@ package bridge
 //}
 //
 //// getBucket once.
-//func (p *tableSinkPlugin) getBucket(ctx context.Context, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
+// func (p *tableSinkPlugin) getBucket(ctx context.Context, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
 //	bucket, err, _ := p.getBucketOnce.Do(bucketKey.String(), func() (any, error) {
 //		return p.api.GetBucketRequest(bucketKey).Send(ctx)
 //	})
@@ -245,7 +245,7 @@ package bridge
 //}
 //
 //// createBucket once.
-//func (p *tableSinkPlugin) createBucket(ctx context.Context, rb rollback.Builder, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
+// func (p *tableSinkPlugin) createBucket(ctx context.Context, rb rollback.Builder, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
 //	bucket, err, _ := p.createBucketOnce.Do(bucketKey.String(), func() (any, error) {
 //		// Create bucket
 //		bucket := &keboola.Bucket{BucketKey: bucketKey}
