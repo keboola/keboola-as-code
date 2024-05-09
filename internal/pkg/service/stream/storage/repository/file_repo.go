@@ -53,6 +53,8 @@ type rotateSinkContext struct {
 	NewFileResource *FileResource
 }
 
+const RecentFilesLimit = 50
+
 func newFileRepository(cfg level.Config, d dependencies, backoff model.RetryBackoff, all *Repository) *FileRepository {
 	return &FileRepository{
 		client:  d.EtcdClient(),
@@ -66,6 +68,12 @@ func newFileRepository(cfg level.Config, d dependencies, backoff model.RetryBack
 // ListAll files in all storage levels.
 func (r *FileRepository) ListAll() iterator.DefinitionT[model.File] {
 	return r.schema.AllLevels().GetAll(r.client)
+}
+
+// ListRecentIn files in all storage levels in descending order.
+func (r *FileRepository) ListRecentIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
+	return r.schema.AllLevels().InObject(parentKey).
+		GetAll(r.client, iterator.WithSort(etcd.SortDescend), iterator.WithLimit(RecentFilesLimit))
 }
 
 // ListIn files in all storage levels, in the parent.
