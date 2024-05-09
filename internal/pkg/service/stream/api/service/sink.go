@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"golang.org/x/exp/maps"
 )
 
@@ -68,13 +69,33 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		return nil
 	})
 
+	keys := maps.Keys(filesMap)
+	if len(keys) > 0 {
+		statisticsMap, err := d.StatisticsRepository().FilesStats(ctx, d.SinkKey(), keys[0], keys[len(keys) - 1]).Do(ctx).ResultOrErr()
+		if err != nil {
+			return nil, err
+		}
 
+		for key, aggregated := range statisticsMap {
+			assignStatistics(filesMap[key].Statistics.Total, aggregated.Total)
+			assignStatistics(filesMap[key].Statistics.Levels.Local, aggregated.Local)
+			assignStatistics(filesMap[key].Statistics.Levels.Staging, aggregated.Staging)
+			assignStatistics(filesMap[key].Statistics.Levels.Target, aggregated.Target)
+		}
+	}
 
 	res = &stream.SinkStatisticsFilesResult{
 		Files: maps.Values(filesMap),
 	}
 
 	return res, nil
+}
+
+func assignStatistics(levelStatistics *stream.Level, levelValue statistics.Value) {
+	levelStatistics.FirstRecordAt = timeToString(&levelValue.FirstRecordAt)
+	levelStatistics.LastRecordAt = timeToString(&levelValue.LastRecordAt)
+	levelStatistics.RecordsCount = levelValue.RecordsCount
+	levelStatistics.UncompressedSize = uint64(levelValue.UncompressedSize)
 }
 
 func timeToString(time *utctime.UTCTime) *string {

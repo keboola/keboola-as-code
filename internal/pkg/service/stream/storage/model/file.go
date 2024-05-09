@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/benbjohnson/clock"
 	"go.opentelemetry.io/otel/attribute"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -82,5 +83,13 @@ func (f File) Telemetry(clk clock.Clock) []attribute.KeyValue {
 		attribute.String("file.state", f.State.String()),
 		attribute.String("file.lastStateChange", lastStateChange.String()),
 		attribute.Int("file.retryAttempt", f.RetryAttempt),
+	}
+}
+
+func NewFileIDFromKey(key, prefix string) FileID {
+	relativeKey := strings.TrimPrefix(key, prefix)
+	openedAt, _, _ := strings.Cut(relativeKey, "/")
+	return FileID{
+		OpenedAt: utctime.MustParse(openedAt),
 	}
 }
