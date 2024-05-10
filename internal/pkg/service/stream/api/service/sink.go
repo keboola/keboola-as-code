@@ -55,6 +55,11 @@ func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRe
 }
 
 func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRequestScope, payload *stream.SinkStatisticsFilesPayload) (res *stream.SinkStatisticsFilesResult, err error) {
+	err = s.repo.Sink().ExistsOrErr(d.SinkKey()).Do(ctx).Err()
+	if err != nil {
+		return nil, err
+	}
+
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
 	// TODO: I'm surprised that I'm not passing ctx anywhere here. Am I doing it correctly?
@@ -73,6 +78,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 	if len(keys) > 0 {
 		statisticsMap, err := d.StatisticsRepository().FilesStats(ctx, d.SinkKey(), keys[0], keys[len(keys) - 1]).Do(ctx).ResultOrErr()
 		if err != nil {
+			// TODO: Do I need to transform the error here somehow?
 			return nil, err
 		}
 
