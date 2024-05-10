@@ -70,12 +70,6 @@ func (r *FileRepository) ListAll() iterator.DefinitionT[model.File] {
 	return r.schema.AllLevels().GetAll(r.client)
 }
 
-// ListRecentIn files in all storage levels in descending order.
-func (r *FileRepository) ListRecentIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
-	return r.schema.AllLevels().InObject(parentKey).
-		GetAll(r.client, iterator.WithSort(etcd.SortDescend), iterator.WithLimit(RecentFilesLimit))
-}
-
 // ListIn files in all storage levels, in the parent.
 func (r *FileRepository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
@@ -93,6 +87,12 @@ func (r *FileRepository) ListInState(parentKey fmt.Stringer, state model.FileSta
 		WithFilter(func(file model.File) bool {
 			return file.State == state
 		})
+}
+
+// ListRecentIn files in all storage levels in descending order.
+func (r *FileRepository) ListRecentIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
+	return r.schema.AllLevels().InObject(parentKey).
+		GetAll(r.client, iterator.WithSort(etcd.SortDescend), iterator.WithLimit(RecentFilesLimit))
 }
 
 // Get file entity.
