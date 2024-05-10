@@ -54,6 +54,8 @@ func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRe
 	return s.mapper.NewSinkStatisticsTotalResponse(stats), nil
 }
 
+const RecentFilesLimit = 50
+
 func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRequestScope, payload *stream.SinkStatisticsFilesPayload) (res *stream.SinkStatisticsFilesResult, err error) {
 	err = s.repo.Sink().ExistsOrErr(d.SinkKey()).Do(ctx).Err()
 	if err != nil {
@@ -62,7 +64,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
-	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
+	err = d.StorageRepository().File().ListRecentIn(d.SinkKey(), RecentFilesLimit + 1).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
 		filesMap[value.FileID] = &stream.SinkFile{
 			State:       value.State,
 			OpenedAt:    value.OpenedAt().String(),
@@ -78,7 +80,11 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	keys := maps.Keys(filesMap)
 	if len(keys) > 0 {
-		statisticsMap, err := d.StatisticsRepository().FilesStats(d.SinkKey(), keys[0], keys[len(keys) - 1]).Do(ctx).ResultOrErr()
+		var end *model.FileID
+		if len(keys) > RecentFilesLimit {
+			end = &keys[len(keys) - 1]
+		}
+		statisticsMap, err := d.StatisticsRepository().FilesStats(d.SinkKey(), keys[0], end).Do(ctx).ResultOrErr()
 		if err != nil {
 			return nil, err
 		}
