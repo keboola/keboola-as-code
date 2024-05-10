@@ -138,8 +138,8 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 			//	return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, columnPayload.Name, err))
 			//}
 
-			tmplColumn.Language = columnPayload.Template.Language
-			tmplColumn.Content = columnPayload.Template.Content
+			tmplColumn.Template.Language = columnPayload.Template.Language
+			tmplColumn.Template.Content = columnPayload.Template.Content
 			columnEntity = tmplColumn
 		}
 

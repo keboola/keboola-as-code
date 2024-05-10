@@ -269,7 +269,7 @@ package bridge
 //	return bucket.(*keboola.Bucket), nil
 //}
 //
-//func (p *tableSinkPlugin) ensureTableExists(ctx context.Context, rb rollback.Builder, sink definition.Sink) error {
+// func (p *tableSinkPlugin) ensureTableExists(ctx context.Context, rb rollback.Builder, sink definition.Sink) error {
 //	tableKey := keboola.TableKey{BranchID: sink.BranchID, TableID: sink.Table.Keboola.TableID}
 //	columnsNames := sink.Table.Mapping.Columns.Names()
 //	primaryKey := sink.Table.Mapping.Columns.PrimaryKey()

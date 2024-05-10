@@ -597,8 +597,9 @@ paths:
                                                   name: body-col
                                                 - type: template
                                                   name: template-col
-                                                  language: jsonnet
-                                                  content: body.foo + "-" + body.bar
+                                                  template:
+                                                    language: jsonnet
+                                                    content: body.foo + "-" + body.bar
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -685,8 +686,9 @@ paths:
                                           name: body-col
                                         - type: template
                                           name: template-col
-                                          language: jsonnet
-                                          content: body.foo + "-" + body.bar
+                                          template:
+                                            language: jsonnet
+                                            content: body.foo + "-" + body.bar
             responses:
                 "202":
                     description: Accepted response.
@@ -862,8 +864,9 @@ paths:
                                               name: body-col
                                             - type: template
                                               name: template-col
-                                              language: jsonnet
-                                              content: body.foo + "-" + body.bar
+                                              template:
+                                                language: jsonnet
+                                                content: body.foo + "-" + body.bar
                                 version:
                                     number: 3
                                     hash: f43e93acd97eceb3
@@ -960,8 +963,9 @@ paths:
                                           name: body-col
                                         - type: template
                                           name: template-col
-                                          language: jsonnet
-                                          content: body.foo + "-" + body.bar
+                                          template:
+                                            language: jsonnet
+                                            content: body.foo + "-" + body.bar
             responses:
                 "200":
                     description: OK response.
@@ -1599,8 +1603,9 @@ components:
                               name: body-col
                             - type: template
                               name: template-col
-                              language: jsonnet
-                              content: body.foo + "-" + body.bar
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
             required:
                 - type
                 - name
@@ -1999,8 +2004,9 @@ components:
                               name: body-col
                             - type: template
                               name: template-col
-                              language: jsonnet
-                              content: body.foo + "-" + body.bar
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -2232,8 +2238,9 @@ components:
                                       name: body-col
                                     - type: template
                                       name: template-col
-                                      language: jsonnet
-                                      content: body.foo + "-" + body.bar
+                                      template:
+                                        language: jsonnet
+                                        content: body.foo + "-" + body.bar
                           version:
                             number: 3
                             hash: f43e93acd97eceb3
@@ -2294,8 +2301,9 @@ components:
                                   name: body-col
                                 - type: template
                                   name: template-col
-                                  language: jsonnet
-                                  content: body.foo + "-" + body.bar
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -2565,8 +2573,9 @@ components:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
                     minItems: 1
                     maxItems: 100
             description: Table mapping definition.
@@ -2585,8 +2594,9 @@ components:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
             required:
                 - columns
         TableSinkCreate:
@@ -2621,8 +2631,9 @@ components:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
             required:
                 - type
                 - tableId
@@ -2659,8 +2670,9 @@ components:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
         Task:
             type: object
             properties:
@@ -2930,8 +2942,9 @@ components:
                               name: body-col
                             - type: template
                               name: template-col
-                              language: jsonnet
-                              content: body.foo + "-" + body.bar
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
         UpdateSourceRequestBody:
             type: object
             properties:

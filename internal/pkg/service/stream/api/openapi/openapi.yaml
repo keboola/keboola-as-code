@@ -1359,8 +1359,9 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
             version:
                 number: 3
                 hash: f43e93acd97eceb3
@@ -1538,8 +1539,9 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
         required:
             - type
             - name
@@ -2005,8 +2007,9 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
             version:
                 number: 3
                 hash: f43e93acd97eceb3
@@ -2468,8 +2471,9 @@ definitions:
                                   name: body-col
                                 - type: template
                                   name: template-col
-                                  language: jsonnet
-                                  content: body.foo + "-" + body.bar
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -2530,8 +2534,9 @@ definitions:
                               name: body-col
                             - type: template
                               name: template-col
-                              language: jsonnet
-                              content: body.foo + "-" + body.bar
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3101,8 +3106,9 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
     StreamUpdateSinkResponseBody:
         title: StreamUpdateSinkResponseBody
         type: object
@@ -3720,8 +3726,9 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
                 minItems: 1
                 maxItems: 100
         description: Table mapping definition.
@@ -3740,8 +3747,9 @@ definitions:
                   name: body-col
                 - type: template
                   name: template-col
-                  language: jsonnet
-                  content: body.foo + "-" + body.bar
+                  template:
+                    language: jsonnet
+                    content: body.foo + "-" + body.bar
         required:
             - columns
     TableMappingResponseBody:
@@ -3766,8 +3774,9 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
                 minItems: 1
                 maxItems: 100
         description: Table mapping definition.
@@ -3786,8 +3795,9 @@ definitions:
                   name: body-col
                 - type: template
                   name: template-col
-                  language: jsonnet
-                  content: body.foo + "-" + body.bar
+                  template:
+                    language: jsonnet
+                    content: body.foo + "-" + body.bar
         required:
             - columns
     TableSinkCreateRequestBody:
@@ -3823,8 +3833,9 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
         required:
             - type
             - tableId
@@ -3862,8 +3873,9 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
         required:
             - type
             - tableId
@@ -3901,8 +3913,9 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
     TaskOutputsResponseBody:
         title: TaskOutputsResponseBody
         type: object

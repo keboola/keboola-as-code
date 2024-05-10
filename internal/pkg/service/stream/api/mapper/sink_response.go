@@ -94,8 +94,8 @@ func (m *Mapper) newTableMappingResponse(entity table.Mapping) (out api.TableMap
 
 		if v, ok := input.(column.Template); ok {
 			output.Template = &api.TableColumnTemplate{
-				Language: v.Language,
-				Content:  v.Content,
+				Language: v.Template.Language,
+				Content:  v.Template.Content,
 			}
 		}
 

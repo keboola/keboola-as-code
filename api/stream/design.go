@@ -1067,7 +1067,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},
 		column.Body{Name: "body-col"},
-		column.Template{Name: "template-col", Language: "jsonnet", Content: `body.foo + "-" + body.bar`},
+		column.Template{Name: "template-col", Template: column.TemplateConfig{Language: "jsonnet", Content: `body.foo + "-" + body.bar`}},
 	})
 })
 
@@ -1101,8 +1101,8 @@ var TableColumnTemplate = Type("TableColumnTemplate", func() {
 		Example("jsonnet")
 	})
 	Attribute("content", String, func() {
-		MinLength(cast.ToInt(fieldValidationRule(column.Template{}, "Content", "min")))
-		MaxLength(cast.ToInt(fieldValidationRule(column.Template{}, "Content", "max")))
+		MinLength(cast.ToInt(fieldValidationRule(column.TemplateConfig{}, "Content", "min")))
+		MaxLength(cast.ToInt(fieldValidationRule(column.TemplateConfig{}, "Content", "max")))
 		Example(`body.foo + "-" + body.bar`)
 	})
 	Required("language", "content")
