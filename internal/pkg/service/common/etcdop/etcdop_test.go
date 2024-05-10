@@ -44,7 +44,7 @@ func TestValidationError(t *testing.T) {
 	// Test GetAll
 	_, err = pfxFailingValidation.GetAll(client).Do(ctx).AllKVs()
 	assert.Error(t, err)
-	assert.Equal(t, `etcd iterator failed: cannot decode key "my-prefix/my-key", page=1, index=0: validation error`, err.Error())
+	assert.Equal(t, `etcd iterator failed: cannot decode the value of key "my-prefix/my-key", page=1, index=0: validation error`, err.Error())
 }
 
 func TestEncodeDecodeError(t *testing.T) {
@@ -86,5 +86,5 @@ func TestEncodeDecodeError(t *testing.T) {
 	// Test GetAll
 	_, err = pfxFailingEncode.GetAll(client).Do(ctx).AllKVs()
 	assert.Error(t, err)
-	assert.Equal(t, `etcd iterator failed: cannot decode key "my-prefix/my-key", page=1, index=0: decode error`, err.Error())
+	assert.Equal(t, `etcd iterator failed: cannot decode the value of key "my-prefix/my-key", page=1, index=0: decode error`, err.Error())
 }

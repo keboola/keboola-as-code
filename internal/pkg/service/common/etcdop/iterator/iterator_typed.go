@@ -196,7 +196,7 @@ Loop:
 		// Decode item
 		v.currentValue = &op.KeyValueT[T]{Kv: v.values[v.indexOnPage]}
 		if err := v.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
-			v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.indexOnPage, err)
+			v.err = errors.Errorf(`etcd iterator failed: cannot decode the value of key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.indexOnPage, err)
 			return false
 		}
 
