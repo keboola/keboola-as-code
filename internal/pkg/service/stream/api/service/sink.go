@@ -62,8 +62,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
-	// TODO: I'm surprised that I'm not passing ctx anywhere here. Am I doing it correctly?
-	d.StorageRepository().File().ListRecentIn(d.SinkKey()).ForEach(func(value model.File, header *iterator.Header) error {
+	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
 		filesMap[value.FileID] = &stream.SinkFile{
 			State:       value.State,
 			OpenedAt:    value.OpenedAt().String(),
@@ -73,12 +72,14 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	keys := maps.Keys(filesMap)
 	if len(keys) > 0 {
 		statisticsMap, err := d.StatisticsRepository().FilesStats(ctx, d.SinkKey(), keys[0], keys[len(keys) - 1]).Do(ctx).ResultOrErr()
 		if err != nil {
-			// TODO: Do I need to transform the error here somehow?
 			return nil, err
 		}
 
