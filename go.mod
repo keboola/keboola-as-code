@@ -80,6 +80,7 @@ require (
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.16.1
 	goa.design/plugins/v3 v3.16.1
+	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.63.2
 	gopkg.in/DataDog/dd-trace-go.v1 v1.63.1
@@ -266,7 +267,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.20.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	gocloud.dev v0.37.0 // indirect
-	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	google.golang.org/api v0.170.0 // indirect
