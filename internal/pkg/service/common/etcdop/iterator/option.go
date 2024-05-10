@@ -14,9 +14,11 @@ type config struct {
 	client etcd.KV
 	prefix string
 	// startOffset, relative to the prefix, the specified key is excluded
-	startOffset string
+	startOffset         string
+	startOffsetIncluded bool
 	// endOffset, relative to the prefix, the specified key is excluded
-	endOffset string
+	endOffset         string
+	endOffsetIncluded bool
 	// sort - etcd.SortAscend  etcd.Sort.Descend
 	sort etcd.SortOrder
 	// limit is maximum number of iterated records
@@ -96,30 +98,37 @@ func WithFromSameRev(v bool) Option {
 	}
 }
 
-// WithStartOffset defines start of the iteration.
+// WithStartOffset defines start of the iteration relative to the prefix.
 // An empty string (default) means that the start is the first key in the prefix.
 // Iterated are all keys from the range (prefix/startOffset, prefix/endOffset).
-// Boundary values, start and end offsets, are excluded.
-func WithStartOffset(v string) Option {
+// If the included == false, the iteration starts with the key, that is lexicographically after the specified value.
+func WithStartOffset(v string, included bool) Option {
 	return func(c *config) {
 		c.startOffset = v
+		c.startOffsetIncluded = included
 	}
 }
 
-// WithEndOffset defines end of the iteration.
+// WithEndOffset defines end of the iteration relative to the prefix.
 // An empty string (default) means that the end is the last key in the prefix.
 // Iterated are all keys from the range (prefix/startOffset, prefix/endOffset).
-// Boundary values, start and end offsets, are excluded.
-func WithEndOffset(v string) Option {
+// If the included == false, the iteration ends with the key, that is lexicographically before the specified value.
+func WithEndOffset(v string, included bool) Option {
 	return func(c *config) {
 		c.endOffset = v
+		c.endOffsetIncluded = included
 	}
 }
 
 func (c config) start() string {
 	if c.startOffset != "" {
-		// Iterate from the startOffset, the startOffset is excluded.
-		return etcd.GetPrefixRangeEnd(c.prefix + c.startOffset)
+		if c.startOffsetIncluded {
+			// Iterate from the startOffset, the startOffset is included.
+			return c.prefix + c.startOffset
+		} else {
+			// Iterate from the startOffset, the startOffset is excluded.
+			return etcd.GetPrefixRangeEnd(c.prefix + c.startOffset)
+		}
 	}
 	// Iterate from the first key in the prefix.
 	return c.prefix
@@ -127,8 +136,13 @@ func (c config) start() string {
 
 func (c config) end() string {
 	if c.endOffset != "" {
-		// Iterate to the endOffset, the endOffset is excluded.
-		return c.prefix + c.endOffset
+		if c.endOffsetIncluded {
+			// Iterate to the endOffset, the endOffset is included.
+			return etcd.GetPrefixRangeEnd(c.prefix + c.endOffset)
+		} else {
+			// Iterate to the endOffset, the endOffset is excluded.
+			return c.prefix + c.endOffset
+		}
 	}
 	// Iterate to the last key in the prefix.
 	return etcd.GetPrefixRangeEnd(c.prefix)
