@@ -280,10 +280,10 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, pageSize=1",
+			name:             "startOffset(excluded), pageSize=1",
 			kvCount:          5,
 			pageSize:         1,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002")},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false)},
 			expectedCountAll: 3,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -300,11 +300,11 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, pageSize=1, txn",
+			name:             "startOffset(excluded), pageSize=1, txn",
 			kvCount:          5,
 			pageSize:         1,
 			inTxn:            true,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002")},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false)},
 			expectedCountAll: 3,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -323,10 +323,10 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, endOffset, pageSize=1",
+			name:             "startOffset(excluded), endOffset, pageSize=1",
 			kvCount:          5,
 			pageSize:         1,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithEndOffset("foo005")},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false), iterator.WithEndOffset("foo005", false)},
 			expectedCountAll: 2,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -340,10 +340,10 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, pageSize=2",
+			name:             "startOffset(excluded), pageSize=2",
 			kvCount:          5,
 			pageSize:         2,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002")},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false)},
 			expectedCountAll: 3,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -358,10 +358,10 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "endOffset, sort=SortDescend, pageSize=1",
+			name:             "endOffset(excluded), sort=SortDescend, pageSize=1",
 			kvCount:          5,
 			pageSize:         1,
-			options:          []iterator.Option{iterator.WithEndOffset("foo004"), iterator.WithSort(etcd.SortDescend)},
+			options:          []iterator.Option{iterator.WithEndOffset("foo004", false), iterator.WithSort(etcd.SortDescend)},
 			expectedCountAll: 3,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -378,10 +378,10 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, endOffset, sort=SortDescend, pageSize=1",
+			name:             "startOffset(excluded), endOffset, sort=SortDescend, pageSize=1",
 			kvCount:          5,
 			pageSize:         1,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithEndOffset("foo005"), iterator.WithSort(etcd.SortDescend)},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false), iterator.WithEndOffset("foo005", false), iterator.WithSort(etcd.SortDescend)},
 			expectedCountAll: 2,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo004", value: obj{"bar004"}},
@@ -395,10 +395,10 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, sort=SortDescend, pageSize=2",
+			name:             "startOffset(excluded), sort=SortDescend, pageSize=2",
 			kvCount:          5,
 			pageSize:         2,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithSort(etcd.SortDescend)},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false), iterator.WithSort(etcd.SortDescend)},
 			expectedCountAll: 3,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo005", value: obj{"bar005"}},
@@ -413,11 +413,11 @@ func TestIteratorT(t *testing.T) {
 `,
 		},
 		{
-			name:             "startOffset, sort=SortDescend, pageSize=2, txn",
+			name:             "startOffset(excluded), sort=SortDescend, pageSize=2, txn",
 			kvCount:          5,
 			pageSize:         2,
 			inTxn:            true,
-			options:          []iterator.Option{iterator.WithStartOffset("foo002"), iterator.WithSort(etcd.SortDescend)},
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", false), iterator.WithSort(etcd.SortDescend)},
 			expectedCountAll: 3,
 			expectedResults: []resultT{
 				{key: "some/prefix/foo005", value: obj{"bar005"}},
