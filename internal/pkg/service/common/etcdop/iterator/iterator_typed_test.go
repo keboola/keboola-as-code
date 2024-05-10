@@ -433,6 +433,46 @@ func TestIteratorT(t *testing.T) {
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
 `,
 		},
+		{
+			name:             "startOffset(included), endOffset(included), sort=SortAscend, pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", true), iterator.WithEndOffset("foo004", true), iterator.WithSort(etcd.SortAscend)},
+			expectedCountAll: 3,
+			expectedResults: []resultT{
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo002", "some/prefix/foo005")
+✔️  GET ["some/prefix/foo002", "some/prefix/foo005") | rev: %d | count: 3 | loaded: 1
+➡️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d
+✔️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d
+✔️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d | count: 1
+`,
+		},
+		{
+			name:             "startOffset(included), endOffset(included), sort=SortDescend, pageSize=1",
+			kvCount:          5,
+			pageSize:         1,
+			options:          []iterator.Option{iterator.WithStartOffset("foo002", true), iterator.WithEndOffset("foo004", true), iterator.WithSort(etcd.SortDescend)},
+			expectedCountAll: 3,
+			expectedResults: []resultT{
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+			},
+			expectedLogs: `
+➡️  GET ["some/prefix/foo002", "some/prefix/foo005")
+✔️  GET ["some/prefix/foo002", "some/prefix/foo005") | rev: %d | count: 3 | loaded: 1
+➡️  GET ["some/prefix/foo002", "some/prefix/foo004") | rev: %d
+✔️  GET ["some/prefix/foo002", "some/prefix/foo004") | rev: %d | count: 2 | loaded: 1
+➡️  GET ["some/prefix/foo002", "some/prefix/foo003") | rev: %d
+✔️  GET ["some/prefix/foo002", "some/prefix/foo003") | rev: %d | count: 1
+`,
+		},
 	}
 
 	for _, tc := range cases {
