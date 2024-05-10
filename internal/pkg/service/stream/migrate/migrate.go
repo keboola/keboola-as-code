@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/migrate/source"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/migrate/core"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -36,12 +36,13 @@ func run() error {
 
 	flags := NewFlags()
 	if flags.host == "" && flags.storageAPIToken == "" {
-		return errors.New("host/storageAPIToken are required")
+		logger.Error(ctx, "host/storage-api-token token is required")
+		return errors.New("host/storage-api-token is required")
 	}
 
 	logger.Info(ctx, "Starting migration...")
 	// fetch receivers and exports from old API
-	bufferReceivers, err := source.FetchBufferReceivers(ctx, flags.host, flags.storageAPIToken)
+	bufferReceivers, err := core.FetchBufferReceivers(ctx, flags.host, flags.storageAPIToken)
 	if err != nil {
 		logger.Error(ctx, err.Error())
 		return err
@@ -51,9 +52,20 @@ func run() error {
 		err = receiver.CreateSource(ctx, flags.storageAPIToken, flags.host)
 		if err != nil {
 			logger.Error(ctx, err.Error())
+		} else {
+			logger.Infof(ctx, `Source "%s" with id "%s" was created`, receiver.Name, receiver.ID)
 		}
 
+		for _, export := range receiver.Exports {
+			if err = export.CreateSink(ctx, flags.storageAPIToken, flags.host); err != nil {
+				logger.Error(ctx, err.Error())
+			} else {
+				logger.Infof(ctx, `Sink "%s" with id "%s" was created`, export.Name, export.ID)
+			}
+		}
 	}
+
 	logger.Info(ctx, "Migration done")
+
 	return nil
 }
