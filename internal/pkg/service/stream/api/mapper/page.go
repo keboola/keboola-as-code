@@ -52,9 +52,9 @@ func loadPage[E, R any](
 	// Set offset
 	switch sort {
 	case etcd.SortAscend:
-		opts = append(opts, iterator.WithStartOffset(sinceID))
+		opts = append(opts, iterator.WithStartOffset(sinceID, false))
 	case etcd.SortDescend:
-		opts = append(opts, iterator.WithEndOffset(sinceID))
+		opts = append(opts, iterator.WithEndOffset(sinceID, false))
 	default:
 		panic(errors.Errorf(`unexpected etcd sort "%v"`, sort))
 	}
