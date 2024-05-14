@@ -9,8 +9,10 @@ import (
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -99,6 +101,39 @@ func (m *Mapper) NewSourceResponse(entity definition.Source) *api.Source {
 	}
 
 	return out
+}
+
+func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definition.Sink, receiveCtx *receivectx.Context) (*api.TestResult, error) {
+	result := &api.TestResult{
+		ProjectID: sourceKey.ProjectID,
+		BranchID:  sourceKey.BranchID,
+		SourceID:  sourceKey.SourceID,
+	}
+
+	renderer := column.NewRenderer()
+
+	for _, sink := range sinks {
+		row := &api.TestResultRow{}
+		for _, c := range sink.Table.Mapping.Columns {
+			csvValue, err := renderer.CSVValue(c, receiveCtx)
+			if err != nil {
+				return nil, err
+			}
+
+			row.Columns = append(row.Columns, &api.TestResultColumn{
+				Name:  c.ColumnName(),
+				Value: csvValue,
+			})
+		}
+
+		result.Tables = append(result.Tables, &api.TestResultTable{
+			SinkID:  sink.SinkID,
+			TableID: api.TableID(sink.Table.Keboola.TableID.String()),
+			Rows:    []*api.TestResultRow{row},
+		})
+	}
+
+	return result, nil
 }
 
 func (m *Mapper) NewSourcesResponse(
