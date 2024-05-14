@@ -1,5 +1,15 @@
 name: 'Load Go tools cache'
 description: 'Load Go tools cache'
+inputs:
+  aws-s3-bucket:
+    description: Bucket to save cache
+    required: true
+  aws-access-key-id:
+    description: Access key to AWS
+    required: true
+  aws-secret-access-key:
+    description: Secret access key to AWS
+    required: true
 runs:
   using: "composite"
   steps:
@@ -9,17 +19,14 @@ runs:
       run: echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
 
     - name: Load Go tools cache
-      id: go-tools-cache
-      uses: actions/cache@v4
+      uses: ./.github/actions/go-cache
       with:
-        path: |
-          ~/go/pkg
-          ~\go\pkg
-          ~/go/bin
-          ~\go\bin
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-tools-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-tools-
+        key: tools
+        with-variant-keys: false
+        aws-s3-bucket: ${{ inputs.aws-s3-bucket }}
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        windows_go_cache_folder: ${{ github.workspace }}
 
     - name: Install Go modules
       shell: bash
