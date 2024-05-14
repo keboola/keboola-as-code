@@ -54,9 +54,17 @@ jobs:
         uses: ./.github/actions/go-cache
         with:
           key: e2e-cli
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          windows_go_cache_folder: D:/tmp/go-build
 
       - name: Load Go tools cache
         uses: ./.github/actions/go-tools-cache
+        with:
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Run tests
         run: make tests-cli
@@ -66,3 +74,20 @@ jobs:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS: ${{ env.TEST_KBC_PROJECTS }}
+
+      - name: Push Go tools cache
+        uses: ./.github/actions/go-cache-push-s3
+        with:
+          key: tools
+          paths: |
+            /home/runner/go/bin
+            /home/runner/go/pkg
+            /Users/runner/go/bin
+            /Users/runner/go/pkg
+            C:/Users/runneradmin/go/bin
+            C:/Users/runneradmin/go/pkg
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          override: false
+

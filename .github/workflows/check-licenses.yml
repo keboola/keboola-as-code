@@ -22,6 +22,10 @@ jobs:
 
       - name: Load Go tools cache
         uses: ./.github/actions/go-tools-cache
+        with:
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       #####################
       ### License Types ###
@@ -60,3 +64,21 @@ jobs:
           name: go-licenses
           path: /tmp/go-licenses/go-licenses.csv
           if-no-files-found: error
+
+      - name: Push Go tools cache
+        uses: ./.github/actions/go-cache-push-s3
+        with:
+          key: tools
+          paths: |
+            /home/runner/go/bin
+            /home/runner/go/pkg
+            /Users/runner/go/bin
+            /Users/runner/go/pkg
+            C:/Users/runneradmin/go/bin
+            C:/Users/runneradmin/go/pkg
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          override: false
+
+

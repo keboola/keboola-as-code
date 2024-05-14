@@ -46,10 +46,21 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: false
 
+      - name: Change GOCACHE env on Windows to store cache on faster drive
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p D:/tmp/go-build
+          go env -w GOCACHE=D:/tmp/go-build
+
       - name: Load Go build cache
         uses: ./.github/actions/go-cache
         with:
           key: unit
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          windows_go_cache_folder: D:/tmp/go-build
 
       - name: Change modtime of files to 1 unix timestamp
         shell: bash
@@ -58,6 +69,10 @@ jobs:
 
       - name: Load Go tools cache
         uses: ./.github/actions/go-tools-cache
+        with:
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Start etcd database (only on linux)
         if: matrix.name == 'linux'
@@ -78,4 +93,32 @@ jobs:
           UNIT_ETCD_USERNAME: root
           UNIT_ETCD_PASSWORD: toor
           UNIT_ETCD_NAMESPACE: buffer
+
+      - name: Push Go build cache
+        uses: ./.github/actions/go-cache-push-s3
+        with:
+          key: unit
+          paths: |
+            /home/runner/.cache/go-build
+            /Users/runner/Library/Caches/go-build
+            D:/tmp/go-build
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Push Go tools cache
+        uses: ./.github/actions/go-cache-push-s3
+        with:
+          key: tools
+          paths: |
+            /home/runner/go/bin
+            /home/runner/go/pkg
+            /Users/runner/go/bin
+            /Users/runner/go/pkg
+            C:/Users/runneradmin/go/bin
+            C:/Users/runneradmin/go/pkg
+          aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          override: false
 
