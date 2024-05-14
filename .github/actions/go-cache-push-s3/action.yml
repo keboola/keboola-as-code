@@ -1,0 +1,93 @@
+name: 'Save Go essentials into S3'
+description: 'Push the Go essentials into S3'
+inputs:
+  key:
+    description: Cache key
+    required: true
+  paths:
+    description: Where files/folders is located
+    required: true
+  aws-s3-bucket:
+    description: Bucket to save cache
+    required: true
+  aws-access-key-id:
+    description: Access key to AWS
+    required: true
+  aws-secret-access-key:
+    description: Secret access key to AWS
+    required: true
+  override:
+    description: Always override the cache
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+    - name: Do not push cache when exists
+      shell: bash
+      run: |
+        if '${{ inputs.override }}' == 'true'; then
+          echo "SKIP=false" >>  $GITHUB_ENV
+          exit 0
+        fi
+
+        key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}') || true
+        echo "SKIP=false" >> $GITHUB_ENV
+
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+        AWS_DEFAULT_REGION: 'us-east-1'
+
+    - name: Convert multiline string to singleline
+      shell: python
+      if: ${{ env.SKIP }} == false
+      run: |
+        import os
+        paths="""${{ inputs.paths }}"""
+        splited=paths.splitlines()
+        paths=[]
+        for p in splited:
+          if os.path.exists(p):
+            paths.append(p)
+
+        env_file = os.getenv('GITHUB_ENV')
+        with open(env_file, "w") as myfile:
+            myfile.write("SED_PATHS="+" ".join(paths))
+
+    - name: Compress Go build into archive Linux
+      shell: bash
+      if: runner.os == 'Linux'
+      run: |
+        if '${{ env.SKIP }}' == 'true'; then
+          exit 0
+        fi
+        /usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P ${{ env.SED_PATHS }} --use-compress-program zstdmt
+
+    - name: Compress Go build into archive macOS
+      shell: bash
+      if: runner.os == 'macOS'
+      run: |
+        if '${{ env.SKIP }}' == 'true'; then
+          exit 0
+        fi
+        /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P ${{ env.SED_PATHS }} --delay-directory-restore --use-compress-program zstdmt
+
+    - name: Compress Go build into archive Windows
+      shell: bash
+      if: runner.os == 'Windows'
+      run: |
+        if '${{ env.SKIP }}' == 'true'; then
+          exit 0
+        fi
+        C:\\Program\ Files\\Git\\usr\\bin\\tar.exe --posix -cf cache.tzst --exclude cache.tzst -P ${{ env.SED_PATHS }} --force-local --use-compress-program "zstd -T0"
+
+    - name: Push Go build cache to s3
+      shell: bash
+      if: ${{ env.SKIP }} == false
+      run: |
+        aws s3 cp --region us-east-1 cache.tzst s3://${{ inputs.aws-s3-bucket}}/${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
+
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
