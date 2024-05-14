@@ -48,6 +48,7 @@ func TestAppProxyHandler(t *testing.T) {
 		{
 			ID:             "123",
 			Name:           "public",
+			AppSlug:        pointer("PUBLIC"),
 			ProjectID:      "456",
 			UpstreamAppURL: appURL.String(),
 			AuthRules: []api.Rule{

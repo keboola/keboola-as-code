@@ -2105,6 +2105,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "12345",
 			ProjectID:      "123",
 			Name:           "LOWERCASE",
+			AppSlug:        pointer("LOWERCASE"),
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
@@ -2118,6 +2119,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "123",
 			ProjectID:      "123",
 			Name:           "PUBLIC",
+			AppSlug:        pointer("public"),
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
