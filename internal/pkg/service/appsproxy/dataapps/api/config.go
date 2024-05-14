@@ -58,9 +58,9 @@ func (c AppConfig) IdAndName() string {
 
 func (c AppConfig) Domain() string {
 	if c.Name == "" {
-		return c.ID.String()
+		return strings.ToLower(c.ID.String())
 	}
-	return c.Name + "-" + c.ID.String()
+	return strings.ToLower(c.Name + "-" + c.ID.String())
 }
 
 // CookieDomain without port for cookies.
