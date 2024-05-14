@@ -144,6 +144,11 @@ func (s *service) RefreshSourceTokens(context.Context, dependencies.SourceReques
 }
 
 func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.TestSourcePayload, req io.ReadCloser) (res *api.TestResult, err error) {
+	_, err = s.repo.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
 	sinks, err := s.repo.Sink().List(d.SourceKey()).Do(ctx).All()
 	if err != nil {
 		return nil, err
