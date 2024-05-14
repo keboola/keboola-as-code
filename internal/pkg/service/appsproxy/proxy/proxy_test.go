@@ -237,6 +237,20 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps:       map[string]int{},
 		},
 		{
+			name: "redirect-to-host-lowercase",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://foo-12345.hub.keboola.local/some/data/app/url?foo=bar", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusPermanentRedirect, response.StatusCode)
+				location := response.Header.Get("Location")
+				assert.Equal(t, "https://lowercase-12345.hub.keboola.local/some/data/app/url?foo=bar", location)
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "public-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				appServer.Close()
@@ -2088,9 +2102,22 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			UpstreamAppURL: upstream.String(),
 		},
 		{
+			ID:             "12345",
+			ProjectID:      "123",
+			Name:           "LOWERCASE",
+			UpstreamAppURL: upstream.String(),
+			AuthRules: []api.Rule{
+				{
+					Type:         api.RulePathPrefix,
+					Value:        "/",
+					AuthRequired: pointer(false),
+				},
+			},
+		},
+		{
 			ID:             "123",
 			ProjectID:      "123",
-			Name:           "public",
+			Name:           "PUBLIC",
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
