@@ -4,6 +4,22 @@ inputs:
   key:
     description: Cache key
     required: true
+  aws-s3-bucket:
+    description: Bucket to save cache
+    required: true
+  aws-access-key-id:
+    description: Access key to AWS
+    required: true
+  aws-secret-access-key:
+    description: Secret access key to AWS
+    required: true
+  windows_go_cache_folder:
+    description: Where windows build cache is located
+    required: true
+  with-variant-keys:
+    description: Check more generic cache keys
+    required: false
+    default: "true"
 runs:
   using: "composite"
   steps:
@@ -12,15 +28,58 @@ runs:
       shell: bash
       run: echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
 
-    - name: Load Go cache
-      id: load-go-cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/Library/Caches/go-build
-          ~\AppData\Local\go-build
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-
+    - name: Load Go build cache from S3 Linux/MacOS
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }}| tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-' | head -n 1) || true
+        if [ -z "$key" ]; then
+          echo "No cache found"
+          exit 0
+        fi
+        key=$(aws s3 cp s3://${{ inputs.aws-s3-bucket }}/${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }} ${{ runner.temp }}/cache.tzst 2>&1) || true
+        miss=$(echo $key | grep "404" 2>&1) || true
+        echo $miss
+        if [[ -n $miss ]] && [[ '${{ inputs.with-variant-keys }}' == 'true' ]]; then
+          key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-' | head -n 1) || true
+          if [ -z "$key" ]; then
+            key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-' | head -n 1)
+          fi
+
+          aws s3 cp s3://${{ inputs.aws-s3-bucket }}/$key ${{ runner.temp }}/cache.tzst
+        fi
+        /usr/bin/tar -xf ${{ runner.temp }}/cache.tzst -P -C ${{ github.workspace }} --use-compress-program unzstd || true
+
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+        AWS_DEFAULT_REGION: 'us-east-1'
+
+
+    - name: Load Go build cache from S3 Windows
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-' | head -n 1) || true
+        if [ -z "$key" ]; then
+          echo "No cache found"
+          exit 0
+        fi
+        key=$(aws s3 cp s3://${{ inputs.aws-s3-bucket }}/${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }} D:/a/temp/cache.tzst 2>&1) || true
+        miss=$(echo $key | grep "404" 2>&1) || true
+        echo $miss
+        if [[ -z $miss ]] && [[ '${{ inputs.with-variant-keys }}' == 'true' ]]; then
+          key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-' | head -n 1) || true
+          if [ -z "$key" ]; then
+            key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-' | head -n 1)
+          fi
+
+          aws s3 cp s3://${{ inputs.aws-s3-bucket }}/$key D:/a/temp/cache.tzst
+        fi
+        C:\\Program\ Files\\Git\\usr\\bin\\tar.exe -xf D:/a/temp/cache.tzst -P -C D:/a/keboola-as-code/keboola-as-code --force-local --use-compress-program "zstd -d" || true
+
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+        AWS_DEFAULT_REGION: 'us-east-1'
+
