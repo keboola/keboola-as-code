@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"io"
 	"time"
 
@@ -142,6 +144,47 @@ func (s *service) RefreshSourceTokens(context.Context, dependencies.SourceReques
 	return nil, errors.NewNotImplementedError()
 }
 
-func (s *service) TestSource(context.Context, dependencies.SourceRequestScope, *api.TestSourcePayload, io.ReadCloser) (res *api.TestResult, err error) {
-	return nil, errors.NewNotImplementedError()
+func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.TestSourcePayload, req io.ReadCloser) (res *api.TestResult, err error) {
+	result := &api.TestResult{
+		ProjectID: d.SourceKey().ProjectID,
+		BranchID:  d.SourceKey().BranchID,
+		SourceID:  d.SourceKey().SourceID,
+	}
+
+	renderer := column.NewRenderer()
+
+	body, err := io.ReadAll(req)
+	if err != nil {
+		return nil, err
+	}
+
+	receiveCtx := receivectx.New(ctx, d.Clock().Now(), d.RequestClientIP(), d.RequestHeader(), string(body))
+
+	err = s.repo.Sink().List(d.SourceKey()).Do(ctx).ForEachValue(func(value definition.Sink, header *iterator.Header) error {
+		row := &api.TestResultRow{}
+		for _, c := range value.Table.Mapping.Columns {
+			csvValue, err := renderer.CSVValue(c, receiveCtx)
+			if err != nil {
+				return err
+			}
+
+			row.Columns = append(row.Columns, &api.TestResultColumn{
+				Name:  c.ColumnName(),
+				Value: csvValue,
+			})
+		}
+
+		result.Tables = append(result.Tables, &api.TestResultTable{
+			SinkID:  value.SinkID,
+			TableID: api.TableID(value.Table.Keboola.TableID.String()),
+			Rows:    []*api.TestResultRow{row},
+		})
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
