@@ -219,14 +219,7 @@ func (v *TxnOp[R]) Op(ctx context.Context) (LowLevelOp, error) {
 }
 
 func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
-	out := &lowLevelTxn[R]{
-		result:    v.result,
-		client:    v.client,
-		opCounter: make(map[txnPartType]int),
-		thenOps:   make([]etcd.Op, 0),
-		elseOps:   make([]etcd.Op, 0),
-	}
-
+	out := &lowLevelTxn[R]{result: v.result, client: v.client, opCounter: make(map[txnPartType]int)}
 	errs := errors.NewMultiError()
 
 	// Copy init errors
@@ -331,7 +324,7 @@ func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart[R]) error {
 		// The ELSE branch will be applied only if the conditions of the sub-transaction are not met
 		elsePos := -1
 		if len(elseOps) > 0 || len(ifs) > 0 {
-			elsePos = v.addElse(etcd.OpTxn(ifs, []etcd.Op{}, elseOps), nil)
+			elsePos = v.addElse(etcd.OpTxn(ifs, nil, elseOps), nil)
 		}
 
 		// There may be a situation where neither THEN nor ELSE branch is executed:
