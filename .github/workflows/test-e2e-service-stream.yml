@@ -2,12 +2,15 @@ name: "E2E: Buffer"
 
 on:
   workflow_call:
-
+    inputs:
+      test-coverage:
+        type: boolean
+        default: false
+        required: false
 env:
   GO_VERSION: 1.22.2
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
-  TEST_COVERAGE: false
 
 jobs:
   test:
@@ -62,6 +65,7 @@ jobs:
           STREAM_ETCD_USERNAME: root
           STREAM_ETCD_PASSWORD: toor
           STREAM_ETCD_NAMESPACE: stream-api
+          TEST_COVERAGE: ${{ inputs.test-coverage }}
 
       - name: Validate OpenAPI3 definition
         uses: char0n/swagger-editor-validate@b642f037ac53c392f9c8d781c369ce129684e93e

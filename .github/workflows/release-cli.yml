@@ -28,6 +28,7 @@ env:
   APPLE_BUNDLE_ID: "com.keboola.kbc"
   APPLE_TEAM_ID: "46P6KJ65M2"
   APPLE_TEAM_NAME: "Keboola Industries SE"
+  TEST_COVERAGE: true
 
 jobs:
   version:
@@ -56,6 +57,8 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
+    with:
+      test-coverage: ${{ env.TEST_COVERAGE }}
 
   test-e2e-cli:
     name: "E2E: CLI"
@@ -65,6 +68,7 @@ jobs:
     uses: ./.github/workflows/test-e2e-cli.yml
     with:
       version: ${{ needs.version.outputs.VERSION }}
+      test-coverage: ${{ env.TEST_COVERAGE }}
 
   provisioning-cli-s3:
     name: "Provisioning: CLI S3"

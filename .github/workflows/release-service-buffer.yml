@@ -33,6 +33,7 @@ env:
   WORKER_GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/buffer-worker"
   WORKER_ACR_REPOSITORY: "buffer-worker"
   WORKER_ACR_USERNAME: "buffer-worker-push"
+  TEST_COVERAGE: true
 
 jobs:
   test-lint:
@@ -43,10 +44,14 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
+    with:
+      test-coverage: ${{ env.TEST_COVERAGE }}
   test-e2e-service-buffer:
     name: "E2E: Buffer"
     secrets: inherit
     uses: ./.github/workflows/test-e2e-service-buffer.yml
+    with:
+      test-coverage: ${{ env.TEST_COVERAGE }}
   test-k8s-service-buffer:
     name: "K8S: Buffer"
     secrets: inherit

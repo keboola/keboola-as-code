@@ -23,6 +23,7 @@ env:
   ACR_REPOSITORY: "templates-api"
   ACR_REGISTRY: "keboola.azurecr.io"
   ACR_USERNAME: "templates-api-push"
+  TEST_COVERAGE: true
 
 jobs:
   test-lint:
@@ -33,10 +34,14 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
+    with:
+      test-coverage: ${{ env.TEST_COVERAGE }}
   test-e2e-service-templates:
     name: "E2E: Templates"
     secrets: inherit
     uses: ./.github/workflows/test-e2e-service-templates.yml
+    with:
+      test-coverage: ${{ env.TEST_COVERAGE }}
   test-k8s-service-templates:
     name: "K8S: Templates"
     secrets: inherit

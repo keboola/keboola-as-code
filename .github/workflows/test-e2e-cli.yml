@@ -6,12 +6,15 @@ on:
       version:
         type: string
         required: false
+      test-coverage:
+        type: boolean
+        default: false
+        required: false
 
 env:
   GO_VERSION: 1.22.2
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
-  TEST_COVERAGE: false
 
 jobs:
   test:
@@ -66,3 +69,4 @@ jobs:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS: ${{ env.TEST_KBC_PROJECTS }}
+          TEST_COVERAGE: ${{ inputs.test-coverage }}

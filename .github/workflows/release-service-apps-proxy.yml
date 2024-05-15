@@ -23,6 +23,7 @@ env:
   ACR_REPOSITORY: "apps-proxy"
   ACR_REGISTRY: "keboola.azurecr.io"
   ACR_USERNAME: "apps-proxy-push"
+  TEST_COVERAGE: true
 
 jobs:
   test-lint:
@@ -33,6 +34,8 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
+    with:
+      test-coverage: ${{ env.TEST_COVERAGE }}
   test-k8s-service-apps-proxy:
     name: "K8S: Apps Proxy"
     secrets: inherit
