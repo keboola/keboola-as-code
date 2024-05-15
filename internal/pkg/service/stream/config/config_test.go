@@ -13,13 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -211,7 +211,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 					Local: &local.ConfigPatch{
 						Volume: &volume.ConfigPatch{
 							Allocation: &diskalloc.ConfigPatch{
-								Static: test.Ptr(456 * datasize.MB),
+								Static: ptr.Ptr(456 * datasize.MB),
 							},
 						},
 					},
@@ -505,7 +505,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 				Local: &local.ConfigPatch{
 					Volume: &volume.ConfigPatch{
 						Allocation: &diskalloc.ConfigPatch{
-							Static: test.Ptr(456 * datasize.MB),
+							Static: ptr.Ptr(456 * datasize.MB),
 						},
 					},
 				},

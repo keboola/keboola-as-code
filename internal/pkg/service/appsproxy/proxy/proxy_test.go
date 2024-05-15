@@ -40,6 +40,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -304,7 +305,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: pointer(true),
+					EmailVerified: ptr.Ptr(true),
 					Groups:        []string{"admin"},
 				})
 
@@ -552,7 +553,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: pointer(false),
+					EmailVerified: ptr.Ptr(false),
 					Groups:        []string{"admin"},
 				})
 
@@ -887,7 +888,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: pointer(false),
+					EmailVerified: ptr.Ptr(false),
 					Groups:        []string{"admin"},
 				})
 
@@ -1109,7 +1110,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: pointer(true),
+					EmailVerified: ptr.Ptr(true),
 					Groups:        []string{"admin"},
 				})
 
@@ -1592,7 +1593,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 						m[0].QueueUser(&mockoidc.MockUser{
 							Email:         "admin@keboola.com",
-							EmailVerified: pointer(true),
+							EmailVerified: ptr.Ptr(true),
 							Groups:        []string{"admin"},
 						})
 
@@ -2125,7 +2126,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: pointer(false),
+					AuthRequired: ptr.Ptr(false),
 				},
 			},
 		},
@@ -2149,7 +2150,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: pointer(true),
+					AuthRequired: ptr.Ptr(true),
 					Auth:         []provider.ID{"test"},
 				},
 			},
@@ -2168,7 +2169,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: pointer([]string{}),
+					AllowedRoles: ptr.Ptr([]string{}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -2200,7 +2201,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: pointer(false),
+					AuthRequired: ptr.Ptr(false),
 					Auth:         []provider.ID{"test"},
 				},
 			},
@@ -2219,7 +2220,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: pointer([]string{"admin"}),
+					AllowedRoles: ptr.Ptr([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -2245,7 +2246,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: pointer([]string{"manager"}),
+					AllowedRoles: ptr.Ptr([]string{"manager"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 				provider.OIDC{
@@ -2257,7 +2258,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					AllowedRoles: pointer([]string{"admin"}),
+					AllowedRoles: ptr.Ptr([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 				provider.OIDC{
@@ -2291,7 +2292,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     "",
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: pointer([]string{"admin"}),
+					AllowedRoles: ptr.Ptr([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -2317,7 +2318,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: pointer([]string{"admin"}),
+					AllowedRoles: ptr.Ptr([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 				provider.OIDC{
@@ -2329,7 +2330,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					AllowedRoles: pointer([]string{"admin"}),
+					AllowedRoles: ptr.Ptr([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 			},
@@ -2347,7 +2348,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/public",
-					AuthRequired: pointer(false),
+					AuthRequired: ptr.Ptr(false),
 				},
 			},
 		},
@@ -2413,10 +2414,6 @@ func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
 		Transport:     transport,
 		Jar:           jar,
 	}
-}
-
-func pointer[T any](d T) *T {
-	return &d
 }
 
 func extractMetaRefreshTag(t *testing.T, body []byte) string {

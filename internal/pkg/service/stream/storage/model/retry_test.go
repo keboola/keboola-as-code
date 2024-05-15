@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
@@ -27,9 +28,9 @@ func TestRetryable_Validation(t *testing.T) {
 			Value: Retryable{
 				RetryAttempt:  0,
 				RetryReason:   "foo",
-				FirstFailedAt: ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
-				LastFailedAt:  ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
-				RetryAfter:    ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+				FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+				LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+				RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
 			},
 		},
 		{
@@ -48,9 +49,9 @@ func TestRetryable_Validation(t *testing.T) {
 			Value: Retryable{
 				RetryAttempt:  1,
 				RetryReason:   "foo",
-				FirstFailedAt: ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
-				LastFailedAt:  ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
-				RetryAfter:    ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+				FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+				LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+				RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
 			},
 		},
 		{
@@ -59,9 +60,9 @@ func TestRetryable_Validation(t *testing.T) {
 			Value: Retryable{
 				RetryAttempt:  1,
 				RetryReason:   "foo",
-				FirstFailedAt: ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
-				LastFailedAt:  ptr(utctime.MustParse("2000-01-01T16:00:00.000Z")),
-				RetryAfter:    ptr(utctime.MustParse("2000-01-01T18:00:00.000Z")),
+				FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+				LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T16:00:00.000Z")),
+				RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T18:00:00.000Z")),
 			},
 		},
 		{
@@ -70,9 +71,9 @@ func TestRetryable_Validation(t *testing.T) {
 			Value: Retryable{
 				RetryAttempt:  1,
 				RetryReason:   "foo",
-				FirstFailedAt: ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
-				LastFailedAt:  ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
-				RetryAfter:    ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+				FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+				LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+				RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
 			},
 		},
 		{
@@ -81,9 +82,9 @@ func TestRetryable_Validation(t *testing.T) {
 			Value: Retryable{
 				RetryAttempt:  1,
 				RetryReason:   "foo",
-				FirstFailedAt: ptr(utctime.MustParse("2000-01-01T10:00:00.000Z")),
-				LastFailedAt:  ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
-				RetryAfter:    ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+				FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T10:00:00.000Z")),
+				LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+				RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
 			},
 		},
 	}
@@ -105,9 +106,9 @@ func TestRetryable_IncrementRetry(t *testing.T) {
 	assert.Equal(t, Retryable{
 		RetryAttempt:  1,
 		RetryReason:   "some reason",
-		FirstFailedAt: ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
-		LastFailedAt:  ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
-		RetryAfter:    ptr(utctime.MustParse("2000-01-01T00:02:00.000Z")), // +2 min
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T00:02:00.000Z")), // +2 min
 	}, v)
 
 	// 2
@@ -115,9 +116,9 @@ func TestRetryable_IncrementRetry(t *testing.T) {
 	assert.Equal(t, Retryable{
 		RetryAttempt:  2,
 		RetryReason:   "some reason",
-		FirstFailedAt: ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
-		LastFailedAt:  ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
-		RetryAfter:    ptr(utctime.MustParse("2000-01-01T01:08:00.000Z")), // +8 min
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T01:08:00.000Z")), // +8 min
 	}, v)
 
 	// 3
@@ -125,9 +126,9 @@ func TestRetryable_IncrementRetry(t *testing.T) {
 	assert.Equal(t, Retryable{
 		RetryAttempt:  3,
 		RetryReason:   "some reason",
-		FirstFailedAt: ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
-		LastFailedAt:  ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
-		RetryAfter:    ptr(utctime.MustParse("2000-01-01T02:32:00.000Z")), // +32 min
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T02:32:00.000Z")), // +32 min
 	}, v)
 }
 
@@ -137,9 +138,9 @@ func TestRetryable_ResetRetry(t *testing.T) {
 	v := Retryable{
 		RetryAttempt:  1,
 		RetryReason:   "foo",
-		FirstFailedAt: ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
-		LastFailedAt:  ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
-		RetryAfter:    ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T15:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T17:00:00.000Z")),
 	}
 
 	v.ResetRetry()

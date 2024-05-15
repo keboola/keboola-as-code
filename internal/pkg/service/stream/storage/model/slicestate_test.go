@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 )
@@ -35,7 +36,7 @@ func TestSlice_StateTransition(t *testing.T) {
 	assert.Equal(t, Slice{
 		SliceKey:  sliceKey,
 		State:     SliceClosing,
-		ClosingAt: ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
+		ClosingAt: ptr.Ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
 	}, slice)
 
 	// SliceUploading
@@ -45,8 +46,8 @@ func TestSlice_StateTransition(t *testing.T) {
 	assert.Equal(t, Slice{
 		SliceKey:    sliceKey,
 		State:       SliceUploading,
-		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
-		UploadingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
+		ClosingAt:   ptr.Ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
+		UploadingAt: ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
 	}, slice)
 
 	// SliceUploaded
@@ -56,9 +57,9 @@ func TestSlice_StateTransition(t *testing.T) {
 	assert.Equal(t, Slice{
 		SliceKey:    sliceKey,
 		State:       SliceUploaded,
-		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
-		UploadingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
-		UploadedAt:  ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
+		ClosingAt:   ptr.Ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
+		UploadingAt: ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
+		UploadedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
 	}, slice)
 
 	// SliceImported
@@ -68,10 +69,10 @@ func TestSlice_StateTransition(t *testing.T) {
 	assert.Equal(t, Slice{
 		SliceKey:    sliceKey,
 		State:       SliceImported,
-		ClosingAt:   ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
-		UploadingAt: ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
-		UploadedAt:  ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
-		ImportedAt:  ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")),
+		ClosingAt:   ptr.Ptr(utctime.MustParse("2000-01-01T01:00:00.000Z")),
+		UploadingAt: ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
+		UploadedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T03:00:00.000Z")),
+		ImportedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")),
 	}, slice)
 
 	// Invalid

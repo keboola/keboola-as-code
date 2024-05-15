@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
@@ -19,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
 func TestConfig_With(t *testing.T) {
@@ -37,16 +37,16 @@ func TestConfig_With(t *testing.T) {
 	localConfigPatch := &local.ConfigPatch{
 		Volume: &volume.ConfigPatch{
 			Assignment: &assignment.ConfigPatch{
-				Count:          test.Ptr(2),
-				PreferredTypes: test.Ptr([]string{"foo", "bar"}),
+				Count:          ptr.Ptr(2),
+				PreferredTypes: ptr.Ptr([]string{"foo", "bar"}),
 			},
 		},
 		Compression: &compression.ConfigPatch{
 			GZIP: &compression.GZIPConfigPatch{
-				Level:          test.Ptr(5),
-				Implementation: test.Ptr(compression.GZIPImplFast),
-				BlockSize:      test.Ptr(10 * datasize.MB),
-				Concurrency:    test.Ptr(10),
+				Level:          ptr.Ptr(5),
+				Implementation: ptr.Ptr(compression.GZIPImplFast),
+				BlockSize:      ptr.Ptr(10 * datasize.MB),
+				Concurrency:    ptr.Ptr(10),
 			},
 		},
 	}
@@ -61,12 +61,12 @@ func TestConfig_With(t *testing.T) {
 		PreferredTypes: []string{"foo", "bar"},
 	}
 	stagingConfigPatch := &staging.ConfigPatch{
-		MaxSlicesPerFile: test.Ptr(1000),
+		MaxSlicesPerFile: ptr.Ptr(1000),
 		Upload: &staging.UploadConfigPatch{
 			Trigger: &staging.UploadTriggerPatch{
-				Count:    test.Ptr(uint64(30000)),
-				Size:     test.Ptr(4 * datasize.MB),
-				Interval: test.Ptr(duration.From(5 * time.Minute)),
+				Count:    ptr.Ptr(uint64(30000)),
+				Size:     ptr.Ptr(4 * datasize.MB),
+				Interval: ptr.Ptr(duration.From(5 * time.Minute)),
 			},
 		},
 	}
@@ -88,17 +88,17 @@ func TestConfig_With(t *testing.T) {
 	localConfigPatch2 := &local.ConfigPatch{
 		Volume: &volume.ConfigPatch{
 			Sync: &disksync.ConfigPatch{
-				Mode:            test.Ptr(disksync.ModeCache),
-				Wait:            test.Ptr(true),
-				CheckInterval:   test.Ptr(duration.From(10 * time.Millisecond)),
-				CountTrigger:    test.Ptr(uint(123)),
-				BytesTrigger:    test.Ptr(1 * datasize.MB),
-				IntervalTrigger: test.Ptr(duration.From(100 * time.Millisecond)),
+				Mode:            ptr.Ptr(disksync.ModeCache),
+				Wait:            ptr.Ptr(true),
+				CheckInterval:   ptr.Ptr(duration.From(10 * time.Millisecond)),
+				CountTrigger:    ptr.Ptr(uint(123)),
+				BytesTrigger:    ptr.Ptr(1 * datasize.MB),
+				IntervalTrigger: ptr.Ptr(duration.From(100 * time.Millisecond)),
 			},
 			Allocation: &diskalloc.ConfigPatch{
-				Enabled:  test.Ptr(true),
-				Static:   test.Ptr(10 * datasize.MB),
-				Relative: test.Ptr(150),
+				Enabled:  ptr.Ptr(true),
+				Static:   ptr.Ptr(10 * datasize.MB),
+				Relative: ptr.Ptr(150),
 			},
 		},
 	}
@@ -119,9 +119,9 @@ func TestConfig_With(t *testing.T) {
 	targetConfigPatch := &target.ConfigPatch{
 		Import: &target.ImportConfigPatch{
 			Trigger: &target.ImportTriggerPatch{
-				Count:    test.Ptr(uint64(60000)),
-				Size:     test.Ptr(7 * datasize.MB),
-				Interval: test.Ptr(duration.From(8 * time.Minute)),
+				Count:    ptr.Ptr(uint64(60000)),
+				Size:     ptr.Ptr(7 * datasize.MB),
+				Interval: ptr.Ptr(duration.From(8 * time.Minute)),
 			},
 		},
 	}

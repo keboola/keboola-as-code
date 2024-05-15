@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -213,7 +214,7 @@ func TestSlice_Validation(t *testing.T) {
 				SliceKey:  testSliceKey(),
 				Type:      FileTypeCSV,
 				State:     SliceClosing,
-				ClosingAt: ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ClosingAt: ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},
@@ -229,8 +230,8 @@ func TestSlice_Validation(t *testing.T) {
 				SliceKey:    testSliceKey(),
 				Type:        FileTypeCSV,
 				State:       SliceUploading,
-				ClosingAt:   ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				UploadingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},
@@ -246,9 +247,9 @@ func TestSlice_Validation(t *testing.T) {
 				SliceKey:    testSliceKey(),
 				Type:        FileTypeCSV,
 				State:       SliceUploaded,
-				ClosingAt:   ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				UploadingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				UploadedAt:  ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
+				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				UploadedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},
@@ -264,10 +265,10 @@ func TestSlice_Validation(t *testing.T) {
 				SliceKey:    testSliceKey(),
 				Type:        FileTypeCSV,
 				State:       SliceImported,
-				ClosingAt:   ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				UploadingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				UploadedAt:  ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
-				ImportedAt:  ptr(utctime.MustParse("2006-01-02T18:04:05.000Z")),
+				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				UploadedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
+				ImportedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T18:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},
