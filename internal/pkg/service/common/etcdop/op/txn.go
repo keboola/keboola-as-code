@@ -147,6 +147,21 @@ func (v *TxnOp[R]) OnResult(fn func(result *TxnResult[R])) *TxnOp[R] {
 	})
 }
 
+// SetResultTo is a shortcut for the AddProcessor.
+// If no error occurred, the result of the operation is written to the target pointer,
+// otherwise an empty value is written.
+func (v *TxnOp[R]) SetResultTo(ptr *R) *TxnOp[R] {
+	v.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
+		if r.Err() == nil {
+			*ptr = r.Result()
+		} else {
+			var empty R
+			*ptr = empty
+		}
+	})
+	return v
+}
+
 // OnFailed is a shortcut for the AddProcessor.
 // If no error occurred yet and the transaction is failed, then the callback is executed.
 func (v *TxnOp[R]) OnFailed(fn func(result *TxnResult[R])) *TxnOp[R] {
