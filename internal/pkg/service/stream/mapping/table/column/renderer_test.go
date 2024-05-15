@@ -6,21 +6,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid/v5"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
-func TestRenderer_ID(t *testing.T) {
+func TestRenderer_UUID(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.ID{}
+	c := column.UUID{}
 
 	val, err := renderer.CSVValue(c, &receivectx.Context{})
 	assert.NoError(t, err)
-	assert.Equal(t, column.IDPlaceholder, val)
+	id, err := uuid.FromString(val)
+	assert.NoError(t, err)
+	assert.Equal(t, uuid.V7, id.Version())
 }
 
 func TestRenderer_DateTime(t *testing.T) {

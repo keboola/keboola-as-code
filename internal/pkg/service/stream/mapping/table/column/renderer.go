@@ -3,6 +3,8 @@ package column
 import (
 	"strings"
 
+	"github.com/gofrs/uuid/v5"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/jsonnet"
@@ -29,8 +31,13 @@ func (r *Renderer) CSVValue(c Column, ctx *receivectx.Context) (string, error) {
 		return ctx.Now.UTC().Format(TimeFormat), nil
 	case Headers:
 		return json.EncodeString(ctx.HeadersMap(), false)
-	case ID:
-		return IDPlaceholder, nil
+	case UUID:
+		id, err := uuid.NewV7()
+		if err != nil {
+			return "", err
+		}
+
+		return id.String(), err
 	case IP:
 		return ctx.IP.String(), nil
 	case Template:

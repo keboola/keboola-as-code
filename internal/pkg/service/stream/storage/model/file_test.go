@@ -165,7 +165,7 @@ func TestFile_Validation(t *testing.T) {
 				Type:    FileTypeCSV,
 				State:   FileWriting,
 				Columns: column.Columns{
-					column.ID{},
+					column.UUID{},
 					column.Headers{},
 					column.Body{},
 				},
@@ -183,7 +183,7 @@ func TestFile_Validation(t *testing.T) {
 				State:     FileClosing,
 				ClosingAt: ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				Columns: column.Columns{
-					column.ID{},
+					column.UUID{},
 					column.Headers{},
 					column.Body{},
 				},
@@ -202,7 +202,7 @@ func TestFile_Validation(t *testing.T) {
 				ClosingAt:   ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				ImportingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				Columns: column.Columns{
-					column.ID{},
+					column.UUID{},
 					column.Headers{},
 					column.Body{},
 				},
@@ -222,7 +222,7 @@ func TestFile_Validation(t *testing.T) {
 				ImportingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				ImportedAt:  ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
 				Columns: column.Columns{
-					column.ID{},
+					column.UUID{},
 					column.Headers{},
 					column.Body{},
 				},

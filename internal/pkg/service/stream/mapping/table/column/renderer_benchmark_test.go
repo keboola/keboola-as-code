@@ -24,3 +24,16 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 		assert.Equal(b, `"val3"`, val)
 	}
 }
+
+func BenchmarkColumn_UUID(b *testing.B) {
+	c := column.UUID{}
+
+	reqCtx := &receivectx.Context{}
+	renderer := column.NewRenderer()
+
+	for i := 0; i < b.N; i++ {
+		val, err := renderer.CSVValue(c, reqCtx)
+		assert.NoError(b, err)
+		assert.Len(b, val, 36)
+	}
+}

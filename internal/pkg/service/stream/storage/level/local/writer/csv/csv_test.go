@@ -55,7 +55,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	// Create slice
 	slice := testcase.NewTestSlice(vol)
 	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.ID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
+	slice.Columns = column.Columns{column.UUID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 
@@ -88,7 +88,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	// Create slice
 	slice := testcase.NewTestSlice(vol)
 	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.ID{Name: "id"}}
+	slice.Columns = column.Columns{column.UUID{Name: "id"}}
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
 
@@ -136,7 +136,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	// Create slice
 	slice := testcase.NewTestSlice(vol)
 	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.ID{Name: "id"}}
+	slice.Columns = column.Columns{column.UUID{Name: "id"}}
 	slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	slice.LocalStorage.DiskSync.Wait = true
 	// prevent sync during the test

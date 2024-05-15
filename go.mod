@@ -28,6 +28,7 @@ require (
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/go-resty/resty/v2 v2.12.0
 	github.com/gofrs/flock v0.8.1
+	github.com/gofrs/uuid/v5 v5.2.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-jsonnet v0.20.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
