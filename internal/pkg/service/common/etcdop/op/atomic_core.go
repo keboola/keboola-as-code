@@ -1,16 +1,35 @@
 package op
 
 import (
+	"context"
 	etcd "go.etcd.io/etcd/client/v3"
+	"slices"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // AtomicOpCore provides a common interface of the atomic operation, without result type specific methods.
 // See the AtomicOp.Core method for details.
 type AtomicOpCore struct {
-	client     etcd.KV
-	readPhase  []HighLevelFactory
-	writePhase []HighLevelFactory
+	client         etcd.KV
+	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
 	locks          []Mutex
+	readPhase      []HighLevelFactory
+	writePhase     []HighLevelFactory
+
+// SkipPrefixKeysCheck disables the feature.
+//
+// By default, the feature is enabled and checks that each loaded key within the Read Phase, from a prefix, exists in Write Phase.
+// This can be potentially SLOW and generate a lot of IF conditions, if there are a large number of keys in the prefix.
+// Therefore, this feature can be turned off by the method.
+//
+// Modification of a key in the prefix is always detected,
+// this feature is used to detect the deletion of a key from the prefix.
+//
+// See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
+func (v *AtomicOpCore) SkipPrefixKeysCheck() *AtomicOpCore {
+	v.checkPrefixKey = false
+	return v
 }
 
 func (v *AtomicOpCore) AddFrom(ops ...AtomicOpInterface) *AtomicOpCore {
