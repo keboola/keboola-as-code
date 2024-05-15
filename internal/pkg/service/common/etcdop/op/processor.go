@@ -68,6 +68,30 @@ func (p processors[R]) WithOnResult(fn func(result R)) processors[R] {
 	})
 }
 
+// WithNotEmptyResultAsError is a shortcut for the WithProcessor.
+// If no error occurred yet and the result is NOT an empty value for the R type (nil if it is a pointer),
+// then the callback is executed and returned error is added to the Result.
+func (p processors[R]) WithNotEmptyResultAsError(fn func() error) processors[R] {
+	return p.WithProcessor(func(_ context.Context, result *Result[R]) {
+		emptyValue := result.result == nil || reflect.ValueOf(*result.result).IsZero()
+		emptyValueErr := errors.As(result.Err(), &EmptyResultError{})
+
+		// Empty value is expected, reset EmptyResultError
+		if emptyValueErr {
+			result.ResetErr()
+			return
+		}
+
+		// Found unexpected empty value and no other error
+		if !emptyValue && result.Err() == nil {
+			if err := fn(); err != nil {
+				result.ResetErr()
+				result.AddErr(err)
+			}
+		}
+	})
+}
+
 // WithEmptyResultAsError is a shortcut for the WithProcessor.
 // If no error occurred yet and the result is an empty value for the R type (nil if it is a pointer),
 // then the callback is executed and returned error is added to the Result.
