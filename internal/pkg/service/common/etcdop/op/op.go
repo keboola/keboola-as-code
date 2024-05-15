@@ -119,6 +119,14 @@ func (v WithResult[R]) WithOnResult(fn func(result R)) WithResult[R] {
 	return v
 }
 
+// WithNotEmptyResultAsError is a shortcut for the WithProcessor.
+// If no error occurred yet and the result is NOT an empty value for the R type (nil if it is a pointer),
+// then the callback is executed and returned error is added to the Result.
+func (v WithResult[R]) WithNotEmptyResultAsError(fn func() error) WithResult[R] {
+	v.processors = v.processors.WithNotEmptyResultAsError(fn)
+	return v
+}
+
 // WithEmptyResultAsError is a shortcut for the WithProcessor.
 // If no error occurred yet and the result is an empty value for the R type (nil if it is a pointer),
 // then the callback is executed and returned error is added to the Result.
