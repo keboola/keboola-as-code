@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Mirror [T,V] is a in memory AtomicTree filled via the etcd Watch API from a WatchStreamT[T].
+// Mirror [T,V] is an in memory AtomicTree filled via the etcd Watch API from a WatchStreamT[T].
 // Tree read operations are publicly available, writing is performed exclusively from the watch stream.
 // Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorSetup.
 // Start with SetupMirror function.
@@ -27,6 +27,25 @@ type MirrorSetup[T any, V any] struct {
 	filter   func(t WatchEventT[T]) bool
 	mapKey   func(kv *op.KeyValue, value T) string
 	mapValue func(kv *op.KeyValue, value T) V
+}
+
+// SetupFullMirror - without key and value mapping.
+func SetupFullMirror[T any](
+	logger log.Logger,
+	stream *RestartableWatchStreamT[T],
+) MirrorSetup[T, T] {
+	mapKey := func(kv *op.KeyValue, value T) string {
+		return string(kv.Key)
+	}
+	mapValue := func(kv *op.KeyValue, value T) T {
+		return value
+	}
+	return MirrorSetup[T, T]{
+		logger:   logger,
+		stream:   stream,
+		mapKey:   mapKey,
+		mapValue: mapValue,
+	}
 }
 
 func SetupMirror[T any, V any](
@@ -123,6 +142,10 @@ func (m *Mirror[T, V]) Atomic(do func(t prefixtree.TreeReadOnly[V])) {
 
 func (m *Mirror[T, V]) Get(key string) (V, bool) {
 	return m.tree.Get(key)
+}
+
+func (m *Mirror[T, V]) All() []V {
+	return m.tree.All()
 }
 
 func (m *Mirror[T, V]) AllFromPrefix(key string) []V {
