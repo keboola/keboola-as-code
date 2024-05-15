@@ -1,8 +1,6 @@
 package op
 
 import (
-	"context"
-
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
@@ -28,86 +26,24 @@ func (v *AtomicOpCore) RequireLock(lock Mutex) *AtomicOpCore {
 	return v
 }
 
-func (v *AtomicOpCore) ReadOp(ops ...Op) *AtomicOpCore {
-	for _, op := range ops {
-		v.Read(func(ctx context.Context) Op {
-			return op
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) Read(factories ...func(ctx context.Context) Op) *AtomicOpCore {
-	for _, fn := range factories {
-		v.ReadOrErr(func(ctx context.Context) (Op, error) {
-			return fn(ctx), nil
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) OnRead(fns ...func(ctx context.Context)) *AtomicOpCore {
-	for _, fn := range fns {
-		v.ReadOrErr(func(ctx context.Context) (Op, error) {
-			fn(ctx)
-			return nil, nil
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) OnReadOrErr(fns ...func(ctx context.Context) error) *AtomicOpCore {
-	for _, fn := range fns {
-		v.ReadOrErr(func(ctx context.Context) (Op, error) {
-			return nil, fn(ctx)
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) ReadOrErr(factories ...HighLevelFactory) *AtomicOpCore {
+// Read adds operations factories to the READ phase.
+//
+// The factory can return <nil>, if you want to execute some code during the READ phase,
+// but no etcd operation is generated.
+//
+// The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
+func (v *AtomicOpCore) Read(factories ...HighLevelFactory) *AtomicOpCore {
 	v.readPhase = append(v.readPhase, factories...)
 	return v
 }
 
-func (v *AtomicOpCore) Write(factories ...func(ctx context.Context) Op) *AtomicOpCore {
-	for _, fn := range factories {
-		v.WriteOrErr(func(ctx context.Context) (Op, error) {
-			return fn(ctx), nil
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) BeforeWrite(fns ...func(ctx context.Context)) *AtomicOpCore {
-	for _, fn := range fns {
-		v.WriteOrErr(func(ctx context.Context) (Op, error) {
-			fn(ctx)
-			return nil, nil
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) BeforeWriteOrErr(fns ...func(ctx context.Context) error) *AtomicOpCore {
-	for _, fn := range fns {
-		v.WriteOrErr(func(ctx context.Context) (Op, error) {
-			return nil, fn(ctx)
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) WriteOp(ops ...Op) *AtomicOpCore {
-	for _, op := range ops {
-		v.Write(func(context.Context) Op {
-			return op
-		})
-	}
-	return v
-}
-
-func (v *AtomicOpCore) WriteOrErr(factories ...HighLevelFactory) *AtomicOpCore {
+// Write adds operations factories to the WRITE phase.
+//
+// The factory can return <nil>, if you want to execute some code during the READ phase,
+// but no etcd operation is generated.
+//
+// The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
+func (v *AtomicOpCore) Write(factories ...HighLevelFactory) *AtomicOpCore {
 	v.writePhase = append(v.writePhase, factories...)
 	return v
 }
