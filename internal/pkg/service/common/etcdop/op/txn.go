@@ -27,6 +27,7 @@ type TxnOp[R any] struct {
 	result     *R
 	client     etcd.KV
 	processors []func(ctx context.Context, r *TxnResult[R])
+	errs       errors.MultiError
 	ifs        []etcd.Cmp
 	thenOps    []Op
 	thenTxnOps []Op // thenTxnOps are separated from thenOps to avoid confusing between Then and Merge
@@ -109,6 +110,16 @@ func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 	return v
 }
 
+// AddError - all static errors are returned when the low level txn is composed.
+// It makes error handling easier and move it to one place.
+func (v *TxnOp[R]) AddError(errs ...error) *TxnOp[R] {
+	if v.errs == nil {
+		v.errs = errors.NewMultiError()
+	}
+	v.errs.Append(errs...)
+	return v
+}
+
 // Merge merges the transaction with one or more other transactions.
 // If comparisons from all transactions are merged.
 // The processors from all transactions are preserved and executed.
@@ -175,6 +186,11 @@ func (v *TxnOp[R]) Op(ctx context.Context) (LowLevelOp, error) {
 func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	out := &lowLevelTxn[R]{result: v.result, client: v.client, thenOps: make([]etcd.Op, 0), elseOps: make([]etcd.Op, 0)}
 	errs := errors.NewMultiError()
+
+	// Copy init errors
+	if v.errs != nil {
+		errs.Append(v.errs.WrappedErrors()...)
+	}
 
 	// Copy IFs
 	out.ifs = make([]etcd.Cmp, len(v.ifs))
