@@ -50,11 +50,11 @@ func TestTxnOp_Empty(t *testing.T) {
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
 		assert.Equal(t, etcd.OpTxn(
 			// If
-			[]etcd.Cmp{},
+			nil,
 			// Then
-			[]etcd.Op{},
+			nil,
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -424,37 +424,37 @@ func TestTxnOp_Then_Simple(t *testing.T) {
 		// ----- Txn - Level 1 ------
 		assert.Equal(t, etcd.OpTxn(
 			// If
-			[]etcd.Cmp{},
+			nil,
 			// Then
 			[]etcd.Op{
 				etcd.OpPut("key1", "value1"),
 				// ----- Txn - Level 2 ------
 				etcd.OpTxn(
 					// If
-					[]etcd.Cmp{},
+					nil,
 					// Then
 					[]etcd.Op{
 						etcd.OpPut("key2", "value2"),
 						// ----- Txn - Level 3 ------
 						etcd.OpTxn(
 							// If
-							[]etcd.Cmp{},
+							nil,
 							// Then
 							[]etcd.Op{
 								etcd.OpPut("key3", "value3"),
 							},
 							// Else
-							[]etcd.Op{},
+							nil,
 						),
 					},
 					// Else
-					[]etcd.Op{},
+					nil,
 				),
 				// -----
 				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -510,7 +510,7 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
 		assert.Equal(t, etcd.OpTxn(
 			// If
-			[]etcd.Cmp{},
+			nil,
 			// Then
 			[]etcd.Op{
 				etcd.OpPut("key1", "value1"),
@@ -519,7 +519,7 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -619,17 +619,17 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 								etcd.OpPut("key3", "value3"),
 							},
 							// Else
-							[]etcd.Op{},
+							nil,
 						),
 					},
 					// Else
-					[]etcd.Op{},
+					nil,
 				),
 				// -----
 				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -738,11 +738,11 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 						etcd.Compare(etcd.Version("key3"), "=", 0),
 					},
 					// Then
-					[]etcd.Op{},
+					nil,
 					// Else
 					[]etcd.Op{
 						// Check conditions of the nested transaction - 2, for processors
-						etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key3"), "=", 0)}, []etcd.Op{}, []etcd.Op{}),
+						etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key3"), "=", 0)}, nil, nil),
 					},
 				),
 			},
@@ -830,16 +830,8 @@ func TestTxnOp_Merge_RealExample(t *testing.T) {
 			},
 			// Else
 			[]etcd.Op{
-				etcd.OpTxn(
-					[]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
-				),
-				etcd.OpTxn(
-					[]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
-				),
+				etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, nil, nil),
+				etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, nil, nil),
 				etcd.OpPut("key/txn/succeeded", "false"),
 			},
 		), lowLevel.Op)
@@ -1075,7 +1067,7 @@ func TestTxnOp_Merge_Complex(t *testing.T) {
 						etcd.Compare(etcd.Value("txn1/if"), "=", "ok"),
 					},
 					// Then
-					[]etcd.Op{},
+					nil,
 					// Else
 					[]etcd.Op{
 						etcd.OpPut("txn1/else/put", "ok"),
@@ -1088,7 +1080,7 @@ func TestTxnOp_Merge_Complex(t *testing.T) {
 						etcd.Compare(etcd.Value("txn2/if"), "=", "ok"),
 					},
 					// Then
-					[]etcd.Op{},
+					nil,
 					// Else
 					[]etcd.Op{
 						etcd.OpPut("txn2/else/put", "ok"),
