@@ -32,9 +32,8 @@ import (
 // Retries on network errors are always performed.
 type AtomicOp[R any] struct {
 	*AtomicOpCore
-	result         *R
-	processors     processors[R]
-	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
+	result     *R
+	processors processors[R]
 }
 
 type AtomicOpInterface interface {
@@ -63,7 +62,7 @@ func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
 //
 // See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
 func (v *AtomicOp[R]) SkipPrefixKeysCheck() *AtomicOp[R] {
-	v.checkPrefixKey = false
+	v.AtomicOpCore.SkipPrefixKeysCheck()
 	return v
 }
 
