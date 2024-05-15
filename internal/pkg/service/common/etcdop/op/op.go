@@ -37,7 +37,7 @@ type Header = etcdserverpb.ResponseHeader // shortcut
 // The struct is immutable, see With* methods.
 type WithResult[R any] struct {
 	client     etcd.KV
-	factory    lowLevelFactory
+	factory    LowLevelFactory
 	mapper     func(ctx context.Context, raw RawResponse) (result R, err error)
 	processors processors[R]
 }
@@ -52,8 +52,6 @@ type LowLevelFactory func(ctx context.Context) (etcd.Op, error)
 //
 // The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
 type HighLevelFactory func(ctx context.Context) Op
-
-type lowLevelFactory = LowLevelFactory // alias for private embedding
 
 func NewForType[R any](client etcd.KV, factory LowLevelFactory, mapper func(ctx context.Context, raw RawResponse) (result R, err error)) WithResult[R] {
 	return WithResult[R]{client: client, factory: factory, mapper: mapper}
