@@ -10,9 +10,9 @@ import (
 // See the AtomicOp.Core method for details.
 type AtomicOpCore struct {
 	client     etcd.KV
-	locks      []mutex
 	readPhase  []HighLevelFactory
 	writePhase []HighLevelFactory
+	locks          []Mutex
 }
 
 func (v *AtomicOpCore) AddFrom(ops ...AtomicOpInterface) *AtomicOpCore {
@@ -23,7 +23,7 @@ func (v *AtomicOpCore) AddFrom(ops ...AtomicOpInterface) *AtomicOpCore {
 	return v
 }
 
-func (v *AtomicOpCore) RequireLock(lock mutex) *AtomicOpCore {
+func (v *AtomicOpCore) RequireLock(lock Mutex) *AtomicOpCore {
 	v.locks = append(v.locks, lock)
 	return v
 }

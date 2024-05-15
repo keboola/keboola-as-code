@@ -2,13 +2,12 @@ package op
 
 import (
 	"context"
+	"github.com/cenkalti/backoff/v4"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // AtomicOp is similar to the TxnOp and wraps it.
@@ -38,15 +37,15 @@ type AtomicOp[R any] struct {
 	checkPrefixKey bool // checkPrefixKey - see SkipPrefixKeysCheck method documentation
 }
 
-// mutex abstracts concurrency.Mutex and etcdop.Mutex types.
-type mutex interface {
-	Key() string
-	IsOwner() etcd.Cmp
-}
-
 type AtomicOpInterface interface {
 	ReadPhaseOps() []HighLevelFactory
 	WritePhaseOps() []HighLevelFactory
+}
+
+// Mutex abstracts concurrency.Mutex and etcdop.Mutex types.
+type Mutex interface {
+	Key() string
+	IsOwner() etcd.Cmp
 }
 
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
@@ -103,7 +102,7 @@ func (v *AtomicOp[R]) AddFrom(ops ...AtomicOpInterface) *AtomicOp[R] {
 // There are no automatic retries. Depending on the kind of the operation, you may retry or ignore the error.
 //
 // The method ensures that only the owner of the lock performs the database operation.
-func (v *AtomicOp[R]) RequireLock(lock mutex) *AtomicOp[R] {
+func (v *AtomicOp[R]) RequireLock(lock Mutex) *AtomicOp[R] {
 	v.AtomicOpCore.RequireLock(lock)
 	return v
 }
