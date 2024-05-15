@@ -87,7 +87,7 @@ func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
 	// Bulletproof check of the low-level transaction is in the "lowLevelTxn" method.
 	for i, op := range ops {
 		if _, ok := op.(txnInterface); ok {
-			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use ThenTxn, not Then`, i))
+			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use Merge or ThenTxn, not Then`, i))
 		}
 	}
 
@@ -186,7 +186,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		if lowLevel, err := op.Op(ctx); err != nil {
 			errs.Append(errors.PrefixErrorf(err, "cannot create operation [then][%d]", i))
 		} else if lowLevel.Op.IsTxn() {
-			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation is a transaction, use ThenTxn, not Then`, i))
+			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation is a transaction, use Merge or ThenTxn, not Then`, i))
 		} else {
 			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		}
@@ -249,7 +249,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		}
 
 		// There may be a situation where neither THEN nor ELSE branch is executed:
-		// If the transaction fails, but the reason is not in this sub-transaction.
+		// It occurs, when the root transaction fails, but the reason is not in this sub-transaction.
 
 		// On result, compose and map response that corresponds to the original sub-transaction
 		// Processor from nested transactions must be invoked first.
