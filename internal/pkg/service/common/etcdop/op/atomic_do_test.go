@@ -72,7 +72,7 @@ func TestAtomicFromCtx_Complex(t *testing.T) {
 						return etcdop.NewKey(key).Get(client).WithOnResult(func(r *op.KeyValue) {
 							// 3. Write the key copy
 							op.AtomicFromCtx(ctx). // <<<<<<<<<<<<<<
-								Write(func(ctx context.Context) op.Op {
+										Write(func(ctx context.Context) op.Op {
 									return etcdop.NewKey(key+"-copy").Put(client, string(r.Value))
 								})
 						})
