@@ -9,6 +9,10 @@ env:
   TEST_PARALLELISM_PKG: 6
   TEST_COVERAGE: false
 
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
 jobs:
   test:
     name: ${{ matrix.name }}
@@ -58,8 +62,6 @@ jobs:
         with:
           key: unit
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           windows_go_cache_folder: D:/tmp/go-build
 
       - name: Change modtime of files to 1 unix timestamp
@@ -71,8 +73,6 @@ jobs:
         uses: ./.github/actions/go-tools-cache
         with:
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Start etcd database (only on linux)
         if: matrix.name == 'linux'
@@ -103,8 +103,6 @@ jobs:
             /Users/runner/Library/Caches/go-build
             D:/tmp/go-build
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Push Go tools cache
         uses: ./.github/actions/go-cache-push-s3
@@ -118,7 +116,5 @@ jobs:
             C:/Users/runneradmin/go/bin
             C:/Users/runneradmin/go/pkg
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           override: false
 

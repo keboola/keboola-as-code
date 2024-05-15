@@ -9,6 +9,10 @@ env:
   TEST_PARALLELISM_PKG: 1
   TEST_COVERAGE: false
 
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
 jobs:
   test:
     name: test
@@ -43,16 +47,12 @@ jobs:
         with:
           key: build
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           windows_go_cache_folder: D:/tmp/go-build
 
       - name: Load Go tools cache
         uses: ./.github/actions/go-tools-cache
         with:
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Start etcd database
         run: |
@@ -88,7 +88,5 @@ jobs:
             C:/Users/runneradmin/go/bin
             C:/Users/runneradmin/go/pkg
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           override: false
 

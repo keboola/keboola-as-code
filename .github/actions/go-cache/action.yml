@@ -7,12 +7,6 @@ inputs:
   aws-s3-bucket:
     description: Bucket to save cache
     required: true
-  aws-access-key-id:
-    description: Access key to AWS
-    required: true
-  aws-secret-access-key:
-    description: Secret access key to AWS
-    required: true
   windows_go_cache_folder:
     description: Where windows build cache is located
     required: true
@@ -27,6 +21,13 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
+
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
+        role-session-name: ghactionscaching
+        aws-region: us-east-1
 
     - name: Load Go build cache from S3 Linux/MacOS
       if: runner.os != 'Windows'
@@ -50,12 +51,6 @@ runs:
         fi
         /usr/bin/tar -xf ${{ runner.temp }}/cache.tzst -P -C ${{ github.workspace }} --use-compress-program unzstd || true
 
-      env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
-        AWS_DEFAULT_REGION: 'us-east-1'
-
-
     - name: Load Go build cache from S3 Windows
       if: runner.os == 'Windows'
       shell: bash
@@ -77,9 +72,4 @@ runs:
           aws s3 cp s3://${{ inputs.aws-s3-bucket }}/$key D:/a/temp/cache.tzst
         fi
         C:\\Program\ Files\\Git\\usr\\bin\\tar.exe -xf D:/a/temp/cache.tzst -P -C D:/a/keboola-as-code/keboola-as-code --force-local --use-compress-program "zstd -d" || true
-
-      env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
-        AWS_DEFAULT_REGION: 'us-east-1'
 

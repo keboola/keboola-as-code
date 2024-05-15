@@ -6,6 +6,10 @@ on:
 env:
   GO_VERSION: 1.22.2
 
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
 jobs:
   check:
     name: check
@@ -24,8 +28,6 @@ jobs:
         uses: ./.github/actions/go-tools-cache
         with:
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       #####################
       ### License Types ###
@@ -77,8 +79,5 @@ jobs:
             C:/Users/runneradmin/go/bin
             C:/Users/runneradmin/go/pkg
           aws-s3-bucket: ${{ secrets.AWS_S3_CACHE_BUCKET_NAME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           override: false
-
 

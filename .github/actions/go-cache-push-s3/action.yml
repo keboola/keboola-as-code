@@ -9,13 +9,6 @@ inputs:
     required: true
   aws-s3-bucket:
     description: Bucket to save cache
-    required: true
-  aws-access-key-id:
-    description: Access key to AWS
-    required: true
-  aws-secret-access-key:
-    description: Secret access key to AWS
-    required: true
   override:
     description: Always override the cache
     required: false
@@ -23,6 +16,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
+        role-session-name: ghactionscaching
+        aws-region: us-east-1
+
     - name: Do not push cache when exists
       shell: bash
       run: |
@@ -33,11 +33,6 @@ runs:
 
         key=$(aws s3 ls s3://${{ inputs.aws-s3-bucket }} | tr -s ' ' | cut -d ' ' -f 4 | grep '${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}') || true
         echo "SKIP=false" >> $GITHUB_ENV
-
-      env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
-        AWS_DEFAULT_REGION: 'us-east-1'
 
     - name: Convert multiline string to singleline
       shell: python
@@ -86,8 +81,5 @@ runs:
       shell: bash
       if: ${{ env.SKIP }} == false
       run: |
-        aws s3 cp --region us-east-1 cache.tzst s3://${{ inputs.aws-s3-bucket}}/${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
+        aws s3 cp cache.tzst s3://${{ inputs.aws-s3-bucket}}/${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
 
-      env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
