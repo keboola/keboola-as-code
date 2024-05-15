@@ -103,7 +103,7 @@ func (v Key) DeleteIfExists(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 			return etcd.OpTxn(
 				[]etcd.Cmp{etcd.Compare(etcd.Version(v.Key()), "!=", 0)},
 				[]etcd.Op{etcd.OpDelete(v.Key(), opts...)},
-				[]etcd.Op{},
+				nil,
 			), nil
 		},
 		func(_ context.Context, raw op.RawResponse) (bool, error) {
@@ -132,7 +132,7 @@ func (v Key) PutIfNotExists(client etcd.KV, val string, opts ...etcd.OpOption) o
 			return etcd.OpTxn(
 				[]etcd.Cmp{etcd.Compare(etcd.Version(v.Key()), "=", 0)},
 				[]etcd.Op{etcd.OpPut(v.Key(), val, opts...)},
-				[]etcd.Op{},
+				nil,
 			), nil
 		},
 		func(_ context.Context, raw op.RawResponse) (bool, error) {
@@ -223,7 +223,7 @@ func (v KeyT[T]) PutIfNotExists(client etcd.KV, val T, opts ...etcd.OpOption) op
 			return etcd.OpTxn(
 				[]etcd.Cmp{etcd.Compare(etcd.Version(v.Key()), "=", 0)},
 				[]etcd.Op{etcd.OpPut(v.Key(), encoded, opts...)},
-				[]etcd.Op{},
+				nil,
 			), nil
 		},
 		func(_ context.Context, raw op.RawResponse) (bool, error) {
