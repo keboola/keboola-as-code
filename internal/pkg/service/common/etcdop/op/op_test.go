@@ -119,6 +119,14 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 				return nil
 			}
 		}).
+		WithNotEmptyResultAsError(func() error {
+			log.WriteString("WithNotEmptyResultAsError\n")
+			if processorErrors {
+				return errors.New("error from WithNotEmptyResultAsError")
+			} else {
+				return nil
+			}
+		}).
 		WithResultValidator(func(value string) error {
 			log.WriteString("WithResultValidator\n")
 			assert.Equal(t, expected, value)
@@ -171,7 +179,7 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 			PutEtcdKeyValue: "foo",
 			ExpectedValue:   "foo",
 			ProcessorErrors: false,
-			ExpectedLog:     []string{"WithProcessor", "WithOnResult", "WithResultValidator"},
+			ExpectedLog:     []string{"WithProcessor", "WithOnResult", "WithNotEmptyResultAsError", "WithResultValidator"},
 			ExpectedError:   "",
 		},
 		{
