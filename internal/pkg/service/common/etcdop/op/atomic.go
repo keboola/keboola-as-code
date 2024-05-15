@@ -107,53 +107,25 @@ func (v *AtomicOp[R]) RequireLock(lock Mutex) *AtomicOp[R] {
 	return v
 }
 
-func (v *AtomicOp[R]) ReadOp(ops ...Op) *AtomicOp[R] {
-	v.AtomicOpCore.ReadOp(ops...)
-	return v
-}
-
-func (v *AtomicOp[R]) Read(factories ...func(ctx context.Context) Op) *AtomicOp[R] {
+// Read adds operations factories to the READ phase.
+//
+// The factory can return <nil>, if you want to execute some code during the READ phase,
+// but no etcd operation is generated.
+//
+// The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
+func (v *AtomicOp[R]) Read(factories ...HighLevelFactory) *AtomicOp[R] {
 	v.AtomicOpCore.Read(factories...)
 	return v
 }
 
-func (v *AtomicOp[R]) OnRead(fns ...func(ctx context.Context)) *AtomicOp[R] {
-	v.AtomicOpCore.OnRead(fns...)
-	return v
-}
-
-func (v *AtomicOp[R]) OnReadOrErr(fns ...func(ctx context.Context) error) *AtomicOp[R] {
-	v.AtomicOpCore.OnReadOrErr(fns...)
-	return v
-}
-
-func (v *AtomicOp[R]) ReadOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
-	v.AtomicOpCore.ReadOrErr(factories...)
-	return v
-}
-
-func (v *AtomicOp[R]) Write(factories ...func(ctx context.Context) Op) *AtomicOp[R] {
+// Write adds operations factories to the WRITE phase.
+//
+// The factory can return <nil>, if you want to execute some code during the READ phase,
+// but no etcd operation is generated.
+//
+// The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
+func (v *AtomicOp[R]) Write(factories ...HighLevelFactory) *AtomicOp[R] {
 	v.AtomicOpCore.Write(factories...)
-	return v
-}
-
-func (v *AtomicOp[R]) BeforeWrite(fns ...func(ctx context.Context)) *AtomicOp[R] {
-	v.AtomicOpCore.BeforeWrite(fns...)
-	return v
-}
-
-func (v *AtomicOp[R]) BeforeWriteOrErr(fns ...func(ctx context.Context) error) *AtomicOp[R] {
-	v.AtomicOpCore.BeforeWriteOrErr(fns...)
-	return v
-}
-
-func (v *AtomicOp[R]) WriteOp(ops ...Op) *AtomicOp[R] {
-	v.AtomicOpCore.WriteOp(ops...)
-	return v
-}
-
-func (v *AtomicOp[R]) WriteOrErr(factories ...HighLevelFactory) *AtomicOp[R] {
-	v.AtomicOpCore.WriteOrErr(factories...)
 	return v
 }
 

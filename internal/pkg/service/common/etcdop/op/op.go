@@ -46,7 +46,12 @@ type WithResult[R any] struct {
 type LowLevelFactory func(ctx context.Context) (etcd.Op, error)
 
 // HighLevelFactory creates a high-level etcd operation.
-type HighLevelFactory func(ctx context.Context) (Op, error)
+//
+// The factory can return <nil>, if you want to execute some code during the READ phase,
+// but no etcd operation is generated.
+//
+// The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
+type HighLevelFactory func(ctx context.Context) Op
 
 type lowLevelFactory = LowLevelFactory // alias for private embedding
 
