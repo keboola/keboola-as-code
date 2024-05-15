@@ -29,6 +29,7 @@ type AppID string
 type AppConfig struct {
 	ID             AppID              `json:"appId"`
 	Name           string             `json:"appName"`
+	AppSlug        *string            `json:"appSlug"`
 	ProjectID      string             `json:"projectId"`
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
@@ -57,10 +58,10 @@ func (c AppConfig) IdAndName() string {
 }
 
 func (c AppConfig) Domain() string {
-	if c.Name == "" {
+	if c.AppSlug == nil || *c.AppSlug == "" {
 		return strings.ToLower(c.ID.String())
 	}
-	return strings.ToLower(c.Name + "-" + c.ID.String())
+	return strings.ToLower(*c.AppSlug + "-" + c.ID.String())
 }
 
 // CookieDomain without port for cookies.
