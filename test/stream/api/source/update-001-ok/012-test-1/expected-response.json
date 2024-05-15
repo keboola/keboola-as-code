@@ -1,0 +1,6 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "tables": []
+}
