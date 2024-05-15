@@ -987,7 +987,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 	MinLength(minLength)
 	MaxLength(maxLength)
 	Example(column.Columns{
-		column.ID{Name: "id-col", PrimaryKey: true},
+		column.UUID{Name: "id-col", PrimaryKey: true},
 		column.Datetime{Name: "datetime-col"},
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},

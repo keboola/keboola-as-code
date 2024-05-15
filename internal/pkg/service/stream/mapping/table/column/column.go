@@ -25,8 +25,8 @@ type Column interface {
 func MakeColumn(typ Type, name string, primaryKey bool) (Column, error) {
 	var v Column
 	switch typ {
-	case columnIDType:
-		v = ID{Name: name, PrimaryKey: primaryKey}
+	case columnUUIDType:
+		v = UUID{Name: name, PrimaryKey: primaryKey}
 	case columnDatetimeType:
 		v = Datetime{Name: name, PrimaryKey: primaryKey}
 	case columnIPType:

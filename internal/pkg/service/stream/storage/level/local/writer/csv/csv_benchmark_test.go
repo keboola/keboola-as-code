@@ -200,7 +200,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.WriterBenchmark {
 	columns := column.Columns{
 		// 8 columns, only the count is important for CSV
-		column.ID{},
+		column.UUID{},
 		column.Datetime{},
 		column.Body{},
 		column.Template{},

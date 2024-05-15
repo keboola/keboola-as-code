@@ -56,7 +56,7 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 		Type:     model.FileTypeCSV,
 		State:    model.SliceWriting,
 		Columns: column.Columns{
-			column.ID{},
+			column.UUID{},
 			column.Headers{},
 			column.Body{},
 		},
