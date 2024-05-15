@@ -2,8 +2,9 @@ package op
 
 import (
 	"context"
-	etcd "go.etcd.io/etcd/client/v3"
 	"slices"
+
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -190,9 +191,12 @@ func (v *AtomicOpCore) do(ctx context.Context, tracker *TrackerKV, opts ...Optio
 	}
 
 	// Run READ phase, track used keys/prefixes
-	readResult := readTxn.Do(ctx, opts...)
-	if err = readResult.Err(); err != nil {
-		return nil, 0, err
+	if !readTxn.Empty() {
+		if readResult := readTxn.Do(ctx, opts...); readResult.Err() == nil {
+			readRevision = readResult.Header().Revision
+		} else {
+			return nil, 0, readResult.Err()
+		}
 	}
 
 	// Create WRITE transaction
@@ -201,5 +205,5 @@ func (v *AtomicOpCore) do(ctx context.Context, tracker *TrackerKV, opts ...Optio
 		return nil, 0, err
 	}
 
-	return writeTxn, readResult.Header().Revision, nil
+	return writeTxn, readRevision, nil
 }
