@@ -1,5 +1,5 @@
 {
-  "path": "<<001-create:response.url>>",
+  "path": "<<004-patch-settings-1-empty:response.url>>",
   "method": "GET",
   "headers": {
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
