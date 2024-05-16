@@ -1,5 +1,5 @@
 {
   "statusCode": 404,
-  "error": "stream.api.sinkNotFound",
-  "message": "Sink \"my-sink\" not found in the source."
+  "error": "stream.api.sourceNotFound",
+  "message": "Source \"my-source\" not found in the branch."
 }
