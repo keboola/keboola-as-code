@@ -1,5 +1,5 @@
 {
-  "path": "<<010-poll-3:response.outputs.url>>",
+  "path": "<<007-poll-source-2:response.outputs.url>>",
   "method": "GET",
   "headers": {
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
