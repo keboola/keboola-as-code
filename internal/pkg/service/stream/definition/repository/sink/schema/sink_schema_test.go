@@ -45,6 +45,10 @@ func TestSinkSchema(t *testing.T) {
 			"definition/sink/active/123/456/",
 		},
 		{
+			s.Active().In(sinkKey.SourceKey).Prefix(),
+			"definition/sink/active/123/456/my-source/",
+		},
+		{
 			s.Active().InProject(sinkKey.ProjectID).Prefix(),
 			"definition/sink/active/123/",
 		},
