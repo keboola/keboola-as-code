@@ -155,7 +155,7 @@ func EncodeUpdateSourceResponse(encoder func(context.Context, http.ResponseWrite
 		res, _ := v.(*stream.Task)
 		enc := encoder(ctx, w)
 		body := NewUpdateSourceResponseBody(res)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		return enc.Encode(body)
 	}
 }
@@ -394,8 +394,11 @@ func EncodeGetSourceError(encoder func(context.Context, http.ResponseWriter) goa
 // stream DeleteSource endpoint.
 func EncodeDeleteSourceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		w.WriteHeader(http.StatusOK)
-		return nil
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewDeleteSourceResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
 	}
 }
 
@@ -551,10 +554,10 @@ func EncodeGetSourceSettingsError(encoder func(context.Context, http.ResponseWri
 // by the stream UpdateSourceSettings endpoint.
 func EncodeUpdateSourceSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*stream.SettingsResult)
+		res, _ := v.(*stream.Task)
 		enc := encoder(ctx, w)
 		body := NewUpdateSourceSettingsResponseBody(res)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		return enc.Encode(body)
 	}
 }
@@ -646,86 +649,6 @@ func EncodeUpdateSourceSettingsError(encoder func(context.Context, http.Response
 				body = formatter(ctx, res)
 			} else {
 				body = NewUpdateSourceSettingsStreamAPIForbiddenResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
-			return enc.Encode(body)
-		default:
-			return encodeError(ctx, w, v)
-		}
-	}
-}
-
-// EncodeRefreshSourceTokensResponse returns an encoder for responses returned
-// by the stream RefreshSourceTokens endpoint.
-func EncodeRefreshSourceTokensResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
-	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*stream.Source)
-		enc := encoder(ctx, w)
-		body := NewRefreshSourceTokensResponseBody(res)
-		w.WriteHeader(http.StatusOK)
-		return enc.Encode(body)
-	}
-}
-
-// DecodeRefreshSourceTokensRequest returns a decoder for requests sent to the
-// stream RefreshSourceTokens endpoint.
-func DecodeRefreshSourceTokensRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
-	return func(r *http.Request) (any, error) {
-		var (
-			branchID        string
-			sourceID        string
-			storageAPIToken string
-			err             error
-
-			params = mux.Vars(r)
-		)
-		branchID = params["branchId"]
-		sourceID = params["sourceId"]
-		if utf8.RuneCountInString(sourceID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
-		}
-		if utf8.RuneCountInString(sourceID) > 48 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
-		}
-		storageAPIToken = r.Header.Get("X-StorageApi-Token")
-		if storageAPIToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewRefreshSourceTokensPayload(branchID, sourceID, storageAPIToken)
-		if strings.Contains(payload.StorageAPIToken, " ") {
-			// Remove authorization scheme prefix (e.g. "Bearer")
-			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
-			payload.StorageAPIToken = cred
-		}
-
-		return payload, nil
-	}
-}
-
-// EncodeRefreshSourceTokensError returns an encoder for errors returned by the
-// RefreshSourceTokens stream endpoint.
-func EncodeRefreshSourceTokensError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
-	encodeError := goahttp.ErrorEncoder(encoder, formatter)
-	return func(ctx context.Context, w http.ResponseWriter, v error) error {
-		var en goa.GoaErrorNamer
-		if !errors.As(v, &en) {
-			return encodeError(ctx, w, v)
-		}
-		switch en.GoaErrorName() {
-		case "stream.api.sourceNotFound":
-			var res *stream.GenericError
-			errors.As(v, &res)
-			res.StatusCode = http.StatusNotFound
-			enc := encoder(ctx, w)
-			var body any
-			if false { // formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1147,10 +1070,10 @@ func EncodeGetSinkSettingsError(encoder func(context.Context, http.ResponseWrite
 // by the stream UpdateSinkSettings endpoint.
 func EncodeUpdateSinkSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*stream.SettingsResult)
+		res, _ := v.(*stream.Task)
 		enc := encoder(ctx, w)
 		body := NewUpdateSinkSettingsResponseBody(res)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		return enc.Encode(body)
 	}
 }
@@ -1386,7 +1309,7 @@ func EncodeUpdateSinkResponse(encoder func(context.Context, http.ResponseWriter)
 		res, _ := v.(*stream.Task)
 		enc := encoder(ctx, w)
 		body := NewUpdateSinkResponseBody(res)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		return enc.Encode(body)
 	}
 }
@@ -1500,8 +1423,11 @@ func EncodeUpdateSinkError(encoder func(context.Context, http.ResponseWriter) go
 // stream DeleteSink endpoint.
 func EncodeDeleteSinkResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		w.WriteHeader(http.StatusOK)
-		return nil
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewDeleteSinkResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
 	}
 }
 
@@ -1928,6 +1854,9 @@ func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBo
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
 	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
+	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
 	}
@@ -1954,14 +1883,44 @@ func marshalStreamHTTPSourceToHTTPSourceResponseBody(v *stream.HTTPSource) *HTTP
 	return res
 }
 
+// marshalStreamCreatedEntityToCreatedEntityResponseBody builds a value of type
+// *CreatedEntityResponseBody from a value of type *stream.CreatedEntity.
+func marshalStreamCreatedEntityToCreatedEntityResponseBody(v *stream.CreatedEntity) *CreatedEntityResponseBody {
+	res := &CreatedEntityResponseBody{
+		At: v.At,
+	}
+	if v.By != nil {
+		res.By = marshalStreamByToByResponseBody(v.By)
+	}
+
+	return res
+}
+
+// marshalStreamByToByResponseBody builds a value of type *ByResponseBody from
+// a value of type *stream.By.
+func marshalStreamByToByResponseBody(v *stream.By) *ByResponseBody {
+	res := &ByResponseBody{
+		Type:      v.Type,
+		TokenID:   v.TokenID,
+		TokenDesc: v.TokenDesc,
+		UserID:    v.UserID,
+		UserName:  v.UserName,
+	}
+
+	return res
+}
+
 // marshalStreamVersionToVersionResponseBody builds a value of type
 // *VersionResponseBody from a value of type *stream.Version.
 func marshalStreamVersionToVersionResponseBody(v *stream.Version) *VersionResponseBody {
 	res := &VersionResponseBody{
 		Number:      v.Number,
 		Hash:        v.Hash,
-		ModifiedAt:  v.ModifiedAt,
 		Description: v.Description,
+		At:          v.At,
+	}
+	if v.By != nil {
+		res.By = marshalStreamByToByResponseBody(v.By)
 	}
 
 	return res
@@ -1978,19 +1937,6 @@ func marshalStreamDeletedEntityToDeletedEntityResponseBody(v *stream.DeletedEnti
 	}
 	if v.By != nil {
 		res.By = marshalStreamByToByResponseBody(v.By)
-	}
-
-	return res
-}
-
-// marshalStreamByToByResponseBody builds a value of type *ByResponseBody from
-// a value of type *stream.By.
-func marshalStreamByToByResponseBody(v *stream.By) *ByResponseBody {
-	res := &ByResponseBody{
-		Type:            v.Type,
-		TokenID:         v.TokenID,
-		UserID:          v.UserID,
-		UserDescription: v.UserDescription,
 	}
 
 	return res
@@ -2095,16 +2041,18 @@ func marshalStreamTestResultColumnToTestResultColumnResponseBody(v *stream.TestR
 	return res
 }
 
-// unmarshalTableSinkRequestBodyToStreamTableSink builds a value of type
-// *stream.TableSink from a value of type *TableSinkRequestBody.
-func unmarshalTableSinkRequestBodyToStreamTableSink(v *TableSinkRequestBody) *stream.TableSink {
+// unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate builds a value of
+// type *stream.TableSinkCreate from a value of type
+// *TableSinkCreateRequestBody.
+func unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate(v *TableSinkCreateRequestBody) *stream.TableSinkCreate {
 	if v == nil {
 		return nil
 	}
-	res := &stream.TableSink{}
-	if v.Mapping != nil {
-		res.Mapping = unmarshalTableMappingRequestBodyToStreamTableMapping(v.Mapping)
+	res := &stream.TableSinkCreate{
+		Type:    stream.TableType(*v.Type),
+		TableID: stream.TableID(*v.TableID),
 	}
+	res.Mapping = unmarshalTableMappingRequestBodyToStreamTableMapping(v.Mapping)
 
 	return res
 }
@@ -2112,12 +2060,7 @@ func unmarshalTableSinkRequestBodyToStreamTableSink(v *TableSinkRequestBody) *st
 // unmarshalTableMappingRequestBodyToStreamTableMapping builds a value of type
 // *stream.TableMapping from a value of type *TableMappingRequestBody.
 func unmarshalTableMappingRequestBodyToStreamTableMapping(v *TableMappingRequestBody) *stream.TableMapping {
-	if v == nil {
-		return nil
-	}
-	res := &stream.TableMapping{
-		TableID: stream.TableID(*v.TableID),
-	}
+	res := &stream.TableMapping{}
 	res.Columns = make([]*stream.TableColumn, len(v.Columns))
 	for i, val := range v.Columns {
 		res.Columns[i] = unmarshalTableColumnRequestBodyToStreamTableColumn(val)
@@ -2167,7 +2110,10 @@ func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSi
 	if v == nil {
 		return nil
 	}
-	res := &TableSinkResponseBody{}
+	res := &TableSinkResponseBody{
+		Type:    string(v.Type),
+		TableID: string(v.TableID),
+	}
 	if v.Mapping != nil {
 		res.Mapping = marshalStreamTableMappingToTableMappingResponseBody(v.Mapping)
 	}
@@ -2178,12 +2124,7 @@ func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSi
 // marshalStreamTableMappingToTableMappingResponseBody builds a value of type
 // *TableMappingResponseBody from a value of type *stream.TableMapping.
 func marshalStreamTableMappingToTableMappingResponseBody(v *stream.TableMapping) *TableMappingResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &TableMappingResponseBody{
-		TableID: string(v.TableID),
-	}
+	res := &TableMappingResponseBody{}
 	if v.Columns != nil {
 		res.Columns = make([]*TableColumnResponseBody, len(v.Columns))
 		for i, val := range v.Columns {
@@ -2240,12 +2181,9 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 		BranchID:    int(v.BranchID),
 		SourceID:    string(v.SourceID),
 		SinkID:      string(v.SinkID),
+		Type:        string(v.Type),
 		Name:        v.Name,
 		Description: v.Description,
-	}
-	if v.Type != nil {
-		type_ := string(*v.Type)
-		res.Type = &type_
 	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
@@ -2253,11 +2191,37 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
 	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
+	}
 	if v.Deleted != nil {
 		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
 	}
 	if v.Disabled != nil {
 		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
+	}
+
+	return res
+}
+
+// unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate builds a value of
+// type *stream.TableSinkUpdate from a value of type
+// *TableSinkUpdateRequestBody.
+func unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(v *TableSinkUpdateRequestBody) *stream.TableSinkUpdate {
+	if v == nil {
+		return nil
+	}
+	res := &stream.TableSinkUpdate{}
+	if v.Type != nil {
+		type_ := stream.TableType(*v.Type)
+		res.Type = &type_
+	}
+	if v.TableID != nil {
+		tableID := stream.TableID(*v.TableID)
+		res.TableID = &tableID
+	}
+	if v.Mapping != nil {
+		res.Mapping = unmarshalTableMappingRequestBodyToStreamTableMapping(v.Mapping)
 	}
 
 	return res
@@ -2297,11 +2261,14 @@ func marshalStreamLevelsToLevelsResponseBody(v *stream.Levels) *LevelsResponseBo
 // *SinkFileResponseBody from a value of type *stream.SinkFile.
 func marshalStreamSinkFileToSinkFileResponseBody(v *stream.SinkFile) *SinkFileResponseBody {
 	res := &SinkFileResponseBody{
-		State:       string(v.State),
-		OpenedAt:    v.OpenedAt,
-		ClosingAt:   v.ClosingAt,
-		ImportingAt: v.ImportingAt,
-		ImportedAt:  v.ImportedAt,
+		State:        string(v.State),
+		OpenedAt:     v.OpenedAt,
+		ClosingAt:    v.ClosingAt,
+		ImportingAt:  v.ImportingAt,
+		ImportedAt:   v.ImportedAt,
+		RetryAttempt: v.RetryAttempt,
+		RetryReason:  v.RetryReason,
+		RetryAfter:   v.RetryAfter,
 	}
 	if v.Statistics != nil {
 		res.Statistics = marshalStreamSinkFileStatisticsToSinkFileStatisticsResponseBody(v.Statistics)

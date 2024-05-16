@@ -158,10 +158,11 @@ paths:
                             - projectId
                             - branchId
                             - sourceId
-                            - version
                             - type
                             - name
                             - description
+                            - created
+                            - version
                 "404":
                     description: Not Found response.
                     schema:
@@ -192,8 +193,17 @@ paths:
                   required: true
                   type: string
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/StreamDeleteSourceResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -229,8 +239,8 @@ paths:
                   schema:
                     $ref: '#/definitions/StreamUpdateSourceRequestBody'
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
                     schema:
                         $ref: '#/definitions/StreamUpdateSourceResponseBody'
                         required:
@@ -310,10 +320,17 @@ paths:
                   schema:
                     $ref: '#/definitions/StreamUpdateSourceSettingsRequestBody'
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
                     schema:
                         $ref: '#/definitions/StreamUpdateSourceSettingsResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -479,9 +496,11 @@ paths:
                             - branchId
                             - sourceId
                             - sinkId
-                            - version
+                            - type
                             - name
                             - description
+                            - version
+                            - created
                 "404":
                     description: Not Found response.
                     schema:
@@ -517,8 +536,17 @@ paths:
                   required: true
                   type: string
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/StreamDeleteSinkResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -559,8 +587,8 @@ paths:
                   schema:
                     $ref: '#/definitions/StreamUpdateSinkRequestBody'
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
                     schema:
                         $ref: '#/definitions/StreamUpdateSinkResponseBody'
                         required:
@@ -650,10 +678,17 @@ paths:
                   schema:
                     $ref: '#/definitions/StreamUpdateSinkSettingsRequestBody'
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
                     schema:
                         $ref: '#/definitions/StreamUpdateSinkSettingsResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "404":
                     description: Not Found response.
                     schema:
@@ -791,49 +826,6 @@ paths:
                 - https
             security:
                 - storage-api-token: []
-    /v1/branches/{branchId}/sources/{sourceId}/tokens/refresh:
-        post:
-            tags:
-                - configuration
-            summary: Refresh source tokens
-            description: Each sink uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.
-            operationId: RefreshSourceTokens
-            parameters:
-                - name: branchId
-                  in: path
-                  description: ID of the branch or "default".
-                  required: true
-                  type: string
-                - name: sourceId
-                  in: path
-                  description: Unique ID of the source.
-                  required: true
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/StreamRefreshSourceTokensResponseBody'
-                        required:
-                            - projectId
-                            - branchId
-                            - sourceId
-                            - version
-                            - type
-                            - name
-                            - description
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody'
-                        required:
-                            - statusCode
-                            - error
-                            - message
-            schemes:
-                - https
-            security:
-                - storage-api-token: []
     /v1/documentation/openapi.json:
         get:
             tags:
@@ -932,6 +924,10 @@ definitions:
         title: ByResponseBody
         type: object
         properties:
+            tokenDesc:
+                type: string
+                description: Description of the token.
+                example: john.green@company.com
             tokenId:
                 type: string
                 description: ID of the token.
@@ -943,22 +939,46 @@ definitions:
                 enum:
                     - system
                     - user
-            userDescription:
-                type: string
-                description: Description of the user.
-                example: user@company.com
             userId:
                 type: string
                 description: ID of the user.
                 example: "578621"
+            userName:
+                type: string
+                description: Name of the user.
+                example: John Green
         description: Information about the operation actor.
         example:
             type: user
             tokenId: "896455"
+            tokenDesc: john.green@company.com
             userId: "578621"
-            userDescription: user@company.com
+            userName: John Green
         required:
             - type
+    CreatedEntityResponseBody:
+        title: CreatedEntityResponseBody
+        type: object
+        properties:
+            at:
+                type: string
+                description: Date and time of deletion.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            by:
+                $ref: '#/definitions/ByResponseBody'
+        description: Information about the entity creation.
+        example:
+            at: "2022-04-28T14:20:04.000Z"
+            by:
+                type: user
+                tokenId: "896455"
+                tokenDesc: john.green@company.com
+                userId: "578621"
+                userName: John Green
+        required:
+            - at
+            - by
     DeletedEntityResponseBody:
         title: DeletedEntityResponseBody
         type: object
@@ -976,8 +996,9 @@ definitions:
             by:
                 type: user
                 tokenId: "896455"
+                tokenDesc: john.green@company.com
                 userId: "578621"
-                userDescription: user@company.com
+                userName: John Green
         required:
             - at
             - by
@@ -1002,8 +1023,9 @@ definitions:
             by:
                 type: user
                 tokenId: "896455"
+                tokenDesc: john.green@company.com
                 userId: "578621"
-                userDescription: user@company.com
+                userName: John Green
             reason: Disabled for recurring problems.
         required:
             - at
@@ -1206,6 +1228,20 @@ definitions:
                 type: string
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
+            retryAfter:
+                type: string
+                description: Next attempt time.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            retryAttempt:
+                type: integer
+                description: Number of failed attempts.
+                example: 3
+                format: int64
+            retryReason:
+                type: string
+                description: Reason of the last failed attempt.
+                example: network problem
             state:
                 type: string
                 example: writing
@@ -1222,6 +1258,9 @@ definitions:
             closingAt: "2022-04-28T14:20:04.000Z"
             importingAt: "2022-04-28T14:20:04.000Z"
             importedAt: "2022-04-28T14:20:04.000Z"
+            retryAttempt: 3
+            retryReason: network problem
+            retryAfter: "2022-04-28T14:20:04.000Z"
             statistics:
                 total:
                     firstRecordAt: "2022-04-28T14:20:04.000Z"
@@ -1289,6 +1328,8 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            created:
+                $ref: '#/definitions/CreatedEntityResponseBody'
             deleted:
                 $ref: '#/definitions/DeletedEntityResponseBody'
             description:
@@ -1337,8 +1378,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: uuid-v7
                           name: id-col
@@ -1353,36 +1395,55 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
             version:
                 number: 3
                 hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
                 description: The reason for the last change was...
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            created:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
             deleted:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
             disabled:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
                 reason: Disabled for recurring problems.
         required:
             - projectId
             - branchId
             - sourceId
             - sinkId
-            - version
+            - type
             - name
             - description
+            - version
+            - created
     SourceResponseBody:
         title: SourceResponseBody
         type: object
@@ -1391,6 +1452,8 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            created:
+                $ref: '#/definitions/CreatedEntityResponseBody'
             deleted:
                 $ref: '#/definitions/DeletedEntityResponseBody'
             description:
@@ -1434,34 +1497,51 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            created:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
             version:
                 number: 3
                 hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
                 description: The reason for the last change was...
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
             deleted:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
             disabled:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
                 reason: Disabled for recurring problems.
         required:
             - projectId
             - branchId
             - sourceId
-            - version
             - type
             - name
             - description
+            - created
+            - version
     StreamAPIVersionIndexResponseBody:
         title: StreamAPIVersionIndexResponseBody
         type: object
@@ -1502,7 +1582,7 @@ definitions:
                 minLength: 1
                 maxLength: 48
             table:
-                $ref: '#/definitions/TableSinkRequestBody'
+                $ref: '#/definitions/TableSinkCreateRequestBody'
             type:
                 type: string
                 example: table
@@ -1514,8 +1594,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: uuid-v7
                           name: id-col
@@ -1530,8 +1611,9 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
         required:
             - type
             - name
@@ -1847,6 +1929,80 @@ definitions:
             - statusCode
             - error
             - message
+    StreamDeleteSinkResponseBody:
+        title: StreamDeleteSinkResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
     StreamDeleteSinkStreamAPISinkNotFoundResponseBody:
         title: StreamDeleteSinkStreamAPISinkNotFoundResponseBody
         type: object
@@ -1899,6 +2055,80 @@ definitions:
             - statusCode
             - error
             - message
+    StreamDeleteSourceResponseBody:
+        title: StreamDeleteSourceResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
     StreamDeleteSourceStreamAPISourceNotFoundResponseBody:
         title: StreamDeleteSourceStreamAPISourceNotFoundResponseBody
         type: object
@@ -1933,6 +2163,8 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            created:
+                $ref: '#/definitions/CreatedEntityResponseBody'
             deleted:
                 $ref: '#/definitions/DeletedEntityResponseBody'
             description:
@@ -1980,8 +2212,9 @@ definitions:
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: uuid-v7
                           name: id-col
@@ -1996,36 +2229,55 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
             version:
                 number: 3
                 hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
                 description: The reason for the last change was...
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            created:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
             deleted:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
             disabled:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
                 reason: Disabled for recurring problems.
         required:
             - projectId
             - branchId
             - sourceId
             - sinkId
-            - version
+            - type
             - name
             - description
+            - version
+            - created
     StreamGetSinkSettingsResponseBody:
         title: StreamGetSinkSettingsResponseBody
         type: object
@@ -2165,6 +2417,8 @@ definitions:
                 type: integer
                 example: 345
                 format: int64
+            created:
+                $ref: '#/definitions/CreatedEntityResponseBody'
             deleted:
                 $ref: '#/definitions/DeletedEntityResponseBody'
             description:
@@ -2207,34 +2461,51 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            created:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
             version:
                 number: 3
                 hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
                 description: The reason for the last change was...
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
             deleted:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
             disabled:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
                     tokenId: "896455"
+                    tokenDesc: john.green@company.com
                     userId: "578621"
-                    userDescription: user@company.com
+                    userName: John Green
                 reason: Disabled for recurring problems.
         required:
             - projectId
             - branchId
             - sourceId
-            - version
             - type
             - name
             - description
+            - created
+            - version
     StreamGetSourceSettingsResponseBody:
         title: StreamGetSourceSettingsResponseBody
         type: object
@@ -2441,8 +2712,9 @@ definitions:
                       name: Raw Data Sink
                       description: The sink stores records to a table.
                       table:
+                        type: keboola
+                        tableId: in.c-bucket.table
                         mapping:
-                            tableId: in.c-bucket.table
                             columns:
                                 - type: uuid-v7
                                   name: id-col
@@ -2457,27 +2729,44 @@ definitions:
                                   name: body-col
                                 - type: template
                                   name: template-col
-                                  language: jsonnet
-                                  content: body.foo + "-" + body.bar
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
-                        modifiedAt: "2022-04-28T14:20:04.000Z"
                         description: The reason for the last change was...
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      created:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
                       deleted:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
                             tokenId: "896455"
+                            tokenDesc: john.green@company.com
                             userId: "578621"
-                            userDescription: user@company.com
+                            userName: John Green
                       disabled:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
                             tokenId: "896455"
+                            tokenDesc: john.green@company.com
                             userId: "578621"
-                            userDescription: user@company.com
+                            userName: John Green
                         reason: Disabled for recurring problems.
             sourceId:
                 type: string
@@ -2502,8 +2791,9 @@ definitions:
                   name: Raw Data Sink
                   description: The sink stores records to a table.
                   table:
+                    type: keboola
+                    tableId: in.c-bucket.table
                     mapping:
-                        tableId: in.c-bucket.table
                         columns:
                             - type: uuid-v7
                               name: id-col
@@ -2518,27 +2808,44 @@ definitions:
                               name: body-col
                             - type: template
                               name: template-col
-                              language: jsonnet
-                              content: body.foo + "-" + body.bar
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
-                    modifiedAt: "2022-04-28T14:20:04.000Z"
                     description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
                   deleted:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
                         tokenId: "896455"
+                        tokenDesc: john.green@company.com
                         userId: "578621"
-                        userDescription: user@company.com
+                        userName: John Green
                   disabled:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
                         tokenId: "896455"
+                        tokenDesc: john.green@company.com
                         userId: "578621"
-                        userDescription: user@company.com
+                        userName: John Green
                     reason: Disabled for recurring problems.
         required:
             - projectId
@@ -2599,25 +2906,41 @@ definitions:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                      created:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
-                        modifiedAt: "2022-04-28T14:20:04.000Z"
                         description: The reason for the last change was...
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
                       deleted:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
                             tokenId: "896455"
+                            tokenDesc: john.green@company.com
                             userId: "578621"
-                            userDescription: user@company.com
+                            userName: John Green
                       disabled:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
                             tokenId: "896455"
+                            tokenDesc: john.green@company.com
                             userId: "578621"
-                            userDescription: user@company.com
+                            userName: John Green
                         reason: Disabled for recurring problems.
         example:
             projectId: 123
@@ -2636,135 +2959,47 @@ definitions:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
-                    modifiedAt: "2022-04-28T14:20:04.000Z"
                     description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
                   deleted:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
                         tokenId: "896455"
+                        tokenDesc: john.green@company.com
                         userId: "578621"
-                        userDescription: user@company.com
+                        userName: John Green
                   disabled:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
                         tokenId: "896455"
+                        tokenDesc: john.green@company.com
                         userId: "578621"
-                        userDescription: user@company.com
+                        userName: John Green
                     reason: Disabled for recurring problems.
         required:
             - projectId
             - branchId
             - page
             - sources
-    StreamRefreshSourceTokensResponseBody:
-        title: StreamRefreshSourceTokensResponseBody
-        type: object
-        properties:
-            branchId:
-                type: integer
-                example: 345
-                format: int64
-            deleted:
-                $ref: '#/definitions/DeletedEntityResponseBody'
-            description:
-                type: string
-                description: Description of the source.
-                example: The source receives events from Github.
-                maxLength: 4096
-            disabled:
-                $ref: '#/definitions/DisabledEntityResponseBody'
-            http:
-                $ref: '#/definitions/HTTPSourceResponseBody'
-            name:
-                type: string
-                description: Human readable name of the source.
-                example: Github Webhook Source
-                minLength: 1
-                maxLength: 40
-            projectId:
-                type: integer
-                example: 123
-                format: int64
-            sourceId:
-                type: string
-                example: github-webhook-source
-                minLength: 1
-                maxLength: 48
-            type:
-                type: string
-                example: http
-                enum:
-                    - http
-            version:
-                $ref: '#/definitions/VersionResponseBody'
-        example:
-            projectId: 123
-            branchId: 345
-            sourceId: github-webhook-source
-            type: http
-            name: Github Webhook Source
-            description: The source receives events from Github.
-            http:
-                url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                modifiedAt: "2022-04-28T14:20:04.000Z"
-                description: The reason for the last change was...
-            deleted:
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    userId: "578621"
-                    userDescription: user@company.com
-            disabled:
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    userId: "578621"
-                    userDescription: user@company.com
-                reason: Disabled for recurring problems.
-        required:
-            - projectId
-            - branchId
-            - sourceId
-            - version
-            - type
-            - name
-            - description
-    StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody:
-        title: StreamRefreshSourceTokensStreamAPISourceNotFoundResponseBody
-        type: object
-        properties:
-            error:
-                type: string
-                description: Name of error.
-                example: stream.internalError
-            message:
-                type: string
-                description: Error message.
-                example: Internal Error
-            statusCode:
-                type: integer
-                description: HTTP status code.
-                example: 500
-                format: int64
-        description: Source not found error.
-        example:
-            statusCode: 404
-            error: stream.api.sourceNotFound
-            message: Source "github-pull-requests" not found.
-        required:
-            - statusCode
-            - error
-            - message
     StreamSinkStatisticsFilesResponseBody:
         title: StreamSinkStatisticsFilesResponseBody
         type: object
@@ -2779,6 +3014,9 @@ definitions:
                       closingAt: "2022-04-28T14:20:04.000Z"
                       importingAt: "2022-04-28T14:20:04.000Z"
                       importedAt: "2022-04-28T14:20:04.000Z"
+                      retryAttempt: 3
+                      retryReason: network problem
+                      retryAfter: "2022-04-28T14:20:04.000Z"
                       statistics:
                         total:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
@@ -2808,6 +3046,9 @@ definitions:
                   closingAt: "2022-04-28T14:20:04.000Z"
                   importingAt: "2022-04-28T14:20:04.000Z"
                   importedAt: "2022-04-28T14:20:04.000Z"
+                  retryAttempt: 3
+                  retryReason: network problem
+                  retryAfter: "2022-04-28T14:20:04.000Z"
                   statistics:
                     total:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
@@ -3060,19 +3301,21 @@ definitions:
                 minLength: 1
                 maxLength: 40
             table:
-                $ref: '#/definitions/TableSinkRequestBody'
+                $ref: '#/definitions/TableSinkUpdateRequestBody'
             type:
                 type: string
                 example: table
                 enum:
                     - table
         example:
+            changeDescription: Renamed.
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
             table:
+                type: keboola
+                tableId: in.c-bucket.table
                 mapping:
-                    tableId: in.c-bucket.table
                     columns:
                         - type: uuid-v7
                           name: id-col
@@ -3087,9 +3330,9 @@ definitions:
                           name: body-col
                         - type: template
                           name: template-col
-                          language: jsonnet
-                          content: body.foo + "-" + body.bar
-            changeDescription: Renamed.
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
     StreamUpdateSinkResponseBody:
         title: StreamUpdateSinkResponseBody
         type: object
@@ -3168,6 +3411,10 @@ definitions:
         title: StreamUpdateSinkSettingsRequestBody
         type: object
         properties:
+            changeDescription:
+                type: string
+                description: Description of the modification, description of the version.
+                example: Updated settings.
             settings:
                 type: array
                 items:
@@ -3176,6 +3423,7 @@ definitions:
                     - key: some.service.limit
                       value: 1m20s
         example:
+            changeDescription: Updated settings.
             settings:
                 - key: some.service.limit
                   value: 1m20s
@@ -3183,29 +3431,76 @@ definitions:
         title: StreamUpdateSinkSettingsResponseBody
         type: object
         properties:
-            settings:
-                type: array
-                items:
-                    $ref: '#/definitions/SettingResultResponseBody'
-                example:
-                    - key: some.service.limit
-                      type: string
-                      description: Minimal interval between uploads.
-                      value: 1m20s
-                      defaultValue: 30s
-                      overwritten: true
-                      protected: false
-                      validation: minDuration=15s
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
         example:
-            settings:
-                - key: some.service.limit
-                  type: string
-                  description: Minimal interval between uploads.
-                  value: 1m20s
-                  defaultValue: 30s
-                  overwritten: true
-                  protected: false
-                  validation: minDuration=15s
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
     StreamUpdateSinkSettingsStreamAPIForbiddenResponseBody:
         title: StreamUpdateSinkSettingsStreamAPIForbiddenResponseBody
         type: object
@@ -3361,10 +3656,10 @@ definitions:
                 enum:
                     - http
         example:
+            changeDescription: Renamed.
             type: http
             name: Github Webhook Source
             description: The source receives events from Github.
-            changeDescription: Renamed.
     StreamUpdateSourceResponseBody:
         title: StreamUpdateSourceResponseBody
         type: object
@@ -3463,29 +3758,76 @@ definitions:
         title: StreamUpdateSourceSettingsResponseBody
         type: object
         properties:
-            settings:
-                type: array
-                items:
-                    $ref: '#/definitions/SettingResultResponseBody'
-                example:
-                    - key: some.service.limit
-                      type: string
-                      description: Minimal interval between uploads.
-                      value: 1m20s
-                      defaultValue: 30s
-                      overwritten: true
-                      protected: false
-                      validation: minDuration=15s
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
         example:
-            settings:
-                - key: some.service.limit
-                  type: string
-                  description: Minimal interval between uploads.
-                  value: 1m20s
-                  defaultValue: 30s
-                  overwritten: true
-                  protected: false
-                  validation: minDuration=15s
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
     StreamUpdateSourceSettingsStreamAPIForbiddenResponseBody:
         title: StreamUpdateSourceSettingsStreamAPIForbiddenResponseBody
         type: object
@@ -3582,9 +3924,9 @@ definitions:
             type:
                 type: string
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                example: id
+                example: body
                 enum:
-                    - id
+                    - uuid-v7
                     - datetime
                     - ip
                     - body
@@ -3593,7 +3935,7 @@ definitions:
         description: An output mapping defined by a template.
         example:
             primaryKey: false
-            type: id
+            type: body
             name: id-col
             template:
                 language: jsonnet
@@ -3619,9 +3961,9 @@ definitions:
             type:
                 type: string
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                example: id
+                example: body
                 enum:
-                    - id
+                    - uuid-v7
                     - datetime
                     - ip
                     - body
@@ -3630,7 +3972,7 @@ definitions:
         description: An output mapping defined by a template.
         example:
             primaryKey: false
-            type: id
+            type: body
             name: id-col
             template:
                 language: jsonnet
@@ -3702,16 +4044,13 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
                 minItems: 1
                 maxItems: 100
-            tableId:
-                type: string
-                example: in.c-bucket.table
         description: Table mapping definition.
         example:
-            tableId: in.c-bucket.table
             columns:
                 - type: uuid-v7
                   name: id-col
@@ -3726,10 +4065,10 @@ definitions:
                   name: body-col
                 - type: template
                   name: template-col
-                  language: jsonnet
-                  content: body.foo + "-" + body.bar
+                  template:
+                    language: jsonnet
+                    content: body.foo + "-" + body.bar
         required:
-            - tableId
             - columns
     TableMappingResponseBody:
         title: TableMappingResponseBody
@@ -3753,16 +4092,13 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
                 minItems: 1
                 maxItems: 100
-            tableId:
-                type: string
-                example: in.c-bucket.table
         description: Table mapping definition.
         example:
-            tableId: in.c-bucket.table
             columns:
                 - type: uuid-v7
                   name: id-col
@@ -3777,21 +4113,30 @@ definitions:
                   name: body-col
                 - type: template
                   name: template-col
-                  language: jsonnet
-                  content: body.foo + "-" + body.bar
+                  template:
+                    language: jsonnet
+                    content: body.foo + "-" + body.bar
         required:
-            - tableId
             - columns
-    TableSinkRequestBody:
-        title: TableSinkRequestBody
+    TableSinkCreateRequestBody:
+        title: TableSinkCreateRequestBody
         type: object
         properties:
             mapping:
                 $ref: '#/definitions/TableMappingRequestBody'
-        description: Table sink definition.
+            tableId:
+                type: string
+                example: in.c-bucket.table
+            type:
+                type: string
+                example: keboola
+                enum:
+                    - keboola
+        description: Table sink configuration for "type" = "table".
         example:
+            type: keboola
+            tableId: in.c-bucket.table
             mapping:
-                tableId: in.c-bucket.table
                 columns:
                     - type: uuid-v7
                       name: id-col
@@ -3806,18 +4151,32 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
+        required:
+            - type
+            - tableId
+            - mapping
     TableSinkResponseBody:
         title: TableSinkResponseBody
         type: object
         properties:
             mapping:
                 $ref: '#/definitions/TableMappingResponseBody'
-        description: Table sink definition.
+            tableId:
+                type: string
+                example: in.c-bucket.table
+            type:
+                type: string
+                example: keboola
+                enum:
+                    - keboola
+        description: Table sink configuration for "type" = "table".
         example:
+            type: keboola
+            tableId: in.c-bucket.table
             mapping:
-                tableId: in.c-bucket.table
                 columns:
                     - type: uuid-v7
                       name: id-col
@@ -3832,8 +4191,49 @@ definitions:
                       name: body-col
                     - type: template
                       name: template-col
-                      language: jsonnet
-                      content: body.foo + "-" + body.bar
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
+        required:
+            - type
+            - tableId
+            - mapping
+    TableSinkUpdateRequestBody:
+        title: TableSinkUpdateRequestBody
+        type: object
+        properties:
+            mapping:
+                $ref: '#/definitions/TableMappingRequestBody'
+            tableId:
+                type: string
+                example: in.c-bucket.table
+            type:
+                type: string
+                example: keboola
+                enum:
+                    - keboola
+        description: Table sink configuration for "type" = "table".
+        example:
+            type: keboola
+            tableId: in.c-bucket.table
+            mapping:
+                columns:
+                    - type: uuid-v7
+                      name: id-col
+                      primaryKey: true
+                    - type: datetime
+                      name: datetime-col
+                    - type: ip
+                      name: ip-col
+                    - type: headers
+                      name: headers-col
+                    - type: body
+                      name: body-col
+                    - type: template
+                      name: template-col
+                      template:
+                        language: jsonnet
+                        content: body.foo + "-" + body.bar
     TaskOutputsResponseBody:
         title: TaskOutputsResponseBody
         type: object
@@ -3946,6 +4346,13 @@ definitions:
         title: VersionResponseBody
         type: object
         properties:
+            at:
+                type: string
+                description: Date and time of the modification.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            by:
+                $ref: '#/definitions/ByResponseBody'
             description:
                 type: string
                 description: Description of the change.
@@ -3954,11 +4361,6 @@ definitions:
                 type: string
                 description: Hash of the entity state.
                 example: f43e93acd97eceb3
-            modifiedAt:
-                type: string
-                description: Date and time of the modification.
-                example: "2022-04-28T14:20:04.000Z"
-                format: date-time
             number:
                 type: integer
                 description: Version number counted from 1.
@@ -3969,12 +4371,19 @@ definitions:
         example:
             number: 3
             hash: f43e93acd97eceb3
-            modifiedAt: "2022-04-28T14:20:04.000Z"
             description: The reason for the last change was...
+            at: "2022-04-28T14:20:04.000Z"
+            by:
+                type: user
+                tokenId: "896455"
+                tokenDesc: john.green@company.com
+                userId: "578621"
+                userName: John Green
         required:
             - number
             - hash
-            - modifiedAt
+            - at
+            - by
             - description
 securityDefinitions:
     storage-api-token:

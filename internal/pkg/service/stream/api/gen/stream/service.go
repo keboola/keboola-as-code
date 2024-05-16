@@ -39,14 +39,11 @@ type Service interface {
 	// Get the source definition.
 	GetSource(context.Context, dependencies.SourceRequestScope, *GetSourcePayload) (res *Source, err error)
 	// Delete the source.
-	DeleteSource(context.Context, dependencies.SourceRequestScope, *DeleteSourcePayload) (err error)
+	DeleteSource(context.Context, dependencies.SourceRequestScope, *DeleteSourcePayload) (res *Task, err error)
 	// Get source settings.
 	GetSourceSettings(context.Context, dependencies.SourceRequestScope, *GetSourceSettingsPayload) (res *SettingsResult, err error)
 	// Update source settings.
-	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res *SettingsResult, err error)
-	// Each sink uses its own token scoped to the target bucket, this endpoint
-	// refreshes all of those tokens.
-	RefreshSourceTokens(context.Context, dependencies.SourceRequestScope, *RefreshSourceTokensPayload) (res *Source, err error)
+	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res *Task, err error)
 	// Tests configured mapping of the source and its sinks.
 	TestSource(context.Context, dependencies.SourceRequestScope, *TestSourcePayload, io.ReadCloser) (res *TestResult, err error)
 	// Create a new sink in the source.
@@ -56,13 +53,13 @@ type Service interface {
 	// Get the sink settings.
 	GetSinkSettings(context.Context, dependencies.SinkRequestScope, *GetSinkSettingsPayload) (res *SettingsResult, err error)
 	// Update sink settings.
-	UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *UpdateSinkSettingsPayload) (res *SettingsResult, err error)
+	UpdateSinkSettings(context.Context, dependencies.SinkRequestScope, *UpdateSinkSettingsPayload) (res *Task, err error)
 	// List all sinks in the source.
 	ListSinks(context.Context, dependencies.SourceRequestScope, *ListSinksPayload) (res *SinksList, err error)
 	// Update the sink.
 	UpdateSink(context.Context, dependencies.SinkRequestScope, *UpdateSinkPayload) (res *Task, err error)
 	// Delete the sink.
-	DeleteSink(context.Context, dependencies.SinkRequestScope, *DeleteSinkPayload) (err error)
+	DeleteSink(context.Context, dependencies.SinkRequestScope, *DeleteSinkPayload) (res *Task, err error)
 	// Get total statistics of the sink.
 	SinkStatisticsTotal(context.Context, dependencies.SinkRequestScope, *SinkStatisticsTotalPayload) (res *SinkStatisticsTotalResult, err error)
 	// Get files statistics of the sink.
@@ -91,7 +88,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [22]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "RefreshSourceTokens", "TestSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask"}
+var MethodNames = [21]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask"}
 
 // ID of the branch.
 type BranchID = keboola.BranchID
@@ -105,10 +102,12 @@ type By struct {
 	Type string
 	// ID of the token.
 	TokenID *string
+	// Description of the token.
+	TokenDesc *string
 	// ID of the user.
 	UserID *string
-	// Description of the user.
-	UserDescription *string
+	// Name of the user.
+	UserName *string
 }
 
 // CreateSinkPayload is the payload type of the stream service CreateSink
@@ -125,8 +124,7 @@ type CreateSinkPayload struct {
 	Name string
 	// Description of the source.
 	Description *string
-	// Table sink configuration for "type" = "table".
-	Table *TableSink
+	Table       *TableSinkCreate
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -142,6 +140,14 @@ type CreateSourcePayload struct {
 	Name string
 	// Description of the source.
 	Description *string
+}
+
+// Information about the entity creation.
+type CreatedEntity struct {
+	// Date and time of deletion.
+	At string
+	// Who created the entity.
+	By *By
 }
 
 // DeleteSinkPayload is the payload type of the stream service DeleteSink
@@ -284,14 +290,6 @@ type PaginatedResponse struct {
 // ID of the project.
 type ProjectID = keboola.ProjectID
 
-// RefreshSourceTokensPayload is the payload type of the stream service
-// RefreshSourceTokens method.
-type RefreshSourceTokensPayload struct {
-	StorageAPIToken string
-	BranchID        BranchIDOrDefault
-	SourceID        SourceID
-}
-
 // ServiceDetail is the result type of the stream service ApiVersionIndex
 // method.
 type ServiceDetail struct {
@@ -343,16 +341,16 @@ type Sink struct {
 	BranchID  BranchID
 	SourceID  SourceID
 	SinkID    SinkID
-	Type      *SinkType
+	Type      SinkType
 	// Human readable name of the sink.
 	Name string
 	// Description of the source.
 	Description string
-	// Table sink configuration for "type" = "table".
-	Table    *TableSink
-	Version  *Version
-	Deleted  *DeletedEntity
-	Disabled *DisabledEntity
+	Table       *TableSink
+	Version     *Version
+	Created     *CreatedEntity
+	Deleted     *DeletedEntity
+	Disabled    *DisabledEntity
 }
 
 type SinkFile struct {
@@ -361,7 +359,13 @@ type SinkFile struct {
 	ClosingAt   *string
 	ImportingAt *string
 	ImportedAt  *string
-	Statistics  *SinkFileStatistics
+	// Number of failed attempts.
+	RetryAttempt *int
+	// Reason of the last failed attempt.
+	RetryReason *string
+	// Next attempt time.
+	RetryAfter *string
+	Statistics *SinkFileStatistics
 }
 
 type SinkFileStatistics struct {
@@ -432,6 +436,7 @@ type Source struct {
 	Description string
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSource
+	Created  *CreatedEntity
 	Version  *Version
 	Deleted  *DeletedEntity
 	Disabled *DisabledEntity
@@ -479,14 +484,31 @@ type TableID string
 
 // Table mapping definition.
 type TableMapping struct {
-	TableID TableID
 	Columns TableColumns
 }
 
-// Table sink definition.
+// Table sink configuration for "type" = "table".
 type TableSink struct {
+	Type    TableType
+	TableID TableID
 	Mapping *TableMapping
 }
+
+// Table sink configuration for "type" = "table".
+type TableSinkCreate struct {
+	Type    TableType
+	TableID TableID
+	Mapping *TableMapping
+}
+
+// Table sink configuration for "type" = "table".
+type TableSinkUpdate struct {
+	Type    *TableType
+	TableID *TableID
+	Mapping *TableMapping
+}
+
+type TableType = definition.TableType
 
 // Task is the result type of the stream service CreateSource method.
 type Task struct {
@@ -573,15 +595,14 @@ type UpdateSinkPayload struct {
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
-	Type            *SinkType
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Type              *SinkType
 	// Human readable name of the sink.
 	Name *string
 	// Description of the source.
 	Description *string
-	// Table sink configuration for "type" = "table".
-	Table *TableSink
-	// Description of the modification, description of the version.
-	ChangeDescription *string
+	Table       *TableSinkUpdate
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service
@@ -591,7 +612,9 @@ type UpdateSinkSettingsPayload struct {
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	SinkID          SinkID
-	Settings        SettingsPatch
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Settings          SettingsPatch
 }
 
 // UpdateSourcePayload is the payload type of the stream service UpdateSource
@@ -600,13 +623,13 @@ type UpdateSourcePayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
-	Type            *SourceType
+	// Description of the modification, description of the version.
+	ChangeDescription *string
+	Type              *SourceType
 	// Human readable name of the source.
 	Name *string
 	// Description of the source.
 	Description *string
-	// Description of the modification, description of the version.
-	ChangeDescription *string
 }
 
 // UpdateSourceSettingsPayload is the payload type of the stream service
@@ -626,10 +649,12 @@ type Version struct {
 	Number definition.VersionNumber
 	// Hash of the entity state.
 	Hash string
-	// Date and time of the modification.
-	ModifiedAt string
 	// Description of the change.
 	Description string
+	// Date and time of the modification.
+	At string
+	// Who modified the entity.
+	By *By
 }
 
 // Error returns an error description.
