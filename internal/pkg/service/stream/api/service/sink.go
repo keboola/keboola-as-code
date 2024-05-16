@@ -102,6 +102,21 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 			assignStatistics(filesMap[key].Statistics.Levels.Staging, aggregated.Staging)
 			assignStatistics(filesMap[key].Statistics.Levels.Target, aggregated.Target)
 		}
+
+		for _, file := range filesMap {
+			if file.Statistics.Total.RecordsCount == 0 {
+				file.Statistics.Total = nil
+			}
+			if file.Statistics.Levels.Local.RecordsCount == 0 {
+				file.Statistics.Levels.Local = nil
+			}
+			if file.Statistics.Levels.Staging.RecordsCount == 0 {
+				file.Statistics.Levels.Staging = nil
+			}
+			if file.Statistics.Levels.Target.RecordsCount == 0 {
+				file.Statistics.Levels.Target = nil
+			}
+		}
 	}
 
 	res = &stream.SinkStatisticsFilesResult{

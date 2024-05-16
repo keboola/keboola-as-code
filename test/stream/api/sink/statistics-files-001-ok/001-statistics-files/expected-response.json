@@ -19,14 +19,6 @@
             "lastRecordAt": "2000-01-01T01:00:00.000Z",
             "recordsCount": 1,
             "uncompressedSize": 1
-          },
-          "staging": {
-            "recordsCount": 0,
-            "uncompressedSize": 0
-          },
-          "target": {
-            "recordsCount": 0,
-            "uncompressedSize": 0
           }
         }
       }
