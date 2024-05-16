@@ -31,7 +31,6 @@ type Server struct {
 	DeleteSource         http.Handler
 	GetSourceSettings    http.Handler
 	UpdateSourceSettings http.Handler
-	RefreshSourceTokens  http.Handler
 	TestSource           http.Handler
 	CreateSink           http.Handler
 	GetSink              http.Handler
@@ -108,7 +107,6 @@ func New(
 			{"DeleteSource", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}"},
 			{"GetSourceSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"UpdateSourceSettings", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
-			{"RefreshSourceTokens", "POST", "/v1/branches/{branchId}/sources/{sourceId}/tokens/refresh"},
 			{"TestSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/test"},
 			{"CreateSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"GetSink", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
@@ -126,7 +124,6 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
-			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/tokens/refresh"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
@@ -155,7 +152,6 @@ func New(
 		DeleteSource:         NewDeleteSourceHandler(e.DeleteSource, mux, decoder, encoder, errhandler, formatter),
 		GetSourceSettings:    NewGetSourceSettingsHandler(e.GetSourceSettings, mux, decoder, encoder, errhandler, formatter),
 		UpdateSourceSettings: NewUpdateSourceSettingsHandler(e.UpdateSourceSettings, mux, decoder, encoder, errhandler, formatter),
-		RefreshSourceTokens:  NewRefreshSourceTokensHandler(e.RefreshSourceTokens, mux, decoder, encoder, errhandler, formatter),
 		TestSource:           NewTestSourceHandler(e.TestSource, mux, decoder, encoder, errhandler, formatter),
 		CreateSink:           NewCreateSinkHandler(e.CreateSink, mux, decoder, encoder, errhandler, formatter),
 		GetSink:              NewGetSinkHandler(e.GetSink, mux, decoder, encoder, errhandler, formatter),
@@ -191,7 +187,6 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.DeleteSource = m(s.DeleteSource)
 	s.GetSourceSettings = m(s.GetSourceSettings)
 	s.UpdateSourceSettings = m(s.UpdateSourceSettings)
-	s.RefreshSourceTokens = m(s.RefreshSourceTokens)
 	s.TestSource = m(s.TestSource)
 	s.CreateSink = m(s.CreateSink)
 	s.GetSink = m(s.GetSink)
@@ -221,7 +216,6 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountDeleteSourceHandler(mux, h.DeleteSource)
 	MountGetSourceSettingsHandler(mux, h.GetSourceSettings)
 	MountUpdateSourceSettingsHandler(mux, h.UpdateSourceSettings)
-	MountRefreshSourceTokensHandler(mux, h.RefreshSourceTokens)
 	MountTestSourceHandler(mux, h.TestSource)
 	MountCreateSinkHandler(mux, h.CreateSink)
 	MountGetSinkHandler(mux, h.GetSink)
@@ -700,57 +694,6 @@ func NewUpdateSourceSettingsHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "UpdateSourceSettings")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			errhandler(ctx, w, err)
-		}
-	})
-}
-
-// MountRefreshSourceTokensHandler configures the mux to serve the "stream"
-// service "RefreshSourceTokens" endpoint.
-func MountRefreshSourceTokensHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/tokens/refresh", f)
-}
-
-// NewRefreshSourceTokensHandler creates a HTTP handler which loads the HTTP
-// request and calls the "stream" service "RefreshSourceTokens" endpoint.
-func NewRefreshSourceTokensHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeRefreshSourceTokensRequest(mux, decoder)
-		encodeResponse = EncodeRefreshSourceTokensResponse(encoder)
-		encodeError    = EncodeRefreshSourceTokensError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "RefreshSourceTokens")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -1375,7 +1318,6 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings", h.ServeHTTP)
-	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/tokens/refresh", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)

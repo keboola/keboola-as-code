@@ -29,7 +29,6 @@ type Endpoints struct {
 	DeleteSource         goa.Endpoint
 	GetSourceSettings    goa.Endpoint
 	UpdateSourceSettings goa.Endpoint
-	RefreshSourceTokens  goa.Endpoint
 	TestSource           goa.Endpoint
 	CreateSink           goa.Endpoint
 	GetSink              goa.Endpoint
@@ -67,7 +66,6 @@ func NewEndpoints(s Service) *Endpoints {
 		DeleteSource:         NewDeleteSourceEndpoint(s, a.APIKeyAuth),
 		GetSourceSettings:    NewGetSourceSettingsEndpoint(s, a.APIKeyAuth),
 		UpdateSourceSettings: NewUpdateSourceSettingsEndpoint(s, a.APIKeyAuth),
-		RefreshSourceTokens:  NewRefreshSourceTokensEndpoint(s, a.APIKeyAuth),
 		TestSource:           NewTestSourceEndpoint(s, a.APIKeyAuth),
 		CreateSink:           NewCreateSinkEndpoint(s, a.APIKeyAuth),
 		GetSink:              NewGetSinkEndpoint(s, a.APIKeyAuth),
@@ -94,7 +92,6 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.DeleteSource = m(e.DeleteSource)
 	e.GetSourceSettings = m(e.GetSourceSettings)
 	e.UpdateSourceSettings = m(e.UpdateSourceSettings)
-	e.RefreshSourceTokens = m(e.RefreshSourceTokens)
 	e.TestSource = m(e.TestSource)
 	e.CreateSink = m(e.CreateSink)
 	e.GetSink = m(e.GetSink)
@@ -231,7 +228,7 @@ func NewDeleteSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
-		return nil, s.DeleteSource(ctx, deps, p)
+		return s.DeleteSource(ctx, deps, p)
 	}
 }
 
@@ -272,26 +269,6 @@ func NewUpdateSourceSettingsEndpoint(s Service, authAPIKeyFn security.AuthAPIKey
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.UpdateSourceSettings(ctx, deps, p)
-	}
-}
-
-// NewRefreshSourceTokensEndpoint returns an endpoint function that calls the
-// method "RefreshSourceTokens" of service "stream".
-func NewRefreshSourceTokensEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
-	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*RefreshSourceTokensPayload)
-		var err error
-		sc := security.APIKeyScheme{
-			Name:           "storage-api-token",
-			Scopes:         []string{},
-			RequiredScopes: []string{},
-		}
-		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
-		if err != nil {
-			return nil, err
-		}
-		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
-		return s.RefreshSourceTokens(ctx, deps, p)
 	}
 }
 
@@ -451,7 +428,7 @@ func NewDeleteSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
-		return nil, s.DeleteSink(ctx, deps, p)
+		return s.DeleteSink(ctx, deps, p)
 	}
 }
 
