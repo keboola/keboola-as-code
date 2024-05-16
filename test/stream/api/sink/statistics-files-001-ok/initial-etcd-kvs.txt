@@ -1,108 +1,4 @@
 <<<<<
-definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
-  "isDefault": true
-}
->>>>>
-
-<<<<<
-definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
-  "sourceId": "my-source",
-  "version": {
-    "number": 1,
-    "hash": "db005c310109808b",
-    "modifiedAt": "2024-02-29T16:04:00.035Z",
-    "description": "New source."
-  },
-  "type": "http",
-  "name": "My Source",
-  "http": {
-    "secret": "kQU45mKXenSndxyxk4DohbkXS610B0oKYvyWGixGgMUJpbAr"
-  }
-}
->>>>>
-
-<<<<<
-definition/sink/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
-  "sourceId": "my-source",
-  "sinkId": "my-sink",
-  "version": {
-    "number": 5,
-    "hash": "46739e92e00d7521",
-    "modifiedAt": "2006-01-02T15:04:05.123Z",
-    "description": "Rollback to version 2"
-  },
-  "type": "table",
-  "name": "Modified Name",
-  "description": "My Description",
-  "config": [
-    {
-      "key": "storage.level.local.volume.assignment.count",
-      "value": 1
-    },
-    {
-      "key": "storage.level.local.volume.assignment.preferredTypes",
-      "value": [
-        "default"
-      ]
-    },
-    {
-      "key": "storage.level.local.volume.sync.bytesTrigger",
-      "value": "100KB"
-    },
-    {
-      "key": "storage.level.local.volume.sync.checkInterval",
-      "value": "1ms"
-    },
-    {
-      "key": "storage.level.local.volume.sync.countTrigger",
-      "value": 100
-    },
-    {
-      "key": "storage.level.local.volume.sync.intervalTrigger",
-      "value": "100ms"
-    },
-    {
-      "key": "storage.level.local.volume.sync.mode",
-      "value": "disk"
-    },
-    {
-      "key": "storage.level.local.volume.sync.wait",
-      "value": false
-    }
-  ],
-  "table": {
-    "keboola": {
-      "tableId": "in.bucket.table"
-    },
-    "mapping": {
-      "columns": [
-        {
-          "type": "datetime",
-          "name": "datetime"
-        },
-        {
-          "type": "body",
-          "name": "body"
-        }
-      ]
-    }
-  }
-}
->>>>>
-
-<<<<<
 storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/2000-01-01T02:00:00.000Z
 -----
 {
@@ -165,6 +61,7 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
     }
   },
   "staging": {
+    "provider": "keboola",
     "compression": {
       "type": "gzip",
       "gzip": {
@@ -174,15 +71,10 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
         "concurrency": 0
       }
     },
-    "credentials": {},
-    "credentialsExpiration": "2000-01-01T03:00:00.000Z"
+    "expiration": "2000-01-01T03:00:00.000Z"
   },
   "target": {
-    "table": {
-      "keboola": {
-        "tableId": "in.bucket.table"
-      }
-    }
+    "provider": "keboola"
   }
 }
 >>>>>
