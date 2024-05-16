@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -239,6 +241,14 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 			ClosingAt:   timeToString(value.ClosingAt),
 			ImportingAt: timeToString(value.ImportingAt),
 			ImportedAt:  timeToString(value.ImportedAt),
+			Statistics: &stream.SinkFileStatistics{
+				Levels: &stream.Levels{
+					Local:   &stream.Level{},
+					Staging: &stream.Level{},
+					Target:  &stream.Level{},
+				},
+				Total: &stream.Level{},
+			},
 		}
 
 		if value.RetryAttempt > 0 {
@@ -254,34 +264,26 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		return nil, err
 	}
 
+	// Sort keys lexicographically
 	keys := maps.Keys(filesMap)
+	slices.SortStableFunc(keys, func(a, b model.FileID) int {
+		return strings.Compare(a.String(), b.String())
+	})
+
 	if len(keys) > 0 {
 		statisticsMap, err := d.StatisticsRepository().FilesStats(d.SinkKey(), keys[0], keys[len(keys)-1]).Do(ctx).ResultOrErr()
 		if err != nil {
 			return nil, err
 		}
 
-		for key, aggregated := range statisticsMap {
-			if filesMap[key].Statistics == nil {
-				filesMap[key].Statistics = &stream.SinkFileStatistics{
-					Levels: &stream.Levels{
-						Local:   &stream.Level{},
-						Staging: &stream.Level{},
-						Target:  &stream.Level{},
-					},
-					Total: &stream.Level{},
-				}
-			}
-			assignStatistics(filesMap[key].Statistics.Total, aggregated.Total)
-			assignStatistics(filesMap[key].Statistics.Levels.Local, aggregated.Local)
-			assignStatistics(filesMap[key].Statistics.Levels.Staging, aggregated.Staging)
-			assignStatistics(filesMap[key].Statistics.Levels.Target, aggregated.Target)
+		for k, aggregated := range statisticsMap {
+			assignStatistics(filesMap[k].Statistics.Total, aggregated.Total)
+			assignStatistics(filesMap[k].Statistics.Levels.Local, aggregated.Local)
+			assignStatistics(filesMap[k].Statistics.Levels.Staging, aggregated.Staging)
+			assignStatistics(filesMap[k].Statistics.Levels.Target, aggregated.Target)
 		}
 
 		for _, file := range filesMap {
-			if file.Statistics.Total.RecordsCount == 0 {
-				file.Statistics.Total = nil
-			}
 			if file.Statistics.Levels.Local.RecordsCount == 0 {
 				file.Statistics.Levels.Local = nil
 			}
@@ -294,11 +296,13 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		}
 	}
 
-	res = &stream.SinkStatisticsFilesResult{
-		Files: maps.Values(filesMap),
-	}
+	// Sort files response by OpenedAt timestamp
+	files := maps.Values(filesMap)
+	slices.SortStableFunc(files, func(a, b *api.SinkFile) int {
+		return strings.Compare(a.OpenedAt, b.OpenedAt)
+	})
 
-	return res, nil
+	return &stream.SinkStatisticsFilesResult{Files: files}, nil
 }
 
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
