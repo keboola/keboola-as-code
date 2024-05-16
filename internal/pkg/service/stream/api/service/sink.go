@@ -119,7 +119,7 @@ func assignStatistics(levelStatistics *stream.Level, levelValue statistics.Value
 }
 
 func timeToString(time *utctime.UTCTime) *string {
-	if time == nil {
+	if time == nil || time.IsZero() {
 		return nil
 	}
 
