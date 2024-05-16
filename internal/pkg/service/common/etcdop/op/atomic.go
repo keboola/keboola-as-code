@@ -36,8 +36,13 @@ type AtomicOp[R any] struct {
 }
 
 type AtomicOpInterface interface {
+	// ReadPhaseOps returns all op factories for READ phase,
+	// is used in joining two atomic operations, see AddFrom method.
 	ReadPhaseOps() []HighLevelFactory
+	// WritePhaseOps returns all op factories for WRITE phase,
+	// is used in joining two atomic operations, see AddFrom method.
 	WritePhaseOps() []HighLevelFactory
+	// Core returns AtomicOpCore - This does not contain result type specific methods.
 	Core() *AtomicOpCore
 }
 
@@ -47,6 +52,7 @@ type Mutex interface {
 	IsOwner() etcd.Cmp
 }
 
+// Atomic creates empty atomic operation with result type R.
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
 	v := &AtomicOp[R]{AtomicOpCore: newAtomicCore(client), result: result}
 	v.setProcessorFactory(func() func(ctx context.Context, r *TxnResult[NoResult]) {
