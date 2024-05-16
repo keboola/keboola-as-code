@@ -18,6 +18,10 @@ func (m *Mapper) NewSinkStatisticsTotalResponse(result statistics.Aggregated) (r
 }
 
 func mapValueToLevel(value statistics.Value) *stream.Level {
+	if value.RecordsCount == 0 {
+		return nil
+	}
+
 	return &stream.Level{
 		FirstRecordAt:    timeValueToPointer(value.FirstRecordAt),
 		LastRecordAt:     timeValueToPointer(value.LastRecordAt),

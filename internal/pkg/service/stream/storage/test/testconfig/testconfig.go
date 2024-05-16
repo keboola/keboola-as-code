@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
@@ -25,16 +26,16 @@ func StorageConfigPatch() configpatch.PatchKVs {
 					Local: &local.ConfigPatch{
 						Volume: &volume.ConfigPatch{
 							Assignment: &assignment.ConfigPatch{
-								Count:          ptr(1),
-								PreferredTypes: ptr([]string{"default"}),
+								Count:          ptr.Ptr(1),
+								PreferredTypes: ptr.Ptr([]string{"default"}),
 							},
 							Sync: &disksync.ConfigPatch{
-								Mode:            ptr(disksync.ModeDisk),
-								Wait:            ptr(false),
-								CheckInterval:   ptr(duration.From(1 * time.Millisecond)),
-								CountTrigger:    ptr(uint(100)),
-								BytesTrigger:    ptr(100 * datasize.KB),
-								IntervalTrigger: ptr(duration.From(100 * time.Millisecond)),
+								Mode:            ptr.Ptr(disksync.ModeDisk),
+								Wait:            ptr.Ptr(false),
+								CheckInterval:   ptr.Ptr(duration.From(1 * time.Millisecond)),
+								CountTrigger:    ptr.Ptr(uint(100)),
+								BytesTrigger:    ptr.Ptr(100 * datasize.KB),
+								IntervalTrigger: ptr.Ptr(duration.From(100 * time.Millisecond)),
 							},
 						},
 					},
@@ -54,8 +55,8 @@ func LocalVolumeConfig(count int, preferred []string) configpatch.PatchKVs {
 					Local: &local.ConfigPatch{
 						Volume: &volume.ConfigPatch{
 							Assignment: &assignment.ConfigPatch{
-								Count:          ptr(count),
-								PreferredTypes: ptr(preferred),
+								Count:          ptr.Ptr(count),
+								PreferredTypes: ptr.Ptr(preferred),
 							},
 						},
 					},
@@ -64,8 +65,4 @@ func LocalVolumeConfig(count int, preferred []string) configpatch.PatchKVs {
 		},
 		configpatch.WithModifyProtected(),
 	)
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }

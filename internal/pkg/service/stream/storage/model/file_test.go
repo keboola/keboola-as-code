@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -181,7 +182,7 @@ func TestFile_Validation(t *testing.T) {
 				FileKey:   testFileKey(),
 				Type:      FileTypeCSV,
 				State:     FileClosing,
-				ClosingAt: ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ClosingAt: ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},
@@ -199,8 +200,8 @@ func TestFile_Validation(t *testing.T) {
 				FileKey:     testFileKey(),
 				Type:        FileTypeCSV,
 				State:       FileImporting,
-				ClosingAt:   ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				ImportingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ImportingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},
@@ -218,9 +219,9 @@ func TestFile_Validation(t *testing.T) {
 				FileKey:     testFileKey(),
 				Type:        FileTypeCSV,
 				State:       FileImported,
-				ClosingAt:   ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				ImportingAt: ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				ImportedAt:  ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
+				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ImportingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				ImportedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
 				Columns: column.Columns{
 					column.UUID{},
 					column.Headers{},

@@ -874,11 +874,8 @@ var SinkStatisticsTotalResult = Type("SinkStatisticsTotalResult", func() {
 
 var Levels = Type("Levels", func() {
 	Attribute("local", Level)
-	Required("local")
 	Attribute("staging", Level)
-	Required("staging")
 	Attribute("target", Level)
-	Required("target")
 })
 
 var Level = Type("Level", func() {

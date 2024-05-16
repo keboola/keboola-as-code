@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 )
 
 type Config struct {
@@ -203,9 +204,9 @@ func TestDumpAll_CustomTags(t *testing.T) {
 	kvs, err := configpatch.DumpAll(
 		newConfig(),
 		ConfigPatch{
-			Key2: ptr(234),
+			Key2: ptr.Ptr(234),
 			Key3: &ConfigNested1Patch{
-				Key5: ptr(345),
+				Key5: ptr.Ptr(345),
 			},
 		},
 		configpatch.WithNameTag("alternative"),                          // <<<<<
@@ -377,11 +378,11 @@ func newConfig() Config {
 
 func newConfigPatch() ConfigPatch {
 	return ConfigPatch{
-		Key1: ptr([]string{"patch1"}),
+		Key1: ptr.Ptr([]string{"patch1"}),
 		Key3: &ConfigNested1Patch{
-			Key5: ptr(789),
+			Key5: ptr.Ptr(789),
 			Key6: &ConfigNested2Patch{
-				Key7: ptr([]string{"patch7"}),
+				Key7: ptr.Ptr([]string{"patch7"}),
 			},
 		},
 	}
@@ -389,11 +390,11 @@ func newConfigPatch() ConfigPatch {
 
 func newConfigPatchProtected() ConfigPatch {
 	return ConfigPatch{
-		Key2: ptr(567),
+		Key2: ptr.Ptr(567),
 		Key3: &ConfigNested1Patch{
-			Key5: ptr(789),
+			Key5: ptr.Ptr(789),
 			Key6: &ConfigNested2Patch{
-				Key8: ptr(true),
+				Key8: ptr.Ptr(true),
 			},
 		},
 	}
@@ -402,12 +403,8 @@ func newConfigPatchProtected() ConfigPatch {
 func newConfigPatchInvalid() ConfigPatchInvalid {
 	return ConfigPatchInvalid{
 		Key1: "patch1",
-		Key2: ptr("patch2"),
-		Key8: ptr("patch8"),
-		Key9: ptr(789),
+		Key2: ptr.Ptr("patch2"),
+		Key8: ptr.Ptr("patch8"),
+		Key9: ptr.Ptr(789),
 	}
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
