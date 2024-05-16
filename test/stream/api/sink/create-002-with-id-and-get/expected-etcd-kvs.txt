@@ -1,0 +1,146 @@
+<<<<<
+definition/sink/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-custom-id",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "description": "New sink.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "type": "table",
+  "name": "My Sink",
+  "table": {
+    "type": "keboola",
+    "keboola": {
+      "tableId": "in.c-my-bucket.my-table"
+    },
+    "mapping": {
+      "columns": [
+        {
+          "type": "uuid-v7",
+          "name": "id",
+          "primaryKey": true
+        },
+        {
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    }
+  }
+}
+>>>>>
+
+<<<<<
+definition/sink/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/0000000001
+-----
+%A
+>>>>>
+
+<<<<<
+definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000001
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s
+-----
+%A
+>>>>>
+
+<<<<<
+storage/keboola/secret/token/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-custom-id",
+  "token": {
+    %A,
+    "bucketPermissions": {
+      "in.c-my-bucket": "write"
+    }
+  }
+}
+>>>>>
+
+<<<<<
+storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s
+-----
+%A
+>>>>>
+
+<<<<<
+storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s
+-----
+%A
+  "state": "writing",
+%A
+>>>>>
+
+<<<<<
+storage/file/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s
+-----
+{
+%A
+  "state": "writing",
+%A
+>>>>>
+
+<<<<<
+storage/slice/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s/my-volume/%s
+-----
+%A
+  "state": "writing",
+%A
+>>>>>
+
+<<<<<
+storage/slice/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s/my-volume/%s
+-----
+%A
+  "state": "writing",
+%A
+>>>>>
