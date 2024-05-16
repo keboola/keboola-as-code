@@ -8,10 +8,27 @@
   "http": {
     "url": "https://stream-in.keboola.local/projects/%%TEST_KBC_PROJECT_ID%%/sources/my-source/%s"
   },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "version": {
     "number": 3,
     "hash": "%s",
-    "modifiedAt": "%s",
-    "description": "Super cool modification."
+    "description": "Super cool modification.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
   }
 }
