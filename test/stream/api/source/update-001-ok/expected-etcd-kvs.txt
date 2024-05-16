@@ -77,3 +77,9 @@ task/%%TEST_KBC_PROJECT_ID%%/api.update.source/%%TEST_DEFAULT_BRANCH_ID%%/my-sou
 -----
 %A
 >>>>>
+
+<<<<<
+definition/sink/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink
+-----
+%A
+>>>>>
