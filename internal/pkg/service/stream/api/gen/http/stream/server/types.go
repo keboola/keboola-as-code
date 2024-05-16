@@ -35,13 +35,13 @@ type CreateSourceRequestBody struct {
 // UpdateSourceRequestBody is the type of the "stream" service "UpdateSource"
 // endpoint HTTP request body.
 type UpdateSourceRequestBody struct {
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Type              *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Human readable name of the source.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	// Description of the modification, description of the version.
-	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
 }
 
 // UpdateSourceSettingsRequestBody is the type of the "stream" service
@@ -62,29 +62,29 @@ type CreateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	// Table sink configuration for "type" = "table".
-	Table *TableSinkRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
 
 // UpdateSinkSettingsRequestBody is the type of the "stream" service
 // "UpdateSinkSettings" endpoint HTTP request body.
 type UpdateSinkSettingsRequestBody struct {
-	Settings []*SettingPatchRequestBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string                    `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Settings          []*SettingPatchRequestBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
 }
 
 // UpdateSinkRequestBody is the type of the "stream" service "UpdateSink"
 // endpoint HTTP request body.
 type UpdateSinkRequestBody struct {
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Description of the modification, description of the version.
+	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Type              *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	// Table sink configuration for "type" = "table".
-	Table *TableSinkRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	// Description of the modification, description of the version.
-	ChangeDescription *string `form:"changeDescription,omitempty" json:"changeDescription,omitempty" xml:"changeDescription,omitempty"`
+	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
 
 // APIVersionIndexResponseBody is the type of the "stream" service
@@ -164,9 +164,33 @@ type GetSourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+}
+
+// DeleteSourceResponseBody is the type of the "stream" service "DeleteSource"
+// endpoint HTTP response body.
+type DeleteSourceResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // GetSourceSettingsResponseBody is the type of the "stream" service
@@ -178,25 +202,24 @@ type GetSourceSettingsResponseBody struct {
 // UpdateSourceSettingsResponseBody is the type of the "stream" service
 // "UpdateSourceSettings" endpoint HTTP response body.
 type UpdateSourceSettingsResponseBody struct {
-	Settings []*SettingResultResponseBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
-}
-
-// RefreshSourceTokensResponseBody is the type of the "stream" service
-// "RefreshSourceTokens" endpoint HTTP response body.
-type RefreshSourceTokensResponseBody struct {
-	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	Type      string `form:"type" json:"type" xml:"type"`
-	// Human readable name of the source.
-	Name string `form:"name" json:"name" xml:"name"`
-	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // TestSourceResponseBody is the type of the "stream" service "TestSource"
@@ -235,20 +258,20 @@ type CreateSinkResponseBody struct {
 // GetSinkResponseBody is the type of the "stream" service "GetSink" endpoint
 // HTTP response body.
 type GetSinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// Table sink configuration for "type" = "table".
-	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Description string                      `form:"description" json:"description" xml:"description"`
+	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
+	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled    *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // GetSinkSettingsResponseBody is the type of the "stream" service
@@ -260,7 +283,24 @@ type GetSinkSettingsResponseBody struct {
 // UpdateSinkSettingsResponseBody is the type of the "stream" service
 // "UpdateSinkSettings" endpoint HTTP response body.
 type UpdateSinkSettingsResponseBody struct {
-	Settings []*SettingResultResponseBody `form:"settings,omitempty" json:"settings,omitempty" xml:"settings,omitempty"`
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // ListSinksResponseBody is the type of the "stream" service "ListSinks"
@@ -276,6 +316,29 @@ type ListSinksResponseBody struct {
 // UpdateSinkResponseBody is the type of the "stream" service "UpdateSink"
 // endpoint HTTP response body.
 type UpdateSinkResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
+// DeleteSinkResponseBody is the type of the "stream" service "DeleteSink"
+// endpoint HTTP response body.
+type DeleteSinkResponseBody struct {
 	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
 	// Task type.
 	Type string `form:"type" json:"type" xml:"type"`
@@ -420,18 +483,6 @@ type UpdateSourceSettingsStreamAPISourceNotFoundResponseBody struct {
 // "stream" service "UpdateSourceSettings" endpoint HTTP response body for the
 // "stream.api.forbidden" error.
 type UpdateSourceSettingsStreamAPIForbiddenResponseBody struct {
-	// HTTP status code.
-	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
-	// Name of error.
-	Name string `form:"error" json:"error" xml:"error"`
-	// Error message.
-	Message string `form:"message" json:"message" xml:"message"`
-}
-
-// RefreshSourceTokensStreamAPISourceNotFoundResponseBody is the type of the
-// "stream" service "RefreshSourceTokens" endpoint HTTP response body for the
-// "stream.api.sourceNotFound" error.
-type RefreshSourceTokensStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -731,6 +782,7 @@ type SourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
@@ -742,23 +794,11 @@ type HTTPSourceResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 }
 
-// VersionResponseBody is used to define fields on response body types.
-type VersionResponseBody struct {
-	// Version number counted from 1.
-	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
-	// Hash of the entity state.
-	Hash string `form:"hash" json:"hash" xml:"hash"`
-	// Date and time of the modification.
-	ModifiedAt string `form:"modifiedAt" json:"modifiedAt" xml:"modifiedAt"`
-	// Description of the change.
-	Description string `form:"description" json:"description" xml:"description"`
-}
-
-// DeletedEntityResponseBody is used to define fields on response body types.
-type DeletedEntityResponseBody struct {
+// CreatedEntityResponseBody is used to define fields on response body types.
+type CreatedEntityResponseBody struct {
 	// Date and time of deletion.
 	At string `form:"at" json:"at" xml:"at"`
-	// Who deleted the entity, for example "system", "user", ...
+	// Who created the entity.
 	By *ByResponseBody `form:"by" json:"by" xml:"by"`
 }
 
@@ -768,10 +808,34 @@ type ByResponseBody struct {
 	Type string `form:"type" json:"type" xml:"type"`
 	// ID of the token.
 	TokenID *string `form:"tokenId,omitempty" json:"tokenId,omitempty" xml:"tokenId,omitempty"`
+	// Description of the token.
+	TokenDesc *string `form:"tokenDesc,omitempty" json:"tokenDesc,omitempty" xml:"tokenDesc,omitempty"`
 	// ID of the user.
 	UserID *string `form:"userId,omitempty" json:"userId,omitempty" xml:"userId,omitempty"`
-	// Description of the user.
-	UserDescription *string `form:"userDescription,omitempty" json:"userDescription,omitempty" xml:"userDescription,omitempty"`
+	// Name of the user.
+	UserName *string `form:"userName,omitempty" json:"userName,omitempty" xml:"userName,omitempty"`
+}
+
+// VersionResponseBody is used to define fields on response body types.
+type VersionResponseBody struct {
+	// Version number counted from 1.
+	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
+	// Hash of the entity state.
+	Hash string `form:"hash" json:"hash" xml:"hash"`
+	// Description of the change.
+	Description string `form:"description" json:"description" xml:"description"`
+	// Date and time of the modification.
+	At string `form:"at" json:"at" xml:"at"`
+	// Who modified the entity.
+	By *ByResponseBody `form:"by" json:"by" xml:"by"`
+}
+
+// DeletedEntityResponseBody is used to define fields on response body types.
+type DeletedEntityResponseBody struct {
+	// Date and time of deletion.
+	At string `form:"at" json:"at" xml:"at"`
+	// Who deleted the entity, for example "system", "user", ...
+	By *ByResponseBody `form:"by" json:"by" xml:"by"`
 }
 
 // DisabledEntityResponseBody is used to define fields on response body types.
@@ -828,12 +892,13 @@ type TestResultColumnResponseBody struct {
 
 // TableSinkResponseBody is used to define fields on response body types.
 type TableSinkResponseBody struct {
-	Mapping *TableMappingResponseBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
+	Type    string                    `form:"type" json:"type" xml:"type"`
+	TableID string                    `form:"tableId" json:"tableId" xml:"tableId"`
+	Mapping *TableMappingResponseBody `form:"mapping" json:"mapping" xml:"mapping"`
 }
 
 // TableMappingResponseBody is used to define fields on response body types.
 type TableMappingResponseBody struct {
-	TableID string                     `form:"tableId" json:"tableId" xml:"tableId"`
 	Columns []*TableColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
 }
 
@@ -859,20 +924,20 @@ type TableColumnTemplateResponseBody struct {
 
 // SinkResponseBody is used to define fields on response body types.
 type SinkResponseBody struct {
-	ProjectID int     `form:"projectId" json:"projectId" xml:"projectId"`
-	BranchID  int     `form:"branchId" json:"branchId" xml:"branchId"`
-	SourceID  string  `form:"sourceId" json:"sourceId" xml:"sourceId"`
-	SinkID    string  `form:"sinkId" json:"sinkId" xml:"sinkId"`
-	Type      *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
-	Description string `form:"description" json:"description" xml:"description"`
-	// Table sink configuration for "type" = "table".
-	Table    *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Description string                      `form:"description" json:"description" xml:"description"`
+	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
+	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled    *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // LevelResponseBody is used to define fields on response body types.
@@ -892,12 +957,18 @@ type LevelsResponseBody struct {
 
 // SinkFileResponseBody is used to define fields on response body types.
 type SinkFileResponseBody struct {
-	State       string                          `form:"state" json:"state" xml:"state"`
-	OpenedAt    string                          `form:"openedAt" json:"openedAt" xml:"openedAt"`
-	ClosingAt   *string                         `form:"closingAt,omitempty" json:"closingAt,omitempty" xml:"closingAt,omitempty"`
-	ImportingAt *string                         `form:"importingAt,omitempty" json:"importingAt,omitempty" xml:"importingAt,omitempty"`
-	ImportedAt  *string                         `form:"importedAt,omitempty" json:"importedAt,omitempty" xml:"importedAt,omitempty"`
-	Statistics  *SinkFileStatisticsResponseBody `form:"statistics" json:"statistics" xml:"statistics"`
+	State       string  `form:"state" json:"state" xml:"state"`
+	OpenedAt    string  `form:"openedAt" json:"openedAt" xml:"openedAt"`
+	ClosingAt   *string `form:"closingAt,omitempty" json:"closingAt,omitempty" xml:"closingAt,omitempty"`
+	ImportingAt *string `form:"importingAt,omitempty" json:"importingAt,omitempty" xml:"importingAt,omitempty"`
+	ImportedAt  *string `form:"importedAt,omitempty" json:"importedAt,omitempty" xml:"importedAt,omitempty"`
+	// Number of failed attempts.
+	RetryAttempt *int `form:"retryAttempt,omitempty" json:"retryAttempt,omitempty" xml:"retryAttempt,omitempty"`
+	// Reason of the last failed attempt.
+	RetryReason *string `form:"retryReason,omitempty" json:"retryReason,omitempty" xml:"retryReason,omitempty"`
+	// Next attempt time.
+	RetryAfter *string                         `form:"retryAfter,omitempty" json:"retryAfter,omitempty" xml:"retryAfter,omitempty"`
+	Statistics *SinkFileStatisticsResponseBody `form:"statistics" json:"statistics" xml:"statistics"`
 }
 
 // SinkFileStatisticsResponseBody is used to define fields on response body
@@ -915,14 +986,15 @@ type SettingPatchRequestBody struct {
 	Value any `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
 }
 
-// TableSinkRequestBody is used to define fields on request body types.
-type TableSinkRequestBody struct {
+// TableSinkCreateRequestBody is used to define fields on request body types.
+type TableSinkCreateRequestBody struct {
+	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
 }
 
 // TableMappingRequestBody is used to define fields on request body types.
 type TableMappingRequestBody struct {
-	TableID *string                   `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Columns []*TableColumnRequestBody `form:"columns,omitempty" json:"columns,omitempty" xml:"columns,omitempty"`
 }
 
@@ -944,6 +1016,13 @@ type TableColumnRequestBody struct {
 type TableColumnTemplateRequestBody struct {
 	Language *string `form:"language,omitempty" json:"language,omitempty" xml:"language,omitempty"`
 	Content  *string `form:"content,omitempty" json:"content,omitempty" xml:"content,omitempty"`
+}
+
+// TableSinkUpdateRequestBody is used to define fields on request body types.
+type TableSinkUpdateRequestBody struct {
+	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
+	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
 }
 
 // NewAPIVersionIndexResponseBody builds the HTTP response body from the result
@@ -1033,6 +1112,9 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	if res.HTTP != nil {
 		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
 	}
+	if res.Created != nil {
+		body.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(res.Created)
+	}
 	if res.Version != nil {
 		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
 	}
@@ -1041,6 +1123,27 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	}
 	if res.Disabled != nil {
 		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
+	}
+	return body
+}
+
+// NewDeleteSourceResponseBody builds the HTTP response body from the result of
+// the "DeleteSource" endpoint of the "stream" service.
+func NewDeleteSourceResponseBody(res *stream.Task) *DeleteSourceResponseBody {
+	body := &DeleteSourceResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }
@@ -1060,39 +1163,21 @@ func NewGetSourceSettingsResponseBody(res *stream.SettingsResult) *GetSourceSett
 
 // NewUpdateSourceSettingsResponseBody builds the HTTP response body from the
 // result of the "UpdateSourceSettings" endpoint of the "stream" service.
-func NewUpdateSourceSettingsResponseBody(res *stream.SettingsResult) *UpdateSourceSettingsResponseBody {
-	body := &UpdateSourceSettingsResponseBody{}
-	if res.Settings != nil {
-		body.Settings = make([]*SettingResultResponseBody, len(res.Settings))
-		for i, val := range res.Settings {
-			body.Settings[i] = marshalStreamSettingResultToSettingResultResponseBody(val)
-		}
+func NewUpdateSourceSettingsResponseBody(res *stream.Task) *UpdateSourceSettingsResponseBody {
+	body := &UpdateSourceSettingsResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
 	}
-	return body
-}
-
-// NewRefreshSourceTokensResponseBody builds the HTTP response body from the
-// result of the "RefreshSourceTokens" endpoint of the "stream" service.
-func NewRefreshSourceTokensResponseBody(res *stream.Source) *RefreshSourceTokensResponseBody {
-	body := &RefreshSourceTokensResponseBody{
-		ProjectID:   int(res.ProjectID),
-		BranchID:    int(res.BranchID),
-		SourceID:    string(res.SourceID),
-		Type:        string(res.Type),
-		Name:        res.Name,
-		Description: res.Description,
-	}
-	if res.HTTP != nil {
-		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
-	}
-	if res.Version != nil {
-		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
-	}
-	if res.Deleted != nil {
-		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
-	}
-	if res.Disabled != nil {
-		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }
@@ -1145,18 +1230,18 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 		BranchID:    int(res.BranchID),
 		SourceID:    string(res.SourceID),
 		SinkID:      string(res.SinkID),
+		Type:        string(res.Type),
 		Name:        res.Name,
 		Description: res.Description,
-	}
-	if res.Type != nil {
-		type_ := string(*res.Type)
-		body.Type = &type_
 	}
 	if res.Table != nil {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
 	}
 	if res.Version != nil {
 		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
+	}
+	if res.Created != nil {
+		body.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(res.Created)
 	}
 	if res.Deleted != nil {
 		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
@@ -1182,13 +1267,21 @@ func NewGetSinkSettingsResponseBody(res *stream.SettingsResult) *GetSinkSettings
 
 // NewUpdateSinkSettingsResponseBody builds the HTTP response body from the
 // result of the "UpdateSinkSettings" endpoint of the "stream" service.
-func NewUpdateSinkSettingsResponseBody(res *stream.SettingsResult) *UpdateSinkSettingsResponseBody {
-	body := &UpdateSinkSettingsResponseBody{}
-	if res.Settings != nil {
-		body.Settings = make([]*SettingResultResponseBody, len(res.Settings))
-		for i, val := range res.Settings {
-			body.Settings[i] = marshalStreamSettingResultToSettingResultResponseBody(val)
-		}
+func NewUpdateSinkSettingsResponseBody(res *stream.Task) *UpdateSinkSettingsResponseBody {
+	body := &UpdateSinkSettingsResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }
@@ -1219,6 +1312,27 @@ func NewListSinksResponseBody(res *stream.SinksList) *ListSinksResponseBody {
 // the "UpdateSink" endpoint of the "stream" service.
 func NewUpdateSinkResponseBody(res *stream.Task) *UpdateSinkResponseBody {
 	body := &UpdateSinkResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
+// NewDeleteSinkResponseBody builds the HTTP response body from the result of
+// the "DeleteSink" endpoint of the "stream" service.
+func NewDeleteSinkResponseBody(res *stream.Task) *DeleteSinkResponseBody {
+	body := &DeleteSinkResponseBody{
 		TaskID:     string(res.TaskID),
 		Type:       res.Type,
 		URL:        res.URL,
@@ -1371,18 +1485,6 @@ func NewUpdateSourceSettingsStreamAPISourceNotFoundResponseBody(res *stream.Gene
 // "stream" service.
 func NewUpdateSourceSettingsStreamAPIForbiddenResponseBody(res *stream.GenericError) *UpdateSourceSettingsStreamAPIForbiddenResponseBody {
 	body := &UpdateSourceSettingsStreamAPIForbiddenResponseBody{
-		StatusCode: res.StatusCode,
-		Name:       res.Name,
-		Message:    res.Message,
-	}
-	return body
-}
-
-// NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody builds the HTTP
-// response body from the result of the "RefreshSourceTokens" endpoint of the
-// "stream" service.
-func NewRefreshSourceTokensStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *RefreshSourceTokensStreamAPISourceNotFoundResponseBody {
-	body := &RefreshSourceTokensStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1651,9 +1753,9 @@ func NewCreateSourcePayload(body *CreateSourceRequestBody, branchID string, stor
 // NewUpdateSourcePayload builds a stream service UpdateSource endpoint payload.
 func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sourceID string, storageAPIToken string) *stream.UpdateSourcePayload {
 	v := &stream.UpdateSourcePayload{
+		ChangeDescription: body.ChangeDescription,
 		Name:              body.Name,
 		Description:       body.Description,
-		ChangeDescription: body.ChangeDescription,
 	}
 	if body.Type != nil {
 		type_ := stream.SourceType(*body.Type)
@@ -1727,17 +1829,6 @@ func NewUpdateSourceSettingsPayload(body *UpdateSourceSettingsRequestBody, branc
 	return v
 }
 
-// NewRefreshSourceTokensPayload builds a stream service RefreshSourceTokens
-// endpoint payload.
-func NewRefreshSourceTokensPayload(branchID string, sourceID string, storageAPIToken string) *stream.RefreshSourceTokensPayload {
-	v := &stream.RefreshSourceTokensPayload{}
-	v.BranchID = stream.BranchIDOrDefault(branchID)
-	v.SourceID = stream.SourceID(sourceID)
-	v.StorageAPIToken = storageAPIToken
-
-	return v
-}
-
 // NewTestSourcePayload builds a stream service TestSource endpoint payload.
 func NewTestSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.TestSourcePayload {
 	v := &stream.TestSourcePayload{}
@@ -1760,7 +1851,7 @@ func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID
 		v.SinkID = &sinkID
 	}
 	if body.Table != nil {
-		v.Table = unmarshalTableSinkRequestBodyToStreamTableSink(body.Table)
+		v.Table = unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate(body.Table)
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
@@ -1795,7 +1886,9 @@ func NewGetSinkSettingsPayload(branchID string, sourceID string, sinkID string, 
 // NewUpdateSinkSettingsPayload builds a stream service UpdateSinkSettings
 // endpoint payload.
 func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UpdateSinkSettingsPayload {
-	v := &stream.UpdateSinkSettingsPayload{}
+	v := &stream.UpdateSinkSettingsPayload{
+		ChangeDescription: body.ChangeDescription,
+	}
 	if body.Settings != nil {
 		v.Settings = make([]*stream.SettingPatch, len(body.Settings))
 		for i, val := range body.Settings {
@@ -1825,16 +1918,16 @@ func NewListSinksPayload(branchID string, sourceID string, sinceID string, limit
 // NewUpdateSinkPayload builds a stream service UpdateSink endpoint payload.
 func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UpdateSinkPayload {
 	v := &stream.UpdateSinkPayload{
+		ChangeDescription: body.ChangeDescription,
 		Name:              body.Name,
 		Description:       body.Description,
-		ChangeDescription: body.ChangeDescription,
 	}
 	if body.Type != nil {
 		type_ := stream.SinkType(*body.Type)
 		v.Type = &type_
 	}
 	if body.Table != nil {
-		v.Table = unmarshalTableSinkRequestBodyToStreamTableSink(body.Table)
+		v.Table = unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(body.Table)
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
@@ -2010,7 +2103,7 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 		}
 	}
 	if body.Table != nil {
-		if err2 := ValidateTableSinkRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+		if err2 := ValidateTableSinkCreateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -2055,7 +2148,7 @@ func ValidateUpdateSinkRequestBody(body *UpdateSinkRequestBody, errContext []str
 		}
 	}
 	if body.Table != nil {
-		if err2 := ValidateTableSinkRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+		if err2 := ValidateTableSinkUpdateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -2076,9 +2169,23 @@ func ValidateSettingPatchRequestBody(body *SettingPatchRequestBody, errContext [
 	return
 }
 
-// ValidateTableSinkRequestBody runs the validations defined on
-// TableSinkRequestBody
-func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []string) (err error) {
+// ValidateTableSinkCreateRequestBody runs the validations defined on
+// TableSinkCreateRequestBody
+func ValidateTableSinkCreateRequestBody(body *TableSinkCreateRequestBody, errContext []string) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
+	}
+	if body.TableID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
+	}
+	if body.Mapping == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", strings.Join(errContext, ".")))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "keboola") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"keboola"}))
+		}
+	}
 	if body.Mapping != nil {
 		if err2 := ValidateTableMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -2090,9 +2197,6 @@ func ValidateTableSinkRequestBody(body *TableSinkRequestBody, errContext []strin
 // ValidateTableMappingRequestBody runs the validations defined on
 // TableMappingRequestBody
 func ValidateTableMappingRequestBody(body *TableMappingRequestBody, errContext []string) (err error) {
-	if body.TableID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
-	}
 	if body.Columns == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("columns", strings.Join(errContext, ".")))
 	}
@@ -2123,8 +2227,8 @@ func ValidateTableColumnRequestBody(body *TableColumnRequestBody, errContext []s
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "id" || *body.Type == "datetime" || *body.Type == "ip" || *body.Type == "body" || *body.Type == "headers" || *body.Type == "template") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"id", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
+		if !(*body.Type == "uuid-v7" || *body.Type == "datetime" || *body.Type == "ip" || *body.Type == "body" || *body.Type == "headers" || *body.Type == "template") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"uuid-v7", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
 		}
 	}
 	if body.Template != nil {
@@ -2157,6 +2261,22 @@ func ValidateTableColumnTemplateRequestBody(body *TableColumnTemplateRequestBody
 	if body.Content != nil {
 		if utf8.RuneCountInString(*body.Content) > 4096 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "content"), "."), *body.Content, utf8.RuneCountInString(*body.Content), 4096, false))
+		}
+	}
+	return
+}
+
+// ValidateTableSinkUpdateRequestBody runs the validations defined on
+// TableSinkUpdateRequestBody
+func ValidateTableSinkUpdateRequestBody(body *TableSinkUpdateRequestBody, errContext []string) (err error) {
+	if body.Type != nil {
+		if !(*body.Type == "keboola") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"keboola"}))
+		}
+	}
+	if body.Mapping != nil {
+		if err2 := ValidateTableMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
