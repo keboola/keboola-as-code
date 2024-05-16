@@ -1,0 +1,18 @@
+{
+  "taskId": "api.create.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/weird-id/%s",
+  "type": "api.create.sink",
+  "url": "https://stream.keboola.local/v1/tasks/api.create.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/weird-id/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Sink has been created successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/sinks/weird-id",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source",
+    "sinkId": "weird-id"
+  }
+}
