@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.invalidEnumValue",
+  "message": "Value of body.type must be one of \"table\" but got value \"foo\"."
+}
