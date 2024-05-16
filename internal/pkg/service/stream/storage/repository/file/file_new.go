@@ -1,4 +1,4 @@
-package repository
+package file
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -12,7 +12,11 @@ import (
 )
 
 // newFile creates file entity.
-func newFile(cfg level.Config, resource FileResource, sink definition.Sink) (f model.File, err error) {
+func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.Sink) (f model.File, err error) {
+	if !r.plugins.IsSinkWithLocalStorage(&sink) {
+		return model.File{}, errors.Errorf(`sink type "%s" has no local storage support`, sink.Type)
+	}
+
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.
@@ -22,15 +26,14 @@ func newFile(cfg level.Config, resource FileResource, sink definition.Sink) (f m
 		return model.File{}, errors.Errorf(`file compression type "%s" is not supported`, cfg.Local.Compression.Type)
 	}
 
-	localDir := resource.FileKey.String()
+	localDir := k.String()
 
-	f.FileKey = resource.FileKey
+	f.FileKey = k
 	f.Type = model.FileTypeCSV // different file types are not supported now
 	f.State = model.FileWriting
-	f.Columns = sink.Table.Mapping.Columns
 	f.LocalStorage = local.NewFile(localDir, cfg.Local)
-	f.StagingStorage = staging.NewFile(f.LocalStorage, resource.Credentials)
-	f.TargetStorage = target.New(sink.Table.Keboola.TableID)
+	f.StagingStorage = staging.NewFile(f.LocalStorage, k.OpenedAt().Time())
+	f.TargetStorage = target.New()
 	f.Assignment.Config = cfg.Local.Volume.Assignment
 
 	return f, nil
