@@ -1,5 +1,5 @@
 {
-  "path": "<<001-create-3:response.url>>",
+  "path": "<<001-create-source-5:response.url>>",
   "method": "GET",
   "headers": {
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
