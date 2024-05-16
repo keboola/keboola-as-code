@@ -885,9 +885,9 @@ type LevelResponseBody struct {
 
 // LevelsResponseBody is used to define fields on response body types.
 type LevelsResponseBody struct {
-	Local   *LevelResponseBody `form:"local" json:"local" xml:"local"`
-	Staging *LevelResponseBody `form:"staging" json:"staging" xml:"staging"`
-	Target  *LevelResponseBody `form:"target" json:"target" xml:"target"`
+	Local   *LevelResponseBody `form:"local,omitempty" json:"local,omitempty" xml:"local,omitempty"`
+	Staging *LevelResponseBody `form:"staging,omitempty" json:"staging,omitempty" xml:"staging,omitempty"`
+	Target  *LevelResponseBody `form:"target,omitempty" json:"target,omitempty" xml:"target,omitempty"`
 }
 
 // SinkFileResponseBody is used to define fields on response body types.
