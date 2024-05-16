@@ -4,6 +4,16 @@ definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "isDefault": true
 }
 >>>>>
@@ -15,11 +25,28 @@ definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-s
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
   "sourceId": "my-source",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "version": {
     "number": 4,
     "hash": "%s",
-    "modifiedAt": "%s",
-    "description": "Super cool modification 2."
+    "description": "Super cool modification 2.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
   },
   "type": "http",
   "name": "My Source Updated 2",
@@ -74,12 +101,6 @@ task/%%TEST_KBC_PROJECT_ID%%/api.update.source/%%TEST_DEFAULT_BRANCH_ID%%/my-sou
 
 <<<<<
 task/%%TEST_KBC_PROJECT_ID%%/api.update.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
------
-%A
->>>>>
-
-<<<<<
-definition/sink/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink
 -----
 %A
 >>>>>
