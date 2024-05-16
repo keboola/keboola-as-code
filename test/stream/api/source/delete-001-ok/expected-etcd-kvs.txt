@@ -4,6 +4,16 @@ definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "isDefault": true
 }
 >>>>>
@@ -15,14 +25,40 @@ definition/source/deleted/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
   "sourceId": "my-source",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "version": {
     "number": 1,
     "hash": "%s",
-    "modifiedAt": "%s",
-    "description": "New source."
+    "description": "New source.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
   },
-  "deleted": true,
-  "deletedAt": "%s",
+  "deleted": {
+    "directly": true,
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "type": "http",
   "name": "My Source",
   "http": {
@@ -38,11 +74,28 @@ definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
   "sourceId": "my-source",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
   "version": {
     "number": 1,
     "hash": "%s",
-    "modifiedAt": "%s",
-    "description": "New source."
+    "description": "New source.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
   },
   "type": "http",
   "name": "My Source",
@@ -54,6 +107,12 @@ definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-
 
 <<<<<
 task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.delete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
 -----
 %A
 >>>>>
