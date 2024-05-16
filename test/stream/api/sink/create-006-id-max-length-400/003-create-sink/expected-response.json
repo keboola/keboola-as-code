@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.invalidLength",
+  "message": "Length of body.sinkId must be lesser or equal than 48 but got value \"123456789-123456789-123456789-123456789-123456789\" (len=49)"
+}
