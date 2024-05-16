@@ -21,9 +21,10 @@ type AtomicOpCore struct {
 	processorFactory atomicOpCoreProcessorFactory
 }
 
+// atomicOpCoreProcessorFactory - aux struct to connect type specific processors from AtomicOp to AtomicOpCore.
 type atomicOpCoreProcessorFactory func() func(ctx context.Context, r *TxnResult[NoResult])
 
-// SkipPrefixKeysCheck disables the feature.
+// SkipPrefixKeysCheck disables the feature described bellow.
 //
 // By default, the feature is enabled and checks that each loaded key within the Read Phase, from a prefix, exists in Write Phase.
 // This can be potentially SLOW and generate a lot of IF conditions, if there are a large number of keys in the prefix.
@@ -35,46 +36,6 @@ type atomicOpCoreProcessorFactory func() func(ctx context.Context, r *TxnResult[
 // See TestAtomicOp:GetPrefix_DeleteKey_SkipPrefixKeysCheck.
 func (v *AtomicOpCore) SkipPrefixKeysCheck() *AtomicOpCore {
 	v.checkPrefixKey = false
-	return v
-}
-
-func (v *AtomicOpCore) ReadPhaseOps() (out []HighLevelFactory) {
-	return slices.Clone(v.readPhase)
-}
-
-func (v *AtomicOpCore) WritePhaseOps() (out []HighLevelFactory) {
-	if v.processorFactory == nil && len(v.locks) == 0 {
-		return slices.Clone(v.writePhase)
-	}
-
-	return []HighLevelFactory{func(ctx context.Context) Op {
-		txn, err := v.writeTxn(ctx)
-		if err == nil {
-			return txn
-		} else {
-			return ErrorOp(err)
-		}
-	}}
-}
-
-func (v *AtomicOpCore) Core() *AtomicOpCore {
-	return v
-}
-
-func (v *AtomicOpCore) Empty() bool {
-	return len(v.locks) == 0 && len(v.readPhase) == 0 && len(v.writePhase) == 0
-}
-
-func (v *AtomicOpCore) AddFrom(ops ...AtomicOpInterface) *AtomicOpCore {
-	for _, op := range ops {
-		v.readPhase = append(v.readPhase, op.ReadPhaseOps()...)
-		v.writePhase = append(v.writePhase, op.WritePhaseOps()...)
-	}
-	return v
-}
-
-func (v *AtomicOpCore) RequireLock(lock Mutex) *AtomicOpCore {
-	v.locks = append(v.locks, lock)
 	return v
 }
 
@@ -97,6 +58,54 @@ func (v *AtomicOpCore) Read(factories ...HighLevelFactory) *AtomicOpCore {
 // The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
 func (v *AtomicOpCore) Write(factories ...HighLevelFactory) *AtomicOpCore {
 	v.writePhase = append(v.writePhase, factories...)
+	return v
+}
+
+// ReadPhaseOps returns all op factories for READ phase,
+// is used in joining two atomic operations, see AddFrom method.
+func (v *AtomicOpCore) ReadPhaseOps() (out []HighLevelFactory) {
+	return slices.Clone(v.readPhase)
+}
+
+// WritePhaseOps returns all op factories for WRITE phase,
+// is used in joining two atomic operations, see AddFrom method.
+func (v *AtomicOpCore) WritePhaseOps() (out []HighLevelFactory) {
+	// If there is no processor callback and no lock (IF condition),
+	// we can return operations without wrapping them to a TXN.
+	if v.processorFactory == nil && len(v.locks) == 0 {
+		return slices.Clone(v.writePhase)
+	}
+
+	return []HighLevelFactory{func(ctx context.Context) Op {
+		txn, err := v.writeTxn(ctx)
+		if err == nil {
+			return txn
+		} else {
+			return ErrorOp(err)
+		}
+	}}
+}
+
+// Core - to match AtomicOpInterface.
+func (v *AtomicOpCore) Core() *AtomicOpCore {
+	return v
+}
+
+func (v *AtomicOpCore) Empty() bool {
+	return len(v.locks) == 0 && len(v.readPhase) == 0 && len(v.writePhase) == 0
+}
+
+// AddFrom merges operations from some other atomic operation.
+func (v *AtomicOpCore) AddFrom(ops ...AtomicOpInterface) *AtomicOpCore {
+	for _, op := range ops {
+		v.readPhase = append(v.readPhase, op.ReadPhaseOps()...)
+		v.writePhase = append(v.writePhase, op.WritePhaseOps()...)
+	}
+	return v
+}
+
+func (v *AtomicOpCore) RequireLock(lock Mutex) *AtomicOpCore {
+	v.locks = append(v.locks, lock)
 	return v
 }
 
