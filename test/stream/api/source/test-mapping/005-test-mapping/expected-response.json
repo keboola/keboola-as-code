@@ -5,7 +5,7 @@
   "tables": [
     {
       "sinkId": "my-sink",
-      "tableId": "in.bucket.table",
+      "tableId": "in.c-my-bucket.my-table",
       "rows": [
         {
           "columns": [
