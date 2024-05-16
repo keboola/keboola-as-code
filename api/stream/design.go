@@ -435,6 +435,20 @@ var _ = Service("stream", func() {
 			TaskNotFoundError()
 		})
 	})
+
+	// Aggregation endpoints -------------------------------------------------------------------------------------------
+
+	Method("AggregateSources", func() {
+		Meta("openapi:summary", "Aggregation endpoint for sources")
+		Description("Details about sources for the UI.")
+		Result(AggregationSourcesResult)
+		Payload(AggregationSourcesRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/aggregation/sources")
+			Meta("openapi:tag:internal")
+			Response(StatusOK)
+		})
+	})
 })
 
 // IDs -----------------------------------------------------------------------------------------------------------------
@@ -1250,7 +1264,54 @@ var GetTaskRequest = Type("GetTaskRequest", func() {
 	Required("taskId")
 })
 
-// Errors ------------------------------------------------------------------------------------------------------------
+// Aggregation ---------------------------------------------------------------------------------------------------------
+
+var AggregationSourcesRequest = Type("AggregationSourcesRequest", func() {
+	BranchKeyRequest()
+})
+
+var AggregationSourcesResult = Type("AggregationSourcesResult", func() {
+	Attribute("sources", AggregationSources)
+	Required("sources")
+})
+
+var AggregationSources = Type("AggregationSources", ArrayOf(AggregationSource))
+
+var AggregationSource = Type("AggregationSource", func() {
+	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	SourceKeyResponse()
+	SourceFieldsRW()
+	Attribute("http", HTTPSource, func() {
+		Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
+	})
+	Attribute("version", EntityVersion)
+	Attribute("deleted", DeletedEntity)
+	Attribute("disabled", DisabledEntity)
+	Attribute("sinks", AggregationSinks)
+	Required("version", "type", "name", "description", "type", "sinks")
+})
+
+var AggregationSinks = Type("AggregationSinks", ArrayOf(AggregationSink))
+
+var AggregationSink = Type("AggregationSink", func() {
+	Description("A mapping from imported data to a destination table.")
+	SinkKeyResponse()
+	SinkFieldsRW()
+	Attribute("version", EntityVersion)
+	Attribute("deleted", DeletedEntity)
+	Attribute("disabled", DisabledEntity)
+	Attribute("statistics", AggregationStatistics)
+	Required("version", "name", "description", "statistics")
+})
+
+var AggregationStatistics = Type("AggregationStatistics", func() {
+	Attribute("total", Level)
+	Attribute("levels", Levels)
+	Attribute("files", SinkFiles)
+	Required("total", "levels", "files")
+})
+
+// Errors --------------------------------------------------------------------------------------------------------------
 
 var GenericErrorType = Type("GenericError", func() {
 	Description("Generic error.")
