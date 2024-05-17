@@ -26,7 +26,7 @@ func (s *service) cleanup(ctx context.Context, wg *sync.WaitGroup) <-chan error 
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if err := s.tasks.Cleanup(); err != nil && !errors.Is(err, context.Canceled) {
+				if err := s.tasks.Cleanup(ctx); err != nil && !errors.Is(err, context.Canceled) {
 					logger.Error(ctx, err.Error())
 				}
 			}
