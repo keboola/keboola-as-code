@@ -56,14 +56,8 @@ type Mutex interface {
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
 	v := &AtomicOp[R]{AtomicOpCore: newAtomicCore(client), result: result}
 	v.setProcessorFactory(func() func(ctx context.Context, r *TxnResult[NoResult]) {
-		if v.processors.len() == 0 {
-			return nil
-		}
-
 		return func(ctx context.Context, r *TxnResult[NoResult]) {
-			if r.Succeeded() || r.Err() != nil {
-				v.processors.invoke(ctx, newResult(r.Response(), v.result))
-			}
+			v.processors.invoke(ctx, newResult(r.Response(), v.result))
 		}
 	})
 	return v
