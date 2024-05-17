@@ -123,7 +123,9 @@ func TestFullMirror(t *testing.T) {
 
 	// Setup full mirroring of the etcd prefix tree to the memory.
 	logger := log.NewDebugLogger()
-	mirror, errCh := SetupFullMirror(logger, pfx.GetAllAndWatch(ctx, client, clientv3.WithPrevKV())).
+	mirror, errCh := SetupFullMirror(
+		logger,
+		pfx.GetAllAndWatch(ctx, client, clientv3.WithPrevKV())).
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
