@@ -1,7 +1,7 @@
 package column
 
 const (
-	columnHeadersType Type = "headers"
+	ColumnHeadersType Type = "headers"
 )
 
 type Headers struct {
@@ -10,7 +10,7 @@ type Headers struct {
 }
 
 func (v Headers) ColumnType() Type {
-	return columnHeadersType
+	return ColumnHeadersType
 }
 
 func (v Headers) ColumnName() string {
