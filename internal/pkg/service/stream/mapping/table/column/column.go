@@ -15,6 +15,8 @@ import (
 
 type Type string
 
+type Types []Type
+
 // Column is an interface used to restrict valid column types.
 type Column interface {
 	ColumnName() string
@@ -22,23 +24,52 @@ type Column interface {
 	IsPrimaryKey() bool
 }
 
+func AllTypes() Types {
+	return Types{
+		ColumnUUIDType,
+		ColumnDatetimeType,
+		ColumnIPType,
+		ColumnBodyType,
+		ColumnHeadersType,
+		ColumnTemplateType,
+	}
+}
+
 func MakeColumn(typ Type, name string, primaryKey bool) (Column, error) {
 	var v Column
 	switch typ {
-	case columnUUIDType:
+	case ColumnUUIDType:
 		v = UUID{Name: name, PrimaryKey: primaryKey}
-	case columnDatetimeType:
+	case ColumnDatetimeType:
 		v = Datetime{Name: name, PrimaryKey: primaryKey}
-	case columnIPType:
+	case ColumnIPType:
 		v = IP{Name: name, PrimaryKey: primaryKey}
-	case columnBodyType:
+	case ColumnBodyType:
 		v = Body{Name: name, PrimaryKey: primaryKey}
-	case columnHeadersType:
+	case ColumnHeadersType:
 		v = Headers{Name: name, PrimaryKey: primaryKey}
-	case columnTemplateType:
+	case ColumnTemplateType:
 		v = Template{Name: name, PrimaryKey: primaryKey}
 	default:
 		return nil, errors.Errorf(`invalid column type "%s"`, typ)
 	}
 	return v, nil
+}
+
+func (v Type) String() string {
+	return string(v)
+}
+
+func (v Types) Strings() (out []string) {
+	for _, t := range v {
+		out = append(out, t.String())
+	}
+	return out
+}
+
+func (v Types) AnySlice() (out []any) {
+	for _, t := range v {
+		out = append(out, t.String())
+	}
+	return out
 }
