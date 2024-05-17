@@ -3,16 +3,26 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
-// Delete returns an etcd operation to delete all statistics associated with the object key.
+func (r *Repository) rollupStatisticsOnFileDelete() {
+	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, updated *model.File) error {
+		if updated.Deleted {
+			op.AtomicFromCtx(ctx).AddFrom(r.deleteOrRollup(updated.FileKey))
+		}
+		return nil
+	})
+}
+
+// deleteOrRollup returns an etcd operation to delete all statistics associated with the object key.
 // Statistics for the level.Target are not deleted but are rolled up to the parent object.
-// This operation should not be used separately but atomically together with the deletion of the object.
-func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
+func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 	ops := op.Atomic(r.client, &op.NoResult{})
 	for _, inLevel := range level.AllLevels() {
 		// Object prefix contains all statistics related to the object
@@ -27,13 +37,15 @@ func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 			sumKey := r.schema.InLevel(level.Target).InParentOf(objectKey).Sum()
 
 			// Get sum from the parent object
-			ops.ReadOp(sumKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
-				if result == nil {
-					parentSum = statistics.Value{}
-				} else {
-					parentSum = result.Value
-				}
-			}))
+			ops.Read(func(ctx context.Context) op.Op {
+				return sumKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
+					if result == nil {
+						parentSum = statistics.Value{}
+					} else {
+						parentSum = result.Value
+					}
+				})
+			})
 
 			// Get statistics of the object
 			ops.Read(func(context.Context) op.Op {
@@ -52,7 +64,9 @@ func (r *Repository) Delete(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 		}
 
 		// Delete statistics
-		ops.WriteOp(objectPfx.DeleteAll(r.client))
+		ops.Write(func(ctx context.Context) op.Op {
+			return objectPfx.DeleteAll(r.client)
+		})
 	}
 
 	return ops
