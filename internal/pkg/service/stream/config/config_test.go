@@ -89,6 +89,8 @@ source:
         # Public URL of the HTTP source for link generation.
         publicUrl: null
 storage:
+    # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
+    volumesPath: ""
     statistics:
         sync:
             # Statistics synchronization interval, from memory to the etcd. Validation rules: required,minDuration=100ms,maxDuration=5s
@@ -206,6 +208,7 @@ storage:
 	// Add missing values, and validate it
 	cfg.NodeID = "test-node"
 	cfg.StorageAPIHost = "connection.keboola.local"
+	cfg.Storage.VolumesPath = "/tmp/stream-volumes"
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
