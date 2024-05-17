@@ -1,60 +1,60 @@
 package repository
 
 import (
-	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	file "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
+	slice "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume"
 )
 
 type dependencies interface {
-	Clock() clock.Clock
+	Logger() log.Logger
+	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
-	KeboolaPublicAPI() *keboola.PublicAPI
+	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
-	StatisticsRepository() *statsRepo.Repository
 }
 
 // Repository provides database operations with the storage entities.
-// The orchestration of these database operations with other parts of the platform is handled by an upper facade.
 type Repository struct {
-	hook   *hook
-	sink   *definitionRepo.SinkRepository
-	file   *FileRepository
-	slice  *SliceRepository
-	token  *TokenRepository
-	volume *VolumeRepository
+	volume *volume.Repository
+	file   *file.Repository
+	slice  *slice.Repository
 }
 
-func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) *Repository {
+func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) (*Repository, error) {
 	r := &Repository{}
-	r.hook = newHook(cfg, d, r)
-	r.sink = d.DefinitionRepository().Sink()
-	r.file = newFileRepository(cfg, d, backoff, r)
-	r.slice = newSliceRepository(d, backoff, r)
-	r.token = newTokenRepository(d, r)
-	r.volume = newVolumeRepository(d)
-	return r
+
+	if vr, err := volume.NewRepository(d); err == nil {
+		r.volume = vr
+	} else {
+		return nil, err
+	}
+
+	r.file = file.NewRepository(cfg, d, backoff, r.volume)
+
+	r.slice = slice.NewRepository(d, backoff, r.file)
+
+	return r, nil
 }
 
-func (r *Repository) File() *FileRepository {
+func (r *Repository) Volume() *volume.Repository {
+	return r.volume
+}
+
+func (r *Repository) File() *file.Repository {
 	return r.file
 }
 
-func (r *Repository) Slice() *SliceRepository {
+func (r *Repository) Slice() *slice.Repository {
 	return r.slice
-}
-
-func (r *Repository) Token() *TokenRepository {
-	return r.token
-}
-
-func (r *Repository) Volume() *VolumeRepository {
-	return r.volume
 }
