@@ -1,0 +1,91 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "page": {
+    "limit": 100,
+    "totalCount": 5,
+    "sinceId": "",
+    "lastId": "my-sink-5"
+  },
+  "sinks": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-1",
+      "type": "table",
+      "name": "My Sink 1",
+      "description": "",
+      "table": {
+        "type": "keboola",
+        "tableId": "in.c-my-bucket.my-table-1",
+        "mapping": {
+          "columns": [
+            {
+              "primaryKey": true,
+              "type": "uuid-v7",
+              "name": "id"
+            },
+            {
+              "primaryKey": false,
+              "type": "body",
+              "name": "body"
+            }
+          ]
+        }
+      },
+      "version": {
+        "number": 1,
+        "hash": "%s",
+        "description": "New sink.",
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      },
+      "created": {
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      }
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-2",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-3",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-4",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-5",
+      %A
+    }
+  ]
+}
