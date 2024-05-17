@@ -14,9 +14,9 @@ func (r *Repository) FilesStats(sinkKey key.SinkKey, start model.FileID, end mod
 	result := make(map[model.FileID]*statistics.Aggregated)
 	txn := op.TxnWithResult(r.client, &result)
 
-	for _, level := range level.AllLevels() {
+	for _, l := range level.AllLevels() {
 		// Get stats prefix for the slice state
-		pfx := r.schema.InLevel(level).InSink(sinkKey)
+		pfx := r.schema.InLevel(l).InSink(sinkKey)
 
 		opts := []iterator.Option{
 			iterator.WithStartOffset(start.OpenedAt.String(), true),
@@ -32,7 +32,7 @@ func (r *Repository) FilesStats(sinkKey key.SinkKey, start model.FileID, end mod
 					if result[fileID] == nil {
 						result[fileID] = &statistics.Aggregated{}
 					}
-					aggregate.Aggregate(level, kv.Value, result[fileID])
+					aggregate.Aggregate(l, kv.Value, result[fileID])
 					return nil
 				}),
 		)

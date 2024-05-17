@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -15,16 +16,27 @@ import (
 // TransformFn transforms statistics value, for example to set StagingSize after the upload.
 type TransformFn func(value *statistics.Value)
 
-// Move moves slice statistics to a different storage level.
-// This operation should not be used separately but atomically together with changing the slice state.
-func (r *Repository) Move(sliceKey model.SliceKey, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
-	return r.MoveAll(sliceKey, from, to, transform...)
+func (r *Repository) moveStatisticsOnSliceUpdate() {
+	r.plugins.Collection().OnSliceSave(func(ctx context.Context, now time.Time, original, updated *model.Slice) error {
+		if original != nil {
+			fromLevel := original.State.Level()
+			toLevel := updated.State.Level()
+			if fromLevel != toLevel {
+				op.AtomicFromCtx(ctx).AddFrom(r.moveAll(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
+					// There is actually no additional compression, when uploading slice to the staging storage
+					if toLevel == level.Staging {
+						value.StagingSize = value.CompressedSize
+					}
+				}))
+			}
+		}
+		return nil
+	})
 }
 
-// MoveAll moves all statistics in the parentKey to a different storage level.
+// moveAll moves all statistics in the parentKey to a different storage level.
 // Returned value is sum of all slices statistics.
-// This operation should not be used separately but atomically together with changing the slice state.
-func (r *Repository) MoveAll(parentKey fmt.Stringer, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
+func (r *Repository) moveAll(parentKey fmt.Stringer, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
 	if from == to {
 		panic(errors.Errorf(`"from" and "to" storage levels are same and equal to "%s"`, to))
 	}
@@ -35,16 +47,20 @@ func (r *Repository) MoveAll(parentKey fmt.Stringer, from, to level.Level, trans
 	var valueKVs op.KeyValuesT[statistics.Value]
 	if k, ok := parentKey.(model.SliceKey); ok {
 		// Get
-		atomicOp.ReadOp(r.schema.InLevel(from).InSlice(k).GetKV(r.client).WithOnResult(func(kv *op.KeyValueT[statistics.Value]) {
-			if kv == nil {
-				valueKVs = nil
-			} else {
-				valueKVs = []*op.KeyValueT[statistics.Value]{kv}
-			}
-		}))
+		atomicOp.Read(func(ctx context.Context) op.Op {
+			return r.schema.InLevel(from).InSlice(k).GetKV(r.client).WithOnResult(func(kv *op.KeyValueT[statistics.Value]) {
+				if kv == nil {
+					valueKVs = nil
+				} else {
+					valueKVs = []*op.KeyValueT[statistics.Value]{kv}
+				}
+			})
+		})
 	} else {
 		// List
-		atomicOp.ReadOp(r.schema.InLevel(from).InObject(parentKey).GetAll(r.client).WithAllKVsTo(&valueKVs))
+		atomicOp.Read(func(ctx context.Context) op.Op {
+			return r.schema.InLevel(from).InObject(parentKey).GetAll(r.client).WithAllKVsTo(&valueKVs)
+		})
 	}
 
 	return atomicOp.

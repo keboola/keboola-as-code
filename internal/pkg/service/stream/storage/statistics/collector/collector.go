@@ -66,7 +66,8 @@ func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, 
 
 		c.writersLock.Lock()
 		c.writers[k] = &writerSnapshot{
-			writer: w, stats: statistics.PerSlice{
+			writer: w,
+			stats: statistics.PerSlice{
 				SliceKey: k,
 				Value:    statistics.Value{SlicesCount: 1},
 			},
