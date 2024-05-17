@@ -1,7 +1,7 @@
 package column
 
 const (
-	columnIPType Type = "ip"
+	ColumnIPType Type = "ip"
 )
 
 type IP struct {
@@ -10,7 +10,7 @@ type IP struct {
 }
 
 func (v IP) ColumnType() Type {
-	return columnIPType
+	return ColumnIPType
 }
 
 func (v IP) ColumnName() string {
