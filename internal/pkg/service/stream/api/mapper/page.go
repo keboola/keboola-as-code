@@ -23,7 +23,7 @@ func loadPage[E, R any](
 	limit int,
 	sort etcd.SortOrder,
 	list func(...iterator.Option) iterator.DefinitionT[E],
-	mapper func(E) R,
+	mapper func(E) (R, error),
 ) (out []R, page *stream.PaginatedResponse, err error) {
 	// Check limits
 	if sort != etcd.SortAscend && sort != etcd.SortDescend {
@@ -69,7 +69,12 @@ func loadPage[E, R any](
 	result := itr.
 		ForEachKV(func(kv *op.KeyValueT[E], _ *iterator.Header) error {
 			// Map the value
-			out = append(out, mapper(kv.Value))
+			mapped, err := mapper(kv.Value)
+			if err != nil {
+				return err
+			}
+
+			out = append(out, mapped)
 			page.LastID = strings.TrimPrefix(kv.Key(), itr.Prefix())
 			return nil
 		}).
