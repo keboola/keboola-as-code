@@ -15,36 +15,35 @@ import (
 )
 
 type service struct {
-	clock     clock.Clock
-	publicURL *url.URL
-	tasks     *task.Node
-	repo      *definitionRepo.Repository
-	mapper    *mapper.Mapper
+	clock      clock.Clock
+	publicURL  *url.URL
+	tasks      *task.Node
+	definition *definitionRepo.Repository
+	mapper     *mapper.Mapper
 }
 
 func New(d dependencies.APIScope, cfg config.Config) api.Service {
 	return &service{
-		clock:     d.Clock(),
-		publicURL: d.APIPublicURL(),
-		tasks:     d.TaskNode(),
-		repo:      d.DefinitionRepository(),
-		mapper:    mapper.New(d, cfg),
+		clock:      d.Clock(),
+		publicURL:  d.APIPublicURL(),
+		tasks:      d.TaskNode(),
+		definition: d.DefinitionRepository(),
+		mapper:     mapper.New(d, cfg),
 	}
 }
 
-func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope) (err error) {
+func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope) error {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (s *service) APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *api.ServiceDetail, err error) {
-	res = &api.ServiceDetail{
+func (s *service) APIVersionIndex(context.Context, dependencies.PublicRequestScope) (*api.ServiceDetail, error) {
+	return &api.ServiceDetail{
 		API:           "stream",
 		Documentation: s.publicURL.JoinPath("v1", "documentation").String(),
-	}
-	return res, nil
+	}, nil
 }
 
-func (s *service) HealthCheck(context.Context, dependencies.PublicRequestScope) (res string, err error) {
+func (s *service) HealthCheck(context.Context, dependencies.PublicRequestScope) (string, error) {
 	return "OK", nil
 }
