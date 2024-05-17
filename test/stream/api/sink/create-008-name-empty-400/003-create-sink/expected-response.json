@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.invalidLength",
+  "message": "Length of body.name must be greater or equal than 1 but got value \"\" (len=0)"
+}
