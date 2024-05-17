@@ -15,10 +15,11 @@
 # Test binary, build with `go test -c`
 *.test
 
-# Output of the go coverage tool
+# Output of tests
 coverage.html
 benchmark.txt
 *.out
+.actual
 
 # IDE
 /.idea
