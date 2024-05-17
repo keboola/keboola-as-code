@@ -77,8 +77,7 @@ func (v *AtomicOpCore) WritePhaseOps() (out []HighLevelFactory) {
 	}
 
 	return []HighLevelFactory{func(ctx context.Context) Op {
-		txn, err := v.writeTxn(ctx)
-		if err == nil {
+		if txn, err := v.writeTxn(ctx); err == nil {
 			return txn
 		} else {
 			return ErrorOp(err)
