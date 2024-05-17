@@ -8,6 +8,8 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -22,7 +24,7 @@ type taskConfig struct {
 	Operation task.Fn
 }
 
-func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScope, payload *api.GetTaskPayload) (res *api.Task, err error) {
+func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScope, payload *api.GetTaskPayload) (*api.Task, error) {
 	t, err := s.tasks.GetTask(task.Key{ProjectID: d.ProjectID(), TaskID: payload.TaskID}).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
@@ -31,7 +33,7 @@ func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScop
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) startTask(cfg taskConfig) (task.Task, error) {
+func (s *service) startTask(ctx context.Context, cfg taskConfig) (task.Task, error) {
 	cfg.Type = "api." + cfg.Type
 
 	objectKey := cfg.ObjectKey.String()
@@ -43,13 +45,19 @@ func (s *service) startTask(cfg taskConfig) (task.Task, error) {
 	}
 
 	taskID := task.ID(cfg.Type + "/" + objectKey)
-	return s.tasks.RunTask(task.Config{
+	return s.tasks.StartTask(ctx, task.Config{
 		Type: cfg.Type,
 		Key:  task.Key{ProjectID: cfg.ProjectID, TaskID: taskID},
 		Lock: cfg.ObjectKey.String(),
 		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), cfg.Timeout)
+			return context.WithTimeout(context.WithoutCancel(ctx), cfg.Timeout)
 		},
-		Operation: cfg.Operation,
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			rb := rollback.New(logger)
+			ctx = rollback.ContextWith(ctx, rb)
+			result := cfg.Operation(ctx, logger)
+			rb.InvokeIfErr(ctx, &result.Error)
+			return result
+		},
 	})
 }
