@@ -48,8 +48,7 @@ type Node struct {
 	logger log.Logger
 	client *etcd.Client
 
-	tasksCtx context.Context
-	tasksWg  *sync.WaitGroup
+	tasksWg *sync.WaitGroup
 
 	session *etcdop.Session
 
@@ -102,9 +101,7 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 
 	// Graceful shutdown
 	bgContext := ctxattr.ContextWith(context.Background(), attribute.String("node", n.nodeID)) // nolint: contextcheck
-	var cancelTasks context.CancelFunc
 	n.tasksWg = &sync.WaitGroup{}
-	n.tasksCtx, cancelTasks = context.WithCancel(bgContext)
 	sessionWg := &sync.WaitGroup{}
 	sessionCtx, cancelSession := context.WithCancel(bgContext)
 	proc.OnShutdown(func(ctx context.Context) {
@@ -113,7 +110,6 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 		if c := n.tasksCount.Load(); c > 0 {
 			n.logger.Infof(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
-		cancelTasks()
 		n.tasksWg.Wait()
 		cancelSession()
 		sessionWg.Wait()
@@ -121,7 +117,7 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 	})
 
 	// Log node ID
-	n.logger.Infof(n.tasksCtx, `node ID "%s"`, n.nodeID)
+	n.logger.Infof(bgContext, `node ID "%s"`, n.nodeID)
 
 	// Create etcd session
 	session, errCh := etcdop.
@@ -168,15 +164,15 @@ func (n *Node) StartTask(ctx context.Context, cfg Config) (t Task, err error) {
 }
 
 // RunTaskOrErr in foreground, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) RunTaskOrErr(cfg Config) error {
-	_, err := n.RunTask(cfg)
+func (n *Node) RunTaskOrErr(ctx context.Context, cfg Config) error {
+	_, err := n.RunTask(ctx, cfg)
 	return err
 }
 
 // RunTask in foreground, the task run at most once, it is provided by local lock and etcd transaction.
-func (n *Node) RunTask(cfg Config) (t Task, err error) {
+func (n *Node) RunTask(ctx context.Context, cfg Config) (t Task, err error) {
 	// Prepare task, acquire lock, handle error during prepare phase
-	task, fn, err := n.prepareTask(n.tasksCtx, cfg)
+	task, fn, err := n.prepareTask(ctx, cfg)
 	if err != nil {
 		return Task{}, err
 	}
@@ -238,7 +234,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t Task, fn runTaskF
 		n.taskEtcdPrefix.Key(taskKey.String()).Put(n.client, task),
 		lock.PutIfNotExists(n.client, task.Node, etcd.WithLease(session.Lease())),
 	)
-	if r := createTaskOp.Do(n.tasksCtx); r.Err() != nil { // nolint: contextcheck
+	if r := createTaskOp.Do(ctx); r.Err() != nil { // nolint: contextcheck
 		unlock()
 		return Task{}, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, r.Err())
 	} else if !r.Succeeded() {

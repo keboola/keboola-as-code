@@ -24,8 +24,8 @@ const (
 )
 
 // Cleanup deletes old tasks to free space in etcd.
-func (n *Node) Cleanup() (err error) {
-	return n.RunTaskOrErr(Config{
+func (n *Node) Cleanup(ctx context.Context) (err error) {
+	return n.RunTaskOrErr(ctx, Config{
 		Type: cleanupTaskType,
 		Key:  Key{SystemTask: true, TaskID: cleanupTaskType},
 		Lock: cleanupTaskType,
