@@ -1,0 +1,6 @@
+{
+  "statusCode": 404,
+  "error": "stream.api.sinkNotFound",
+  "message": "Sink \"my-sink\" not found in the source."
+}
+
