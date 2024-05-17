@@ -8,9 +8,10 @@ import (
 
 // Config contains global configuration for the storage.
 type Config struct {
-	Statistics statistics.Config `configKey:"statistics"`
-	Cleanup    cleanup.Config    `configKey:"cleanup"`
-	Level      level.Config      `configKey:"level"`
+	VolumesPath string            `configKey:"volumesPath" configUsage:"Mounted volumes path, each volume is in \"{type}/{label}\" subdir." validate:"required"`
+	Statistics  statistics.Config `configKey:"statistics"`
+	Cleanup     cleanup.Config    `configKey:"cleanup"`
+	Level       level.Config      `configKey:"level"`
 }
 
 type ConfigPatch struct {
