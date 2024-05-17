@@ -6,41 +6,41 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 )
 
-// serviceScope implements ServiceScope interface.
-type tableSinkScope struct {
-	tableSinkParentScopes
+// localStorageScope implements LocalStorageScope interface.
+type localStorageScope struct {
+	localStorageParentScopes
 	statisticsL1Cache *cache.L1
 	statisticsL2Cache *cache.L2
 }
 
-type tableSinkParentScopes interface {
+type localStorageParentScopes interface {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
 
-type tableSinkParentScopesImpl struct {
+type localStorageParentScopesImpl struct {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
 
-func (v *tableSinkScope) StatisticsL1Cache() *cache.L1 {
+func (v *localStorageScope) StatisticsL1Cache() *cache.L1 {
 	return v.statisticsL1Cache
 }
 
-func (v *tableSinkScope) StatisticsL2Cache() *cache.L2 {
+func (v *localStorageScope) StatisticsL2Cache() *cache.L2 {
 	return v.statisticsL2Cache
 }
 
-func NewTableSinkScope(d tableSinkParentScopes, cfg config.Config) (v TableSinkScope, err error) {
-	return newTableSinkScope(d, cfg)
+func NewLocalStorageScope(d localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
+	return newLocalStorageScope(d, cfg)
 }
 
-func newTableSinkScope(parentScp tableSinkParentScopes, cfg config.Config) (v TableSinkScope, err error) {
-	d := &tableSinkScope{}
+func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
+	d := &localStorageScope{}
 
-	d.tableSinkParentScopes = parentScp
+	d.localStorageParentScopes = parentScp
 
 	d.statisticsL1Cache, err = cache.NewL1Cache(d.Logger(), d.StatisticsRepository())
 	if err != nil {
