@@ -102,7 +102,7 @@ valueB
 %AValue of the actual key
 	            	"key1"
 	            	doesn't match the expected key
-	            	"key1":
+	            	"key1"
 	            	Diff:
 	            	-----
 	            	@@ -1 +1 @@
@@ -121,7 +121,7 @@ valueB
 %AValue of the actual key
 	            	"key2"
 	            	doesn't match the expected key
-	            	"key2":
+	            	"key2"
 	            	Diff:
 	            	-----
 	            	@@ -1 +1 @@
@@ -197,6 +197,66 @@ value2
 	Error:      	These keys are in expected but not actual ectd state:
 	            	[001] key2
 `, strings.TrimSpace(mT.buf.String()))
+}
+
+func TestAssertKVsFromFile_Difference(t *testing.T) {
+	t.Parallel()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Put keys
+	ctx := context.Background()
+	_, err := client.Put(ctx, "key1", "value1")
+	assert.NoError(t, err)
+	_, err = client.Put(ctx, "key2", "value2")
+	assert.NoError(t, err)
+
+	mT := &mockedT{}
+	etcdhelper.AssertKVsFromFile(mT, client, `fixtures/expected-001.txt`)
+
+	// Expected error
+	wildcards.Assert(t, strings.TrimSpace(`
+%AValue of the actual key
+	            	"key1"
+	            	doesn't match the expected key
+	            	"key1"
+	            	defined in the file
+	            	"fixtures/expected-001.txt"
+	            	Diff:
+	            	-----
+	            	@@ -1 +1 @@
+	            	-valueA
+	            	+value1
+	            	-----
+	            	Actual:
+	            	-----
+	            	value1
+	            	-----
+	            	Expected:
+	            	-----
+	            	valueA
+	            	-----
+
+%AValue of the actual key
+	            	"key2"
+	            	doesn't match the expected key
+	            	"key2"
+	            	defined in the file
+	            	"fixtures/expected-001.txt"
+	            	Diff:
+	            	-----
+	            	@@ -1 +1 @@
+	            	-valueB
+	            	+value2
+	            	-----
+	            	Actual:
+	            	-----
+	            	value2
+	            	-----
+	            	Expected:
+	            	-----
+	            	valueB
+	            	-----
+`), strings.TrimSpace(mT.buf.String()))
 }
 
 func TestAssertKeys_Equal(t *testing.T) {
