@@ -7,15 +7,24 @@ import (
 )
 
 const (
-	SinkTypeTable = SinkType("table")
+	SinkTypeTable    = SinkType("table")
+	TableTypeKeboola = TableType("keboola")
 )
+
+type TableType string
 
 // TableSink configures destination table.
 type TableSink struct {
-	Keboola TableSinkKeboola `json:"keboola"`
-	Mapping table.Mapping    `json:"mapping"`
+	Type    TableType     `json:"type" validate:"required,oneof=keboola"`
+	Keboola *KeboolaTable `json:"keboola" validate:"required_if=Type keboola"`
+
+	Mapping table.Mapping `json:"mapping"`
 }
 
-type TableSinkKeboola struct {
+type KeboolaTable struct {
 	TableID keboola.TableID `json:"tableId" validate:"required"`
+}
+
+func (t TableType) String() string {
+	return string(t)
 }
