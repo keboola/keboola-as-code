@@ -94,7 +94,7 @@ func TestCleanup(t *testing.T) {
 
 	// Run the cleanup
 	tel.Reset()
-	assert.NoError(t, node.Cleanup())
+	assert.NoError(t, node.Cleanup(ctx))
 
 	// Shutdown - wait for cleanup
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
