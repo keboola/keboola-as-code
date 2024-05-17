@@ -70,9 +70,9 @@ func TestAtomicFromCtx_Complex(t *testing.T) {
 					// 2. Read the key (based on the result of the previous read!)
 					Read(func(ctx context.Context) op.Op {
 						return etcdop.NewKey(key).Get(client).WithOnResult(func(r *op.KeyValue) {
-							// 3. Write the key copy
 							op.AtomicFromCtx(ctx). // <<<<<<<<<<<<<<
-										Write(func(ctx context.Context) op.Op {
+								// 3. Write the key copy
+								Write(func(ctx context.Context) op.Op {
 									return etcdop.NewKey(key+"-copy").Put(client, string(r.Value))
 								})
 						})
