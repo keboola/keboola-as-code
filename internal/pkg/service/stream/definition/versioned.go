@@ -10,30 +10,55 @@ import (
 )
 
 type VersionedInterface interface {
+	EntityCreatedAt() utctime.UTCTime
+	EntityCreatedBy() By
 	VersionNumber() VersionNumber
 	VersionHash() string
 	VersionModifiedAt() utctime.UTCTime
+	VersionModifiedBy() By
 	VersionDescription() string
 }
 
 type Versioned struct {
+	Created Created `json:"created"`
 	Version Version `json:"version"`
+}
+
+type Created struct {
+	At utctime.UTCTime `json:"at" hash:"ignore" validate:"required"`
+	By By              `json:"by" hash:"ignore" validate:"required"`
 }
 
 type Version struct {
 	Number      VersionNumber   `json:"number" hash:"ignore" validate:"required,min=1"`
 	Hash        string          `json:"hash" hash:"ignore" validate:"required,len=16"`
-	ModifiedAt  utctime.UTCTime `json:"modifiedAt" hash:"ignore" validate:"required"`
 	Description string          `json:"description" hash:"ignore"`
+	At          utctime.UTCTime `json:"at" hash:"ignore" validate:"required"`
+	By          By              `json:"by" hash:"ignore" validate:"required"`
 }
 
 type VersionNumber int
 
-func (v *Versioned) IncrementVersion(s any, now time.Time, description string) {
-	v.Version.ModifiedAt = utctime.From(now)
-	v.Version.Description = description
+func (v *Versioned) IncrementVersion(s any, now time.Time, by By, description string) {
+	if v.Created.At.IsZero() {
+		v.Created.At = utctime.From(now)
+		v.Created.By = by
+	}
+
+	v.Version.At = utctime.From(now)
+	v.Version.By = by
+
 	v.Version.Number += 1
 	v.Version.Hash = hashStruct(s)
+	v.Version.Description = description
+}
+
+func (v *Versioned) EntityCreatedAt() utctime.UTCTime {
+	return v.Created.At
+}
+
+func (v *Versioned) EntityCreatedBy() By {
+	return v.Created.By
 }
 
 func (v *Versioned) VersionNumber() VersionNumber {
@@ -45,7 +70,11 @@ func (v *Versioned) VersionHash() string {
 }
 
 func (v *Versioned) VersionModifiedAt() utctime.UTCTime {
-	return v.Version.ModifiedAt
+	return v.Version.At
+}
+
+func (v *Versioned) VersionModifiedBy() By {
+	return v.Version.By
 }
 
 func (v *Versioned) VersionDescription() string {
