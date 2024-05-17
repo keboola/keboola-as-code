@@ -34,7 +34,7 @@ fi
 # golangci-lint
 if ! command -v golangci-lint &> /dev/null
 then
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.57.2
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.58.0
 fi
 
 # gci
