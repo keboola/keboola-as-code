@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.missingField",
+  "message": "\"X-StorageApi-Token\" is missing from header."
+}
