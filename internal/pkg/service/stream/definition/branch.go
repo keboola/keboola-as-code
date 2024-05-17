@@ -6,6 +6,7 @@ import (
 
 type Branch struct {
 	key.BranchKey
+	Switchable
 	SoftDeletable
 	IsDefault bool `json:"isDefault"`
 }
