@@ -78,7 +78,10 @@ func TestRenderer_Template_Json_Scalar(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1.key2')"}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  "Body('key1.key2')",
+	}}
 
 	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -92,7 +95,10 @@ func TestRenderer_Template_Json_Object(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  "Body('key1')",
+	}}
 
 	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -106,7 +112,10 @@ func TestRenderer_Template_Json_ArrayOfObjects(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  "Body('key1')",
+	}}
 
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -120,7 +129,10 @@ func TestRenderer_Template_Json_ArrayIndex(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1[1].key3')"}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  "Body('key1[1].key3')",
+	}}
 
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -134,7 +146,10 @@ func TestRenderer_Template_Json_Full(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body()`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Body()`,
+	}}
 
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -148,7 +163,10 @@ func TestRenderer_Template_Json_UndefinedKey_Error(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body('key1.invalid')`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Body('key1.invalid')`,
+	}}
 
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -162,7 +180,10 @@ func TestRenderer_Template_Json_UndefinedKey_DefaultValue(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body('key1.invalid', 123)`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Body('key1.invalid', 123)`,
+	}}
 
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
@@ -176,7 +197,10 @@ func TestRenderer_Template_FormData_Full(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body()`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Body()`,
+	}}
 
 	body := `key1=bar1&key2[]=bar2&key2[]=bar3`
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
@@ -190,7 +214,10 @@ func TestRenderer_Template_Headers(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Content-Encoding')`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Header('Content-Encoding')`,
+	}}
 
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
@@ -203,7 +230,10 @@ func TestRenderer_Template_Headers_Case(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('CONTENT-ENCODING')`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Header('CONTENT-ENCODING')`,
+	}}
 
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
@@ -216,7 +246,10 @@ func TestRenderer_Template_Headers_All(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header()`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Header()`,
+	}}
 
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
@@ -229,7 +262,10 @@ func TestRenderer_Template_Headers_UndefinedKey_Error(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Invalid-KEY')`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Header('Invalid-KEY')`,
+	}}
 
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
@@ -241,7 +277,10 @@ func TestRenderer_Template_Headers_UndefinedKey_DefaultValue(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Invalid-KEY', "abc")`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `Header('Invalid-KEY', "abc")`,
+	}}
 
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
@@ -254,7 +293,10 @@ func TestRenderer_Template_InvalidLanguage(t *testing.T) {
 	t.Parallel()
 
 	renderer := column.NewRenderer()
-	c := column.Template{Language: "invalid", Content: `Body("")`}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: "invalid",
+		Content:  `Body("")`,
+	}}
 
 	_, err := renderer.CSVValue(c, &receivectx.Context{})
 	assert.ErrorContains(t, err, `unsupported language "invalid", only "jsonnet" is supported`)
