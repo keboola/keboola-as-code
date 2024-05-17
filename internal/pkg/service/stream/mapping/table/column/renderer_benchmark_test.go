@@ -11,7 +11,10 @@ import (
 )
 
 func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1[1].key3')"}
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  "Body('key1[1].key3')",
+	}}
 
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
