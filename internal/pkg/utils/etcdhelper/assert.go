@@ -1,8 +1,12 @@
+//nolint:forbidigo // no virtual fs
+
 package etcdhelper
 
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -12,17 +16,26 @@ import (
 	"github.com/umisama/go-regexpcache"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type AssertOption func(*assertConfig)
 
 type assertConfig struct {
-	ignoredKeyPatterns []string
+	ignoredKeyPatterns    []string
+	expectedStateFromFile string
 }
 
 func WithIgnoredKeyPattern(v string) AssertOption {
 	return func(c *assertConfig) {
 		c.ignoredKeyPatterns = append(c.ignoredKeyPatterns, v)
+	}
+}
+
+func withExpectedStateFromFile(path string) AssertOption {
+	return func(c *assertConfig) {
+		c.expectedStateFromFile = path
 	}
 }
 
@@ -68,14 +81,26 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 	return assert.Equal(t, expectedKeys, actualKeys)
 }
 
+// AssertKVsFromFile dumps all KVs from an etcd database and compares them with content of the file.
+// In the file, a wildcards can be used, see the wildcards package.
+func AssertKVsFromFile(t assert.TestingT, client etcd.KV, path string, ops ...AssertOption) bool {
+	data, err := os.ReadFile(path) //nolint:forbidigo // no virtual FS
+	if assert.NoError(t, err) || errors.Is(err, os.ErrNotExist) {
+		expected := string(data)
+		ops = append(ops, withExpectedStateFromFile(path))
+		return AssertKVsString(t, client, expected, ops...)
+	}
+	return false
+}
+
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
-func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) {
+func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
 
-	AssertKVs(t, client, ParseDump(expected), ops...)
+	return AssertKVs(t, client, ParseDump(expected), ops...)
 }
 
 // AssertKVs dumps all KVs from an etcd database and compares them with the expected KVs.
@@ -113,6 +138,14 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 		}
 	}
 
+	// Dump actual state
+	if c.expectedStateFromFile != "" {
+		outDir := filepath.Join(filepath.Dir(c.expectedStateFromFile), ".out")              //nolint:forbidigo // no virtual FS
+		filePath := filepath.Join(outDir, filepath.Base(c.expectedStateFromFile)+".actual") //nolint:forbidigo // no virtual FS
+		assert.NoError(t, os.MkdirAll(outDir, 0o750))                                       //nolint:forbidigo // no virtual FS
+		assert.NoError(t, os.WriteFile(filePath, []byte(KVsToString(actualKVs)), 0o600))    //nolint:forbidigo // no virtual FS
+	}
+
 	// Compare expected and actual KVs
 	matchedExpected := make(map[int]bool)
 	matchedActual := make(map[int]bool)
@@ -135,7 +168,12 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 					}
 					break
 				} else {
-					assert.Fail(t, fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\":\n%s", actual.Key, expected.Key, err))
+					msg := fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\"", actual.Key, expected.Key)
+					if c.expectedStateFromFile != "" {
+						msg += fmt.Sprintf("\ndefined in the file\n\"%s\"", c.expectedStateFromFile)
+					}
+					msg += fmt.Sprintf("\n%s", err)
+					assert.Fail(t, msg)
 				}
 			}
 		}
@@ -148,7 +186,11 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 		}
 	}
 	if len(unmatchedExpected) > 0 {
-		assert.Fail(t, fmt.Sprintf("These keys are in expected but not actual ectd state:\n%s", strings.Join(unmatchedExpected, "\n")))
+		msg := fmt.Sprintf("These keys are in expected but not actual ectd state:\n%s\n", strings.Join(unmatchedExpected, "\n"))
+		if c.expectedStateFromFile != "" {
+			msg += fmt.Sprintf("Please, update the file:\n\"%s\"", c.expectedStateFromFile)
+		}
+		assert.Fail(t, msg)
 	}
 
 	var unmatchedActual []string
@@ -158,7 +200,11 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 		}
 	}
 	if len(unmatchedActual) > 0 {
-		assert.Fail(t, fmt.Sprintf("These keys are in actual but not expected ectd state:\n%s", strings.Join(unmatchedActual, "\n")))
+		msg := fmt.Sprintf("These keys are in actual but not expected ectd state:\n%s\n", strings.Join(unmatchedActual, "\n"))
+		if c.expectedStateFromFile != "" {
+			msg += fmt.Sprintf("Please, update the file:\n\"%s\"", c.expectedStateFromFile)
+		}
+		assert.Fail(t, msg)
 	}
 
 	return len(unmatchedExpected) == 0 && len(unmatchedActual) == 0
