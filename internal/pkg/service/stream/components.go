@@ -8,11 +8,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	ComponentAPI = "api"
+	ComponentAPI        = "api"
+	ComponentDiskWriter = "disk-writer"
 )
 
 type Components map[Component]bool
@@ -21,6 +23,13 @@ type Component string
 
 func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg config.Config, components map[Component]bool) error {
 	// Start components, always in the same order
+
+	if components[ComponentDiskWriter] {
+		if err := writernode.Start(ctx, d, cfg); err != nil {
+			return err
+		}
+	}
+
 	if components[ComponentAPI] {
 		if err := api.Start(ctx, d, cfg); err != nil {
 			return err
@@ -46,7 +55,7 @@ func ParseComponentsList(args []string) (Components, error) {
 	var unexpected []string
 	for _, component := range args {
 		switch component {
-		case ComponentAPI: // expected components
+		case ComponentAPI, ComponentDiskWriter: // expected components
 			components[Component(component)] = true
 		default:
 			unexpected = append(unexpected, component)
