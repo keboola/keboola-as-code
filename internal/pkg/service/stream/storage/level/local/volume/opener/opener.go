@@ -75,9 +75,6 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID
 					return
 				}
 
-				// Log volume
-				logger.Infof(ctx, `opened volume, id="%s", type="%s", path="%s"`, vol.ID(), vol.Type(), vol.Label())
-
 				// Register the volume
 				lock.Lock()
 				defer lock.Unlock()
@@ -99,7 +96,7 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID
 
 	// Check walk error
 	if walkErr != nil {
-		errs.Append(walkErr)
+		errs.Append(errors.PrefixErrorf(walkErr, `cannot walk volumes path "%s"`, volumesPath))
 	}
 
 	// Check errors
