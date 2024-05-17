@@ -2,7 +2,7 @@ package column
 
 const (
 	TemplateLanguageJsonnet      = "jsonnet"
-	columnTemplateType      Type = "template"
+	ColumnTemplateType      Type = "template"
 )
 
 type Template struct {
@@ -13,7 +13,7 @@ type Template struct {
 }
 
 func (v Template) ColumnType() Type {
-	return columnTemplateType
+	return ColumnTemplateType
 }
 
 func (v Template) ColumnName() string {

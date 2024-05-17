@@ -1,7 +1,7 @@
 package column
 
 const (
-	columnUUIDType Type = "uuid-v7"
+	ColumnUUIDType Type = "uuid-v7"
 )
 
 type UUID struct {
@@ -10,7 +10,7 @@ type UUID struct {
 }
 
 func (v UUID) ColumnType() Type {
-	return columnUUIDType
+	return ColumnUUIDType
 }
 
 func (v UUID) ColumnName() string {
