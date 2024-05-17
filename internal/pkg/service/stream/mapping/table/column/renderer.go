@@ -41,14 +41,14 @@ func (r *Renderer) CSVValue(c Column, ctx *receivectx.Context) (string, error) {
 	case IP:
 		return ctx.IP.String(), nil
 	case Template:
-		if c.Language != TemplateLanguageJsonnet {
-			return "", errors.Errorf(`unsupported language "%s", only "jsonnet" is supported`, c.Language)
+		if c.Template.Language != TemplateLanguageJsonnet {
+			return "", errors.Errorf(`unsupported language "%s", only "jsonnet" is supported`, c.Template.Language)
 		}
 
 		vm := r.jsonnetPool.Get()
 		defer r.jsonnetPool.Put(vm)
 
-		res, err := jsonnet.Evaluate(vm, ctx, c.Content)
+		res, err := jsonnet.Evaluate(vm, ctx, c.Template.Content)
 		if err != nil {
 			return res, err
 		}
