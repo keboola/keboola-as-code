@@ -31,7 +31,9 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -39,6 +41,9 @@ import (
 const (
 	// putMaxStatsPerTxn defines maximum number of keys per transaction when updating database values.
 	putMaxStatsPerTxn = 100
+	// recordsForSliceDiskSizeCalc defines the number of last slice statistics that are taken into account
+	// when calculating the amount of disk space that needs to be pre-allocated for a new slice.
+	recordsForSliceDiskSizeCalc = 10
 )
 
 type _provider = Provider
@@ -46,26 +51,36 @@ type _provider = Provider
 // Repository provides database operations for storage statistics records.
 type Repository struct {
 	_provider
+	logger    log.Logger
 	telemetry telemetry.Telemetry
 	client    *etcd.Client
 	schema    schema
+	plugins   *plugin.Plugins
 }
 
 type dependencies interface {
+	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	Plugins() *plugin.Plugins
 }
 
 func New(d dependencies) *Repository {
 	r := &Repository{
+		logger:    d.Logger().WithComponent("storage.statistics.repository"),
 		telemetry: d.Telemetry(),
 		client:    d.EtcdClient(),
 		schema:    newSchema(d.EtcdSerde()),
+		plugins:   d.Plugins(),
 	}
 
 	// Setup Provider interface
 	r._provider = NewProvider(r.aggregate)
+
+	r.moveStatisticsOnSliceUpdate()
+	r.rollupStatisticsOnFileDelete()
+	r.estimateSliceSizeOnSliceCreate()
 
 	return r
 }
