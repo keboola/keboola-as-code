@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/http/stream/server"
-	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	streamGen "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
@@ -60,7 +60,7 @@ func Start(ctx context.Context, d dependencies.ServiceScope, cfg config.Config) 
 			// Create server with endpoints
 			docsFs := http.FS(openapi.Fs)
 			swaggerFs := http.FS(swaggerui.SwaggerFS)
-			endpoints := bufferGen.NewEndpoints(svc)
+			endpoints := streamGen.NewEndpoints(svc)
 			endpoints.Use(middleware.OpenTelemetryExtractEndpoint())
 			server := apiServer.New(endpoints, c.Muxer, c.Decoder, c.Encoder, c.ErrorHandler, c.ErrorFormatter, docsFs, docsFs, docsFs, docsFs, swaggerFs)
 
