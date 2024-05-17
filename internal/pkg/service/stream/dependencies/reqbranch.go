@@ -53,11 +53,10 @@ func getBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Branc
 	}
 }
 
-func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.BranchIDOrDefault) (definition.Branch, error) {
+func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.BranchIDOrDefault) (branch definition.Branch, err error) {
 	repo := d.DefinitionRepository().Branch()
 
 	var res *keboola.Branch
-	var err error
 	if branchInput.Default() {
 		res, err = d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 		if err != nil {
@@ -79,8 +78,10 @@ func createBranch(ctx context.Context, d ProjectRequestScope, branchInput key.Br
 	}
 
 	branchKey := key.BranchKey{ProjectID: d.ProjectID(), BranchID: res.ID}
-	branch := definition.Branch{BranchKey: branchKey, IsDefault: true}
-	return repo.Create(d.Clock().Now(), &branch).Do(ctx).ResultOrErr()
+	branch = definition.Branch{BranchKey: branchKey, IsDefault: true}
+
+	by := definition.ByFromToken(d.StorageAPIToken())
+	return repo.Create(&branch, d.Clock().Now(), by).Do(ctx).ResultOrErr()
 }
 
 func (v *branchRequestScope) Branch() definition.Branch {

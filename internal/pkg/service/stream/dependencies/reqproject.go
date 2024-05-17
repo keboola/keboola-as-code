@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
 // projectRequestScope implements ProjectRequestScope interface.
@@ -36,4 +37,8 @@ func newProjectRequestScope(pubReqScp PublicRequestScope, prjScp dependencies.Pr
 
 func (v *projectRequestScope) Logger() log.Logger {
 	return v.logger
+}
+
+func (v *projectRequestScope) RequestUser() definition.By {
+	return definition.ByFromToken(v.StorageAPIToken())
 }
