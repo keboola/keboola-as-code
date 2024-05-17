@@ -1,29 +1,12 @@
 package target
 
-import (
-	"github.com/keboola/go-client/pkg/keboola"
-)
-
 type Target struct {
-	Table Table `json:"table"`
+	// Provider of the target data destination.
+	Provider Provider `json:"provider" validate:"required"`
 }
 
-type Table struct {
-	Keboola KeboolaTable `json:"keboola"`
-}
+type Provider string
 
-type KeboolaTable struct {
-	TableID keboola.TableID `json:"tableId" validate:"required"`
-	// StorageJob is the last table import job.
-	StorageJob *keboola.StorageJob `json:"storageJob,omitempty"`
-}
-
-func New(tableID keboola.TableID) Target {
-	return Target{
-		Table: Table{
-			Keboola: KeboolaTable{
-				TableID: tableID,
-			},
-		},
-	}
+func New() Target {
+	return Target{}
 }
