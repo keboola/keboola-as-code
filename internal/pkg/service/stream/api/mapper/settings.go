@@ -3,6 +3,8 @@ package mapper
 import (
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -26,7 +28,7 @@ func (m *Mapper) NewSettingsPatch(apiPatch api.SettingsPatch, superAdmin bool) (
 	}
 
 	// Validation
-	cfg := m.config
+	cfg := deepcopy.Copy(m.config).(config.Config)
 	patch := config.Patch{}
 	if err := configpatch.ApplyKVs(&cfg, &patch, patchKVs, opts...); err != nil {
 		if errors.As(err, &configpatch.ProtectedKeyError{}) {
