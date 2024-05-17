@@ -61,7 +61,7 @@ func FormatTime(t time.Time) string {
 }
 
 func From(t time.Time) UTCTime {
-	return UTCTime(t.UTC().Truncate(time.Millisecond))
+	return UTCTime(t.UTC())
 }
 
 func MustParse(s string) UTCTime {
