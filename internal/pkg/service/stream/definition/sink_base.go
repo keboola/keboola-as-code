@@ -12,14 +12,14 @@ type Sink struct {
 	Versioned
 	Switchable
 	SoftDeletable
-	Type        SinkType             `json:"type" validate:"required,oneof=table"`
+	Type        SinkType             `json:"type" validate:"required"`
 	Name        string               `json:"name" validate:"required,min=1,max=40"`
 	Description string               `json:"description,omitempty" validate:"max=4096"`
 	Config      configpatch.PatchKVs `json:"config,omitempty"` // see stream/config/config.Patch
 
 	// Sink type specific fields
 
-	Table *TableSink `json:"table" validate:"required_if=Type table"`
+	Table *TableSink `json:"table,omitempty" validate:"required_if=Type table"`
 }
 
 func (t SinkType) String() string {
