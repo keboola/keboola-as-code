@@ -1,7 +1,7 @@
 package column
 
 const (
-	columnBodyType Type = "body"
+	ColumnBodyType Type = "body"
 )
 
 type Body struct {
@@ -10,7 +10,7 @@ type Body struct {
 }
 
 func (v Body) ColumnType() Type {
-	return columnBodyType
+	return ColumnBodyType
 }
 
 func (v Body) ColumnName() string {

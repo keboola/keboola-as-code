@@ -19,12 +19,15 @@ func TestMappedColumns_Serde(t *testing.T) {
 		column.Body{Name: "body"},
 		column.Headers{Name: "headers"},
 		column.Template{
-			Name:     "template",
-			Language: column.TemplateLanguageJsonnet,
-			Content:  `Body('my.key')+':'+Body('my.value')'`,
+			Name: "template",
+			Template: column.TemplateConfig{
+				Language: column.TemplateLanguageJsonnet,
+				Content:  `Body('my.key')+':'+Body('my.value')'`,
+			},
 		},
 	}
-	expectedJSON := `[{"type":"uuid-v7","name":"id","primaryKey":true},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}]`
+
+	expectedJSON := `[{"type":"uuid-v7","name":"id","primaryKey":true},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","template":{"language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}}]`
 
 	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)
