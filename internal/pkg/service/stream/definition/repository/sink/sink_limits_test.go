@@ -1,4 +1,4 @@
-package repository_test
+package sink_test
 
 import (
 	"context"
@@ -18,14 +18,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
+	sinkrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink/schema"
+	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
 func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -40,26 +44,27 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
-	sinkSchema := schema.ForSink(d.EtcdSerde())
+	sinkSchema := schema.New(d.EtcdSerde())
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, repo.Source().Create(clk.Now(), "Create", &source).Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create sinks up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := 1; i <= repository.MaxSinksPerSource; i++ {
+	for i := 1; i <= sinkrepo.MaxSinksPerSource; i++ {
 		sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", i))})
-		sink.IncrementVersion(sink, clk.Now(), "Create")
+		sink.SetCreation(clk.Now(), by)
+		sink.IncrementVersion(sink, clk.Now(), by, "Create")
 		txn.Then(sinkSchema.Active().ByKey(sink.SinkKey).Put(client, sink))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == repository.MaxSinksPerSource {
+		if ops == 100 || i == sinkrepo.MaxSinksPerSource {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -69,11 +74,11 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	}
 	sinks, err := sinkRepo.List(sourceKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sinks, repository.MaxSinksPerSource)
+	assert.Len(t, sinks, sinkrepo.MaxSinksPerSource)
 
 	// Exceed the limit
 	sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "over-maximum-count"})
-	if err := sinkRepo.Create(clk.Now(), "Create description", &sink).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sinkRepo.Create(&sink, clk.Now(), by, "Create description").Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "sink count limit reached in the source, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
@@ -81,7 +86,9 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 
 func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -97,30 +104,30 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
-	sinkSchema := schema.ForSink(d.EtcdSerde())
+	sinkSchema := schema.New(d.EtcdSerde())
 
 	// Create parents
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 	source := test.NewSource(sourceKey)
-	require.NoError(t, repo.Source().Create(clk.Now(), "Create", &source).Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create sink
 	sink := test.NewSink(sinkKey)
-	require.NoError(t, sinkRepo.Create(clk.Now(), "create", &sink).Do(ctx).Err())
+	require.NoError(t, sinkRepo.Create(&sink, clk.Now(), by, "create").Do(ctx).Err())
 
 	// Create versions up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := sink.VersionNumber() + 1; i <= repository.MaxSourceVersionsPerSource; i++ {
+	for i := sink.VersionNumber() + 1; i <= sourcerepo.MaxSourceVersionsPerSource; i++ {
 		sink.Description = fmt.Sprintf("Description %04d", i)
-		sink.IncrementVersion(sink, clk.Now(), "Some Update")
+		sink.IncrementVersion(sink, clk.Now(), by, "Some Update")
 		txn.Then(sinkSchema.Versions().Of(sinkKey).Version(sink.VersionNumber()).Put(client, sink))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == repository.MaxSourceVersionsPerSource {
+		if ops == 100 || i == sourcerepo.MaxSourceVersionsPerSource {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -129,14 +136,14 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 		}
 	}
 	// Check that the maximum count is reached
-	sinks, err := sinkRepo.Versions(sinkKey).Do(ctx).AllKVs()
+	sinks, err := sinkRepo.ListVersions(sinkKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sinks, repository.MaxSourceVersionsPerSource)
+	assert.Len(t, sinks, sourcerepo.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sinkRepo.Update(clk.Now(), sinkKey, "Some update", func(v definition.Sink) definition.Sink {
+	err = sinkRepo.Update(sinkKey, clk.Now(), by, "Some update", func(v definition.Sink) (definition.Sink, error) {
 		v.Description = "foo"
-		return v
+		return v, nil
 	}).Do(ctx).Err()
 	if assert.Error(t, err) {
 		assert.Equal(t, "version count limit reached in the sink, the maximum is 1000", err.Error())
