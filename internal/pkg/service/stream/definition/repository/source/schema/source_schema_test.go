@@ -12,7 +12,7 @@ import (
 
 func TestSourceSchema(t *testing.T) {
 	t.Parallel()
-	s := ForSource(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 
 	sourceKey := key.SourceKey{
 		BranchKey: key.BranchKey{
@@ -88,7 +88,7 @@ func TestSourceSchema(t *testing.T) {
 
 func TestSourceaInState_In(t *testing.T) {
 	t.Parallel()
-	s := ForSource(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 	assert.Panics(t, func() {
 		s.Active().In("unexpected type")
 	})
