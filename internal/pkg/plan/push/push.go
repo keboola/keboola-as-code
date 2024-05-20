@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
+func NewPlan(diffResults *diff.Results, allowTargetEnv bool) (*diffop.Plan, error) {
 	plan := diffop.NewPlan(`push`)
 	for _, result := range diffResults.Results {
 		switch result.State {
@@ -16,6 +16,10 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 		case diff.ResultNotEqual:
 			// SKIP: if only Relations have changed + no changed relations on the API side
 			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InAPI") {
+				continue
+			}
+
+			if allowTargetEnv && result.ChangedFields.Has("name") {
 				continue
 			}
 			plan.Add(result, diffop.ActionSaveRemote)
