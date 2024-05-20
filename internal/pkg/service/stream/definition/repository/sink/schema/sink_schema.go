@@ -17,7 +17,7 @@ type (
 	SinkVersionsOf Sink
 )
 
-func ForSink(s *serde.Serde) Sink {
+func New(s *serde.Serde) Sink {
 	return Sink{PrefixT: NewTypedPrefix[definition.Sink]("definition/sink", s)}
 }
 
