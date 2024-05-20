@@ -42,6 +42,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"http" is a required field`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
@@ -54,6 +55,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"http.secret" is a required field`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
@@ -67,6 +69,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"http.secret" must be 48 characters in length`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
@@ -82,6 +85,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
@@ -97,6 +101,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
 			Value: definition.Source{
 				SourceKey:     sourceKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
@@ -111,6 +116,7 @@ func TestHTTPSource_Validation(t *testing.T) {
 			Name: "ok",
 			Value: definition.Source{
 				SourceKey:     sourceKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SourceTypeHTTP,
