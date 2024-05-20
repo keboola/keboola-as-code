@@ -1,0 +1,59 @@
+<<<<<
+definition/sink/active/123/567/my-source/my-sink
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "created": {
+    "at": "2000-01-01T01:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "version": {
+    "number": 4,
+    "hash": "%s",
+    "description": "Rollback to version \"2\".",
+    "at": "2000-01-01T04:00:00.000Z",
+    "by": {
+      "type": "user",
+      "tokenId": "111",
+      "tokenDesc": "some.user@company.com",
+      "userId": "222",
+      "userName": "Some User"
+    }
+  },
+  "type": "test",
+  %A
+}
+>>>>>
+
+<<<<<
+definition/sink/version/123/567/my-source/my-sink/0000000001
+-----
+%A
+>>>>>
+
+<<<<<
+definition/sink/version/123/567/my-source/my-sink/0000000002
+-----
+%A
+>>>>>
+
+<<<<<
+definition/sink/version/123/567/my-source/my-sink/0000000003
+-----
+%A
+>>>>>
+
+<<<<<
+definition/sink/version/123/567/my-source/my-sink/0000000004
+-----
+%A
+>>>>>
