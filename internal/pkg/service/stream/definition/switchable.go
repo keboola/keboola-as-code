@@ -26,6 +26,8 @@ type SwitchableInterface interface {
 	EnabledAt() *utctime.UTCTime
 }
 
+// Switchable entity can be enabled/disabled.
+// By default, both fields are nil, and entity is considered as enabled.
 type Switchable struct {
 	Disabled *Disabled `json:"disabled,omitempty" validate:"excluded_with=Enabled"`
 	Enabled  *Enabled  `json:"enabled,omitempty" validate:"excluded_with=Disabled"`
@@ -55,6 +57,8 @@ func (v *Switchable) Disable(now time.Time, by By, reason string, directly bool)
 }
 
 func (v *Switchable) IsEnabled() bool {
+	// Only one field from Enabled and Disabled can be set at the same time.
+	// If both fields are nil, the entity is considered as enabled.
 	return v.Disabled == nil
 }
 
