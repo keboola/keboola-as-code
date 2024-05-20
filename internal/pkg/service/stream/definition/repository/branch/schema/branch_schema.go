@@ -14,7 +14,7 @@ type (
 	BranchInState Branch
 )
 
-func ForBranch(s *serde.Serde) Branch {
+func New(s *serde.Serde) Branch {
 	return Branch{PrefixT: NewTypedPrefix[definition.Branch]("definition/branch", s)}
 }
 
