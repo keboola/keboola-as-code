@@ -3,6 +3,7 @@ package definition
 import (
 	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -69,8 +70,7 @@ func (v *SoftDeletable) DeletedBy() *By {
 	if v.Deleted == nil {
 		return nil
 	}
-	value := v.Deleted.By
-	return &value
+	return ptr.Ptr(v.Deleted.By)
 }
 
 func (v *SoftDeletable) DeletedAt() utctime.UTCTime {
@@ -92,8 +92,7 @@ func (v *SoftDeletable) UndeletedBy() *By {
 	if v.Undeleted == nil {
 		return nil
 	}
-	value := v.Undeleted.By
-	return &value
+	return ptr.Ptr(v.Undeleted.By)
 }
 
 func (v *SoftDeletable) UndeletedAt() utctime.UTCTime {
