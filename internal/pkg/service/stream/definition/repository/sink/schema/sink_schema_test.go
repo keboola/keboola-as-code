@@ -12,7 +12,7 @@ import (
 
 func TestSinkSchema(t *testing.T) {
 	t.Parallel()
-	s := ForSink(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 
 	sourceKey := key.SourceKey{
 		BranchKey: key.BranchKey{
@@ -43,6 +43,10 @@ func TestSinkSchema(t *testing.T) {
 		{
 			s.Active().In(sinkKey.BranchKey).Prefix(),
 			"definition/sink/active/123/456/",
+		},
+		{
+			s.Active().In(sinkKey.SourceKey).Prefix(),
+			"definition/sink/active/123/456/my-source/",
 		},
 		{
 			s.Active().InProject(sinkKey.ProjectID).Prefix(),
@@ -101,7 +105,7 @@ func TestSinkSchema(t *testing.T) {
 
 func TestSinkSchemaInState_In(t *testing.T) {
 	t.Parallel()
-	s := ForSink(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 	assert.Panics(t, func() {
 		s.Active().In("unexpected type")
 	})
