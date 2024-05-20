@@ -12,7 +12,7 @@ import (
 
 func TestBranchSchema(t *testing.T) {
 	t.Parallel()
-	s := ForBranch(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 
 	branchKey := key.BranchKey{
 		ProjectID: 123,
