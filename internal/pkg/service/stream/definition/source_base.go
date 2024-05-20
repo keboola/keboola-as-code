@@ -9,6 +9,7 @@ type SourceType string
 
 type Source struct {
 	key.SourceKey
+	Created
 	Versioned
 	Switchable
 	SoftDeletable
