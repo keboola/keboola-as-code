@@ -53,6 +53,7 @@ func TestTableSink_Validation(t *testing.T) {
 			ExpectedError: `"table" is a required field`,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
@@ -68,6 +69,7 @@ func TestTableSink_Validation(t *testing.T) {
 `,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
@@ -81,6 +83,7 @@ func TestTableSink_Validation(t *testing.T) {
 			ExpectedError: `"name" must be a maximum of 40 characters in length`,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
@@ -104,6 +107,7 @@ func TestTableSink_Validation(t *testing.T) {
 			ExpectedError: `"description" must be a maximum of 4,096 characters in length`,
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
@@ -126,6 +130,7 @@ func TestTableSink_Validation(t *testing.T) {
 			Name: "minimal",
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
@@ -148,6 +153,7 @@ func TestTableSink_Validation(t *testing.T) {
 			Name: "with custom upload conditions",
 			Value: definition.Sink{
 				SinkKey:       sinkKey,
+				Created:       test.Created(),
 				Versioned:     test.Versioned(),
 				SoftDeletable: test.SoftDeletable(),
 				Type:          definition.SinkTypeTable,
