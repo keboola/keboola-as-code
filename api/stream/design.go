@@ -446,6 +446,8 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/aggregation/sources")
 			Meta("openapi:tag:internal")
+			Param("sinceId")
+			Param("limit")
 			Response(StatusOK)
 		})
 	})
@@ -1268,11 +1270,15 @@ var GetTaskRequest = Type("GetTaskRequest", func() {
 
 var AggregationSourcesRequest = Type("AggregationSourcesRequest", func() {
 	BranchKeyRequest()
+	PaginatedRequest()
 })
 
 var AggregationSourcesResult = Type("AggregationSourcesResult", func() {
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
+	BranchKeyResponse()
+	Attribute("page", PaginatedResponse)
 	Attribute("sources", AggregationSources)
-	Required("sources")
+	Required("page", "sources")
 })
 
 var AggregationSources = Type("AggregationSources", ArrayOf(AggregationSource))
