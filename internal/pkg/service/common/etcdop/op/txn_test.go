@@ -50,11 +50,11 @@ func TestTxnOp_Empty(t *testing.T) {
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
 		assert.Equal(t, etcd.OpTxn(
 			// If
-			[]etcd.Cmp{},
+			nil,
 			// Then
-			[]etcd.Op{},
+			nil,
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -372,7 +372,7 @@ func TestTxnOp_Then_CalledWithTxn_2(t *testing.T) {
 
 	_, err := Txn(client).Then(txnOp).Op(context.Background())
 	if assert.Error(t, err) {
-		assert.Equal(t, "cannot create operation [then][0]: operation is a transaction, use Merge or ThenTxn, not Then", err.Error())
+		assert.Equal(t, "cannot create operation [then][0]:\n- operation is a transaction, use Merge or ThenTxn, not Then", err.Error())
 	}
 }
 
@@ -382,7 +382,7 @@ func TestTxnOp_ThenTxn_CalledWithoutTxn(t *testing.T) {
 	client := etcd.KV(nil)
 	_, err := Txn(client).ThenTxn(etcdop.Key("foo").Put(client, "bar")).Op(context.Background())
 	if assert.Error(t, err) {
-		assert.Equal(t, "cannot create operation [thenTxn][0]: operation is not a transaction, use Then, not ThenTxn", err.Error())
+		assert.Equal(t, "cannot create operation [thenTxn][0]:\n- operation is not a transaction, use Then, not ThenTxn", err.Error())
 	}
 }
 
@@ -399,16 +399,22 @@ func TestTxnOp_Then_Simple(t *testing.T) {
 		Then(etcdop.Key("key1").Put(client, "value1")).
 		ThenTxn(
 			Txn(client).
-				Then(etcdop.Key("key2").Put(client, "value2")).
+				Then(etcdop.Key("key2").Put(client, "value2").WithOnResult(func(NoResult) {
+					log.WriteString("put key2 succeeded\n")
+				})).
 				ThenTxn(
 					Txn(client).
-						Then(etcdop.Key("key3").Put(client, "value3")).
+						Then(etcdop.Key("key3").Put(client, "value3").WithOnResult(func(NoResult) {
+							log.WriteString("put key3 succeeded\n")
+						})).
 						OnSucceeded(func(*TxnResult[NoResult]) {
 							log.WriteString("nested transaction succeeded\n")
 						}),
 				),
 		).
-		Then(etcdop.Key("key4").Put(client, "value4")).
+		Then(etcdop.Key("key4").Put(client, "value4").WithOnResult(func(NoResult) {
+			log.WriteString("put key4 succeeded\n")
+		})).
 		OnSucceeded(func(*TxnResult[NoResult]) {
 			log.WriteString("root transaction succeeded\n")
 		})
@@ -418,36 +424,37 @@ func TestTxnOp_Then_Simple(t *testing.T) {
 		// ----- Txn - Level 1 ------
 		assert.Equal(t, etcd.OpTxn(
 			// If
-			[]etcd.Cmp{},
+			nil,
 			// Then
 			[]etcd.Op{
 				etcd.OpPut("key1", "value1"),
-				etcd.OpPut("key4", "value4"),
 				// ----- Txn - Level 2 ------
 				etcd.OpTxn(
 					// If
-					[]etcd.Cmp{},
+					nil,
 					// Then
 					[]etcd.Op{
 						etcd.OpPut("key2", "value2"),
 						// ----- Txn - Level 3 ------
 						etcd.OpTxn(
 							// If
-							[]etcd.Cmp{},
+							nil,
 							// Then
 							[]etcd.Op{
 								etcd.OpPut("key3", "value3"),
 							},
 							// Else
-							[]etcd.Op{},
+							nil,
 						),
 					},
 					// Else
-					[]etcd.Op{},
+					nil,
 				),
+				// -----
+				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -458,7 +465,10 @@ func TestTxnOp_Then_Simple(t *testing.T) {
 
 	// Check processors
 	assert.Equal(t, strings.TrimSpace(`
+put key2 succeeded
+put key3 succeeded
 nested transaction succeeded
+put key4 succeeded
 root transaction succeeded
 `), strings.TrimSpace(log.String()))
 }
@@ -476,15 +486,21 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 		Merge(
 			etcdop.Key("key1").Put(client, "value1"),
 			Txn(client).
-				Then(etcdop.Key("key2").Put(client, "value2")).
+				Then(etcdop.Key("key2").Put(client, "value2").WithOnResult(func(NoResult) {
+					log.WriteString("put key2 succeeded\n")
+				})).
 				Merge(
 					Txn(client).
-						Then(etcdop.Key("key3").Put(client, "value3")).
+						Then(etcdop.Key("key3").Put(client, "value3").WithOnResult(func(NoResult) {
+							log.WriteString("put key3 succeeded\n")
+						})).
 						OnSucceeded(func(*TxnResult[NoResult]) {
 							log.WriteString("nested transaction succeeded\n")
 						}),
 				),
-			etcdop.Key("key4").Put(client, "value4"),
+			etcdop.Key("key4").Put(client, "value4").WithOnResult(func(NoResult) {
+				log.WriteString("put key4 succeeded\n")
+			}),
 		).
 		OnSucceeded(func(*TxnResult[NoResult]) {
 			log.WriteString("root transaction succeeded\n")
@@ -494,7 +510,7 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 	if lowLevel, err := txn.Op(ctx); assert.NoError(t, err) {
 		assert.Equal(t, etcd.OpTxn(
 			// If
-			[]etcd.Cmp{},
+			nil,
 			// Then
 			[]etcd.Op{
 				etcd.OpPut("key1", "value1"),
@@ -503,7 +519,7 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -514,7 +530,10 @@ func TestTxnOp_Merge_Simple(t *testing.T) {
 
 	// Check processors
 	assert.Equal(t, strings.TrimSpace(`
+put key2 succeeded
+put key3 succeeded
 nested transaction succeeded
+put key4 succeeded
 root transaction succeeded
 `), strings.TrimSpace(log.String()))
 }
@@ -534,7 +553,9 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 		ThenTxn(
 			Txn(client).
 				If(etcd.Compare(etcd.Version("key2"), "=", 0)).
-				Then(etcdop.Key("key2").Put(client, "value2")).
+				Then(etcdop.Key("key2").Put(client, "value2").WithOnResult(func(NoResult) {
+					log.WriteString("put key2 succeeded\n")
+				})).
 				OnSucceeded(func(*TxnResult[NoResult]) {
 					log.WriteString("nested transaction succeeded - 1\n")
 				}).
@@ -544,7 +565,9 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 				ThenTxn(
 					Txn(client).
 						If(etcd.Compare(etcd.Version("key3"), "=", 0)).
-						Then(etcdop.Key("key3").Put(client, "value3")).
+						Then(etcdop.Key("key3").Put(client, "value3").WithOnResult(func(NoResult) {
+							log.WriteString("put key3 succeeded\n")
+						})).
 						OnSucceeded(func(*TxnResult[NoResult]) {
 							log.WriteString("nested transaction succeeded - 2\n")
 						}).
@@ -554,7 +577,9 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 				),
 		).
 		If(etcd.Compare(etcd.Version("key4"), "=", 0)).
-		Then(etcdop.Key("key4").Put(client, "value4")).
+		Then(etcdop.Key("key4").Put(client, "value4").WithOnResult(func(NoResult) {
+			log.WriteString("put key4 succeeded\n")
+		})).
 		OnSucceeded(func(*TxnResult[NoResult]) {
 			log.WriteString("root transaction succeeded\n")
 		}).
@@ -574,7 +599,6 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 			// Then
 			[]etcd.Op{
 				etcd.OpPut("key1", "value1"),
-				etcd.OpPut("key4", "value4"),
 				// ----- Txn - Level 2 ------
 				etcd.OpTxn(
 					// If
@@ -595,15 +619,17 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 								etcd.OpPut("key3", "value3"),
 							},
 							// Else
-							[]etcd.Op{},
+							nil,
 						),
 					},
 					// Else
-					[]etcd.Op{},
+					nil,
 				),
+				// -----
+				etcd.OpPut("key4", "value4"),
 			},
 			// Else
-			[]etcd.Op{},
+			nil,
 		), lowLevel.Op)
 	}
 
@@ -612,8 +638,11 @@ func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 	require.NoError(t, result.Err())
 	assert.True(t, result.Succeeded())
 	assert.Equal(t, strings.TrimSpace(`
+put key2 succeeded
+put key3 succeeded
 nested transaction succeeded - 2
 nested transaction succeeded - 1
+put key4 succeeded
 root transaction succeeded
 `), strings.TrimSpace(log.String()))
 
@@ -626,6 +655,7 @@ root transaction succeeded
 	assert.True(t, result.Succeeded())
 	assert.Equal(t, strings.TrimSpace(`
 nested transaction failed - 1
+put key4 succeeded
 root transaction succeeded
 `), strings.TrimSpace(log.String()))
 }
@@ -645,7 +675,9 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 		Merge(
 			Txn(client).
 				If(etcd.Compare(etcd.Version("key2"), "=", 0)).
-				Then(etcdop.Key("key2").Put(client, "value2")).
+				Then(etcdop.Key("key2").Put(client, "value2").WithOnResult(func(NoResult) {
+					log.WriteString("put key2 succeeded\n")
+				})).
 				OnSucceeded(func(*TxnResult[NoResult]) {
 					log.WriteString("nested transaction succeeded - 1\n")
 				}).
@@ -655,7 +687,9 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 				Merge(
 					Txn(client).
 						If(etcd.Compare(etcd.Version("key3"), "=", 0)).
-						Then(etcdop.Key("key3").Put(client, "value3")).
+						Then(etcdop.Key("key3").Put(client, "value3").WithOnResult(func(NoResult) {
+							log.WriteString("put key3 succeeded\n")
+						})).
 						OnSucceeded(func(*TxnResult[NoResult]) {
 							log.WriteString("nested transaction succeeded - 2\n")
 						}).
@@ -665,7 +699,9 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 				),
 		).
 		If(etcd.Compare(etcd.Version("key4"), "=", 0)).
-		Then(etcdop.Key("key4").Put(client, "value4")).
+		Then(etcdop.Key("key4").Put(client, "value4").WithOnResult(func(NoResult) {
+			log.WriteString("put key4 succeeded\n")
+		})).
 		OnSucceeded(func(*TxnResult[NoResult]) {
 			log.WriteString("root transaction succeeded\n")
 		}).
@@ -680,17 +716,17 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 			[]etcd.Cmp{
 				// All conditions, from all merged transactions, have to be fulfilled
 				etcd.Compare(etcd.Version("key1"), "=", 0),
-				etcd.Compare(etcd.Version("key4"), "=", 0),
 				etcd.Compare(etcd.Version("key2"), "=", 0),
 				etcd.Compare(etcd.Version("key3"), "=", 0),
+				etcd.Compare(etcd.Version("key4"), "=", 0),
 			},
 			// Then
 			[]etcd.Op{
 				// Then all operations are applied
 				etcd.OpPut("key1", "value1"),
-				etcd.OpPut("key4", "value4"),
 				etcd.OpPut("key2", "value2"),
 				etcd.OpPut("key3", "value3"),
+				etcd.OpPut("key4", "value4"),
 			},
 			// Else
 			[]etcd.Op{
@@ -702,11 +738,11 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 						etcd.Compare(etcd.Version("key3"), "=", 0),
 					},
 					// Then
-					[]etcd.Op{},
+					nil,
 					// Else
 					[]etcd.Op{
 						// Check conditions of the nested transaction - 2, for processors
-						etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key3"), "=", 0)}, []etcd.Op{}, []etcd.Op{}),
+						etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key3"), "=", 0)}, nil, nil),
 					},
 				),
 			},
@@ -718,8 +754,11 @@ func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 	require.NoError(t, result.Err())
 	assert.True(t, result.Succeeded())
 	assert.Equal(t, strings.TrimSpace(`
+put key2 succeeded
+put key3 succeeded
 nested transaction succeeded - 2
 nested transaction succeeded - 1
+put key4 succeeded
 root transaction succeeded
 `), strings.TrimSpace(log.String()))
 
@@ -785,23 +824,15 @@ func TestTxnOp_Merge_RealExample(t *testing.T) {
 			},
 			// Then
 			[]etcd.Op{
-				etcd.OpPut("key/txn/succeeded", "true"),
 				etcd.OpPut("key/put", "value"),
 				etcd.OpDelete("key/delete"),
+				etcd.OpPut("key/txn/succeeded", "true"),
 			},
 			// Else
 			[]etcd.Op{
+				etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, nil, nil),
+				etcd.OpTxn([]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, nil, nil),
 				etcd.OpPut("key/txn/succeeded", "false"),
-				etcd.OpTxn(
-					[]etcd.Cmp{etcd.Compare(etcd.Version("key/put"), "=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
-				),
-				etcd.OpTxn(
-					[]etcd.Cmp{etcd.Compare(etcd.Version("key/delete"), "!=", 0)}, // If
-					[]etcd.Op{}, // Then
-					[]etcd.Op{}, // Else
-				),
 			},
 		), lowLevel.Op)
 	}
@@ -840,9 +871,9 @@ txn succeeded: error: - key/put already exists;- key/delete not found
 				Succeeded: false,
 				Error:     "- key/put already exists\n- key/delete not found",
 				Results: []any{
-					NoResult{},                      // else put
 					"ERROR: key/put already exists", // putOp
 					"ERROR: key/delete not found",   // deleteOp
+					NoResult{},                      // else put
 				},
 			},
 		},
@@ -865,9 +896,9 @@ txn succeeded: error: key/delete not found
 				Succeeded: false,
 				Error:     "key/delete not found",
 				Results: []any{
-					NoResult{},                    // else put
 					NoResult{},                    // put op
 					"ERROR: key/delete not found", // deleteOp
+					NoResult{},                    // else put
 				},
 			},
 		},
@@ -914,9 +945,9 @@ txn succeeded: error: key/put already exists
 				Succeeded: false,
 				Error:     "key/put already exists",
 				Results: []any{
-					NoResult{},                      // else put
 					"ERROR: key/put already exists", // put op
 					NoResult{},                      // deleteOp
+					NoResult{},                      // else put
 				},
 			},
 		},
@@ -951,9 +982,9 @@ txn succeeded: true
 			ExpectedTxnResult: txnResult{
 				Succeeded: true,
 				Results: []any{
-					NoResult{}, // then put
 					true,       // put op
 					true,       // delete op
+					NoResult{}, // then put
 				},
 			},
 		},
@@ -1036,7 +1067,7 @@ func TestTxnOp_Merge_Complex(t *testing.T) {
 						etcd.Compare(etcd.Value("txn1/if"), "=", "ok"),
 					},
 					// Then
-					[]etcd.Op{},
+					nil,
 					// Else
 					[]etcd.Op{
 						etcd.OpPut("txn1/else/put", "ok"),
@@ -1049,7 +1080,7 @@ func TestTxnOp_Merge_Complex(t *testing.T) {
 						etcd.Compare(etcd.Value("txn2/if"), "=", "ok"),
 					},
 					// Then
-					[]etcd.Op{},
+					nil,
 					// Else
 					[]etcd.Op{
 						etcd.OpPut("txn2/else/put", "ok"),
