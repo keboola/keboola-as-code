@@ -13,7 +13,7 @@ services:
       - cache:/tmp/cache
     environment:
       # For all
-      - TEST_KBC_PROJECTS
+      - TEST_KBC_PROJECTS_FILE=/code/projects.json
       - TEST_KBC_PROJECTS_LOCK_HOST
       - TEST_KBC_PROJECTS_LOCK_PASSWORD
       # For Templates API
