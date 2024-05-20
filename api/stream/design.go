@@ -1278,9 +1278,9 @@ var AggregationSourcesResult = Type("AggregationSourcesResult", func() {
 var AggregationSources = Type("AggregationSources", ArrayOf(AggregationSource))
 
 var AggregationSource = Type("AggregationSource", func() {
-	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", repository.MaxSourcesPerBranch))
+	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
-	SourceFieldsRW()
+	SourceFields(OpRead)
 	Attribute("http", HTTPSource, func() {
 		Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
 	})
@@ -1296,7 +1296,7 @@ var AggregationSinks = Type("AggregationSinks", ArrayOf(AggregationSink))
 var AggregationSink = Type("AggregationSink", func() {
 	Description("A mapping from imported data to a destination table.")
 	SinkKeyResponse()
-	SinkFieldsRW()
+	SinkFields(OpRead)
 	Attribute("version", EntityVersion)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
