@@ -26,10 +26,7 @@ func (e *Executor) OnSourceSave(ctx context.Context, now time.Time, by definitio
 	e.logger.Infof(ctx, `executing OnSourceSave "%s"`, updated.SourceKey.String())
 	ctx = context.WithValue(ctx, updatedSource, updated)
 	return e.collection.onSourceSave.forEach(func(fn onSourceSaveFn) error {
-		if err := fn(ctx, now, by, old, updated); err != nil {
-			return err
-		}
-		return nil
+		return fn(ctx, now, by, old, updated)
 	})
 }
 
