@@ -27,6 +27,7 @@ type TxnOp[R any] struct {
 	result     *R
 	client     etcd.KV
 	processors []func(ctx context.Context, r *TxnResult[R])
+	errs       errors.MultiError
 	ifs        []etcd.Cmp
 	thenOps    []Op
 	thenTxnOps []Op // thenTxnOps are separated from thenOps to avoid confusing between Then and Merge
@@ -87,7 +88,7 @@ func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
 	// Bulletproof check of the low-level transaction is in the "lowLevelTxn" method.
 	for i, op := range ops {
 		if _, ok := op.(txnInterface); ok {
-			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use ThenTxn, not Then`, i))
+			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use Merge or ThenTxn, not Then`, i))
 		}
 	}
 
@@ -106,6 +107,16 @@ func (v *TxnOp[R]) ThenTxn(ops ...Op) *TxnOp[R] {
 // The operations in the Else branch will be executed if any of the If comparisons fail.
 func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 	v.elseOps = append(v.elseOps, ops...)
+	return v
+}
+
+// AddError - all static errors are returned when the low level txn is composed.
+// It makes error handling easier and move it to one place.
+func (v *TxnOp[R]) AddError(errs ...error) *TxnOp[R] {
+	if v.errs == nil {
+		v.errs = errors.NewMultiError()
+	}
+	v.errs.Append(errs...)
 	return v
 }
 
@@ -134,6 +145,21 @@ func (v *TxnOp[R]) OnResult(fn func(result *TxnResult[R])) *TxnOp[R] {
 			fn(r)
 		}
 	})
+}
+
+// SetResultTo is a shortcut for the AddProcessor.
+// If no error occurred, the result of the operation is written to the target pointer,
+// otherwise an empty value is written.
+func (v *TxnOp[R]) SetResultTo(ptr *R) *TxnOp[R] {
+	v.AddProcessor(func(ctx context.Context, r *TxnResult[R]) {
+		if r.Err() == nil {
+			*ptr = r.Result()
+		} else {
+			var empty R
+			*ptr = empty
+		}
+	})
+	return v
 }
 
 // OnFailed is a shortcut for the AddProcessor.
@@ -176,6 +202,11 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	out := &lowLevelTxn[R]{result: v.result, client: v.client, thenOps: make([]etcd.Op, 0), elseOps: make([]etcd.Op, 0)}
 	errs := errors.NewMultiError()
 
+	// Copy init errors
+	if v.errs != nil {
+		errs.Append(v.errs.WrappedErrors()...)
+	}
+
 	// Copy IFs
 	out.ifs = make([]etcd.Cmp, len(v.ifs))
 	copy(out.ifs, v.ifs)
@@ -186,7 +217,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		if lowLevel, err := op.Op(ctx); err != nil {
 			errs.Append(errors.PrefixErrorf(err, "cannot create operation [then][%d]", i))
 		} else if lowLevel.Op.IsTxn() {
-			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation is a transaction, use ThenTxn, not Then`, i))
+			errs.Append(errors.Errorf(`cannot create operation [then][%d]: operation is a transaction, use Merge or ThenTxn, not Then`, i))
 		} else {
 			out.addThen(lowLevel.Op, lowLevel.MapResponse)
 		}
@@ -249,7 +280,7 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 		}
 
 		// There may be a situation where neither THEN nor ELSE branch is executed:
-		// If the transaction fails, but the reason is not in this sub-transaction.
+		// It occurs, when the root transaction fails, but the reason is not in this sub-transaction.
 
 		// On result, compose and map response that corresponds to the original sub-transaction
 		// Processor from nested transactions must be invoked first.

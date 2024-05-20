@@ -37,7 +37,7 @@ type Header = etcdserverpb.ResponseHeader // shortcut
 // The struct is immutable, see With* methods.
 type WithResult[R any] struct {
 	client     etcd.KV
-	factory    lowLevelFactory
+	factory    LowLevelFactory
 	mapper     func(ctx context.Context, raw RawResponse) (result R, err error)
 	processors processors[R]
 }
@@ -46,9 +46,12 @@ type WithResult[R any] struct {
 type LowLevelFactory func(ctx context.Context) (etcd.Op, error)
 
 // HighLevelFactory creates a high-level etcd operation.
-type HighLevelFactory func(ctx context.Context) (Op, error)
-
-type lowLevelFactory = LowLevelFactory // alias for private embedding
+//
+// The factory can return <nil>, if you want to execute some code during the READ phase,
+// but no etcd operation is generated.
+//
+// The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
+type HighLevelFactory func(ctx context.Context) Op
 
 func NewForType[R any](client etcd.KV, factory LowLevelFactory, mapper func(ctx context.Context, raw RawResponse) (result R, err error)) WithResult[R] {
 	return WithResult[R]{client: client, factory: factory, mapper: mapper}
@@ -113,6 +116,14 @@ func (v WithResult[R]) WithResultValidator(fn func(R) error) WithResult[R] {
 // If no error occurred yet, then the callback is executed with the result.
 func (v WithResult[R]) WithOnResult(fn func(result R)) WithResult[R] {
 	v.processors = v.processors.WithOnResult(fn)
+	return v
+}
+
+// WithNotEmptyResultAsError is a shortcut for the WithProcessor.
+// If no error occurred yet and the result is NOT an empty value for the R type (nil if it is a pointer),
+// then the callback is executed and returned error is added to the Result.
+func (v WithResult[R]) WithNotEmptyResultAsError(fn func() error) WithResult[R] {
+	v.processors = v.processors.WithNotEmptyResultAsError(fn)
 	return v
 }
 
