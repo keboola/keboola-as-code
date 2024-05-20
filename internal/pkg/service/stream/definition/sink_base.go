@@ -9,6 +9,7 @@ type SinkType string
 
 type Sink struct {
 	key.SinkKey
+	Created
 	Versioned
 	Switchable
 	SoftDeletable
