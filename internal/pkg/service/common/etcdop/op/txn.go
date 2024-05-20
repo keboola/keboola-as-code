@@ -56,7 +56,6 @@ type lowLevelTxn[R any] struct {
 	result     *R
 	client     etcd.KV
 	processors []func(ctx context.Context, r *TxnResult[R])
-	opCounter  map[txnPartType]int
 	ifs        []etcd.Cmp
 	thenOps    []etcd.Op
 	elseOps    []etcd.Op
@@ -219,7 +218,7 @@ func (v *TxnOp[R]) Op(ctx context.Context) (LowLevelOp, error) {
 }
 
 func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
-	out := &lowLevelTxn[R]{result: v.result, client: v.client, opCounter: make(map[txnPartType]int)}
+	out := &lowLevelTxn[R]{result: v.result, client: v.client}
 	errs := errors.NewMultiError()
 
 	// Copy init errors
@@ -228,10 +227,13 @@ func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	}
 
 	// Process all transaction parts
+	opIndex := make(map[txnPartType]int)
 	for _, part := range v.parts {
 		if err := out.addPart(ctx, part); err != nil {
+			err = errors.PrefixErrorf(err, `cannot create operation [%s][%d]:`, part.Type, opIndex[part.Type])
 			errs.Append(err)
 		}
+		opIndex[part.Type]++
 	}
 
 	// Add top-level processors
@@ -272,9 +274,6 @@ func (v *lowLevelTxn[R]) Do(ctx context.Context, opts ...Option) *TxnResult[R] {
 }
 
 func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart[R]) error {
-	opIndex := v.opCounter[part.Type]
-	v.opCounter[part.Type]++
-
 	// Add if
 	if part.Type == txnOpIf {
 		v.ifs = append(v.ifs, part.If)
@@ -284,17 +283,17 @@ func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart[R]) error {
 	// Create low-level operation
 	lowLevel, err := part.Factory.Op(ctx)
 	if err != nil {
-		return errors.PrefixErrorf(err, "cannot create operation [%s][%d]", part.Type, opIndex)
+		return err
 	}
 	switch part.Type {
 	case txnOpThen:
 		if lowLevel.Op.IsTxn() {
-			return errors.Errorf(`cannot create operation [then][%d]: operation is a transaction, use Merge or ThenTxn, not Then`, opIndex)
+			return errors.New("operation is a transaction, use Merge or ThenTxn, not Then")
 		}
 		v.addThen(lowLevel.Op, lowLevel.MapResponse)
 	case txnOpThenTxn:
 		if !lowLevel.Op.IsTxn() {
-			return errors.Errorf(`cannot create operation [thenTxn][%d]: operation is not a transaction, use Then, not ThenTxn`, opIndex)
+			return errors.New("operation is not a transaction, use Then, not ThenTxn")
 		}
 		v.addThen(lowLevel.Op, lowLevel.MapResponse)
 	case txnOpElse:
