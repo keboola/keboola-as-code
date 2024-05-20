@@ -1,4 +1,4 @@
-package definition
+package definition_test
 
 import (
 	"testing"
@@ -13,10 +13,11 @@ func TestBranch_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Test cases
-	cases := testvalidation.TestCases[Branch]{
+	cases := testvalidation.TestCases[definition.Branch]{
 		{
-			Name: "empty",
-			Value: Branch{
+			Name: "ok",
+			Value: definition.Branch{
+				Created: test.Created(),
 				BranchKey: key.BranchKey{
 					ProjectID: 123,
 					BranchID:  456,
