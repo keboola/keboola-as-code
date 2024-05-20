@@ -17,7 +17,7 @@ type (
 	SourceVersionsOf Source
 )
 
-func ForSource(s *serde.Serde) Source {
+func New(s *serde.Serde) Source {
 	return Source{PrefixT: NewTypedPrefix[definition.Source]("definition/source", s)}
 }
 
