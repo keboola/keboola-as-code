@@ -372,7 +372,7 @@ func TestTxnOp_Then_CalledWithTxn_2(t *testing.T) {
 
 	_, err := Txn(client).Then(txnOp).Op(context.Background())
 	if assert.Error(t, err) {
-		assert.Equal(t, "cannot create operation [then][0]: operation is a transaction, use Merge or ThenTxn, not Then", err.Error())
+		assert.Equal(t, "cannot create operation [then][0]:\n- operation is a transaction, use Merge or ThenTxn, not Then", err.Error())
 	}
 }
 
@@ -382,7 +382,7 @@ func TestTxnOp_ThenTxn_CalledWithoutTxn(t *testing.T) {
 	client := etcd.KV(nil)
 	_, err := Txn(client).ThenTxn(etcdop.Key("foo").Put(client, "bar")).Op(context.Background())
 	if assert.Error(t, err) {
-		assert.Equal(t, "cannot create operation [thenTxn][0]: operation is not a transaction, use Then, not ThenTxn", err.Error())
+		assert.Equal(t, "cannot create operation [thenTxn][0]:\n- operation is not a transaction, use Then, not ThenTxn", err.Error())
 	}
 }
 
