@@ -1,4 +1,4 @@
-package repository_test
+package branch_test
 
 import (
 	"context"
@@ -15,14 +15,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
+	branchrepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestBranchLimits_BranchesPerProject(t *testing.T) {
+func TestBranchRepository_Limits_BranchesPerProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -35,19 +37,20 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	branchRepo := repository.New(d).Branch()
-	branchSchema := schema.ForBranch(d.EtcdSerde())
+	branchSchema := schema.New(d.EtcdSerde())
 
 	// Create branches up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := 1; i <= repository.MaxBranchesPerProject; i++ {
+	for i := 1; i <= branchrepo.MaxBranchesPerProject; i++ {
 		branch := test.NewBranch(key.BranchKey{ProjectID: branchKey.ProjectID, BranchID: keboola.BranchID(1000 + i)})
+		branch.SetCreation(clk.Now(), by)
 		txn.Then(branchSchema.Active().ByKey(branch.BranchKey).Put(client, branch))
 
-		// Send the txn it is full, or after the last item
+		// Send the txn if it is full, or after the last item
 		ops++
-		if ops == 100 || i == repository.MaxBranchesPerProject {
+		if ops == 100 || i == branchrepo.MaxBranchesPerProject {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -57,11 +60,11 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 	}
 	branches, err := branchRepo.List(branchKey.ProjectID).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, branches, repository.MaxBranchesPerProject)
+	assert.Len(t, branches, branchrepo.MaxBranchesPerProject)
 
 	// Exceed the limit
 	branch := test.NewBranch(key.BranchKey{ProjectID: 123, BranchID: 111111})
-	if err := branchRepo.Create(clk.Now(), &branch).Do(ctx).Err(); assert.Error(t, err) {
+	if err := branchRepo.Create(&branch, clk.Now(), by).Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "branch count limit reached in the project, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
