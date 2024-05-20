@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	BySystem = "system"
-	ByUser   = "user"
+	BySystem ByType = "system"
+	ByUser   ByType = "user"
 )
 
 type ByType string
