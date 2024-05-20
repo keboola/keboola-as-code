@@ -1,4 +1,4 @@
-package repository_test
+package source_test
 
 import (
 	"context"
@@ -18,14 +18,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/schema"
+	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestSourceLimits_SourcesPerBranch(t *testing.T) {
+func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -39,24 +42,25 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
-	sourceSchema := schema.ForSource(d.EtcdSerde())
+	sourceSchema := schema.New(d.EtcdSerde())
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 
 	// Create sources up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := 1; i <= repository.MaxSourcesPerBranch; i++ {
-		source := test.NewSource(key.SourceKey{BranchKey: branchKey, SourceID: key.SourceID(fmt.Sprintf("my-source-%d", i))})
-		source.IncrementVersion(source, clk.Now(), "Create")
+	for i := 1; i <= sourcerepo.MaxSourcesPerBranch; i++ {
+		source := test.NewSource(key.SourceKey{BranchKey: branchKey, SourceID: key.SourceID(fmt.Sprintf("my-sourcerepo-%d", i))})
+		source.SetCreation(clk.Now(), by)
+		source.IncrementVersion(source, clk.Now(), by, "Create")
 		txn.Then(sourceSchema.Active().ByKey(source.SourceKey).Put(client, source))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == repository.MaxSourcesPerBranch {
+		if ops == 100 || i == sourcerepo.MaxSourcesPerBranch {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -66,11 +70,11 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 	}
 	sources, err := sourceRepo.List(branchKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sources, repository.MaxSourcesPerBranch)
+	assert.Len(t, sources, sourcerepo.MaxSourcesPerBranch)
 
 	// Exceed the limit
 	source := test.NewSource(key.SourceKey{BranchKey: key.BranchKey{ProjectID: projectID, BranchID: 456}, SourceID: "over-maximum-count"})
-	if err := sourceRepo.Create(clk.Now(), "Create description", &source).Do(ctx).Err(); assert.Error(t, err) {
+	if err := sourceRepo.Create(&source, clk.Now(), by, "Create description").Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "source count limit reached in the branch, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 	}
@@ -78,7 +82,9 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 
 func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+	by := test.ByUser()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -86,35 +92,35 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	// Fixtures
 	projectID := keboola.ProjectID(123)
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
-	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-1"}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-sourcerepo-1"}
 
 	// Get services
 	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
-	sourceSchema := schema.ForSource(d.EtcdSerde())
+	sourceSchema := schema.New(d.EtcdSerde())
 
 	// Create branch
 	branch := test.NewBranch(branchKey)
-	require.NoError(t, repo.Branch().Create(clk.Now(), &branch).Do(ctx).Err())
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 
-	// Create source
+	// Create sourcerepo
 	source := test.NewSource(sourceKey)
-	require.NoError(t, sourceRepo.Create(clk.Now(), "Create", &source).Do(ctx).Err())
+	require.NoError(t, sourceRepo.Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create versions up to maximum count
 	// Note: multiple puts are merged to a transaction to improve test speed
 	txn := op.Txn(client)
 	ops := 0
-	for i := source.VersionNumber() + 1; i <= repository.MaxSourceVersionsPerSource; i++ {
+	for i := source.VersionNumber() + 1; i <= sourcerepo.MaxSourceVersionsPerSource; i++ {
 		source.Description = fmt.Sprintf("Description %04d", i)
-		source.IncrementVersion(source, clk.Now(), "Some Update")
+		source.IncrementVersion(source, clk.Now(), by, "Some Update")
 		txn.Then(sourceSchema.Versions().Of(sourceKey).Version(source.VersionNumber()).Put(client, source))
 
 		// Send the txn it is full, or after the last item
 		ops++
-		if ops == 100 || i == repository.MaxSourceVersionsPerSource {
+		if ops == 100 || i == sourcerepo.MaxSourceVersionsPerSource {
 			// Send
 			assert.NoError(t, txn.Do(ctx).Err())
 			// Reset
@@ -123,12 +129,12 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 		}
 	}
 	// Check that the maximum count is reached
-	sources, err := sourceRepo.Versions(sourceKey).Do(ctx).AllKVs()
+	sources, err := sourceRepo.ListVersions(sourceKey).Do(ctx).AllKVs()
 	assert.NoError(t, err)
-	assert.Len(t, sources, repository.MaxSourceVersionsPerSource)
+	assert.Len(t, sources, sourcerepo.MaxSourceVersionsPerSource)
 
 	// Exceed the limit
-	err = sourceRepo.Update(clk.Now(), sourceKey, "Some update", func(v definition.Source) (definition.Source, error) {
+	err = sourceRepo.Update(sourceKey, clk.Now(), by, "Some update", func(v definition.Source) (definition.Source, error) {
 		v.Description = "foo"
 		return v, nil
 	}).Do(ctx).Err()
