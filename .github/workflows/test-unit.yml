@@ -34,11 +34,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set TEST_KBC_PROJECTS
+      - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
         with:
           secrets: ${{ toJSON(secrets) }}
-          projects: ${{ vars.TEST_KBC_PROJECTS }}
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -72,6 +71,7 @@ jobs:
         env:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
           DATADOG_ENABLED: false
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
           UNIT_ETCD_ENDPOINT: etcd:2379

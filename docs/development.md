@@ -18,9 +18,14 @@ Call `make fix` or `go mod vendor` to fix the `vendor` packages. Also when rebas
 
 ### Setup ENV
 
-Create `.env` file with definition of testing projects:
+Create `.env` file with definition of testing projects for example:
 ```
-TEST_KBC_PROJECTS='[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","backend":"snowflake/bigquery","token":"<token>", "legacyTransformation": "false/true"},...]'
+TEST_KBC_PROJECTS_FILE=~/keboola-as-code/projects.json
+```
+
+The `~/your/path/to/keboola-as-code/projects.json` points to `gitignored` file that you are supposed to create within the project. The structure of this json file is according to this schema:
+```
+[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","backend":"snowflake/bigquery","token":"<token>", "legacyTransformation": "false/true"},...]
 ```
 
 Staging storage can be `s3`, `abs` or `gcs`, according to the stack. LegacyTransformations are support only on stacks different than `gcp`.
