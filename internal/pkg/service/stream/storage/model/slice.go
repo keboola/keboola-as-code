@@ -16,6 +16,7 @@ const sliceFilename = "slice"
 type Slice struct {
 	SliceKey
 	Retryable
+	Deleted        bool             `json:"-"` // internal field to mark entity for deletion, there is no soft delete
 	Type           FileType         `json:"type" validate:"required"`
 	State          SliceState       `json:"state" validate:"required,oneof=writing closing uploading uploaded imported"`
 	ClosingAt      *utctime.UTCTime `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State uploading,required_if=State uploaded,required_if=State imported"`
