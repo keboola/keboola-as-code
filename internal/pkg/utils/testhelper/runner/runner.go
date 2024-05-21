@@ -75,7 +75,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 		backendOptions = append(backendOptions, tp.WithLegacyTransformation())
 	}
 
-	project := testproject.GetTestProjectForTest(t, backendOptions...)
+	project := testproject.GetTestProjectForTest(t, "", backendOptions...)
 	// Create context with timeout.
 	// Acquiring a test project and setting it up is not part of the timeout.
 	ctx, cancelFn := context.WithTimeout(context.Background(), testTimeout)

@@ -1,1 +1,1 @@
-template test run --local-only
+template test run --local-only --test-projects-file ./projects.json

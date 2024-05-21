@@ -119,16 +119,17 @@ type _reference = model.TemplateRef
 
 type Template struct {
 	_reference
-	template        repository.TemplateRecord
-	version         repository.VersionRecord
-	deps            dependencies
-	fs              filesystem.Fs
-	srcDir          filesystem.Fs
-	testsDir        filesystem.Fs
-	longDescription string
-	readme          string
-	manifestFile    *ManifestFile
-	inputs          StepsGroups
+	template         repository.TemplateRecord
+	version          repository.VersionRecord
+	deps             dependencies
+	fs               filesystem.Fs
+	srcDir           filesystem.Fs
+	testsDir         filesystem.Fs
+	projectsFilePath string
+	longDescription  string
+	readme           string
+	manifestFile     *ManifestFile
+	inputs           StepsGroups
 }
 
 type Test struct {
@@ -141,7 +142,7 @@ type CreatedTest struct {
 	*Test
 }
 
-func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, components *model.ComponentsMap) (*Template, error) {
+func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, projectsFilePath string, components *model.ComponentsMap) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
 	//   src dir FS - objects root
@@ -160,7 +161,7 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	}
 
 	// Create struct
-	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir}
+	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir, projectsFilePath: projectsFilePath}
 
 	// Create load context
 	loadCtx := load.NewContext(ctx, srcDir, components)
@@ -214,6 +215,10 @@ func (t *Template) Fs() filesystem.Fs {
 
 func (t *Template) SrcDir() filesystem.Fs {
 	return t.srcDir
+}
+
+func (t *Template) ProjectsFilePath() string {
+	return t.projectsFilePath
 }
 
 func (t *Template) TestsDir(ctx context.Context) (filesystem.Fs, error) {

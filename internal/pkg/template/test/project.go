@@ -38,6 +38,7 @@ func PrepareProject(
 	ctx context.Context,
 	logger log.Logger,
 	tel telemetry.Telemetry,
+	path string,
 	stdout io.Writer,
 	stderr io.Writer,
 	proc *servicectx.Process,
@@ -51,7 +52,7 @@ func PrepareProject(
 	}
 
 	// Get a test project
-	testPrj, unlockFn, err := testproject.GetTestProject(envs)
+	testPrj, unlockFn, err := testproject.GetTestProject(path, envs)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}

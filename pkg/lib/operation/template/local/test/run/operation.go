@@ -106,7 +106,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), tmpl.ProjectsFilePath(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), 0, true)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), tmpl.ProjectsFilePath(), d.Stdout(), d.Stderr(), d.Process(), 0, true)
 	if err != nil {
 		return err
 	}

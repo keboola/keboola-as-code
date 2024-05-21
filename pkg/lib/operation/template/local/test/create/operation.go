@@ -41,7 +41,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}()
 
 	branchID := 1
-	prjState, _, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Logger(), d.Telemetry(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
+	prjState, _, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Logger(), d.Telemetry(), tmpl.ProjectsFilePath(), d.Stdout(), d.Stderr(), d.Process(), branchID, false)
 	if err != nil {
 		return err
 	}
