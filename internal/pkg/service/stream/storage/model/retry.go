@@ -75,7 +75,7 @@ func (b *retryBackoff) RetryAt(failedAt time.Time, attempt int) (retryAt time.Ti
 	return failedAt.Add(time.Duration(float64(interval) * randomFactor))
 }
 
-func (v *Retryable) IncrementRetry(backoff RetryBackoff, failedAt time.Time, reason string) {
+func (v *Retryable) IncrementRetryAttempt(backoff RetryBackoff, failedAt time.Time, reason string) {
 	v.RetryAttempt += 1
 	v.RetryReason = reason
 

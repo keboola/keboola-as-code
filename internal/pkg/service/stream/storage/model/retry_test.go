@@ -102,7 +102,7 @@ func TestRetryable_IncrementRetry(t *testing.T) {
 	v := Retryable{}
 
 	// 1
-	v.IncrementRetry(backoff, utctime.MustParse("2000-01-01T00:00:00.000Z").Time(), "some reason")
+	v.IncrementRetryAttempt(backoff, utctime.MustParse("2000-01-01T00:00:00.000Z").Time(), "some reason")
 	assert.Equal(t, Retryable{
 		RetryAttempt:  1,
 		RetryReason:   "some reason",
@@ -112,7 +112,7 @@ func TestRetryable_IncrementRetry(t *testing.T) {
 	}, v)
 
 	// 2
-	v.IncrementRetry(backoff, utctime.MustParse("2000-01-01T01:00:00.000Z").Time(), "some reason")
+	v.IncrementRetryAttempt(backoff, utctime.MustParse("2000-01-01T01:00:00.000Z").Time(), "some reason")
 	assert.Equal(t, Retryable{
 		RetryAttempt:  2,
 		RetryReason:   "some reason",
@@ -122,7 +122,7 @@ func TestRetryable_IncrementRetry(t *testing.T) {
 	}, v)
 
 	// 3
-	v.IncrementRetry(backoff, utctime.MustParse("2000-01-01T02:00:00.000Z").Time(), "some reason")
+	v.IncrementRetryAttempt(backoff, utctime.MustParse("2000-01-01T02:00:00.000Z").Time(), "some reason")
 	assert.Equal(t, Retryable{
 		RetryAttempt:  3,
 		RetryReason:   "some reason",
