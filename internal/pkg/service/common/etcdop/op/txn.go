@@ -27,10 +27,11 @@ const (
 // This allows you to easily combine operations into an atomic transaction
 // Processors defined in the operations will be executed.
 //
-// Another advantage is the ability to combine several TxnOp transactions into one, see Add method.
+// Another advantage is the ability to combine several TxnOp transactions into one, see Merge method.
 //
 // R is type of the transaction result, use NoResult type if you don't need it.
-// The results of individual sub-operations can be obtained using TxnResult.SubResults.
+// The results of individual sub-operations can be obtained using TxnResult.SubResults,
+// but a better way is to set the OnResult callback on the sub-transaction.
 type TxnOp[R any] struct {
 	result     *R
 	client     etcd.KV
@@ -280,6 +281,11 @@ func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart) error {
 		return nil
 	}
 
+	// Merge
+	if part.Type == txnOpMerge {
+		return v.mergeTxn(ctx, part.Op)
+	}
+
 	// Create low-level operation
 	lowLevel, err := part.Factory.Op(ctx)
 	if err != nil {
@@ -298,70 +304,6 @@ func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart) error {
 		v.addThen(lowLevel.Op, lowLevel.MapResponse)
 	case txnOpElse:
 		v.addElse(lowLevel.Op, lowLevel.MapResponse)
-	case txnOpMerge:
-		// If it is not a transaction, process it as Then
-		if !lowLevel.Op.IsTxn() {
-			v.addThen(lowLevel.Op, lowLevel.MapResponse)
-			return nil
-		}
-
-		// Get transaction parts
-		ifs, thenOps, elseOps := lowLevel.Op.Txn()
-
-		// Merge IFs
-		v.ifs = append(v.ifs, ifs...)
-
-		// Merge THEN operations
-		// The THEN branch will be applied, if all conditions (from all sub-transactions) are met.
-		thenStart := len(v.thenOps)
-		thenEnd := thenStart + len(thenOps)
-		for _, item := range thenOps {
-			v.addThen(item, nil)
-		}
-
-		// Merge ELSE operations
-		// The ELSE branch will be applied only if the conditions of the sub-transaction are not met
-		elsePos := -1
-		if len(elseOps) > 0 || len(ifs) > 0 {
-			elsePos = v.addElse(etcd.OpTxn(ifs, nil, elseOps), nil)
-		}
-
-		// There may be a situation where neither THEN nor ELSE branch is executed:
-		// It occurs, when the root transaction fails, but the reason is not in this sub-transaction.
-
-		// On result, compose and map response that corresponds to the original sub-transaction
-		// Processor from nested transactions must be invoked first.
-		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
-			// Get sub-transaction response
-			var subTxnResponse *etcd.TxnResponse
-			switch {
-			case r.succeeded:
-				subTxnResponse = &etcd.TxnResponse{
-					// The entire transaction succeeded, which means that a partial transaction succeeded as well
-					Succeeded: true,
-					// Compose responses that corresponds to the original sub-transaction
-					Responses: r.Response().Txn().Responses[thenStart:thenEnd],
-				}
-			case elsePos >= 0:
-				subTxnResponse = (*etcd.TxnResponse)(r.Response().Txn().Responses[elsePos].GetResponseTxn())
-				if subTxnResponse.Succeeded {
-					// Skip mapper bellow, the transaction failed, but not due to a condition in the sub-transaction
-					r.AddSubResult(NoResult{})
-					return
-				}
-			default:
-				// Skip mapper bellow, the transaction failed, but there is no condition in the sub-transaction
-				r.AddSubResult(NoResult{})
-				return
-			}
-
-			// Call original mapper of the sub transaction
-			if subResult, err := lowLevel.MapResponse(ctx, r.Response().SubResponse(subTxnResponse.OpResponse())); err == nil {
-				r.AddSubResult(subResult)
-			} else {
-				r.AddSubResult(err).AddErr(err)
-			}
-		})
 	default:
 		panic(errors.Errorf(`unexpected operation type "%s"`, part.Type))
 	}
@@ -369,13 +311,13 @@ func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart) error {
 	return nil
 }
 
-func (v *lowLevelTxn[R]) addThen(op etcd.Op, mapper MapFn) int {
+func (v *lowLevelTxn[R]) addThen(op etcd.Op, mapper MapFn) {
 	v.thenOps = append(v.thenOps, op)
 
 	// If the transaction is successful (then branch), the OP result will be available in the Responses[INDEX],
 	// so we can call original mapper with the sub-response.
-	index := len(v.thenOps) - 1
 	if mapper != nil {
+		index := len(v.thenOps) - 1
 		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
 			if r.Succeeded() {
 				rawSubResponse := r.Response().Txn().Responses[index]
@@ -388,17 +330,15 @@ func (v *lowLevelTxn[R]) addThen(op etcd.Op, mapper MapFn) int {
 			}
 		})
 	}
-
-	return index
 }
 
-func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) int {
+func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) {
 	v.elseOps = append(v.elseOps, op)
 
 	// If the transaction is NOT successful (else branch), the OP result will be available in the Responses[INDEX],
 	// so we can call original mapper with the sub-response.
-	index := len(v.elseOps) - 1
 	if mapper != nil {
+		index := len(v.elseOps) - 1
 		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
 			if !r.Succeeded() {
 				rawSubResponse := r.Response().Txn().Responses[index]
@@ -411,8 +351,81 @@ func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) int {
 			}
 		})
 	}
+}
 
-	return index
+func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
+	// Create low level operation
+	lowLevel, err := op.Op(ctx)
+	if err != nil {
+		return err
+	}
+
+	// If it is not a transaction, process it as Then
+	if !lowLevel.Op.IsTxn() {
+		v.addThen(lowLevel.Op, lowLevel.MapResponse)
+		return nil
+	}
+
+	// Get transaction parts
+	ifs, thenOps, elseOps := lowLevel.Op.Txn()
+
+	// Merge IFs
+	v.ifs = append(v.ifs, ifs...)
+
+	// Merge THEN operations
+	// The THEN branch will be applied, if all conditions (from all sub-transactions) are met.
+	thenStart := len(v.thenOps)
+	thenEnd := thenStart + len(thenOps)
+	for _, item := range thenOps {
+		v.addThen(item, nil)
+	}
+
+	// Merge ELSE operations
+	// The ELSE branch will be applied only if the conditions of the sub-transaction are not met
+	elseTxnPos := -1
+	if len(elseOps) > 0 || len(ifs) > 0 {
+		elseTxnPos = len(v.elseOps)
+		v.addElse(etcd.OpTxn(ifs, nil, elseOps), nil)
+	}
+
+	// There may be a situation where neither THEN nor ELSE branch is executed:
+	// It occurs, when the root transaction fails, but the reason is not in this sub-transaction.
+
+	// On result, compose and map response that corresponds to the original sub-transaction
+	// Processor from nested transactions must be invoked first.
+	v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
+		// Get sub-transaction response
+		var subTxnResponse *etcd.TxnResponse
+		switch {
+		case r.succeeded:
+			subTxnResponse = &etcd.TxnResponse{
+				// The entire transaction succeeded, which means that a partial transaction succeeded as well
+				Succeeded: true,
+				// Compose responses that corresponds to the original sub-transaction
+				Responses: r.Response().Txn().Responses[thenStart:thenEnd],
+			}
+		case elseTxnPos >= 0:
+			subTxnResponse = (*etcd.TxnResponse)(r.Response().Txn().Responses[elseTxnPos].GetResponseTxn())
+			if subTxnResponse.Succeeded {
+				// Skip mapper bellow, the transaction failed, but not due to a condition in the sub-transaction
+				r.AddSubResult(NoResult{})
+				return
+			}
+		default:
+			// Skip mapper bellow, the transaction failed, but there is no condition in the sub-transaction
+			r.AddSubResult(NoResult{})
+			return
+		}
+
+		// Call original mapper of the sub transaction
+		if subResult, err := lowLevel.MapResponse(ctx, r.Response().SubResponse(subTxnResponse.OpResponse())); err == nil {
+			r.AddSubResult(subResult)
+		} else {
+			r.AddSubResult(err).AddErr(err)
+		}
+	})
+
+	return nil
 }
 
 func (v *lowLevelTxn[R]) mapResponse(ctx context.Context, raw RawResponse) *TxnResult[R] {
