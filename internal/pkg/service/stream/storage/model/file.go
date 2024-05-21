@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	FileTypeCSV = "csv"
+	FileTypeCSV = FileType("csv")
 )
 
 // File represents a file prepared in the staging storage to be imported into the target storage.
@@ -25,6 +25,7 @@ const (
 type File struct {
 	FileKey
 	Retryable
+	Deleted        bool                  `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
 	Type           FileType              `json:"type" validate:"required,oneof=csv"`
 	State          FileState             `json:"state" validate:"required,oneof=writing closing importing imported"`
 	ClosingAt      *utctime.UTCTime      `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State importing,required_if=State imported"`
