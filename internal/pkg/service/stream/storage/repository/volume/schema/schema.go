@@ -11,7 +11,7 @@ type (
 	Volume struct{ PrefixT[volume.Metadata] }
 )
 
-func ForVolume(s *serde.Serde) Volume {
+func New(s *serde.Serde) Volume {
 	return Volume{PrefixT: NewTypedPrefix[volume.Metadata]("storage/volume", s)}
 }
 
