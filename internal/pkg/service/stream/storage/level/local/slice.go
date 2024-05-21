@@ -25,7 +25,7 @@ type Slice struct {
 	AllocatedDiskSpace datasize.ByteSize `json:"allocatedDiskSpace"`
 }
 
-func (f File) NewSlice(path string, prevSliceSize datasize.ByteSize) (Slice, error) {
+func (f File) NewSlice(path string) (Slice, error) {
 	// Create filename according to the compression type
 	filename, err := compression.Filename("slice.csv", f.Compression.Type)
 	if err != nil {
@@ -33,10 +33,9 @@ func (f File) NewSlice(path string, prevSliceSize datasize.ByteSize) (Slice, err
 	}
 
 	return Slice{
-		Dir:                filepath.Join(f.Dir, NormalizeDirPath(path)),
-		Filename:           filename,
-		Compression:        f.Compression,
-		DiskSync:           f.DiskSync,
-		AllocatedDiskSpace: f.DiskAllocation.ForNextSlice(prevSliceSize),
+		Dir:         filepath.Join(f.Dir, NormalizeDirPath(path)),
+		Filename:    filename,
+		Compression: f.Compression,
+		DiskSync:    f.DiskSync,
 	}, nil
 }
