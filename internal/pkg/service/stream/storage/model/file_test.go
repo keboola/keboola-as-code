@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
@@ -98,17 +97,12 @@ func TestFile_Validation(t *testing.T) {
 		DiskAllocation: diskalloc.NewConfig(),
 	}
 	stagingStorage := staging.File{
-		Compression:                 compression.NewConfig(),
-		UploadCredentials:           &keboola.FileUploadCredentials{},
-		UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
+		Provider:    "foo",
+		Compression: compression.NewConfig(),
+		Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}
 	targetStorage := target.Target{
-		Table: target.Table{
-			Keboola: target.KeboolaTable{
-				TableID:    keboola.MustParseTableID("in.bucket.table"),
-				StorageJob: &keboola.StorageJob{},
-			},
-		},
+		Provider: "foo",
 	}
 	volumeAssignment := assignment.Assignment{
 		Config: assignment.Config{
@@ -138,12 +132,17 @@ func TestFile_Validation(t *testing.T) {
 - "assignment.config.count" is a required field
 - "assignment.config.preferredTypes" is a required field
 - "assignment.volumes" must contain at least 1 item
+- "local.dir" is a required field
+- "local.compression.type" is a required field
+- "local.diskSync.mode" is a required field
+- "local.diskAllocation.static" is a required field
+- "local.diskAllocation.relative" must be 100 or greater
+- "staging.provider" is a required field
+- "staging.compression" is a required field
+- "staging.expiration" is a required field
+- "target.provider" is a required field
 `,
-			Value: File{
-				LocalStorage:   localStorage,
-				StagingStorage: stagingStorage,
-				TargetStorage:  targetStorage,
-			},
+			Value: File{},
 		},
 		{
 			Name:          "empty columns",
