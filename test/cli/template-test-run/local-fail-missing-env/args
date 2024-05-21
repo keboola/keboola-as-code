@@ -1,1 +1,1 @@
-template test run my-template 0.0.1 --local-only
+template test run my-template 0.0.1 --local-only --test-projects-file ./projects.json

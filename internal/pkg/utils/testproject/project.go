@@ -47,10 +47,10 @@ type Project struct {
 
 type UnlockFn func()
 
-func GetTestProjectForTest(t *testing.T, options ...testproject.Option) *Project {
+func GetTestProjectForTest(t *testing.T, path string, options ...testproject.Option) *Project {
 	t.Helper()
 
-	p, unlockFn, err := GetTestProject(env.Empty(), options...)
+	p, unlockFn, err := GetTestProject(path, env.Empty(), options...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,8 +69,8 @@ func GetTestProjectForTest(t *testing.T, options ...testproject.Option) *Project
 	return p
 }
 
-func GetTestProject(envs *env.Map, options ...testproject.Option) (*Project, UnlockFn, error) {
-	project, unlockFn, err := testproject.GetTestProject(options...)
+func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (*Project, UnlockFn, error) {
+	project, unlockFn, err := testproject.GetTestProjectInPath(path, options...)
 	if err != nil {
 		return nil, nil, err
 	}

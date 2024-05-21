@@ -1,1 +1,1 @@
-template test my-template 0.0.1 --remote-only
+template test my-template 0.0.1 --remote-only --test-projects-file ./projects.json

@@ -1,0 +1,9 @@
+[
+  {
+    "host": "%%TEST_KBC_STORAGE_API_HOST%%",
+    "project":%%TEST_KBC_PROJECT_ID%%,
+    "stagingStorage": "%%TEST_KBC_PROJECT_STAGING_STORAGE%%",
+    "backend": "%%TEST_KBC_PROJECT_BACKEND%%",
+    "token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  }
+]
