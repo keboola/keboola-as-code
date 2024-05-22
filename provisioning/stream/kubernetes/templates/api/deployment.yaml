@@ -2,29 +2,29 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: buffer-api
+  name: stream-api
   namespace: $NAMESPACE
   labels:
-    app: buffer-api
+    app: stream-api
     releaseId: $RELEASE_ID
 spec:
-  replicas: $BUFFER_API_REPLICAS
+  replicas: $STREAM_API_REPLICAS
   selector:
     matchLabels:
-      app: buffer-api
+      app: stream-api
   template:
     metadata:
       labels:
-        app: buffer-api
+        app: stream-api
         releaseId: $RELEASE_ID
-        buffer-etcd-client: "true"
+        stream-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
-        tags.datadoghq.com/service: "buffer-api"
+        tags.datadoghq.com/service: "stream"
         tags.datadoghq.com/version: "$RELEASE_ID"
       annotations:
         log: "true"
         ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "github.com/keboola/keboola-as-code"}'
-        ad.datadoghq.com/buffer-api.checks: |
+        ad.datadoghq.com/stream-api.checks: |
           {
             "openmetrics": {
               "instances": [
@@ -39,11 +39,14 @@ spec:
             }
           }
     spec:
-      terminationGracePeriodSeconds: 600
+      terminationGracePeriodSeconds: 60
       containers:
-        - name: buffer-api
-          image: $BUFFER_API_REPOSITORY:$BUFFER_API_IMAGE_TAG
+        - name: stream-api
+          image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
+          command: [ "/app/service" ]
+          args: [ "--config-file", "/stream/config/config.yaml", "api" ] # run API component
           resources:
+            # Note: Update also soft GOMEMLIMIT bellow
             requests:
               cpu: "200m"
               memory: "512Mi"
@@ -52,31 +55,23 @@ spec:
           ports:
             - containerPort: 8000 # API
             - containerPort: 9000 # metrics
+          volumeMounts:
+            - name: config
+              mountPath: /stream/config
+              readOnly: true
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
               value: "400MiB"
-            - name: BUFFER_API_STORAGE_API_HOST
+            - name: STREAM_NODE_ID
               valueFrom:
-                configMapKeyRef:
-                  name: buffer-api
-                  key: storageApiHost
-            - name: BUFFER_API_PUBLIC_ADDRESS
-              valueFrom:
-                configMapKeyRef:
-                  name: buffer-api
-                  key: bufferApiHost
-            - name: BUFFER_API_ETCD_ENDPOINT
-              value: buffer-etcd.buffer.svc.cluster.local:2379
-            - name: BUFFER_API_ETCD_USERNAME
-              value: root
-            - name: BUFFER_API_ETCD_PASSWORD
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: STREAM_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: buffer-etcd
+                  name: stream-etcd
                   key: etcd-root-password
-            - name: BUFFER_API_ETCD_NAMESPACE
-              value: buffer
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
@@ -121,5 +116,12 @@ spec:
                   value: KubernetesLivenessProbe
             periodSeconds: 10
             failureThreshold: 3
+      volumes:
+        - name: config
+          configMap:
+            name: stream
+            items:
+              - key: config.yaml
+                path: config.yaml
       nodeSelector:
         nodepool: main

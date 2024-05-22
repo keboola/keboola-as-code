@@ -2,16 +2,16 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: buffer-api
+  name: stream-api
   namespace: $NAMESPACE
   labels:
-    app: buffer-api
+    app: stream-api
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 spec:
   type: LoadBalancer
   selector:
-    app: buffer-api
+    app: stream-api
   ports:
     - port: 80
       targetPort: 8000
