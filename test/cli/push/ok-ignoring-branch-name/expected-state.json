@@ -1,0 +1,20 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    },
+    {
+      "branch": {
+        "name": "bar",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": []
+    }
+  ]
+}

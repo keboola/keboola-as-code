@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "project": {
+    "id": 1,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "allowTargetEnv": true,
+  "allowedBranches": [
+    "2"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": 2,
+      "path": "foo"
+    }
+  ],
+  "configurations": []
+}
