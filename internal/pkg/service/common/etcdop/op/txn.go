@@ -35,7 +35,7 @@ type TxnOp[R any] struct {
 	result     *R
 	client     etcd.KV
 	errs       errors.MultiError
-	parts      []txnPart[R]
+	parts      []txnPart
 	processors []func(ctx context.Context, r *TxnResult[R])
 }
 
@@ -46,7 +46,7 @@ type txnInterface interface {
 
 type txnPartType string
 
-type txnPart[R any] struct {
+type txnPart struct {
 	Type    txnPartType
 	If      etcd.Cmp
 	Factory Op
@@ -87,7 +87,7 @@ func (v *TxnOp[R]) Empty() bool {
 // If all comparisons succeed, the Then branch will be executed; otherwise, the Else branch will be executed.
 func (v *TxnOp[R]) If(cs ...etcd.Cmp) *TxnOp[R] {
 	for _, c := range cs {
-		v.parts = append(v.parts, txnPart[R]{Type: txnOpIf, If: c})
+		v.parts = append(v.parts, txnPart{Type: txnOpIf, If: c})
 	}
 
 	return v
@@ -103,7 +103,7 @@ func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
 		if _, ok := op.(txnInterface); ok {
 			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use Merge or ThenTxn, not Then`, i))
 		}
-		v.parts = append(v.parts, txnPart[R]{Type: txnOpThen, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpThen, Factory: op})
 	}
 
 	return v
@@ -113,7 +113,7 @@ func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
 // To merge a transaction, use Merge.
 func (v *TxnOp[R]) ThenTxn(ops ...Op) *TxnOp[R] {
 	for _, op := range ops {
-		v.parts = append(v.parts, txnPart[R]{Type: txnOpThenTxn, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpThenTxn, Factory: op})
 	}
 	return v
 }
@@ -122,7 +122,7 @@ func (v *TxnOp[R]) ThenTxn(ops ...Op) *TxnOp[R] {
 // The operations in the Else branch will be executed if any of the If comparisons fail.
 func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 	for _, op := range ops {
-		v.parts = append(v.parts, txnPart[R]{Type: txnOpElse, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpElse, Factory: op})
 	}
 	return v
 }
@@ -135,7 +135,7 @@ func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 // To add a transaction to the Then branch without merging, use ThenTxn.
 func (v *TxnOp[R]) Merge(ops ...Op) *TxnOp[R] {
 	for _, op := range ops {
-		v.parts = append(v.parts, txnPart[R]{Type: txnOpMerge, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpMerge, Factory: op})
 	}
 	return v
 }
@@ -273,7 +273,7 @@ func (v *lowLevelTxn[R]) Do(ctx context.Context, opts ...Option) *TxnResult[R] {
 	return v.mapResponse(ctx, response)
 }
 
-func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart[R]) error {
+func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart) error {
 	// Add if
 	if part.Type == txnOpIf {
 		v.ifs = append(v.ifs, part.If)
