@@ -233,13 +233,21 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
 	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
-		filesMap[value.FileID] = &stream.SinkFile{
+		out := &stream.SinkFile{
 			State:       value.State,
 			OpenedAt:    value.OpenedAt().String(),
 			ClosingAt:   timeToString(value.ClosingAt),
 			ImportingAt: timeToString(value.ImportingAt),
 			ImportedAt:  timeToString(value.ImportedAt),
 		}
+
+		if value.RetryAttempt > 0 {
+			out.RetryAttempt = ptr.Ptr(value.RetryAttempt)
+			out.RetryReason = ptr.Ptr(value.RetryReason)
+			out.RetryAfter = ptr.Ptr(value.RetryAfter.String())
+		}
+
+		filesMap[value.FileID] = out
 		return nil
 	})
 	if err != nil {
