@@ -12,16 +12,17 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY . .
-RUN make build-buffer-worker
+RUN make build-stream-service
 
 # Production container
 FROM alpine:3.19
 RUN apk add -U --no-cache ca-certificates git
 
-COPY --from=buildContainer /app/target/stream/worker /app/worker
+COPY --from=buildContainer /app/target/stream/service /app/service
 WORKDIR /app
+
+# API
+EXPOSE 8000
 
 # Prometheus metrics
 EXPOSE 9000
-
-CMD ["/app/worker", "--metrics-listen=0.0.0.0:9000"]
