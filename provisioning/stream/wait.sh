@@ -15,7 +15,7 @@ KUBERNETES_ROLLOUT_WAIT="${KUBERNETES_ROLLOUT_WAIT:=1200s}"
 echo
 echo "Waiting for the etcd rollout ..."
 echo "--------------------------"
-if kubectl rollout status sts/buffer-etcd --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
+if kubectl rollout status sts/stream-etcd --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
   echo
   echo "Etcd deployment has been successful."
 else
@@ -24,7 +24,7 @@ else
   echo "--------------------------"
   echo "Logs:"
   echo "--------------------------"
-  kubectl logs --namespace "$NAMESPACE" --selector "app=buffer-etcd" --all-containers --prefix --timestamps  --tail=-1
+  kubectl logs --namespace "$NAMESPACE" --selector "app=stream-etcd" --all-containers --prefix --timestamps  --tail=-1
   echo "--------------------------"
   exit 1
 fi
@@ -33,7 +33,7 @@ fi
 echo
 echo "Waiting for the API rollout ..."
 echo "--------------------------"
-if kubectl rollout status deployment/buffer-api --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
+if kubectl rollout status deployment/stream-api --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
   echo
   echo "API deployment has been successful."
   echo "--------------------------"
@@ -43,26 +43,26 @@ else
   echo "--------------------------"
   echo "Logs:"
   echo "--------------------------"
-  kubectl logs --namespace "$NAMESPACE" --selector "app=buffer-api" --all-containers --prefix --timestamps --tail=-1
+  kubectl logs --namespace "$NAMESPACE" --selector "app=stream-api" --all-containers --prefix --timestamps --tail=-1
   echo "--------------------------"
   exit 1
 fi
 
-# Wait for the Worker rollout
+# Wait for the Storage rollout
 echo
-echo "Waiting for the Worker rollout ..."
+echo "Waiting for the Storage rollout ..."
 echo "--------------------------"
-if kubectl rollout status deployment/buffer-worker --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
+if kubectl rollout status statefulset/stream-storage --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
   echo
-  echo "Worker deployment has been successful."
+  echo "Storage rollout has been successful."
   echo "--------------------------"
 else
   echo
-  echo "Worker deployment failed."
+  echo "Storage rollout failed."
   echo "--------------------------"
   echo "Logs:"
   echo "--------------------------"
-  kubectl logs --namespace "$NAMESPACE" --selector "app=buffer-worker" --all-containers --prefix --timestamps --tail=-1
+  kubectl logs --namespace "$NAMESPACE" --selector "app=stream-storage" --all-containers --prefix --timestamps --tail=-1
   echo "--------------------------"
   exit 1
 fi

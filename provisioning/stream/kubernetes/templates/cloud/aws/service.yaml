@@ -2,14 +2,14 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: buffer-api
+  name: stream-api
   namespace: $NAMESPACE
   labels:
-    app: buffer-api
+    app: stream-api
 spec:
   type: ClusterIP
   selector:
-    app: buffer-api
+    app: stream-api
   ports:
     - port: 80
       targetPort: 8000

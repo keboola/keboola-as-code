@@ -2,12 +2,12 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: buffer-api-pdb
+  name: stream-api-pdb
   namespace: $NAMESPACE
   labels:
-    app: buffer-api
+    app: stream-api
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      app: buffer-api
+      app: stream-api

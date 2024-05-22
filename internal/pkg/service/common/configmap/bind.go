@@ -351,8 +351,10 @@ func collectValues(cfg BindConfig, flagToField FlagToFieldFn) (*orderedmap.Order
 
 		// Store
 		config.VisitAllRecursive(func(path orderedmap.Path, v any, parent any) {
-			// Copy leaf values
-			if _, ok := v.(*orderedmap.OrderedMap); !ok {
+			// Copy leaf values = value is not object AND key is map step, not slice step
+			_, isObject := v.(*orderedmap.OrderedMap)
+			_, isMapKey := path.Last().(orderedmap.MapStep)
+			if !isObject && isMapKey {
 				if err := values.SetNestedPath(path, fieldValue{Value: v, SetBy: SetByConfig}); err != nil {
 					errs.Append(err)
 				}
