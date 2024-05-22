@@ -1291,10 +1291,11 @@ var AggregationSource = Type("AggregationSource", func() {
 		Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
 	})
 	Attribute("version", EntityVersion)
+	Attribute("created", CreatedEntity)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
 	Attribute("sinks", AggregationSinks)
-	Required("version", "type", "name", "description", "type", "sinks")
+	Required("version", "created", "sinks")
 })
 
 var AggregationSinks = Type("AggregationSinks", ArrayOf(AggregationSink))
@@ -1304,10 +1305,11 @@ var AggregationSink = Type("AggregationSink", func() {
 	SinkKeyResponse()
 	SinkFields(OpRead)
 	Attribute("version", EntityVersion)
+	Attribute("created", CreatedEntity)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
 	Attribute("statistics", AggregationStatistics)
-	Required("version", "name", "description", "statistics")
+	Required("version", "created", "statistics")
 })
 
 var AggregationStatistics = Type("AggregationStatistics", func() {
