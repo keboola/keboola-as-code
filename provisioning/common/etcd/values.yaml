@@ -12,7 +12,7 @@ nodeSelector:
 
 # Locked/updated etcd image
 image:
-  tag: 3.5.11-debian-11-r3
+  tag: 3.5.13-debian-12-r10
 
 # Additional pod annotations
 podAnnotations:
@@ -56,6 +56,9 @@ extraEnvVars:
   # Default value in etcd v3.2+ is "100 000": https://etcd.io/docs/v3.5/op-guide/maintenance/#raft-log-retention
   - name: ETCD_SNAPSHOT_COUNT
     value: "10000"
+  # GOMEMLIMIT to prevent OOM kill, update the value together with "resources" spec.
+  - name: GOMEMLIMIT
+    value: "256MiB"
 
 # The root password is used for authentication, the client gets a JWT token with short expiration.
 auth:
@@ -105,7 +108,7 @@ startupProbe:
   periodSeconds: 5
   timeoutSeconds: 5
   successThreshold: 1
-  failureThreshold: 60
+  failureThreshold: 300
 livenessProbe:
   initialDelaySeconds: 0 # replaced by startupProbe
 readinessProbe:

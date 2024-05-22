@@ -36,7 +36,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/keboola/go-client v1.26.4
-	github.com/keboola/go-utils v0.10.2
+	github.com/keboola/go-utils v0.10.3-0.20240522072138-726d26d3bf0f
 	github.com/klauspost/compress v1.17.8
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0

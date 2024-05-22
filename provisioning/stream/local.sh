@@ -14,20 +14,15 @@ if ! minikube status > /dev/null; then
 fi
 
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
-API_IMAGE="$BUFFER_API_REPOSITORY:$BUFFER_API_IMAGE_TAG"
-WORKER_IMAGE="$BUFFER_WORKER_REPOSITORY:$BUFFER_WORKER_IMAGE_TAG"
+SERVICE_IMAGE="$STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG"
 echo
-echo "Building API image ..."
+echo "Building Service image ..."
 echo "--------------------------"
-docker build -t "$API_IMAGE" -f "./docker/api/Dockerfile" "../../"
+docker build -t "$SERVICE_IMAGE" -f "./docker/service/Dockerfile" "../../"
 echo
-echo "Building Worker image ..."
-echo "--------------------------"
-docker build -t "$WORKER_IMAGE" -f "./docker/worker/Dockerfile" "../../"
 
 # Load the images to the Minikube
-minikube image load --overwrite=true "$API_IMAGE"
-minikube image load --overwrite=true "$WORKER_IMAGE"
+minikube image load --overwrite=true "$SERVICE_IMAGE"
 
 echo
 echo "Images in the MiniKube:"
@@ -59,5 +54,5 @@ echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
 echo "Load balancer of the service is accessible at:"
-minikube service --url --namespace "$NAMESPACE" buffer-api
+minikube service --url --namespace "$NAMESPACE" stream-api
 

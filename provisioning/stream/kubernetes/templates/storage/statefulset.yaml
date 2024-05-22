@@ -1,30 +1,31 @@
 ---
-kind: Deployment
+kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: buffer-worker
+  name: stream-storage
   namespace: $NAMESPACE
   labels:
-    app: buffer-worker
+    app: stream-storage
     releaseId: $RELEASE_ID
 spec:
-  replicas: $BUFFER_WORKER_REPLICAS
+  serviceName: "stream-storage"
+  replicas: $STREAM_STORAGE_REPLICAS
   selector:
     matchLabels:
-      app: buffer-worker
+      app: stream-storage
   template:
     metadata:
       labels:
-        app: buffer-worker
+        app: stream-storage
         releaseId: $RELEASE_ID
-        buffer-etcd-client: "true"
+        stream-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
-        tags.datadoghq.com/service: "buffer-worker"
+        tags.datadoghq.com/service: "stream"
         tags.datadoghq.com/version: "$RELEASE_ID"
       annotations:
         log: "true"
         ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "github.com/keboola/keboola-as-code"}'
-        ad.datadoghq.com/buffer-worker.checks: |
+        ad.datadoghq.com/stream-storage.checks: |
           {
             "openmetrics": {
               "instances": [
@@ -39,38 +40,40 @@ spec:
             }
           }
     spec:
-#      terminationGracePeriodSeconds: 600
+      terminationGracePeriodSeconds: 600
       containers:
-        - name: buffer-worker
-          image: $BUFFER_WORKER_REPOSITORY:$BUFFER_WORKER_IMAGE_TAG
+        - name: stream-disk-writer
+          image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
+          command: [ "/app/service" ]
+          args: [ "--config-file", "/stream/config/config.yaml", "disk-writer" ] # run disk writer component
           resources:
+            # Note: Update also soft GOMEMLIMIT bellow
             requests:
               cpu: "200m"
-              memory: $BUFFER_WORKER_MEMORY
+              memory: "512Mi"
             limits:
-              memory: $BUFFER_WORKER_MEMORY
+              memory: "512Mi"
           ports:
             - containerPort: 9000 # metrics
+          volumeMounts:
+            - name: config
+              mountPath: /stream/config
+              readOnly: true
+            - name: ssd-001
+              mountPath: /stream/volumes/ssd/ssd-001
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
-              value: $BUFFER_WORKER_MEMORY_GOMEMLIMIT
-            - name: BUFFER_WORKER_STORAGE_API_HOST
+              value: "400MiB"
+            - name: STREAM_NODE_ID
               valueFrom:
-                configMapKeyRef:
-                  name: buffer-worker
-                  key: storageApiHost
-            - name: BUFFER_WORKER_ETCD_ENDPOINT
-              value: buffer-etcd.buffer.svc.cluster.local:2379
-            - name: BUFFER_WORKER_ETCD_USERNAME
-              value: root
-            - name: BUFFER_WORKER_ETCD_PASSWORD
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: STREAM_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: buffer-etcd
+                  name: stream-etcd
                   key: etcd-root-password
-            - name: BUFFER_WORKER_ETCD_NAMESPACE
-              value: buffer
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
@@ -87,5 +90,21 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
+      volumes:
+        - name: config
+          configMap:
+            name: stream
+            items:
+              - key: config.yaml
+                path: config.yaml
       nodeSelector:
         nodepool: main
+  volumeClaimTemplates:
+    - metadata:
+        name: ssd-001
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        #storageClassName: "my-storage-class"
+        resources:
+          requests:
+            storage: 10Gi
