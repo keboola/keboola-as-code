@@ -1,4 +1,4 @@
-name: "E2E: Buffer"
+name: "E2E: Stream"
 
 on:
   workflow_call:
