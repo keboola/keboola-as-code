@@ -48,9 +48,9 @@ type txnInterface interface {
 type txnPartType string
 
 type txnPart struct {
-	Type    txnPartType
-	If      etcd.Cmp
-	Factory Op
+	Type txnPartType
+	If   etcd.Cmp
+	Op   Op
 }
 
 type lowLevelTxn[R any] struct {
@@ -104,7 +104,7 @@ func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
 		if _, ok := op.(txnInterface); ok {
 			panic(errors.Errorf(`invalid operation[%d]: op is a transaction, use Merge or ThenTxn, not Then`, i))
 		}
-		v.parts = append(v.parts, txnPart{Type: txnOpThen, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpThen, Op: op})
 	}
 
 	return v
@@ -114,7 +114,7 @@ func (v *TxnOp[R]) Then(ops ...Op) *TxnOp[R] {
 // To merge a transaction, use Merge.
 func (v *TxnOp[R]) ThenTxn(ops ...Op) *TxnOp[R] {
 	for _, op := range ops {
-		v.parts = append(v.parts, txnPart{Type: txnOpThenTxn, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpThenTxn, Op: op})
 	}
 	return v
 }
@@ -123,7 +123,7 @@ func (v *TxnOp[R]) ThenTxn(ops ...Op) *TxnOp[R] {
 // The operations in the Else branch will be executed if any of the If comparisons fail.
 func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 	for _, op := range ops {
-		v.parts = append(v.parts, txnPart{Type: txnOpElse, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpElse, Op: op})
 	}
 	return v
 }
@@ -136,7 +136,7 @@ func (v *TxnOp[R]) Else(ops ...Op) *TxnOp[R] {
 // To add a transaction to the Then branch without merging, use ThenTxn.
 func (v *TxnOp[R]) Merge(ops ...Op) *TxnOp[R] {
 	for _, op := range ops {
-		v.parts = append(v.parts, txnPart{Type: txnOpMerge, Factory: op})
+		v.parts = append(v.parts, txnPart{Type: txnOpMerge, Op: op})
 	}
 	return v
 }
@@ -287,7 +287,7 @@ func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart) error {
 	}
 
 	// Create low-level operation
-	lowLevel, err := part.Factory.Op(ctx)
+	lowLevel, err := part.Op.Op(ctx)
 	if err != nil {
 		return err
 	}
