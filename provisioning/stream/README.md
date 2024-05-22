@@ -1,4 +1,4 @@
-# Provisioning of the Buffer Service
+# Provisioning of the Stream Service
 
 ## Directory Structure
 
@@ -43,10 +43,10 @@ If you need to debug or test something in a Kubernetes cluster, you can use loca
 At the end of the script, the URL of the service is printed.
 ```sh
 To interact with the MiniKube profile run:
-export MINIKUBE_PROFILE=buffer
+export MINIKUBE_PROFILE=stream
 
 To clear the MiniKube:
-MINIKUBE_PROFILE=buffer minikube delete --purge
+MINIKUBE_PROFILE=stream minikube delete --purge
 
 Load balancer of the service is accessible at:
 http://172.17.0.2:32183
@@ -55,7 +55,7 @@ http://172.17.0.2:32183
 ### etcd
 
 Etcd deployment includes a network policy,
-only pods with `buffer-etcd-client=true` can connect to the etcd.
+only pods with `stream-etcd-client=true` can connect to the etcd.
 
 #### Client
 
@@ -63,14 +63,14 @@ If you need to start the etcd client, you can use this following commands.
 
 Run interactive container:
 ```
-export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "buffer" buffer-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "stream" stream-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
 
-kubectl run --tty --stdin --rm --restart=Never buffer-etcd-client \
-  --namespace buffer \
+kubectl run --tty --stdin --rm --restart=Never stream-etcd-client \
+  --namespace stream \
   --image docker.io/bitnami/etcd:3.5.5-debian-11-r16 \
-  --labels="buffer-etcd-client=true" \
+  --labels="stream-etcd-client=true" \
   --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
-  --env="ETCDCTL_ENDPOINTS=buffer-etcd:2379" \
+  --env="ETCDCTL_ENDPOINTS=stream-etcd:2379" \
   --command -- bash
 ```
 
