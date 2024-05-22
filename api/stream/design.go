@@ -913,16 +913,20 @@ var Levels = Type("Levels", func() {
 
 var Level = Type("Level", func() {
 	Attribute("firstRecordAt", String, func() {
+		Description("Timestamp of the first received record.")
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
 	Attribute("lastRecordAt", String, func() {
+		Description("Timestamp of the last received record.")
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
 	Attribute("recordsCount", UInt64)
 	Required("recordsCount")
-	Attribute("uncompressedSize", UInt64)
+	Attribute("uncompressedSize", UInt64, func() {
+		Description("Uncompressed size of data in bytes.")
+	})
 	Required("uncompressedSize")
 })
 
@@ -954,6 +958,19 @@ var SinkFile = Type("SinkFile", func() {
 		Example("2022-04-28T14:20:04.000Z")
 	})
 	Attribute("importedAt", String, func() {
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("retryAttempt", Int, func() {
+		Description("Number of failed attempts.")
+		Example(3)
+	})
+	Attribute("retryReason", String, func() {
+		Description("Reason of the last failed attempt.")
+		Example("network problem")
+	})
+	Attribute("retryAfter", String, func() {
+		Description("Next attempt time.")
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
