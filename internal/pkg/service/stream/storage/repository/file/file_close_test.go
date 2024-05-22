@@ -71,17 +71,17 @@ func TestFileRepository_CloseFileOnSourceDeactivation(t *testing.T) {
 
 	// Disable Source, it in cascade disables Sinks, it triggers files closing
 	// -----------------------------------------------------------------------------------------------------------------
-	// var closeEtcdLogs string
+	var closeEtcdLogs string
 	{
 		clk.Add(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Source().Disable(sourceKey, clk.Now(), by, "test reason").Do(ctx).Err())
-		// closeEtcdLogs = etcdLogs.String()
+		closeEtcdLogs = etcdLogs.String()
 	}
 
 	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_close_ops_001.txt`, closeEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_close_ops_001.txt`, closeEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
@@ -136,17 +136,17 @@ func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
 
 	// Disable Sink, it in cascade disables Sinks, it triggers files closing
 	// -----------------------------------------------------------------------------------------------------------------
-	// var closeEtcdLogs string
+	var closeEtcdLogs string
 	{
 		clk.Add(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "test reason").Do(ctx).Err())
-		// closeEtcdLogs = etcdLogs.String()
+		closeEtcdLogs = etcdLogs.String()
 	}
 
 	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_close_ops_002.txt`, closeEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_close_ops_002.txt`, closeEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------

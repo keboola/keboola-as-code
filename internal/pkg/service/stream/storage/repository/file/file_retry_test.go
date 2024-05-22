@@ -118,9 +118,12 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Import failed again, increment retry attempt
 	// -----------------------------------------------------------------------------------------------------------------
+	var incrementRetryAttemptLogs string
 	{
 		clk.Add(time.Hour)
+		etcdLogs.Reset()
 		file, err := fileRepo.IncrementRetryAttempt(fileKey, clk.Now(), "some reason 2").Do(ctx).ResultOrErr()
+		incrementRetryAttemptLogs = etcdLogs.String()
 		require.NoError(t, err)
 		require.NotEmpty(t, file)
 		assert.Equal(t, model.FileImporting, file.State)
@@ -129,7 +132,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_retry_ops_001.txt`, deleteEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_retry_ops_001.txt`, incrementRetryAttemptLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------

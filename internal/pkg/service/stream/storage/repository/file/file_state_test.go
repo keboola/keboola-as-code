@@ -106,14 +106,17 @@ func TestFileRepository_StateTransition(t *testing.T) {
 
 	// Switch file to the Imported state
 	// -----------------------------------------------------------------------------------------------------------------
+	var stateSwitchEtcdLogs string
 	{
 		clk.Add(time.Hour)
+		etcdLogs.Reset()
 		require.NoError(t, fileRepo.SwitchToImported(fileKey, clk.Now()).Do(ctx).Err())
+		stateSwitchEtcdLogs = etcdLogs.String()
 	}
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_ops_001.txt`, deleteEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_rotate_ops_001.txt`, stateSwitchEtcdLogs)
 
 	// Check etcd state - there is no file
 	// -----------------------------------------------------------------------------------------------------------------

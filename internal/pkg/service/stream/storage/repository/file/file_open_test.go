@@ -78,17 +78,17 @@ func TestFileRepository_OpenFileOnSinkActivation(t *testing.T) {
 
 	// Enable Source, it in cascade enables Sinks, it triggers files opening
 	// -----------------------------------------------------------------------------------------------------------------
-	// var openEtcdLogs string
+	var openEtcdLogs string
 	{
 		clk.Add(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Source().Enable(sourceKey, clk.Now(), by).Do(ctx).Err())
-		// openEtcdLogs = etcdLogs.String()
+		openEtcdLogs = etcdLogs.String()
 	}
 
 	// Check etcd operations
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_open_ops_001.txt`, openEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_open_ops_001.txt`, openEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------

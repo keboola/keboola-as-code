@@ -67,11 +67,14 @@ func TestFileRepository_Rotate(t *testing.T) {
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
-	// Create the second file
+	// Rotate - c reate the second file
 	// -----------------------------------------------------------------------------------------------------------------
+	var rotateEtcdLogs string
 	{
 		clk.Add(time.Hour)
+		etcdLogs.Reset()
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
+		rotateEtcdLogs = etcdLogs.String()
 	}
 
 	// Create the third file
@@ -83,7 +86,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 
 	// Check etcd logs
 	// -----------------------------------------------------------------------------------------------------------------
-	// etcdlogger.AssertFromFile(t, `fixtures/file_rotate_ops_001.txt`, deleteEtcdLogs)
+	etcdlogger.AssertFromFile(t, `fixtures/file_rotate_ops_001.txt`, rotateEtcdLogs)
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
