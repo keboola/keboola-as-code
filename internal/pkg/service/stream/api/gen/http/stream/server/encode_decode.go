@@ -2261,11 +2261,14 @@ func marshalStreamLevelsToLevelsResponseBody(v *stream.Levels) *LevelsResponseBo
 // *SinkFileResponseBody from a value of type *stream.SinkFile.
 func marshalStreamSinkFileToSinkFileResponseBody(v *stream.SinkFile) *SinkFileResponseBody {
 	res := &SinkFileResponseBody{
-		State:       string(v.State),
-		OpenedAt:    v.OpenedAt,
-		ClosingAt:   v.ClosingAt,
-		ImportingAt: v.ImportingAt,
-		ImportedAt:  v.ImportedAt,
+		State:        string(v.State),
+		OpenedAt:     v.OpenedAt,
+		ClosingAt:    v.ClosingAt,
+		ImportingAt:  v.ImportingAt,
+		ImportedAt:   v.ImportedAt,
+		RetryAttempt: v.RetryAttempt,
+		RetryReason:  v.RetryReason,
+		RetryAfter:   v.RetryAfter,
 	}
 	if v.Statistics != nil {
 		res.Statistics = marshalStreamSinkFileStatisticsToSinkFileStatisticsResponseBody(v.Statistics)

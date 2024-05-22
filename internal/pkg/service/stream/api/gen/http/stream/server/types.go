@@ -957,12 +957,18 @@ type LevelsResponseBody struct {
 
 // SinkFileResponseBody is used to define fields on response body types.
 type SinkFileResponseBody struct {
-	State       string                          `form:"state" json:"state" xml:"state"`
-	OpenedAt    string                          `form:"openedAt" json:"openedAt" xml:"openedAt"`
-	ClosingAt   *string                         `form:"closingAt,omitempty" json:"closingAt,omitempty" xml:"closingAt,omitempty"`
-	ImportingAt *string                         `form:"importingAt,omitempty" json:"importingAt,omitempty" xml:"importingAt,omitempty"`
-	ImportedAt  *string                         `form:"importedAt,omitempty" json:"importedAt,omitempty" xml:"importedAt,omitempty"`
-	Statistics  *SinkFileStatisticsResponseBody `form:"statistics" json:"statistics" xml:"statistics"`
+	State       string  `form:"state" json:"state" xml:"state"`
+	OpenedAt    string  `form:"openedAt" json:"openedAt" xml:"openedAt"`
+	ClosingAt   *string `form:"closingAt,omitempty" json:"closingAt,omitempty" xml:"closingAt,omitempty"`
+	ImportingAt *string `form:"importingAt,omitempty" json:"importingAt,omitempty" xml:"importingAt,omitempty"`
+	ImportedAt  *string `form:"importedAt,omitempty" json:"importedAt,omitempty" xml:"importedAt,omitempty"`
+	// Number of failed attempts.
+	RetryAttempt *int `form:"retryAttempt,omitempty" json:"retryAttempt,omitempty" xml:"retryAttempt,omitempty"`
+	// Reason of the last failed attempt.
+	RetryReason *string `form:"retryReason,omitempty" json:"retryReason,omitempty" xml:"retryReason,omitempty"`
+	// Next attempt time.
+	RetryAfter *string                         `form:"retryAfter,omitempty" json:"retryAfter,omitempty" xml:"retryAfter,omitempty"`
+	Statistics *SinkFileStatisticsResponseBody `form:"statistics" json:"statistics" xml:"statistics"`
 }
 
 // SinkFileStatisticsResponseBody is used to define fields on response body

@@ -359,7 +359,13 @@ type SinkFile struct {
 	ClosingAt   *string
 	ImportingAt *string
 	ImportedAt  *string
-	Statistics  *SinkFileStatistics
+	// Number of failed attempts.
+	RetryAttempt *int
+	// Reason of the last failed attempt.
+	RetryReason *string
+	// Next attempt time.
+	RetryAfter *string
+	Statistics *SinkFileStatistics
 }
 
 type SinkFileStatistics struct {
