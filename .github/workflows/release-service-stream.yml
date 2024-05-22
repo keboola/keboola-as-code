@@ -1,0 +1,90 @@
+name: 'Release: Stream Service'
+
+on:
+  push:
+    tags:
+      - 'stream-v**'
+
+env:
+  # DockerHub login
+  DOCKERHUB_USER: "keboolabot"
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  IMAGE_TAG: ${{ github.ref_name }}
+  IMAGE_NAME: "keboola/stream-service"
+ 
+  ECR_REGION: "us-east-1"
+  ECR_REPOSITORY: "keboola/stream-service"
+  ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-StreamServicePushRole-k57lBKJxl9Dr"
+  ACR_REGISTRY: "keboola.azurecr.io"
+  ACR_REPOSITORY: "stream-service"
+  ACR_USERNAME: "stream-service-push"
+  GCP_REGISTRY: "us-central1-docker.pkg.dev"
+  GCP_IDENTITY_PROVIDER: "projects/388088979044/locations/global/workloadIdentityPools/github/providers/github"
+  GCP_ACCOUNT: "keboola-as-code-ci-push@keboola-prod-artifacts.iam.gserviceaccount.com"
+  GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/stream-service"
+
+jobs:
+  test-lint:
+    name: "Lint"
+    secrets: inherit
+    uses: ./.github/workflows/test-lint.yml
+  test-unit:
+    name: "Unit Tests"
+    secrets: inherit
+    uses: ./.github/workflows/test-unit.yml
+  test-e2e-service-stream:
+    name: "E2E: Stream"
+    secrets: inherit
+    uses: ./.github/workflows/test-e2e-service-stream.yml
+#  test-k8s-service-stream:
+#    name: "K8S: Stream"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-k8s-service-stream.yml
+  build-and-push-api-image:
+    name: "Build & Push Image"
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    needs:
+      - test-lint
+      - test-unit
+      - test-e2e-service-stream
+#      - test-k8s-service-stream
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build Service image
+        uses: docker/build-push-action@v3
+        with:
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          context: .
+          file: provisioning/stream/docker/service/Dockerfile
+
+      - name: Push Service image to Amazon ECR, Azure ACR and GCP GAR
+        uses: ./.github/actions/push-image-aws-azure-gcp
+        with:
+          imageName: ${{ env.IMAGE_NAME }}
+          imageTag: ${{ env.IMAGE_TAG }}
+          ecrRegion: ${{ env.ECR_REGION }}
+          ecrRepository: ${{ env.ECR_REPOSITORY }}
+          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          gcpRepository: ${{ env.GCP_REPOSITORY }}
+          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
+          acrRegistry: ${{ env.ACR_REGISTRY }}
+          acrRepository: ${{ env.ACR_REPOSITORY }}
+          acrUsername: ${{ env.ACR_USERNAME }}
+          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
