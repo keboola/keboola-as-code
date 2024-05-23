@@ -340,7 +340,7 @@ func (v *lowLevelTxn[R]) addThen(op etcd.Op, mapper MapFn) {
 		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
 			if r.Succeeded() {
 				rawSubResponse := r.Response().Txn().Responses[index]
-				subResponse := r.Response().SubResponse(mapRawResponse(rawSubResponse))
+				subResponse := r.Response().WithOpResponse(mapRawResponse(rawSubResponse))
 				if _, err := mapper(ctx, subResponse); err != nil {
 					r.AddErr(err)
 				}
@@ -358,7 +358,7 @@ func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) {
 		index := len(v.elseOps) - 1
 		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
 			if !r.Succeeded() {
-				subResponse := r.Response().SubResponse(mapRawResponse(r.Response().Txn().Responses[index]))
+				subResponse := r.Response().WithOpResponse(mapRawResponse(r.Response().OpResponse().Txn().Responses[index]))
 				if _, err := mapper(ctx, subResponse); err != nil {
 					r.AddErr(err)
 				}
@@ -430,7 +430,7 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 		}
 
 		// Call original mapper of the sub transaction
-		if _, err := lowLevel.MapResponse(ctx, r.Response().SubResponse(subTxnResponse.OpResponse())); err != nil {
+		if _, err := lowLevel.MapResponse(ctx, r.Response().WithOpResponse(subTxnResponse.OpResponse())); err != nil {
 			r.AddErr(err)
 		}
 	})
