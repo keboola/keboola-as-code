@@ -88,6 +88,9 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 
 	// Clear cookie on logout
 	if req.URL.Path == signOutPath {
+		// This clears provider selection cookie while oauth2-proxy clears the session cookie.
+		// The user isn't logged out on the provider's side, but when redirected to the provider they're
+		// forced to select their account again because of the "select_account" flag in LoginURLParameters.
 		s.clearCookie(w, req)
 	}
 
