@@ -1,6 +1,7 @@
 package op_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
 type txnTestCase struct {
@@ -1343,6 +1345,101 @@ txn succeeded: true
 	for _, tc := range cases {
 		tc.Run(t, ctx, client, &log, txn)
 	}
+}
+
+func TestTxnOp_Merge_Nested(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	var logs bytes.Buffer
+
+	var etcdLogs bytes.Buffer
+	client.KV = etcdlogger.KVLogWrapper(client.KV, &etcdLogs, etcdlogger.WithMinimal())
+
+	onSucceeded := func(i int) func(result *TxnResult[NoResult]) {
+		return func(result *TxnResult[NoResult]) {
+			logs.WriteString(fmt.Sprintf("callback%d\n", i))
+		}
+	}
+
+	// Define transaction with nested merging
+	txn := Txn(client).
+		Merge(Txn(nil).OnSucceeded(onSucceeded(1)).
+			Merge(Txn(nil).OnSucceeded(onSucceeded(2)).
+				Merge(Txn(nil).OnSucceeded(onSucceeded(3)).
+					Merge(Txn(nil).OnSucceeded(onSucceeded(4)).
+						If(etcd.Compare(etcd.CreateRevision("key"), "!=", 0)).
+						OnFailed(func(r *TxnResult[NoResult]) {
+							r.AddErr(errors.New("key must exists"))
+						}),
+					),
+				),
+			),
+		)
+
+	// Failed
+	logs.Reset()
+	etcdLogs.Reset()
+	result := txn.Do(ctx)
+	assert.False(t, result.Succeeded())
+	if assert.Error(t, result.Err()) {
+		assert.Equal(t, "key must exists", result.Err().Error())
+	}
+	etcdlogger.Assert(t, `
+➡️  TXN
+  ➡️  IF:
+  001 "key" CREATE NOT_EQUAL 0
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "key" CREATE NOT_EQUAL 0
+  001   ➡️  ELSE:
+  001   001 ➡️  TXN
+  001   001   ➡️  IF:
+  001   001   001 "key" CREATE NOT_EQUAL 0
+  001   001   ➡️  ELSE:
+  001   001   001 ➡️  TXN
+  001   001   001   ➡️  IF:
+  001   001   001   001 "key" CREATE NOT_EQUAL 0
+  001   001   001   ➡️  ELSE:
+  001   001   001   001 ➡️  TXN
+  001   001   001   001   ➡️  IF:
+  001   001   001   001   001 "key" CREATE NOT_EQUAL 0
+✔️  TXN | succeeded: false
+	`, etcdLogs.String())
+	assert.Empty(t, logs.String()) // no OnSucceeded callback were called
+
+	// Succeeded
+	require.NoError(t, etcdop.Key("key").Put(client, "value").Do(ctx).Err())
+	logs.Reset()
+	etcdLogs.Reset()
+	result = txn.Do(ctx)
+	assert.True(t, result.Succeeded())
+	assert.NoError(t, result.Err())
+	etcdlogger.Assert(t, `
+➡️  TXN
+  ➡️  IF:
+  001 "key" CREATE NOT_EQUAL 0
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "key" CREATE NOT_EQUAL 0
+  001   ➡️  ELSE:
+  001   001 ➡️  TXN
+  001   001   ➡️  IF:
+  001   001   001 "key" CREATE NOT_EQUAL 0
+  001   001   ➡️  ELSE:
+  001   001   001 ➡️  TXN
+  001   001   001   ➡️  IF:
+  001   001   001   001 "key" CREATE NOT_EQUAL 0
+  001   001   001   ➡️  ELSE:
+  001   001   001   001 ➡️  TXN
+  001   001   001   001   ➡️  IF:
+  001   001   001   001   001 "key" CREATE NOT_EQUAL 0
+✔️  TXN | succeeded: true
+`, etcdLogs.String())
+	assert.Equal(t, "callback4\ncallback3\ncallback2\ncallback1\n", logs.String())
 }
 
 // txnResult is simplified version of the TxnResult, without dynamic values, for easier comparison in tests.
