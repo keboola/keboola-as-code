@@ -10,12 +10,11 @@ type TxnResult[R any] struct {
 
 type txnResultCore struct {
 	*resultCore
-	subResults []any
 }
 
-func newTxnResult[R any](response *RawResponse, result *R) *TxnResult[R] {
+func newTxnResult[R any](core *txnResultCore, result *R) *TxnResult[R] {
 	return &TxnResult[R]{
-		txnResultCore: newTxnResultCore(response),
+		txnResultCore: core,
 		result:        result,
 	}
 }
@@ -30,7 +29,7 @@ func newTxnResultCore(response *RawResponse) *txnResultCore {
 }
 
 func newErrorTxnResult[R any](err error) *TxnResult[R] {
-	r := newTxnResult[R](nil, nil)
+	r := newTxnResult[R](newTxnResultCore(nil), nil)
 	r.AddErr(err)
 	return r
 }
@@ -55,16 +54,4 @@ func (v *TxnResult[R]) Result() R {
 	} else {
 		return *v.result
 	}
-}
-
-func (v *TxnResult[R]) SubResults() []any {
-	return v.subResults
-}
-
-func (v *TxnResult[R]) SetSubResults(results []any) {
-	v.subResults = results
-}
-
-func (v *TxnResult[R]) AddSubResult(result any) {
-	v.subResults = append(v.subResults, result)
 }

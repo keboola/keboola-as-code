@@ -19,7 +19,7 @@ func TestTxnResult(t *testing.T) {
 	}
 
 	str1 := "foo"
-	result := newTxnResult(expectedResponse, &str1)
+	result := newTxnResult(newTxnResultCore(expectedResponse), &str1)
 
 	// Response
 	assert.Same(t, expectedResponse, result.Response())
@@ -36,13 +36,6 @@ func TestTxnResult(t *testing.T) {
 
 	// Result
 	assert.Equal(t, "foo", result.Result())
-
-	// SubResults/SetSubResult/AddSubResult
-	assert.Empty(t, result.SubResults())
-	result.SetSubResults([]any{"foo", "bar"})
-	assert.Equal(t, []any{"foo", "bar"}, result.SubResults())
-	result.AddSubResult("baz")
-	assert.Equal(t, []any{"foo", "bar", "baz"}, result.SubResults())
 
 	// Err/AddErr
 	assert.NoError(t, result.Err())
