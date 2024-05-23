@@ -141,7 +141,7 @@ func (v WithResult[R]) mapResponse(ctx context.Context, raw *RawResponse) *Resul
 	if value, err := v.mapper(ctx, raw); err == nil {
 		r = newResult[R](raw, &value)
 	} else {
-		r = newResult[R](&raw, nil).AddErr(err)
+		r = newErrorResult[R](err)
 	}
 
 	// Invoke WithResult
