@@ -1279,18 +1279,6 @@ func TestTxnOp_Merge_Nested(t *testing.T) {
   001 ➡️  TXN
   001   ➡️  IF:
   001   001 "key" CREATE NOT_EQUAL 0
-  001   ➡️  ELSE:
-  001   001 ➡️  TXN
-  001   001   ➡️  IF:
-  001   001   001 "key" CREATE NOT_EQUAL 0
-  001   001   ➡️  ELSE:
-  001   001   001 ➡️  TXN
-  001   001   001   ➡️  IF:
-  001   001   001   001 "key" CREATE NOT_EQUAL 0
-  001   001   001   ➡️  ELSE:
-  001   001   001   001 ➡️  TXN
-  001   001   001   001   ➡️  IF:
-  001   001   001   001   001 "key" CREATE NOT_EQUAL 0
 ✔️  TXN | succeeded: false
 	`, etcdLogs.String())
 	assert.Empty(t, logs.String()) // no OnSucceeded callback were called
@@ -1310,28 +1298,9 @@ func TestTxnOp_Merge_Nested(t *testing.T) {
   001 ➡️  TXN
   001   ➡️  IF:
   001   001 "key" CREATE NOT_EQUAL 0
-  001   ➡️  ELSE:
-  001   001 ➡️  TXN
-  001   001   ➡️  IF:
-  001   001   001 "key" CREATE NOT_EQUAL 0
-  001   001   ➡️  ELSE:
-  001   001   001 ➡️  TXN
-  001   001   001   ➡️  IF:
-  001   001   001   001 "key" CREATE NOT_EQUAL 0
-  001   001   001   ➡️  ELSE:
-  001   001   001   001 ➡️  TXN
-  001   001   001   001   ➡️  IF:
-  001   001   001   001   001 "key" CREATE NOT_EQUAL 0
 ✔️  TXN | succeeded: true
 `, etcdLogs.String())
 	assert.Equal(t, "callback4\ncallback3\ncallback2\ncallback1\n", logs.String())
-}
-
-// txnResult is simplified version of the TxnResult, without dynamic values, for easier comparison in tests.
-type txnResult struct {
-	Succeeded bool
-	Error     string
-	Results   []any
 }
 
 func newLogHelpers(log *strings.Builder) (func(msg string) func(r NoResult), func(msg string) func(r *KeyValue)) {
