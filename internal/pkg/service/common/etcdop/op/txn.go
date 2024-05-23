@@ -93,7 +93,7 @@ func (v *TxnOp[R]) txnProcessorsCount() int {
 	return len(v.processors)
 }
 
-func (v *TxnOp[R]) txnInvokeProcessors(ctx context.Context, base *resultBase) error {
+func (v *TxnOp[R]) txnInvokeProcessors(ctx context.Context, base *resultBase) {
 	txnResult := newTxnResult(base, v.result)
 	for _, p := range v.processors {
 		p(ctx, txnResult)
@@ -341,9 +341,7 @@ func (v *lowLevelTxn[R]) addThen(op etcd.Op, mapper MapFn) {
 			if r.Succeeded() {
 				rawSubResponse := r.Response().Txn().Responses[index]
 				subResponse := r.Response().SubResponse(mapRawResponse(rawSubResponse))
-				if subResult, err := mapper(ctx, subResponse); err == nil {
-					r.AddSubResult(subResult)
-				} else {
+				if _, err := mapper(ctx, subResponse); err != nil {
 					r.AddErr(err)
 				}
 			}
@@ -424,20 +422,15 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 			subTxnResponse = (*etcd.TxnResponse)(r.Response().Txn().Responses[elseTxnPos].GetResponseTxn())
 			if subTxnResponse.Succeeded {
 				// Skip mapper bellow, the transaction failed, but not due to a condition in the sub-transaction
-				r.AddSubResult(NoResult{})
 				return
 			}
 		default:
 			// Skip mapper bellow, the transaction failed, but there is no condition in the sub-transaction
-			r.AddSubResult(NoResult{})
 			return
 		}
 
 		// Call original mapper of the sub transaction
-		if subResult, err := lowLevel.MapResponse(ctx, r.Response().SubResponse(subTxnResponse.OpResponse())); err == nil {
-			r.AddSubResult(subResult)
-		} else {
-			r.AddSubResult(err)
+		if _, err := lowLevel.MapResponse(ctx, r.Response().SubResponse(subTxnResponse.OpResponse())); err != nil {
 			r.AddErr(err)
 		}
 	})
