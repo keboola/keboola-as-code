@@ -42,7 +42,11 @@ type TxnOp[R any] struct {
 
 // txnInterface is a marker interface for generic type TxnOp.
 type txnInterface interface {
-	txn()
+	Op
+	txnParts() []txnPart
+	txnInitError() error
+	txnProcessorsCount() int
+	txnInvokeProcessors(ctx context.Context, result *resultBase)
 }
 
 type txnPartType string
@@ -64,12 +68,12 @@ type lowLevelTxn[R any] struct {
 
 // Txn creates an empty transaction with NoResult.
 func Txn(client etcd.KV) *TxnOp[NoResult] {
-	return &TxnOp[NoResult]{client: client, result: &NoResult{}}
+	return &TxnOp[NoResult]{client: client, result: &NoResult{}, errs: errors.NewMultiError()}
 }
 
 // TxnWithResult creates an empty transaction with the result.
 func TxnWithResult[R any](client etcd.KV, result *R) *TxnOp[R] {
-	return &TxnOp[R]{client: client, result: result}
+	return &TxnOp[R]{client: client, result: result, errs: errors.NewMultiError()}
 }
 
 // MergeToTxn merges listed operations into a transaction using And method.
@@ -77,8 +81,24 @@ func MergeToTxn(client etcd.KV, ops ...Op) *TxnOp[NoResult] {
 	return Txn(client).Merge(ops...)
 }
 
-// txn is a marker method defined by the txnInterface.
-func (v *TxnOp[R]) txn() {}
+func (v *TxnOp[R]) txnParts() []txnPart {
+	return v.parts
+}
+
+func (v *TxnOp[R]) txnInitError() error {
+	return v.errs.ErrorOrNil()
+}
+
+func (v *TxnOp[R]) txnProcessorsCount() int {
+	return len(v.processors)
+}
+
+func (v *TxnOp[R]) txnInvokeProcessors(ctx context.Context, base *resultBase) error {
+	txnResult := newTxnResult(base, v.result)
+	for _, p := range v.processors {
+		p(ctx, txnResult)
+	}
+}
 
 func (v *TxnOp[R]) Empty() bool {
 	return len(v.parts) == 0
@@ -144,9 +164,6 @@ func (v *TxnOp[R]) Merge(ops ...Op) *TxnOp[R] {
 // AddError - all static errors are returned when the low level txn is composed.
 // It makes error handling easier and move it to one place.
 func (v *TxnOp[R]) AddError(errs ...error) *TxnOp[R] {
-	if v.errs == nil {
-		v.errs = errors.NewMultiError()
-	}
 	v.errs.Append(errs...)
 	return v
 }
