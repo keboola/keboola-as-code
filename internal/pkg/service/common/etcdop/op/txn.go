@@ -341,11 +341,8 @@ func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) {
 		index := len(v.elseOps) - 1
 		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
 			if !r.Succeeded() {
-				rawSubResponse := r.Response().Txn().Responses[index]
-				subResponse := r.Response().SubResponse(mapRawResponse(rawSubResponse))
-				if subResult, err := mapper(ctx, subResponse); err == nil {
-					r.AddSubResult(subResult)
-				} else {
+				subResponse := r.Response().SubResponse(mapRawResponse(r.Response().Txn().Responses[index]))
+				if _, err := mapper(ctx, subResponse); err != nil {
 					r.AddErr(err)
 				}
 			}
@@ -397,7 +394,7 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 		// Get sub-transaction response
 		var subTxnResponse *etcd.TxnResponse
 		switch {
-		case r.succeeded:
+		case r.Succeeded():
 			subTxnResponse = &etcd.TxnResponse{
 				// The entire transaction succeeded, which means that a partial transaction succeeded as well
 				Succeeded: true,
@@ -421,7 +418,8 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 		if subResult, err := lowLevel.MapResponse(ctx, r.Response().SubResponse(subTxnResponse.OpResponse())); err == nil {
 			r.AddSubResult(subResult)
 		} else {
-			r.AddSubResult(err).AddErr(err)
+			r.AddSubResult(err)
+			r.AddErr(err)
 		}
 	})
 
@@ -429,14 +427,9 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 }
 
 func (v *lowLevelTxn[R]) mapResponse(ctx context.Context, raw *RawResponse) *TxnResult[R] {
-	// Map transaction response
-	r := newTxnResult(&raw, v.result)
-	r.succeeded = raw.Txn().Succeeded
-
-	// Use processors
+	result := newTxnResult(newResultBase(raw), v.result)
 	for _, p := range v.processors {
-		p(ctx, r)
+		p(ctx, result)
 	}
-
-	return r
+	return result
 }
