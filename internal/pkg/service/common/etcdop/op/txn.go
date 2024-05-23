@@ -237,29 +237,13 @@ func (v *TxnOp[R]) Op(ctx context.Context) (LowLevelOp, error) {
 
 func (v *TxnOp[R]) lowLevelTxn(ctx context.Context) (*lowLevelTxn[R], error) {
 	out := &lowLevelTxn[R]{result: v.result, client: v.client}
-	errs := errors.NewMultiError()
 
-	// Copy init errors
-	if v.errs != nil {
-		errs.Append(v.errs.WrappedErrors()...)
-	}
-
-	// Process all transaction parts
-	opIndex := make(map[txnPartType]int)
-	for _, part := range v.parts {
-		if err := out.addPart(ctx, part); err != nil {
-			err = errors.PrefixErrorf(err, `cannot create operation [%s][%d]:`, part.Type, opIndex[part.Type])
-			errs.Append(err)
-		}
-		opIndex[part.Type]++
+	if err := out.addParts(ctx, v); err != nil {
+		return nil, err
 	}
 
 	// Add top-level processors
 	out.processors = append(out.processors, v.processors...)
-
-	if err := errs.ErrorOrNil(); err != nil {
-		return nil, err
-	}
 
 	return out, nil
 }
@@ -289,6 +273,24 @@ func (v *lowLevelTxn[R]) Do(ctx context.Context, opts ...Option) *TxnResult[R] {
 	}
 
 	return v.mapResponse(ctx, response)
+}
+
+func (v *lowLevelTxn[R]) addParts(ctx context.Context, txn txnInterface) error {
+	if err := txn.txnInitError(); err != nil {
+		return err
+	}
+
+	errs := errors.NewMultiError()
+	opIndex := make(map[txnPartType]int)
+	for _, part := range txn.txnParts() {
+		if err := v.addPart(ctx, part); err != nil {
+			err = errors.PrefixErrorf(err, `cannot create operation [%s][%d]:`, part.Type, opIndex[part.Type])
+			errs.Append(err)
+		}
+		opIndex[part.Type]++
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (v *lowLevelTxn[R]) addPart(ctx context.Context, part txnPart) error {
