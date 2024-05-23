@@ -7,12 +7,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
 func (s *service) CreateSink(_ context.Context, d dependencies.SourceRequestScope, payload *stream.CreateSinkPayload) (res *stream.Task, err error) {
@@ -66,13 +63,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
 	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
-		filesMap[value.FileID] = &stream.SinkFile{
-			State:       value.State,
-			OpenedAt:    value.OpenedAt().String(),
-			ClosingAt:   timeToString(value.ClosingAt),
-			ImportingAt: timeToString(value.ImportingAt),
-			ImportedAt:  timeToString(value.ImportedAt),
-		}
+		filesMap[value.FileID] = s.mapper.NewSinkFile(value)
 		return nil
 	})
 	if err != nil {
@@ -87,35 +78,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		}
 
 		for key, aggregated := range statisticsMap {
-			if filesMap[key].Statistics == nil {
-				filesMap[key].Statistics = &stream.SinkFileStatistics{
-					Levels: &stream.Levels{
-						Local:   &stream.Level{},
-						Staging: &stream.Level{},
-						Target:  &stream.Level{},
-					},
-					Total: &stream.Level{},
-				}
-			}
-			assignStatistics(filesMap[key].Statistics.Total, aggregated.Total)
-			assignStatistics(filesMap[key].Statistics.Levels.Local, aggregated.Local)
-			assignStatistics(filesMap[key].Statistics.Levels.Staging, aggregated.Staging)
-			assignStatistics(filesMap[key].Statistics.Levels.Target, aggregated.Target)
-		}
-
-		for _, file := range filesMap {
-			if file.Statistics.Total.RecordsCount == 0 {
-				file.Statistics.Total = nil
-			}
-			if file.Statistics.Levels.Local.RecordsCount == 0 {
-				file.Statistics.Levels.Local = nil
-			}
-			if file.Statistics.Levels.Staging.RecordsCount == 0 {
-				file.Statistics.Levels.Staging = nil
-			}
-			if file.Statistics.Levels.Target.RecordsCount == 0 {
-				file.Statistics.Levels.Target = nil
-			}
+			filesMap[key].Statistics = s.mapper.NewSinkFileStatistics(aggregated)
 		}
 	}
 
@@ -124,19 +87,4 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 	}
 
 	return res, nil
-}
-
-func assignStatistics(levelStatistics *stream.Level, levelValue statistics.Value) {
-	levelStatistics.FirstRecordAt = timeToString(&levelValue.FirstRecordAt)
-	levelStatistics.LastRecordAt = timeToString(&levelValue.LastRecordAt)
-	levelStatistics.RecordsCount = levelValue.RecordsCount
-	levelStatistics.UncompressedSize = uint64(levelValue.UncompressedSize)
-}
-
-func timeToString(time *utctime.UTCTime) *string {
-	if time == nil || time.IsZero() {
-		return nil
-	}
-
-	return ptr.Ptr(time.String())
 }
