@@ -370,6 +370,37 @@ func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) {
 }
 
 func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
+	// Step down to a nested Merge operation, if there is no processor/else branch.
+	if txn, ok := op.(txnInterface); ok && isSimpleTxn(txn) {
+		thenStart := len(v.thenOps)
+		elseStart := len(v.elseOps)
+		if err := v.addParts(ctx, txn); err != nil {
+			return err
+		}
+
+		if txn.txnProcessorsCount() > 0 {
+			thenEnd := len(v.thenOps)
+			elseEnd := len(v.elseOps)
+			v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
+				response := &etcd.TxnResponse{Succeeded: r.Succeeded()}
+				if r.Succeeded() {
+					response.Responses = r.Response().Txn().Responses[thenStart:thenEnd]
+				} else {
+					response.Responses = r.Response().Txn().Responses[elseStart:elseEnd]
+				}
+
+				// Call original mapper of the sub transaction
+				rx := r.Response().SubResponse(response.OpResponse())
+				core := newTxnResultCore(&rx)
+				if err := txn.txnInvokeProcessors(ctx, core); err != nil {
+					r.AddErr(err)
+				}
+			})
+		}
+
+		return nil
+	}
+
 	// Create low level operation
 	lowLevel, err := op.Op(ctx)
 	if err != nil {
@@ -446,4 +477,18 @@ func (v *lowLevelTxn[R]) mapResponse(ctx context.Context, raw RawResponse) *TxnR
 		p(ctx, result)
 	}
 	return result
+}
+
+// isSimpleTxn returns true if the transaction has no processor and has no else branch.
+// In that case, it is possible to merge it more easily: IF/THEN parts are added to the parent transaction.
+func isSimpleTxn(txn txnInterface) bool {
+	for _, part := range txn.txnParts() {
+		if part.Type == txnOpIf {
+			return false
+		}
+		if part.Type == txnOpElse {
+			return false
+		}
+	}
+	return true
 }
