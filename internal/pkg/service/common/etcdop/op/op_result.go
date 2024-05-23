@@ -4,10 +4,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Result of a high-level operation.
 type Result[R any] struct {
+	*resultBase
+	result *R
+}
+
+// resultBase is common part of all results regardless of the type of value or whether it is a transaction.
+type resultBase struct {
 	response *RawResponse
 	errors   errors.MultiError
-	result   *R
 }
 
 // EmptyResultError signals an empty result of the etcd operation.
@@ -24,41 +30,21 @@ func NewEmptyResultError(err error) EmptyResultError {
 	return EmptyResultError{error: err}
 }
 
-func newResult[R any](r *RawResponse, result *R) *Result[R] {
-	return &Result[R]{
+func newResult[R any](response *RawResponse, result *R) *Result[R] {
+	return &Result[R]{resultBase: newResultBase(response), result: result}
+}
+
+func newResultBase(response *RawResponse) *resultBase {
+	return &resultBase{
 		errors:   errors.NewMultiError(),
-		response: r,
-		result:   result,
+		response: response,
 	}
 }
 
 func newErrorResult[R any](err error) *Result[R] {
-	return newResult[R](nil, nil).AddErr(err)
-}
-
-func (v *Result[R]) Response() *RawResponse {
-	return v.response
-}
-
-func (v *Result[R]) Header() *Header {
-	return getResponseHeader(v.response)
-}
-
-func (v *Result[R]) Result() R {
-	if v.result == nil {
-		var empty R
-		return empty
-	} else {
-		return *v.result
-	}
-}
-
-func (v *Result[R]) Err() error {
-	return v.errors.ErrorOrNil()
-}
-
-func (v *Result[R]) HeaderOrErr() (*Header, error) {
-	return v.Header(), v.Err()
+	r := newResult[R](nil, nil)
+	r.AddErr(err)
+	return r
 }
 
 func (v *Result[R]) ResultOrErr() (R, error) {
@@ -70,19 +56,37 @@ func (v *Result[R]) ResultOrErr() (R, error) {
 	}
 }
 
-func (v *Result[R]) SetResult(result *R) *Result[R] {
-	v.result = result
-	return v
+func (v *Result[R]) Result() R {
+	if v.result == nil {
+		var empty R
+		return empty
+	} else {
+		return *v.result
+	}
 }
 
-func (v *Result[R]) ResetErr() *Result[R] {
+func (v *resultBase) Response() *RawResponse {
+	return v.response
+}
+
+func (v *resultBase) Header() *Header {
+	return getResponseHeader(v.response)
+}
+
+func (v *resultBase) Err() error {
+	return v.errors.ErrorOrNil()
+}
+
+func (v *resultBase) HeaderOrErr() (*Header, error) {
+	return v.Header(), v.Err()
+}
+
+func (v *resultBase) ResetErr() {
 	v.errors = errors.NewMultiError()
-	return v
 }
 
-func (v *Result[R]) AddErr(err error) *Result[R] {
+func (v *resultBase) AddErr(err error) {
 	v.errors.Append(err)
-	return v
 }
 
 func getResponseHeader(response *RawResponse) *Header {
