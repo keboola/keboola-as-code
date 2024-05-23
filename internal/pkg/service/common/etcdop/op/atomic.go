@@ -57,7 +57,9 @@ func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
 	v := &AtomicOp[R]{AtomicOpCore: newAtomicCore(client), result: result}
 	v.setProcessorFactory(func() func(ctx context.Context, r *TxnResult[NoResult]) {
 		return func(ctx context.Context, r *TxnResult[NoResult]) {
-			v.processors.invoke(ctx, newResult(r.Response(), v.result))
+			if r.Err() == nil && r.Succeeded() {
+				v.processors.invoke(ctx, newResult(r.Response(), v.result))
+			}
 		}
 	})
 	return v
