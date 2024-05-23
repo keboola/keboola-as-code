@@ -41,8 +41,9 @@ func DoWithRetry(ctx context.Context, client etcd.KV, op etcd.Op, opts ...Option
 	b := newBackoff(opts...)
 	attempt := 0
 	for {
-		response.OpResponse, err = client.Do(ctx, op)
+		opResponse, err := client.Do(ctx, op)
 		if err == nil {
+			response = response.WithOpResponse(opResponse)
 			break
 		}
 

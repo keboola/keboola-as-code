@@ -34,7 +34,7 @@ func (p processors[R]) WithProcessor(fn func(ctx context.Context, result *Result
 func (p processors[R]) WithResultTo(ptr *R) processors[R] {
 	return p.WithProcessor(func(_ context.Context, r *Result[R]) {
 		if r.Err() == nil {
-			*ptr = *r.result
+			*ptr = r.Result()
 		} else {
 			var empty R
 			*ptr = empty

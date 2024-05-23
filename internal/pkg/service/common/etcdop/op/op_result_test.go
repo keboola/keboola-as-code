@@ -14,9 +14,7 @@ func TestResult(t *testing.T) {
 	t.Parallel()
 
 	expectedHeader := &etcdserverpb.ResponseHeader{}
-	expectedResponse := &RawResponse{
-		OpResponse: (&clientv3.GetResponse{Header: expectedHeader}).OpResponse(),
-	}
+	expectedResponse := newRawResponse(nil, nil).WithOpResponse((&clientv3.GetResponse{Header: expectedHeader}).OpResponse())
 
 	result := newResult[string](expectedResponse, nil)
 
@@ -33,11 +31,8 @@ func TestResult(t *testing.T) {
 	assert.Equal(t, "", str)
 	assert.NoError(t, err)
 
-	// Result/SetResult
+	// Result
 	assert.Empty(t, result.Result())
-	str2 := "foo"
-	result.SetResult(&str2)
-	assert.Equal(t, "foo", result.Result())
 
 	// Err/AddErr
 	assert.NoError(t, result.Err())
