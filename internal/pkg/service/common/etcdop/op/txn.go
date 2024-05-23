@@ -441,7 +441,7 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 }
 
 func (v *lowLevelTxn[R]) mapResponse(ctx context.Context, raw RawResponse) *TxnResult[R] {
-	result := newTxnResult(&raw, v.result)
+	result := newTxnResult(newTxnResultCore(&raw), v.result)
 	for _, p := range v.processors {
 		p(ctx, result)
 	}
