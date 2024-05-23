@@ -1,75 +1,70 @@
 package op
 
+import "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+
 // TxnResult is result of the TxnOp.
 type TxnResult[R any] struct {
-	result     *Result[R]
-	succeeded  bool
+	*txnResultCore
+	result *R
+}
+
+type txnResultCore struct {
+	*resultCore
 	subResults []any
 }
 
 func newTxnResult[R any](response *RawResponse, result *R) *TxnResult[R] {
 	return &TxnResult[R]{
-		result: newResult[R](response, result),
+		txnResultCore: newTxnResultCore(response),
+		result:        result,
+	}
+}
+
+func newTxnResultCore(response *RawResponse) *txnResultCore {
+	if response != nil && response.Txn() == nil {
+		panic(errors.New("unexpected response"))
+	}
+	return &txnResultCore{
+		resultCore: newResultCore(response),
 	}
 }
 
 func newErrorTxnResult[R any](err error) *TxnResult[R] {
-	return newTxnResult[R](nil, nil).AddErr(err)
+	r := newTxnResult[R](nil, nil)
+	r.AddErr(err)
+	return r
 }
 
 func (v *TxnResult[R]) Succeeded() bool {
-	return v.succeeded
+	return v.response != nil && v.response.Txn().Succeeded
 }
 
-func (v *TxnResult[R]) SetSubResults(results []any) *TxnResult[R] {
-	v.subResults = results
-	return v
+func (v *TxnResult[R]) ResultOrErr() (R, error) {
+	if err := v.Err(); err == nil {
+		return v.Result(), nil
+	} else {
+		var empty R
+		return empty, err
+	}
+}
+
+func (v *TxnResult[R]) Result() R {
+	if v.result == nil {
+		var empty R
+		return empty
+	} else {
+		return *v.result
+	}
 }
 
 func (v *TxnResult[R]) SubResults() []any {
 	return v.subResults
 }
 
-func (v *TxnResult[R]) AddSubResult(result any) *TxnResult[R] {
+func (v *TxnResult[R]) SetSubResults(results []any) {
+	v.subResults = results
+}
+
+func (v *TxnResult[R]) AddSubResult(result any) {
 	v.subResults = append(v.subResults, result)
-	return v
-}
-
-func (v *TxnResult[R]) Response() *RawResponse {
-	return v.result.Response()
-}
-
-func (v *TxnResult[R]) Header() *Header {
-	return v.result.Header()
-}
-
-func (v *TxnResult[R]) Result() R {
-	return v.result.Result()
-}
-
-func (v *TxnResult[R]) Err() error {
-	return v.result.Err()
-}
-
-func (v *TxnResult[R]) HeaderOrErr() (*Header, error) {
-	return v.result.HeaderOrErr()
-}
-
-func (v *TxnResult[R]) ResultOrErr() (R, error) {
-	return v.result.ResultOrErr()
-}
-
-func (v *TxnResult[R]) SetResult(result *R) *TxnResult[R] {
-	v.result.SetResult(result)
-	return v
-}
-
-func (v *TxnResult[R]) ResetErr() *TxnResult[R] {
-	v.result.ResetErr()
-	return v
-}
-
-func (v *TxnResult[R]) AddErr(err error) *TxnResult[R] {
-	v.result.AddErr(err)
-	return v
 }

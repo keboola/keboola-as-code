@@ -15,7 +15,7 @@ func TestTxnResult(t *testing.T) {
 
 	expectedHeader := &etcdserverpb.ResponseHeader{}
 	expectedResponse := &RawResponse{
-		OpResponse: (&clientv3.GetResponse{Header: expectedHeader}).OpResponse(),
+		OpResponse: (&clientv3.TxnResponse{Succeeded: true, Header: expectedHeader}).OpResponse(),
 	}
 
 	str1 := "foo"
@@ -34,11 +34,8 @@ func TestTxnResult(t *testing.T) {
 	assert.Equal(t, "foo", resultValue)
 	assert.NoError(t, err)
 
-	// Result/SetResult
+	// Result
 	assert.Equal(t, "foo", result.Result())
-	str2 := "bar"
-	result.SetResult(&str2)
-	assert.Equal(t, "bar", result.Result())
 
 	// SubResults/SetSubResult/AddSubResult
 	assert.Empty(t, result.SubResults())
@@ -56,14 +53,10 @@ func TestTxnResult(t *testing.T) {
 		assert.Equal(t, "- error1\n- error2", err.Error())
 	}
 
-	// Succeeded - false
-	assert.False(t, result.Succeeded())
+	// Succeeded
+	assert.True(t, result.Succeeded())
 
 	// Reset
 	result.ResetErr()
 	assert.Nil(t, result.Err())
-
-	// Succeeded - true
-	result.succeeded = true
-	assert.True(t, result.Succeeded())
 }

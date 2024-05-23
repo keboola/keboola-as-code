@@ -33,11 +33,8 @@ func TestResult(t *testing.T) {
 	assert.Equal(t, "", str)
 	assert.NoError(t, err)
 
-	// Result/SetResult
+	// Result
 	assert.Empty(t, result.Result())
-	str2 := "foo"
-	result.SetResult(&str2)
-	assert.Equal(t, "foo", result.Result())
 
 	// Err/AddErr
 	assert.NoError(t, result.Err())

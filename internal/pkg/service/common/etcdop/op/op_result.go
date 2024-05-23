@@ -5,9 +5,13 @@ import (
 )
 
 type Result[R any] struct {
+	*resultCore
+	result *R
+}
+
+type resultCore struct {
 	response *RawResponse
 	errors   errors.MultiError
-	result   *R
 }
 
 // EmptyResultError signals an empty result of the etcd operation.
@@ -24,41 +28,24 @@ func NewEmptyResultError(err error) EmptyResultError {
 	return EmptyResultError{error: err}
 }
 
-func newResult[R any](r *RawResponse, result *R) *Result[R] {
+func newResult[R any](response *RawResponse, result *R) *Result[R] {
 	return &Result[R]{
+		resultCore: newResultCore(response),
+		result:     result,
+	}
+}
+
+func newResultCore(response *RawResponse) *resultCore {
+	return &resultCore{
 		errors:   errors.NewMultiError(),
-		response: r,
-		result:   result,
+		response: response,
 	}
 }
 
 func newErrorResult[R any](err error) *Result[R] {
-	return newResult[R](nil, nil).AddErr(err)
-}
-
-func (v *Result[R]) Response() *RawResponse {
-	return v.response
-}
-
-func (v *Result[R]) Header() *Header {
-	return getResponseHeader(v.response)
-}
-
-func (v *Result[R]) Result() R {
-	if v.result == nil {
-		var empty R
-		return empty
-	} else {
-		return *v.result
-	}
-}
-
-func (v *Result[R]) Err() error {
-	return v.errors.ErrorOrNil()
-}
-
-func (v *Result[R]) HeaderOrErr() (*Header, error) {
-	return v.Header(), v.Err()
+	r := newResult[R](nil, nil)
+	r.AddErr(err)
+	return r
 }
 
 func (v *Result[R]) ResultOrErr() (R, error) {
@@ -70,19 +57,37 @@ func (v *Result[R]) ResultOrErr() (R, error) {
 	}
 }
 
-func (v *Result[R]) SetResult(result *R) *Result[R] {
-	v.result = result
-	return v
+func (v *Result[R]) Result() R {
+	if v.result == nil {
+		var empty R
+		return empty
+	} else {
+		return *v.result
+	}
 }
 
-func (v *Result[R]) ResetErr() *Result[R] {
+func (v *resultCore) Response() *RawResponse {
+	return v.response
+}
+
+func (v *resultCore) Header() *Header {
+	return getResponseHeader(v.response)
+}
+
+func (v *resultCore) Err() error {
+	return v.errors.ErrorOrNil()
+}
+
+func (v *resultCore) HeaderOrErr() (*Header, error) {
+	return v.Header(), v.Err()
+}
+
+func (v *resultCore) ResetErr() {
 	v.errors = errors.NewMultiError()
-	return v
 }
 
-func (v *Result[R]) AddErr(err error) *Result[R] {
+func (v *resultCore) AddErr(err error) {
 	v.errors.Append(err)
-	return v
 }
 
 func getResponseHeader(response *RawResponse) *Header {
