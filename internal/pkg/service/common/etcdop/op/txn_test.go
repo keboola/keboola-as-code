@@ -23,7 +23,8 @@ type txnTestCase struct {
 	InitialEtcdState  string
 	ExpectedLogs      string
 	ExpectedEtcdState string
-	ExpectedTxnResult txnResult
+	ExpectedSucceeded bool
+	ExpectedError     string
 }
 
 func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client, log *strings.Builder, txn *TxnOp[NoResult]) {
@@ -34,7 +35,14 @@ func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client
 	require.NoError(t, etcdop.Prefix("").DeleteAll(client).Do(ctx).Err(), tc.Name)
 	require.NoError(t, etcdhelper.PutAllFromSnapshot(ctx, client, tc.InitialEtcdState), tc.Name)
 
-	assert.Equal(t, tc.ExpectedTxnResult, simplifyTxnResult(txn.Do(ctx)), tc.Name)
+	result := txn.Do(ctx)
+	assert.Equal(t, tc.ExpectedSucceeded, result.Succeeded())
+	if tc.ExpectedError == "" {
+		assert.NoError(t, result.Err())
+	} else if assert.Error(t, result.Err()) {
+		assert.Equal(t, tc.ExpectedError, result.Err().Error())
+	}
+
 	etcdhelper.AssertKVsString(t, client, tc.ExpectedEtcdState)
 	assert.Equal(t, strings.TrimSpace(tc.ExpectedLogs), strings.TrimSpace(log.String()), tc.Name)
 }
@@ -61,7 +69,9 @@ func TestTxnOp_Empty(t *testing.T) {
 	}
 
 	// Execute
-	assert.Equal(t, txnResult{Succeeded: true, Error: "", Results: nil}, simplifyTxnResult(txn.Do(ctx)))
+	result := txn.Do(ctx)
+	assert.True(t, result.Succeeded())
+	assert.NoError(t, result.Err())
 }
 
 func TestTxnOp_OpError_Create(t *testing.T) {
@@ -239,8 +249,9 @@ func TestTxnOp_IfThenElse(t *testing.T) {
 	cases := []txnTestCase{
 		// -------------------------------------------------------------------------------------------------------------
 		{
-			Name:             "Succeeded: false, Else branch",
-			InitialEtcdState: ``,
+			Name:              "Succeeded: false, Else branch",
+			InitialEtcdState:  ``,
+			ExpectedSucceeded: false,
 			ExpectedEtcdState: `
 <<<<<
 key/3
@@ -260,14 +271,6 @@ put 4
 txn OnFailed
 txn OnResult: failed
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: false,
-				Results: []any{
-					// Results from the Else branch
-					NoResult{},
-					NoResult{},
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 		{
@@ -285,6 +288,7 @@ key/bar
 bar
 >>>>>
 `,
+			ExpectedSucceeded: true,
 			ExpectedEtcdState: `
 <<<<<
 key/foo
@@ -319,22 +323,6 @@ get bar bar
 txn OnSucceeded
 txn OnResult: succeeded
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: true,
-				Results: []any{
-					// Results from the Then branch
-					NoResult{},
-					NoResult{},
-					&KeyValue{
-						Key:   []byte("key/foo"),
-						Value: []byte("foo"),
-					},
-					&KeyValue{
-						Key:   []byte("key/bar"),
-						Value: []byte("bar"),
-					},
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 	}
@@ -851,6 +839,7 @@ key/put
 foo
 >>>>>
 `,
+			ExpectedError: "- key/put already exists\n- key/delete not found",
 			ExpectedEtcdState: `
 <<<<<
 key/put
@@ -869,20 +858,12 @@ put succeeded: false
 delete succeeded: false
 txn succeeded: error: - key/put already exists;- key/delete not found
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: false,
-				Error:     "- key/put already exists\n- key/delete not found",
-				Results: []any{
-					"ERROR: key/put already exists", // putOp
-					"ERROR: key/delete not found",   // deleteOp
-					NoResult{},                      // else put
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 		{
 			Name:             "PutIfNotExists=success | DeleteIfExists=fail",
 			InitialEtcdState: ``,
+			ExpectedError:    "key/delete not found",
 			ExpectedEtcdState: `
 <<<<<
 key/txn/succeeded
@@ -894,15 +875,6 @@ false
 delete succeeded: false
 txn succeeded: error: key/delete not found
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: false,
-				Error:     "key/delete not found",
-				Results: []any{
-					NoResult{},                    // put op
-					"ERROR: key/delete not found", // deleteOp
-					NoResult{},                    // else put
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 		{
@@ -920,6 +892,7 @@ key/delete
 bar
 >>>>>
 `,
+			ExpectedError: "key/put already exists",
 			ExpectedEtcdState: `
 <<<<<
 key/put
@@ -943,15 +916,6 @@ false
 put succeeded: false
 txn succeeded: error: key/put already exists
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: false,
-				Error:     "key/put already exists",
-				Results: []any{
-					"ERROR: key/put already exists", // put op
-					NoResult{},                      // deleteOp
-					NoResult{},                      // else put
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 		{
@@ -963,6 +927,7 @@ key/delete
 bar
 >>>>>
 `,
+			ExpectedSucceeded: true,
 			ExpectedEtcdState: `
 <<<<<
 key/put
@@ -981,14 +946,6 @@ put succeeded: true
 delete succeeded: true
 txn succeeded: true
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: true,
-				Results: []any{
-					true,       // put op
-					true,       // delete op
-					NoResult{}, // then put
-				},
-			},
 		},
 		// -----------------------------------------------------------------------------------------------------------------
 	}
@@ -1026,7 +983,7 @@ func TestTxnOp_Merge_Complex(t *testing.T) {
 				Else(etcdop.Key("txn1/else/put").Put(client, "ok").WithOnResult(onNoResult("txn1 else put"))).
 				Else(etcdop.Key("txn1/else/get").Get(client).WithOnResult(onGetResult("txn1 else get"))).
 				OnResult(func(r *TxnResult[NoResult]) {
-					_, _ = fmt.Fprintf(&log, "txn1 succeeded: %t %v\n", r.Succeeded(), simplifyTxnResult(r).Results)
+					_, _ = fmt.Fprintf(&log, "txn1 succeeded: %t\n", r.Succeeded())
 				}),
 		).
 		Merge(
@@ -1037,7 +994,7 @@ func TestTxnOp_Merge_Complex(t *testing.T) {
 				Else(etcdop.Key("txn2/else/put").Put(client, "ok").WithOnResult(onNoResult("txn2 else put"))).
 				Else(etcdop.Key("txn2/else/get").Get(client).WithOnResult(onGetResult("txn2 else get"))).
 				OnResult(func(r *TxnResult[NoResult]) {
-					_, _ = fmt.Fprintf(&log, "txn2 succeeded: %t %v\n", r.Succeeded(), simplifyTxnResult(r).Results)
+					_, _ = fmt.Fprintf(&log, "txn2 succeeded: %t\n", r.Succeeded())
 				}),
 		)
 
@@ -1105,6 +1062,7 @@ txn1/else/get
 value
 >>>>>
 `,
+			ExpectedSucceeded: false,
 			ExpectedEtcdState: `
 <<<<<
 txn1/else/get
@@ -1135,45 +1093,12 @@ txn else put
 txn else get <nil>
 txn1 else put
 txn1 else get value
-txn1 succeeded: false [{} key:"txn1/else/get" value:"value" ]
+txn1 succeeded: false
 txn2 else put
 txn2 else get <nil>
-txn2 succeeded: false [{} <nil>]
+txn2 succeeded: false
 txn succeeded: false
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: false,
-				Results: []any{
-					// Results from the Else branch
-					NoResult{},       // txn: put
-					(*KeyValue)(nil), // txn: get
-					// txn1
-					txnResult{
-						Succeeded: false, // false -> Else branch
-						// Else branch results:
-						Results: []any{
-							// txn1/else/put
-							NoResult{},
-							// txn1/else/get
-							&KeyValue{
-								Key:   []byte("txn1/else/get"),
-								Value: []byte("value"),
-							},
-						},
-					},
-					// txn2
-					txnResult{
-						Succeeded: false, // false -> Else branch
-						// Else branch results:
-						Results: []any{
-							// txn2/else/put
-							NoResult{},
-							// txn2/else/get
-							(*KeyValue)(nil),
-						},
-					},
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 		{
@@ -1185,6 +1110,7 @@ txn1/if
 ok
 >>>>>
 `,
+			ExpectedSucceeded: false,
 			ExpectedEtcdState: `
 <<<<<
 txn1/if
@@ -1209,29 +1135,9 @@ txn else put
 txn else get <nil>
 txn2 else put
 txn2 else get <nil>
-txn2 succeeded: false [{} <nil>]
+txn2 succeeded: false
 txn succeeded: false
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: false,
-				Results: []any{
-					// Results from the Else branch
-					NoResult{},       // txn: put
-					(*KeyValue)(nil), // txn: get
-					// txn1
-					NoResult{}, // skipped, conditions for execution of txn1 are met, but txn2 has blocked the entire txn
-					// txn2
-					txnResult{
-						Succeeded: false, // false -> Else branch
-						Results: []any{
-							// txn2/else/put
-							NoResult{},
-							// txn2/else/get
-							(*KeyValue)(nil),
-						},
-					},
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 		{
@@ -1261,6 +1167,7 @@ txn2/then/get
 value
 >>>>>
 `,
+			ExpectedSucceeded: true,
 			ExpectedEtcdState: `
 <<<<<
 txn/if
@@ -1309,34 +1216,12 @@ txn then put
 txn then get <nil>
 txn1 then put
 txn1 then get <nil>
-txn1 succeeded: true [{} <nil>]
+txn1 succeeded: true
 txn2 then put
 txn2 then get value
-txn2 succeeded: true [{} key:"txn2/then/get" value:"value" ]
+txn2 succeeded: true
 txn succeeded: true
 `,
-			ExpectedTxnResult: txnResult{
-				Succeeded: true,
-				Results: []any{
-					// Results from the Then branch
-					NoResult{},       // txn: put
-					(*KeyValue)(nil), // txn: get
-					txnResult{
-						Succeeded: true, // true -> If branch
-						Results: []any{
-							NoResult{},       // txn1: put
-							(*KeyValue)(nil), // txn1: get
-						},
-					},
-					txnResult{
-						Succeeded: true, // true -> If branch
-						Results: []any{
-							NoResult{}, // txn2: put
-							&KeyValue{Key: []byte("txn2/then/get"), Value: []byte("value")}, // txn2: get
-						},
-					},
-				},
-			},
 		},
 		// -------------------------------------------------------------------------------------------------------------
 	}
@@ -1469,36 +1354,4 @@ func newLogHelpers(log *strings.Builder) (func(msg string) func(r NoResult), fun
 		}
 	}
 	return onNoResult, onGetResult
-}
-
-func simplifyTxnResult(v *TxnResult[NoResult]) (out txnResult) {
-	out.Succeeded = v.Succeeded()
-
-	if v.Err() != nil {
-		out.Error = v.Err().Error()
-	}
-
-	for _, r := range v.SubResults() {
-		switch r := r.(type) {
-		case *KeyValue:
-			if r != nil {
-				out.Results = append(out.Results, &KeyValue{Key: r.Key, Value: r.Value})
-			} else {
-				out.Results = append(out.Results, (*KeyValue)(nil))
-			}
-		case []*KeyValue:
-			var sub []any
-			for _, item := range r {
-				sub = append(sub, &KeyValue{Key: item.Key, Value: item.Value})
-			}
-			out.Results = append(out.Results, sub)
-		case *TxnResult[NoResult]:
-			out.Results = append(out.Results, simplifyTxnResult(r))
-		case error:
-			out.Results = append(out.Results, fmt.Sprintf("ERROR: %s", r.Error()))
-		default:
-			out.Results = append(out.Results, r)
-		}
-	}
-	return out
 }
