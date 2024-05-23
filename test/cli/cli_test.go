@@ -2,8 +2,11 @@
 package cli
 
 import (
+	"os"
 	"testing"
 
+	// enables caching of binary.
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
 )
@@ -12,7 +15,10 @@ import (
 func TestCliE2E(t *testing.T) {
 	t.Parallel()
 
-	binaryPath := testhelper.CompileBinary(t, "cli", "build-local")
+	binaryPath := os.Getenv("TEST_BINARY_PATH")
+	if binaryPath == "" {
+		binaryPath = testhelper.CompileBinary(t, "cli", "build-local")
+	}
 
 	runner.
 		NewRunner(t).

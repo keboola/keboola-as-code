@@ -640,6 +640,10 @@ func (t *Test) assertProjectState() {
 		err = t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualState, true)))
 		assert.NoError(t.t, err)
 
+		tm := time.Unix(1, 0).Local()
+		// this prevents file too new check when go caching, updates modtime of actual-state.json
+		err = os.Chtimes(t.workingDirFS.BasePath()+"/actual-state.json", tm, tm) // nolint:forbidigo
+		assert.NoError(t.t, err)
 		// Compare expected and actual state
 		wildcards.Assert(
 			t.t,
