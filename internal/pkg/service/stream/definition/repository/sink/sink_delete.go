@@ -14,12 +14,13 @@ import (
 
 func (r *Repository) SoftDelete(k key.SinkKey, now time.Time, by definition.By) *op.AtomicOp[definition.Sink] {
 	var deleted definition.Sink
-	return op.Atomic(r.client, &deleted).
+	return op.
+		Atomic(r.client, &deleted).
 		AddFrom(r.
 			softDeleteAllFrom(k, now, by, true).
-			OnResult(func(r []definition.Sink) {
-				if len(r) == 1 {
-					deleted = r[0]
+			OnResult(func(sinks []definition.Sink) {
+				if len(sinks) == 1 {
+					deleted = sinks[0]
 				}
 			}))
 }
