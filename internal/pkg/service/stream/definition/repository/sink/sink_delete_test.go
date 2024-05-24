@@ -75,8 +75,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 	// Get - not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		err := repo.Get(sinkKey).Do(ctx).Err()
-		if assert.Error(t, err) {
+		if err := repo.Get(sinkKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink" not found in the source`, err.Error())
 		}
 	}
