@@ -53,9 +53,11 @@ func TestSinkRepository_Undelete(t *testing.T) {
 
 	// Undelete - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := repo.Undelete(sinkKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `deleted sink "my-sink" not found in the source`, err.Error())
-		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+	{
+		if err := repo.Undelete(sinkKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `deleted sink "my-sink" not found in the source`, err.Error())
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+		}
 	}
 
 	// Create - ok
