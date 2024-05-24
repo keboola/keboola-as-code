@@ -46,9 +46,11 @@ func TestSinkRepository_Enable(t *testing.T) {
 
 	// Enable - not found
 	// -----------------------------------------------------------------------------------------------------------------
-	if err := repo.Enable(sinkKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
-		assert.Equal(t, `sink "my-sink" not found in the source`, err.Error())
-		serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+	{
+		if err := repo.Enable(sinkKey, now, by).Do(ctx).Err(); assert.Error(t, err) {
+			assert.Equal(t, `sink "my-sink" not found in the source`, err.Error())
+			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
+		}
 	}
 
 	// Create - ok
