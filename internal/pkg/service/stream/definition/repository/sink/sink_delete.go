@@ -32,7 +32,7 @@ func (r *Repository) deleteSinksOnSourceDelete() {
 }
 
 // softDeleteAllFrom the parent key.
-func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, deletedWithParent bool) *op.AtomicOp[[]definition.Sink] {
+func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by definition.By, directly bool) *op.AtomicOp[[]definition.Sink] {
 	var allOriginal, allDeleted []definition.Sink
 	atomicOp := op.Atomic(r.client, &allDeleted)
 
@@ -56,7 +56,7 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by
 
 			// Mark deleted
 			deleted := deepcopy.Copy(old).(definition.Sink)
-			deleted.Delete(now, by, deletedWithParent)
+			deleted.Delete(now, by, directly)
 
 			// Save
 			txn.Merge(r.save(ctx, now, by, &old, &deleted))
