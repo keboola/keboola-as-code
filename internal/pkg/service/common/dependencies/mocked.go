@@ -375,6 +375,8 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 		etcdCfg := cfg.etcdConfig
 		if cfg.etcdDebugLog {
 			etcdCfg.DebugLog = true
+		} else {
+			etcdCfg.DebugLog = etcdhelper.VerboseTestLogs()
 		}
 
 		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, etcdCfg)
