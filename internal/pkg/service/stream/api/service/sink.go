@@ -10,16 +10,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
 //nolint:dupl // CreateSource method is similar
@@ -235,64 +232,27 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
 	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
-		out := &stream.SinkFile{
-			State:       value.State,
-			OpenedAt:    value.OpenedAt().String(),
-			ClosingAt:   timeToString(value.ClosingAt),
-			ImportingAt: timeToString(value.ImportingAt),
-			ImportedAt:  timeToString(value.ImportedAt),
-			Statistics: &stream.SinkFileStatistics{
-				Levels: &stream.Levels{
-					Local:   &stream.Level{},
-					Staging: &stream.Level{},
-					Target:  &stream.Level{},
-				},
-				Total: &stream.Level{},
-			},
-		}
-
-		if value.RetryAttempt > 0 {
-			out.RetryAttempt = ptr.Ptr(value.RetryAttempt)
-			out.RetryReason = ptr.Ptr(value.RetryReason)
-			out.RetryAfter = ptr.Ptr(value.RetryAfter.String())
-		}
-
-		filesMap[value.FileID] = out
+		filesMap[value.FileID] = s.mapper.NewSinkFile(value)
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Sort keys lexicographically
-	keys := maps.Keys(filesMap)
-	slices.SortStableFunc(keys, func(a, b model.FileID) int {
-		return strings.Compare(a.String(), b.String())
-	})
+	if len(filesMap) > 0 {
+		// Sort keys lexicographically
+		keys := maps.Keys(filesMap)
+		slices.SortStableFunc(keys, func(a, b model.FileID) int {
+			return strings.Compare(a.String(), b.String())
+		})
 
-	if len(keys) > 0 {
 		statisticsMap, err := d.StatisticsRepository().FilesStats(d.SinkKey(), keys[0], keys[len(keys)-1]).Do(ctx).ResultOrErr()
 		if err != nil {
 			return nil, err
 		}
 
-		for k, aggregated := range statisticsMap {
-			assignStatistics(filesMap[k].Statistics.Total, aggregated.Total)
-			assignStatistics(filesMap[k].Statistics.Levels.Local, aggregated.Local)
-			assignStatistics(filesMap[k].Statistics.Levels.Staging, aggregated.Staging)
-			assignStatistics(filesMap[k].Statistics.Levels.Target, aggregated.Target)
-		}
-
-		for _, file := range filesMap {
-			if file.Statistics.Levels.Local.RecordsCount == 0 {
-				file.Statistics.Levels.Local = nil
-			}
-			if file.Statistics.Levels.Staging.RecordsCount == 0 {
-				file.Statistics.Levels.Staging = nil
-			}
-			if file.Statistics.Levels.Target.RecordsCount == 0 {
-				file.Statistics.Levels.Target = nil
-			}
+		for key, aggregated := range statisticsMap {
+			filesMap[key].Statistics = s.mapper.NewSinkFileStatistics(aggregated)
 		}
 	}
 
@@ -311,19 +271,4 @@ func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
 
 func (s *service) sinkMustExists(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().ExistsOrErr(k).Do(ctx).Err()
-}
-
-func assignStatistics(levelStatistics *stream.Level, levelValue statistics.Value) {
-	levelStatistics.FirstRecordAt = timeToString(&levelValue.FirstRecordAt)
-	levelStatistics.LastRecordAt = timeToString(&levelValue.LastRecordAt)
-	levelStatistics.RecordsCount = levelValue.RecordsCount
-	levelStatistics.UncompressedSize = uint64(levelValue.UncompressedSize)
-}
-
-func timeToString(time *utctime.UTCTime) *string {
-	if time == nil || time.IsZero() {
-		return nil
-	}
-
-	return ptr.Ptr(time.String())
 }
