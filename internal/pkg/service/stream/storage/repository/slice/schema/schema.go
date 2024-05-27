@@ -24,7 +24,7 @@ type (
 	SliceInObject Slice
 )
 
-func ForSlice(s *serde.Serde) Slice {
+func New(s *serde.Serde) Slice {
 	return Slice{PrefixT: etcdop.NewTypedPrefix[model.Slice]("storage/slice", s)}
 }
 
