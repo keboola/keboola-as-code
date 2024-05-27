@@ -53,8 +53,6 @@ func (r *Repository) softDeleteAllFrom(parentKey fmt.Stringer, now time.Time, by
 	atomicOp.Write(func(ctx context.Context) op.Op {
 		txn := op.Txn(r.client)
 		for _, old := range allOriginal {
-			old := old
-
 			// Mark deleted
 			deleted := deepcopy.Copy(old).(definition.Sink)
 			deleted.Delete(now, by, directly)
