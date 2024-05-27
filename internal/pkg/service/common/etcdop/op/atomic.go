@@ -56,8 +56,13 @@ type Mutex interface {
 func Atomic[R any](client etcd.KV, result *R) *AtomicOp[R] {
 	v := &AtomicOp[R]{AtomicOpCore: newAtomicCore(client), result: result}
 	v.setProcessorFactory(func() func(ctx context.Context, r *TxnResult[NoResult]) {
+		// Invoke processors only if the transaction succeeded and there is no collision.
+		// Otherwise, succeeded == false, the processors are skipped,
+		// because the atomic operation is retried due to a collision or an etcd error, see AtomicOp.Do method.
 		return func(ctx context.Context, r *TxnResult[NoResult]) {
-			v.processors.invoke(ctx, newResult(r.Response(), v.result))
+			if r.Err() != nil || r.Succeeded() {
+				v.processors.invoke(ctx, newResult(r.Response(), v.result))
+			}
 		}
 	})
 	return v
