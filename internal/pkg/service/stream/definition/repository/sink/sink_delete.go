@@ -27,7 +27,7 @@ func (r *Repository) SoftDelete(k key.SinkKey, now time.Time, by definition.By) 
 
 func (r *Repository) deleteSinksOnSourceDelete() {
 	r.plugins.Collection().OnSourceDelete(func(ctx context.Context, now time.Time, by definition.By, original, deleted *definition.Source) error {
-		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(deleted.SourceKey, now, by, false))
+		op.AtomicOpFromCtx(ctx).AddFrom(r.softDeleteAllFrom(deleted.SourceKey, now, by, false))
 		return nil
 	})
 }
