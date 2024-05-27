@@ -14,7 +14,7 @@ import (
 
 func TestFileSchema(t *testing.T) {
 	t.Parallel()
-	s := ForFile(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 
 	fileKey := test.NewFileKey()
 
