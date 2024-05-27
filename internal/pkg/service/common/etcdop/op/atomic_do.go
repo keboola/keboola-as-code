@@ -11,34 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const (
-	actualAtomicOpCtxKey  = ctxKey("actualAtomicOp")
-	atomicOpMaxReadLevels = 10
-)
-
-type ctxKey string
-
-// actualAtomicOp - aux struct, part of the context, to provide actual atomic operation to be extended.
-type actualAtomicOp struct {
-	Value  *AtomicOpCore
-	Closed bool
-}
-
-// AtomicFromCtx gets actual atomic operation from the context.
-//
-// It can be used to add some additional READ operations based on result from a previous READ operation.
-// See AtomicOp.Do method and TestAtomicFromCtx_Complex for details.
-func AtomicFromCtx(ctx context.Context) *AtomicOpCore {
-	actualOp, ok := ctx.Value(actualAtomicOpCtxKey).(*actualAtomicOp)
-	if !ok {
-		panic(errors.New("no atomic operation found in the context"))
-	}
-	if actualOp.Closed {
-		panic(errors.New("atomic operation in the context is closed"))
-	}
-	return actualOp.Value
-}
-
 func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	b := newBackoff(opts...)
 	attempt := 0
@@ -77,6 +49,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 	level := 0
 	firstReadRevision := int64(0)
 	tracker := NewTracker(v.client)
+	store := newAtomicOpStore()
 
 	currentLevel := v.Core()
 	writeTxn := TxnWithResult(v.client, v.result)
@@ -92,7 +65,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 		}
 
 		// Create a new empty container: for operations generated during the processing of the current level
-		nextLevel := &actualAtomicOp{Value: currentLevel.newEmpty()}
+		nextLevel := newActualAtomicOp(currentLevel.newEmpty(), store)
 
 		// Invoke current read level and merge generated partial write txn
 		ctx := context.WithValue(ctx, actualAtomicOpCtxKey, nextLevel)
@@ -107,8 +80,8 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 
 		// Go to the next level
 		level++
-		nextLevel.Closed = true // no operation can be added more
-		currentLevel = nextLevel.Value
+		nextLevel.close() // no operation can be added more
+		currentLevel = nextLevel.Core()
 	}
 
 	writeTxn.If(v.writeIfConditions(tracker, firstReadRevision)...)
