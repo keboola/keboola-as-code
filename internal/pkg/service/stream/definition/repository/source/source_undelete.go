@@ -70,18 +70,18 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by d
 			}
 
 			// Mark undeleted
-			created := deepcopy.Copy(old).(definition.Source)
-			created.Undelete(now, by)
+			undeleted := deepcopy.Copy(old).(definition.Source)
+			undeleted.Undelete(now, by)
 
 			// Create a new version record, if the entity has been undeleted directly
 			if directly {
 				versionDescription := fmt.Sprintf(`Undeleted to version "%d".`, old.Version.Number)
-				created.IncrementVersion(created, now, by, versionDescription)
+				undeleted.IncrementVersion(undeleted, now, by, versionDescription)
 			}
 
 			// Save
-			txn.Merge(r.save(ctx, now, by, &old, &created))
-			allCreated = append(allCreated, created)
+			txn.Merge(r.save(ctx, now, by, &old, &undeleted))
+			allCreated = append(allCreated, undeleted)
 		}
 		return txn
 	})
