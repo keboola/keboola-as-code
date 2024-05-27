@@ -26,10 +26,8 @@ func (r *Repository) Enable(k key.SinkKey, now time.Time, by definition.By) *op.
 }
 
 func (r *Repository) enableSinksOnSourceEnable() {
-	r.plugins.Collection().OnSourceSave(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) error {
-		if updated.IsEnabledAt(now) {
-			op.AtomicFromCtx(ctx).AddFrom(r.enableAllFrom(updated.SourceKey, now, by, false))
-		}
+	r.plugins.Collection().OnSourceEnabled(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Source) error {
+		op.AtomicOpFromCtx(ctx).AddFrom(r.enableAllFrom(sink.SourceKey, now, by, false))
 		return nil
 	})
 }
@@ -69,8 +67,9 @@ func (r *Repository) enableAllFrom(parentKey fmt.Stringer, now time.Time, by def
 			}
 
 			// Save
-			txn.Merge(r.save(ctx, now, by, &original, &enabled))
-			allEnabled = append(allEnabled, enabled)
+			txn.Merge(r.save(ctx, now, by, &original, &enabled).OnSucceeded(func(r *op.TxnResult[definition.Sink]) {
+				allEnabled = append(allEnabled, r.Result())
+			}))
 		}
 		return txn
 	})
