@@ -33,11 +33,11 @@ func (r *Repository) Version(k key.SourceKey, version definition.VersionNumber) 
 
 func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, by definition.By, to definition.VersionNumber) *op.AtomicOp[definition.Source] {
 	var updated definition.Source
-	var latest, targetVersion *op.KeyValueT[definition.Source]
+	var latestVersion, targetVersion *op.KeyValueT[definition.Source]
 	return op.Atomic(r.client, &updated).
 		// Get latest version to calculate next version number
 		Read(func(ctx context.Context) op.Op {
-			return r.schema.Versions().Of(k).GetOne(r.client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).WithResultTo(&latest)
+			return r.schema.Versions().Of(k).GetOne(r.client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).WithResultTo(&latestVersion)
 		}).
 		// Get target version
 		Read(func(ctx context.Context) op.Op {
@@ -45,17 +45,17 @@ func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, by definiti
 		}).
 		Write(func(ctx context.Context) op.Op {
 			// Return the most significant error
-			if latest == nil {
+			if latestVersion == nil {
 				return op.ErrorOp(serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch"))
 			} else if targetVersion == nil {
 				return op.ErrorOp(serviceError.NewResourceNotFoundError("source version", k.SourceID.String()+"/"+to.String(), "branch"))
 			}
 
 			// Prepare the new value
+			old := latestVersion.Value
 			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
-			old := targetVersion.Value
-			updated = deepcopy.Copy(old).(definition.Source)
-			updated.Version = latest.Value.Version
+			updated = deepcopy.Copy(targetVersion.Value).(definition.Source)
+			updated.Version = latestVersion.Value.Version
 			updated.IncrementVersion(updated, now, by, versionDescription)
 			return r.save(ctx, now, by, &old, &updated)
 		})
