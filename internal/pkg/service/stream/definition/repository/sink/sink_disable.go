@@ -54,8 +54,6 @@ func (r *Repository) disableAllFrom(parentKey fmt.Stringer, now time.Time, by de
 	atomicOp.Write(func(ctx context.Context) op.Op {
 		txn := op.Txn(r.client)
 		for _, original := range allOriginal {
-			original := original
-
 			if original.IsDisabled() {
 				continue
 			}

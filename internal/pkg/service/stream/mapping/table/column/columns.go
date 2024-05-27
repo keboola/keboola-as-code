@@ -28,8 +28,6 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 	var items []json.RawMessage
 
 	for _, column := range v {
-		column := column
-
 		typ := column.ColumnType()
 
 		typeJSON, err := json.Marshal(typ)
