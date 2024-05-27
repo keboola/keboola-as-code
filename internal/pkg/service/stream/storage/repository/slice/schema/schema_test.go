@@ -14,7 +14,7 @@ import (
 
 func TestSliceSchema(t *testing.T) {
 	t.Parallel()
-	s := ForSlice(serde.NewJSON(serde.NoValidation))
+	s := New(serde.NewJSON(serde.NoValidation))
 
 	sliceKey := test.NewSliceKey()
 
