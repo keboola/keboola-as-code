@@ -26,7 +26,7 @@ func (r *Repository) SoftDelete(k key.SourceKey, now time.Time, by definition.By
 
 func (r *Repository) deleteSourcesOnBranchDelete() {
 	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, original, deleted *definition.Branch) error {
-		op.AtomicFromCtx(ctx).AddFrom(r.softDeleteAllFrom(deleted.BranchKey, now, by, false))
+		op.AtomicOpFromCtx(ctx).AddFrom(r.softDeleteAllFrom(deleted.BranchKey, now, by, false))
 		return nil
 	})
 }

@@ -27,7 +27,7 @@ import (
 //
 // Retries on network errors are always performed.
 //
-// The atomic operation can be read from the context during generation to be extended, see AtomicFromCtx function.
+// The atomic operation can be read from the context during generation to be extended, see AtomicOpFromCtx function.
 // This can lead to several subsequent READ phases, but there is always only one WRITE phase, after all READ phases.
 type AtomicOp[R any] struct {
 	*AtomicOpCore
