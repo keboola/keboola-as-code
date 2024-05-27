@@ -92,6 +92,27 @@ func TestSinkRepository_Enable(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, sink.IsEnabled())
 		assert.True(t, sink.IsEnabledAt(now))
+		assert.Equal(t, definition.VersionNumber(3), sink.VersionNumber())
+	}
+
+	// Rollback to the disabled state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		now = now.Add(time.Hour)
+		sink, err := repo.RollbackVersion(sinkKey, now, by, 2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink.IsDisabled())
+		assert.Equal(t, definition.VersionNumber(4), sink.VersionNumber())
+	}
+
+	// Rollback to the enabled state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		now = now.Add(time.Hour)
+		sink, err := repo.RollbackVersion(sinkKey, now, by, 3).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink.IsEnabled())
+		assert.Equal(t, definition.VersionNumber(5), sink.VersionNumber())
 	}
 }
 
@@ -258,5 +279,31 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.True(t, sink3.IsEnabled())
+	}
+
+	// Rollback Source to the disabled state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		now = now.Add(time.Hour)
+		source, err := d.DefinitionRepository().Source().RollbackVersion(sourceKey, now, by, 2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, definition.VersionNumber(4), source.Version.Number)
+		assert.True(t, source.IsDisabled())
+	}
+	{
+		var err error
+
+		// Sink1 has been disabled before the Source has been disabled, so it remains disabled.
+		sink1, err = repo.Get(sinkKey1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink1.IsDisabled())
+
+		// Sink2 and Sink2 are disabled
+		sink2, err = repo.Get(sinkKey2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink2.IsDisabled())
+		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink3.IsDisabled())
 	}
 }
