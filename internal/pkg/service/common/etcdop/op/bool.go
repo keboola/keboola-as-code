@@ -9,7 +9,7 @@ import (
 type BoolOp = WithResult[bool]
 
 // BoolMapper converts an etcd response to true/false value.
-type BoolMapper func(ctx context.Context, r RawResponse) (bool, error)
+type BoolMapper func(ctx context.Context, r *RawResponse) (bool, error)
 
 // NewBoolOp wraps an operation, the result of which us true/false value.
 // True means success of the operation.

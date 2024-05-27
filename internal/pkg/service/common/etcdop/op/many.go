@@ -9,10 +9,10 @@ import (
 type GetManyOp = WithResult[[]*KeyValue]
 
 // GetManyMapper converts an etcd response to slice of KVs.
-type GetManyMapper func(ctx context.Context, raw RawResponse) ([]*KeyValue, error)
+type GetManyMapper func(ctx context.Context, raw *RawResponse) ([]*KeyValue, error)
 
 // GetManyTMapper converts an etcd response to slice of KVs of the type T.
-type GetManyTMapper[T any] func(ctx context.Context, raw RawResponse) (KeyValuesT[T], error)
+type GetManyTMapper[T any] func(ctx context.Context, raw *RawResponse) (KeyValuesT[T], error)
 
 // NewGetManyOp wraps an operation, the result of which is zero or multiple KV pairs.
 func NewGetManyOp(client etcd.KV, factory LowLevelFactory, mapper GetManyMapper) GetManyOp {

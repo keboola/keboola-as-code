@@ -97,7 +97,7 @@ func (v Definition) CountAll(opts ...etcd.OpOption) op.CountOp {
 			opts = append([]etcd.OpOption{etcd.WithRange(v.config.end()), etcd.WithCountOnly()}, opts...)
 			return etcd.OpGet(v.config.start(), opts...), nil
 		},
-		func(ctx context.Context, raw op.RawResponse) (int64, error) {
+		func(ctx context.Context, raw *op.RawResponse) (int64, error) {
 			return raw.Get().Count, nil
 		},
 	)
@@ -121,7 +121,7 @@ func (v *ForEach) Op(ctx context.Context) (op.LowLevelOp, error) {
 
 	return op.LowLevelOp{
 		Op: firstPageOp.Op,
-		MapResponse: func(ctx context.Context, response op.RawResponse) (result any, err error) {
+		MapResponse: func(ctx context.Context, response *op.RawResponse) (result any, err error) {
 			// Create iterator, see comment above.
 			itr := v.def.Do(ctx, response.Options...).OnPage(v.onPage...)
 			itr.client = response.Client
@@ -351,7 +351,7 @@ func nextPageOp(client etcd.KV, start, end string, sort etcd.SortOrder, pageSize
 		func(ctx context.Context) (etcd.Op, error) {
 			return etcd.OpGet(start, opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) ([]*op.KeyValue, error) {
+		func(_ context.Context, raw *op.RawResponse) ([]*op.KeyValue, error) {
 			return raw.Get().Kvs, nil
 		},
 	)

@@ -83,7 +83,7 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 		return etcd.OpGet("key"), nil
 	}
 
-	mapper := func(ctx context.Context, raw op.RawResponse) (result string, err error) {
+	mapper := func(ctx context.Context, raw *op.RawResponse) (result string, err error) {
 		if response := raw.Get(); response != nil {
 			if len(response.Kvs) == 1 {
 				return string(raw.Get().Kvs[0].Value), nil
@@ -209,7 +209,7 @@ func TestOpForType_WithProcessorMethods_Pointer(t *testing.T) {
 		return etcd.OpGet("key"), nil
 	}
 
-	mapper := func(ctx context.Context, raw op.RawResponse) (result *testValue, err error) {
+	mapper := func(ctx context.Context, raw *op.RawResponse) (result *testValue, err error) {
 		if response := raw.Get(); response != nil {
 			if len(response.Kvs) == 1 {
 				value := &testValue{}

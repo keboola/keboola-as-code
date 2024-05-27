@@ -77,7 +77,7 @@ func (v Prefix) AtLeastOneExists(client etcd.KV, opts ...etcd.OpOption) op.BoolO
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCountOnly()}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (bool, error) {
+		func(_ context.Context, raw *op.RawResponse) (bool, error) {
 			return raw.Get().Count > 0, nil
 		},
 	)
@@ -90,7 +90,7 @@ func (v Prefix) Count(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 			opts = append([]etcd.OpOption{etcd.WithCountOnly(), etcd.WithPrefix()}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (int64, error) {
+		func(_ context.Context, raw *op.RawResponse) (int64, error) {
 			return raw.Get().Count, nil
 		},
 	)
@@ -103,7 +103,7 @@ func (v Prefix) GetOne(client etcd.KV, opts ...etcd.OpOption) op.GetOneOp {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(ctx context.Context, raw op.RawResponse) (*op.KeyValue, error) {
+		func(ctx context.Context, raw *op.RawResponse) (*op.KeyValue, error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(raw.Get().Kvs)
 			switch count {
@@ -129,7 +129,7 @@ func (v Prefix) DeleteAll(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 			return etcd.OpDelete(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (int64, error) {
+		func(_ context.Context, raw *op.RawResponse) (int64, error) {
 			return raw.Del().Deleted, nil
 		},
 	)
@@ -142,7 +142,7 @@ func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.WithResult[
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(ctx context.Context, raw op.RawResponse) (*op.KeyValueT[T], error) {
+		func(ctx context.Context, raw *op.RawResponse) (*op.KeyValueT[T], error) {
 			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(raw.Get().Kvs)
 			switch count {

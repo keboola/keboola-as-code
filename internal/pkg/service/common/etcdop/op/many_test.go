@@ -20,7 +20,7 @@ func TestGetManyOp(t *testing.T) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil
 	}
 
-	mapper := func(ctx context.Context, raw RawResponse) ([]*KeyValue, error) {
+	mapper := func(ctx context.Context, raw *RawResponse) ([]*KeyValue, error) {
 		return raw.Get().Kvs, nil
 	}
 
@@ -56,7 +56,7 @@ func TestGetManyTOp(t *testing.T) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil
 	}
 
-	mapper := func(ctx context.Context, raw RawResponse) (KeyValuesT[Data], error) {
+	mapper := func(ctx context.Context, raw *RawResponse) (KeyValuesT[Data], error) {
 		kvs := raw.Get().Kvs
 		data := make(KeyValuesT[Data], 0, len(kvs))
 		for _, kv := range kvs {
