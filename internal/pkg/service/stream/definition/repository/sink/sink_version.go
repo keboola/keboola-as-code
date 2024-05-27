@@ -52,9 +52,9 @@ func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, by definition
 			}
 
 			// Prepare the new value
+			old := latestVersion.Value
 			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
-			old := targetVersion.Value
-			updated = deepcopy.Copy(old).(definition.Sink)
+			updated = deepcopy.Copy(targetVersion.Value).(definition.Sink)
 			updated.Version = latestVersion.Value.Version
 			updated.IncrementVersion(updated, now, by, versionDescription)
 			return r.save(ctx, now, by, &old, &updated)

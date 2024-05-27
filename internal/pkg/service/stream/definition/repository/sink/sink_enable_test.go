@@ -229,14 +229,18 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Source().Disable(sourceKey, now, by, "Reason").Do(ctx).Err())
+		source, err := d.DefinitionRepository().Source().Disable(sourceKey, now, by, "Reason").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, definition.VersionNumber(2), source.Version.Number)
 	}
 
 	// Enable Source
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Source().Enable(sourceKey, now, by).Do(ctx).Err())
+		source, err := d.DefinitionRepository().Source().Enable(sourceKey, now, by).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, definition.VersionNumber(3), source.Version.Number)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_004.txt", ignoredEtcdKeys)
 	}
 	{
@@ -250,9 +254,9 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 		// Sink2 and Sink2 are enabled
 		sink2, err = repo.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink2.IsDisabled())
+		assert.True(t, sink2.IsEnabled())
 		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink3.IsDisabled())
+		assert.True(t, sink3.IsEnabled())
 	}
 }
