@@ -1,0 +1,51 @@
+// READ - the file to be marked as imported
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+
+✔️  TXN | succeeded: true
+
+// READ - slices from the file
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
+
+✔️  TXN | succeeded: true
+
+// READ - get statistics to be moved
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+
+✔️  TXN | succeeded: true
+
+➡️  TXN
+  // Objects from the READ phase must be unchanged
+  ➡️  IF:
+  001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  002 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  003 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  004 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD LESS %d
+  005 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD GREATER 0
+  006 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD LESS %d
+  007 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  008 "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD EQUAL 0
+  ➡️  THEN:
+  // Mark file and slice as imported, move stats
+  001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/file/level/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  003 ➡️  DEL "storage/file/level/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  004 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  005 ➡️  PUT "storage/slice/level/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  006 ➡️  DEL "storage/slice/level/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  ➡️  ELSE:
+  // File doesn't exist error message
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  // Slice doesn't exist error message
+  002 ➡️  TXN
+  002   ➡️  IF:
+  002   001 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+✔️  TXN | succeeded: true
+
