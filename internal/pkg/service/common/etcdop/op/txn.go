@@ -254,7 +254,7 @@ func (v *lowLevelTxn[R]) Op(_ context.Context) (LowLevelOp, error) {
 func (v *lowLevelTxn[R]) op() LowLevelOp {
 	return LowLevelOp{
 		Op: etcd.OpTxn(v.ifs, v.thenOps, v.elseOps),
-		MapResponse: func(ctx context.Context, raw RawResponse) (result any, err error) {
+		MapResponse: func(ctx context.Context, raw *RawResponse) (result any, err error) {
 			txnResult := v.mapResponse(ctx, raw)
 			return txnResult, txnResult.Err()
 		},
@@ -428,7 +428,7 @@ func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 	return nil
 }
 
-func (v *lowLevelTxn[R]) mapResponse(ctx context.Context, raw RawResponse) *TxnResult[R] {
+func (v *lowLevelTxn[R]) mapResponse(ctx context.Context, raw *RawResponse) *TxnResult[R] {
 	// Map transaction response
 	r := newTxnResult(&raw, v.result)
 	r.succeeded = raw.Txn().Succeeded

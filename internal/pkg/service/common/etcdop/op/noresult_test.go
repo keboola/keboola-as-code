@@ -19,7 +19,7 @@ func TestNoResultOp(t *testing.T) {
 		return etcd.OpGet("test"), nil
 	}
 
-	mapper := func(ctx context.Context, raw RawResponse) error {
+	mapper := func(ctx context.Context, raw *RawResponse) error {
 		return nil
 	}
 
