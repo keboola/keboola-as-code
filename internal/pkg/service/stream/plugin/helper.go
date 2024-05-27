@@ -1,50 +1,43 @@
 package plugin
 
 import (
-	"time"
+	"reflect"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
-func isDeletedNow(now time.Time, updated definition.SoftDeletableInterface) bool {
-	return updated.DeletedAt().Time().Equal(now)
+func isCreatedNow(original any) bool {
+	return reflect.ValueOf(original).IsNil()
 }
 
-func isUndeletedNow(now time.Time, updated definition.SoftDeletableInterface) bool {
-	return updated.UndeletedAt().Time().Equal(now)
+func isDeletedNow(original, updated any) bool {
+	o, ok1 := original.(definition.SoftDeletableInterface)
+	u, ok2 := updated.(definition.SoftDeletableInterface)
+	return !reflect.ValueOf(original).IsNil() && ok1 && ok2 && !o.IsDeleted() && u.IsDeleted()
 }
 
-func isActivatedNow(now time.Time, updated definition.SwitchableInterface) bool {
-	var created bool
-	if v, ok := updated.(definition.CreatedInterface); ok {
-		created = v.CreatedAt().Time().Equal(now)
-	}
-
-	var undeleted bool
-	if v, ok := updated.(definition.SoftDeletableInterface); ok {
-		undeleted = isUndeletedNow(now, v)
-	}
-
-	var enabled bool
-	{
-		at := updated.EnabledAt()
-		enabled = at != nil && at.Time().Equal(now)
-	}
-
-	return created || undeleted || enabled
+func isUndeletedNow(original, updated any) bool {
+	o, ok1 := original.(definition.SoftDeletableInterface)
+	u, ok2 := updated.(definition.SoftDeletableInterface)
+	return !reflect.ValueOf(original).IsNil() && ok1 && ok2 && o.IsDeleted() && !u.IsDeleted()
 }
 
-func isDeactivatedNow(now time.Time, updated definition.SwitchableInterface) bool {
-	var deleted bool
-	if v, ok := updated.(definition.SoftDeletableInterface); ok {
-		deleted = isDeletedNow(now, v)
-	}
+func isEnabledNow(original, updated any) bool {
+	o, ok1 := original.(definition.SwitchableInterface)
+	u, ok2 := updated.(definition.SwitchableInterface)
+	return !reflect.ValueOf(original).IsNil() && ok1 && ok2 && o.IsDisabled() && u.IsEnabled()
+}
 
-	var disabled bool
-	{
-		at := updated.DisabledAt()
-		disabled = at != nil && at.Time().Equal(now)
-	}
+func isDisabledNow(original, updated any) bool {
+	o, ok1 := original.(definition.SwitchableInterface)
+	u, ok2 := updated.(definition.SwitchableInterface)
+	return !reflect.ValueOf(original).IsNil() && ok1 && ok2 && o.IsEnabled() && u.IsDisabled()
+}
 
-	return deleted || disabled
+func isActivatedNow(original, updated any) bool {
+	return isCreatedNow(original) || isUndeletedNow(original, updated) || isEnabledNow(original, updated)
+}
+
+func isDeactivatedNow(original, updated any) bool {
+	return isDeletedNow(original, updated) || isDisabledNow(original, updated)
 }
