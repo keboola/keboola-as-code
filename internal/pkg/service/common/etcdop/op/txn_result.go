@@ -17,7 +17,7 @@ func newErrorTxnResult[R any](err error) *TxnResult[R] {
 }
 
 func (v *TxnResult[R]) Succeeded() bool {
-	return v.response != nil && v.response.Txn().Succeeded
+	return v.response != nil && v.response.Txn() != nil && v.response.Txn().Succeeded
 }
 
 func (v *TxnResult[R]) ResultOrErr() (R, error) {
