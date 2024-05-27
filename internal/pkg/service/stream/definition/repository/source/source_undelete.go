@@ -63,8 +63,6 @@ func (r *Repository) undeleteAllFrom(parentKey fmt.Stringer, now time.Time, by d
 	atomicOp.Write(func(ctx context.Context) op.Op {
 		txn := op.Txn(r.client)
 		for _, old := range allOld {
-			old := old
-
 			if old.Deleted.Directly != directly {
 				continue
 			}
