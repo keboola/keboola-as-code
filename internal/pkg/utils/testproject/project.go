@@ -365,8 +365,6 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 	errs := errors.NewMultiError()
 
 	for _, fixture := range files {
-		fixture := fixture
-
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -429,8 +427,6 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	errs := errors.NewMultiError()
 
 	for _, fixture := range sandboxes {
-		fixture := fixture
-
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
