@@ -24,7 +24,7 @@ type (
 	FileInObject File
 )
 
-func ForFile(s *serde.Serde) File {
+func New(s *serde.Serde) File {
 	return File{PrefixT: etcdop.NewTypedPrefix[model.File]("storage/file", s)}
 }
 
