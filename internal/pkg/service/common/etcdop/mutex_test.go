@@ -194,8 +194,6 @@ func TestMutex_ParallelWork(t *testing.T) {
 					// Create N unique locks in the session
 					locksWg := &sync.WaitGroup{}
 					for _, lockTester := range lockTesters {
-						lockTester := lockTester
-
 						// Use each lock N times in parallel
 						for k := 0; k < tc.Parallel; k++ {
 							workWg.Add(1)
