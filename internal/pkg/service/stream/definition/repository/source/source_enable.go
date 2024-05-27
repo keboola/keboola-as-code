@@ -27,10 +27,8 @@ func (r *Repository) Enable(k key.SourceKey, now time.Time, by definition.By) *o
 }
 
 func (r *Repository) enableSourcesOnBranchEnable() {
-	r.plugins.Collection().OnBranchSave(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) error {
-		if updated.IsEnabledAt(now) {
-			op.AtomicFromCtx(ctx).AddFrom(r.enableAllFrom(updated.BranchKey, now, by, false))
-		}
+	r.plugins.Collection().OnBranchEnable(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) error {
+		op.AtomicOpFromCtx(ctx).AddFrom(r.enableAllFrom(updated.BranchKey, now, by, false))
 		return nil
 	})
 }
