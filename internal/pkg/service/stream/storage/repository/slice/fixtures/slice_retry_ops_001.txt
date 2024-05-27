@@ -1,0 +1,22 @@
+// READ - the slice
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+✔️  TXN | succeeded: true
+
+// WRITE - save the slice
+➡️  TXN
+  // Objects from the READ phase must be unchanged
+  ➡️  IF:
+  001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  002 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  003 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  ➡️  THEN:
+  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+✔️  TXN | succeeded: true
+
