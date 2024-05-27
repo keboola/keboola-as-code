@@ -19,7 +19,7 @@ func TestBoolOp(t *testing.T) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil
 	}
 
-	mapper := func(ctx context.Context, raw RawResponse) (bool, error) {
+	mapper := func(ctx context.Context, raw *RawResponse) (bool, error) {
 		return raw.Get().Count > 0, nil
 	}
 

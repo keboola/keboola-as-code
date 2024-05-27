@@ -19,7 +19,7 @@ func TestCountOp(t *testing.T) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil
 	}
 
-	mapper := func(ctx context.Context, raw RawResponse) (int64, error) {
+	mapper := func(ctx context.Context, raw *RawResponse) (int64, error) {
 		return raw.Get().Count, nil
 	}
 

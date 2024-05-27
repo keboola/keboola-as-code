@@ -42,7 +42,7 @@ func (v Key) Exists(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (bool, error) {
+		func(_ context.Context, raw *op.RawResponse) (bool, error) {
 			count := raw.Get().Count
 			switch count {
 			case 0:
@@ -62,7 +62,7 @@ func (v Key) Get(client etcd.KV, opts ...etcd.OpOption) op.GetOneOp {
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (*op.KeyValue, error) {
+		func(_ context.Context, raw *op.RawResponse) (*op.KeyValue, error) {
 			count := raw.Get().Count
 			switch count {
 			case 0:
@@ -82,7 +82,7 @@ func (v Key) Delete(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpDelete(v.Key(), opts...), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (bool, error) {
+		func(_ context.Context, raw *op.RawResponse) (bool, error) {
 			count := raw.Del().Deleted
 			switch count {
 			case 0:
@@ -106,7 +106,7 @@ func (v Key) DeleteIfExists(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 				nil,
 			), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (bool, error) {
+		func(_ context.Context, raw *op.RawResponse) (bool, error) {
 			return raw.Txn().Succeeded, nil
 		},
 	)
@@ -118,7 +118,7 @@ func (v Key) Put(client etcd.KV, val string, opts ...etcd.OpOption) op.NoResultO
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpPut(v.Key(), val, opts...), nil
 		},
-		func(_ context.Context, _ op.RawResponse) error {
+		func(_ context.Context, _ *op.RawResponse) error {
 			// response is always OK
 			return nil
 		},
@@ -135,7 +135,7 @@ func (v Key) PutIfNotExists(client etcd.KV, val string, opts ...etcd.OpOption) o
 				nil,
 			), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (bool, error) {
+		func(_ context.Context, raw *op.RawResponse) (bool, error) {
 			return raw.Txn().Succeeded, nil
 		},
 	)
@@ -152,7 +152,7 @@ func (v KeyT[T]) GetKV(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
 		},
-		func(ctx context.Context, raw op.RawResponse) (*op.KeyValueT[T], error) {
+		func(ctx context.Context, raw *op.RawResponse) (*op.KeyValueT[T], error) {
 			count := raw.Get().Count
 			switch count {
 			case 0:
@@ -177,7 +177,7 @@ func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.WithResult[T] {
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
 		},
-		func(ctx context.Context, raw op.RawResponse) (T, error) {
+		func(ctx context.Context, raw *op.RawResponse) (T, error) {
 			var target T
 			switch count := raw.Get().Count; count {
 			case 0:
@@ -205,7 +205,7 @@ func (v KeyT[T]) Put(client etcd.KV, val T, opts ...etcd.OpOption) op.WithResult
 			}
 			return etcd.OpPut(v.Key(), encoded, opts...), nil
 		},
-		func(_ context.Context, _ op.RawResponse) (T, error) {
+		func(_ context.Context, _ *op.RawResponse) (T, error) {
 			// Result is inserted value
 			return val, nil
 		},
@@ -226,7 +226,7 @@ func (v KeyT[T]) PutIfNotExists(client etcd.KV, val T, opts ...etcd.OpOption) op
 				nil,
 			), nil
 		},
-		func(_ context.Context, raw op.RawResponse) (bool, error) {
+		func(_ context.Context, raw *op.RawResponse) (bool, error) {
 			return raw.Txn().Succeeded, nil
 		},
 	)

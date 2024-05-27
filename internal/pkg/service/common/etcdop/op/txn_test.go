@@ -104,7 +104,7 @@ func TestTxnOp_OpError_MapResult_IfBranch(t *testing.T) {
 	opFactory := func(i int) Op {
 		return testOp{Operation: LowLevelOp{
 			Op: etcd.OpPut(fmt.Sprintf("key/foo%d", i), "bar"), // duplicate key in a transaction is not allowed
-			MapResponse: func(_ context.Context, _ RawResponse) (result any, err error) {
+			MapResponse: func(_ context.Context, _ *RawResponse) (result any, err error) {
 				return nil, errors.Errorf("some error (%d)", i)
 			},
 		}}
@@ -139,7 +139,7 @@ func TestTxnOp_OpError_MapResult_ElseBranch(t *testing.T) {
 	opFactory := func(i int) Op {
 		return testOp{Operation: LowLevelOp{
 			Op: etcd.OpPut(fmt.Sprintf("key/foo%d", i), "bar"), // duplicate key in a transaction is not allowed
-			MapResponse: func(_ context.Context, _ RawResponse) (result any, err error) {
+			MapResponse: func(_ context.Context, _ *RawResponse) (result any, err error) {
 				return nil, errors.Errorf("some error (%d)", i)
 			},
 		}}
@@ -365,7 +365,7 @@ func TestTxnOp_Then_CalledWithTxn_2(t *testing.T) {
 			return etcd.OpTxn(nil, nil, nil), nil
 		},
 		// Mapper
-		func(ctx context.Context, raw RawResponse) error {
+		func(ctx context.Context, raw *RawResponse) error {
 			return nil
 		},
 	)
