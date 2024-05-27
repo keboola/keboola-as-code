@@ -1,0 +1,76 @@
+// READ - the source to be enabled
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/source/active/123/456/my-source"
+✔️  TXN | succeeded: true
+
+// READ - sinks from the source
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0")
+✔️  TXN | succeeded: true
+
+// READ - get statistics of the sink1 - to calculate pre-allocated disk space
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-1/", "storage/stats/staging/123/456/my-source/my-sink-10")
+  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink-1/", "storage/stats/target/123/456/my-source/my-sink-10")
+✔️  TXN | succeeded: true
+
+// READ - get statistics of the sink2 - to calculate pre-allocated disk space
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-2/", "storage/stats/staging/123/456/my-source/my-sink-20")
+  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink-2/", "storage/stats/target/123/456/my-source/my-sink-20")
+✔️  TXN | succeeded: true
+
+// WRITE
+➡️  TXN
+  // Objects from the READ phase must be unchanged
+  ➡️  IF:
+  001 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  002 "storage/file/all/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  003 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  004 "storage/slice/all/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  005 "definition/source/active/123/456/my-source" MOD GREATER 0
+  006 "definition/source/active/123/456/my-source" MOD LESS %d
+  007 ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") MOD GREATER 0
+  008 ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") MOD LESS %d
+  009 "definition/sink/active/123/456/my-source/my-sink-1" MOD GREATER 0
+  010 "definition/sink/active/123/456/my-source/my-sink-2" MOD GREATER 0
+  ➡️  THEN:
+  // Update source, sinks.
+  // Create new files and slices.
+  001 ➡️  PUT "definition/source/active/123/456/my-source"
+  002 ➡️  PUT "definition/source/version/123/456/my-source/0000000003"
+  003 ➡️  PUT "definition/sink/active/123/456/my-source/my-sink-1"
+  004 ➡️  PUT "definition/sink/version/123/456/my-source/my-sink-1/0000000001"
+  005 ➡️  PUT "definition/sink/active/123/456/my-source/my-sink-2"
+  006 ➡️  PUT "definition/sink/version/123/456/my-source/my-sink-2/0000000001"
+  007 ➡️  PUT "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z"
+  008 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z"
+  009 ➡️  PUT "storage/file/all/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z"
+  010 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z"
+  011 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  012 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  013 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  014 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  ➡️  ELSE:
+  // File already exists error message
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  // File already exists error message
+  002 ➡️  TXN
+  002   ➡️  IF:
+  002   001 "storage/file/all/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  // Slice already exists error message
+  003 ➡️  TXN
+  003   ➡️  IF:
+  003   001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  // Slice already exists error message
+  004 ➡️  TXN
+  004   ➡️  IF:
+  004   001 "storage/slice/all/123/456/my-source/my-sink-2/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+✔️  TXN | succeeded: true
+
