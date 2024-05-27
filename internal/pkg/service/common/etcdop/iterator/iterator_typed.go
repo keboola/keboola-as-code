@@ -137,8 +137,8 @@ func (v *ForEachT[T]) Op(ctx context.Context) (op.LowLevelOp, error) {
 		Op: firstPageOp.Op,
 		MapResponse: func(ctx context.Context, response *op.RawResponse) (result any, err error) {
 			// Create iterator, see comment above.
-			itr := v.def.Do(ctx, response.Options...).OnPage(v.onPage...)
-			itr.client = response.Client
+			itr := v.def.Do(ctx, response.Options()...).OnPage(v.onPage...)
+			itr.client = response.Client()
 
 			// Inject the first page, from the response
 			itr.moveToPage(response.Get())
