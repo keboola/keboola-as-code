@@ -19,7 +19,7 @@ func TestGetOneOp(t *testing.T) {
 	factory := func(ctx context.Context) (etcd.Op, error) {
 		return etcd.OpGet("foo"), nil
 	}
-	mapper := func(ctx context.Context, raw RawResponse) (*KeyValue, error) {
+	mapper := func(ctx context.Context, raw *RawResponse) (*KeyValue, error) {
 		get := raw.Get()
 		if get.Count > 0 {
 			return get.Kvs[0], nil
@@ -61,7 +61,7 @@ func TestGetOneTOp(t *testing.T) {
 		return etcd.OpGet("foo"), nil
 	}
 
-	mapper := func(ctx context.Context, raw RawResponse) (*KeyValueT[Data], error) {
+	mapper := func(ctx context.Context, raw *RawResponse) (*KeyValueT[Data], error) {
 		get := raw.Get()
 		if get.Count > 0 {
 			kv := get.Kvs[0]

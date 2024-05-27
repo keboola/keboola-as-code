@@ -28,7 +28,7 @@ type LowLevelOp struct {
 	MapResponse MapFn
 }
 
-type MapFn func(ctx context.Context, raw RawResponse) (result any, err error)
+type MapFn func(ctx context.Context, raw *RawResponse) (result any, err error)
 
 type Header = etcdserverpb.ResponseHeader // shortcut
 
@@ -38,7 +38,7 @@ type Header = etcdserverpb.ResponseHeader // shortcut
 type WithResult[R any] struct {
 	client     etcd.KV
 	factory    LowLevelFactory
-	mapper     func(ctx context.Context, raw RawResponse) (result R, err error)
+	mapper     func(ctx context.Context, raw *RawResponse) (result R, err error)
 	processors processors[R]
 }
 
@@ -53,7 +53,7 @@ type LowLevelFactory func(ctx context.Context) (etcd.Op, error)
 // The factory can return op.ErrorOp(err) OR op.ErrorTxn[T](err) to signal a static error.
 type HighLevelFactory func(ctx context.Context) Op
 
-func NewForType[R any](client etcd.KV, factory LowLevelFactory, mapper func(ctx context.Context, raw RawResponse) (result R, err error)) WithResult[R] {
+func NewForType[R any](client etcd.KV, factory LowLevelFactory, mapper func(ctx context.Context, raw *RawResponse) (result R, err error)) WithResult[R] {
 	return WithResult[R]{client: client, factory: factory, mapper: mapper}
 }
 
@@ -64,7 +64,7 @@ func (v WithResult[R]) Op(ctx context.Context) (out LowLevelOp, err error) {
 	}
 
 	// Register response mapper
-	out.MapResponse = func(ctx context.Context, raw RawResponse) (result any, err error) {
+	out.MapResponse = func(ctx context.Context, raw *RawResponse) (result any, err error) {
 		return v.mapResponse(ctx, raw).ResultOrErr()
 	}
 
@@ -135,11 +135,11 @@ func (v WithResult[R]) WithEmptyResultAsError(fn func() error) WithResult[R] {
 	return v
 }
 
-func (v WithResult[R]) mapResponse(ctx context.Context, raw RawResponse) *Result[R] {
+func (v WithResult[R]) mapResponse(ctx context.Context, raw *RawResponse) *Result[R] {
 	// Map response to the result value
 	var r *Result[R]
 	if value, err := v.mapper(ctx, raw); err == nil {
-		r = newResult[R](&raw, &value)
+		r = newResult[R](raw, &value)
 	} else {
 		r = newResult[R](&raw, nil).AddErr(err)
 	}
