@@ -1,0 +1,34 @@
+// READ - the file and the slice
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  GET "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+✔️  TXN | succeeded: true
+
+// READ - statistics - to be moved
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+✔️  TXN | succeeded: true
+
+// WRITE
+➡️  TXN
+  // Objects from the READ phase must be unchanged
+  ➡️  IF:
+  001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  002 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  003 "storage/file/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  004 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  005 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD LESS %d
+  006 "storage/stats/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD EQUAL 0
+  ➡️  THEN:
+  // Mark the slices as uploaded, move it to the staging level
+  001 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  002 ➡️  PUT "storage/slice/level/staging/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  003 ➡️  DEL "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/slice/all/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+✔️  TXN | succeeded: true
+
