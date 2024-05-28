@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="/_proxy/assets/favicon.ico">
 
-    <title>Keboola</title>
+    <title>Unexpected error - {{.Status}}</title>
 
     <link rel="stylesheet" href="/_proxy/assets/styles.css">
 </head>
 <body>
 <header>
     {{ if .App }}
-      <h1>My Application</h1>
+      <h1>{{.App.Name}}</h1>
       <section>
           <div>
               App ID: <b>{{.App.IDAndName}}</b>
@@ -62,10 +62,12 @@
         </pre>
 
     {{ if .Details }}
-        <label for="more"></label>
-        <input type="checkbox" id="more">
-        <div class="collapsible-content">
-            <pre>{{ .Details }}</pre>
+        <div class="collapsible">
+            <pre>
+            {{ .Details }}
+            </pre>
+            <label for="more"></label>
+            <input type="checkbox" id="more">
         </div>
     {{ end }}
 
