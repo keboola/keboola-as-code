@@ -21,9 +21,16 @@ Included files (they are not called directly):
 
 ## Production Deployment
 
-- A tag `apps-proxy-vX.Y.Z` triggers GitHub Workflow.
+- A tag `apps-proxy-vX.Y.Z` triggers GitHub actions Workflow.
 - The `build-and-push-apps-proxy` step builds the Apps Proxy image and pushes it to a repository in AWS and Azure.
 - Push to Azure ACR triggers a release pipeline.
+- Links to the AWS and Azure pipelines can be found in the `Service` page, in the internal Confluence.
+
+## Testing Deployment
+
+- A tag `test-apps-proxy-v*` triggers GitHub actions Workflow.
+- The `build-and-push-apps-proxy` step builds the Apps Proxy image and pushes it to a repository in AWS and Azure.
+- Push to Azure ACR triggers a testing pipeline.
 - Links to the AWS and Azure pipelines can be found in the `Service` page, in the internal Confluence.
 
 ## Local Deployment
