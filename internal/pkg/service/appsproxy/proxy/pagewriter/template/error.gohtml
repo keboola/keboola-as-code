@@ -13,18 +13,18 @@
 <body>
 <header>
     {{ if .App }}
+      {{ if and .App.Name .App.ID .App.ProjectID  }}
       <h1>{{.App.Name}}</h1>
       <section>
           <div>
               App ID: <b>{{.App.ID}}</b>
           </div>
-          {{ if .App.ProjectID }}
           <b>,</b>
           <div>
               Project ID: <b>{{.App.ProjectID}}</b>
           </div>
-          {{ end }}
       </section>
+      {{ end }}
     {{ end }}
 </header>
 <main>
@@ -41,10 +41,8 @@
       <path fill-rule="evenodd" clip-rule="evenodd" d="M115.716 122.323L122.624 123.705L122.067 127.605L126.411 131.406L125.094 132.911L119.934 128.395L120.376 125.295L115.323 124.284L115.716 122.323Z" fill="#1F8FFF"/>
     </svg>
     <h2>{{.Status}}</h2>
-    {{ if .App }}
+    {{ if and .App .App.Name }}
     <p>Application  “{{.App.Name}}“ {{.StatusText}}</p>
-    {{ else }}
-    <p>Applicaton is not existing</p>
     {{ end }}
     <p class="exception">
         {{.ExceptionID}}
