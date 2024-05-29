@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'apps-proxy-v**'
+      - 'test-apps-proxy-v**'
 
 env:
   # DockerHub login
