@@ -88,7 +88,7 @@ func TestFileRepository_StateTransition(t *testing.T) {
 		}).Do(ctx).Err())
 	}
 
-	// Mark all slices as Uploading
+	// Mark all slices as Uploaded
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
