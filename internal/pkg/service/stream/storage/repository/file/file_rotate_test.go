@@ -67,7 +67,7 @@ func TestFileRepository_Rotate(t *testing.T) {
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
-	// Rotate - c reate the second file
+	// Rotate - create the second file
 	// -----------------------------------------------------------------------------------------------------------------
 	var rotateEtcdLogs string
 	{
