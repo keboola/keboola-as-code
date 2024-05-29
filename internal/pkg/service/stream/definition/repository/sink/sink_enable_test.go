@@ -61,6 +61,7 @@ func TestSinkRepository_Enable(t *testing.T) {
 
 		sink := test.NewSink(sinkKey)
 		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
+		assert.Equal(t, definition.VersionNumber(1), sink.VersionNumber())
 	}
 
 	// Get - ok
@@ -73,16 +74,20 @@ func TestSinkRepository_Enable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		assert.NoError(t, repo.Disable(sinkKey, now, by, "some reason").Do(ctx).Err())
+		sink, err := repo.Disable(sinkKey, now, by, "some reason").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_001.txt", ignoredEtcdKeys)
+		assert.Equal(t, definition.VersionNumber(2), sink.VersionNumber())
 	}
 
 	// Enable - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, repo.Enable(sinkKey, now, by).Do(ctx).Err())
+		sink, err := repo.Enable(sinkKey, now, by).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_002.txt", ignoredEtcdKeys)
+		assert.Equal(t, definition.VersionNumber(3), sink.VersionNumber())
 	}
 
 	// Get - ok
@@ -92,7 +97,6 @@ func TestSinkRepository_Enable(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, sink.IsEnabled())
 		assert.True(t, sink.IsEnabledAt(now))
-		assert.Equal(t, definition.VersionNumber(3), sink.VersionNumber())
 	}
 
 	// Rollback to the disabled state
