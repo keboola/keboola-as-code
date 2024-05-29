@@ -96,63 +96,63 @@ func (c *Collection) OnSourceSave(fn onSourceSaveFn) {
 }
 
 func (c *Collection) OnSourceEnabled(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) error {
-		if isEnabledNow(original, branch) {
-			return fn(ctx, now, by, original, branch)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if isEnabledNow(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSourceDisabled(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) error {
-		if isDisabledNow(original, branch) {
-			return fn(ctx, now, by, original, branch)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if isDisabledNow(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSourceActivation(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) error {
-		if isActivatedNow(original, branch) {
-			return fn(ctx, now, by, original, branch)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if isActivatedNow(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSourceDeactivation(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) error {
-		if isDeactivatedNow(original, branch) {
-			return fn(ctx, now, by, original, branch)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if isDeactivatedNow(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSourceModification(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) error {
-		if !isActivatedNow(original, updated) && !isDeactivatedNow(original, updated) && !reflect.DeepEqual(original, updated) {
-			return fn(ctx, now, by, original, updated)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if !isActivatedNow(original, source) && !isDeactivatedNow(original, source) && !reflect.DeepEqual(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSourceDelete(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) error {
-		if isDeletedNow(original, branch) {
-			return fn(ctx, now, by, original, branch)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if isDeletedNow(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSourceUndelete(fn onSourceSaveFn) {
-	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, branch *definition.Source) error {
-		if isUndeletedNow(original, branch) {
-			return fn(ctx, now, by, original, branch)
+	c.onSourceSave = append(c.onSourceSave, func(ctx context.Context, now time.Time, by definition.By, original, source *definition.Source) error {
+		if isUndeletedNow(original, source) {
+			return fn(ctx, now, by, original, source)
 		}
 		return nil
 	})
@@ -163,45 +163,45 @@ func (c *Collection) OnSinkSave(fn onSinkSaveFn) {
 }
 
 func (c *Collection) OnSinkEnabled(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) error {
-		if isEnabledNow(original, updated) {
-			return fn(ctx, now, by, original, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
+		if isEnabledNow(original, sink) {
+			return fn(ctx, now, by, original, sink)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSinkDisabled(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) error {
-		if isDisabledNow(original, updated) {
-			return fn(ctx, now, by, original, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
+		if isDisabledNow(original, sink) {
+			return fn(ctx, now, by, original, sink)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSinkActivation(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) error {
-		if isActivatedNow(original, updated) {
-			return fn(ctx, now, by, original, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
+		if isActivatedNow(original, sink) {
+			return fn(ctx, now, by, original, sink)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSinkDeactivation(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) error {
-		if isDeactivatedNow(original, updated) {
-			return fn(ctx, now, by, original, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
+		if isDeactivatedNow(original, sink) {
+			return fn(ctx, now, by, original, sink)
 		}
 		return nil
 	})
 }
 
 func (c *Collection) OnSinkModification(fn onSinkSaveFn) {
-	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Sink) error {
-		if !isActivatedNow(original, updated) && !isDeactivatedNow(original, updated) && !reflect.DeepEqual(original, updated) {
-			return fn(ctx, now, by, original, updated)
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
+		if !isActivatedNow(original, sink) && !isDeactivatedNow(original, sink) && !reflect.DeepEqual(original, sink) {
+			return fn(ctx, now, by, original, sink)
 		}
 		return nil
 	})
