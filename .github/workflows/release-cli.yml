@@ -353,6 +353,12 @@ jobs:
         env:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true' # allow add-path
 
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu' # See 'Supported distributions' for available options
+          java-version: '21'
+
       - name: Download zipped exe
         id: download_zip
         shell: bash
@@ -375,11 +381,38 @@ jobs:
         run: |
           base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
 
-      - name: Sign EXE
-        env:
-          CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
+      - name: Fetch token
+        shell: bash
         run: |
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
+          RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/${{ secrets.WINDOWS_SIGNING_TENANT_ID }}/oauth2/v2.0/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -H "Accept: application/json" \
+          -d "grant_type=client_credentials&client_id=${{ secrets.WINDOWS_SIGNING_CLIENT_ID }}&client_secret=${{ secrets.WINDOWS_SIGNING_CLIENT_SECRET }}&scope=https://vault.azure.net/.default")
+          
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+          
+          if [[ -z "$ACCESS_TOKEN" ]]; then
+          echo "Failed to fetch access token"
+          echo "Response: $RESPONSE"
+          exit 1
+          fi
+          
+          echo "WINDOWS_SIGNING_ACCESS_TOKEN=${ACCESS_TOKEN}" >> $GITHUB_ENV
+
+      - name: Download jsign
+        shell: bash
+        run: |
+          curl -L -o jsign-6.0.jar https://github.com/ebourg/jsign/releases/download/6.0/jsign-6.0.jar
+
+      - name: Sign EXE
+        shell: bash
+        run: |
+          java -jar jsign-6.0.jar --storetype AZUREKEYVAULT \
+            --keystore kbc-cli-code-signing \
+            --storepass ${{ env.WINDOWS_SIGNING_ACCESS_TOKEN }} \
+            --tsaurl http://timestamp.digicert.com \
+            --replace \
+            "kbc.exe"
 
       - name: Build MSI
         id: build_msi
@@ -393,13 +426,27 @@ jobs:
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
           echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
 
+      # Error Handling: "ERROR StatusLogger Log4j2 could not find a logging implementation.
+      # Please add log4j-core to the classpath. Using SimpleLogger to log to the console..."
+      #
+      # This error indicates that the jsign tool (which uses Log4j2 for logging) is unable to find
+      # the core logging implementation (log4j-core) in its classpath. As a result, Log4j2 defaults
+      # to SimpleLogger, which logs to the console.
+      #
+      # To resolve this issue, ensure that the jsign-6.0.jar file includes the log4j-core library
+      # or that the log4j-core dependency is correctly added to the classpath.
       - name: Sign MSI
+        shell: bash
         env:
-          CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         run: |
-          $msi=".\build\package\windows\msi\$env:MSI_FILE"
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
+          msi="./build/package/windows/msi/${{ env.MSI_FILE }}"
+          java -jar jsign-6.0.jar --storetype AZUREKEYVAULT \
+            --keystore kbc-cli-code-signing \
+            --storepass ${{ env.WINDOWS_SIGNING_ACCESS_TOKEN }} \
+            --tsaurl http://timestamp.digicert.com \
+            --replace \
+            $msi
 
       - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
