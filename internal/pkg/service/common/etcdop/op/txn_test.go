@@ -1303,6 +1303,64 @@ func TestTxnOp_Merge_Nested(t *testing.T) {
 	assert.Equal(t, "callback4\ncallback3\ncallback2\ncallback1\n", logs.String())
 }
 
+func TestTxnOp_Merge_Nested_ServerError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	var logs bytes.Buffer
+
+	var etcdLogs bytes.Buffer
+	client.KV = etcdlogger.KVLogWrapper(client.KV, &etcdLogs, etcdlogger.WithMinimal())
+
+	onSucceeded := func(i int) func(result *TxnResult[NoResult]) {
+		return func(result *TxnResult[NoResult]) {
+			logs.WriteString(fmt.Sprintf("callback%d\n", i))
+		}
+	}
+
+	// Define transaction with nested merging
+	txn := Txn(client).
+		Merge(Txn(nil).OnSucceeded(onSucceeded(1)).
+			Merge(Txn(nil).OnSucceeded(onSucceeded(2)).
+				Then(etcdop.Key("key").Put(client, "foo")).
+				Then(etcdop.Key("key").Put(client, "bar")).
+				Merge(Txn(nil).OnSucceeded(onSucceeded(3)).
+					Merge(Txn(nil).OnSucceeded(onSucceeded(4)).
+						If(etcd.Compare(etcd.CreateRevision("key"), "=", 0)).
+						OnFailed(func(r *TxnResult[NoResult]) {
+							r.AddErr(errors.New("key must exists"))
+						}),
+					),
+				),
+			),
+		)
+
+	// Succeeded
+	require.NoError(t, etcdop.Key("key").Put(client, "value").Do(ctx).Err())
+	logs.Reset()
+	etcdLogs.Reset()
+	result := txn.Do(ctx)
+	assert.False(t, result.Succeeded())
+	if assert.Error(t, result.Err()) {
+		assert.Equal(t, "etcdserver: duplicate key given in txn request", result.Err().Error())
+	}
+	etcdlogger.Assert(t, `
+➡️  TXN
+  ➡️  IF:
+  001 "key" CREATE EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "key"
+  002 ➡️  PUT "key"
+  ➡️  ELSE:
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "key" CREATE EQUAL 0
+✖  TXN | error: etcdserver: duplicate key given in txn request
+`, etcdLogs.String())
+	assert.Empty(t, logs.String())
+}
+
 func newLogHelpers(log *strings.Builder) (func(msg string) func(r NoResult), func(msg string) func(r *KeyValue)) {
 	onNoResult := func(msg string) func(r NoResult) {
 		return func(r NoResult) {
