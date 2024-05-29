@@ -8,6 +8,8 @@ import (
 )
 
 // processors are callbacks that can react on or modify the result of an operation.
+// processors are invoked only if the etcd operation completed without server error.
+// Result methods Err/AddErr/ResetErr are used for logical errors, e.g. some unexpected value is found.
 type processors[R any] struct {
 	callbacks []func(ctx context.Context, r *Result[R])
 }
