@@ -95,7 +95,6 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 		etcdLogs.Reset()
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(slice.SliceKey, clk.Now()).Do(ctx).Err())
-		// toUploadingEtcdLogs = etcdLogs.String()
 	}
 
 	// Switch slice to the storage.SliceUploaded state
