@@ -45,7 +45,6 @@ type txnInterface interface {
 	Op
 	txnParts() []txnPart
 	txnInitError() error
-	txnProcessorsCount() int
 	txnInvokeProcessors(ctx context.Context, result *resultBase)
 }
 
@@ -87,10 +86,6 @@ func (v *TxnOp[R]) txnParts() []txnPart {
 
 func (v *TxnOp[R]) txnInitError() error {
 	return v.errs.ErrorOrNil()
-}
-
-func (v *TxnOp[R]) txnProcessorsCount() int {
-	return len(v.processors)
 }
 
 func (v *TxnOp[R]) txnInvokeProcessors(ctx context.Context, base *resultBase) {
@@ -370,28 +365,12 @@ func (v *lowLevelTxn[R]) addElse(op etcd.Op, mapper MapFn) {
 func (v *lowLevelTxn[R]) mergeTxn(ctx context.Context, op Op) error {
 	// Step down to a nested Merge operation, if there is no processor/else branch.
 	if txn, ok := op.(txnInterface); ok && isSimpleTxn(txn) {
-		thenStart := len(v.thenOps)
-		elseStart := len(v.elseOps)
 		if err := v.addParts(ctx, txn); err != nil {
 			return err
 		}
-
-		if txn.txnProcessorsCount() > 0 {
-			thenEnd := len(v.thenOps)
-			elseEnd := len(v.elseOps)
-			v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
-				response := &etcd.TxnResponse{Succeeded: r.Succeeded()}
-				if r.Succeeded() {
-					response.Responses = r.Response().Txn().Responses[thenStart:thenEnd]
-				} else {
-					response.Responses = r.Response().Txn().Responses[elseStart:elseEnd]
-				}
-
-				// Call original mapper of the sub transaction
-				txn.txnInvokeProcessors(ctx, r.resultBase)
-			})
-		}
-
+		v.processors = append(v.processors, func(ctx context.Context, r *TxnResult[R]) {
+			txn.txnInvokeProcessors(ctx, r.resultBase)
+		})
 		return nil
 	}
 
