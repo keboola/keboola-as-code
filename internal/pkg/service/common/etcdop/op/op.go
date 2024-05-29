@@ -36,9 +36,12 @@ type Header = etcdserverpb.ResponseHeader // shortcut
 // The R is the operation result type.
 // The struct is immutable, see With* methods.
 type WithResult[R any] struct {
-	client     etcd.KV
-	factory    LowLevelFactory
-	mapper     func(ctx context.Context, raw *RawResponse) (result R, err error)
+	client  etcd.KV
+	factory LowLevelFactory
+	mapper  func(ctx context.Context, raw *RawResponse) (result R, err error)
+	// processors are callbacks that can react on or modify the result of an operation.
+	// processors are invoked only if the etcd operation completed without server error.
+	// Result methods Err/AddErr/ResetErr are used for logical errors, e.g. some unexpected value is found.
 	processors processors[R]
 }
 

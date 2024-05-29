@@ -33,10 +33,13 @@ const (
 // The results of individual sub-operations can be obtained using TxnResult.SubResults,
 // but a better way is to set the OnResult callback on the sub-transaction.
 type TxnOp[R any] struct {
-	result     *R
-	client     etcd.KV
-	errs       errors.MultiError
-	parts      []txnPart
+	result *R
+	client etcd.KV
+	errs   errors.MultiError
+	parts  []txnPart
+	// processors are callbacks that can react on or modify the result of an operation.
+	// processors are invoked only if the etcd operation completed without server error.
+	// Result methods Err/AddErr/ResetErr are used for logical errors, e.g. some unexpected value is found.
 	processors []func(ctx context.Context, r *TxnResult[R])
 }
 
