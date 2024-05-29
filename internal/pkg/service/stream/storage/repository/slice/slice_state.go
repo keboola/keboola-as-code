@@ -76,11 +76,11 @@ func (r *Repository) switchState(ctx context.Context, fileState model.FileState,
 	return r.save(ctx, now, &oldValue, &newValue)
 }
 
-func (r *Repository) switchStateInBatch(ctx context.Context, fState model.FileState, original []model.Slice, now time.Time, from, to model.SliceState) *op.TxnOp[[]model.Slice] {
+func (r *Repository) switchStateInBatch(ctx context.Context, fileState model.FileState, original []model.Slice, now time.Time, from, to model.SliceState) *op.TxnOp[[]model.Slice] {
 	var updated []model.Slice
 	txn := op.TxnWithResult(r.client, &updated)
 	for _, slice := range original {
-		txn.Merge(r.switchState(ctx, fState, slice, now, from, to).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
+		txn.Merge(r.switchState(ctx, fileState, slice, now, from, to).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
 			updated = append(updated, r.Result())
 		}))
 	}
