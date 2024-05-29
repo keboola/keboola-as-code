@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
@@ -77,7 +78,7 @@ func TestFileRepository_List(t *testing.T) {
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
-	// List files
+	// ListIn files
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
@@ -100,6 +101,58 @@ func TestFileRepository_List(t *testing.T) {
 		result, err = fileRepo.ListIn(sourceKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Equal(t, files, result)
+	}
+
+	// ListAll files
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		files, err := fileRepo.ListAll().Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, files, 2)
+		require.NotEmpty(t, files[0])
+		require.NotEmpty(t, files[1])
+		assert.Equal(t, model.FileClosing, files[0].State)
+		assert.Equal(t, model.FileWriting, files[1].State)
+	}
+
+	// ListInLevel files
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		files, err := fileRepo.ListInLevel(sinkKey, level.Local).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, files, 2)
+		require.NotEmpty(t, files[0])
+		require.NotEmpty(t, files[1])
+		assert.Equal(t, model.FileClosing, files[0].State)
+		assert.Equal(t, model.FileWriting, files[1].State)
+
+		files, err = fileRepo.ListInLevel(sinkKey, level.Staging).Do(ctx).All()
+		require.NoError(t, err)
+		assert.Empty(t, files)
+
+		files, err = fileRepo.ListInLevel(sinkKey, level.Target).Do(ctx).All()
+		require.NoError(t, err)
+		assert.Empty(t, files)
+	}
+
+	// ListInState files
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		files, err := fileRepo.ListInState(sinkKey, model.FileWriting).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.NotEmpty(t, files[0])
+		assert.Equal(t, model.FileWriting, files[0].State)
+
+		files, err = fileRepo.ListInState(sinkKey, model.FileClosing).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.NotEmpty(t, files[0])
+		assert.Equal(t, model.FileClosing, files[0].State)
+
+		files, err = fileRepo.ListInState(sinkKey, model.FileImporting).Do(ctx).All()
+		require.NoError(t, err)
+		assert.Empty(t, files)
 	}
 }
 
