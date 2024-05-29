@@ -30,6 +30,10 @@ const SliceUploading SliceState = "uploading"
 const SliceUploaded SliceState = "uploaded"
 
 // SliceImported
+//
+// Only following transitions are allowed:
+// SliceWriting -> SliceClosing -> SliceUploading -> SliceUploaded
+//
 // The parent File has been successfully imported to the target table.
 // The Slice can be removed from the staging storage, if needed.
 const SliceImported SliceState = "imported"
