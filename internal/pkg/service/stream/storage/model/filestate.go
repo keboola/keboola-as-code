@@ -29,6 +29,9 @@ const FileImported FileState = "imported"
 
 // FileState is an enum type for file states.
 //
+// Only following transitions are allowed:
+// FileWriting -> FileClosing -> FileImporting -> FileImported
+//
 // Example File and Slice transitions.
 //
 //	    FILE            SLICE1           SLICE2           SLICE3
