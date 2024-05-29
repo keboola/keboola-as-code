@@ -86,16 +86,22 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 	// Should be logger enabled?
 	verbose := VerboseTestLogs()
 
-	// Enable logger
-	if verbose {
-		encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-		logger = zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
-			if entry.Level > log.DebugLevel {
-				bytes, _ := encoder.EncodeEntry(entry, fields)
-				_, _ = os.Stdout.Write(bytes.Bytes()) // nolint:forbidigo
-			}
-		}))
-	}
+	// Replace default logger
+	// By default only client errors are printed to the test stdout.
+	// Each server error, for example "etcdserver: duplicate key given in txn request",
+	// is also client warning, but these errors are checked in the tests,
+	// so we usually do not need to log them in duplicate from the client.
+	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	logger = zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
+		minLevel := log.ErrorLevel
+		if verbose {
+			minLevel = log.InfoLevel
+		}
+		if entry.Level >= minLevel {
+			bytes, _ := encoder.EncodeEntry(entry, fields)
+			_, _ = os.Stdout.WriteString("ETCD_TEST_CLIENT " + bytes.String() + "\n") // nolint:forbidigo
+		}
+	}))
 
 	// Dial options
 	dialOpts = append(
