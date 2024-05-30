@@ -12,6 +12,10 @@ env:
   TEST_PARALLELISM_PKG: 1
   TEST_COVERAGE: false
 
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
 jobs:
   test:
     name: ${{ matrix.name }}
@@ -34,27 +38,24 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+          build-type: e2e-tests-cli
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
-
       - name: Load Go build cache
         uses: ./.github/actions/go-cache
         with:
           key: e2e-cli
-
-      - name: Load Go tools cache
-        uses: ./.github/actions/go-tools-cache
 
       - name: Run tests
         run: make tests-cli

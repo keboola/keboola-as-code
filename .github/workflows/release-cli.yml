@@ -93,16 +93,11 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
         with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Install tools
-        run: |
-          . ./scripts/tools.sh
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
+          go-version: ${{ vars.GO_VERSION }}
+          build-type: cli-release
 
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@v1
