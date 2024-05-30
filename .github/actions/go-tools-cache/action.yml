@@ -21,9 +21,9 @@ runs:
         restore-keys: |
           ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-tools-
 
-    - name: Install Go modules
-      shell: bash
-      run: go mod download
+#    - name: Install Go modules
+#      shell: bash
+#      run: go mod download
 
     - name: Install tools
       run: . ./scripts/tools.sh
