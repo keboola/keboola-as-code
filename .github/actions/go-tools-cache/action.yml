@@ -3,7 +3,7 @@ description: 'Load Go tools cache'
 runs:
   using: "composite"
   steps:
-    - name: Use GNU tar instead BSD tar
+    - name: Use GNU tar instead BSD tar on Windows
       if: runner.os == 'Windows'
       shell: bash
       run: echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
@@ -17,9 +17,9 @@ runs:
           ~\go\pkg
           ~/go/bin
           ~\go\bin
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-tools-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v7-tools-${{ hashFiles('scripts/tools.sh') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-tools-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v7-tools-
 
 #    - name: Install Go modules
 #      shell: bash
