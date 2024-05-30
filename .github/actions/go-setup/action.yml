@@ -1,0 +1,154 @@
+name: 'Setup Go, tools and caching'
+description: 'Setup Go, tools and caching'
+inputs:
+  go-version:
+    description: Go version
+    required: true
+  cache-version:
+    description: Cache workflow version
+    required: false
+    default: "001"
+  build-type:
+    description: Build type, for example "default", "linter", ...
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: false
+
+    # There is no md5sum command on macOS by default
+    - name: Export name of the MD5 sum command for E2E tests
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "macOS" ]; then
+          echo "MD5_COMMAND=md5" >> $GITHUB_ENV
+        else
+          echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
+        fi
+
+    # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
+    # GOCACHE    - Build and test cache.
+    # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
+    # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
+    - name: Set and export Go envs
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          # C: is slow: https://github.com/actions/runner-images/issues/8755
+          GODIRS=D:/tmp/go
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          GODIRS=/Users/runner/.cache/go
+        else
+          GODIRS=/home/runner/.cache/go
+        fi
+        
+        mkdir -p $GODIRS/path
+        mkdir -p $GODIRS/cache
+        mkdir -p $GODIRS/modcache
+        mkdir -p $GODIRS/lintcache
+        mkdir -p $GODIRS/bin
+        
+        go env -w \
+        GOPATH=$GODIRS/path \
+        GOCACHE=$GODIRS/cache \
+        GOMODCACHE=$GODIRS/modcache \
+        GOBIN=$GODIRS/bin \
+        
+        echo "GODIRS=$GODIRS" >> $GITHUB_ENV
+        echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
+        echo "$GODIRS/bin" >> $GITHUB_PATH
+
+    # Load compiled tools from cache to skip installation
+    - name: Load Go tools cache
+      id: go-cache-tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/bin
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-tools-
+
+    # Install missing tools
+    - name: Install tools
+      shell: bash
+      run: |
+        echo "Installing tools ..."
+        ./scripts/tools.sh
+        
+        echo "Installed tools:"
+        ls -alh "$GODIRS/bin"
+        
+        go clean -cache -modcache
+
+    # Load dependencies - Go modules to skip download
+    - name: Load Go modules cache
+      id: go-cache-mod
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/modcache
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
+
+    - name: Load Go build and test cache
+      id: go-cache-build
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/cache
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
+
+    - name: Load Linter cache
+      id: go-cache-linter
+      if: inputs.build-type == 'lint'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/lintcache
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-linter-
+
+    - name: Download Go modules
+      shell: bash
+      run: |
+        echo "Downloading modules ..."
+        go mod tidy
+        
+        echo "Modules size:"
+        du -hd0 "$GODIRS/modcache"
+
+    - name: Reset modtime of files to 1 unix timestamp, to make Go test caching work
+      shell: bash
+      run: |
+        echo "Resetting modtime ..."
+        
+        excluded='-path "**/.out*" -or -path "**/.git/**" -or -name "projects.json"'
+        echo "Excluded: $excluded"
+        
+        echo "Dirs:"
+        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)" "$GITHUB_WORKSPACE"
+        do
+          echo "$dir"
+          # !!! -L = follow symlinks
+          find -L "$dir" -not \( $excluded \) -print0 | xargs -0 touch -d '1970-01-01T00:00:01'
+        done
+        
+        echo "Done"
+        echo
+
+    # Enable the step to debug Go testing cache misses.
+    # To find problematic dir/file: Run the workflow twice, download tests logs, sort lines and make a diff.
+    # https://pkg.go.dev/cmd/go#hdr-Build_and_test_caching
+    - name: Enable debugging of the Go test cache
+      if: false # disabled, enable for debugging
+      shell: bash
+      run: echo "GODEBUG=gocachehash=1" >> $GITHUB_ENV
