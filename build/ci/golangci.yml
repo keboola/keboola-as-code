@@ -8,6 +8,10 @@ output:
   sort-results: true
 
 linters-settings:
+  # Prevent updating goa generated code due to linter update
+  misspell:
+    ignore-words:
+      - Statuser
   # Errors from the project can be returned without wrapping
   wrapcheck:
     ignorePackageGlobs:
