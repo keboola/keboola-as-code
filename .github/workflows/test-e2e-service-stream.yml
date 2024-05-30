@@ -4,7 +4,6 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.22.2
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
   TEST_COVERAGE: false
