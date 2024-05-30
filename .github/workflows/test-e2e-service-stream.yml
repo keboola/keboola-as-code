@@ -36,11 +36,6 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - name: Load Go build cache
-        uses: ./.github/actions/go-cache
-        with:
-          key: e2e
-
       - name: Start etcd database
         run: |
           set -Eeuo pipefail
