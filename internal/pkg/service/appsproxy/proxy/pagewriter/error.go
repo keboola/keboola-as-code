@@ -20,7 +20,6 @@ type errorPageData struct {
 	App         *AppData
 	Status      int
 	StatusText  string
-	Messages    []string
 	Details     string
 	ExceptionID string
 }
@@ -89,7 +88,7 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	if status != http.StatusInternalServerError && userMsgProvider != nil {
 		details = errors.Format(err, errors.FormatAsSentences())
 		if errName != "" {
-			details = errName + ":\n" + details
+			details = strings.Join(userMessages, "\n") + errName + ":\n" + details
 		}
 	}
 
@@ -124,17 +123,16 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	}
 
 	// Render page
-	pw.WriteErrorPage(w, req, app, status, userMessages, details, exceptionID)
+	pw.WriteErrorPage(w, req, app, status, details, exceptionID)
 }
 
-func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, messages []string, details, exceptionID string) {
+func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, details, exceptionID string) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
 	w.Header().Set("pragma", "no-cache")
 
 	data := &errorPageData{
 		Status:      status,
 		StatusText:  http.StatusText(status),
-		Messages:    messages,
 		Details:     details,
 		ExceptionID: exceptionID,
 	}
