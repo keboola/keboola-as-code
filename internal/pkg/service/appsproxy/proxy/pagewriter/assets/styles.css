@@ -35,7 +35,7 @@ header {
     text-align: center;
 }
 
-header>section {
+header > section {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -52,7 +52,7 @@ main {
     max-width: 450px;
 }
 
-main>p:first-of-type {
+main > p:first-of-type {
     font-size: 16px;
     font-weight: 500;
     line-height: 24px;
@@ -60,7 +60,7 @@ main>p:first-of-type {
     margin: 0;
 }
 
-main>p:not(:last-child) {
+main > p:not(:last-child) {
     margin-bottom: 16px;
 }
 
@@ -75,7 +75,7 @@ main>p:not(:last-child) {
     color: var(--text-dark);
 }
 
-main>img {
+main > img {
     width: 200px;
     height: 145px;
     object-fit: cover;
@@ -85,7 +85,7 @@ footer {
     margin-top: auto;
 }
 
-footer>p:first-of-type {
+footer > p:first-of-type {
     font-size: 12px;
     font-weight: 600;
     line-height: 16px;
@@ -179,7 +179,7 @@ a:hover {
     font-size: 14px;
 }
 
-.collapsible:has(input:checked)>label::after {
+.collapsible:has(input:checked) > label::after {
     content: 'Less Info';
     font-size: 14px;
 }
@@ -194,7 +194,7 @@ a:hover {
     margin: 0;
 }
 
-.collapsible:has(input:checked)>pre {
+.collapsible:has(input:checked) > pre {
     max-height: 100%;
     padding: 10px 16px;
     margin-bottom: 16px;

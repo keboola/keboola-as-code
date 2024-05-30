@@ -82,19 +82,20 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 	// Exception ID
 	exceptionID := pagewriter.ExceptionIDPrefix + opts.RequestID
 
+	joinedMessage := strings.Join(messages, "\n")
 	// Add attributes
 	req = req.WithContext(ctxattr.ContextWith(
 		req.Context(),
 		semconv.HTTPStatusCode(opts.Status),
 		attribute.String("exceptionId", exceptionID),
-		attribute.String("error.userMessages", strings.Join(messages, "\n")),
+		attribute.String("error.userMessages", joinedMessage),
 		attribute.String("error.details", opts.AppError),
 	))
 
 	// Log warning
 	pw.logger.Warn(req.Context(), strings.Join(messages, "\n")) //nolint:contextcheck // false positive
 
-	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, messages, "", exceptionID)
+	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, joinedMessage+opts.AppError, exceptionID)
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {
