@@ -26,17 +26,19 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Go and tools
+        uses: ./.github/actions/go-install
+        with:
+          go-version: ${{ vars.GO_VERSION }}
 
       - name: Set TEST_KBC_PROJECTS
         uses: ./.github/actions/export-kbc-projects
         with:
           secrets: ${{ toJSON(secrets) }}
           projects: ${{ vars.TEST_KBC_PROJECTS }}
-
-      - name: Install Go and tools
-        uses: ./.github/actions/go-install
 
       - name: Load Go build cache
         uses: ./.github/actions/go-cache

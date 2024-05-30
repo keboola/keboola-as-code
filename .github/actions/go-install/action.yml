@@ -1,13 +1,112 @@
 name: 'Install Go and tools'
 description: 'Install Go and tools'
+inputs:
+  go-version:
+    description: Go version
+    required: true
+  build-type:
+    description: Build type, for example "default", "linter", ...
+    default: "default"
 runs:
   using: "composite"
   steps:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version: ${{ inputs.go-version }}
         cache: false
 
+    # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
+    # GOCACHE    - Build and test cache.
+    # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
+    # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
+    - name: Set and export Go envs
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          # C: is slow: https://github.com/actions/runner-images/issues/8755
+          GODIRS=D:/tmp/go
+        else
+          GODIRS=/home/runner/.cache/go
+        fi
+        
+        mkdir -p $GODIRS/path
+        mkdir -p $GODIRS/cache
+        mkdir -p $GODIRS/modcache
+        mkdir -p $GODIRS/lintcache
+        mkdir -p $GODIRS/bin
+        mkdir -p $GODIRS/tmp
+        
+        go env -w \
+        GOPATH=$GODIRS/path \
+        GOCACHE=$GODIRS/cache \
+        GOMODCACHE=$GODIRS/modcache \
+        GOBIN=$GODIRS/bin \
+        GOTMPDIR=$GODIRS/tmp 
+        
+        go env
+        
+        echo "GODIRS=$GODIRS" >> $GITHUB_ENV
+        echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
+        echo "$GODIRS/bin" >> $GITHUB_PATH
+
     - name: Load Go tools cache
-      uses: ./.github/actions/go-tools-cache
+      id: go-cache-tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/bin
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v10-tools-${{ hashFiles('scripts/tools.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v10-tools-
+
+    - name: Install tools
+      shell: bash
+      run: |
+        echo "Installing tools ..."
+        ./scripts/tools.sh
+        
+        echo "Installed tools:"
+        ls -alh "$GODIRS/bin"
+        
+        go clean -cache -modcache
+
+    - name: Load Go modules cache
+      id: go-cache-mod
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/modcache
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v10-mod-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v10-mod-
+
+    - name: Download Go modules
+      shell: bash
+      run: |
+        echo "Downloading modules ..."
+        go mod download -x
+        
+        echo "Modules cache size:"
+        du --max-depth=0 -h "$GODIRS/modcache"
+
+    - name: Load Go build and test cache
+      id: go-cache-build
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/cache
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v10-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v10-build-${{ inputs.build-type }}-
+
+    - name: Load Linter cache
+      id: go-cache-linter
+      if: inputs.build-type == 'lint'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.GODIRS }}/lintcache
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v10-linter-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v10-linter-

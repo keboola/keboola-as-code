@@ -95,6 +95,8 @@ jobs:
 
       - name: Install Go and tools
         uses: ./.github/actions/go-install
+        with:
+          go-version: ${{ vars.GO_VERSION }}
 
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@v1

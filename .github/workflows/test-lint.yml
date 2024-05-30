@@ -8,12 +8,38 @@ permissions:
   contents: read    # This is required for actions/checkout
 
 jobs:
+  lint-windows:
+    name: lint
+    runs-on: windows-2022
+    steps:
+      - name: Setup line endings
+        run: git config --global core.autocrlf false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go and tools
+        uses: ./.github/actions/go-install
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+          build-type: lint
+
+      - name: Run code linters
+        run: make lint
+        shell: bash
+
   lint:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Go and tools
+        uses: ./.github/actions/go-install
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+          build-type: lint
 
       - name: Check links in Markdown files
         uses: lycheeverse/lychee-action@v1.8.0
@@ -28,9 +54,6 @@ jobs:
             --exclude '^https://app.datadoghq.eu/.*'
             --exclude '^https://community.chocolatey.org/.*'
             --exclude '^https://packages.debian.org/$'
-
-      - name: Install Go and tools
-        uses: ./.github/actions/go-install
 
       - name: Run code linters
         run: make lint

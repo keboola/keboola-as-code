@@ -12,11 +12,13 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Go and tools
         uses: ./.github/actions/go-install
+        with:
+          go-version: ${{ vars.GO_VERSION }}
 
       #####################
       ### License Types ###
