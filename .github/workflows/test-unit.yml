@@ -30,19 +30,19 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+          build-type: unit-tests
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
         with:
           secrets: ${{ toJSON(secrets) }}
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
 
       - name: Load Go build cache
         uses: ./.github/actions/go-cache
@@ -53,9 +53,6 @@ jobs:
         shell: bash
         run: |
           find . -type f,d -exec touch -r {} -d '1970-01-01T00:00:01' {} \; || true
-
-      - name: Load Go tools cache
-        uses: ./.github/actions/go-tools-cache
 
       - name: Start etcd database (only on linux)
         if: matrix.name == 'linux'
