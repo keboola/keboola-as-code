@@ -20,7 +20,6 @@ type errorPageData struct {
 	App         *AppData
 	Status      int
 	StatusText  string
-	Messages    []string
 	Details     string
 	ExceptionID string
 }
@@ -59,17 +58,17 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 		errName = "internal"
 	}
 	// User message, internal errors are masked by default
-	var userMessages []string
+	var userMessages string
 	var userMsgProvider svcerrors.WithUserMessage
 	switch {
 	case errors.As(err, &userMsgProvider):
 		formattedErr := userMsgProvider.ErrorUserMessage()
-		userMessages = strings.Split(strings.TrimSpace(formattedErr), "\n")
+		userMessages = strings.TrimSpace(formattedErr)
 	case status != http.StatusInternalServerError:
-		userMessages = []string{"Internal Server Error Oops! Something went wrong."}
+		userMessages = "Internal Server Error Oops! Something went wrong."
 	default:
 		formattedErr := errors.Format(err, errors.FormatAsSentences())
-		userMessages = strings.Split(strings.TrimSpace(formattedErr), "\n")
+		userMessages = strings.TrimSpace(formattedErr)
 	}
 
 	// Log message
@@ -93,6 +92,14 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 		}
 	}
 
+	// Add user messages when details are absent or there is different message than details contains
+	if details == "" {
+		details = userMessages
+		// Remove last character as it typically contains `.` character
+	} else if !strings.Contains(details, userMessages[:len(userMessages)-1]) {
+		details = userMessages + "\n" + details
+	}
+
 	// ExceptionID
 	var exceptionID string
 	var exceptionIDProvider svcerrors.WithExceptionID
@@ -112,7 +119,7 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 		req.Context(),
 		semconv.HTTPStatusCode(status),
 		attribute.String("exceptionId", exceptionID),
-		attribute.String("error.userMessages", strings.Join(userMessages, "\n")),
+		attribute.String("error.userMessages", userMessages),
 		attribute.String("error.details", details),
 	))
 
@@ -124,17 +131,16 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	}
 
 	// Render page
-	pw.WriteErrorPage(w, req, app, status, userMessages, details, exceptionID)
+	pw.WriteErrorPage(w, req, app, status, details, exceptionID)
 }
 
-func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, messages []string, details, exceptionID string) {
+func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, details, exceptionID string) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
 	w.Header().Set("pragma", "no-cache")
 
 	data := &errorPageData{
 		Status:      status,
 		StatusText:  http.StatusText(status),
-		Messages:    messages,
 		Details:     details,
 		ExceptionID: exceptionID,
 	}

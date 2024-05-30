@@ -41,19 +41,10 @@
       <path fill-rule="evenodd" clip-rule="evenodd" d="M115.716 122.323L122.624 123.705L122.067 127.605L126.411 131.406L125.094 132.911L119.934 128.395L120.376 125.295L115.323 124.284L115.716 122.323Z" fill="#1F8FFF"/>
     </svg>
     <h2>{{.Status}}</h2>
-    <p>{{ if and .App .App.Name }} Application  “{{.App.Name}}“ {{ end }} {{.StatusText}}</p>
+    <p>{{ if and .App .App.Name }}Application  “{{.App.Name}}“ {{ end }}{{.StatusText}}</p>
     <p class="exception">
         {{.ExceptionID}}
     </p>
-    {{ if eq (len .Messages) 1 }}
-        <p class="message">{{index .Messages 0 }}</p>
-    {{ else }}
-        <ul class="message">
-            {{range .Messages}}
-                <li>{{.}}</li>
-            {{end}}
-        </ul>
-    {{ end }}
     {{ if .Details }}
     <div class="collapsible">
         <pre>
