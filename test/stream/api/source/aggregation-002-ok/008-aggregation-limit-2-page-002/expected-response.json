@@ -1,0 +1,24 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "page": {
+    "limit": 2,
+    "totalCount": 5,
+    "sinceId": "my-source-2",
+    "lastId": "my-source-4"
+  },
+  "sources": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-3",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-4",
+      %A
+    }
+  ]
+}

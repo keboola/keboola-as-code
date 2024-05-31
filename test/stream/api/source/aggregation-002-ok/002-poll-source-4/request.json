@@ -1,0 +1,11 @@
+{
+  "path": "<<001-create-source-4:response.url>>",
+  "method": "GET",
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "repeat": {
+    "until": "status != 'processing'",
+    "timeout": 60
+  }
+}
