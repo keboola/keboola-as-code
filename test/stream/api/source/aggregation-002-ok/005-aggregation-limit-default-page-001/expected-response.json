@@ -1,0 +1,227 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "page": {
+    "limit": 100,
+    "totalCount": 5,
+    "sinceId": "",
+    "lastId": "my-source-5"
+  },
+  "sources": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-1",
+      "type": "http",
+      "name": "My Source 1",
+      "description": "",
+      "http": {
+        "url": "https://stream-in.keboola.local/projects/%%TEST_KBC_PROJECT_ID%%/sources/my-source-1/%s"
+      },
+      "created": {
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      },
+      "version": {
+        "number": 1,
+        "hash": "%s",
+        "description": "New source.",
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      },
+      "sinks": [
+        {
+          "projectId": %%TEST_KBC_PROJECT_ID%%,
+          "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+          "sourceId": "my-source-1",
+          "sinkId": "my-sink-1",
+          "type": "table",
+          "name": "My Sink",
+          "description": "",
+          "table": {
+            "type": "keboola",
+            "tableId": "in.c-my-bucket.my-table",
+            "mapping": {
+              "columns": [
+                {
+                  "primaryKey": true,
+                  "type": "uuid-v7",
+                  "name": "id"
+                },
+                {
+                  "primaryKey": false,
+                  "type": "body",
+                  "name": "body"
+                }
+              ]
+            }
+          },
+          "created": {
+            "at": "%s",
+            "by": {
+              "type": "user",
+              "tokenId": "%s",
+              "tokenDesc": "%s",
+              "userId": "%s",
+              "userName": "%s"
+            }
+          },
+          "version": {
+            "number": 1,
+            "hash": "%s",
+            "description": "New sink.",
+            "at": "%s",
+            "by": {
+              "type": "user",
+              "tokenId": "%s",
+              "tokenDesc": "%s",
+              "userId": "%s",
+              "userName": "%s"
+            }
+          },
+          "statistics": {
+            "total": {
+              "firstRecordAt": "2000-01-01T00:00:00.000Z",
+              "lastRecordAt": "2000-01-01T01:00:00.000Z",
+              "recordsCount": 1,
+              "uncompressedSize": 1
+            },
+            "levels": {
+              "local": {
+                "firstRecordAt": "2000-01-01T00:00:00.000Z",
+                "lastRecordAt": "2000-01-01T01:00:00.000Z",
+                "recordsCount": 1,
+                "uncompressedSize": 1
+              }
+            },
+            "files": [
+              {
+                "state": "writing",
+                "openedAt": "%s"
+              },
+              {
+                "state": "imported",
+                "openedAt": "2000-01-01T02:00:00.000Z",
+                "closingAt": "2000-01-01T05:00:00.000Z",
+                "importingAt": "2000-01-01T12:00:00.000Z",
+                "importedAt": "2000-01-01T13:00:00.000Z",
+                "statistics": {
+                  "total": {
+                    "firstRecordAt": "2000-01-01T00:00:00.000Z",
+                    "lastRecordAt": "2000-01-01T01:00:00.000Z",
+                    "recordsCount": 1,
+                    "uncompressedSize": 1
+                  },
+                  "levels": {
+                    "local": {
+                      "firstRecordAt": "2000-01-01T00:00:00.000Z",
+                      "lastRecordAt": "2000-01-01T01:00:00.000Z",
+                      "recordsCount": 1,
+                      "uncompressedSize": 1
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "projectId": %%TEST_KBC_PROJECT_ID%%,
+          "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+          "sourceId": "my-source-1",
+          "sinkId": "my-sink-2",
+          "type": "table",
+          "name": "My Sink",
+          "description": "",
+          "table": {
+            "type": "keboola",
+            "tableId": "in.c-my-bucket.my-table",
+            "mapping": {
+              "columns": [
+                {
+                  "primaryKey": true,
+                  "type": "uuid-v7",
+                  "name": "id"
+                },
+                {
+                  "primaryKey": false,
+                  "type": "body",
+                  "name": "body"
+                }
+              ]
+            }
+          },
+          "created": {
+            "at": "%s",
+            "by": {
+              "type": "user",
+              "tokenId": "%s",
+              "tokenDesc": "%s",
+              "userId": "%s",
+              "userName": "%s"
+            }
+          },
+          "version": {
+            "number": 1,
+            "hash": "%s",
+            "description": "New sink.",
+            "at": "%s",
+            "by": {
+              "type": "user",
+              "tokenId": "%s",
+              "tokenDesc": "%s",
+              "userId": "%s",
+              "userName": "%s"
+            }
+          },
+          "statistics": {
+            "total": null,
+            "levels": {},
+            "files": [
+              {
+                "state": "writing",
+                "openedAt": "%s"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-2",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-3",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-4",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-5",
+      %A
+    }
+  ]
+}
