@@ -20,5 +20,5 @@ type Context interface {
 	BodyBytes() ([]byte, error)
 	BodyLength() int
 	BodyMap() (*orderedmap.OrderedMap, error)
-	JSONValue(*fastjson.ParserPool) (*fastjson.Value, error)
+	JSONValue(parserPool *fastjson.ParserPool) (*fastjson.Value, error)
 }

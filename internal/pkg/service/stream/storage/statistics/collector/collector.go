@@ -32,8 +32,8 @@ type Collector struct {
 }
 
 type WriterEvents interface {
-	OnOpen(fn func(encoding.Pipeline) error)
-	OnClose(func(w encoding.Pipeline, err error) error)
+	OnOpen(fn func(p encoding.Pipeline) error)
+	OnClose(fn func(p encoding.Pipeline, err error) error)
 }
 
 // writerSnapshot contains collected statistics from a writer.Writer.
@@ -94,9 +94,9 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 
 		return nil
 	})
-	events.OnClose(func(w encoding.Pipeline, _ error) error {
+	events.OnClose(func(p encoding.Pipeline, _ error) error {
 		// Sync the final statistics and unregister the writer
-		k := w.SliceKey()
+		k := p.SliceKey()
 		err := c.syncOne(k)
 
 		c.writersLock.Lock()

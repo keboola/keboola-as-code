@@ -44,7 +44,7 @@ type Pipeline interface {
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Pipeline]
 	// Close the writer and sync data to the disk.
-	Close(context.Context) error
+	Close(ctx context.Context) error
 }
 
 type StatisticsProvider interface {
