@@ -31,7 +31,7 @@ type Writer interface {
 	// WriteRow of tabular data.
 	WriteRow(timestamp time.Time, values []any) error
 	// Close the writer and sync data to the disk.
-	Close(context.Context) error
+	Close(ctx context.Context) error
 
 	// Events provides listening to the writer lifecycle.
 	Events() *Events

@@ -34,7 +34,7 @@ type Collector struct {
 
 type WriterEvents interface {
 	OnWriterOpen(fn func(writer.Writer) error)
-	OnWriterClose(func(w writer.Writer, err error) error)
+	OnWriterClose(fn func(w writer.Writer, err error) error)
 }
 
 // writerSnapshot contains collected statistics from a writer.Writer.

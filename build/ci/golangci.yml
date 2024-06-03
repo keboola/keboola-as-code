@@ -122,6 +122,7 @@ linters:
     - gosimple
     - govet
     - importas
+    - inamedparam
     - ineffassign
     - makezero
     - misspell
