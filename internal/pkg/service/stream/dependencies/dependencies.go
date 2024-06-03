@@ -36,6 +36,7 @@ import (
 	"net/url"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -67,6 +68,7 @@ type ServiceScope interface {
 	DefinitionRepository() *definitionRepo.Repository
 	StorageRepository() *storageRepo.Repository
 	StatisticsRepository() *statsRepo.Repository
+	AggregationRepository() *aggregationRepo.Repository
 	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
 }
 

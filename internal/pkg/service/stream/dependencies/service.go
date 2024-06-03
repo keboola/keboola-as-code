@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
@@ -32,6 +33,7 @@ type serviceScope struct {
 	definitionRepository        *definitionRepo.Repository
 	storageRepository           *storageRepo.Repository
 	storageStatisticsRepository *statsRepo.Repository
+	aggregationRepository       *aggregationRepo.Repository
 	keboolaBridge               *keboolaSinkBridge.Bridge
 }
 
@@ -139,6 +141,8 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 
+	d.aggregationRepository = aggregationRepo.New(d)
+
 	return d, nil
 }
 
@@ -160,4 +164,8 @@ func (v *serviceScope) StorageRepository() *storageRepo.Repository {
 
 func (v *serviceScope) StatisticsRepository() *statsRepo.Repository {
 	return v.storageStatisticsRepository
+}
+
+func (v *serviceScope) AggregationRepository() *aggregationRepo.Repository {
+	return v.aggregationRepository
 }
