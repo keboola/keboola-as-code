@@ -55,7 +55,7 @@ type StaticScript struct {
 }
 
 func (v UsedSharedCodeRows) IdsSlice() []any {
-	var ids []any
+	ids := make([]any, 0, len(v))
 	for _, rowKey := range v {
 		ids = append(ids, rowKey.ID.String())
 	}
@@ -112,7 +112,7 @@ func (c Code) String() string {
 }
 
 func (v Scripts) Slice() []any {
-	var out []any
+	out := make([]any, 0, len(v))
 	for _, script := range v {
 		out = append(out, script.Content())
 	}
@@ -120,7 +120,7 @@ func (v Scripts) Slice() []any {
 }
 
 func (v Scripts) String(componentID keboola.ComponentID) string {
-	var items []string
+	items := make([]string, 0, len(v))
 	for _, script := range v {
 		items = append(items, strings.TrimRight(script.Content(), " \r\n\t"))
 	}
@@ -135,7 +135,7 @@ func (v Scripts) String(componentID keboola.ComponentID) string {
 
 // MarshalJSON converts Scripts to JSON []string.
 func (v Scripts) MarshalJSON() ([]byte, error) {
-	var scripts []string
+	scripts := make([]string, 0, len(v))
 	for _, script := range v {
 		scripts = append(scripts, script.(StaticScript).Value)
 	}
@@ -152,7 +152,7 @@ func (v *Scripts) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	*v = make(Scripts, 0)
+	*v = make(Scripts, 0, len(scripts))
 	for _, item := range scripts {
 		*v = append(*v, StaticScript{Value: item})
 	}
@@ -185,7 +185,7 @@ func ScriptsFromStr(content string, componentID keboola.ComponentID) Scripts {
 }
 
 func ScriptsFromSlice(items []any) Scripts {
-	var scripts Scripts
+	scripts := make(Scripts, 0, len(items))
 	for _, item := range items {
 		scripts = append(scripts, StaticScript{Value: cast.ToString(item)})
 	}

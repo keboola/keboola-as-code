@@ -77,7 +77,7 @@ func (v ChangedFields) Remove(field string) {
 }
 
 func (v ChangedFields) String() string {
-	var out []string
+	out := make([]string, 0, len(v))
 	for field := range v {
 		out = append(out, field)
 	}

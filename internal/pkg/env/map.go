@@ -67,7 +67,7 @@ func (m *Map) ToString() (string, error) {
 }
 
 func (m *Map) ToSlice() []string {
-	var out []string
+	out := make([]string, 0, len(m.Keys()))
 	for _, k := range m.Keys() {
 		v := m.Get(k)
 		out = append(out, fmt.Sprintf(`%s=%s`, k, v))
@@ -85,7 +85,7 @@ func (m *Map) ToMap() map[string]string {
 }
 
 func (m *Map) Keys() []string {
-	keys := make([]string, 0)
+	keys := make([]string, 0, len(m.data))
 	for k := range m.data {
 		keys = append(keys, k)
 	}

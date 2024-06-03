@@ -39,7 +39,7 @@ func New(ctx context.Context, now time.Time, ip net.IP, headers http.Header, bod
 }
 
 func (v *Context) HeadersStr() string {
-	var lines []string
+	lines := make([]string, 0, len(v.Headers))
 	for k, v := range v.Headers {
 		lines = append(lines, fmt.Sprintf("%s: %s\n", http.CanonicalHeaderKey(k), v[0]))
 	}

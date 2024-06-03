@@ -265,7 +265,7 @@ func (root *RootCommand) Execute() (exitCode int) {
 
 func (root *RootCommand) listAliases() string {
 	// Join aliases to single line
-	var lines []string
+	lines := make([]string, 0, len(root.aliases.Keys()))
 	var maxLength int
 	for _, cmd := range root.aliases.Keys() {
 		aliasesRaw, _ := root.aliases.Get(cmd)
