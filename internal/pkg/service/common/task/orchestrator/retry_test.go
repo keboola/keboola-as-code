@@ -21,7 +21,7 @@ func TestRetryBackoff(t *testing.T) {
 
 	// Get all delays without sleep
 	var delays []time.Duration
-	for i := 0; i < 11; i++ {
+	for range 11 {
 		delay := b.NextBackOff()
 		if delay == backoff.Stop {
 			assert.Fail(t, "received unexpected stop")

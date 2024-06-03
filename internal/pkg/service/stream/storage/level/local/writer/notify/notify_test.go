@@ -58,7 +58,7 @@ func TestNotifier_Success(t *testing.T) {
 	}
 
 	// Call Wait 5x before done
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wait()
 	}
 
@@ -68,7 +68,7 @@ func TestNotifier_Success(t *testing.T) {
 	n.Done(nil)
 
 	// Call Wait 5x after done
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wait()
 	}
 
@@ -110,7 +110,7 @@ func TestNotifier_Error(t *testing.T) {
 	}
 
 	// Call Wait 5x before done
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wait()
 	}
 
@@ -120,7 +120,7 @@ func TestNotifier_Error(t *testing.T) {
 	n.Done(errors.New("some error"))
 
 	// Call Wait 5x after done
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wait()
 	}
 

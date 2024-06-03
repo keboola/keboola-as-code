@@ -34,7 +34,7 @@ func TestSyncMap_GetOrInit_Race(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	accessCounter := atomic.NewInt64(0)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

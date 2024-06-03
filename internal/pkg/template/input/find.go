@@ -94,7 +94,7 @@ func Find(objectKey model.Key, component *keboola.Component, content *orderedmap
 			inputType = TypeStringArray
 			inputKind = KindMultiSelect
 			// Each element must be string
-			for i := 0; i < valRef.Len(); i++ {
+			for i := range valRef.Len() {
 				item := valRef.Index(i)
 				// Unwrap interface
 				if item.Type().Kind() == reflect.Interface {

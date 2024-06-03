@@ -81,7 +81,7 @@ func (w *Workers) StartAndWait() error {
 
 	// Collect errors in the same order as workers were defined
 	workersCount := w.workerNum.Load()
-	for i := int64(0); i < workersCount; i++ {
+	for i := range workersCount {
 		if err, ok := w.errors[i]; ok {
 			errs.Append(err)
 		}

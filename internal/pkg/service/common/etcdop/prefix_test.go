@@ -267,7 +267,7 @@ func BenchmarkPrefix_GetAll(b *testing.B) {
 	if err := Key("key0").Put(client, "foo").Do(ctx).Err(); err != nil {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("key%04d", i)
 		if err := pfx.Key(key).Put(client, "bar").Do(ctx).Err(); err != nil {
 			b.Fatalf(`cannot create etcd key "%s": %s`, key, err)
@@ -367,7 +367,7 @@ func BenchmarkPrefixT_GetAll(b *testing.B) {
 	if err := Key("key0").Put(client, "foo").Do(ctx).Err(); err != nil {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("key%04d", i)
 		if err := pfx.Key(key).Put(client, "bar").Do(ctx).Err(); err != nil {
 			b.Fatalf(`cannot create etcd key "%s": %s`, key, err)
