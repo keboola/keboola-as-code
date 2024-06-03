@@ -136,6 +136,7 @@ linters:
     - govet
     - importas
     - ineffassign
+    - intrange
     - makezero
     - nakedret
     - nilerr

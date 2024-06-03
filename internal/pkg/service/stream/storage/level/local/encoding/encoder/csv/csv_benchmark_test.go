@@ -216,7 +216,7 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 			// Pre-generate unique records
 			records := make([]recordctx.Context, benchmarkUniqueRecords)
 			now := utctime.MustParse("2000-01-01T01:00:00.000Z")
-			for i := 0; i < benchmarkUniqueRecords; i++ {
+			for i := range benchmarkUniqueRecords {
 				now = now.Add(time.Hour)
 				records[i] = recordctx.FromHTTP(
 					now.Time(),
@@ -227,7 +227,8 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 			// Send the pre-generated records to the channel over and over
 			go func() {
 				defer close(ch)
-				for i := 0; i < n; i++ {
+				row := 0
+				for range n {
 					if ctx.Err() != nil {
 						break
 					}

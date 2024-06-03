@@ -102,7 +102,7 @@ func BindKVs(patchStruct any, kvs PatchKVs, opts ...Option) error {
 					targetSlice.Set(reflect.Zero(expectedType))
 
 					// Convert items
-					for index := 0; index < value.Len(); index++ {
+					for index := range value.Len() {
 						item := value.Index(index)
 						for item.Kind() == reflect.Pointer || item.Kind() == reflect.Interface {
 							item = item.Elem()

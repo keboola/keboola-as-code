@@ -156,7 +156,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 
 			total := atomic.NewInt64(0) // count and verify that all operations have been invoked
 			var lockTesters []lockTester
-			for i := 0; i < tc.UniqueLocks; i++ {
+			for i := range tc.UniqueLocks {
 				active := atomic.NewInt64(0) // count of active CriticalWork calls per lock, should be always at most one
 				lockTesters = append(lockTesters, lockTester{
 					LockName: fmt.Sprintf("locks/my-lock-%02d", i+1),
@@ -177,7 +177,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 
 			// Start N sessions
 			workWg := &sync.WaitGroup{}
-			for i := 0; i < tc.Sessions; i++ {
+			for range tc.Sessions {
 				workWg.Add(1)
 				readyWg.Add(1)
 				go func() {
@@ -194,7 +194,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 					locksWg := &sync.WaitGroup{}
 					for _, lockTester := range lockTesters {
 						// Use each lock N times in parallel
-						for k := 0; k < tc.Parallel; k++ {
+						for range tc.Parallel {
 							workWg.Add(1)
 							locksWg.Add(1)
 							go func() {
@@ -210,7 +210,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 								}
 
 								// Use each lock N time sequentially
-								for l := 0; l < tc.Serial; l++ {
+								for range tc.Serial {
 									lockTester.CriticalWork(session.NewMutex(lockTester.LockName))
 								}
 							}()

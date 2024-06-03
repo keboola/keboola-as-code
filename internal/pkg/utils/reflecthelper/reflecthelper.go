@@ -73,7 +73,7 @@ func GetFieldsWithTag(tag string, model any) []*StructField {
 
 	var fields []*StructField
 	numFields := modelType.NumField()
-	for i := 0; i < numFields; i++ {
+	for i := range numFields {
 		field := modelType.Field(i)
 		tag := field.Tag.Get(tagName)
 		if tag == tagValue {
