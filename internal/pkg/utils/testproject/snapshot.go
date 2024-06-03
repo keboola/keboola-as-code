@@ -35,7 +35,6 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
 				wg := request.NewWaitGroup(ctx)
 				for _, apiBranch := range *apiBranches {
-					apiBranch := apiBranch
 					branch := &fixtures.BranchWithConfigs{Branch: &fixtures.Branch{}, Configs: make([]*fixtures.Config, 0)}
 					branch.Name = apiBranch.Name
 					branch.Description = apiBranch.Description
@@ -178,7 +177,6 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			ListTablesRequest(p.defaultBranch.ID).
 			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
 				for _, table := range *apiTables {
-					table := table
 					// The table list does not contain the "definition" field, so we have to load the tables separately.
 					grp.Go(func() error {
 						return p.keboolaProjectAPI.

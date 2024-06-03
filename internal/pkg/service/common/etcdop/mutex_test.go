@@ -137,7 +137,6 @@ func TestMutex_ParallelWork(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		name := fmt.Sprintf(`Sessions%02d_UniqueLocks%02d_Parallel%02d_Serial%02d`, tc.Sessions, tc.UniqueLocks, tc.Parallel, tc.Serial)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -194,8 +193,6 @@ func TestMutex_ParallelWork(t *testing.T) {
 					// Create N unique locks in the session
 					locksWg := &sync.WaitGroup{}
 					for _, lockTester := range lockTesters {
-						lockTester := lockTester
-
 						// Use each lock N times in parallel
 						for k := 0; k < tc.Parallel; k++ {
 							workWg.Add(1)

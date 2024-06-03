@@ -124,7 +124,6 @@ func (v *Volume) Close(ctx context.Context) error {
 	// Close all slice readers
 	wg := &sync.WaitGroup{}
 	for _, r := range v.openedReaders() {
-		r := r
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

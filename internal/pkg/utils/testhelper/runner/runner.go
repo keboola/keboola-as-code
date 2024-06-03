@@ -107,11 +107,10 @@ func (r *Runner) ForEachTest(runFn func(test *Test)) {
 
 	// Run test for each directory
 	for _, testDirName := range testhelper.GetTestDirs(r.t, r.testsDir) {
-		testName := testDirName
-		r.t.Run(testName, func(t *testing.T) {
+		r.t.Run(testDirName, func(t *testing.T) {
 			t.Parallel()
 
-			test, cancelFn := r.newTest(t, testName)
+			test, cancelFn := r.newTest(t, testDirName)
 			defer cancelFn()
 			runFn(test)
 		})

@@ -96,6 +96,7 @@ linters:
   enable:
     - asciicheck
     - bodyclose
+    - copyloopvar
     - contextcheck
     - depguard
     - dogsled

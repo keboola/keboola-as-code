@@ -28,8 +28,6 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 	var items []json.RawMessage
 
 	for _, column := range v {
-		column := column
-
 		typ := column.ColumnType()
 
 		typeJSON, err := json.Marshal(typ)
@@ -37,7 +35,7 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		columnJSON, err := json.Marshal(&column)
+		columnJSON, err := json.Marshal(&column) // nolint: gosec
 		if err != nil {
 			return nil, err
 		}

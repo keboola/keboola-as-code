@@ -75,7 +75,6 @@ func TestLocalUnitOfWork_workersFor(t *testing.T) {
 	var order []int
 
 	for _, level := range []int{3, 2, 4, 1} {
-		level := level
 		uow.workersFor(level).AddWorker(func(ctx context.Context) error {
 			lock.Lock()
 			defer lock.Unlock()

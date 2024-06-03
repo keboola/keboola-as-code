@@ -122,7 +122,6 @@ func (v *container) invokeParallel(ctx context.Context) error {
 	// Invoke in parallel
 	wg := &sync.WaitGroup{}
 	for _, cb := range v.callbacks {
-		cb := cb
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
