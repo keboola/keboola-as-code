@@ -11,9 +11,9 @@ import (
 // Formatter is a configurable error formatter.
 type Formatter interface {
 	// WithMessageFormatter returns clone formatter with a custom MessageFormatter.
-	WithMessageFormatter(MessageFormatter) Formatter
+	WithMessageFormatter(mf MessageFormatter) Formatter
 	// WithPrefixFormatter returns clone formatter with a custom PrefixFormatter.
-	WithPrefixFormatter(PrefixFormatter) Formatter
+	WithPrefixFormatter(pf PrefixFormatter) Formatter
 	// Format error to string.
 	Format(err error, opts ...FormatOption) string
 }

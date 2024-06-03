@@ -16,6 +16,6 @@ type Manifest interface {
 	ResolveParentPath(record model.ObjectManifest) error
 	GetRecord(key model.Key) (model.ObjectManifest, bool)
 	CreateOrGetRecord(key model.Key) (record model.ObjectManifest, found bool, err error)
-	PersistRecord(model.ObjectManifest) error
+	PersistRecord(manifest model.ObjectManifest) error
 	Delete(object model.WithKey)
 }
