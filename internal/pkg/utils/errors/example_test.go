@@ -2,6 +2,7 @@ package errors_test
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -38,7 +39,10 @@ func ExampleWrap() {
 func ExampleWithStack() {
 	originalErr := errors.New("original error")
 	err := errors.WithStack(originalErr)
-	fmt.Println(errors.Format(err, errors.FormatWithStack()))
+	re := regexp.MustCompile(`\[.*/internal`)
+	fmt.Println(string(re.ReplaceAll([]byte(errors.Format(err, errors.FormatWithStack())), []byte("["))))
+	// output:
+	// original error [/pkg/utils/errors/example_test.go:40]
 }
 
 func ExampleFormatWithStack() {
@@ -48,7 +52,15 @@ func ExampleFormatWithStack() {
 	fmt.Println(errors.Format(wrappedErr))
 	fmt.Println()
 	fmt.Println("FormatWithStack:")
-	fmt.Println(errors.Format(wrappedErr, errors.FormatWithStack()))
+	re := regexp.MustCompile(`\[.*/internal`)
+	fmt.Println(string(re.ReplaceAll([]byte(errors.Format(wrappedErr, errors.FormatWithStack())), []byte("["))))
+	// output:
+	// Standard output:
+	// new error message
+	//
+	// FormatWithStack:
+	// new error message [/pkg/utils/errors/example_test.go:50] (*errors.wrappedError):
+	// - original error [/pkg/utils/errors/example_test.go:49]
 }
 
 func ExampleFormatWithUnwrap() {
