@@ -552,7 +552,7 @@ func TestWatchBackoff(t *testing.T) {
 	b.RandomizationFactor = 0
 
 	// Get all delays without sleep
-	var delays []time.Duration
+	delays := make([]time.Duration, 0, 14)
 	for range 14 {
 		delay := b.NextBackOff()
 		if delay == backoff.Stop {

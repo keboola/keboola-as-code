@@ -194,7 +194,7 @@ func ParseJSONInputForCreateTable(filePath string) ([]keboola.Column, error) {
 
 // getOptionCreateRequest returns Options.CreateTableRequest from the flags (columns, primary keys, table name). It is used if the `columns-from` flag is not specified.
 func getOptionCreateRequest(columns []string) []keboola.Column {
-	var c []keboola.Column
+	c := make([]keboola.Column, 0, len(columns))
 	for _, column := range columns {
 		var col keboola.Column
 		col.Name = column

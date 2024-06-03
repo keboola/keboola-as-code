@@ -56,9 +56,9 @@ func (p *Dialogs) AskNewTemplateInputs(ctx context.Context, deps inputsDialogDep
 type inputFields map[string]input.ObjectField
 
 func (f inputFields) Write(out *strings.Builder) {
-	var table []inputFieldLine
 	var inputIDMaxLength int
 	var fieldPathMaxLength int
+	table := make([]inputFieldLine, 0, len(f))
 
 	// Convert and get max lengths for padding
 	for _, field := range f {

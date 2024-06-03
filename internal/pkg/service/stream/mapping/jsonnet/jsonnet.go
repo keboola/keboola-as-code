@@ -307,8 +307,8 @@ func bodyPathInternalFn(vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFuncti
 }
 
 func applyNativeFn(fnName string, args ...ast.Node) ast.Node {
-	var freeVars []ast.Identifier
-	var fnArgs []ast.CommaSeparatedExpr
+	freeVars := make([]ast.Identifier, 0, len(args))
+	fnArgs := make([]ast.CommaSeparatedExpr, 0, len(args))
 	for _, item := range args {
 		fnArgs = append(fnArgs, ast.CommaSeparatedExpr{Expr: item})
 		// Build list of the freeVars manually, so we can skip parser.PreprocessAst step, it is faster

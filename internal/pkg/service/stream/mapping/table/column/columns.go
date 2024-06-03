@@ -25,8 +25,7 @@ func (v Columns) PrimaryKey() []string {
 }
 
 func (v Columns) MarshalJSON() ([]byte, error) {
-	var items []json.RawMessage
-
+	items := make([]json.RawMessage, 0, len(v))
 	for _, column := range v {
 		typ := column.ColumnType()
 

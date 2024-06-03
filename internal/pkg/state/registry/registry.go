@@ -87,7 +87,7 @@ func (s *Registry) All() []ObjectState {
 		return aKey < bKey
 	})
 
-	var out []ObjectState
+	out := make([]ObjectState, 0, len(s.objects.Keys()))
 	for _, key := range s.objects.Keys() {
 		// Get value
 		v, _ := s.objects.Get(key)

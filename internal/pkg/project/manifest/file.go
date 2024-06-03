@@ -104,7 +104,7 @@ func (c *file) validate(ctx context.Context) error {
 }
 
 func (c *file) records() []model.ObjectManifest {
-	var out []model.ObjectManifest
+	out := make([]model.ObjectManifest, 0, 1024)
 	for _, branch := range c.Branches {
 		out = append(out, branch)
 	}
@@ -124,8 +124,8 @@ func (c *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
 	branchesMap := make(map[string]*model.BranchManifest)
 	configsMap := make(map[string]*model.ConfigManifestWithRows)
-	c.Branches = make([]*model.BranchManifest, 0)
-	c.Configs = make([]*model.ConfigManifestWithRows, 0)
+	c.Branches = make([]*model.BranchManifest, 0, len(records))
+	c.Configs = make([]*model.ConfigManifestWithRows, 0, len(records))
 
 	for _, manifest := range records {
 		// Skip invalid (eg. missing config file)
