@@ -39,6 +39,8 @@ func ExampleWithStack() {
 	originalErr := errors.New("original error")
 	err := errors.WithStack(originalErr)
 	fmt.Println(errors.Format(err, errors.FormatWithStack()))
+	// output:
+	// original error [/home/martinv/keboola/keboola-as-code/internal/pkg/utils/errors/example_test.go:39]
 }
 
 func ExampleFormatWithStack() {
@@ -49,6 +51,13 @@ func ExampleFormatWithStack() {
 	fmt.Println()
 	fmt.Println("FormatWithStack:")
 	fmt.Println(errors.Format(wrappedErr, errors.FormatWithStack()))
+	// output:
+	// Standard output:
+	// new error message
+	//
+	// FormatWithStack:
+	// new error message [/home/martinv/keboola/keboola-as-code/internal/pkg/utils/errors/example_test.go:48] (*errors.wrappedError):
+	// - original error [/home/martinv/keboola/keboola-as-code/internal/pkg/utils/errors/example_test.go:47]
 }
 
 func ExampleFormatWithUnwrap() {
