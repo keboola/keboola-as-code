@@ -51,7 +51,7 @@ func VolumesFor(all []volume.Metadata, cfg Config, randomSeed int64) (out Assign
 
 	// Convert map to slice and sort node volumes by the preferred priority.
 	// Volumes with the most preferred volume type are first.
-	var perNode []*nodeVolumes
+	perNode := make([]*nodeVolumes, 0, len(byNode))
 	for nodeID, volumes := range byNode {
 		typePriority.Sort(volumes, randomSeed)
 		perNode = append(perNode, &nodeVolumes{nodeID: nodeID, volumes: newStack[volume.Metadata](volumes)})

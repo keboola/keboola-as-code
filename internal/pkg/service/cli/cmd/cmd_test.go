@@ -48,8 +48,9 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Map commands to names
-	var names []string
-	for _, cmd := range root.Commands() {
+	cmds := root.Commands()
+	names := make([]string, 0, len(cmds))
+	for _, cmd := range cmds {
 		names = append(names, cmd.Name())
 	}
 

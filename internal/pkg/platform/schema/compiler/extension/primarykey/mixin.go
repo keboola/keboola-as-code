@@ -140,7 +140,7 @@ func (v *Mixin) Edges() []ent.Edge {
 
 // Indexes method generates index for composed primary key.
 func (v *Mixin) Indexes() (indexes []ent.Index) {
-	var fields []string
+	fields := make([]string, 0, len(v.pkFields))
 	for _, f := range v.pkFields {
 		fields = append(fields, f.Name)
 		indexes = append(indexes, index.Fields(f.Name).Annotations(PKFieldAnnotation{}))

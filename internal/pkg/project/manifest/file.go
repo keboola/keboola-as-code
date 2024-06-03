@@ -104,7 +104,7 @@ func (c *file) validate(ctx context.Context) error {
 }
 
 func (c *file) records() []model.ObjectManifest {
-	var out []model.ObjectManifest
+	out := make([]model.ObjectManifest, 0, len(c.Branches)+len(c.Configs))
 	for _, branch := range c.Branches {
 		out = append(out, branch)
 	}

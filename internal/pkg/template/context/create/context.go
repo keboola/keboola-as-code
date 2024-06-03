@@ -126,8 +126,7 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 }
 
 func remoteFilterForCreate(sourceBranch model.BranchKey, configs []ConfigDef) model.ObjectsFilter {
-	var keys []model.Key
-
+	keys := make([]model.Key, 0, len(configs)+1)
 	// Branch
 	keys = append(keys, sourceBranch)
 

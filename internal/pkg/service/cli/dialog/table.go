@@ -69,7 +69,7 @@ func (p *Dialogs) AskTable(allTables []*keboola.Table, id configmap.Value[string
 		return nil, errors.Errorf(`table with ID "%s" not found in the project`, tableID)
 	}
 
-	var selectOpts []string
+	selectOpts := make([]string, 0, len(allTables)+1)
 	if config.allowCreateNew {
 		selectOpts = []string{"Create a new table"}
 	}

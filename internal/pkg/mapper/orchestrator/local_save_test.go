@@ -26,7 +26,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
-	var files []filesystem.File
+	files := make([]filesystem.File, 0, len(recipe.Files.All()))
 	for _, file := range recipe.Files.All() {
 		var fileRaw *filesystem.RawFile
 		if f, ok := file.(*filesystem.JSONFile); ok {

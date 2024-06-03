@@ -62,7 +62,7 @@ func ParseComponentsList(args []string) (Components, error) {
 }
 
 func (v Components) String() string {
-	var names []string
+	names := make([]string, 0, len(v))
 	for k := range v {
 		names = append(names, string(k))
 	}
