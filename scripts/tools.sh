@@ -52,7 +52,7 @@ fi
 # air - code changes watcher
 if ! command -v air &> /dev/null
 then
-  go install github.com/cosmtrek/air@latest
+  go install github.com/air-verse/air@latest
 fi
 
 # godoc
