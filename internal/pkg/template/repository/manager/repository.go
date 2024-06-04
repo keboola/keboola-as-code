@@ -107,7 +107,8 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 		r.d.Logger().Infof(ctx, `loading template "%s/%s"`, reference.FullName(), r.git.CommitHash())
 
 		// Load template
-		tmpl, err := loadTemplateOp.Run(ctx, r.d, r.repo, reference)
+		r.d.Logger().Infof(ctx, r.repo.Fs().BasePath())
+		tmpl, err := loadTemplateOp.Run(ctx, r.d, r.repo, reference, "")
 		if err != nil {
 			return nil, errors.Errorf(`cannot load template "%s": %w`, reference.FullName(), err)
 		}

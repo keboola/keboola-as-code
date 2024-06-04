@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -106,8 +107,25 @@ func (v *localCommandScope) Template(ctx context.Context, reference model.Templa
 	// Update repository reference
 	reference.WithRepository(repo.Definition())
 
+	// Set working directory
+	workDir := v.GlobalFlags().WorkingDir.Value
+	if workDir == "" {
+		workDir, err = os.Getwd() // nolint:forbidigo
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Set TestProjectFile
+	var projectsFilePath string
+	if v.GlobalFlags().TestProjectsFile.Value != "" {
+		projectsFilePath = filepath.Join(workDir, v.GlobalFlags().TestProjectsFile.Value) // nolint:forbidigo
+		if !filepath.IsAbs(projectsFilePath) {                                            // nolint:forbidigo
+			return nil, errors.Errorf("invalid path to projects file: %q", projectsFilePath)
+		}
+	}
+
 	// Load template
-	return loadTemplateOp.Run(ctx, v, repo, reference)
+	return loadTemplateOp.Run(ctx, v, repo, reference, projectsFilePath)
 }
 
 func (v *localCommandScope) LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error) {
