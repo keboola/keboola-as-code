@@ -170,8 +170,8 @@ func (n *nopCloser) Close() error {
 	return nil
 }
 
-// TestAllowOutput enables writing of various dump files to ".out" directories.
-func TestAllowOutput() bool {
+// AllowedOutDir returns true if writing of various dump files to ".out" directories is enabled.
+func AllowedOutDir() bool {
 	value := os.Getenv("TEST_ALLOW_OUTPUT")
 	if value == "" {
 		return true
