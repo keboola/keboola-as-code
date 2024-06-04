@@ -31,23 +31,23 @@ func TestRenameAllPlan(t *testing.T) {
 		"type": "extractor",
 		"name": "Generic",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":   "keboola.ex-db-mysql",
 		"type": "extractor",
 		"name": "MySQL",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
 	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySQLExResponder.Once())
 
 	// Load state
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Get rename plan
 	plan, err := NewPlan(projectState.State())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Clear manifest records before assert
 	for _, action := range plan.actions {

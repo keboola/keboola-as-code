@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -37,7 +38,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 		ID:          "456",
 	}
 	object, err := manager.createObject(key, "New Config")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	config := object.(*model.Config)
@@ -74,7 +75,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 		ID:          "789",
 	}
 	object, err := manager.createObject(key, "New Row")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	row := object.(*model.ConfigRow)
@@ -101,7 +102,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 		ID:          "456",
 	}
 	object, err := manager.createObject(key, "New Config")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	config := object.(*model.Config)
@@ -129,7 +130,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 		ID:          "789",
 	}
 	object, err := manager.createObject(key, "New Row")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	row := object.(*model.ConfigRow)
@@ -152,7 +153,7 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 		ID:          "456",
 	}
 	object, err := manager.createObject(key, "New Config")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	config := object.(*model.Config)
@@ -177,7 +178,7 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 		ID:          "789",
 	}
 	object, err := manager.createObject(key, "New Row")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	row := object.(*model.ConfigRow)

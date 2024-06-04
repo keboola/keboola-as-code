@@ -5,6 +5,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configurationrow"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/key"
@@ -25,21 +26,21 @@ func TestUpdate(t *testing.T) {
 		RowID:       "my-row",
 	}
 	row, err := client.ConfigurationRow.Query().Where(configurationrow.ID(rowID)).Only(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "my-row", row.Name)
 	assert.Equal(t, "My Row", row.Description)
-	assert.Equal(t, true, row.IsDisabled)
+	assert.True(t, row.IsDisabled)
 
 	// Update
 	_, err = row.Update().SetName("new-name").SetDescription("New Description").SetIsDisabled(false).Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Query again
 	row, err = client.ConfigurationRow.Query().Where(configurationrow.ID(rowID)).Only(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, "new-name", row.Name)
 	assert.Equal(t, "New Description", row.Description)
-	assert.Equal(t, false, row.IsDisabled)
+	assert.False(t, row.IsDisabled)
 }

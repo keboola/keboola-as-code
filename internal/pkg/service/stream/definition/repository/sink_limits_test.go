@@ -61,14 +61,14 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 		ops++
 		if ops == 100 || i == repository.MaxSinksPerSource {
 			// Send
-			assert.NoError(t, txn.Do(ctx).Err())
+			require.NoError(t, txn.Do(ctx).Err())
 			// Reset
 			ops = 0
 			txn = op.Txn(client)
 		}
 	}
 	sinks, err := sinkRepo.List(sourceKey).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, sinks, repository.MaxSinksPerSource)
 
 	// Exceed the limit
@@ -122,7 +122,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 		ops++
 		if ops == 100 || i == repository.MaxSourceVersionsPerSource {
 			// Send
-			assert.NoError(t, txn.Do(ctx).Err())
+			require.NoError(t, txn.Do(ctx).Err())
 			// Reset
 			ops = 0
 			txn = op.Txn(client)
@@ -130,7 +130,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	}
 	// Check that the maximum count is reached
 	sinks, err := sinkRepo.Versions(sinkKey).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, sinks, repository.MaxSourceVersionsPerSource)
 
 	// Exceed the limit

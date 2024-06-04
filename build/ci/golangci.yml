@@ -89,6 +89,10 @@ linters-settings:
   exhaustive:
     check-generated: true
     default-signifies-exhaustive: true
+  testifylint:
+    disable:
+      - error-is-as
+      - go-require
 
 # https://golangci-lint.run/usage/linters
 linters:
@@ -135,6 +139,7 @@ linters:
     - staticcheck
     - stylecheck
     - tagliatelle
+    - testifylint
     - thelper
     - tparallel
     - paralleltest

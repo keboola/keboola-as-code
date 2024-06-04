@@ -30,7 +30,7 @@ func TestLoadState(t *testing.T) {
 	t.Parallel()
 	testProject := testproject.GetTestProjectForTest(t)
 	err := testProject.SetState("minimal.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	envs := testProject.Env()
 
 	// Same IDs in local and remote state
@@ -49,13 +49,13 @@ func TestLoadState(t *testing.T) {
 		LoadRemoteState: true,
 	}
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), fs, m), d)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	ok, localErr, remoteErr := state.Load(context.Background(), options)
 
 	// Check errors
 	assert.True(t, ok)
-	assert.NoError(t, localErr)
-	assert.NoError(t, remoteErr)
+	require.NoError(t, localErr)
+	require.NoError(t, remoteErr)
 
 	// Check results
 	assert.Equal(t, []*model.BranchState{
@@ -171,7 +171,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 
 	// Load manifest
 	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return m, fs
 }

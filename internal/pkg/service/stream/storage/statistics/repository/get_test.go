@@ -34,22 +34,22 @@ func TestProvider(t *testing.T) {
 	// Empty
 	v, err := repo.ProjectStats(ctx, sliceKey1.ProjectID)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.FileStats(ctx, sliceKey1.FileKey)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.SliceStats(ctx, sliceKey1)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Add some statistics
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
@@ -84,8 +84,8 @@ func TestProvider(t *testing.T) {
 			},
 		},
 	}))
-	assert.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
-	assert.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
 
 	// Check provider
 	expected := statistics.Aggregated{
@@ -125,21 +125,21 @@ func TestProvider(t *testing.T) {
 
 	// Project-File level
 	v, err = repo.ProjectStats(ctx, sliceKey1.ProjectID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, v)
 	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, v)
 	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, v)
 	v, err = repo.FileStats(ctx, sliceKey1.FileKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, v)
 
 	// Slice level
 	v, err = repo.SliceStats(ctx, sliceKey1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
 			SlicesCount:      1,
@@ -159,7 +159,7 @@ func TestProvider(t *testing.T) {
 		},
 	}, v)
 	v, err = repo.SliceStats(ctx, sliceKey2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Staging: statistics.Value{
 			SlicesCount:      1,
@@ -179,7 +179,7 @@ func TestProvider(t *testing.T) {
 		},
 	}, v)
 	v, err = repo.SliceStats(ctx, sliceKey3)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Target: statistics.Value{
 			SlicesCount:      1,
@@ -202,7 +202,7 @@ func TestProvider(t *testing.T) {
 	// Add slice from a different export
 	sliceKey4 := test.NewSliceKeyOpenedAt("2000-01-01T04:00:00.000Z")
 	sliceKey4.SinkID += "-2"
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey4,
 			Value: statistics.Value{
@@ -218,7 +218,7 @@ func TestProvider(t *testing.T) {
 
 	// Receiver level
 	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
 			SlicesCount:      2,
@@ -256,7 +256,7 @@ func TestProvider(t *testing.T) {
 
 	// Export level
 	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
 			SlicesCount:      1,
@@ -292,7 +292,7 @@ func TestProvider(t *testing.T) {
 		},
 	}, v)
 	v, err = repo.SinkStats(ctx, sliceKey4.SinkKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Aggregated{
 		Local: statistics.Value{
 			SlicesCount:      1,
@@ -337,7 +337,7 @@ func TestRepository_MaxUsedDiskSizeBySliceIn(t *testing.T) {
 	assert.Equal(t, datasize.ByteSize(0), result)
 
 	// Put statistics
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		// Last 3 ------------------------------------------------------------------------------------------------------
 		{
 			SliceKey: sliceKey1,

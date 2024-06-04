@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -17,10 +18,10 @@ func TestManifestRecordGetParent(t *testing.T) {
 		ComponentID: "keboola.foo",
 		ID:          "456",
 	}}
-	assert.NoError(t, r.trackRecord(branchManifest))
+	require.NoError(t, r.trackRecord(branchManifest))
 	parent, err := r.GetParent(configManifest)
 	assert.Equal(t, branchManifest, parent)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
@@ -33,7 +34,7 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 	}}
 	parent, err := r.GetParent(configManifest)
 	assert.Nil(t, parent)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `manifest record for branch "123" not found, referenced from config "branch:123/component:keboola.foo/config:456"`, err.Error())
 }
 
@@ -42,5 +43,5 @@ func TestManifestRecordGetParentNil(t *testing.T) {
 	r := NewRecords(model.SortByID)
 	parent, err := r.GetParent(&model.BranchManifest{})
 	assert.Nil(t, parent)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }

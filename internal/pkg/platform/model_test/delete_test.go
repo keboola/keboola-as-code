@@ -5,6 +5,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDelete(t *testing.T) {
@@ -20,7 +21,7 @@ func TestDelete(t *testing.T) {
 	// Cascade delete
 	count, err := client.Branch.Delete().Exec(ctx)
 	assert.Equal(t, 1, count)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, 0, client.Branch.Query().CountX(ctx))

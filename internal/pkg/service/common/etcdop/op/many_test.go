@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -25,21 +26,21 @@ func TestGetManyOp(t *testing.T) {
 	}
 
 	values, err := NewGetManyOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, values)
 
 	_, err = client.Put(ctx, "test/0", "test0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	values, err = NewGetManyOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"test0"}, getStringValues(values))
 
 	_, err = client.Put(ctx, "test/1", "test1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	values, err = NewGetManyOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"test0", "test1"}, getStringValues(values))
 }
 
@@ -75,21 +76,21 @@ func TestGetManyTOp(t *testing.T) {
 	}
 
 	values, err := NewGetManyTOp(client, factory, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, values)
 
 	_, err = client.Put(ctx, "test/0", json.MustEncodeString(Data{Field: "test0"}, false))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	values, err = NewGetManyTOp(client, factory, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []Data{{Field: "test0"}}, values.Values())
 
 	_, err = client.Put(ctx, "test/1", json.MustEncodeString(Data{Field: "test1"}, false))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	values, err = NewGetManyTOp(client, factory, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []Data{{Field: "test0"}, {Field: "test1"}}, values.Values())
 }
 

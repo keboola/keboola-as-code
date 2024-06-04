@@ -232,7 +232,6 @@ func TestGetLogFileFromFlags(t *testing.T) {
 	tempDir := t.TempDir()
 	root.globalFlags.LogFile.Value = filesystem.Join(tempDir, "log-file.txt")
 	root.setupLogger()
-	assert.Equal(t, root.globalFlags.LogFile, root.globalFlags.LogFile)
 	assert.False(t, root.logFile.IsTemp())
 	assert.NoError(t, root.logFile.File().Close())
 }

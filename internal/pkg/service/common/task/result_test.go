@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -14,14 +15,14 @@ func TestOkResult(t *testing.T) {
 	assert.Equal(t, Result{Result: "task succeeded"}, result)
 	assert.Equal(t, "task succeeded", result.Result)
 	assert.False(t, result.IsError())
-	assert.Nil(t, result.Error)
+	require.NoError(t, result.Error)
 
 	// WithResult
 	result = result.WithResult("new message")
 	assert.Equal(t, Result{Result: "new message"}, result)
 	assert.Equal(t, "new message", result.Result)
 	assert.False(t, result.IsError())
-	assert.Nil(t, result.Error)
+	require.NoError(t, result.Error)
 
 	// WithError
 	assert.PanicsWithError(t, `result type is "ok", not "error", it cannot be modified`, func() {
@@ -41,7 +42,7 @@ func TestOkResult_WithOutput(t *testing.T) {
 	}, result)
 	assert.Equal(t, "task succeeded", result.Result)
 	assert.False(t, result.IsError())
-	assert.Nil(t, result.Error)
+	require.NoError(t, result.Error)
 
 	// WithResult
 	result = result.WithResult("new message")
@@ -54,7 +55,7 @@ func TestOkResult_WithOutput(t *testing.T) {
 	}, result)
 	assert.Equal(t, "new message", result.Result)
 	assert.False(t, result.IsError())
-	assert.Nil(t, result.Error)
+	require.NoError(t, result.Error)
 
 	// WithError
 	assert.PanicsWithError(t, `result type is "ok", not "error", it cannot be modified`, func() {

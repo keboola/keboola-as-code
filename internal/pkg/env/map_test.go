@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEnvMap(t *testing.T) {
 	t.Parallel()
 	m := Empty()
-	assert.Len(t, m.Keys(), 0)
+	assert.Empty(t, m.Keys())
 
 	// Set
 	m.Set(`abc_def`, `123`)
@@ -43,16 +44,16 @@ func TestEnvMap(t *testing.T) {
 
 	// Unset
 	m.Unset(`ABC_def`)
-	assert.Len(t, m.Keys(), 0)
+	assert.Empty(t, m.Keys())
 	str, err := m.ToString()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, ``, str)
 
 	// ToString
 	m.Set(`A`, `123`)
 	m.Set(`X`, `Y`)
 	str, err = m.ToString()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "A=123\nX=\"Y\"", str)
 }
 
@@ -73,12 +74,12 @@ func TestEnvMapFromMap(t *testing.T) {
 
 // nolint paralleltest
 func TestEnvMapFromOs(t *testing.T) {
-	assert.NoError(t, os.Setenv(`Foo`, `bar`)) // nolint forbidigo
+	require.NoError(t, os.Setenv(`Foo`, `bar`)) // nolint forbidigo
 	m, err := FromOs()
 	assert.NotNil(t, m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	str, err := m.ToString()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, str, `FOO="bar"`)
 }
 
@@ -96,7 +97,7 @@ func TestEnvMapMerge(t *testing.T) {
 	m1.Merge(m2, false) // overwrite = false
 	str, err := m1.ToString()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "A=1\nB=2\nC=30", str)
 }
 
@@ -114,6 +115,6 @@ func TestEnvMapMergeOverwrite(t *testing.T) {
 	m1.Merge(m2, true) // overwrite = true
 	str, err := m1.ToString()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "A=1\nB=20\nC=30", str)
 }

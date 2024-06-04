@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -31,7 +32,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Create manifest
 	fs := aferofs.NewMemoryFs()
 	manifestContent := `{"version": 2, "project": {"id": 789, "apiHost": "mocked.transport.http"}}`
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
 
 	f := flag.DefaultGlobalFlags()
 
@@ -74,9 +75,9 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	proc := servicectx.NewForTest(t)
 	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New()), f, env.Empty())
 	localScp, err := newLocalCommandScope(ctx, baseScp, configmap.NewValueWithOrigin("mocked.transport.http", configmap.SetByFlag))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = newRemoteCommandScope(ctx, localScp, configmap.NewValueWithOrigin("my-secret", configmap.SetByFlag))
 	expected := `provided token is from the project "12345", but in manifest is defined project "789"`
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, expected, err.Error())
 }

@@ -932,14 +932,14 @@ func (tc *testCase) run(t *testing.T) {
 	var ticketResponses []*http.Response
 	for i := 1; i <= tc.expectedNewIds; i++ {
 		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		ticketResponses = append(ticketResponses, response)
 	}
 	d.MockedHTTPTransport().RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert state before
 	assert.Equal(t, tc.untrackedPaths, projectState.UntrackedPaths())
@@ -954,7 +954,7 @@ func (tc *testCase) run(t *testing.T) {
 
 	// Get plan
 	plan, err := NewPlan(ctx, projectState.State())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
 	for _, action := range plan.actions {
@@ -968,8 +968,8 @@ func (tc *testCase) run(t *testing.T) {
 
 	// Invoke
 	plan, err = NewPlan(ctx, projectState.State()) // plan with callbacks
-	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(ctx, d.Logger(), d.KeboolaProjectAPI(), projectState.State()))
+	require.NoError(t, err)
+	require.NoError(t, plan.Invoke(ctx, d.Logger(), d.KeboolaProjectAPI(), projectState.State()))
 
 	// Assert new IDs requests count
 	assert.Equal(t, tc.expectedNewIds, d.MockedHTTPTransport().GetCallCountInfo()["POST =~/storage/tickets"])

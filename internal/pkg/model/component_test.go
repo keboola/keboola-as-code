@@ -63,7 +63,7 @@ func TestComponentDefaultBucket(t *testing.T) {
 	assert.Equal(t, keboola.ComponentID("keboola.ex-aws-s3"), component.ID)
 	assert.Equal(t, "AWS S3", component.Name)
 	assert.IsType(t, keboola.ComponentData{}, component.Data)
-	assert.Equal(t, true, component.Data.DefaultBucket)
+	assert.True(t, component.Data.DefaultBucket)
 	assert.Equal(t, "in", component.Data.DefaultBucketStage)
 
 	m := NewComponentsMap([]*keboola.Component{&component})

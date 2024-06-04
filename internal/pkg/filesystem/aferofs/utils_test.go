@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
@@ -14,22 +15,22 @@ func TestCopyFs2FsRootToRoot_LocalToMemory(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
 	localFs, err := NewLocalFs(tempDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	memoryFs := NewMemoryFs()
 
 	// Create files
-	assert.NoError(t, localFs.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
-	assert.NoError(t, localFs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
+	require.NoError(t, localFs.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
+	require.NoError(t, localFs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
 
 	// Copy
-	assert.NoError(t, CopyFs2Fs(localFs, "", memoryFs, ""))
+	require.NoError(t, CopyFs2Fs(localFs, "", memoryFs, ""))
 
 	// Assert
 	file1, err := memoryFs.ReadFile(ctx, filesystem.NewFileDef("foo.txt"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content1", file1.Content)
 	file2, err := memoryFs.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join("my-dir", "bar.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content2", file2.Content)
 }
 
@@ -38,24 +39,24 @@ func TestCopyFs2FsRootToRoot_LocalToLocal(t *testing.T) {
 	ctx := context.Background()
 	tempDir1 := t.TempDir()
 	localFs1, err := NewLocalFs(tempDir1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	tempDir2 := t.TempDir()
 	localFs2, err := NewLocalFs(tempDir2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, localFs1.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
-	assert.NoError(t, localFs1.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
+	require.NoError(t, localFs1.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
+	require.NoError(t, localFs1.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
 
 	// Copy
-	assert.NoError(t, CopyFs2Fs(localFs1, "", localFs2, ""))
+	require.NoError(t, CopyFs2Fs(localFs1, "", localFs2, ""))
 
 	// Assert
 	file1, err := localFs2.ReadFile(ctx, filesystem.NewFileDef("foo.txt"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content1", file1.Content)
 	file2, err := localFs2.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join("my-dir", "bar.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content2", file2.Content)
 }
 
@@ -65,33 +66,33 @@ func TestCopyFs2FsRootToRoot_BaseToBase(t *testing.T) {
 	ctx := context.Background()
 	tempDir1 := t.TempDir()
 	localFs1, err := NewLocalFs(tempDir1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	subDir1 := filesystem.Join("sub", "dir", "1")
-	assert.NoError(t, localFs1.Mkdir(ctx, subDir1))
+	require.NoError(t, localFs1.Mkdir(ctx, subDir1))
 	base1, err := localFs1.SubDirFs(subDir1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tempDir2 := t.TempDir()
 	localFs2, err := NewLocalFs(tempDir2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	subDir2 := filesystem.Join("sub", "dir", "2")
-	assert.NoError(t, localFs2.Mkdir(ctx, subDir2))
+	require.NoError(t, localFs2.Mkdir(ctx, subDir2))
 	base2, err := localFs2.SubDirFs(subDir2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, base1.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
-	assert.NoError(t, base1.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
+	require.NoError(t, base1.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
+	require.NoError(t, base1.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
 
 	// Copy
-	assert.NoError(t, CopyFs2Fs(base1, "", base2, ""))
+	require.NoError(t, CopyFs2Fs(base1, "", base2, ""))
 
 	// Assert
 	file1, err := localFs2.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join(subDir2, "foo.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content1", file1.Content)
 	file2, err := localFs2.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join(subDir2, "my-dir", "bar.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content2", file2.Content)
 }
 
@@ -102,21 +103,21 @@ func TestCopyFs2FsRootToRoot_MemoryToLocal(t *testing.T) {
 	memoryFs := NewMemoryFs()
 	tempDir := t.TempDir()
 	localFs, err := NewLocalFs(tempDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, memoryFs.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
-	assert.NoError(t, memoryFs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
+	require.NoError(t, memoryFs.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
+	require.NoError(t, memoryFs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
 
 	// Copy
-	assert.NoError(t, CopyFs2Fs(memoryFs, "/", localFs, "/"))
+	require.NoError(t, CopyFs2Fs(memoryFs, "/", localFs, "/"))
 
 	// Assert
 	file1, err := localFs.ReadFile(ctx, filesystem.NewFileDef("foo.txt"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content1", file1.Content)
 	file2, err := localFs.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join("my-dir", "bar.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content2", file2.Content)
 }
 
@@ -128,18 +129,18 @@ func TestCopyFs2FsRootToRoot_MemoryToMemory(t *testing.T) {
 	memoryFs2 := NewMemoryFs()
 
 	// Create files
-	assert.NoError(t, memoryFs1.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
-	assert.NoError(t, memoryFs1.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
+	require.NoError(t, memoryFs1.WriteFile(ctx, filesystem.NewRawFile("foo.txt", "content1")))
+	require.NoError(t, memoryFs1.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content2")))
 
 	// Copy
-	assert.NoError(t, CopyFs2Fs(memoryFs1, "/", memoryFs2, "/"))
+	require.NoError(t, CopyFs2Fs(memoryFs1, "/", memoryFs2, "/"))
 
 	// Assert
 	file1, err := memoryFs2.ReadFile(ctx, filesystem.NewFileDef("foo.txt"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content1", file1.Content)
 	file2, err := memoryFs2.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join("my-dir", "bar.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content2", file2.Content)
 }
 
@@ -149,17 +150,17 @@ func TestCopyFs2FsDirToDir(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
 	localFs, err := NewLocalFs(tempDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	memoryFs := NewMemoryFs()
 
 	// Create files
-	assert.NoError(t, localFs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content")))
+	require.NoError(t, localFs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content")))
 
 	// Copy
-	assert.NoError(t, CopyFs2Fs(localFs, "my-dir", memoryFs, "my-dir-2"))
+	require.NoError(t, CopyFs2Fs(localFs, "my-dir", memoryFs, "my-dir-2"))
 
 	// Assert
 	file, err := memoryFs.ReadFile(ctx, filesystem.NewFileDef(filesystem.Join("my-dir-2", "bar.txt")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "content", file.Content)
 }

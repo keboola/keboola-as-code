@@ -35,22 +35,22 @@ func TestRepository_FilesStats(t *testing.T) {
 	// Empty
 	v, err := repo.ProjectStats(ctx, sliceKey1.ProjectID)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.SourceStats(ctx, sliceKey1.SourceKey)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.SinkStats(ctx, sliceKey1.SinkKey)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.FileStats(ctx, sliceKey1.FileKey)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	v, err = repo.SliceStats(ctx, sliceKey1)
 	assert.Empty(t, v)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Add some statistics
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
@@ -96,8 +96,8 @@ func TestRepository_FilesStats(t *testing.T) {
 			},
 		},
 	}))
-	assert.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
-	assert.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
 
 	// Files Stats
 	start := model.FileID{

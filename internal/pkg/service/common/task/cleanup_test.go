@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -56,7 +56,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "err",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey1.String()).Put(client, task1).Do(ctx).Err())
+	require.NoError(t, taskPrefix.Key(taskKey1.String()).Put(client, task1).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
@@ -73,7 +73,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(client, task2).Do(ctx).Err())
+	require.NoError(t, taskPrefix.Key(taskKey2.String()).Put(client, task2).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
@@ -90,11 +90,11 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
+	require.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
 
 	// Run the cleanup
 	tel.Reset()
-	assert.NoError(t, node.Cleanup())
+	require.NoError(t, node.Cleanup())
 
 	// Shutdown - wait for cleanup
 	d.Process().Shutdown(ctx, errors.New("bye bye"))

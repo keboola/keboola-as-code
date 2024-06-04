@@ -47,19 +47,19 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		// List - empty
 		sinks, err := sinkRepo.List(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sinks)
 		sinks, err = sinkRepo.List(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sinks)
 	}
 	{
 		// ListDeleted - empty
 		sinks, err := sinkRepo.ListDeleted(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sinks)
 		sinks, err = sinkRepo.ListDeleted(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sinks)
 	}
 	{
@@ -128,30 +128,30 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		// List
 		sinks, err := sinkRepo.List(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sinks, 2)
 		sinks, err = sinkRepo.List(sinkKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sinks, 2)
 		sinks, err = sinkRepo.List(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sinks, 1)
 		sinks, err = sinkRepo.List(sinkKey2.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sinks, 1)
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, sinkRepo.ExistsOrErr(sinkKey1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.ExistsOrErr(sinkKey1).Do(ctx).Err())
 	}
 	{
 		// Get
 		result1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Sink 1", result1.Name)
 		assert.Equal(t, definition.VersionNumber(1), result1.VersionNumber())
 		result2, err := sinkRepo.Get(sinkKey2).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Sink 2", result2.Name)
 		assert.Equal(t, definition.VersionNumber(1), result2.VersionNumber())
 	}
@@ -165,7 +165,7 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		// Versions
 		versions, err := sinkRepo.Versions(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, versions, 1)
 	}
 
@@ -197,13 +197,13 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// Modify description
-		assert.NoError(t, sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
+		require.NoError(t, sinkRepo.Update(clk.Now(), sinkKey1, "Update description", func(v definition.Sink) definition.Sink {
 			v.Description = "Modified Description"
 			return v
 		}).Do(ctx).Err())
 
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "Modified Description", sink1.Description)
 		assert.Equal(t, definition.VersionNumber(3), sink1.VersionNumber())
 	}
@@ -225,10 +225,10 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		sink, err := sinkRepo.Version(sinkKey1, 1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Sink 1", sink.Name)
 		sink, err = sinkRepo.Version(sinkKey1, 2).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", sink.Name)
 	}
 
@@ -244,7 +244,7 @@ func TestRepository_Sink(t *testing.T) {
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
 	}
 	{
 		// ExistsOrErr - not found
@@ -263,27 +263,27 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		// GetDeleted - found
 		result, err := sinkRepo.GetDeleted(sinkKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", result.Name)
 		assert.Equal(t, definition.VersionNumber(3), result.VersionNumber())
 	}
 	{
 		// Version - found
 		result, err := sinkRepo.Version(sinkKey1, 1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Sink 1", result.Name)
 		assert.Equal(t, definition.VersionNumber(1), result.VersionNumber())
 	}
 	{
 		// List - empty
 		sinks, err := sinkRepo.List(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sinks)
 	}
 	{
 		// ListDeleted
 		sinks, err := sinkRepo.ListDeleted(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sinks, 1)
 	}
 
@@ -305,7 +305,7 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, sinkRepo.ExistsOrErr(sinkKey1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.ExistsOrErr(sinkKey1).Do(ctx).Err())
 	}
 	{
 		// Get
@@ -325,13 +325,13 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		// List
 		sinks, err := sinkRepo.List(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sinks, 1)
 	}
 	{
 		// ListDeleted - empty
 		sinks, err := sinkRepo.ListDeleted(sinkKey1.SourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sinks)
 	}
 
@@ -349,12 +349,12 @@ func TestRepository_Sink(t *testing.T) {
 		sink1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(3), sink1.VersionNumber())
-		assert.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.SoftDelete(clk.Now(), sinkKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		sink1 := test.NewSink(sinkKey1)
-		assert.NoError(t, sinkRepo.Create(clk.Now(), "Re-create", &sink1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Create(clk.Now(), "Re-create", &sink1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), sink1.VersionNumber())
 		assert.Equal(t, "My Sink", sink1.Name)
 		assert.Equal(t, "My Description", sink1.Description)
@@ -363,7 +363,7 @@ func TestRepository_Sink(t *testing.T) {
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, sinkRepo.ExistsOrErr(sinkKey1).Do(ctx).Err())
+		require.NoError(t, sinkRepo.ExistsOrErr(sinkKey1).Do(ctx).Err())
 	}
 	{
 		// Get
@@ -377,7 +377,7 @@ func TestRepository_Sink(t *testing.T) {
 	{
 		// Versions
 		versions, err := sinkRepo.Versions(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, versions, 4)
 	}
 
@@ -385,12 +385,12 @@ func TestRepository_Sink(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, sinkRepo.Rollback(clk.Now(), sinkKey1, 2).Do(ctx).Err())
+		require.NoError(t, sinkRepo.Rollback(clk.Now(), sinkKey1, 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
 		result1, err := sinkRepo.Get(sinkKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Description", result1.Description)
 		assert.Equal(t, definition.VersionNumber(5), result1.VersionNumber())
 		assert.Equal(t, "Rollback to version 2", result1.VersionDescription())

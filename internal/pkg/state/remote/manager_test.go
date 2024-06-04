@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -103,13 +104,13 @@ func TestRemoteSaveMapper(t *testing.T) {
 
 	// Save object
 	uow.SaveObject(configState, configState.Local, model.ChangedFields{})
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// Modified version was sent to the API
 	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, reqBody, "\"configuration\":{\"key\"\n:\"api value\"\n,\"new\"\n:\"value\"\n}")
 	assert.Contains(t, reqBody, `"name":"modified name"`)
 
@@ -184,7 +185,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 
 	// Load all
 	uow.LoadAll(model.NoFilter())
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// Config has been loaded
 	assert.Len(t, projectState.Configs(), 1)
@@ -292,7 +293,7 @@ func TestLoadConfigMetadata(t *testing.T) {
 
 	// Load all
 	uow.LoadAll(model.NoFilter())
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// Check
 	config1Key := model.ConfigKey{
@@ -352,14 +353,14 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 
 	// Save
 	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// Check
 	assert.NotNil(t, httpRequest)
 	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
 }
 
@@ -385,7 +386,7 @@ func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
 
 	// Save
 	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 }
 
 func TestSaveConfigMetadata_Update(t *testing.T) {
@@ -425,13 +426,13 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 
 	// Save
 	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields("metadata"))
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// Check
 	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
 }
 
@@ -460,7 +461,7 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 
 	// Save, metadata field is not changed
 	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 }
 
 func newTestRemoteUOW(t *testing.T, mappers ...any) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
@@ -474,7 +475,7 @@ func newTestRemoteUOW(t *testing.T, mappers ...any) (*remote.UnitOfWork, *httpmo
 	)
 
 	api, err := keboola.NewAuthorizedAPI(context.Background(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -33,19 +34,19 @@ func TestMountFs_Rename(t *testing.T) {
 			NewMountPoint(filesystem.Join("/sub/dir1/dir2"), dir2),
 		},
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create file
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("/sub/dir1/foo", "abc")))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("/sub/dir1/foo", "abc")))
 
 	// Move file within mount point - no error
-	assert.NoError(t, fs.Move(ctx, "/sub/dir1/foo", "/sub/dir1/bar"))
+	require.NoError(t, fs.Move(ctx, "/sub/dir1/foo", "/sub/dir1/bar"))
 	assert.False(t, fs.IsFile(ctx, "/sub/dir1/foo"))
 	assert.True(t, fs.IsFile(ctx, "/sub/dir1/bar"))
 
 	// Move file outside mount point - error
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("/sub/dir1/foo", "abc")))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("/sub/dir1/foo", "abc")))
 	err = fs.Move(ctx, "/sub/dir1/foo", "/bar")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `path "/sub/dir1/foo" cannot be moved outside mount dir "/sub/dir1" to "/bar"`, err.Error())
 }

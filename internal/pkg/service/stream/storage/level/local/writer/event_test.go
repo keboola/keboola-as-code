@@ -30,14 +30,14 @@ func TestEventWriter(t *testing.T) {
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "2"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "2"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
 	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volumes" level
 	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
@@ -59,9 +59,9 @@ func TestEventWriter(t *testing.T) {
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volume" level
 	vol1, err := volumes.Volume("HDD_1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol2, err := volumes.Volume("HDD_2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol1.Events().OnWriterOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
@@ -120,7 +120,7 @@ func TestEventWriter(t *testing.T) {
 	})
 
 	// Close all
-	assert.NoError(t, volumes.Close(ctx))
+	require.NoError(t, volumes.Close(ctx))
 
 	// Check logs, closing is parallel, so writers logs are checked separately
 	logger.AssertJSONMessages(t, `
@@ -160,12 +160,12 @@ func TestEventWriter_OpenError(t *testing.T) {
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
 	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Register "OnWriterOpen" event on the "volumes" level
 	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
@@ -174,7 +174,7 @@ func TestEventWriter_OpenError(t *testing.T) {
 
 	// Register "OnWriterOpen" event on the "volume" level
 	vol, err := volumes.Volume("HDD_1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol.Events().OnWriterOpen(func(w writer.Writer) error {
 		return errors.New("error (2)")
 	})
@@ -186,7 +186,7 @@ func TestEventWriter_OpenError(t *testing.T) {
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	require.NoError(t, volumes.Close(ctx))
 }
 
 func TestEventWriter_CloseError(t *testing.T) {
@@ -200,12 +200,12 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
 	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Register "OnWriterClose" event on the "volumes" level
 	volumes.Events().OnWriterClose(func(w writer.Writer, _ error) error {
@@ -214,7 +214,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// Register "OnWriterClose" event on the "volume" level
 	vol, err := volumes.Volume("HDD_1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol.Events().OnWriterClose(func(w writer.Writer, _ error) error {
 		return errors.New("error (2)")
 	})
@@ -235,7 +235,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	require.NoError(t, volumes.Close(ctx))
 }
 
 func volumeFactory(w *writer.BaseWriter) (writer.Writer, error) {

@@ -41,7 +41,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	_, ok := w.Unwrap().(*csv.Writer)
 	assert.True(t, ok)
 
-	assert.NoError(t, v.Close(ctx))
+	require.NoError(t, v.Close(ctx))
 }
 
 // TestDefaultFactory_FileTypeInvalid test handling of an invalid file type.
@@ -54,7 +54,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
 	v, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, writerVolume.WithWriterFactory(factory.Default))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	slice := test.NewSlice()
 	slice.Type = "invalid"
@@ -63,5 +63,5 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 		assert.Equal(t, `unexpected file type "invalid"`, err.Error())
 	}
 
-	assert.NoError(t, v.Close(ctx))
+	require.NoError(t, v.Close(ctx))
 }

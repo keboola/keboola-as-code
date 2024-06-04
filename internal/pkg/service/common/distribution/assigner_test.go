@@ -6,6 +6,7 @@ import (
 
 	"github.com/lafikl/consistent"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestConsistentHashLib tests the library behavior and shows how it should be used.
@@ -15,7 +16,7 @@ func TestConsistentHashLib(t *testing.T) {
 
 	// Test no node
 	_, err := c.Get("foo")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, consistent.ErrNoHosts, err)
 
 	// Add nodes
@@ -29,7 +30,7 @@ func TestConsistentHashLib(t *testing.T) {
 	keysPerNode := make(map[string]int)
 	for i := 1; i <= 100; i++ {
 		node, err := c.Get(fmt.Sprintf("foo%02d", i))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		keysPerNode[node]++
 	}
 	assert.Equal(t, map[string]int{
@@ -48,7 +49,7 @@ func TestConsistentHashLib(t *testing.T) {
 	keysPerNode = make(map[string]int)
 	for i := 1; i <= 100; i++ {
 		node, err := c.Get(fmt.Sprintf("foo%02d", i))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		keysPerNode[node]++
 	}
 	assert.Equal(t, map[string]int{

@@ -43,7 +43,7 @@ func TestOpen_Error_DirPermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume directory is readonly
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
+	require.NoError(t, os.Chmod(tc.VolumePath, 0o440))
 
 	_, err := tc.OpenVolume()
 	if assert.Error(t, err) {
@@ -62,8 +62,8 @@ func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 
 	// Volume ID file is not readable
 	path := filepath.Join(tc.VolumePath, volume.IDFile)
-	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
-	assert.NoError(t, os.Chmod(path, 0o110))
+	require.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
+	require.NoError(t, os.Chmod(path, 0o110))
 
 	_, err := tc.OpenVolume()
 	if assert.Error(t, err) {
@@ -84,7 +84,7 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, content, volume.IDLength)
 
 		// Volume ID reported by the volume instance match the file content
@@ -95,15 +95,15 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	lock := flock.New(filepath.Join(tc.VolumePath, lockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
-	assert.NoError(t, err)
-	assert.NoError(t, lock.Unlock())
+	require.NoError(t, err)
+	require.NoError(t, lock.Unlock())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -135,7 +135,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	// File content remains same
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, writeContent, content)
 	}
 
@@ -143,15 +143,15 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	lock := flock.New(filepath.Join(tc.VolumePath, lockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
-	assert.NoError(t, err)
-	assert.NoError(t, lock.Unlock())
+	require.NoError(t, err)
+	require.NoError(t, lock.Unlock())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -169,7 +169,7 @@ func TestOpen_VolumeLock(t *testing.T) {
 
 	// Open volume - first instance - ok
 	vol, err := tc.OpenVolume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Open volume - second instance - error
 	_, err = tc.OpenVolume()
@@ -178,7 +178,7 @@ func TestOpen_VolumeLock(t *testing.T) {
 	}
 
 	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 }
 
 func TestVolume_Close_Errors(t *testing.T) {

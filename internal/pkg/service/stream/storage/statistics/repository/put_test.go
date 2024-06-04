@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -24,11 +25,11 @@ func TestRepository_Put(t *testing.T) {
 	repo := d.StatisticsRepository()
 
 	// Empty
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{}))
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{}))
 	etcdhelper.AssertKVsString(t, d.EtcdClient(), ``)
 
 	// One
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: test.NewSliceKeyOpenedAt("2000-01-20T00:00:00.000Z"),
 			Value: statistics.Value{
@@ -74,8 +75,8 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 		})
 	}
 	assert.Len(t, records, 150)
-	assert.NoError(t, repo.Put(ctx, records))
+	require.NoError(t, repo.Put(ctx, records))
 	kvs, err := etcdhelper.DumpAll(ctx, d.EtcdClient())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, kvs, 151)
 }

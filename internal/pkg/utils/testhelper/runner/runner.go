@@ -11,7 +11,6 @@ import (
 	"time"
 
 	tp "github.com/keboola/go-utils/pkg/testproject"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -37,8 +36,8 @@ func NewRunner(t *testing.T) *Runner {
 	callerDir := filepath.Dir(callerFile)    // nolint:forbidigo
 
 	workingDir := filesystem.Join(callerDir, ".out")
-	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
+	require.NoError(t, os.RemoveAll(workingDir))
+	require.NoError(t, os.MkdirAll(workingDir, 0o755))
 
 	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir}
 }
@@ -49,14 +48,14 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	testDir := filepath.Join(r.testsDir, testDirName)
 	workingDir := filepath.Join(r.workingDir, testDirName)
 
-	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
-	assert.NoError(t, os.Chdir(workingDir))
+	require.NoError(t, os.RemoveAll(workingDir))
+	require.NoError(t, os.MkdirAll(workingDir, 0o755))
+	require.NoError(t, os.Chdir(workingDir))
 
 	testDirFS, err := aferofs.NewLocalFs(testDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	workingDirFS, err := aferofs.NewLocalFs(workingDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	state := &fixtures.StateFile{}
 

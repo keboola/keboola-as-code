@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -42,18 +43,18 @@ func TestAskCreateConfig(t *testing.T) {
   "branches": [{"id": 123, "path": "main"}]
 }
 `
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
 		fmt.Sprintf(manifestContent, 123, `foo.bar.com`),
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Load project
 	projectState, err := deps.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -61,27 +62,27 @@ func TestAskCreateConfig(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Select the target branch"))
+		require.NoError(t, console.ExpectString("Select the target branch"))
 
-		assert.NoError(t, console.SendEnter()) // enter - Main
+		require.NoError(t, console.SendEnter()) // enter - Main
 
-		assert.NoError(t, console.ExpectString("Select the target component"))
+		require.NoError(t, console.ExpectString("Select the target component"))
 
-		assert.NoError(t, console.SendLine("extractor generic\n"))
+		require.NoError(t, console.SendLine("extractor generic\n"))
 
-		assert.NoError(t, console.ExpectString("Enter a name for the new config"))
+		require.NoError(t, console.ExpectString("Enter a name for the new config"))
 
-		assert.NoError(t, console.SendLine(`Foo Bar`))
+		require.NoError(t, console.SendLine(`Foo Bar`))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	opts, err := AskCreateConfig(projectState, d, deps, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, createConfig.Options{

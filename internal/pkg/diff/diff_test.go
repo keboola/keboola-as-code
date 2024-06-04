@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -22,11 +23,11 @@ func TestDiffOnlyInLocal(t *testing.T) {
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Local:          &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInLocal, result.State)
@@ -42,11 +43,11 @@ func TestDiffOnlyInRemote(t *testing.T) {
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote:         &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInRemote, result.State)
@@ -73,11 +74,11 @@ func TestDiffEqual(t *testing.T) {
 			IsDefault:   false,
 		},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultEqual, result.State)
@@ -105,11 +106,11 @@ func TestDiffNotEqual(t *testing.T) {
 			IsDefault:   true,
 		},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultNotEqual, result.State)
@@ -140,7 +141,7 @@ func TestDiffEqualConfig(t *testing.T) {
 			IsDefault:   false,
 		},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	configKey := model.ConfigKey{
 		BranchID:    123,
@@ -160,11 +161,11 @@ func TestDiffEqualConfig(t *testing.T) {
 			Description: "description",
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	require.NoError(t, projectState.Set(configState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
@@ -198,7 +199,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 			IsDefault:   false,
 		},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	configKey := model.ConfigKey{
 		BranchID:    123,
@@ -218,11 +219,11 @@ func TestDiffNotEqualConfig(t *testing.T) {
 			Description: "changed",
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	require.NoError(t, projectState.Set(configState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
 	result1 := results.Results[0]
@@ -258,7 +259,7 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 			IsDefault:   false,
 		},
 	}
-	assert.NoError(t, projectState.Set(branchState))
+	require.NoError(t, projectState.Set(branchState))
 
 	configKey := model.ConfigKey{
 		BranchID:    123,
@@ -294,11 +295,11 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	require.NoError(t, projectState.Set(configState))
 
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
 	result1 := results.Results[0]
@@ -329,7 +330,7 @@ func TestDiffRelations(t *testing.T) {
 			PathValue: `path/to/target`,
 		},
 	}
-	assert.NoError(t, projectState.Set(targetState))
+	require.NoError(t, projectState.Set(targetState))
 
 	objectKey := fixtures.MockedKey{
 		ID: `345`,
@@ -368,7 +369,7 @@ func TestDiffRelations(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, projectState.Set(objectState))
+	require.NoError(t, projectState.Set(objectState))
 
 	differ := NewDiffer(projectState)
 	reporter := differ.diffValues(objectState, objectState.Remote.Relations, objectState.Local.Relations)
@@ -450,7 +451,7 @@ func TestDiffTransformation(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	require.NoError(t, projectState.Set(configState))
 
 	// Transformation
 	differ := NewDiffer(projectState)
@@ -513,7 +514,7 @@ func TestDiffSharedCode(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, projectState.Set(configRowState))
+	require.NoError(t, projectState.Set(configRowState))
 
 	// Transformation
 	differ := NewDiffer(projectState)
@@ -678,7 +679,7 @@ func TestDiffOrchestration(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	require.NoError(t, projectState.Set(configState))
 
 	differ := NewDiffer(projectState)
 	reporter := differ.diffValues(configState, configState.Remote.Orchestration, configState.Local.Orchestration)
@@ -762,7 +763,7 @@ func TestDiffMap(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	require.NoError(t, projectState.Set(configState))
 
 	differ := NewDiffer(projectState)
 	reporter := differ.diffValues(configState, configState.Remote.Content, configState.Local.Content)

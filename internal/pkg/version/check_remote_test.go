@@ -7,6 +7,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -17,7 +18,7 @@ func TestCheckIfLatestVersionDev(t *testing.T) {
 	t.Parallel()
 	c, _ := createMockedChecker(t)
 	err := c.CheckIfLatest(context.Background(), build.DevVersionValue)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `skipped, found dev build`, err.Error())
 }
 
@@ -25,7 +26,7 @@ func TestCheckIfLatestVersionEqual(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(context.Background(), `v1.2.3`)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotContains(t, logs.AllMessages(), `warn`)
 }
 
@@ -33,7 +34,7 @@ func TestCheckIfLatestVersionGreater(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(context.Background(), `v1.2.5`)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotContains(t, logs.AllMessages(), `warn`)
 }
 
@@ -41,7 +42,7 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(context.Background(), `v1.2.2`)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	expected := `
 {"level":"warn","message":"*******************************************************"}
 {"level":"warn","message":"WARNING: A new version \"v1.2.3\" is available."}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/dimfeld/httptreemux/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -246,7 +247,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 
 				// Invoke nop endpoint
 				_, err := goaEndpoint(ctx, nil)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				next.ServeHTTP(w, req.WithContext(ctx))
 			})

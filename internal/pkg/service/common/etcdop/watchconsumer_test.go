@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/tests/v3/integration"
 	"google.golang.org/grpc/connectivity"
 
@@ -53,7 +54,7 @@ func TestWatchConsumer(t *testing.T) {
 			}
 		}).
 		WithOnClose(func(err error) {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			onCloseCalled = true
 		}).
 		WithForEach(func(events []WatchEvent, header *Header, restart bool) {
@@ -69,14 +70,14 @@ func TestWatchConsumer(t *testing.T) {
 		StartConsumer(ctx, wg)
 
 	// Wait for initialization
-	assert.NoError(t, <-init)
+	require.NoError(t, <-init)
 
 	// Expect created event
 	logger.AssertJSONMessages(t, `{"level":"info","message":"OnCreated: created (rev 1)"}`)
 	logger.Truncate()
 
 	// Put some key
-	assert.NoError(t, pfx.Key("key1").Put(watchClient, "value1").Do(ctx).Err())
+	require.NoError(t, pfx.Key("key1").Put(watchClient, "value1").Do(ctx).Err())
 
 	// Expect forEach event
 	assert.Eventually(t, func() bool {
@@ -95,14 +96,14 @@ func TestWatchConsumer(t *testing.T) {
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
-	assert.NoError(t, pfx.Key("key2").Put(testClient, "value2").Do(ctx).Err())
-	assert.NoError(t, pfx.Key("key3").Put(testClient, "value3").Do(ctx).Err())
+	require.NoError(t, pfx.Key("key2").Put(testClient, "value2").Do(ctx).Err())
+	require.NoError(t, pfx.Key("key3").Put(testClient, "value3").Do(ctx).Err())
 
 	// Compact, during the watcher is disconnected
 	status, err := testClient.Status(ctx, testClient.Endpoints()[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Unblock dialer, watcher will be reconnected
 	watchMember.Bridge().UnpauseConnections()
@@ -121,7 +122,7 @@ func TestWatchConsumer(t *testing.T) {
 	logger.Truncate()
 
 	// The restart flag is false in further events.
-	assert.NoError(t, pfx.Key("key4").Put(testClient, "value4").Do(ctx).Err())
+	require.NoError(t, pfx.Key("key4").Put(testClient, "value4").Do(ctx).Err())
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
 	}, 5*time.Second, 10*time.Millisecond)

@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -62,14 +63,14 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			),
 	}
 	for _, file := range files {
-		assert.NoError(t, fs.WriteFile(context.Background(), file))
+		require.NoError(t, fs.WriteFile(context.Background(), file))
 	}
 	logger.Truncate()
 
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Logs
 	expectedLogs := `
@@ -85,13 +86,13 @@ func TestMapAfterLocalLoad(t *testing.T) {
 
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, orchestratorConfigState.ID, rel1.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel2, err := target2.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, orchestratorConfigState.ID, rel2.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel3, err := target3.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, orchestratorConfigState.ID, rel3.(*model.UsedInOrchestratorRelation).ConfigID)
 
 	// Orchestration
@@ -259,16 +260,16 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 			SetDescription(`task config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, fs.WriteFile(ctx, file))
+		require.NoError(t, fs.WriteFile(ctx, file))
 	}
-	assert.NoError(t, fs.Mkdir(ctx, phasesDir+`/002-phase-with-deps`))
+	require.NoError(t, fs.Mkdir(ctx, phasesDir+`/002-phase-with-deps`))
 	logger.Truncate()
 
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
 	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Assert error
 	expectedError := `
@@ -323,7 +324,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 			SetDescription(`phase config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, fs.WriteFile(ctx, file))
+		require.NoError(t, fs.WriteFile(ctx, file))
 	}
 	logger.Truncate()
 
@@ -331,7 +332,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
 	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Assert error
 	expectedError := `

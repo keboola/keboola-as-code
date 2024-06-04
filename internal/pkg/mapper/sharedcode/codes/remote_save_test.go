@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -21,13 +22,13 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	// Map config
 	configRecipe := model.NewRemoteSaveRecipe(configState.Manifest(), configState.Remote, model.NewChangedFields(`configuration`))
 	err := state.Mapper().MapBeforeRemoteSave(context.Background(), configRecipe)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Map row
 	rowRecipe := model.NewRemoteSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields(`configuration`))
 	err = state.Mapper().MapBeforeRemoteSave(context.Background(), rowRecipe)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert

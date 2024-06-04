@@ -21,7 +21,7 @@ func TestPrefixTree(t *testing.T) {
 	assert.False(t, found)
 
 	// AllFromPrefix - no value
-	assert.Len(t, tree.AllFromPrefix("key"), 0)
+	assert.Empty(t, tree.AllFromPrefix("key"))
 	_, found = tree.FirstFromPrefix("key")
 	assert.False(t, found)
 	_, found = tree.LastFromPrefix("key")

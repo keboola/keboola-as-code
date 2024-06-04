@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewPrefixWriter(t *testing.T) {
@@ -13,10 +14,10 @@ func TestNewPrefixWriter(t *testing.T) {
 	w := NewPrefixWriter("[prefix]", out)
 
 	_, err := w.Write([]byte("message 1\n"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = w.Write([]byte("message 2\nmessage 3\nmessage 4\n"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(`
 [prefix]message 1

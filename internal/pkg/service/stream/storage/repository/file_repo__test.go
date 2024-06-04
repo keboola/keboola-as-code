@@ -74,10 +74,10 @@ func TestFileRepository_Operations(t *testing.T) {
 	{
 		// List - empty
 		files, err := fileRepo.ListIn(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, files)
 		files, err = fileRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, files)
 	}
 	{
@@ -139,19 +139,19 @@ func TestFileRepository_Operations(t *testing.T) {
 	{
 		// List
 		files, err := fileRepo.ListIn(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 2)
 		files, err = fileRepo.ListIn(branchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 2)
 		files, err = fileRepo.ListIn(sourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 2)
 		files, err = fileRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 1)
 		files, err = fileRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 1)
 	}
 	{
@@ -281,7 +281,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	// Delete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, fileRepo.Delete(fileKey2).Do(ctx).Err())
+		require.NoError(t, fileRepo.Delete(fileKey2).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -293,7 +293,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T02:00:00.000Z/my-volume
 	{
 		// List - empty
 		files, err := fileRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, files)
 	}
 

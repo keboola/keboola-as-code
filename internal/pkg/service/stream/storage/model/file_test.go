@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -30,7 +31,7 @@ func TestFileID_Validation(t *testing.T) {
 	val := validator.New()
 
 	// Valid
-	assert.NoError(t, val.Validate(ctx, FileID{OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z")}))
+	require.NoError(t, val.Validate(ctx, FileID{OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z")}))
 
 	// Empty
 	err := val.Validate(ctx, FileID{})
@@ -58,7 +59,7 @@ func TestFileKey_Validation(t *testing.T) {
 	val := validator.New()
 
 	// Valid
-	assert.NoError(t, val.Validate(ctx, testFileKey()))
+	require.NoError(t, val.Validate(ctx, testFileKey()))
 
 	// Empty
 	err := val.Validate(ctx, FileKey{})
@@ -241,7 +242,7 @@ func TestFile_Validation(t *testing.T) {
 	for _, tc := range cases {
 		err := val.Validate(ctx, tc.Value)
 		if tc.ExpectedError == "" {
-			assert.NoError(t, err, tc.Name)
+			require.NoError(t, err, tc.Name)
 		} else if assert.Error(t, err, tc.Name) {
 			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
 		}

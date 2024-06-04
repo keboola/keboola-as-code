@@ -77,10 +77,10 @@ func TestSliceRepository_Operations(t *testing.T) {
 	{
 		// List - empty
 		slices, err := sliceRepo.ListIn(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, slices)
 		slices, err = sliceRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, slices)
 	}
 	{
@@ -151,31 +151,31 @@ func TestSliceRepository_Operations(t *testing.T) {
 	{
 		// List
 		slices, err := sliceRepo.ListIn(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 3)
 		slices, err = sliceRepo.ListIn(branchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 3)
 		slices, err = sliceRepo.ListIn(sourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 3)
 		slices, err = sliceRepo.ListIn(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 1)
 		slices, err = sliceRepo.ListIn(sinkKey2).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 1)
 		slices, err = sliceRepo.ListIn(sinkKey3).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 1)
 		slices, err = sliceRepo.ListIn(fileKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 1)
 		slices, err = sliceRepo.ListIn(fileKey2).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 1)
 		slices, err = sliceRepo.ListIn(fileKey3).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, slices, 1)
 	}
 	{
@@ -289,7 +289,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 	// Delete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sliceRepo.Delete(sliceKey2).Do(ctx).Err())
+		require.NoError(t, sliceRepo.Delete(sliceKey2).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -301,7 +301,7 @@ unexpected slice "123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume
 	{
 		// List - empty
 		slices, err := sliceRepo.ListIn(fileKey2).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, slices)
 	}
 

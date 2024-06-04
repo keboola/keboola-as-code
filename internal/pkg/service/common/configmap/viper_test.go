@@ -33,7 +33,7 @@ func TestBindToViper(t *testing.T) {
 
 	// Bind
 	setBy, err := configmap.BindToViper(v, flagToField, configmap.BindConfig{Flags: fs, Envs: envs, EnvNaming: env.NewNamingConvention("MY_APP_")})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, map[string]configmap.SetBy{
 		"verbose": configmap.SetByDefault,
 		"foo":     configmap.SetByFlag,

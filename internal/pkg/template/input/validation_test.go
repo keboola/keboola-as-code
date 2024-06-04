@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type validationTestCase struct {
@@ -335,9 +336,9 @@ func TestValidationRules(t *testing.T) {
 		err := stepsGroups.ValidateDefinitions(context.Background())
 		if c.error == "" {
 			// Expected nil errors.MultiError
-			assert.Nil(t, err, c.description)
+			require.NoError(t, err)
 		} else {
-			assert.Error(t, err, c.description)
+			require.Error(t, err, c.description)
 			assert.Equal(t, c.error, err.Error(), c.description)
 		}
 	}

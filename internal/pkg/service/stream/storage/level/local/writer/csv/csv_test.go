@@ -57,7 +57,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	slice.Type = model.FileTypeCSV
 	slice.Columns = column.Columns{column.UUID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
 	val := validator.New()
-	assert.NoError(t, val.Validate(ctx, slice))
+	require.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
 	w, err := vol.NewWriterFor(slice)
@@ -70,7 +70,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	}
 
 	// Close volume
-	assert.NoError(t, vol.Close(ctx))
+	require.NoError(t, vol.Close(ctx))
 }
 
 func TestCSVWriter_CastToStringError(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	slice.Type = model.FileTypeCSV
 	slice.Columns = column.Columns{column.UUID{Name: "id"}}
 	val := validator.New()
-	assert.NoError(t, val.Validate(ctx, slice))
+	require.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
 	w, err := vol.NewWriterFor(slice)
@@ -103,7 +103,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	}
 
 	// Close volume
-	assert.NoError(t, vol.Close(ctx))
+	require.NoError(t, vol.Close(ctx))
 }
 
 // TestCSVWriter_Close_WaitForWrites tests that the Close method waits for writes in progress
@@ -143,7 +143,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	slice.LocalStorage.DiskSync.CheckInterval = duration.From(2 * time.Second)
 	slice.LocalStorage.DiskSync.IntervalTrigger = duration.From(2 * time.Second)
 	val := validator.New()
-	assert.NoError(t, val.Validate(ctx, slice))
+	require.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
 	w, err := vol.NewWriterFor(slice)
@@ -154,8 +154,8 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 
 	// Start two parallel writes
 	now := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
-	go func() { assert.NoError(t, w.WriteRow(now, []any{"value"})) }()
-	go func() { assert.NoError(t, w.WriteRow(now, []any{"value"})) }()
+	go func() { require.NoError(t, w.WriteRow(now, []any{"value"})) }()
+	go func() { require.NoError(t, w.WriteRow(now, []any{"value"})) }()
 	assert.Eventually(t, func() bool {
 		return w.Unwrap().(*csv.Writer).WaitingWriteOps() == 2
 	}, time.Second, 5*time.Millisecond)
@@ -164,7 +164,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	closeDone := make(chan struct{})
 	go func() {
 		defer close(closeDone)
-		assert.NoError(t, w.Close(ctx))
+		require.NoError(t, w.Close(ctx))
 	}()
 
 	// Unblock sync and wait for Close
@@ -178,16 +178,16 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 
 	// Check file content
 	content, err := os.ReadFile(w.FilePath())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value\nvalue\n", string(content))
 
 	// Check rows count file
 	content, err = os.ReadFile(filepath.Join(w.DirPath(), csv.RowsCounterFile))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "2,2000-01-01T00:00:00.000Z,2000-01-01T00:00:00.000Z", string(content))
 
 	// Close volume
-	assert.NoError(t, vol.Close(ctx))
+	require.NoError(t, vol.Close(ctx))
 }
 
 // nolint:tparallel // false positive

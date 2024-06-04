@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -27,12 +28,12 @@ func TestTxnResult(t *testing.T) {
 	// HeaderOrErr
 	header, err := result.HeaderOrErr()
 	assert.Same(t, expectedHeader, header)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// ResultOrErr
 	resultValue, err := result.ResultOrErr()
 	assert.Equal(t, "foo", resultValue)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Result/SetResult
 	assert.Equal(t, "foo", result.Result())
@@ -48,7 +49,7 @@ func TestTxnResult(t *testing.T) {
 	assert.Equal(t, []any{"foo", "bar", "baz"}, result.SubResults())
 
 	// Err/AddErr
-	assert.NoError(t, result.Err())
+	require.NoError(t, result.Err())
 	assert.Same(t, expectedHeader, result.Header())
 	result.AddErr(errors.New("error1"))
 	result.AddErr(errors.New("error2"))
@@ -61,7 +62,7 @@ func TestTxnResult(t *testing.T) {
 
 	// Reset
 	result.ResetErr()
-	assert.Nil(t, result.Err())
+	require.NoError(t, result.Err())
 
 	// Succeeded - true
 	result.succeeded = true

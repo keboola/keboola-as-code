@@ -46,19 +46,19 @@ func TestChain_SetupMethods(t *testing.T) {
 		return &testWriterFlusherCloser{Writer: w, Name: "W2"}, nil
 	})
 	assert.True(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ok, err = tc.Chain.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
 		return w, nil
 	})
 	assert.False(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ok, err = tc.Chain.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
 		return nil, nil
 	})
 	assert.False(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Flushers
 	tc.Chain.PrependFlusherCloser(&testFlusher{Name: "F1"})
@@ -147,19 +147,19 @@ func TestChain_Complex_Ok(t *testing.T) {
 	// Flush
 	tc.WriteData([]string{"foo", "bar"})
 	tc.AssertFileContent("")
-	assert.NoError(t, tc.Chain.Flush(ctx))
+	require.NoError(t, tc.Chain.Flush(ctx))
 	tc.AssertFileContent("foobar")
 
 	// Sync
 	tc.WriteData([]string{"123", "456"})
 	tc.AssertFileContent("foobar")
-	assert.NoError(t, tc.Chain.Sync(ctx))
+	require.NoError(t, tc.Chain.Sync(ctx))
 	tc.AssertFileContent("foobar123456")
 
 	// Close
 	tc.WriteData([]string{"abc", "def"})
 	tc.AssertFileContent("foobar123456")
-	assert.NoError(t, tc.Chain.Close(ctx))
+	require.NoError(t, tc.Chain.Close(ctx))
 	tc.AssertFileContent("foobar123456abcdef")
 
 	// Check logs
@@ -269,7 +269,7 @@ chain sync error:
 	}
 
 	// Close
-	assert.NoError(t, tc.Chain.Close(ctx))
+	require.NoError(t, tc.Chain.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -665,11 +665,11 @@ func (tc *chainTestCase) WriteData(items []string) {
 		if i%2 == 0 {
 			n, err := tc.Chain.Write([]byte(str))
 			assert.Equal(tc.TB, 3, n)
-			assert.NoError(tc.TB, err)
+			require.NoError(tc.TB, err)
 		} else {
 			n, err := tc.Chain.WriteString(str)
 			assert.Equal(tc.TB, 3, n)
-			assert.NoError(tc.TB, err)
+			require.NoError(tc.TB, err)
 		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFromSlash(t *testing.T) {
@@ -21,38 +22,38 @@ func TestToSlash(t *testing.T) {
 func TestRel(t *testing.T) {
 	t.Parallel()
 	out, err := Rel(`foo/bar`, `foo/bar/abc/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "abc/file.txt", out)
 	out, err = Rel(`/foo/bar/../abc`, `/foo/bar/../abc/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "file.txt", out)
 	out, err = Rel(`foo/bar/../abc`, `/foo/bar/../abc/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "file.txt", out)
 	out, err = Rel(`/foo/bar/../abc`, `foo/bar/../abc/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "file.txt", out)
 }
 
 func TestRelFromRootDir(t *testing.T) {
 	t.Parallel()
 	out, err := Rel(`/`, `/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "file.txt", out)
 	out, err = Rel(`/`, `/dir/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "dir/file.txt", out)
 	out, err = Rel(``, `/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "file.txt", out)
 	out, err = Rel(``, `/dir/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "dir/file.txt", out)
 	out, err = Rel(``, `file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "file.txt", out)
 	out, err = Rel(``, `dir/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "dir/file.txt", out)
 }
 
@@ -81,11 +82,11 @@ func TestBase(t *testing.T) {
 func TestMatch(t *testing.T) {
 	t.Parallel()
 	m, err := Match(`foo/*/*/*`, `foo/bar/abc/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, m)
 
 	m, err = Match(`abc/**`, `foo/bar/abc/file.txt`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, m)
 }
 

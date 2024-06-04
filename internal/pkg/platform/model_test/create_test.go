@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/enttest"
@@ -21,22 +22,22 @@ func TestCreate_SetParent(t *testing.T) {
 	branch, err := branchBuilder(tx).
 		SetBranchID(123).
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	config, err := configBuilder(tx).
 		SetParent(branch).
 		SetComponentID("keboola.my-component").
 		SetConfigID("my-config").
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	row, err := rowBuilder(tx).
 		SetParent(config).
 		SetRowID("my-row").
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, tx.Commit())
+	require.NoError(t, tx.Commit())
 	checkResults(t, ctx, client, branch, config, row)
 }
 
@@ -47,14 +48,14 @@ func TestCreate_SetPartOfID(t *testing.T) {
 	branch, err := branchBuilder(tx).
 		SetBranchID(123).
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	config, err := configBuilder(tx).
 		SetBranchID(branch.BranchID).
 		SetComponentID("keboola.my-component").
 		SetConfigID("my-config").
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	row, err := rowBuilder(tx).
 		SetBranchID(branch.BranchID).
@@ -62,9 +63,9 @@ func TestCreate_SetPartOfID(t *testing.T) {
 		SetConfigID("my-config").
 		SetRowID("my-row").
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, tx.Commit())
+	require.NoError(t, tx.Commit())
 	checkResults(t, ctx, client, branch, config, row)
 }
 
@@ -75,7 +76,7 @@ func TestCreate_SetID(t *testing.T) {
 	branch, err := branchBuilder(tx).
 		SetID(key.BranchKey{BranchID: 123}).
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	config, err := configBuilder(tx).
 		SetID(key.ConfigurationKey{
@@ -84,7 +85,7 @@ func TestCreate_SetID(t *testing.T) {
 			ConfigID:    "my-config",
 		}).
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	row, err := rowBuilder(tx).
 		SetID(key.ConfigurationRowKey{
@@ -94,9 +95,9 @@ func TestCreate_SetID(t *testing.T) {
 			RowID:       "my-row",
 		}).
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, tx.Commit())
+	require.NoError(t, tx.Commit())
 	checkResults(t, ctx, client, branch, config, row)
 }
 
@@ -108,11 +109,11 @@ func checkResults(t *testing.T, ctx context.Context, client *model.Client, b *mo
 
 	// Check entities load from the DB
 	b, err := client.Branch.Query().First(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	c, err = client.Configuration.Query().First(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	r, err = client.ConfigurationRow.Query().First(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertResults(t, b, c, r)
 }
 
@@ -122,7 +123,7 @@ func assertResults(t *testing.T, b *model.Branch, c *model.Configuration, r *mod
 	// Test created entities
 	assert.Equal(t, keboola.BranchID(123), b.BranchID)
 	assert.Equal(t, "main", b.Name)
-	assert.Equal(t, true, b.IsDefault)
+	assert.True(t, b.IsDefault)
 	assert.Equal(t, "my main branch", b.Description)
 
 	assert.Equal(t, keboola.BranchID(123), c.BranchID)
@@ -130,7 +131,7 @@ func assertResults(t *testing.T, b *model.Branch, c *model.Configuration, r *mod
 	assert.Equal(t, keboola.ConfigID("my-config"), c.ConfigID)
 	assert.Equal(t, "my-config", c.Name)
 	assert.Equal(t, "My Config", c.Description)
-	assert.Equal(t, false, c.IsDisabled)
+	assert.False(t, c.IsDisabled)
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: "foo1", Value: "bar1"},
 	}), c.Content)
@@ -141,7 +142,7 @@ func assertResults(t *testing.T, b *model.Branch, c *model.Configuration, r *mod
 	assert.Equal(t, keboola.RowID("my-row"), r.RowID)
 	assert.Equal(t, "my-row", r.Name)
 	assert.Equal(t, "My Row", r.Description)
-	assert.Equal(t, true, r.IsDisabled)
+	assert.True(t, r.IsDisabled)
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: "foo2", Value: "bar2"},
 	}), r.Content)
@@ -164,7 +165,7 @@ func clientForTest(t *testing.T) (context.Context, *model.Client) {
 	ctx := context.Background()
 	client := enttest.Open(t, "sqlite3", "file:model_test?mode=memory&_fk=1")
 	t.Cleanup(func() {
-		assert.NoError(t, client.Close())
+		require.NoError(t, client.Close())
 	})
 
 	return ctx, client
@@ -174,27 +175,27 @@ func createEntities(t *testing.T, ctx context.Context, client *model.Client) {
 	t.Helper()
 
 	tx, err := client.Tx(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	branch, err := branchBuilder(tx).
 		SetBranchID(123).
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	config, err := configBuilder(tx).
 		SetParent(branch).
 		SetComponentID("keboola.my-component").
 		SetConfigID("my-config").
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = rowBuilder(tx).
 		SetParent(config).
 		SetRowID("my-row").
 		Save(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, tx.Commit())
+	require.NoError(t, tx.Commit())
 }
 
 func branchBuilder(tx *model.Tx) *model.BranchCreate {

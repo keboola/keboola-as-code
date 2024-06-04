@@ -103,7 +103,7 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 	}
 
 	// VolumeByType
-	assert.Len(t, volumes.VolumeByType("foo"), 0)
+	assert.Empty(t, volumes.VolumeByType("foo"))
 	assert.Equal(t, []*test.Volume{
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_1", TypeValue: "hdd", LabelValue: "1", PathValue: filepath.Join(tc.VolumesPath, "hdd", "1")},
 		{NodeIDValue: "my-node", IDValue: "volume_hdd_2", TypeValue: "hdd", LabelValue: "2", PathValue: filepath.Join(tc.VolumesPath, "hdd", "2")},

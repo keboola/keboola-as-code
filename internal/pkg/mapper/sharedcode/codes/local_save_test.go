@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -23,17 +24,17 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentID))
 
 	// Create dir
-	assert.NoError(t, state.ObjectsRoot().Mkdir(context.Background(), filesystem.Dir(codeFilePath)))
+	require.NoError(t, state.ObjectsRoot().Mkdir(context.Background(), filesystem.Dir(codeFilePath)))
 
 	// Save to file
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
 	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)
 	assert.NotNil(t, sharedCodeFileRaw)
 	sharedCodeFile, err := sharedCodeFileRaw.ToRawFile()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, codeFilePath, sharedCodeFile.Path())
 	assert.Equal(t, "foo\nbar\n", sharedCodeFile.Content)
 }

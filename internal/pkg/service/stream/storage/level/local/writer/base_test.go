@@ -29,7 +29,7 @@ func TestBaseWriter(t *testing.T) {
 	slice := newTestSlice(t)
 
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	w := NewBaseWriter(logger, clk, slice, dirPath, filePath, writechain.New(logger, file), NewEvents())
 
 	// Test getters
@@ -45,25 +45,25 @@ func TestBaseWriter(t *testing.T) {
 	// Test write methods
 	n, notifier, err := w.WriteWithNotify([]byte("123"))
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, notifier.Wait())
+	require.NoError(t, err)
+	require.NoError(t, notifier.Wait())
 	n, err = w.Write([]byte("456"))
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	n, err = w.WriteString("789")
 	w.AddWriteOp(1)
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	notifier, err = w.DoWithNotify(func() error {
 		_, err := w.Write([]byte("abc"))
 		w.AddWriteOp(1)
 		return err
 	})
-	assert.NoError(t, err)
-	assert.NoError(t, notifier.Wait())
+	require.NoError(t, err)
+	require.NoError(t, notifier.Wait())
 
 	// Test Close method
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Try Close again
 	err = w.Close(ctx)
@@ -73,7 +73,7 @@ func TestBaseWriter(t *testing.T) {
 
 	// Check file content
 	content, err := os.ReadFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("123456789abc"), content)
 }
 
@@ -88,7 +88,7 @@ func TestBaseWriter_CloseError(t *testing.T) {
 	slice := newTestSlice(t)
 
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	w := NewBaseWriter(logger, clk, slice, dirPath, filePath, writechain.New(logger, file), NewEvents())
 
 	w.AppendCloseFn("my-closer", func() error {

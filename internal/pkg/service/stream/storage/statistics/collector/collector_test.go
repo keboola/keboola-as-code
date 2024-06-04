@@ -54,8 +54,8 @@ func TestCollector(t *testing.T) {
 	// Create 3 writers
 	w1 := &testWriter{SliceKeyValue: test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")}
 	w2 := &testWriter{SliceKeyValue: test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")}
-	assert.NoError(t, events.WriterOpen(w1))
-	assert.NoError(t, events.WriterOpen(w2))
+	require.NoError(t, events.WriterOpen(w1))
+	require.NoError(t, events.WriterOpen(w2))
 
 	// Sync: no data
 	triggerSyncAndWait()
@@ -144,7 +144,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	w1.LastRowAtValue = utctime.MustParse("2000-01-01T01:40:00.000Z")
 	w1.CompressedSizeValue = 60
 	w1.UncompressedSizeValue = 600
-	assert.NoError(t, events.WriterClose(w1, nil))
+	require.NoError(t, events.WriterClose(w1, nil))
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
@@ -181,7 +181,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	w2.LastRowAtValue = utctime.MustParse("2000-01-01T01:35:00.000Z")
 	w2.CompressedSizeValue = 30
 	w2.UncompressedSizeValue = 300
-	assert.NoError(t, events.WriterClose(w2, nil))
+	require.NoError(t, events.WriterClose(w2, nil))
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value

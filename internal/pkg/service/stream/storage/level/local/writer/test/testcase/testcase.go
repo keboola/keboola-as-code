@@ -126,7 +126,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	assert.NotEmpty(t, w.UncompressedSize())
 
 	// Close volume
-	assert.NoError(t, vol.Close(ctx))
+	require.NoError(t, vol.Close(ctx))
 
 	// Check compressed size
 	stat, err := os.Stat(w.FilePath())
@@ -146,13 +146,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Read file content
 	content, err := io.ReadAll(reader)
 	require.NoError(t, err)
-	assert.Equal(t, int(w.UncompressedSize().Bytes()), len(content), "uncompressed file size doesn't match")
+	assert.Len(t, content, int(w.UncompressedSize().Bytes()), "uncompressed file size doesn't match")
 
 	// Check written data
 	tc.Validator(t, string(content))
 
 	// Close file
-	assert.NoError(t, f.Close())
+	require.NoError(t, f.Close())
 }
 
 func (tc *WriterTestCase) newSlice(t *testing.T, volume *writerVolume.Volume) *model.Slice {

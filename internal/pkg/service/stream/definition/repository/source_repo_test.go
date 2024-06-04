@@ -49,19 +49,19 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// List - empty
 		sources, err := sourceRepo.List(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sources)
 		sources, err = sourceRepo.List(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 	{
 		// ListDeleted - empty
 		sources, err := sourceRepo.ListDeleted(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sources)
 		sources, err = sourceRepo.ListDeleted(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 	{
@@ -122,13 +122,13 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// List
 		sources, err := sourceRepo.List(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sources, 2)
 		sources, err = sourceRepo.List(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sources, 1)
 		sources, err = sourceRepo.List(sourceKey2.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sources, 1)
 	}
 	{
@@ -152,7 +152,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Versions
 		versions, err := sourceRepo.Versions(sourceKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, versions, 1)
 	}
 
@@ -214,10 +214,10 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		source, err := sourceRepo.Version(sourceKey1, 1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Source 1", source.Name)
 		source, err = sourceRepo.Version(sourceKey1, 2).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "Modified Name", source.Name)
 	}
 
@@ -250,7 +250,7 @@ func TestRepository_Source(t *testing.T) {
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err())
+		require.NoError(t, sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -269,20 +269,20 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Version - found
 		result, err := sourceRepo.Version(sourceKey1, 1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Source 1", result.Name)
 		assert.Equal(t, definition.VersionNumber(1), result.VersionNumber())
 	}
 	{
 		// List - empty
 		sources, err := sourceRepo.List(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 	{
 		// ListDeleted
 		sources, err := sourceRepo.ListDeleted(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sources, 1)
 	}
 
@@ -304,7 +304,7 @@ func TestRepository_Source(t *testing.T) {
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, sourceRepo.ExistsOrErr(sourceKey1).Do(ctx).Err())
+		require.NoError(t, sourceRepo.ExistsOrErr(sourceKey1).Do(ctx).Err())
 	}
 	{
 		// Get
@@ -324,13 +324,13 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// List
 		sources, err := sourceRepo.List(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, sources, 1)
 	}
 	{
 		// ListDeleted - empty
 		sources, err := sourceRepo.ListDeleted(sourceKey1.BranchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, sources)
 	}
 
@@ -348,12 +348,12 @@ func TestRepository_Source(t *testing.T) {
 		source1, err := sourceRepo.Get(sourceKey1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(3), source1.VersionNumber())
-		assert.NoError(t, sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err())
+		require.NoError(t, sourceRepo.SoftDelete(clk.Now(), sourceKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		source1 := test.NewSource(sourceKey1)
-		assert.NoError(t, sourceRepo.Create(clk.Now(), "Re-create", &source1).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Create(clk.Now(), "Re-create", &source1).Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(4), source1.VersionNumber())
 		assert.Equal(t, "My Source", source1.Name)
 		assert.Equal(t, "My Description", source1.Description)
@@ -370,7 +370,7 @@ func TestRepository_Source(t *testing.T) {
 	{
 		// Versions
 		versions, err := sourceRepo.Versions(sourceKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, versions, 4)
 	}
 
@@ -378,12 +378,12 @@ func TestRepository_Source(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rollback
-		assert.NoError(t, sourceRepo.Rollback(clk.Now(), sourceKey1, 2).Do(ctx).Err())
+		require.NoError(t, sourceRepo.Rollback(clk.Now(), sourceKey1, 2).Do(ctx).Err())
 	}
 	{
 		// State after rollback
 		result1, err := sourceRepo.Get(sourceKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "My Description", result1.Description)
 		assert.Equal(t, definition.VersionNumber(5), result1.VersionNumber())
 		assert.Equal(t, "Rollback to version 2", result1.VersionDescription())

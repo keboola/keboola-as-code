@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -16,15 +17,15 @@ func TestDumpAll(t *testing.T) {
 
 	// Put keys
 	_, err := client.Put(context.Background(), "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(context.Background(), "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(context.Background(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Dump
 	dump, err := etcdhelper.DumpAllToString(context.Background(), client)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expected := `
 <<<<<
@@ -60,14 +61,14 @@ func TestDumpAllKeys(t *testing.T) {
 
 	// Put keys
 	_, err := client.Put(context.Background(), "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(context.Background(), "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(context.Background(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Dump
 	dump, err := etcdhelper.DumpAllKeys(context.Background(), client)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"key1", "key2", "key3/key4"}, dump)
 }

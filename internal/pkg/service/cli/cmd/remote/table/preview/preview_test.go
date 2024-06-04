@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
@@ -62,7 +63,7 @@ func TestParseWhereFilter(t *testing.T) {
 
 	for _, c := range cases {
 		actual, err := ParseWhereFilter(c.input)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, c.expected, actual)
 	}
 }
@@ -79,7 +80,7 @@ func TestParseWhereFilter_Errors(t *testing.T) {
 
 	for _, c := range cases {
 		actual, err := ParseWhereFilter(c)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Empty(t, actual)
 	}
 }
@@ -109,7 +110,7 @@ func TestParseColumnOrder(t *testing.T) {
 
 	for _, c := range cases {
 		actual, err := ParseColumnOrder(c.input)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, c.expected, actual)
 	}
 }

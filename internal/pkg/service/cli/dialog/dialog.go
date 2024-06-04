@@ -3,7 +3,7 @@ package dialog
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
@@ -25,7 +25,7 @@ func NewForTest(t *testing.T, interactive bool) (*Dialogs, terminal.Console) {
 	if interactive {
 		// Create virtual console
 		console, err := terminal.New(t)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Create prompt
 		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)

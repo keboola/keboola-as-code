@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
@@ -107,73 +108,73 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Please enter a template public name for users."))
+		require.NoError(t, console.ExpectString("Please enter a template public name for users."))
 
-		assert.NoError(t, console.ExpectString("Template name:"))
+		require.NoError(t, console.ExpectString("Template name:"))
 
-		assert.NoError(t, console.SendLine(`My Super Template`))
+		require.NoError(t, console.SendLine(`My Super Template`))
 
-		assert.NoError(t, console.ExpectString("Please enter a template internal ID."))
+		require.NoError(t, console.ExpectString("Please enter a template internal ID."))
 
-		assert.NoError(t, console.ExpectString("Template ID:"))
+		require.NoError(t, console.ExpectString("Template ID:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - use generated default value, "my-super-template"
+		require.NoError(t, console.SendEnter()) // enter - use generated default value, "my-super-template"
 
-		assert.NoError(t, console.ExpectString("Please enter a short template description."))
+		require.NoError(t, console.ExpectString("Please enter a short template description."))
 
-		assert.NoError(t, console.SendEnter()) // -> start editor
+		require.NoError(t, console.SendEnter()) // -> start editor
 
-		assert.NoError(t, console.ExpectString("Select the source branch:"))
+		require.NoError(t, console.ExpectString("Select the source branch:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - Main
+		require.NoError(t, console.SendEnter()) // enter - Main
 
-		assert.NoError(t, console.ExpectString("Select the configurations to include in the template:"))
+		require.NoError(t, console.ExpectString("Select the configurations to include in the template:"))
 
-		assert.NoError(t, console.ExpectString("Config 1 (keboola.my-component:1)"))
+		require.NoError(t, console.ExpectString("Config 1 (keboola.my-component:1)"))
 
-		assert.NoError(t, console.ExpectString("Config 2 (keboola.my-component:2)"))
+		require.NoError(t, console.ExpectString("Config 2 (keboola.my-component:2)"))
 
-		assert.NoError(t, console.ExpectString("Config 3 (keboola.my-component:3)"))
+		require.NoError(t, console.ExpectString("Config 3 (keboola.my-component:3)"))
 
-		assert.NoError(t, console.SendSpace()) // -> select Config 1
+		require.NoError(t, console.SendSpace()) // -> select Config 1
 
-		assert.NoError(t, console.SendDownArrow()) // -> Config 2
+		require.NoError(t, console.SendDownArrow()) // -> Config 2
 
-		assert.NoError(t, console.SendDownArrow()) // -> Config 3
+		require.NoError(t, console.SendDownArrow()) // -> Config 3
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendEnter()) // -> confirm
+		require.NoError(t, console.SendEnter()) // -> confirm
 
-		assert.NoError(t, console.ExpectString("Please enter a human readable ID for each config and config row."))
+		require.NoError(t, console.ExpectString("Please enter a human readable ID for each config and config row."))
 
-		assert.NoError(t, console.SendEnter()) // -> start editor
+		require.NoError(t, console.SendEnter()) // -> start editor
 
-		assert.NoError(t, console.ExpectString("Please select which fields in the configurations should be user inputs."))
+		require.NoError(t, console.ExpectString("Please select which fields in the configurations should be user inputs."))
 
-		assert.NoError(t, console.SendEnter()) // -> start editor
+		require.NoError(t, console.SendEnter()) // -> start editor
 
-		assert.NoError(t, console.ExpectString("Please define steps and groups for user inputs specification."))
+		require.NoError(t, console.ExpectString("Please define steps and groups for user inputs specification."))
 
-		assert.NoError(t, console.SendEnter()) // -> start editor
+		require.NoError(t, console.SendEnter()) // -> start editor
 
-		assert.NoError(t, console.ExpectString("Please complete the user inputs specification."))
+		require.NoError(t, console.ExpectString("Please complete the user inputs specification."))
 
-		assert.NoError(t, console.SendEnter()) // -> start editor
+		require.NoError(t, console.SendEnter()) // -> start editor
 
-		assert.NoError(t, console.ExpectString("Select the components that are used in the templates."))
+		require.NoError(t, console.ExpectString("Select the components that are used in the templates."))
 
-		assert.NoError(t, console.SendEnter()) // enter
+		require.NoError(t, console.SendEnter()) // enter
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
@@ -262,7 +263,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Run
 	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
@@ -372,7 +373,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Run
 	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{

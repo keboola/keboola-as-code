@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
@@ -16,7 +17,7 @@ func TestPrompt_Select(t *testing.T) {
 
 	// Create virtual console
 	console, err := terminal.New(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
@@ -25,11 +26,11 @@ func TestPrompt_Select(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("My Select"))
+		require.NoError(t, console.ExpectString("My Select"))
 
-		assert.NoError(t, console.SendEnter()) // enter - default value
+		require.NoError(t, console.SendEnter()) // enter - default value
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -39,9 +40,9 @@ func TestPrompt_Select(t *testing.T) {
 		UseDefault: true,
 		Default:    "value2",
 	})
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.True(t, ok)
@@ -53,7 +54,7 @@ func TestPrompt_SelectIndex(t *testing.T) {
 
 	// Create virtual console
 	console, err := terminal.New(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
@@ -62,11 +63,11 @@ func TestPrompt_SelectIndex(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("My Select"))
+		require.NoError(t, console.ExpectString("My Select"))
 
-		assert.NoError(t, console.SendEnter()) // enter - default value
+		require.NoError(t, console.SendEnter()) // enter - default value
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -76,9 +77,9 @@ func TestPrompt_SelectIndex(t *testing.T) {
 		UseDefault: true,
 		Default:    1,
 	})
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.True(t, ok)
@@ -90,7 +91,7 @@ func TestPrompt_MultiSelect(t *testing.T) {
 
 	// Create virtual console
 	console, err := terminal.New(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
@@ -99,11 +100,11 @@ func TestPrompt_MultiSelect(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("My Select"))
+		require.NoError(t, console.ExpectString("My Select"))
 
-		assert.NoError(t, console.SendEnter()) // enter - default value
+		require.NoError(t, console.SendEnter()) // enter - default value
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -112,9 +113,9 @@ func TestPrompt_MultiSelect(t *testing.T) {
 		Options: []string{"value1", "value2", "value3"},
 		Default: []string{"value1", "value3"},
 	})
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.True(t, ok)
@@ -126,7 +127,7 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 
 	// Create virtual console
 	console, err := terminal.New(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
@@ -135,11 +136,11 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("My Select"))
+		require.NoError(t, console.ExpectString("My Select"))
 
-		assert.NoError(t, console.SendEnter()) // enter - default value
+		require.NoError(t, console.SendEnter()) // enter - default value
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -148,9 +149,9 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 		Options: []string{"value1", "value2", "value3"},
 		Default: []int{0, 2},
 	})
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.True(t, ok)
@@ -162,7 +163,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 
 	// Create virtual console
 	console, err := terminal.New(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
@@ -171,13 +172,13 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("My input"))
+		require.NoError(t, console.ExpectString("My input"))
 
-		assert.NoError(t, console.ExpectString("Leave blank for default value."))
+		require.NoError(t, console.ExpectString("Leave blank for default value."))
 
-		assert.NoError(t, console.SendEnter()) // enter - default value
+		require.NoError(t, console.SendEnter()) // enter - default value
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -188,9 +189,9 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 		Hidden:      true,
 		Default:     "default",
 	})
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.True(t, ok)
@@ -202,7 +203,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 
 	// Create virtual console
 	console, err := terminal.New(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
@@ -211,11 +212,11 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("My input"))
+		require.NoError(t, console.ExpectString("My input"))
 
-		assert.NoError(t, console.SendEnter()) // enter - default value
+		require.NoError(t, console.SendEnter()) // enter - default value
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 
 		assert.NotContains(t, console.String(), "Leave blank for default value.")
 	}()
@@ -227,9 +228,9 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 		Help:        "help",
 		Hidden:      true,
 	})
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.True(t, ok)

@@ -9,6 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -31,7 +32,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 			IsDefault: true,
 		},
 	}
-	assert.NoError(t, state.Set(branchState))
+	require.NoError(t, state.Set(branchState))
 
 	// Scheduler config
 	schedulerKey := model.ConfigKey{
@@ -47,7 +48,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 			ConfigKey: schedulerKey,
 		},
 	}
-	assert.NoError(t, state.Set(schedulerConfigState))
+	require.NoError(t, state.Set(schedulerConfigState))
 
 	// Expected HTTP call
 	var httpRequest *http.Request
@@ -74,7 +75,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddDeleted(schedulerConfigState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check API request

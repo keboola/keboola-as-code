@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -28,30 +29,30 @@ func TestSelectConfigInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("LABEL:"))
+		require.NoError(t, console.ExpectString("LABEL:"))
 
-		assert.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
+		require.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
 
-		assert.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
+		require.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
 
-		assert.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
+		require.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
 
 		// down arrow -> select Config 2
-		assert.NoError(t, console.SendDownArrow())
-		assert.NoError(t, console.SendEnter())
+		require.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendEnter())
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	out, err := dialog.SelectConfig(allConfigs, `LABEL`, configmap.NewValue(config2.String()))
 	assert.Same(t, config2, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestSelectConfigByFlag(t *testing.T) {
@@ -69,7 +70,7 @@ func TestSelectConfigByFlag(t *testing.T) {
 	// Run
 	out, err := dialog.SelectConfig(allConfigs, `LABEL`, configmap.Value[string]{Value: "2", SetBy: configmap.SetByFlag})
 	assert.Same(t, config2, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestSelectConfigNonInteractive(t *testing.T) {
@@ -86,7 +87,7 @@ func TestSelectConfigNonInteractive(t *testing.T) {
 
 	// Run
 	_, err := dialog.SelectConfig(allConfigs, `LABEL`, configmap.NewValue(""))
-	assert.ErrorContains(t, err, "please specify config")
+	require.ErrorContains(t, err, "please specify config")
 }
 
 func TestSelectConfigMissing(t *testing.T) {
@@ -104,7 +105,7 @@ func TestSelectConfigMissing(t *testing.T) {
 	// Run
 	out, err := dialog.SelectConfig(allConfigs, `LABEL`, configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault})
 	assert.Nil(t, out)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `please specify config`, err.Error())
 }
 
@@ -128,42 +129,42 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("LABEL:"))
+		require.NoError(t, console.ExpectString("LABEL:"))
 
-		assert.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
+		require.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
 
-		assert.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
+		require.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
 
-		assert.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
+		require.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
 
-		assert.NoError(t, console.ExpectString("Config 4 (foo.bar:4)"))
+		require.NoError(t, console.ExpectString("Config 4 (foo.bar:4)"))
 
-		assert.NoError(t, console.ExpectString("Config 5 (foo.bar:5)"))
+		require.NoError(t, console.ExpectString("Config 5 (foo.bar:5)"))
 
-		assert.NoError(t, console.SendDownArrow()) // -> Config 2
+		require.NoError(t, console.SendDownArrow()) // -> Config 2
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendDownArrow()) // -> Config 3
+		require.NoError(t, console.SendDownArrow()) // -> Config 3
 
-		assert.NoError(t, console.SendDownArrow()) // -> Config 4
+		require.NoError(t, console.SendDownArrow()) // -> Config 4
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendEnter()) // -> confirm
+		require.NoError(t, console.SendEnter()) // -> confirm
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	out, err := dialog.SelectConfigs(allConfigs, `LABEL`, configmap.Value[string]{Value: config2.Name + config4.Name, SetBy: configmap.SetByDefault})
 	assert.Equal(t, []*model.ConfigWithRows{config2, config4}, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestSelectConfigsByFlag(t *testing.T) {
@@ -183,7 +184,7 @@ func TestSelectConfigsByFlag(t *testing.T) {
 	// Run
 	out, err := dialog.SelectConfigs(allConfigs, `LABEL`, configmap.Value[string]{Value: "foo.bar:2, foo.bar:4", SetBy: configmap.SetByFlag})
 	assert.Equal(t, []*model.ConfigWithRows{config2, config4}, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestSelectConfigsMissing(t *testing.T) {
@@ -203,6 +204,6 @@ func TestSelectConfigsMissing(t *testing.T) {
 	// Run
 	out, err := dialog.SelectConfigs(allConfigs, `LABEL`, configmap.NewValue(""))
 	assert.Nil(t, out)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `please specify at least one config`, err.Error())
 }

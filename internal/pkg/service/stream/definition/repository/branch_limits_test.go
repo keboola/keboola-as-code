@@ -8,6 +8,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -49,14 +50,14 @@ func TestBranchLimits_BranchesPerProject(t *testing.T) {
 		ops++
 		if ops == 100 || i == repository.MaxBranchesPerProject {
 			// Send
-			assert.NoError(t, txn.Do(ctx).Err())
+			require.NoError(t, txn.Do(ctx).Err())
 			// Reset
 			ops = 0
 			txn = op.Txn(client)
 		}
 	}
 	branches, err := branchRepo.List(branchKey.ProjectID).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, branches, repository.MaxBranchesPerProject)
 
 	// Exceed the limit

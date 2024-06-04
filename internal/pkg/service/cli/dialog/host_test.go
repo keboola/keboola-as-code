@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 )
@@ -20,11 +21,11 @@ func TestAskStorageAPIHost_HTTPS(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("API host: "))
+		require.NoError(t, console.ExpectString("API host: "))
 
-		assert.NoError(t, console.SendLine(`https://foo.bar.com/`))
+		require.NoError(t, console.SendLine(`https://foo.bar.com/`))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -32,9 +33,9 @@ func TestAskStorageAPIHost_HTTPS(t *testing.T) {
 	assert.Equal(t, `https://foo.bar.com/`, out)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestAskStorageAPIHost_HTTP(t *testing.T) {
@@ -48,11 +49,11 @@ func TestAskStorageAPIHost_HTTP(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("API host: "))
+		require.NoError(t, console.ExpectString("API host: "))
 
-		assert.NoError(t, console.SendLine(`http://foo.bar.com/`))
+		require.NoError(t, console.SendLine(`http://foo.bar.com/`))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -60,23 +61,23 @@ func TestAskStorageAPIHost_HTTP(t *testing.T) {
 	assert.Equal(t, `http://foo.bar.com/`, out)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestAPIHostValidator(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, StorageAPIHostValidator("connection.keboola.com"))
-	assert.NoError(t, StorageAPIHostValidator("connection.keboola.com/"))
-	assert.NoError(t, StorageAPIHostValidator("https://connection.keboola.com"))
-	assert.NoError(t, StorageAPIHostValidator("https://connection.keboola.com/"))
+	require.NoError(t, StorageAPIHostValidator("connection.keboola.com"))
+	require.NoError(t, StorageAPIHostValidator("connection.keboola.com/"))
+	require.NoError(t, StorageAPIHostValidator("https://connection.keboola.com"))
+	require.NoError(t, StorageAPIHostValidator("https://connection.keboola.com/"))
 
 	err := StorageAPIHostValidator("")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "value is required", err.Error())
 
 	err = StorageAPIHostValidator("@#$$%^&%#$&")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "invalid host", err.Error())
 }

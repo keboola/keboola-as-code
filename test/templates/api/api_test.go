@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -71,7 +72,8 @@ func TestTemplatesApiE2E(t *testing.T) {
 						Get("/v1/project/default/instances")
 
 					instances := result["instances"].([]any)
-					if assert.NoError(t, err) && assert.Equal(t, 1, len(instances)) {
+					require.NoError(t, err)
+					if assert.Len(t, instances, 1) {
 						instanceId := instances[0].(map[string]any)["instanceId"].(string)
 						request.Path = strings.ReplaceAll(request.Path, instanceIDPlaceholder, instanceId)
 					}
@@ -92,8 +94,8 @@ func TestTemplatesApiE2E(t *testing.T) {
 
 			// Write current etcd KVs
 			etcdDump, err := etcdhelper.DumpAllToString(ctx, etcdClient)
-			assert.NoError(test.T(), err)
-			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(ctx, filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
+			require.NoError(test.T(), err)
+			require.NoError(test.T(), test.WorkingDirFS().WriteFile(ctx, filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
 
 			// Assert current etcd state against expected state.
 			expectedEtcdKVsPath := "expected-etcd-kvs.txt"

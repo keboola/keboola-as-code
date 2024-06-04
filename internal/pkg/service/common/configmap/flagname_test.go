@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFieldToFlagName(t *testing.T) {
@@ -37,12 +38,12 @@ func TestFlagToFieldMap_AlmostEmpty(t *testing.T) {
 	// Struct
 	flagToField1 := make(map[string]orderedmap.Path)
 	err := flagFieldMapTo(in, flagToField1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Struct pointer
 	flagToField2 := make(map[string]orderedmap.Path)
 	err = flagFieldMapTo(&in, flagToField2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check flag to field mapping
 	expectedFlagToField := map[string]orderedmap.Path{
@@ -95,11 +96,11 @@ func TestFlagToFieldMap_Default(t *testing.T) {
 
 	// Struct
 	flagToField1 := make(map[string]orderedmap.Path)
-	assert.NoError(t, flagFieldMapTo(in, flagToField1))
+	require.NoError(t, flagFieldMapTo(in, flagToField1))
 
 	// Struct pointer
 	flagToField2 := make(map[string]orderedmap.Path)
-	assert.NoError(t, flagFieldMapTo(&in, flagToField2))
+	require.NoError(t, flagFieldMapTo(&in, flagToField2))
 
 	// Check flag to field mapping
 	expectedFlagToField := map[string]orderedmap.Path{

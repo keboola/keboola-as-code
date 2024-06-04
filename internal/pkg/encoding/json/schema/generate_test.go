@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
@@ -13,7 +14,7 @@ func TestGenerateDocument(t *testing.T) {
 	t.Parallel()
 	document, err := GenerateDocument(getSampleSchema())
 	documentJSON := json.MustEncodeString(document, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expected := `
 {
@@ -50,7 +51,7 @@ func TestGenerateDocumentEmptySchema(t *testing.T) {
 	t.Parallel()
 	document, err := GenerateDocument([]byte(`{}`))
 	documentJSON := json.MustEncodeString(document, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{}\n", documentJSON)
 }
 
