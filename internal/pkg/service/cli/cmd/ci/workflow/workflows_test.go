@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -24,23 +25,23 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
+		require.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
 
-		assert.NoError(t, console.SendLine(`n`)) // no
+		require.NoError(t, console.SendLine(`n`)) // no
 
-		assert.NoError(t, console.ExpectString(`Generate "push" workflow?`))
+		require.NoError(t, console.ExpectString(`Generate "push" workflow?`))
 
-		assert.NoError(t, console.SendEnter()) // enter - yes
+		require.NoError(t, console.SendEnter()) // enter - yes
 
-		assert.NoError(t, console.ExpectString(`Generate "pull" workflow?`))
+		require.NoError(t, console.ExpectString(`Generate "pull" workflow?`))
 
-		assert.NoError(t, console.SendLine(`n`)) // no
+		require.NoError(t, console.SendLine(`n`)) // no
 
-		assert.NoError(t, console.ExpectString(`Please select the main GitHub branch name:`))
+		require.NoError(t, console.ExpectString(`Please select the main GitHub branch name:`))
 
-		assert.NoError(t, console.SendEnter()) // enter - main
+		require.NoError(t, console.SendEnter()) // enter - main
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -53,9 +54,9 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}, out)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestAskWorkflowsOptionsByFlag(t *testing.T) {

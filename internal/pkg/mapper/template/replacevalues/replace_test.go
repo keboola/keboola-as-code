@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -143,7 +144,7 @@ func TestValues_Validate_DuplicateOld(t *testing.T) {
 	)
 
 	err := replacements.validate()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `the old ID "12" is defined 2x`, err.Error())
 }
 
@@ -179,7 +180,7 @@ func TestValues_Validate_DuplicateNew(t *testing.T) {
 	)
 
 	err := replacements.validate()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `the new ID "23" is defined 2x`, err.Error())
 }
 
@@ -319,7 +320,7 @@ func TestValues_Replace(t *testing.T) {
 	}
 
 	replaced, err := replacements.Replace(input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, replaced)
 }
 

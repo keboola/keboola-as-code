@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -30,9 +30,9 @@ func TestAssertKVsString_Equal(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// No error is expected
 	etcdhelper.AssertKVsString(t, client, `
@@ -57,9 +57,9 @@ func TestAssertKVsString_Equal_WithIgnoredKeyPattern(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "foo123", "bar")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// No error is expected
 	etcdhelper.AssertKVsString(t, client, `
@@ -78,9 +78,9 @@ func TestAssertKVsString_Difference(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mT := &mockedT{}
 	etcdhelper.AssertKVsString(mT, client, `
@@ -146,9 +146,9 @@ func TestAssertKVsString_OnlyInActual(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mT := &mockedT{}
 	etcdhelper.AssertKVsString(mT, client, `
@@ -174,7 +174,7 @@ func TestAssertKVsString_OnlyInExpected(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mT := &mockedT{}
 	etcdhelper.AssertKVsString(mT, client, `
@@ -206,9 +206,9 @@ func TestAssertKeys_Equal(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// No error is expected
 	etcdhelper.AssertKeys(t, client, []string{"key1", "key2"})
@@ -221,9 +221,9 @@ func TestAssertKeys_Equal_WithIgnoredKeyPattern(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "foo123", "bar")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// No error is expected
 	etcdhelper.AssertKeys(t, client, []string{"key1"}, etcdhelper.WithIgnoredKeyPattern(`^foo.+`))
@@ -236,9 +236,9 @@ func TestAssertKeys_Difference(t *testing.T) {
 	// Put keys
 	ctx := context.Background()
 	_, err := client.Put(ctx, "key1", "value1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mT := &mockedT{}
 	etcdhelper.AssertKeys(mT, client, []string{"key1", "key3"})

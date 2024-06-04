@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
@@ -21,28 +22,28 @@ func TestAskCreateWorkspace(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Enter a name for the new workspace"))
+		require.NoError(t, console.ExpectString("Enter a name for the new workspace"))
 
-		assert.NoError(t, console.SendLine("foo"))
+		require.NoError(t, console.SendLine("foo"))
 
-		assert.NoError(t, console.ExpectString("Select a type for the new workspace"))
+		require.NoError(t, console.ExpectString("Select a type for the new workspace"))
 
-		assert.NoError(t, console.SendDownArrow())
-		assert.NoError(t, console.SendEnter()) // python
+		require.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendEnter()) // python
 
-		assert.NoError(t, console.ExpectString("Select a size for the new workspace"))
+		require.NoError(t, console.ExpectString("Select a size for the new workspace"))
 
-		assert.NoError(t, console.SendEnter()) // small
+		require.NoError(t, console.SendEnter()) // small
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	opts, err := AskCreateWorkspace(d, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, create.CreateOptions{

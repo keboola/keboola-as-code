@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -28,12 +29,12 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(configState.Manifest(), object, model.NewChangedFields())
 
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(context.Background(), blocksDir))
+	require.NoError(t, fs.Mkdir(context.Background(), blocksDir))
 
 	// Save
 	err := state.Mapper().MapBeforeLocalSave(context.Background(), recipe)
-	assert.NoError(t, err)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
 }
 
@@ -52,7 +53,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 
 	configDir := filesystem.Join(`branch`, `config`)
 	blocksDir := filesystem.Join(configDir, `blocks`)
-	assert.NoError(t, fs.Mkdir(context.Background(), blocksDir))
+	require.NoError(t, fs.Mkdir(context.Background(), blocksDir))
 
 	// Prepare
 	object.Content.Set(`foo`, `bar`)
@@ -144,7 +145,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
@@ -158,7 +159,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 		} else {
 			var err error
 			fileRaw, err = file.ToRawFile()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			fileRaw.SetDescription(``)
 		}
 		files = append(files, fileRaw)

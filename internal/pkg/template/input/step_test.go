@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStepsGroup_AreStepsSelectable(t *testing.T) {
@@ -70,40 +71,40 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    RequiredAtLeastOne,
 	}
-	assert.NoError(t, g.ValidateStepsCount(10, 2))
+	require.NoError(t, g.ValidateStepsCount(10, 2))
 	err := g.ValidateStepsCount(10, 0)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "at least one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
 		Required:    RequiredZeroOrOne,
 	}
-	assert.NoError(t, g.ValidateStepsCount(10, 0))
-	assert.NoError(t, g.ValidateStepsCount(10, 1))
+	require.NoError(t, g.ValidateStepsCount(10, 0))
+	require.NoError(t, g.ValidateStepsCount(10, 1))
 	err = g.ValidateStepsCount(10, 2)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "zero or one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
 		Required:    RequiredExactlyOne,
 	}
-	assert.NoError(t, g.ValidateStepsCount(10, 1))
+	require.NoError(t, g.ValidateStepsCount(10, 1))
 	err = g.ValidateStepsCount(10, 0)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
 	err = g.ValidateStepsCount(10, 2)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
 		Required:    RequiredAll,
 	}
-	assert.NoError(t, g.ValidateStepsCount(10, 10))
+	require.NoError(t, g.ValidateStepsCount(10, 10))
 	err = g.ValidateStepsCount(10, 9)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "all steps (10) must be selected", err.Error())
 }
 
@@ -184,7 +185,7 @@ input "fb.extractor.username" is defined 4 times in:
 `
 
 	err := groups.ValidateDefinitions(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }
 
@@ -228,6 +229,6 @@ func TestStepsGroups_Validate_InputsErrors(t *testing.T) {
 `
 
 	err := groups.ValidateDefinitions(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }

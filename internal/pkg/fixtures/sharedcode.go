@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -23,7 +23,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 		Local:  &model.Branch{BranchKey: branchKey},
 		Remote: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, state.Set(branchState))
+	require.NoError(t, state.Set(branchState))
 
 	// Shared code
 	sharedCodeKey := model.ConfigKey{
@@ -53,7 +53,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 			},
 		},
 	}
-	assert.NoError(t, state.Set(sharedCodeState))
+	require.NoError(t, state.Set(sharedCodeState))
 
 	// Shared code row 1
 	row1Key := model.ConfigRowKey{
@@ -72,7 +72,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 		Local:  &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
 		Remote: &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
 	}
-	assert.NoError(t, state.Set(row1State))
+	require.NoError(t, state.Set(row1State))
 
 	// Shared code row 2
 	row2Key := model.ConfigRowKey{
@@ -91,6 +91,6 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 		Local:  &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
 		Remote: &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
 	}
-	assert.NoError(t, state.Set(row2State))
+	require.NoError(t, state.Set(row2State))
 	return sharedCodeKey, []model.ConfigRowKey{row1Key, row2Key}
 }

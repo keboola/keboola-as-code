@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -129,7 +130,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	recipe := model.NewRemoteSaveRecipe(manifest, object, model.NewChangedFields("orchestration"))
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Orchestration is stored in API object content

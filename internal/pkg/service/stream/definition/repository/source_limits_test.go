@@ -58,14 +58,14 @@ func TestSourceLimits_SourcesPerBranch(t *testing.T) {
 		ops++
 		if ops == 100 || i == repository.MaxSourcesPerBranch {
 			// Send
-			assert.NoError(t, txn.Do(ctx).Err())
+			require.NoError(t, txn.Do(ctx).Err())
 			// Reset
 			ops = 0
 			txn = op.Txn(client)
 		}
 	}
 	sources, err := sourceRepo.List(branchKey).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, sources, repository.MaxSourcesPerBranch)
 
 	// Exceed the limit
@@ -116,7 +116,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 		ops++
 		if ops == 100 || i == repository.MaxSourceVersionsPerSource {
 			// Send
-			assert.NoError(t, txn.Do(ctx).Err())
+			require.NoError(t, txn.Do(ctx).Err())
 			// Reset
 			ops = 0
 			txn = op.Txn(client)
@@ -124,7 +124,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	}
 	// Check that the maximum count is reached
 	sources, err := sourceRepo.Versions(sourceKey).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, sources, repository.MaxSourceVersionsPerSource)
 
 	// Exceed the limit

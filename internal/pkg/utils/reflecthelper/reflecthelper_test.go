@@ -52,7 +52,7 @@ func TestMapFromOneTaggedField(t *testing.T) {
 func TestStringFromOneTaggedField(t *testing.T) {
 	t.Parallel()
 	value, found := StringFromOneTaggedField("tag2:value3", testData())
-	assert.Equal(t, value, "def")
+	assert.Equal(t, "def", value)
 	assert.True(t, found)
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -40,19 +41,19 @@ func TestManager_Wakeup(t *testing.T) {
 
 	// The first request is send to the API
 	err := manager.Wakeup(ctx, appID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, transport.GetTotalCallCount())
 
 	// Request is skipped, the Interval was not exceeded
 	clk.Add(time.Millisecond)
 	err = manager.Wakeup(ctx, appID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, transport.GetTotalCallCount())
 
 	// Exceed the Interval
 	clk.Add(wakeup.Interval)
 	err = manager.Wakeup(ctx, appID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, transport.GetTotalCallCount())
 }
 
@@ -86,7 +87,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 			defer wg.Done()
 
 			err := manager.Wakeup(ctx, appID)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			counter.Add(1)
 		}()

@@ -7,6 +7,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -31,7 +32,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	assertDone(t, func() {
 		resp := <-ch
 		assert.True(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Empty(t, resp.Events)
 	}, "watcher created timeout")
 
@@ -39,7 +40,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key1").Put(client, "foo").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key1").Put(client, "foo").Do(ctx).Err())
 	}()
 
 	// Wait for CREATE event
@@ -53,7 +54,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "CREATE timeout")
 
@@ -61,7 +62,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key1").Put(client, "new").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key1").Put(client, "new").Do(ctx).Err())
 	}()
 
 	// Wait for UPDATE event
@@ -75,7 +76,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "UPDATE timeout")
 
@@ -84,7 +85,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, ok)
 	}()
 
@@ -97,7 +98,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "DELETE timeout")
 
@@ -121,7 +122,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	pfx := typedPrefixForTest()
 
 	// CREATE key1
-	assert.NoError(t, pfx.Key("key1").Put(client, "foo1").Do(ctx).Err())
+	require.NoError(t, pfx.Key("key1").Put(client, "foo1").Do(ctx).Err())
 
 	// Create watcher
 	stream := pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())
@@ -138,7 +139,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "CREATE1 timeout")
 
@@ -146,7 +147,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		resp := <-ch
 		assert.True(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Empty(t, resp.Events)
 	}, "watcher created timeout")
 
@@ -154,7 +155,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key2").Put(client, "foo2").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key2").Put(client, "foo2").Do(ctx).Err())
 	}()
 
 	// Wait for CREATE key1 event
@@ -168,7 +169,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "CREATE2 timeout")
 
@@ -176,7 +177,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key2").Put(client, "new").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key2").Put(client, "new").Do(ctx).Err())
 	}()
 
 	// Wait for UPDATE event
@@ -197,7 +198,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "UPDATE timeout")
 
@@ -206,7 +207,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, ok)
 	}()
 
@@ -224,7 +225,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "DELETE timeout")
 

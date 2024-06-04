@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -24,20 +25,20 @@ func TestCountOp(t *testing.T) {
 	}
 
 	count, err := NewCountOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(0), count)
 
 	_, err = client.Put(ctx, "test/0", "test0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	count, err = NewCountOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 
 	_, err = client.Put(ctx, "test/1", "test1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	count, err = NewCountOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), count)
 }

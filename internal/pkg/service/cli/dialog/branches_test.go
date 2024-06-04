@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	syncInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync/init"
@@ -29,30 +30,30 @@ func TestSelectBranchInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("LABEL:"))
+		require.NoError(t, console.ExpectString("LABEL:"))
 
-		assert.NoError(t, console.ExpectString("Branch 1 (1)"))
+		require.NoError(t, console.ExpectString("Branch 1 (1)"))
 
-		assert.NoError(t, console.ExpectString("Branch 2 (2)"))
+		require.NoError(t, console.ExpectString("Branch 2 (2)"))
 
-		assert.NoError(t, console.ExpectString("Branch 3 (3)"))
+		require.NoError(t, console.ExpectString("Branch 3 (3)"))
 
 		// down arrow -> select Branch 2
-		assert.NoError(t, console.SendDownArrow())
-		assert.NoError(t, console.SendEnter())
+		require.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendEnter())
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(branch2.String()))
 	assert.Same(t, branch2, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestSelectBranchByFlag(t *testing.T) {
@@ -70,7 +71,7 @@ func TestSelectBranchByFlag(t *testing.T) {
 	// Run
 	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.Value[string]{Value: branch2.Name, SetBy: configmap.SetByFlag})
 	assert.Same(t, branch2, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestSelectBranchNonInteractive(t *testing.T) {
@@ -87,7 +88,7 @@ func TestSelectBranchNonInteractive(t *testing.T) {
 
 	// Run
 	_, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.Value[string]{Value: "", SetBy: configmap.SetByDefault})
-	assert.ErrorContains(t, err, "please specify branch")
+	require.ErrorContains(t, err, "please specify branch")
 }
 
 func TestSelectBranchMissing(t *testing.T) {
@@ -105,7 +106,7 @@ func TestSelectBranchMissing(t *testing.T) {
 	// Run
 	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(""))
 	assert.Nil(t, out)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `please specify branch`, err.Error())
 }
 
@@ -129,42 +130,42 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("LABEL:"))
+		require.NoError(t, console.ExpectString("LABEL:"))
 
-		assert.NoError(t, console.ExpectString("Branch 1 (1)"))
+		require.NoError(t, console.ExpectString("Branch 1 (1)"))
 
-		assert.NoError(t, console.ExpectString("Branch 2 (2)"))
+		require.NoError(t, console.ExpectString("Branch 2 (2)"))
 
-		assert.NoError(t, console.ExpectString("Branch 3 (3)"))
+		require.NoError(t, console.ExpectString("Branch 3 (3)"))
 
-		assert.NoError(t, console.ExpectString("Branch 4 (4)"))
+		require.NoError(t, console.ExpectString("Branch 4 (4)"))
 
-		assert.NoError(t, console.ExpectString("Branch 5 (5)"))
+		require.NoError(t, console.ExpectString("Branch 5 (5)"))
 
-		assert.NoError(t, console.SendDownArrow()) // -> Branch 2
+		require.NoError(t, console.SendDownArrow()) // -> Branch 2
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendDownArrow()) // -> Branch 3
+		require.NoError(t, console.SendDownArrow()) // -> Branch 3
 
-		assert.NoError(t, console.SendDownArrow()) // -> Branch 4
+		require.NoError(t, console.SendDownArrow()) // -> Branch 4
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendEnter()) // -> confirm
+		require.NoError(t, console.SendEnter()) // -> confirm
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, syncInit.Flags{})
 	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }
 
 func TestSelectBranchesByFlag(t *testing.T) {
@@ -188,7 +189,7 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	// Run
 	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, f)
 	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestSelectBranchesMissing(t *testing.T) {
@@ -208,6 +209,6 @@ func TestSelectBranchesMissing(t *testing.T) {
 	// Run
 	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, syncInit.Flags{})
 	assert.Nil(t, out)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `please specify at least one branch`, err.Error())
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -34,7 +35,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, state.Set(object1))
+	require.NoError(t, state.Set(object1))
 
 	// API side
 	object2 := &fixtures.MockedObjectState{
@@ -47,7 +48,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 			Relations: model.Relations{},
 		},
 	}
-	assert.NoError(t, state.Set(object2))
+	require.NoError(t, state.Set(object2))
 
 	// No other side relation
 	assert.Empty(t, object2.Local.Relations)
@@ -55,7 +56,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Other side relation has been created
@@ -86,12 +87,12 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, state.Set(object1))
+	require.NoError(t, state.Set(object1))
 
 	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Warning is logged
 	expected := `

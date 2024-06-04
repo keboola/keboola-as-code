@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -106,7 +107,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 
 	// Target configs
 	target1, target2, target3 := createTargetConfigs(t, state)
@@ -114,18 +115,18 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check target configs relation
 	rel1, err := target1.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, config.ID, rel1.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel2, err := target2.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, config.ID, rel2.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel3, err := target3.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, config.ID, rel3.(*model.UsedInOrchestratorRelation).ConfigID)
 
 	// Assert orchestration
@@ -306,7 +307,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 
 	// Target configs
 	createTargetConfigs(t, state)
@@ -314,7 +315,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Warnings
 	expectedWarnings := `
@@ -431,12 +432,12 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object
@@ -612,12 +613,12 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Warnings
 	expectedWarnings := `

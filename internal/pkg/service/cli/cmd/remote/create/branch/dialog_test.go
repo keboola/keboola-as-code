@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -22,19 +23,19 @@ func TestAskCreateBranch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Enter a name for the new branch"))
+		require.NoError(t, console.ExpectString("Enter a name for the new branch"))
 
-		assert.NoError(t, console.SendLine(`Foo Bar`))
+		require.NoError(t, console.SendLine(`Foo Bar`))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	opts, err := AskCreateBranch(d, configmap.NewValue("Foo Bar"))
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, createBranch.Options{

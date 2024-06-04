@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
@@ -17,7 +18,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	b := BranchMetadata{}
 
 	// First instance
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Instance 1", "tmpl1", "repo", "1.0.0", "12345", &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"}))
+	require.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Instance 1", "tmpl1", "repo", "1.0.0", "12345", &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"}))
 	assert.Len(t, b, 1)
 
 	meta, found := b["KBC.KAC.templates.instances"]
@@ -26,7 +27,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	wildcards.Assert(t, `[{"instanceId":"inst1","instanceName":"Instance 1","templateId":"tmpl1","repositoryName":"repo","version":"1.0.0","created":{"date":"%s","tokenId":"12345"},"updated":{"date":"%s","tokenId":"12345"},"mainConfig":{"configId":"1234","componentId":"foo.bar"}}]`, meta, "case 1")
 
 	usages, err := b.TemplatesInstances()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
 			InstanceID:     "inst1",
@@ -41,9 +42,9 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	}, usages)
 
 	// Second instance
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst2", "Instance 2", "tmpl2", "repo", "2.0.0", "789", nil))
+	require.NoError(t, b.UpsertTemplateInstance(now, "inst2", "Instance 2", "tmpl2", "repo", "2.0.0", "789", nil))
 	usages, err = b.TemplatesInstances()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
 			InstanceID:     "inst1",
@@ -67,9 +68,9 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	}, usages)
 
 	// First instance - update
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &TemplateMainConfig{ConfigID: "7890", ComponentID: "foo.bar"}))
+	require.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &TemplateMainConfig{ConfigID: "7890", ComponentID: "foo.bar"}))
 	usages, err = b.TemplatesInstances()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
 			InstanceID:     "inst2",
@@ -118,24 +119,24 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 		MainConfig:     &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"},
 	}
 	encUsages, err := json.EncodeString(TemplatesInstances{usage1, usage2}, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	b := BranchMetadata{}
 	b["KBC.KAC.templates.instances"] = encUsages
 
 	usage, found, err := b.TemplateInstance("inst1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 	assert.Equal(t, &usage1, usage)
 
 	err = b.DeleteTemplateUsage("inst1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	usages, err := b.TemplatesInstances()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, usages, 1)
 
 	_, found, err = b.TemplateInstance("inst1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 }

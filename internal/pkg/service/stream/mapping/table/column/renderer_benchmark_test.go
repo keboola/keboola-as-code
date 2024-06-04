@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -20,7 +21,7 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		val, err := renderer.CSVValue(c, reqCtx)
-		assert.NoError(b, err)
+		require.NoError(b, err)
 		assert.Equal(b, `"val3"`, val)
 	}
 }
@@ -33,7 +34,7 @@ func BenchmarkColumn_UUID(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		val, err := renderer.CSVValue(c, reqCtx)
-		assert.NoError(b, err)
+		require.NoError(b, err)
 		assert.Len(b, val, 36)
 	}
 }

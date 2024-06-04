@@ -10,6 +10,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
@@ -26,17 +27,17 @@ func TestVolumes(t *testing.T) {
 
 	// Create volumes directories
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1", "slices"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", "drain"), nil, 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "some-file"), nil, 0o640))
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "HDD", "2"), 0o750))
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "3"), 0o750))
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "SSD", "1"), 0o750))
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "ssd", "2"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1", "slices"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", "drain"), nil, 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "some-file"), nil, 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "HDD", "2"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "3"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "SSD", "1"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "ssd", "2"), 0o750))
 
 	// Only two volumes has volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", volume.IDFile), []byte("HDD_2"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "HDD", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Start volumes opening
 	var err error
@@ -45,7 +46,7 @@ func TestVolumes(t *testing.T) {
 	go func() {
 		defer close(done)
 		volumes, err = OpenVolumes(ctx, logger, clk, "my-node", volumesPath)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	// Three volumes are waiting for volume ID file
@@ -54,9 +55,9 @@ func TestVolumes(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Create remaining volume ID files
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", volume.IDFile), []byte("HDD_3"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "SSD", "1", volume.IDFile), []byte("SSD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "ssd", "2", volume.IDFile), []byte("SSD_2"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", volume.IDFile), []byte("HDD_3"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "SSD", "1", volume.IDFile), []byte("SSD_1"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "ssd", "2", volume.IDFile), []byte("SSD_2"), 0o640))
 
 	// Wait for opening
 	select {
@@ -67,15 +68,15 @@ func TestVolumes(t *testing.T) {
 
 	// Check opened volumes
 	assert.Len(t, volumes.All(), 5)
-	assert.Len(t, volumes.VolumeByType("foo"), 0)
+	assert.Empty(t, volumes.VolumeByType("foo"))
 	assert.Len(t, volumes.VolumeByType("hdd"), 3)
 	assert.Len(t, volumes.VolumeByType("ssd"), 2)
 	for _, id := range []volume.ID{"HDD_1", "HDD_2", "HDD_3", "SSD_1", "SSD_2"} {
 		vol, err := volumes.Volume(id)
 		assert.NotNil(t, vol)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	require.NoError(t, volumes.Close(ctx))
 }

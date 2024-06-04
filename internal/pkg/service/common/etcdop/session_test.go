@@ -83,10 +83,10 @@ func TestSession_Retries(t *testing.T) {
 
 	// Wait for the new session
 	_, err = session.WaitForSession(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	lowLevelSession, err = session.Session()
 	assert.NotNil(t, lowLevelSession)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Stop and check logs
 	cancel()

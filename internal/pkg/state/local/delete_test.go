@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -18,7 +19,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	ctx := context.Background()
 
 	record := &fixtures.MockedManifest{}
-	assert.NoError(t, manager.manifest.PersistRecord(record))
+	require.NoError(t, manager.manifest.PersistRecord(record))
 	_, found := manager.manifest.GetRecord(record.Key())
 	assert.True(t, found)
 
@@ -37,14 +38,14 @@ func TestLocalDeleteModel(t *testing.T) {
 `
 
 	// Save files
-	assert.NoError(t, fs.Mkdir(ctx, dirPath))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(metaFilePath, metaFile)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(configFilePath, configFile)))
+	require.NoError(t, fs.Mkdir(ctx, dirPath))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(metaFilePath, metaFile)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(configFilePath, configFile)))
 	record.AddRelatedPath(metaFilePath)
 	record.AddRelatedPath(configFilePath)
 
 	// Delete
-	assert.NoError(t, manager.deleteObject(ctx, record))
+	require.NoError(t, manager.deleteObject(ctx, record))
 
 	// Assert
 	_, found = manager.manifest.GetRecord(record.Key())
@@ -75,16 +76,16 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	//    D .git
 
 	// Create structure
-	assert.NoError(t, fs.Mkdir(ctx, `.hidden`))
-	assert.NoError(t, fs.Mkdir(ctx, filesystem.Join(`.git`, `empty`)))
-	assert.NoError(t, fs.Mkdir(ctx, `tracked-empty`))
-	assert.NoError(t, fs.Mkdir(ctx, filesystem.Join(`tracked-empty-sub`, `abc`)))
-	assert.NoError(t, fs.Mkdir(ctx, `non-tracked-empty`))
-	assert.NoError(t, fs.Mkdir(ctx, `tracked`))
-	assert.NoError(t, fs.Mkdir(ctx, `non-tracked`))
-	assert.NoError(t, fs.Mkdir(ctx, filesystem.Join(`tracked-with-hidden`, `.git`)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
+	require.NoError(t, fs.Mkdir(ctx, `.hidden`))
+	require.NoError(t, fs.Mkdir(ctx, filesystem.Join(`.git`, `empty`)))
+	require.NoError(t, fs.Mkdir(ctx, `tracked-empty`))
+	require.NoError(t, fs.Mkdir(ctx, filesystem.Join(`tracked-empty-sub`, `abc`)))
+	require.NoError(t, fs.Mkdir(ctx, `non-tracked-empty`))
+	require.NoError(t, fs.Mkdir(ctx, `tracked`))
+	require.NoError(t, fs.Mkdir(ctx, `non-tracked`))
+	require.NoError(t, fs.Mkdir(ctx, filesystem.Join(`tracked-with-hidden`, `.git`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
 
 	// Delete
 	trackedPaths := []string{
@@ -94,7 +95,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 		`tracked`,
 		`tracked-with-hidden`,
 	}
-	assert.NoError(t, DeleteEmptyDirectories(ctx, fs, trackedPaths))
+	require.NoError(t, DeleteEmptyDirectories(ctx, fs, trackedPaths))
 
 	// Assert
 	assert.False(t, fs.Exists(ctx, `tracked-empty`))

@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -44,7 +45,7 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 			Metadata:  map[string]string{},
 		},
 	}
-	assert.NoError(t, mockedState.Set(configState))
+	require.NoError(t, mockedState.Set(configState))
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: configRowKey,
@@ -55,12 +56,12 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 			Content:      orderedmap.New(),
 		},
 	}
-	assert.NoError(t, mockedState.Set(rowState))
+	require.NoError(t, mockedState.Set(rowState))
 
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, mockedState.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, mockedState.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	config := configState.Local
 	assert.NotEmpty(t, config.Metadata)

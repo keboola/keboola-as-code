@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -57,7 +58,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	// Check default value
 	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	actual := dialog.defaultValue()
 	actual = strings.ReplaceAll(actual, "`", "")
 	assert.Equal(t, expected, actual)
@@ -105,7 +106,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	// Check default value
 	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), true, components, branch, configs, input.NewInputsMap())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	actual := dialog.defaultValue()
 	actual = strings.ReplaceAll(actual, "`", "")
 	assert.Equal(t, expected, actual)
@@ -135,8 +136,8 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 	// Parse
 	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
-	assert.NoError(t, err)
-	assert.NoError(t, dialog.parse(result))
+	require.NoError(t, err)
+	require.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
 	configKey := model.ConfigKey{BranchID: 123, ComponentID: "keboola.foo.bar", ID: "my-config-1"}
@@ -187,8 +188,8 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 	// Parse
 	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
-	assert.NoError(t, err)
-	assert.NoError(t, dialog.parse(result))
+	require.NoError(t, err)
+	require.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
 	configKey := model.ConfigKey{BranchID: 123, ComponentID: "keboola.foo.bar", ID: "my-config-1"}
@@ -306,7 +307,7 @@ invalid
 	// Parse
 	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = dialog.parse(result)
 
 	// Assert
@@ -324,7 +325,7 @@ invalid
 - line 19: expected "<mark> <input-id> <field.path>", found  "[ ] invalid"
 - line 20: input "foo-bar-password" is already defined with "string" type, but "parameters.bool" has type "bool"
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
 

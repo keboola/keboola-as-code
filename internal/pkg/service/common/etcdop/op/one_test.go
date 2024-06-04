@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -28,22 +29,22 @@ func TestGetOneOp(t *testing.T) {
 	}
 
 	v, err := NewGetOneOp(client, factory, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, v)
 
 	_, err = client.Put(ctx, "foo", "test1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	v, err = NewGetOneOp(client, factory, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, "test1", string(v.Value))
 
 	_, err = client.Put(ctx, "foo", "test2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	v, err = NewGetOneOp(client, factory, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, "test2", string(v.Value))
 }
@@ -80,22 +81,22 @@ func TestGetOneTOp(t *testing.T) {
 	}
 
 	v, err := NewGetOneTOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, v)
 
 	_, err = client.Put(ctx, "foo", json.MustEncodeString(Data{Field: "test1"}, false))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	v, err = NewGetOneTOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, Data{Field: "test1"}, v.Value)
 
 	_, err = client.Put(ctx, "foo", json.MustEncodeString(Data{Field: "test2"}, false))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	v, err = NewGetOneTOp(client, factoryFn, mapper).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, v)
 	assert.Equal(t, Data{Field: "test2"}, v.Value)
 }

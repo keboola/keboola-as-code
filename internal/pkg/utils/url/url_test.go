@@ -5,13 +5,14 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseQuery(t *testing.T) {
 	t.Parallel()
 
 	res, err := ParseQuery("one=two&three=four&five=&six&seven[]=eight&seven[]=nine")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	exp := orderedmap.New()
 	exp.Set("one", "two")

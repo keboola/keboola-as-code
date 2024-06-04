@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -17,7 +18,7 @@ func TestKnownPathsEmpty(t *testing.T) {
 	t.Parallel()
 	paths, err := loadKnownPaths(t, "empty")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, paths.TrackedPaths())
 	assert.Empty(t, paths.UntrackedPaths())
 
@@ -31,7 +32,7 @@ func TestKnownPathsIgnoredFile(t *testing.T) {
 	t.Parallel()
 	paths, err := loadKnownPaths(t, "ignored-file")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, paths.TrackedPaths())
 	assert.Equal(t, []string{`dir`}, paths.UntrackedPaths())
 
@@ -51,7 +52,7 @@ func TestKnownPathsFilter(t *testing.T) {
 
 	// All paths that contain "123-branch" or "extractor" are ignored.
 	// Compare result with result of the TestKnownPathsComplex.
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"description.md",
 		"main",
@@ -64,7 +65,7 @@ func TestKnownPathsComplex(t *testing.T) {
 	t.Parallel()
 	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// All untracked + hidden nodes ignored
 	assert.Empty(t, paths.TrackedPaths())
@@ -270,7 +271,7 @@ func TestKnownPathsClone(t *testing.T) {
 
 	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	clone := paths.Clone()
 	assert.NotSame(t, paths, clone)
@@ -284,15 +285,15 @@ func TestKnownPathsStateMethods(t *testing.T) {
 	t.Parallel()
 	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	path := `123-branch/extractor/ex-generic-v2`
-	assert.Equal(t, paths.State(path), Untracked)
+	assert.Equal(t, Untracked, paths.State(path))
 	assert.False(t, paths.IsTracked(path))
 	assert.True(t, paths.IsUntracked(path))
 
 	paths.MarkTracked(path)
-	assert.Equal(t, paths.State(path), Tracked)
+	assert.Equal(t, Tracked, paths.State(path))
 	assert.True(t, paths.IsTracked(path))
 	assert.False(t, paths.IsUntracked(path))
 }
@@ -301,7 +302,7 @@ func TestKnownPathsUntrackedDirs(t *testing.T) {
 	t.Parallel()
 	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, []string{
 		"123-branch",
@@ -326,7 +327,7 @@ func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
 	t.Parallel()
 	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, []string{
 		"main/extractor/ex-generic-v2",
@@ -340,6 +341,6 @@ func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, er
 	testDir := filesystem.Dir(testFile)
 	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
 	fs, err := aferofs.NewLocalFs(projectDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return New(context.Background(), fs, options...)
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -20,7 +21,7 @@ func TestMappers_ForEach_StopOnFailure(t *testing.T) {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `error 1`, err.Error())
 	assert.Equal(t, []string{`1`}, callOrder)
 }
@@ -33,7 +34,7 @@ func TestMappers_ForEach_DontStopOnFailure(t *testing.T) {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "- error 1\n- error 2\n- error 3\n- error 4\n- error 5", err.Error())
 	assert.Equal(t, []string{`1`, `2`, `3`, `4`, `5`}, callOrder)
 }
@@ -46,7 +47,7 @@ func TestMappers_ForEachReverse_StopOnFailure(t *testing.T) {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `error 5`, err.Error())
 	assert.Equal(t, []string{`5`}, callOrder)
 }
@@ -59,7 +60,7 @@ func TestMappers_ForEachReverse_DontStopOnFailure(t *testing.T) {
 		callOrder = append(callOrder, mapper.(string))
 		return errors.Errorf(`error %s`, mapper.(string))
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "- error 5\n- error 4\n- error 3\n- error 2\n- error 1", err.Error())
 	assert.Equal(t, []string{`5`, `4`, `3`, `2`, `1`}, callOrder)
 }
@@ -135,7 +136,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 
 	// Default file
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("file.txt", "default")))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("file.txt", "default")))
 	logger.Truncate()
 
 	// Create mapper
@@ -148,7 +149,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 
 	// Invoke
 	output, err := mapper.NewFileLoader(fs).ReadRawFile(ctx, input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, output)
 	logger.AssertJSONMessages(t, expectedLogs)
 }
