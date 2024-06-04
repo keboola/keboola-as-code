@@ -324,7 +324,7 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 
 	url := ts.apiScp.APIPublicURL()
 	url.Path = fmt.Sprintf("/v1/branches/%s/sources", ts.branchID.String())
-	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(out))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url.String(), bytes.NewBuffer(out))
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	req.Header.Add("Content-Type", "application/json")
@@ -350,7 +350,7 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 	require.NoError(t, err)
 
 	urlString := task["url"].(string)
-	req, err = http.NewRequestWithContext(ctx, "GET", urlString, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, urlString, nil)
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	resp, err = http.DefaultClient.Do(req)
@@ -377,7 +377,7 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 
 	url := ts.apiScp.APIPublicURL()
 	url.Path = fmt.Sprintf("/v1/branches/%s/sources/%s/sinks", ts.branchID.String(), sourceKey.SourceID.String())
-	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(out))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url.String(), bytes.NewBuffer(out))
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	req.Header.Add("Content-Type", "application/json")
@@ -403,7 +403,7 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 	require.NoError(t, err)
 
 	urlString := task["url"].(string)
-	req, err = http.NewRequestWithContext(ctx, "GET", urlString, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, urlString, nil)
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	resp, err = http.DefaultClient.Do(req)

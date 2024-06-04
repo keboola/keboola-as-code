@@ -47,7 +47,7 @@ func TestLoggerMiddleware(t *testing.T) {
 
 	// Send logged request
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/action", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/action", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -55,13 +55,13 @@ func TestLoggerMiddleware(t *testing.T) {
 
 	// Send ignored requests
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/ignored-1", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/ignored-1", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "OK", rec.Body.String())
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/ignored-2", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/ignored-2", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
