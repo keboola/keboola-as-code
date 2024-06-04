@@ -49,14 +49,14 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 
 	// Test write methods
 	n, err := w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("foo"))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 4, n)
 	n, err = w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("bar"))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 4, n)
 
 	// Test Close method
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Try Close again
 	err = w.Close(ctx)
@@ -119,11 +119,11 @@ func TestEncodingPipeline_Open_Ok(t *testing.T) {
 	tc := newEncodingTestCase(t)
 
 	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, tc.Manager.Pipelines(), 1)
 
-	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Manager.Pipelines(), 0)
+	require.NoError(t, w.Close(context.Background()))
+	assert.Empty(t, tc.Manager.Pipelines())
 }
 
 func TestEncodingPipeline_Open_Duplicate(t *testing.T) {
@@ -132,7 +132,7 @@ func TestEncodingPipeline_Open_Duplicate(t *testing.T) {
 
 	// Create the writer first time - ok
 	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, tc.Manager.Pipelines(), 1)
 
 	// Create writer for the same slice again - error
@@ -142,8 +142,8 @@ func TestEncodingPipeline_Open_Duplicate(t *testing.T) {
 	}
 	assert.Len(t, tc.Manager.Pipelines(), 1)
 
-	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Manager.Pipelines(), 0)
+	require.NoError(t, w.Close(context.Background()))
+	assert.Empty(t, tc.Manager.Pipelines())
 }
 
 func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
@@ -155,7 +155,7 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	tc.Slice.Encoding.Sync.Wait = true
 
 	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are BLOCKING, each write is waiting for the next sync
 
@@ -165,14 +165,14 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo1"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo1"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
@@ -187,7 +187,7 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo2"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
@@ -200,13 +200,13 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo3"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 	}()
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Wait for goroutine
 	wg.Wait()
@@ -261,7 +261,7 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	tc.Slice.Encoding.Sync.Wait = true
 
 	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are BLOCKING, each write is waiting for the next sync
 
@@ -271,14 +271,14 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo1"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo1"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
@@ -291,7 +291,7 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo2"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
@@ -304,13 +304,13 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		n, err := w.WriteRecord(tc.TestRecord("foo3"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 	}()
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 	wg.Wait()
 
 	// Check file content
@@ -362,35 +362,35 @@ func TestEncodingPipeline_Sync_NoWait_ToDisk(t *testing.T) {
 	tc.Slice.Encoding.Sync.Wait = false
 
 	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
 	n, err := w.WriteRecord(tc.TestRecord("foo1"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	n, err = w.WriteRecord(tc.TestRecord("foo2"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
 	n, err = w.WriteRecord(tc.TestRecord("foo3"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
 	n, err = w.WriteRecord(tc.TestRecord("foo4"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`
@@ -438,35 +438,35 @@ func TestEncodingPipeline_Sync_NoWait_ToDiskCache(t *testing.T) {
 	tc.Slice.Encoding.Sync.Wait = false
 
 	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
 	n, err := w.WriteRecord(tc.TestRecord("foo1"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	n, err = w.WriteRecord(tc.TestRecord("foo2"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
 	n, err = w.WriteRecord(tc.TestRecord("foo3"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
 	n, err = w.WriteRecord(tc.TestRecord("foo4"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`

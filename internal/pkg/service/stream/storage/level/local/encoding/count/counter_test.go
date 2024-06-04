@@ -12,6 +12,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -55,7 +56,7 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	backupPath := filepath.Join(t.TempDir(), "backup")
 
 	c, err := NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Empty
 	assert.Equal(t, uint64(0), c.Count())
@@ -79,9 +80,9 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Sync backup manually
-	assert.NoError(t, c.SyncBackup())
+	require.NoError(t, c.SyncBackup())
 	content, err := os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
 
 	// Add 4
@@ -91,14 +92,14 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2003-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Close (sync backup)
-	assert.NoError(t, c.Close())
+	require.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "9,2001-01-01T00:00:00.000Z,2003-01-01T00:00:00.000Z", string(content))
 
 	// Reopen - load from backup
 	c, err = NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, uint64(9), c.Count())
 
 	// Add 6
@@ -108,9 +109,9 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2004-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Close
-	assert.NoError(t, c.Close())
+	require.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
 
 	assert.Equal(t, "", logger.AllMessages())
@@ -126,7 +127,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	backupPath := filepath.Join(t.TempDir(), "backup")
 
 	c, err := NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Empty
 	assert.Equal(t, uint64(0), c.Count())
@@ -152,7 +153,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	// Sync backup by clock
 	clk.Add(backupInterval)
 	content, err := os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
 
 	// Add 4
@@ -163,14 +164,14 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 
 	// Close (sync backup)
 	clk.Add(backupInterval)
-	assert.NoError(t, c.Close())
+	require.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "9,2001-01-01T00:00:00.000Z,2003-01-01T00:00:00.000Z", string(content))
 
 	// Reopen - load from backup
 	c, err = NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, uint64(9), c.Count())
 
 	// Add 6
@@ -180,9 +181,9 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2004-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Close
-	assert.NoError(t, c.Close())
+	require.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
 
 	assert.Equal(t, "", logger.AllMessages())
@@ -237,7 +238,7 @@ func TestCounterWithBackup_OpenError_Invalid(t *testing.T) {
 			t.Parallel()
 
 			backupPath := filepath.Join(t.TempDir(), "backup")
-			assert.NoError(t, os.WriteFile(backupPath, []byte(tc.content), 0o640))
+			require.NoError(t, os.WriteFile(backupPath, []byte(tc.content), 0o640))
 
 			_, err := NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
 			if assert.Error(t, err) {
@@ -274,7 +275,7 @@ func TestCounterWithBackup_FlushError(t *testing.T) {
 
 	backupBuf := &testBuffer{}
 	m, err := NewCounterWithBackup(ctx, clk, logger, backupBuf, backupInterval)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Seek error
 	backupBuf.seekError = errors.New("some seek error")
@@ -302,7 +303,7 @@ func TestCounterWithBackup_CloseError(t *testing.T) {
 
 	backupBuf := &testBuffer{}
 	m, err := NewCounterWithBackup(ctx, clk, logger, backupBuf, backupInterval)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Write error
 	backupBuf.writeError = errors.New("some write error")

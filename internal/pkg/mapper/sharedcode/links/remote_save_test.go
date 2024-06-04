@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -24,7 +25,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	// Invoke
 	object := transformation.Local
 	recipe := model.NewRemoteSaveRecipe(transformation.Manifest(), object, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Config ID and rows ID are set in Content

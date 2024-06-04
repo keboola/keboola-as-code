@@ -106,13 +106,13 @@ func TestProvider(t *testing.T) {
 		}
 
 		v, err := statsRepo.ProjectStats(ctx, sliceKey1.ProjectID)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedThreeEmptyFilesSlices, v)
 		v, err = statsRepo.SourceStats(ctx, sliceKey1.SourceKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedThreeEmptyFilesSlices, v)
 		v, err = statsRepo.SinkStats(ctx, sliceKey1.SinkKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedThreeEmptyFilesSlices, v)
 
 		expectedEmptySlice := statistics.Aggregated{
@@ -125,10 +125,10 @@ func TestProvider(t *testing.T) {
 		}
 
 		v, err = statsRepo.FileStats(ctx, sliceKey1.FileKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedEmptySlice, v)
 		v, err = statsRepo.SliceStats(ctx, sliceKey1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedEmptySlice, v)
 	}
 
@@ -136,7 +136,7 @@ func TestProvider(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		nodeID1 := "test-node-1"
-		assert.NoError(t, statsRepo.Put(ctx, nodeID1, []statistics.PerSlice{
+		require.NoError(t, statsRepo.Put(ctx, nodeID1, []statistics.PerSlice{
 			{
 				SliceKey:         sliceKey1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -164,7 +164,7 @@ func TestProvider(t *testing.T) {
 		}))
 	}
 	nodeID2 := "test-node-2"
-	assert.NoError(t, statsRepo.Put(ctx, nodeID2, []statistics.PerSlice{
+	require.NoError(t, statsRepo.Put(ctx, nodeID2, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey2,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:10:00.000Z"),
@@ -208,7 +208,7 @@ func TestProvider(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		v, err := statsRepo.SliceStats(ctx, sliceKey1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, statistics.Aggregated{
 			Local: statistics.Value{
 				SlicesCount:      1,
@@ -228,7 +228,7 @@ func TestProvider(t *testing.T) {
 			},
 		}, v)
 		v, err = statsRepo.SliceStats(ctx, sliceKey2)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, statistics.Aggregated{
 			Staging: statistics.Value{
 				SlicesCount:      1,
@@ -250,7 +250,7 @@ func TestProvider(t *testing.T) {
 			},
 		}, v)
 		v, err = statsRepo.SliceStats(ctx, sliceKey3)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, statistics.Aggregated{
 			Target: statistics.Value{
 				SlicesCount:      1,
@@ -277,7 +277,7 @@ func TestProvider(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		v, err := statsRepo.FileStats(ctx, sliceKey1.FileKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, statistics.Aggregated{
 			Local: statistics.Value{
 				SlicesCount:      1,
@@ -297,7 +297,7 @@ func TestProvider(t *testing.T) {
 			},
 		}, v)
 		v, err = statsRepo.FileStats(ctx, sliceKey2.FileKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, statistics.Aggregated{
 			Staging: statistics.Value{
 				SlicesCount:      1,
@@ -319,7 +319,7 @@ func TestProvider(t *testing.T) {
 			},
 		}, v)
 		v, err = statsRepo.FileStats(ctx, sliceKey3.FileKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, statistics.Aggregated{
 			Target: statistics.Value{
 				SlicesCount:      1,
@@ -384,11 +384,11 @@ func TestProvider(t *testing.T) {
 		}
 
 		v, err := statsRepo.SinkStats(ctx, sliceKey1.SinkKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTotal, v)
 
 		v, err = statsRepo.SourceStats(ctx, sliceKey1.SourceKey)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTotal, v)
 	}
 }

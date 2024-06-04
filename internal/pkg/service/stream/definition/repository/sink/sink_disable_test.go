@@ -69,7 +69,7 @@ func TestSinkRepository_Disable(t *testing.T) {
 	// Disable - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.Disable(sinkKey, now, by, "some reason").Do(ctx).Err())
+		require.NoError(t, repo.Disable(sinkKey, now, by, "some reason").Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_disable_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
@@ -86,7 +86,7 @@ func TestSinkRepository_Disable(t *testing.T) {
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.Get(sinkKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sinkKey).Do(ctx).Err())
 	}
 }
 

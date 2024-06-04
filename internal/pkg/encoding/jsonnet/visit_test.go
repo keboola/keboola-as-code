@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVisitAst(t *testing.T) {
@@ -40,7 +41,7 @@ func TestVisitAst(t *testing.T) {
 
 	// Visit & modify
 	node, err := ToAst(code, "")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	VisitAst(&node, func(nodePtr *ast.Node) {
 		switch v := (*nodePtr).(type) {
 		case *ast.LiteralString:

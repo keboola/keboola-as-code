@@ -35,13 +35,13 @@ func TestWriter_Basic(t *testing.T) {
 	// Test write methods
 	n, err := w.Write(ctx, true, []byte("123,456,789\n"))
 	assert.Equal(t, 12, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	n, err = w.Write(ctx, true, []byte("abc,def,ghj\n"))
 	assert.Equal(t, 12, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test Close method
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Try Close again
 	err = w.Close(ctx)
@@ -51,7 +51,7 @@ func TestWriter_Basic(t *testing.T) {
 
 	// Check file content
 	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }
 
@@ -79,16 +79,16 @@ func TestWriter_NotAligned(t *testing.T) {
 	// Test write methods
 	n, err := w.Write(ctx, false, []byte("abc,def,ghj\n"))
 	assert.Equal(t, 12, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	n, err = w.Write(ctx, true, []byte("123,456,789\n"))
 	assert.Equal(t, 12, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	n, err = w.Write(ctx, false, []byte("opq,rst,uvw\n"))
 	assert.Equal(t, 12, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test Close method
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Try Close again
 	err = w.Close(ctx)
@@ -98,7 +98,7 @@ func TestWriter_NotAligned(t *testing.T) {
 
 	// Check file content
 	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("this was before\nabc,def,ghj\n123,456,789\n"), content)
 }
 
@@ -108,7 +108,7 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 
 	slice := test.NewSlice()
 	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage)
@@ -122,10 +122,10 @@ func TestOpenWriter_Ok(t *testing.T) {
 	tc := newWriterTestCase(t)
 
 	w, err := tc.OpenWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
-	assert.NoError(t, w.Close(context.Background()))
+	require.NoError(t, w.Close(context.Background()))
 	assert.FileExists(t, tc.FilePath())
 }
 
@@ -135,7 +135,7 @@ func TestOpenWriter_AlreadyExists(t *testing.T) {
 
 	// First open - ok
 	_, err := tc.OpenWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Second open - already exists error
 	_, err = tc.OpenWriter()
@@ -154,17 +154,17 @@ func TestOpenWriter_SameSliceDifferentSourceNodeID(t *testing.T) {
 
 	// Close volume after the test
 	tc.TB.Cleanup(func() {
-		assert.NoError(tc.TB, vol.Close(context.Background()))
+		require.NoError(tc.TB, vol.Close(context.Background()))
 	})
 
 	// Source node 1
 	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-1"))
 
 	// Source node 2
 	_, err = vol.OpenWriter("source-node-2", tc.Slice.SliceKey, tc.Slice.LocalStorage)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-2"))
 }
 
@@ -182,7 +182,7 @@ func TestWriter_OpenFile_MkdirError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Block creating of the slice directory in the volume directory
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
+	require.NoError(t, os.Chmod(tc.VolumePath, 0o440))
 
 	_, err = tc.OpenWriter()
 	if assert.Error(t, err) {
@@ -190,10 +190,10 @@ func TestWriter_OpenFile_MkdirError(t *testing.T) {
 	}
 
 	// Revert permission for cleanup
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o750))
+	require.NoError(t, os.Chmod(tc.VolumePath, 0o750))
 
 	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 }
 
 func TestWriter_OpenFile_FileError(t *testing.T) {
@@ -206,7 +206,7 @@ func TestWriter_OpenFile_FileError(t *testing.T) {
 	tc := newWriterTestCase(t)
 
 	// Create read only slice directory
-	assert.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
+	require.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
 
 	_, err := tc.OpenWriter()
 	if assert.Error(t, err) {
@@ -222,11 +222,11 @@ func TestWriter_AllocateSpace_Error(t *testing.T) {
 	tc.Allocator.Error = errors.New("some space allocation error")
 
 	w, err := tc.OpenWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 	assert.FileExists(t, tc.FilePath())
 
 	// Check logs
@@ -247,11 +247,11 @@ func TestWriter_AllocateSpace_NotSupported(t *testing.T) {
 	tc.Allocator.Ok = false
 
 	w, err := tc.OpenWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 	assert.FileExists(t, tc.FilePath())
 
 	// Check logs
@@ -271,7 +271,7 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
 	w, err := tc.OpenWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check file - no allocation
 	allocated, err := diskalloc.Allocated(tc.FilePath())
@@ -279,7 +279,7 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 	assert.Less(t, allocated, datasize.KB)
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -324,7 +324,7 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 
 		// Close volume after the test
 		tc.TB.Cleanup(func() {
-			assert.NoError(tc.TB, vol.Close(context.Background()))
+			require.NoError(tc.TB, vol.Close(context.Background()))
 		})
 	}
 

@@ -70,11 +70,11 @@ func TestQuota_Check(t *testing.T) {
 	quotaValue := 1000 * datasize.KB
 
 	// No data, no error
-	assert.NoError(t, quoteChecker.Check(ctx, sinkKey, quotaValue))
+	require.NoError(t, quoteChecker.Check(ctx, sinkKey, quotaValue))
 
 	// Received some data under quota: 600kB < 1000kB, no error
 	updateStats(slice1Key, 600*datasize.KB)
-	assert.NoError(t, quoteChecker.Check(ctx, sinkKey, quotaValue))
+	require.NoError(t, quoteChecker.Check(ctx, sinkKey, quotaValue))
 
 	// Received some data over quota: 1200kB > 1000kB, error
 	expectedErr := `full storage buffer for the sink "123/456/my-receiver/my-export-1", buffered "1.2 MB", quota "1000.0 KB"`

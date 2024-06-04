@@ -317,7 +317,7 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 		Name:     "testSource",
 	}
 	out, err := json.Marshal(payload) // nolint:musttag
-	if !assert.NoError(t, err) {
+	if assert.Error(t, err) {
 		ts.logger.Errorf(ctx, "unable to marshal source create payload: %v", err)
 		return
 	}
@@ -329,7 +329,7 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
-	if !assert.NoError(t, err) {
+	if assert.Error(t, err) {
 		ts.logger.Errorf(ctx, "to create source: %v", err)
 		return
 	}
@@ -370,7 +370,7 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 		Name:     "testSink",
 	}
 	out, err := json.Marshal(payload) // nolint:musttag
-	if !assert.NoError(t, err) {
+	if assert.Error(t, err) {
 		ts.logger.Errorf(ctx, "unable to marshal sink create payload: %v", err)
 		return
 	}
@@ -382,7 +382,7 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
-	if !assert.NoError(t, err) {
+	if assert.Error(t, err) {
 		ts.logger.Errorf(ctx, "to create sink: %v", err)
 		return
 	}

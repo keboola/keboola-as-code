@@ -2,12 +2,12 @@ package validator
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testStruct1 struct {
@@ -35,7 +35,7 @@ func TestValidateStruct(t *testing.T) {
 - "Nested[1].field4" is a required field
 - "field4" is a required field
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
@@ -51,7 +51,7 @@ func TestValidateStructWithNamespace(t *testing.T) {
 - "my.value.Nested[1].field4" is a required field
 - "my.value.field4" is a required field
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
@@ -62,7 +62,7 @@ func TestValidateSlice(t *testing.T) {
 - "[0].field4" is a required field
 - "[1].field4" is a required field
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
@@ -73,21 +73,21 @@ func TestValidateSliceWithNamespace(t *testing.T) {
 - "my.value.[0].field4" is a required field
 - "my.value.[1].field4" is a required field
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
 func TestValidateValue(t *testing.T) {
 	t.Parallel()
 	err := New().ValidateValue("", "required")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `is a required field`, err.Error())
 }
 
 func TestValidateValueAddNamespace(t *testing.T) {
 	t.Parallel()
 	err := New().ValidateCtx(context.Background(), "", "required", "my.value")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"my.value" is a required field`, err.Error())
 }
 
@@ -107,11 +107,11 @@ func TestValidateErrorMsgFunc(t *testing.T) {
 	}
 
 	err := New(rule).ValidateCtx(context.Background(), "foo", "my_rule", "my.value")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"my.value" error message for foo`, err.Error())
 
 	err = New(rule).ValidateCtx(context.Background(), "other", "my_rule", "my.value")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"my.value" other error message`, err.Error())
 }
 
@@ -122,17 +122,17 @@ func TestValidatorRequiredInProject(t *testing.T) {
 	// Project
 	projectCtx := context.Background()
 	err := v.ValidateCtx(projectCtx, `value`, `required_in_project`, `some_field`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = v.ValidateCtx(projectCtx, ``, `required_in_project`, `some_field`)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"some_field" is a required field`, err.Error())
 
 	// Template
 	templateCtx := context.WithValue(context.Background(), DisableRequiredInProjectKey, true)
 	err = v.ValidateCtx(templateCtx, ``, `required_in_project`, `some_field`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = v.ValidateCtx(templateCtx, `value`, `required_in_project`, `some_field`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestValidatorRequiredNotEmpty(t *testing.T) {
@@ -142,19 +142,19 @@ func TestValidatorRequiredNotEmpty(t *testing.T) {
 
 	// String
 	err := v.ValidateCtx(ctx, `value`, `required_not_empty`, `some_field`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = v.ValidateCtx(ctx, ``, `required_not_empty`, `some_field`)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"some_field" is a required field`, err.Error())
 
 	// Array
 	err = v.ValidateCtx(ctx, []int{1, 2, 3}, `required_not_empty`, `some_field`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = v.ValidateCtx(ctx, []int{}, `required_not_empty`, `some_field`)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"some_field" is a required field`, err.Error())
 	err = v.ValidateCtx(ctx, nil, `required_not_empty`, `some_field`)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `"some_field" is a required field`, err.Error())
 }
 
@@ -174,9 +174,9 @@ func TestValidatorAlphaNumDash(t *testing.T) {
 	for i, c := range cases {
 		err := v.ValidateCtx(context.Background(), c.value, `alphanumdash`, `some_field`)
 		if c.error == "" {
-			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
+			require.NoError(t, err, `case: %d`, i+1)
 		} else {
-			assert.Error(t, err, c.error, fmt.Sprintf("case: %d", i+1))
+			require.Error(t, err, c.error, `case: %d`, i+1)
 		}
 	}
 }
@@ -199,9 +199,9 @@ func TestValidatorTemplateIcon(t *testing.T) {
 	for i, c := range cases {
 		err := v.ValidateCtx(context.Background(), c.value, `templateicon`, `some_field`)
 		if c.error == "" {
-			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
+			require.NoError(t, err, `case: %d`, i+1)
 		} else {
-			assert.Error(t, err, c.error, fmt.Sprintf("case: %d", i+1))
+			require.Error(t, err, c.error, `case: %d`, i+1)
 		}
 	}
 }
@@ -221,9 +221,9 @@ func TestValidatorMarkdownLength(t *testing.T) {
 	for i, c := range cases {
 		err := v.ValidateCtx(context.Background(), c.value, `mdmax=10`, `some_field`)
 		if c.error == "" {
-			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
+			require.NoError(t, err, `case: %d`, i+1)
 		} else {
-			assert.Error(t, err, c.error, fmt.Sprintf("case: %d", i+1))
+			require.Error(t, err, c.error, `case: %d`, i+1)
 		}
 	}
 }

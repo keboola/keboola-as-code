@@ -48,10 +48,10 @@ func TestStart_Ok(t *testing.T) {
 
 	// Each volume has a generated ID
 	id1, err := os.ReadFile(filepath.Join(volume1Path, volume.IDFile))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, id1)
 	id2, err := os.ReadFile(filepath.Join(volume2Path, volume.IDFile))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, id2)
 
 	// Volumes have been registered

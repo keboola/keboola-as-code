@@ -64,7 +64,7 @@ func TestSourceRepository_Disable(t *testing.T) {
 	// Disable - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.Disable(sourceKey, now, by, "some reason").Do(ctx).Err())
+		require.NoError(t, repo.Disable(sourceKey, now, by, "some reason").Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_disable_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
@@ -81,7 +81,7 @@ func TestSourceRepository_Disable(t *testing.T) {
 	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
+		require.NoError(t, repo.Get(sourceKey).Do(ctx).Err())
 	}
 }
 

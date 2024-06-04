@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/chunk"
@@ -19,16 +20,16 @@ func TestWriter_Empty(t *testing.T) {
 	w := chunk.NewWriter(log.NewNopLogger(), maxChunkSize)
 
 	// Flush
-	assert.NoError(t, w.Flush())
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 0, w.CompletedChunks())
 
 	// Close
-	assert.NoError(t, w.Close())
+	require.NoError(t, w.Close())
 	assert.Equal(t, 0, w.CompletedChunks())
 
 	// Compare
 	var actualChunks []string
-	assert.NoError(t, w.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+	require.NoError(t, w.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
 		actualChunks = append(actualChunks, string(chunk.Bytes()))
 		return nil
 	}))
@@ -48,61 +49,61 @@ func TestWriter_Ok(t *testing.T) {
 	// Write up to the maximum chunk size
 	n, err := w.Write([]byte("12345"))
 	assert.Equal(t, 5, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 0, w.CompletedChunks())
 	n, err = w.Write([]byte("67890"))
 	assert.Equal(t, 5, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = false, data = 1234567890")
 
 	// Write over the maximum
 	n, err = w.Write([]byte("abc"))
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, w.CompletedChunks())
 
 	// Write over the maximum - split the payload
 	n, err = w.Write([]byte("defghijkl"))
 	assert.Equal(t, 9, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = false, data = abcdefghij")
 
 	// Not empty flush
-	assert.NoError(t, w.Flush())
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 3, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = true, data = kl")
 
 	// Write long message, which requires more than 2 chunks
 	n, err = w.Write([]byte("111111111122222222223333333333abc"))
 	assert.Equal(t, 33, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 6, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = false, data = 1111111111")
 	expectedChunks = append(expectedChunks, "aligned = false, data = 2222222222")
 	expectedChunks = append(expectedChunks, "aligned = false, data = 3333333333")
 
 	// Flush
-	assert.NoError(t, w.Flush())
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 7, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = true, data = abc")
 
 	// Empty flush
-	assert.NoError(t, w.Flush())
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 7, w.CompletedChunks())
 
 	// Close
 	n, err = w.Write([]byte("xyz"))
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Close())
+	require.NoError(t, err)
+	require.NoError(t, w.Close())
 	assert.Equal(t, 8, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = true, data = xyz")
 
 	// Compare
 	var actualChunks []string
-	assert.NoError(t, w.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+	require.NoError(t, w.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
 		actualChunks = append(actualChunks, fmt.Sprintf("aligned = %t, data = %s", chunk.Aligned(), chunk.Bytes()))
 		return nil
 	}))
@@ -128,8 +129,8 @@ func TestWriter_WaitForChunk(t *testing.T) {
 	// A chunk is completed
 	n, err := w.Write([]byte("abc"))
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Flush())
+	require.NoError(t, err)
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 1, w.CompletedChunks())
 
 	// The notifier channel should be unblocked/closed by the first chunk
@@ -147,7 +148,7 @@ func TestWriter_WaitForChunk(t *testing.T) {
 	}
 
 	// Process all chunks
-	assert.NoError(t, w.ProcessCompletedChunks(func(*chunk.Chunk) error {
+	require.NoError(t, w.ProcessCompletedChunks(func(*chunk.Chunk) error {
 		return nil
 	}))
 
@@ -162,8 +163,8 @@ func TestWriter_WaitForChunk(t *testing.T) {
 	// The second chunk
 	n, err = w.Write([]byte("def"))
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Flush())
+	require.NoError(t, err)
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 1, w.CompletedChunks())
 
 	// The notifier channel should be unblocked/closed by the second chunk
@@ -174,11 +175,11 @@ func TestWriter_WaitForChunk(t *testing.T) {
 	}
 
 	// Close
-	assert.NoError(t, w.Close())
+	require.NoError(t, w.Close())
 	assert.Equal(t, 1, w.CompletedChunks())
 
 	// Process all chunks
-	assert.NoError(t, w.ProcessCompletedChunks(func(*chunk.Chunk) error {
+	require.NoError(t, w.ProcessCompletedChunks(func(*chunk.Chunk) error {
 		return nil
 	}))
 	assert.Equal(t, 0, w.CompletedChunks())
@@ -204,20 +205,20 @@ func TestWriter_ProcessCompletedChunks(t *testing.T) {
 	// There are 4 completed chunks
 	n, err := w.Write([]byte("abc")) // 1
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Flush())
+	require.NoError(t, err)
+	require.NoError(t, w.Flush())
 	n, err = w.Write([]byte("def")) // 2
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Flush())
+	require.NoError(t, err)
+	require.NoError(t, w.Flush())
 	n, err = w.Write([]byte("ghi")) // 3
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Flush())
+	require.NoError(t, err)
+	require.NoError(t, w.Flush())
 	n, err = w.Write([]byte("jkl")) // 4
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
-	assert.NoError(t, w.Flush())
+	require.NoError(t, err)
+	require.NoError(t, w.Flush())
 	assert.Equal(t, 4, w.CompletedChunks()) // check
 
 	// Get notifier
@@ -287,7 +288,7 @@ func TestWriter_ProcessCompletedChunks(t *testing.T) {
 	}
 
 	// Last chunk is processed
-	assert.NoError(t, w.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+	require.NoError(t, w.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
 		assert.Equal(t, "jkl", string(chunk.Bytes()))
 		return nil
 	}))

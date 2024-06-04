@@ -67,7 +67,7 @@ func TestSourceRepository_ExistsOrErr(t *testing.T) {
 	// ExistsOrErr - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sourceRepo.ExistsOrErr(sourceKey).Do(ctx).Err())
+		require.NoError(t, sourceRepo.ExistsOrErr(sourceKey).Do(ctx).Err())
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -28,7 +29,7 @@ func TestCliLogger_File(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
 	file, err := NewLogFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
@@ -38,7 +39,7 @@ func TestCliLogger_File(t *testing.T) {
 	logger.Info(context.Background(), "Info msg")
 	logger.Warn(context.Background(), "Warn msg")
 	logger.Error(context.Background(), "Error msg")
-	assert.NoError(t, file.File().Close())
+	require.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := `
@@ -49,7 +50,7 @@ func TestCliLogger_File(t *testing.T) {
 `
 
 	content, err := os.ReadFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	wildcards.Assert(t, expected, string(content))
 }
 
@@ -158,7 +159,7 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
 	file, err := NewLogFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
@@ -174,7 +175,7 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 	logger.Infof(ctx, "Info %s <extra> (<count>)", "message")
 	logger.Warnf(ctx, "Warn %s <extra> (<count>)", "message")
 	logger.Errorf(ctx, "Error %s <extra> (<count>)", "message")
-	assert.NoError(t, file.File().Close())
+	require.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := `
@@ -189,7 +190,7 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 `
 
 	content, err := os.ReadFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	wildcards.Assert(t, expected, string(content))
 
 	expectedOut := "DEBUG\tDebug msg value (4)\nINFO\tInfo msg value (4)\nDEBUG\tDebug message value (4)\nINFO\tInfo message value (4)\n"
@@ -204,7 +205,7 @@ func TestCliLogger_WithComponent(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
 	file, err := NewLogFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
@@ -218,7 +219,7 @@ func TestCliLogger_WithComponent(t *testing.T) {
 	logger.Info(ctx, "Info msg")
 	logger.Warn(ctx, "Warn msg")
 	logger.Error(ctx, "Error msg")
-	assert.NoError(t, file.File().Close())
+	require.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := `
@@ -229,7 +230,7 @@ func TestCliLogger_WithComponent(t *testing.T) {
 `
 
 	content, err := os.ReadFile(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	wildcards.Assert(t, expected, string(content))
 
 	expectedOut := "DEBUG\tDebug msg\nINFO\tInfo msg\n"

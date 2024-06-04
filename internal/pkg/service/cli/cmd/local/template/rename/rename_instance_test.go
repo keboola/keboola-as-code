@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -24,7 +25,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 
 	deps := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
 	branch := branchRaw.(*model.Branch)
@@ -36,7 +37,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	instanceName := "Old Name"
 	repositoryName := "repo"
 	tokenID := "1234"
-	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
+	require.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
 	// Interaction
@@ -45,29 +46,29 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Select branch:"))
+		require.NoError(t, console.ExpectString("Select branch:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - Main
+		require.NoError(t, console.SendEnter()) // enter - Main
 
-		assert.NoError(t, console.ExpectString("Select template instance:"))
+		require.NoError(t, console.ExpectString("Select template instance:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - tmpl1
+		require.NoError(t, console.SendEnter()) // enter - tmpl1
 
-		assert.NoError(t, console.ExpectString("Instance Name"))
+		require.NoError(t, console.ExpectString("Instance Name"))
 
-		assert.NoError(t, console.ExpectString("(Old Name)"))
+		require.NoError(t, console.ExpectString("(Old Name)"))
 
-		assert.NoError(t, console.SendLine("New Name"))
+		require.NoError(t, console.SendLine("New Name"))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	opts, err := AskRenameInstance(projectState, d, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	assert.Equal(t, renameOp.Options{
 		Branch:   branchKey,
@@ -83,7 +84,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 
 	deps := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
 	branch := branchRaw.(*model.Branch)
@@ -95,7 +96,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	instanceName := "Old Name"
 	repositoryName := "repo"
 	tokenID := "1234"
-	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
+	require.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
 	f := Flags{
@@ -104,7 +105,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 		NewName:  configmap.Value[string]{Value: "New Name", SetBy: configmap.SetByFlag},
 	}
 	opts, err := AskRenameInstance(projectState, d, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, renameOp.Options{
 		Branch:   branchKey,
 		Instance: *instance,

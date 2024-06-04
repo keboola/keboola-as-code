@@ -23,11 +23,11 @@ func TestRenderer_UUID(t *testing.T) {
 	c := column.UUID{}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	valStr, ok := val.(string)
 	require.True(t, ok)
 	id, err := uuid.FromString(valStr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, uuid.V7, id.Version())
 }
 
@@ -39,7 +39,7 @@ func TestRenderer_DateTime(t *testing.T) {
 
 	now, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(now, &http.Request{}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "2006-01-02T08:04:05.000Z", val)
 }
 
@@ -50,7 +50,7 @@ func TestRenderer_IP(t *testing.T) {
 	c := column.IP{}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{RemoteAddr: "1.2.3.4:1234"}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.2.3.4", val)
 }
 
@@ -62,7 +62,7 @@ func TestRenderer_Body(t *testing.T) {
 
 	body := "a,b,c"
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("a,b,c"), val)
 }
 
@@ -75,7 +75,7 @@ func TestRenderer_Headers(t *testing.T) {
 	header := http.Header{"Foo1": []string{"bar1"}, "Foo2": []string{"bar2", "bar3"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"Foo1":"bar1","Foo2":"bar2"}`, val)
 }
 
@@ -91,7 +91,7 @@ func TestRenderer_Path_Json_Scalar(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"val2"`, val)
 }
 
@@ -107,7 +107,7 @@ func TestRenderer_Path_Json_Integer(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `42`, val)
 }
 
@@ -123,7 +123,7 @@ func TestRenderer_Path_Json_Float(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `42.1`, val)
 }
 
@@ -139,7 +139,7 @@ func TestRenderer_Path_Json_Object(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key2":"val2"}`, val)
 }
 
@@ -155,7 +155,7 @@ func TestRenderer_Path_Json_ArrayOfObjects(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
 }
 
@@ -171,7 +171,7 @@ func TestRenderer_Path_Json_ArrayIndex(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"val3"`, val)
 }
 
@@ -188,7 +188,7 @@ func TestRenderer_Path_Json_ArrayIndex_RawString(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "val3", val)
 }
 
@@ -202,7 +202,7 @@ func TestRenderer_Path_Json_Full(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
 }
 
@@ -251,7 +251,7 @@ func TestRenderer_Path_Json_UndefinedKey_DefaultValue(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"123"`, val)
 }
 
@@ -268,7 +268,7 @@ func TestRenderer_Path_Json_UndefinedIndex_DefaultValue(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"123"`, val)
 }
 
@@ -286,7 +286,7 @@ func TestRenderer_Path_Json_UndefinedKey_DefaultValue_RawString(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "123", val)
 }
 
@@ -303,7 +303,7 @@ func TestRenderer_Path_Json_Invalid(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.ErrorContains(t, err, `cannot parse request json`)
+	require.ErrorContains(t, err, `cannot parse request json`)
 }
 
 func TestRenderer_Path_FormData_Full(t *testing.T) {
@@ -316,7 +316,7 @@ func TestRenderer_Path_FormData_Full(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
 }
 
@@ -332,7 +332,7 @@ func TestRenderer_Path_FormData_Scalar(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"bar1"`, val)
 }
 
@@ -349,7 +349,7 @@ func TestRenderer_Path_FormData_RawString(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `42`, val)
 }
 
@@ -365,7 +365,7 @@ func TestRenderer_Path_FormData_Object(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"x":"bar2","y":"bar3"}`, val)
 }
 
@@ -381,7 +381,7 @@ func TestRenderer_Path_FormData_ArrayOfObjects(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `[{"x":"bar2"},{"x":"bar3"}]`, val)
 }
 
@@ -397,7 +397,7 @@ func TestRenderer_Path_FormData_ArrayIndex(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"x":"bar3"}`, val)
 }
 
@@ -446,7 +446,7 @@ func TestRenderer_Path_FormData_UndefinedKey_DefaultValue(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"123"`, val)
 }
 
@@ -464,7 +464,7 @@ func TestRenderer_Path_FormData_UndefinedKey_DefaultValue_RawString(t *testing.T
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `123`, val)
 }
 
@@ -481,7 +481,7 @@ func TestRenderer_Template_Json_Scalar(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"val2"`, val)
 }
 
@@ -498,7 +498,7 @@ func TestRenderer_Template_Json_Object(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key2":"val2"}`, val)
 }
 
@@ -515,7 +515,7 @@ func TestRenderer_Template_Json_ArrayOfObjects(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
 }
 
@@ -532,7 +532,7 @@ func TestRenderer_Template_Json_ArrayIndex(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"val3"`, val)
 }
 
@@ -552,7 +552,7 @@ func TestRenderer_Template_Json_ArrayIndex_RawString(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "val3", val)
 }
 
@@ -569,7 +569,7 @@ func TestRenderer_Template_Json_Full(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
 }
 
@@ -603,7 +603,7 @@ func TestRenderer_Template_Json_UndefinedKey_DefaultValue(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "123", val)
 }
 
@@ -636,7 +636,7 @@ func TestRenderer_Template_FormData_Full(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
 }
 
@@ -652,7 +652,7 @@ func TestRenderer_Template_Headers(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"gzip"`, val)
 }
 
@@ -668,7 +668,7 @@ func TestRenderer_Template_Headers_Case(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"gzip"`, val)
 }
 
@@ -684,7 +684,7 @@ func TestRenderer_Template_Headers_All(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"Content-Encoding":"gzip","Content-Type":"application/json"}`, val)
 }
 
@@ -715,7 +715,7 @@ func TestRenderer_Template_Headers_UndefinedKey_DefaultValue(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"abc"`, val)
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -386,7 +387,7 @@ func (tc testCase) run(t *testing.T) {
 			configMetadata.AddInputUsage(inputDef.id, orderedmap.PathFromStr(contentKey), nil)
 		}
 		if inputDef.inContent {
-			assert.NoError(t, configContent.SetNested(contentKey, inputDef.value))
+			require.NoError(t, configContent.SetNested(contentKey, inputDef.value))
 		}
 	}
 
@@ -397,16 +398,16 @@ func (tc testCase) run(t *testing.T) {
 			configMetadata.AddRowInputUsage(configRowKey.ID, inputDef.id, orderedmap.PathFromStr(contentKey), nil)
 		}
 		if inputDef.inContent {
-			assert.NoError(t, rowContent.SetNested(contentKey, inputDef.value))
+			require.NoError(t, rowContent.SetNested(contentKey, inputDef.value))
 		}
 	}
 
 	// Set objects to state
-	assert.NoError(t, state.Set(&model.ConfigState{
+	require.NoError(t, state.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
 		Local:          &model.Config{ConfigKey: configKey, Metadata: configMetadata, Content: configContent},
 	}))
-	assert.NoError(t, state.Set(&model.ConfigRowState{
+	require.NoError(t, state.Set(&model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{ConfigRowKey: configRowKey},
 		Local:             &model.ConfigRow{ConfigRowKey: configRowKey, Content: rowContent},
 	}))

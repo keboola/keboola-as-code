@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -204,9 +205,9 @@ func TestCompareJsonMessages(t *testing.T) {
 		err := CompareJSONMessages(c.expected, c.actual)
 
 		if c.err == nil {
-			assert.NoError(t, err, c.name)
+			require.NoError(t, err, c.name)
 		} else {
-			assert.Error(t, err, c.name)
+			require.Error(t, err, c.name)
 			assert.Equal(t, c.err.Error(), err.Error(), c.name)
 		}
 	}

@@ -78,7 +78,7 @@ func TestSinkRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		assert.NoError(t, repo.SoftDelete(sinkKey, now, by).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(sinkKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_undelete_snapshot_001.txt", ignoredEtcdKeys)
 	}
 

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -32,7 +33,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	deps := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Set fake file editor
 	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -43,84 +44,84 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Select the target branch:"))
+		require.NoError(t, console.ExpectString("Select the target branch:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - Main
+		require.NoError(t, console.SendEnter()) // enter - Main
 
-		assert.NoError(t, console.ExpectString("Instance Name:"))
+		require.NoError(t, console.ExpectString("Instance Name:"))
 
-		assert.NoError(t, console.SendLine("My Instance"))
+		require.NoError(t, console.SendLine("My Instance"))
 
-		assert.NoError(t, console.ExpectString("Enter your Facebook username"))
+		require.NoError(t, console.ExpectString("Enter your Facebook username"))
 
-		assert.NoError(t, console.ExpectString("Facebook username"))
+		require.NoError(t, console.ExpectString("Facebook username"))
 
 		// username can contain alphanum only
-		assert.NoError(t, console.SendLine("u-s"))
+		require.NoError(t, console.SendLine("u-s"))
 
-		assert.NoError(t, console.ExpectString(`Facebook username can only contain alphanumeric characters`))
+		require.NoError(t, console.ExpectString(`Facebook username can only contain alphanumeric characters`))
 
-		assert.NoError(t, console.Send(strings.Repeat(Backspace, 3))) // remove "u-s"
+		require.NoError(t, console.Send(strings.Repeat(Backspace, 3))) // remove "u-s"
 
-		assert.NoError(t, console.SendLine("username"))
+		require.NoError(t, console.SendLine("username"))
 
-		assert.NoError(t, console.ExpectString("Enter your Facebook password"))
+		require.NoError(t, console.ExpectString("Enter your Facebook password"))
 
-		assert.NoError(t, console.ExpectString("Facebook password"))
+		require.NoError(t, console.ExpectString("Facebook password"))
 
-		assert.NoError(t, console.SendLine("password"))
+		require.NoError(t, console.SendLine("password"))
 
-		assert.NoError(t, console.ExpectString("Enter your age"))
+		require.NoError(t, console.ExpectString("Enter your age"))
 
-		assert.NoError(t, console.SendLine("text")) // enter invalid string value
+		require.NoError(t, console.SendLine("text")) // enter invalid string value
 
-		assert.NoError(t, console.ExpectString(`Sorry, your reply was invalid: value "text" is not integer`))
+		require.NoError(t, console.ExpectString(`Sorry, your reply was invalid: value "text" is not integer`))
 
-		assert.NoError(t, console.Send(strings.Repeat(Backspace, 4))) // remove "text"
+		require.NoError(t, console.Send(strings.Repeat(Backspace, 4))) // remove "text"
 
-		assert.NoError(t, console.SendLine("25")) // enter valid numeric value
+		require.NoError(t, console.SendLine("25")) // enter valid numeric value
 
-		assert.NoError(t, console.ExpectString("Do you want to see restricted content?"))
+		require.NoError(t, console.ExpectString("Do you want to see restricted content?"))
 
-		assert.NoError(t, console.ExpectString("Restricted content"))
+		require.NoError(t, console.ExpectString("Restricted content"))
 
-		assert.NoError(t, console.SendLine("yes"))
+		require.NoError(t, console.SendLine("yes"))
 
-		assert.NoError(t, console.ExpectString("What do you like to drink?"))
+		require.NoError(t, console.ExpectString("What do you like to drink?"))
 
-		assert.NoError(t, console.ExpectString("Favorite drink"))
+		require.NoError(t, console.ExpectString("Favorite drink"))
 
-		assert.NoError(t, console.ExpectString("Beer"))
+		require.NoError(t, console.ExpectString("Beer"))
 
-		assert.NoError(t, console.ExpectString("Wine"))
+		require.NoError(t, console.ExpectString("Wine"))
 
-		assert.NoError(t, console.SendDownArrow()) // -> Wine
+		require.NoError(t, console.SendDownArrow()) // -> Wine
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendEnter()) // -> confirm
+		require.NoError(t, console.SendEnter()) // -> confirm
 
-		assert.NoError(t, console.ExpectString("Anything stronger?"))
+		require.NoError(t, console.ExpectString("Anything stronger?"))
 
-		assert.NoError(t, console.ExpectString("Stronger drinks"))
+		require.NoError(t, console.ExpectString("Stronger drinks"))
 
-		assert.NoError(t, console.ExpectString("Rum"))
+		require.NoError(t, console.ExpectString("Rum"))
 
-		assert.NoError(t, console.ExpectString("Vodka"))
+		require.NoError(t, console.ExpectString("Vodka"))
 
-		assert.NoError(t, console.ExpectString("Whiskey"))
+		require.NoError(t, console.ExpectString("Whiskey"))
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendDownArrow()) // -> Vodka
+		require.NoError(t, console.SendDownArrow()) // -> Vodka
 
-		assert.NoError(t, console.SendDownArrow()) // -> Whiskey
+		require.NoError(t, console.SendDownArrow()) // -> Whiskey
 
-		assert.NoError(t, console.SendSpace()) // -> select
+		require.NoError(t, console.SendSpace()) // -> select
 
-		assert.NoError(t, console.SendEnter()) // -> confirm
+		require.NoError(t, console.SendEnter()) // -> confirm
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -196,11 +197,11 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	}
 
 	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
@@ -225,7 +226,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	deps := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Set fake file editor
 	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -236,27 +237,27 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Select the target branch:"))
+		require.NoError(t, console.ExpectString("Select the target branch:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - Main
+		require.NoError(t, console.SendEnter()) // enter - Main
 
-		assert.NoError(t, console.ExpectString("Instance Name:"))
+		require.NoError(t, console.ExpectString("Instance Name:"))
 
-		assert.NoError(t, console.SendLine("My Instance"))
+		require.NoError(t, console.SendLine("My Instance"))
 
-		assert.NoError(t, console.ExpectString("Enter your Facebook username"))
+		require.NoError(t, console.ExpectString("Enter your Facebook username"))
 
-		assert.NoError(t, console.SendLine("username"))
+		require.NoError(t, console.SendLine("username"))
 
-		assert.NoError(t, console.ExpectString("Enter your Facebook password"))
+		require.NoError(t, console.ExpectString("Enter your Facebook password"))
 
-		assert.NoError(t, console.SendLine("password"))
+		require.NoError(t, console.SendLine("password"))
 
-		assert.NoError(t, console.ExpectString("Enter your age"))
+		require.NoError(t, console.ExpectString("Enter your age"))
 
-		assert.NoError(t, console.SendLine("15"))
+		require.NoError(t, console.SendLine("15"))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -323,11 +324,11 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	}
 
 	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
@@ -352,7 +353,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	deps := dependencies.NewMocked(t, context.Background())
 
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Run
 	stepsGroups := input.StepsGroups{
@@ -430,43 +431,43 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Select the target branch:"))
+		require.NoError(t, console.ExpectString("Select the target branch:"))
 
-		assert.NoError(t, console.SendEnter()) // enter - Main
+		require.NoError(t, console.SendEnter()) // enter - Main
 
-		assert.NoError(t, console.ExpectString("Instance Name:"))
+		require.NoError(t, console.ExpectString("Instance Name:"))
 
-		assert.NoError(t, console.SendLine("My Instance"))
+		require.NoError(t, console.SendLine("My Instance"))
 
-		assert.NoError(t, console.ExpectString("Please select which steps you want to fill."))
+		require.NoError(t, console.ExpectString("Please select which steps you want to fill."))
 
-		assert.NoError(t, console.ExpectString("Select steps:"))
+		require.NoError(t, console.ExpectString("Select steps:"))
 
-		assert.NoError(t, console.SendDownArrow()) // skip step 1
+		require.NoError(t, console.SendDownArrow()) // skip step 1
 
-		assert.NoError(t, console.SendDownArrow()) // skip step 2
+		require.NoError(t, console.SendDownArrow()) // skip step 2
 
-		assert.NoError(t, console.SendSpace()) // select step 3
+		require.NoError(t, console.SendSpace()) // select step 3
 
-		assert.NoError(t, console.SendDownArrow()) // move to step 4
+		require.NoError(t, console.SendDownArrow()) // move to step 4
 
-		assert.NoError(t, console.SendSpace()) // select step 4
+		require.NoError(t, console.SendSpace()) // select step 4
 
-		assert.NoError(t, console.SendEnter()) // confirm the selection
+		require.NoError(t, console.SendEnter()) // confirm the selection
 
-		assert.NoError(t, console.ExpectString("Step 3"))
+		require.NoError(t, console.ExpectString("Step 3"))
 
-		assert.NoError(t, console.ExpectString("input3:"))
+		require.NoError(t, console.ExpectString("input3:"))
 
-		assert.NoError(t, console.SendLine("value for input 3"))
+		require.NoError(t, console.SendLine("value for input 3"))
 
-		assert.NoError(t, console.ExpectString("Step 4"))
+		require.NoError(t, console.ExpectString("Step 4"))
 
-		assert.NoError(t, console.ExpectString("input4:"))
+		require.NoError(t, console.ExpectString("input4:"))
 
-		assert.NoError(t, console.SendLine("value for input 4"))
+		require.NoError(t, console.SendLine("value for input 4"))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	f := Flags{
@@ -476,11 +477,11 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	}
 
 	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
@@ -502,7 +503,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	tempDir := t.TempDir()
 	inputsFile := `{"input1": "A", "input2": "B", "input4": "C"}` // input 3 is missing
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
-	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
+	require.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	d, _ := dialog.NewForTest(t, false)
 
@@ -514,7 +515,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 
 	deps := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Run
 	stepsGroups := input.StepsGroups{
@@ -577,7 +578,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	}
 
 	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
@@ -599,7 +600,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	tempDir := t.TempDir()
 	inputsFile := `{"input1": "A", "input3": "B", "input4": "C"}` // input 2 is missing
 	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
-	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
+	require.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	d, _ := dialog.NewForTest(t, false)
 
@@ -610,7 +611,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	}
 	deps := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Run
 	stepsGroups := input.StepsGroups{
@@ -681,6 +682,6 @@ steps group 1 "Please select which steps you want to fill." is invalid:
   - Step 1, inputs: input1
   - Step 3, inputs: input3, input4
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }

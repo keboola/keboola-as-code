@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -33,13 +34,13 @@ func TestLoadCoreFiles(t *testing.T) {
 	// Save files
 	object := &fixtures.MockedObject{}
 	manifest := &fixtures.MockedManifest{}
-	assert.NoError(t, fs.Mkdir(ctx, manifest.Path()))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(manifest.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
+	require.NoError(t, fs.Mkdir(ctx, manifest.Path()))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(manifest.Path()), metaFile)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
 
 	// Call mapper
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), manifest, object)
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 
 	// Values are loaded and set
 	assert.Equal(t, &fixtures.MockedObject{
@@ -68,7 +69,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	inputDir := filesystem.Join(testDir, `..`, `..`, `fixtures`, `local`, `branch-invalid-meta-json`)
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
+	require.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
 
 	// Setup manifest
 	branchManifest := &model.BranchManifest{
@@ -89,7 +90,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	assert.False(t, configManifest.State().IsInvalid())
 	assert.False(t, branchManifest.State().IsNotFound())
 	assert.False(t, configManifest.State().IsNotFound())
-	assert.NoError(t, manifest.Records.SetRecords([]model.ObjectManifest{
+	require.NoError(t, manifest.Records.SetRecords([]model.ObjectManifest{
 		branchManifest,
 		configManifest,
 	}))
@@ -104,7 +105,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 branch metadata file "main/meta.json" is invalid:
 - invalid character 'f' looking for beginning of object key string, offset: 3
 `
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 
 	// Check manifest records

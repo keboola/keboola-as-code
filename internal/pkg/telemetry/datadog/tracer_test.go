@@ -55,7 +55,7 @@ func TestContextAttributes(t *testing.T) {
 	assert.Equal(t, fmt.Sprint(spans[0].SpanID()), spanID.Emit())
 
 	// Span contains common attribute from the context
-	assert.Equal(t, fmt.Sprint(spans[0].Tag("foo")), "bar")
+	assert.Equal(t, "bar", fmt.Sprint(spans[0].Tag("foo")))
 
 	// Log record contains common attribute, TraceID and SpanID
 	logger.Info(ctx, "test")

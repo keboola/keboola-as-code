@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateFlags_AlmostEmpty(t *testing.T) {
@@ -38,13 +39,13 @@ func TestGenerateFlags_AlmostEmpty(t *testing.T) {
 	// Struct
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err := GenerateFlags(fs1, in)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err = GenerateFlags(fs2, &in)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
 }
 
@@ -96,13 +97,13 @@ func TestGenerateFlags_Default(t *testing.T) {
 	// Struct
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err := GenerateFlags(fs1, in)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err = GenerateFlags(fs2, &in)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
 }
 
@@ -154,12 +155,12 @@ func TestGenerateFlags_Default_Value(t *testing.T) {
 	// Struct
 	fs1 := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err := GenerateFlags(fs1, in)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs1.FlagUsages())
 
 	// Struct pointer
 	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err = GenerateFlags(fs2, &in)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), fs2.FlagUsages())
 }

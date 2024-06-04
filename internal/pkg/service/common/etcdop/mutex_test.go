@@ -84,8 +84,8 @@ func TestMutex_LockUnlock(t *testing.T) {
 	// Close session
 	cancel()
 	wg.Wait()
-	assert.ErrorIs(t, lock1.TryLock(ctx), context.Canceled)
-	assert.ErrorIs(t, lock2.TryLock(ctx), context.Canceled)
+	require.ErrorIs(t, lock1.TryLock(ctx), context.Canceled)
+	require.ErrorIs(t, lock2.TryLock(ctx), context.Canceled)
 }
 
 func TestMutex_ParallelWork(t *testing.T) {
@@ -219,7 +219,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 
 					// There is no memory leak
 					locksWg.Wait()
-					assert.Len(t, session.mutexStore.all, 0)
+					assert.Empty(t, session.mutexStore.all)
 				}()
 			}
 

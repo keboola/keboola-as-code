@@ -297,7 +297,7 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 			defer wg.Done()
 
 			cfg, _, err := loader.GetConfig(ctx, appID)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "http://app.local", cfg.UpstreamAppURL)
 			counter.Add(1)
 		}()

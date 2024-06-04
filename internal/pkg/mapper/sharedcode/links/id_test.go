@@ -1,7 +1,6 @@
 package links
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -27,7 +26,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 	}
 	idUtils := newIDUtils()
 	for i, c := range cases {
-		assert.Equal(t, keboola.RowID(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
+		assert.Equal(t, keboola.RowID(c.expected), idUtils.match(c.input), `Case "%d"`, i)
 	}
 }
 

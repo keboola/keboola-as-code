@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -46,7 +46,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 			Relations: configRelations,
 		},
 	}
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 
 	// Row 1
 	row1Key := model.ConfigRowKey{
@@ -64,7 +64,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 			Name:         `first`,
 		},
 	}
-	assert.NoError(t, state.Set(row1State))
+	require.NoError(t, state.Set(row1State))
 
 	// Row 2
 	row2Key := model.ConfigRowKey{
@@ -82,7 +82,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 			Name:         `second`,
 		},
 	}
-	assert.NoError(t, state.Set(row2State))
+	require.NoError(t, state.Set(row2State))
 
 	// Row 3
 	row3Key := model.ConfigRowKey{
@@ -100,5 +100,5 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 			Name:         `third`,
 		},
 	}
-	assert.NoError(t, state.Set(row3State))
+	require.NoError(t, state.Set(row3State))
 }

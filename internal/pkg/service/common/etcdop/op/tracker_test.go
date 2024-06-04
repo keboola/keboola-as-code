@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -21,29 +22,29 @@ func TestTracker(t *testing.T) {
 
 	// Create some keys
 	_, err := client.Put(ctx, "key1", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key3", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key4", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key5", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key6", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = client.Put(ctx, "key7", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test all KV operations: get, del, put, txn + get prefix, get range
 	_, err = tracker.Get(ctx, "key1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = tracker.Get(ctx, "key1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = tracker.Delete(ctx, "key2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = tracker.Put(ctx, "key3", "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = tracker.Txn(ctx).
 		If(etcd.Compare(etcd.Value("key4"), "=", "value")).
 		Then(
@@ -62,7 +63,7 @@ func TestTracker(t *testing.T) {
 			)).
 		Else(etcd.OpGet("key7")).
 		Commit()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Get records
 	operations := tracker.Operations()

@@ -727,7 +727,7 @@ func TestAppProxyRouter(t *testing.T) {
 				}
 
 				// Shutdown provider server
-				assert.NoError(t, m[0].Shutdown())
+				require.NoError(t, m[0].Shutdown())
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
@@ -1175,7 +1175,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				assert.Equal(t, "Hello websocket", v)
 
-				assert.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
+				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
 			expectedNotifications: map[string]int{
 				"123": 1,
@@ -1267,7 +1267,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				assert.Equal(t, "Hello websocket", v)
 
-				assert.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
+				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
 			expectedNotifications: map[string]int{
 				"oidc": 1,
@@ -1391,7 +1391,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				assert.Equal(t, "Hello websocket", v)
 
-				assert.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
+				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
 			expectedNotifications: map[string]int{
 				"multi": 1,
@@ -1476,7 +1476,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location = response.Header.Get("Location")
-				assert.Equal(t, location, "/api")
+				assert.Equal(t, "/api", location)
 
 				// Request to private part (authorized)
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://prefix.hub.keboola.local/api", nil)
@@ -1734,7 +1734,7 @@ func TestAppProxyRouter(t *testing.T) {
 						})
 
 						request, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://oidc.hub.keboola.local/foo/bar", nil)
-						assert.NoError(t, err)
+						require.NoError(t, err)
 
 						response, err := client.Do(request)
 						if assert.NoError(t, err) {
@@ -2232,7 +2232,7 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Basic Authentication")
-				require.Len(t, response.Cookies(), 0)
+				require.Empty(t, response.Cookies())
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -2444,12 +2444,12 @@ func testAuthProviders(t *testing.T) []*mockoidc.MockOIDC {
 
 	oidc0 := testutil.StartOIDCProviderServer(t)
 	t.Cleanup(func() {
-		assert.NoError(t, oidc0.Shutdown())
+		require.NoError(t, oidc0.Shutdown())
 	})
 
 	oidc1 := testutil.StartOIDCProviderServer(t)
 	t.Cleanup(func() {
-		assert.NoError(t, oidc1.Shutdown())
+		require.NoError(t, oidc1.Shutdown())
 	})
 
 	return []*mockoidc.MockOIDC{oidc0, oidc1}

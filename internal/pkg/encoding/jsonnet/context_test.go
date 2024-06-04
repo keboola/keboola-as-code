@@ -11,12 +11,13 @@ import (
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVmContext_Nil(t *testing.T) {
 	t.Parallel()
 	output, err := Evaluate(`{foo: "bar"}`, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", output)
 }
 
@@ -24,7 +25,7 @@ func TestVmContext_Empty(t *testing.T) {
 	t.Parallel()
 	ctx := NewContext()
 	output, err := Evaluate(`{foo: "bar"}`, ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", output)
 }
 
@@ -32,7 +33,7 @@ func TestVmContext_Pretty_False(t *testing.T) {
 	t.Parallel()
 	ctx := NewContext().WithPretty(false)
 	output, err := Evaluate(`{foo: "bar"}`, ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"foo":"bar"}`, output)
 }
 
@@ -87,7 +88,7 @@ func TestVmContext_Complex(t *testing.T) {
 `
 
 	output, err := Evaluate(code, ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), output)
 }
 
@@ -121,7 +122,7 @@ func TestVmContext_VariablesTypes(t *testing.T) {
 `
 
 	output, err := Evaluate(code, ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), output)
 }
 
@@ -136,11 +137,11 @@ func TestVmContext_ValueToLiteral_MapArray(t *testing.T) {
 	ctx.registerTo(vm)
 
 	jsonContent, err := vm.Evaluate(result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var evaluatedResult bytes.Buffer
 	err = json.Indent(&evaluatedResult, []byte(jsonContent), "", "  ")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expected := `{
   "five": [
@@ -342,7 +343,7 @@ Do()
 
 	// Evaluate and assert
 	actual, err := Evaluate(code, ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 	assert.Equal(t, expectedNotifications, notifier.values)
 }

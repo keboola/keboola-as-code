@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -143,6 +144,6 @@ func TestCreateContext(t *testing.T) {
 		},
 	}
 	replacements, err := ctx.Replacements()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedReplacements, replacements.Values())
 }

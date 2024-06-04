@@ -34,7 +34,7 @@ func TestBranchRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -52,7 +52,7 @@ func TestBranchRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, []definition.Branch{
 			branch1,
@@ -80,7 +80,7 @@ func TestBranchRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListDeleted(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -98,7 +98,7 @@ func TestBranchRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListDeleted(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -107,16 +107,16 @@ func TestBranchRepository_ListDeleted(t *testing.T) {
 	{
 		var err error
 		branch1, err = repo.SoftDelete(branchKey1, now, by).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		branch2, err = repo.SoftDelete(branchKey2, now, by).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// ListDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListDeleted(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, []definition.Branch{
 			branch1,

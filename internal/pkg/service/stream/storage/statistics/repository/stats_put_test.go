@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -26,12 +27,12 @@ func TestRepository_Put(t *testing.T) {
 	sliceKey := test.NewSliceKeyOpenedAt("2000-01-20T00:00:00.000Z")
 
 	// Empty
-	assert.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{}))
+	require.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{}))
 	etcdhelper.AssertKVsString(t, d.EtcdClient(), ``)
 
 	// Node1
 	nodeID1 := "test-node-1"
-	assert.NoError(t, repo.Put(ctx, nodeID1, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, nodeID1, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey,
 			FirstRecordAt:    utctime.MustParse("2000-01-20T00:00:00.000Z"),
@@ -45,7 +46,7 @@ func TestRepository_Put(t *testing.T) {
 
 	// Node2
 	nodeID2 := "test-node-2"
-	assert.NoError(t, repo.Put(ctx, nodeID2, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, nodeID2, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey,
 			FirstRecordAt:    utctime.MustParse("2000-01-21T00:00:00.000Z"),
@@ -73,8 +74,8 @@ func TestRepository_Put(t *testing.T) {
 		})
 	}
 	assert.Len(t, records, 150)
-	assert.NoError(t, repo.Put(ctx, nodeID3, records))
+	require.NoError(t, repo.Put(ctx, nodeID3, records))
 	kvs, err := etcdhelper.DumpAll(ctx, d.EtcdClient())
-	assert.NoError(t, err)
-	assert.Equal(t, 2+150, len(kvs))
+	require.NoError(t, err)
+	assert.Len(t, kvs, 2+150)
 }

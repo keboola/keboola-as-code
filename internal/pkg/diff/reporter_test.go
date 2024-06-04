@@ -1,7 +1,6 @@
 package diff
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -76,7 +75,7 @@ func TestReporterStringsDiff(t *testing.T) {
 	}
 	for i, c := range cases {
 		result := stringsDiff(c.remote, c.local)
-		assert.Equal(t, c.result, result, fmt.Sprintf(`case "%d"`, i))
+		assert.Equal(t, c.result, result, `case "%d"`, i)
 	}
 }
 

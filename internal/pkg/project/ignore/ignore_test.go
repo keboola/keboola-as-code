@@ -24,12 +24,12 @@ func TestFile_IgnoreConfigsOrRows(t *testing.T) {
 	file, err := LoadFile(ctx, fs, registry, "foo/bar1")
 	require.NoError(t, err)
 
-	assert.NoError(t, file.IgnoreConfigsOrRows())
+	require.NoError(t, file.IgnoreConfigsOrRows())
 
 	assert.Len(t, registry.IgnoredConfigRows(), 1)
 	assert.Len(t, registry.IgnoredConfigs(), 1)
-	assert.Equal(t, registry.IgnoredConfigRows()[0].ID.String(), "34")
-	assert.Equal(t, registry.IgnoredConfigs()[0].ID.String(), "345")
+	assert.Equal(t, "34", registry.IgnoredConfigRows()[0].ID.String())
+	assert.Equal(t, "345", registry.IgnoredConfigs()[0].ID.String())
 }
 
 func Test_applyIgnoredPatterns(t *testing.T) {

@@ -42,7 +42,7 @@ func TestJobRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -76,7 +76,7 @@ func TestJobRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, []model.Job{job1, job2}, result)
 	}
@@ -85,7 +85,7 @@ func TestJobRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListAll().Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, []model.Job{job1, job2}, result)
 	}
@@ -152,17 +152,17 @@ func TestJobRepository_ListDeleted(t *testing.T) {
 		var err error
 
 		sink1, err = d.DefinitionRepository().Sink().SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		sink2, err = d.DefinitionRepository().Sink().SoftDelete(sinkKey2, now, by).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// List - empty
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(sourceKey).Do(ctx).All()
-		assert.NoError(t, err)
-		assert.Len(t, result, 0)
+		require.NoError(t, err)
+		assert.Empty(t, result)
 	}
 }

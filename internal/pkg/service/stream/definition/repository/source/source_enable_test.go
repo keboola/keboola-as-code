@@ -67,7 +67,7 @@ func TestSourceRepository_Enable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		assert.NoError(t, repo.Disable(sourceKey, now, by, "some reason").Do(ctx).Err())
+		require.NoError(t, repo.Disable(sourceKey, now, by, "some reason").Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_enable_snapshot_001.txt", ignoredEtcdKeys)
 	}
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -32,8 +33,8 @@ func TestGit_Checkout(t *testing.T) {
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	require.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
+	require.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
 	gitRepo := fmt.Sprintf("file://%s", tmpDir)
 
 	// Ctx
@@ -43,26 +44,26 @@ func TestGit_Checkout(t *testing.T) {
 	// Checkout fail from a missing repo
 	ref := model.TemplateRepository{URL: "file://some/missing/repo", Ref: "main"}
 	_, err := Checkout(ctx, ref, true, logger)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), `git repository could not be checked out from "file://some/missing/repo"`)
 
 	// Checkout fail from a non-existing branch
 	ref = model.TemplateRepository{URL: gitRepo, Ref: "non-existing-ref"}
 	_, err = Checkout(ctx, ref, false, logger)
-	assert.Error(t, err)
+	require.Error(t, err)
 	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
 	ref = model.TemplateRepository{URL: gitRepo, Ref: "main"}
 	r, err := Checkout(ctx, ref, false, logger)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Get repository FS
 	fs1, unlockFS1 := r.Fs()
 
 	// Full checkout -> directory is not empty
 	subDirs, err := filesystem.ReadSubDirs(ctx, fs1, "/")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Greater(t, len(subDirs), 1)
 
 	// Check if the hash equals to a commit - the git command should return a "commit" message
@@ -72,7 +73,7 @@ func TestGit_Checkout(t *testing.T) {
 	cmd.Dir = fs1.BasePath()
 	cmd.Stdout = &stdOut
 	err = cmd.Run()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "commit\n", stdOut.String())
 
 	// Test parallel access to FS
@@ -81,7 +82,7 @@ func TestGit_Checkout(t *testing.T) {
 
 	// Test pull
 	_, err = r.Pull(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fs1.Exists(ctx, "example-file.txt"))
 
 	// Test free
@@ -102,8 +103,8 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	require.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
+	require.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
 	gitRepo := fmt.Sprintf("file://%s", tmpDir)
 
 	// Ctx
@@ -113,26 +114,26 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	// Checkout fail from a missing repo
 	ref := model.TemplateRepository{URL: "file://some/missing/repo", Ref: "main"}
 	_, err := Checkout(ctx, ref, true, logger)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), `git repository could not be checked out from "file://some/missing/repo"`)
 
 	// Checkout fail from a non-existing branch
 	ref = model.TemplateRepository{URL: gitRepo, Ref: "non-existing-ref"}
 	_, err = Checkout(ctx, ref, true, logger)
-	assert.Error(t, err)
+	require.Error(t, err)
 	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
 	ref = model.TemplateRepository{URL: gitRepo, Ref: "main"}
 	r, err := Checkout(ctx, ref, true, logger)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Get repository FS
 	fs1, unlockFS1 := r.Fs()
 
 	// Sparse checkout -> directory is empty
 	subDirs, err := filesystem.ReadSubDirs(ctx, fs1, "/")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{".git"}, subDirs)
 
 	// Check if the hash equals to a commit - the git command should return a "commit" message
@@ -142,7 +143,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	cmd.Dir = fs1.BasePath()
 	cmd.Stdout = &stdOut
 	err = cmd.Run()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "commit\n", stdOut.String())
 
 	// Test parallel access to FS
@@ -151,7 +152,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 
 	// Test pull
 	_, err = r.Pull(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fs1.Exists(ctx, ".git"))
 
 	// Test free

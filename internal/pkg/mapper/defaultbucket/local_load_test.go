@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -58,7 +59,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, state.Set(branchState))
+	require.NoError(t, state.Set(branchState))
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -85,7 +86,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, state.Set(configState1))
+	require.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -105,13 +106,13 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 			Content:   content,
 		},
 	}
-	assert.NoError(t, state.Set(configState2))
+	require.NoError(t, state.Set(configState2))
 
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState2)
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState2.ConfigManifest, configState2.Local)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -139,7 +140,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, state.Set(branchState))
+	require.NoError(t, state.Set(branchState))
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -166,7 +167,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, state.Set(configState1))
+	require.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -184,7 +185,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 			Content:   orderedmap.New(),
 		},
 	}
-	assert.NoError(t, state.Set(configState2))
+	require.NoError(t, state.Set(configState2))
 
 	rowKey := model.ConfigRowKey{
 		BranchID:    123,
@@ -209,13 +210,13 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 			Content:      content,
 		},
 	}
-	assert.NoError(t, state.Set(rowState))
+	require.NoError(t, state.Set(rowState))
 
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(rowState)
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.ConfigRowManifest, rowState.Local)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `

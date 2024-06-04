@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -26,7 +27,7 @@ func BenchmarkColumn_Path(b *testing.B) {
 		// reqCtx needs to be created separately for each request, otherwise the parsed json is cached
 		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 		val, err := renderer.CSVValue(c, reqCtx)
-		assert.NoError(b, err)
+		require.NoError(b, err)
 		assert.Equal(b, `"val3"`, val)
 	}
 }
@@ -44,7 +45,7 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 		val, err := renderer.CSVValue(c, reqCtx)
-		assert.NoError(b, err)
+		require.NoError(b, err)
 		assert.Equal(b, `"val3"`, val)
 	}
 }
@@ -57,7 +58,7 @@ func BenchmarkColumn_UUID(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{})
 		val, err := renderer.CSVValue(c, reqCtx)
-		assert.NoError(b, err)
+		require.NoError(b, err)
 		assert.Len(b, val, 36)
 	}
 }

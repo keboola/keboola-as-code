@@ -29,7 +29,7 @@ func TestGenerateAndBind_Empty(t *testing.T) {
 
 	target := TestConfig{}
 
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	assert.Equal(t, TestConfig{}, target)
 }
 
@@ -98,7 +98,7 @@ func TestGenerateAndBind_DefaultValues(t *testing.T) {
 	target := expected
 
 	// TestConfig is unmodified, default values are kept
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	assert.NotSame(t, expected, target)
 	assert.Equal(t, expected, target)
 }
@@ -156,7 +156,7 @@ func TestGenerateAndBind_Flags(t *testing.T) {
 	// Default values are replaced from flags
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{10, 20, 30, 40})
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	assert.Equal(t, []string{"pos1", "pos2", "pos3"}, posArgs)
 	assert.Equal(t, TestConfig{
 		Embedded:        Embedded{EmbeddedField: "foo"},
@@ -228,7 +228,7 @@ func TestGenerateAndBind_Env(t *testing.T) {
 	// Default values are replaced from ENVs
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{10, 20, 30, 40})
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	assert.Equal(t, TestConfig{
 		Embedded: Embedded{
 			EmbeddedField: "flag takes precedence over ENV", // from flag
@@ -314,7 +314,7 @@ int: 999
 	require.NoError(t, os.WriteFile(configFilePath2, []byte(config2), 0o600))
 
 	// Default values are replaced from the YAML config file.
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{11, 22, 33, 44})
 	assert.Equal(t, TestConfig{
@@ -408,7 +408,7 @@ func TestGenerateAndBind_ConfigFile_JSON(t *testing.T) {
 	require.NoError(t, os.WriteFile(configFilePath2, []byte(config2), 0o600))
 
 	// Default values are replaced from the YAML config file.
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{11, 22, 33, 44})
 	assert.Equal(t, TestConfig{
@@ -487,7 +487,7 @@ stringSlice: a,b,c
 
 	// Default values are replaced from the flags and ENVs
 	// SetBy fields are filled in.
-	assert.NoError(t, GenerateAndBind(cfg, &target))
+	require.NoError(t, GenerateAndBind(cfg, &target))
 	expectedDuration := 100 * time.Second
 	expectedAddrValue := netip.AddrFrom4([4]byte{11, 22, 33, 44})
 	assert.Equal(t, TestConfigWithValueStruct{

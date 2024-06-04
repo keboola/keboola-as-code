@@ -378,7 +378,7 @@ func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
 func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader, opts ...TestMeterOption) (out []metricdata.Metrics) {
 	t.Helper()
 	all := &metricdata.ResourceMetrics{}
-	assert.NoError(t, reader.Collect(ctx, all))
+	require.NoError(t, reader.Collect(ctx, all))
 	sort.SliceStable(all.ScopeMetrics, func(i, j int) bool {
 		return all.ScopeMetrics[i].Scope.Name < all.ScopeMetrics[j].Scope.Name
 	})

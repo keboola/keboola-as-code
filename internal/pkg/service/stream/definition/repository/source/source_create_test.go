@@ -79,7 +79,7 @@ func TestSourceRepository_Create(t *testing.T) {
 	// SoftDelete - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
 	}
 
 	// Create - ok, undeleted

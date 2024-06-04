@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
@@ -26,7 +27,7 @@ func TestParseJobRunOptions(t *testing.T) {
 		"component3/config3@tag",
 		"1234/component3/config3@tag",
 	}, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t,
 		run.RunOptions{
 			Jobs: []*run.Job{

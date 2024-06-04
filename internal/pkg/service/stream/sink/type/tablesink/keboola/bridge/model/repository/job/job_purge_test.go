@@ -76,7 +76,7 @@ func TestJobRepository_Purge(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		job := model.Job{JobKey: jobKey}
-		assert.NoError(t, repo.Purge(&job).Do(ctx).Err())
+		require.NoError(t, repo.Purge(&job).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_purge_snapshot_001.txt", ignoredEtcdKeys)
 	}
 

@@ -28,7 +28,7 @@ func TestBindKVs_Empty(t *testing.T) {
 	patch := ConfigPatch{}
 	var kvs []configpatch.PatchKV
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
-	assert.Equal(t, patch, ConfigPatch{})
+	assert.Equal(t, ConfigPatch{}, patch)
 }
 
 func TestBindKVs_One(t *testing.T) {
@@ -38,9 +38,9 @@ func TestBindKVs_One(t *testing.T) {
 		{KeyPath: "foo3.foo5", Value: 789},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
-	assert.Equal(t, patch, ConfigPatch{
+	assert.Equal(t, ConfigPatch{
 		Key3: &ConfigNested1Patch{Key5: ptr.Ptr(789)},
-	})
+	}, patch)
 }
 
 func TestBindKVs_DeepNested(t *testing.T) {
@@ -50,13 +50,13 @@ func TestBindKVs_DeepNested(t *testing.T) {
 		{KeyPath: "foo3.foo6.foo8", Value: false},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
-	assert.Equal(t, patch, ConfigPatch{
+	assert.Equal(t, ConfigPatch{
 		Key3: &ConfigNested1Patch{
 			Key6: &ConfigNested2Patch{
 				Key8: ptr.Ptr(false),
 			},
 		},
-	})
+	}, patch)
 }
 
 func TestBindKVs_Multiple(t *testing.T) {
@@ -67,10 +67,10 @@ func TestBindKVs_Multiple(t *testing.T) {
 		{KeyPath: "foo3.foo5", Value: 789},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
-	assert.Equal(t, patch, ConfigPatch{
+	assert.Equal(t, ConfigPatch{
 		Key1: ptr.Ptr([]string{"bar1"}),
 		Key3: &ConfigNested1Patch{Key5: ptr.Ptr(789)},
-	})
+	}, patch)
 }
 
 func TestBindKVs_UnmarshalText_Ok(t *testing.T) {
@@ -80,9 +80,9 @@ func TestBindKVs_UnmarshalText_Ok(t *testing.T) {
 		{KeyPath: "duration", Value: "1h20m"},
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
-	assert.Equal(t, patch, ConfigPatchTextUnmarshaller{
+	assert.Equal(t, ConfigPatchTextUnmarshaller{
 		Duration: ptr.Ptr(time.Hour + 20*time.Minute),
-	})
+	}, patch)
 }
 
 func TestBindKVs_UnmarshalText_Error(t *testing.T) {
@@ -103,9 +103,9 @@ func TestBindKVs_CompatibleType(t *testing.T) {
 		{KeyPath: "foo3.foo5", Value: float64(789)}, // different, but compatible type
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
-	assert.Equal(t, patch, ConfigPatch{
+	assert.Equal(t, ConfigPatch{
 		Key3: &ConfigNested1Patch{Key5: ptr.Ptr(789)},
-	})
+	}, patch)
 }
 
 func TestBindKVs_IncompatibleType(t *testing.T) {

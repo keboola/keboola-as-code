@@ -356,9 +356,9 @@ func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expecta
 	// Check statistics
 	assert.Len(t, uploadedSlices, 2)
 	sliceStats1, err := ts.apiScp.StatisticsRepository().SliceStats(ctx, uploadedSlices[0].SliceKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	sliceStats2, err := ts.apiScp.StatisticsRepository().SliceStats(ctx, uploadedSlices[1].SliceKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, sliceStats1.Staging.RecordsCount)
 	assert.NotEmpty(t, sliceStats2.Staging.RecordsCount)
 	assert.Equal(t, expectations.records.count/2, int(sliceStats1.Staging.RecordsCount))
@@ -455,7 +455,7 @@ func (ts *testState) testFileImport(t *testing.T, ctx context.Context, expectati
 	// Check statistics
 	prevFile := files[len(files)-2]
 	fileStats, err := ts.apiScp.StatisticsRepository().FileStats(ctx, prevFile.file.FileKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectations.expectedFileRecords.count, int(fileStats.Target.RecordsCount))
 
 	// Check Keboola table

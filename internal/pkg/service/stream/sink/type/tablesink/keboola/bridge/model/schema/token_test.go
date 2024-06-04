@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +23,6 @@ func TestTokenSchema(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		assert.Equal(t, c.expected, c.actual, fmt.Sprintf(`case "%d"`, i+1))
+		assert.Equal(t, c.expected, c.actual, `case "%d"`, i+1)
 	}
 }

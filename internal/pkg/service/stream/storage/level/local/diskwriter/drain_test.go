@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 )
@@ -21,11 +22,11 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 
 	// Create an empty drain file
 	drainFilePath := filepath.Join(tc.VolumePath, diskwriter.DrainFile)
-	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
+	require.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 
 	// Type open volume
 	vol, err := tc.OpenVolume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, vol.Drained())
 
 	// Check error
@@ -34,13 +35,13 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	}
 
 	// Remove the file
-	assert.NoError(t, os.Remove(drainFilePath))
+	require.NoError(t, os.Remove(drainFilePath))
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.False(c, vol.Drained())
 	}, time.Second, 5*time.Millisecond)
 
 	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 }
 
 // TestOpen_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
@@ -51,7 +52,7 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 
 	// Type open volume
 	vol, err := tc.OpenVolume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, vol.Drained())
 
 	// Check error
@@ -61,11 +62,11 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 
 	// Create an empty drain file
 	drainFilePath := filepath.Join(tc.VolumePath, diskwriter.DrainFile)
-	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
+	require.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.True(c, vol.Drained())
 	}, time.Second, 5*time.Millisecond)
 
 	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 }

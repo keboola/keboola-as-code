@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
@@ -31,7 +32,7 @@ func TestRoundRobinBalancer(t *testing.T) {
 	expectWriteToPipeline := func(expectedPipeline *TestPipeline) {
 		result, err := b.WriteRecord(c, pipelines)
 		assert.Equal(t, pipeline.RecordProcessed, result.Status)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "write "+expectedPipeline.Name, strings.TrimSpace(logger.String()))
 		logger.Reset()
 	}

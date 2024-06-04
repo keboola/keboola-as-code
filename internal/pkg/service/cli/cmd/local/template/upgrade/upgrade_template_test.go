@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
@@ -41,14 +42,14 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	configContent := orderedmap.New()
 	rowContent := orderedmap.New()
 	configMetadata.AddInputUsage("input1", orderedmap.PathFromStr("foo.bar"), nil)
-	assert.NoError(t, configContent.SetNested("foo.bar", "old value 1")) // <<<<<<<<<<<
+	require.NoError(t, configContent.SetNested("foo.bar", "old value 1")) // <<<<<<<<<<<
 	configMetadata.AddRowInputUsage(configRowKey.ID, "input2", orderedmap.PathFromStr("foo.bar"), nil)
-	assert.NoError(t, rowContent.SetNested("foo.bar", "old value 2")) // <<<<<<<<<<<
-	assert.NoError(t, projectState.Set(&model.ConfigState{
+	require.NoError(t, rowContent.SetNested("foo.bar", "old value 2")) // <<<<<<<<<<<
+	require.NoError(t, projectState.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
 		Local:          &model.Config{ConfigKey: configKey, Metadata: configMetadata, Content: configContent},
 	}))
-	assert.NoError(t, projectState.Set(&model.ConfigRowState{
+	require.NoError(t, projectState.Set(&model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{ConfigRowKey: configRowKey},
 		Local:             &model.ConfigRow{ConfigRowKey: configRowKey, Content: rowContent},
 	}))
@@ -130,68 +131,68 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Please select which steps you want to fill."))
+		require.NoError(t, console.ExpectString("Please select which steps you want to fill."))
 
 		// Step 1 and 2 are pre-selected, because Input 1 and 2 have been found in config/row.
-		assert.NoError(t, console.ExpectString("Select steps:"))
+		require.NoError(t, console.ExpectString("Select steps:"))
 
-		assert.NoError(t, console.ExpectString("[x]"))
+		require.NoError(t, console.ExpectString("[x]"))
 
-		assert.NoError(t, console.ExpectString("Step 1 - Step Description"))
+		require.NoError(t, console.ExpectString("Step 1 - Step Description"))
 
-		assert.NoError(t, console.ExpectString("[x]"))
+		require.NoError(t, console.ExpectString("[x]"))
 
-		assert.NoError(t, console.ExpectString("Step 2 - Step Description"))
+		require.NoError(t, console.ExpectString("Step 2 - Step Description"))
 
-		assert.NoError(t, console.ExpectString("[ ]"))
+		require.NoError(t, console.ExpectString("[ ]"))
 
-		assert.NoError(t, console.ExpectString("Step 3 - Step Description"))
+		require.NoError(t, console.ExpectString("Step 3 - Step Description"))
 
-		assert.NoError(t, console.ExpectString("[ ]"))
+		require.NoError(t, console.ExpectString("[ ]"))
 
-		assert.NoError(t, console.ExpectString("Step 4 - Step Description"))
+		require.NoError(t, console.ExpectString("Step 4 - Step Description"))
 
-		assert.NoError(t, console.Send(DownArrow)) // move to step 4
+		require.NoError(t, console.Send(DownArrow)) // move to step 4
 
-		assert.NoError(t, console.Send(DownArrow))
+		require.NoError(t, console.Send(DownArrow))
 
-		assert.NoError(t, console.Send(DownArrow))
+		require.NoError(t, console.Send(DownArrow))
 
-		assert.NoError(t, console.Send(Space)) // select step 4
+		require.NoError(t, console.Send(Space)) // select step 4
 
-		assert.NoError(t, console.Send(Enter)) // confirm the selection
+		require.NoError(t, console.Send(Enter)) // confirm the selection
 
-		assert.NoError(t, console.ExpectString("Step 1"))
+		require.NoError(t, console.ExpectString("Step 1"))
 
-		assert.NoError(t, console.ExpectString("input1:"))
+		require.NoError(t, console.ExpectString("input1:"))
 
-		assert.NoError(t, console.ExpectString("(old value 1)"))
+		require.NoError(t, console.ExpectString("(old value 1)"))
 
-		assert.NoError(t, console.SendLine(Enter)) // use default/old value
+		require.NoError(t, console.SendLine(Enter)) // use default/old value
 
-		assert.NoError(t, console.ExpectString("Step 2"))
+		require.NoError(t, console.ExpectString("Step 2"))
 
-		assert.NoError(t, console.ExpectString("input2:"))
+		require.NoError(t, console.ExpectString("input2:"))
 
-		assert.NoError(t, console.ExpectString("(old value 2)"))
+		require.NoError(t, console.ExpectString("(old value 2)"))
 
-		assert.NoError(t, console.SendLine("new value 2")) // fill new value
+		require.NoError(t, console.SendLine("new value 2")) // fill new value
 
-		assert.NoError(t, console.ExpectString("Step 4"))
+		require.NoError(t, console.ExpectString("Step 4"))
 
-		assert.NoError(t, console.ExpectString("input4:"))
+		require.NoError(t, console.ExpectString("input4:"))
 
-		assert.NoError(t, console.SendLine("value 4"))
+		require.NoError(t, console.SendLine("value 4"))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	output, err := AskUpgradeTemplateOptions(context.Background(), d, deps, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, upgradeTemplate.Options{

@@ -67,7 +67,7 @@ func (tc opTestCase[R]) Run(t *testing.T, ctx context.Context, client etcd.KV, l
 	// Check error
 	err := result.Err()
 	if tc.ExpectedError == "" {
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	} else if assert.Error(t, err) {
 		assert.Equal(t, tc.ExpectedError, err.Error())
 	}

@@ -109,7 +109,7 @@ func TestWriter(t *testing.T) {
 	rnd := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	n, err := rnd.Read(data)
 	assert.Equal(t, int(dataLen.Bytes()), n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// The data is written 2x, in halves, to simulate reopen of the compressed file.
 	// Thus, it is checked that it is possible to continue compression after restarting the pod.
@@ -122,7 +122,7 @@ func TestWriter(t *testing.T) {
 		}
 		n, err := w.Write(part)
 		assert.Equal(t, len(part), n)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// Run test cases in parallel
@@ -142,7 +142,7 @@ func TestWriter(t *testing.T) {
 
 			// Close the writer - simulate file close - some outage
 			if v, ok := w.(io.Closer); ok {
-				assert.NoError(t, v.Close())
+				require.NoError(t, v.Close())
 			}
 
 			// Reopen writer - simulates recovery from the outage
@@ -156,13 +156,13 @@ func TestWriter(t *testing.T) {
 
 			// Close the writer
 			if v, ok := w.(io.Closer); ok {
-				assert.NoError(t, v.Close())
+				require.NoError(t, v.Close())
 			}
 
 			// Decode written data and compare.
 			// Compare md5 checksum, because assert library cannot diff such big data.
 			decoded, err := io.ReadAll(tc.Decoder(t, &out))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, md5.Sum(data), md5.Sum(decoded))
 		})
 	}

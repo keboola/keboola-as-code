@@ -111,7 +111,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		nodeID := "test-node"
-		assert.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
+		require.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 			{
 				SliceKey:         sliceKey1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),

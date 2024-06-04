@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -20,7 +21,7 @@ func TestFilesToSave(t *testing.T) {
 	file1 := files.Add(fileRaw1)
 	assert.Same(t, fileRaw1, file1)
 	result, err := fileRaw1.ToRawFile()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Same(t, fileRaw1, result)
 	assert.Equal(t, fileRaw1.Path(), file1.Path())
 
@@ -88,11 +89,11 @@ func TestFilesLoader(t *testing.T) {
 	// Create files
 	jsonContent := "{\"field1\": \"foo\", \"field2\": \"bar\"}"
 	jsonMap := orderedmap.FromPairs([]orderedmap.Pair{{Key: "field1", Value: "foo"}, {Key: "field2", Value: "bar"}})
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo1.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo2.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo3.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo4.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo5.json", jsonContent)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo1.json", jsonContent)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo2.json", jsonContent)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo3.json", jsonContent)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo4.json", jsonContent)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile("foo5.json", jsonContent)))
 
 	// ReadFile
 	rawFile1, err := files.
@@ -101,7 +102,7 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag1`).
 		AddTag(`tag2`).
 		ReadFile(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `foo1.json`, rawFile1.Path())
 	assert.Equal(t, `my description`, rawFile1.Description())
 	assert.Equal(t, jsonContent, rawFile1.Content)
@@ -113,7 +114,7 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag3`).
 		AddTag(`tag4`).
 		ReadJSONFile(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `foo2.json`, jsonFile1.Path())
 	assert.Equal(t, `my description`, jsonFile1.Description())
 	assert.Equal(t, jsonMap, jsonFile1.Content)
@@ -127,7 +128,7 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag6`).
 		ReadJSONFieldsTo(context.Background(), target1, `mytag:field`)
 	assert.True(t, tagFound)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `foo3.json`, jsonFile2.Path())
 	assert.Equal(t, `my description`, jsonFile2.Description())
 	assert.Equal(t, `foo`, target1.Field1)
@@ -142,7 +143,7 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag8`).
 		ReadFileContentTo(context.Background(), target2, `mytag:content`)
 	assert.True(t, tagFound)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `foo4.json`, rawFile2.Path())
 	assert.Equal(t, `my description`, rawFile2.Description())
 	assert.Equal(t, jsonContent, target2.Content)
@@ -156,7 +157,7 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag10`).
 		ReadJSONMapTo(context.Background(), target3, `mytag:map`)
 	assert.True(t, tagFound)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `foo5.json`, jsonFile3.Path())
 	assert.Equal(t, `my description`, jsonFile3.Description())
 	assert.Equal(t, jsonMap, target3.Map)

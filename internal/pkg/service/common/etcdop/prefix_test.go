@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -25,75 +26,75 @@ func TestPrefix(t *testing.T) {
 	key2 := pfx.Key("key2")
 
 	err := key0.Put(client, "out of the prefix").Do(ctx).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// AtLeastOneExists - not found
 	found, err := pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// Count - 0
 	count, err := pfx.Count(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(0), count)
 
 	// GetAll - empty
 	kvs, err := pfx.GetAll(client).Do(ctx).All()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, kvs)
 
 	// GetOne - empty
 	kv, err := pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, kv)
 
 	// DeleteAll - empty
 	deleted, err := pfx.DeleteAll(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(0), deleted)
 
 	// ---
-	assert.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
+	require.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
 
 	// AtLeastOneExists - found 1
 	found, err = pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// Count - 1
 	count, err = pfx.Count(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 
 	// GetAll - found 1
 	kvs, err = pfx.GetAll(client).Do(ctx).All()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, kvs)
 	assert.Len(t, kvs, 1)
 	assert.Equal(t, []byte("foo"), kvs[0].Value)
 
 	// DeleteAll - deleted 1
 	deleted, err = pfx.DeleteAll(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), deleted)
 
 	// ---
-	assert.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
-	assert.NoError(t, key2.Put(client, "bar").Do(ctx).Err())
+	require.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
+	require.NoError(t, key2.Put(client, "bar").Do(ctx).Err())
 
 	// AtLeastOneExists - found 2
 	found, err = pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// Count - 2
 	count, err = pfx.Count(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), count)
 
 	// GetAll - found 2
 	kvs, err = pfx.GetAll(client).Do(ctx).All()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, kvs)
 	assert.Len(t, kvs, 2)
 	assert.Equal(t, []byte("foo"), kvs[0].Value)
@@ -101,13 +102,13 @@ func TestPrefix(t *testing.T) {
 
 	// GetOne - 2 exists
 	kv, err = pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("my/prefix/key2"), kv.Key)
 	assert.Equal(t, []byte("bar"), kv.Value)
 
 	// DeleteAll - deleted 2
 	deleted, err = pfx.DeleteAll(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), deleted)
 }
 
@@ -123,99 +124,99 @@ func TestTypedPrefix(t *testing.T) {
 	key2 := pfx.Key("key2")
 
 	err := key0.Put(client, "out of the prefix").Do(ctx).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// AtLeastOneExists - not found
 	found, err := pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, found)
 
 	// Count - 0
 	count, err := pfx.Count(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(0), count)
 
 	// GetAll - empty
 	kvs, err := pfx.GetAll(client).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, kvs)
 
-	// GetOneKV - empty
-	kv, err := pfx.GetOneKV(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	// GetOne - empty
+	kv, err := pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
 	assert.Nil(t, kv)
 
 	// GetOne - empty
 	resultPtr, err := pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, resultPtr)
 
 	// DeleteAll - empty
 	deleted, err := pfx.DeleteAll(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(0), deleted)
 
 	// ---
-	assert.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
+	require.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
 
 	// AtLeastOneExists - found 1
 	found, err = pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// Count - 1
 	count, err = pfx.Count(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 
 	// GetAll - found 1
 	kvs, err = pfx.GetAll(client).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, kvs)
 	assert.Len(t, kvs, 1)
 	assert.Equal(t, fooType("foo"), kvs[0].Value)
 
 	// DeleteAll - deleted 1
 	deleted, err = pfx.DeleteAll(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), deleted)
 
 	// ---
-	assert.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
-	assert.NoError(t, key2.Put(client, "bar").Do(ctx).Err())
+	require.NoError(t, key1.Put(client, "foo").Do(ctx).Err())
+	require.NoError(t, key2.Put(client, "bar").Do(ctx).Err())
 
 	// AtLeastOneExists - found 2
 	found, err = pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, found)
 
 	// Count - 2
 	count, err = pfx.Count(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), count)
 
 	// GetAll - found 2
 	kvs, err = pfx.GetAll(client).Do(ctx).AllKVs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, kvs)
 	assert.Len(t, kvs, 2)
 	assert.Equal(t, fooType("foo"), kvs[0].Value)
 	assert.Equal(t, fooType("bar"), kvs[1].Value)
 
 	// GetOneKV - 2 exists
-	kv, err = pfx.GetOneKV(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
-	assert.Equal(t, "my/prefix/key2", kv.Key())
-	assert.Equal(t, fooType("bar"), kv.Value)
+	kvp, err := pfx.GetOneKV(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Equal(t, "my/prefix/key2", kvp.Key())
+	assert.Equal(t, fooType("bar"), kvp.Value)
 
 	// GetOne - 2 exists
 	resultPtr, err = pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fooType("bar"), *resultPtr)
 
 	// DeleteAll - deleted 2
 	deleted, err = pfx.DeleteAll(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), deleted)
 }
 

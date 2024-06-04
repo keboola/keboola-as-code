@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -32,7 +32,7 @@ func TestServeMetrics(t *testing.T) {
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	endpointURL := fmt.Sprintf(`http://%s/%s`, listenAddr, prometheus.Endpoint)
 	provider, err := prometheus.ServeMetrics(ctx, prometheus.Config{Listen: listenAddr}, d.Logger(), d.Process(), "my-service")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Get metrics, no meter
 	wildcards.Assert(t, `
@@ -44,7 +44,7 @@ target_info{service_name="my-service"} 1
 	// Setup a meter
 	meter := provider.Meter("test_meter")
 	counter, err := meter.Float64Counter("foo", metric.WithDescription("a simple counter"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Get metrics, empty meter
 	wildcards.Assert(t, `
@@ -88,11 +88,11 @@ target_info{service_name="my-service"} 1
 func getBody(t *testing.T, ctx context.Context, url string) string {
 	t.Helper()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	res, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return string(body)
 }

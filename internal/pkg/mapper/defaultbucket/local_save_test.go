@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -75,7 +76,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, state.Set(configState1))
+	require.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -95,12 +96,12 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 			Content:   content,
 		},
 	}
-	assert.NoError(t, state.Set(configState2))
+	require.NoError(t, state.Set(configState2))
 
 	// Invoke
 	object := deepcopy.Copy(configState2.Local).(*model.Config)
 	recipe := model.NewLocalSaveRecipe(configState2.ConfigManifest, object, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -145,7 +146,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, state.Set(configState1))
+	require.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -163,7 +164,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 			Content:   orderedmap.New(),
 		},
 	}
-	assert.NoError(t, state.Set(configState2))
+	require.NoError(t, state.Set(configState2))
 
 	rowKey := model.ConfigRowKey{
 		BranchID:    123,
@@ -188,13 +189,13 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 			Content:      content,
 		},
 	}
-	assert.NoError(t, state.Set(rowState))
+	require.NoError(t, state.Set(rowState))
 
 	// Invoke
 	object := deepcopy.Copy(rowState.Local).(*model.ConfigRow)
 	recipe := model.NewLocalSaveRecipe(rowState.ConfigRowManifest, object, model.NewChangedFields())
 	object.Content = content
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
