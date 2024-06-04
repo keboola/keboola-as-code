@@ -90,11 +90,12 @@ runs:
       id: go-cache-mod
       uses: actions/cache@v4
       with:
+        enableCrossOsArchive: true
         path: |
           ${{ env.GODIRS }}/modcache
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
+        key: All-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
+          All-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
 
     - name: Load Go build and test cache
       id: go-cache-build
