@@ -8,6 +8,9 @@ inputs:
     description: Cache workflow version
     required: false
     default: "001"
+  cache-s3-bucket:
+    description: S3 bucket for various caches.
+    required: true
   build-type:
     description: Build type, for example "default", "linter", ...
     required: true
@@ -15,7 +18,7 @@ runs:
   using: "composite"
   steps:
     - name: Assume AWS S3 caching role
-      uses: aws-actions/configure-aws-credentials@v3
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
         role-session-name: ghactionscaching
@@ -77,13 +80,15 @@ runs:
     # Load compiled tools from cache to skip installation
     - name: Load Go tools cache
       id: go-cache-tools
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/bin
         key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
         restore-keys: |
           ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-tools-
+      env:
+        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
     # Install missing tools
     - name: Install tools
@@ -100,7 +105,7 @@ runs:
     # Load dependencies - Go modules to skip download
     - name: Load Go modules cache
       id: go-cache-mod
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         enableCrossOsArchive: true
         path: |
@@ -108,27 +113,33 @@ runs:
         key: All-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
         restore-keys: |
           All-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
+      env:
+        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
     - name: Load Go build and test cache
       id: go-cache-build
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/cache
         key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
         restore-keys: |
           ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
+      env:
+        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
     - name: Load Linter cache
       id: go-cache-linter
       if: inputs.build-type == 'lint'
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/lintcache
         key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
         restore-keys: |
           ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-linter-
+      env:
+        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
     - name: Download Go modules
       shell: bash

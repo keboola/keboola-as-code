@@ -31,8 +31,9 @@ jobs:
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
         with:
-          go-version: ${{ vars.GO_VERSION }}
           build-type: e2e-tests-templates
+          go-version: ${{ vars.GO_VERSION }}
+          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
