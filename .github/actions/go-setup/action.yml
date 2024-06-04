@@ -14,6 +14,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Assume AWS S3 caching role
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
+        role-session-name: ghactionscaching
+        aws-region: us-east-1
+
     - name: Install Go
       uses: actions/setup-go@v5
       with:
