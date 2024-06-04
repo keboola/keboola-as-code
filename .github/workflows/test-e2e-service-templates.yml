@@ -43,9 +43,16 @@ jobs:
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
       - name: Run tests
-        run: make tests-templates-api
+        run: |
+          set -eo pipefail
+          BUILD_TARGET_PATH="$TEST_BINARY_TEMPLATES_API" make build-templates-api
+          touch -d '1970-01-01T00:00:01' "$TEST_BINARY_TEMPLATES_API"
+          export TEST_BINARY_TEMPLATES_API_HASH=`md5sum -b "$TEST_BINARY_TEMPLATES_API" | cut -d " " -f1`
+          echo "Binary hash: $TEST_BINARY_TEMPLATES_API_HASH"
+          make tests-templates-api
         shell: bash
         env:
+          TEST_BINARY_TEMPLATES_API: "${{ runner.temp }}/test-build-templates-api"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'

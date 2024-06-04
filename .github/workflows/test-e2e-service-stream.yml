@@ -43,9 +43,16 @@ jobs:
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
       - name: Run API E2E tests
-        run: make tests-stream-api
+        run: |
+          set -eo pipefail
+          BUILD_TARGET_PATH="$TEST_BINARY_STREAM_SERVICE" make build-stream-service
+          touch -d '1970-01-01T00:00:01' "$TEST_BINARY_STREAM_SERVICE"
+          export TEST_BINARY_STREAM_SERVICE_HASH=`md5sum -b "$TEST_BINARY_STREAM_SERVICE" | cut -d " " -f1`
+          echo "Binary hash: $TEST_BINARY_STREAM_SERVICE_HASH" 
+          make tests-stream-api
         shell: bash
         env:
+          TEST_BINARY_STREAM_SERVICE: "${{ runner.temp }}/test-build-stream-service"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'

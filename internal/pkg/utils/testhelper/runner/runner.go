@@ -4,6 +4,7 @@ package runner
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -39,6 +40,7 @@ func NewRunner(t *testing.T) *Runner {
 	workingDir := filesystem.Join(callerDir, ".out")
 	assert.NoError(t, os.RemoveAll(workingDir))
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
+	t.Cleanup(func() { resetTimesIn(t, callerDir, workingDir) })
 
 	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir}
 }
@@ -130,4 +132,26 @@ func GetBackendOption(t *testing.T, backendDefinition *fixtures.BackendDefinitio
 
 	require.Failf(t, "unexcepted type", `unexcepted type: "%s"`, backendDefinition.Type)
 	return nil
+}
+
+// resetTimesIn create/mod time for each file in the ".out" directory.
+// It is required by tests caching, new file has to be at least 2 seconds old to generate cache entry for tests.
+func resetTimesIn(t *testing.T, root, dir string) {
+	t.Helper()
+	timestamp := time.Unix(1, 0).Local()
+
+	// Reset parent directories, each creation of a subdir changes the mod time
+	actual := dir
+	for {
+		require.NoError(t, os.Chtimes(actual, timestamp, timestamp))
+		if actual == root || actual == "." {
+			break
+		}
+		actual = filepath.Dir(actual)
+	}
+
+	// Reset nested directories and files
+	require.NoError(t, filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		return os.Chtimes(path, timestamp, timestamp) // nolint:forbidigo
+	}))
 }

@@ -53,9 +53,22 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Run tests
-        run: make tests-cli
+        run: |
+          set -eo pipefail
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            export TEST_BINARY_CLI="${{ runner.temp }}\test-build-cli.exe"
+          else
+            export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
+          fi
+          BUILD_TARGET_PATH="$TEST_BINARY_CLI" make build-local
+          touch -d '1970-01-01T00:00:01' "$TEST_BINARY_CLI"
+          export TEST_BINARY_CLI_HASH=`md5sum -b "$TEST_BINARY_CLI" | cut -d " " -f1`
+          echo "Binary hash: $TEST_BINARY_CLI_HASH"
+          make tests-cli
         shell: bash
         env:
+          CLI_BUILD_DATE: "-"
+          CLI_BUILD_GIT_COMMIT: "-"
           VERSION: ${{ inputs.version }}
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
