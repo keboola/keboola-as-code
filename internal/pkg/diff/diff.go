@@ -3,11 +3,13 @@ package diff
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -199,6 +201,18 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		// Diff SharedCode row as string
 		cmp.Transformer("sharedCodeRow", func(code model.SharedCodeRow) string {
 			return code.String()
+		}),
+
+		cmpopts.AcyclicTransformer("projectDescription", func(branchMetadata model.BranchMetadata) model.BranchMetadata {
+			branchMetadata = deepcopy.Copy(branchMetadata).(model.BranchMetadata)
+			desc, found := branchMetadata[model.ProjectDescriptionMetaKey]
+			// Compile the regular expression
+			// if description contains empty string and spaces, then ignore and delete this metadata
+			ok := regexp.MustCompile(`^\s*$`).MatchString(desc)
+			if found && ok {
+				delete(branchMetadata, model.ProjectDescriptionMetaKey)
+			}
+			return branchMetadata
 		}),
 		// Do not compare local paths
 		cmpopts.IgnoreTypes(model.AbsPath{}),
