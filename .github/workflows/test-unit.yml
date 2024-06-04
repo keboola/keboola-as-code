@@ -2,11 +2,16 @@ name: "Unit Tests"
 
 on:
   workflow_call:
+    inputs:
+      without-cache:
+        type: boolean
+        default: false
+        required: false
 
 env:
   TEST_PARALLELISM: 12
   TEST_PARALLELISM_PKG: 6
-  TEST_COVERAGE: false
+  TEST_COVERAGE: ${{ inputs.without-cache == true }}
 
 permissions:
   id-token: write   # This is required for requesting the JWT
@@ -42,6 +47,7 @@ jobs:
         with:
           build-type: unit-tests
           go-version: ${{ vars.GO_VERSION }}
+          without-cache: ${{ inputs.without-cache }}
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Set TEST_KBC_PROJECTS_FILE entries

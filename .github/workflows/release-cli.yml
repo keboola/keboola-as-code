@@ -55,6 +55,8 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
+    with:
+      without-cache: true
 
   test-e2e-cli:
     name: "E2E: CLI"
@@ -64,6 +66,7 @@ jobs:
     uses: ./.github/workflows/test-e2e-cli.yml
     with:
       version: ${{ needs.version.outputs.VERSION }}
+      without-cache: true
 
   provisioning-cli-s3:
     name: "Provisioning: CLI S3"

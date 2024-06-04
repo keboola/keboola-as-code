@@ -4,6 +4,10 @@ inputs:
   go-version:
     description: Go version
     required: true
+  without-cache:
+    description: Disable cache
+    default: "false"
+    required: false
   cache-version:
     description: Cache workflow version
     required: false
@@ -80,6 +84,7 @@ runs:
     # Load compiled tools from cache to skip installation
     - name: Load Go tools cache
       id: go-cache-tools
+      if: inputs.without-cache != 'true'
       uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         path: |
@@ -105,6 +110,7 @@ runs:
     # Load dependencies - Go modules to skip download
     - name: Load Go modules cache
       id: go-cache-mod
+      if: inputs.without-cache != 'true'
       uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         enableCrossOsArchive: true
@@ -118,6 +124,7 @@ runs:
 
     - name: Load Go build and test cache
       id: go-cache-build
+      if: inputs.without-cache != 'true'
       uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         path: |
@@ -130,7 +137,7 @@ runs:
 
     - name: Load Linter cache
       id: go-cache-linter
-      if: inputs.build-type == 'lint'
+      if: inputs.build-type == 'lint' && inputs.without-cache != 'true'
       uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
         path: |
@@ -151,6 +158,7 @@ runs:
         du -hd0 "$GODIRS/modcache"
 
     - name: Reset modtime of files to 1 unix timestamp, to make Go test caching work
+      if: inputs.without-cache != 'true'
       shell: bash
       run: |
         echo "Resetting modtime ..."

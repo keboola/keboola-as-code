@@ -33,6 +33,8 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
+    with:
+      without-cache: true
   test-k8s-service-apps-proxy:
     name: "K8S: Apps Proxy"
     secrets: inherit

@@ -2,6 +2,11 @@ name: "E2E: Templates"
 
 on:
   workflow_call:
+    inputs:
+      without-cache:
+        type: boolean
+        default: false
+        required: false
 
 env:
   TEST_PARALLELISM: 16
@@ -33,6 +38,7 @@ jobs:
         with:
           build-type: e2e-tests-templates
           go-version: ${{ vars.GO_VERSION }}
+          without-cache: ${{ inputs.without-cache }}
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
