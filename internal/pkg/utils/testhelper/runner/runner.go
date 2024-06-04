@@ -4,7 +4,7 @@ package runner
 
 import (
 	"context"
-	"io/fs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -26,34 +25,47 @@ import (
 const testTimeout = 5 * time.Minute
 
 type Runner struct {
-	t          *testing.T
-	testsDir   string
-	workingDir string
+	t        *testing.T
+	testsDir string
 }
 
 func NewRunner(t *testing.T) *Runner {
 	t.Helper()
 
 	_, callerFile, _, _ := runtime.Caller(1) //nolint:dogsled
-	callerDir := filepath.Dir(callerFile)    // nolint:forbidigo
+	testsDir := filepath.Dir(callerFile)     // nolint:forbidigo
 
-	workingDir := filesystem.Join(callerDir, ".out")
-	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
-	t.Cleanup(func() { resetTimesIn(t, callerDir, workingDir) })
+	// Delete debug files from the previous run
+	if testhelper.CreateOutDir() {
+		require.NoError(t, os.RemoveAll(filesystem.Join(testsDir, ".out")))
+	}
 
-	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir}
+	return &Runner{t: t, testsDir: testsDir}
 }
 
 func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.CancelFunc) {
 	t.Helper()
 
 	testDir := filepath.Join(r.testsDir, testDirName)
-	workingDir := filepath.Join(r.workingDir, testDirName)
 
-	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
+	// Create temporary working dir
+	workingDir := t.TempDir()
 	assert.NoError(t, os.Chdir(workingDir))
+
+	// Chdir after the test, without it, the deletion of the temp dir is not possible on Windows
+	t.Cleanup(func() {
+		assert.NoError(t, os.Chdir(testDir))
+	})
+
+	// Keep working dir for debugging
+	t.Cleanup(func() {
+		if testhelper.CreateOutDir() {
+			outDir := filesystem.Join(r.testsDir, ".out", testDirName)
+			require.NoError(t, os.RemoveAll(outDir))
+			require.NoError(t, os.MkdirAll(outDir, 0o755))
+			require.NoError(t, aferofs.CopyFs2Fs(nil, workingDir, nil, outDir))
+		}
+	})
 
 	testDirFS, err := aferofs.NewLocalFs(testDir)
 	assert.NoError(t, err)
@@ -132,26 +144,4 @@ func GetBackendOption(t *testing.T, backendDefinition *fixtures.BackendDefinitio
 
 	require.Failf(t, "unexcepted type", `unexcepted type: "%s"`, backendDefinition.Type)
 	return nil
-}
-
-// resetTimesIn create/mod time for each file in the ".out" directory.
-// It is required by tests caching, new file has to be at least 2 seconds old to generate cache entry for tests.
-func resetTimesIn(t *testing.T, root, dir string) {
-	t.Helper()
-	timestamp := time.Unix(1, 0).Local()
-
-	// Reset parent directories, each creation of a subdir changes the mod time
-	actual := dir
-	for {
-		require.NoError(t, os.Chtimes(actual, timestamp, timestamp))
-		if actual == root || actual == "." {
-			break
-		}
-		actual = filepath.Dir(actual)
-	}
-
-	// Reset nested directories and files
-	require.NoError(t, filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		return os.Chtimes(path, timestamp, timestamp) // nolint:forbidigo
-	}))
 }

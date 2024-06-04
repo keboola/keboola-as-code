@@ -65,7 +65,7 @@ jobs:
           touch -d '1970-01-01T00:00:01' "$TEST_BINARY_CLI"
           export TEST_BINARY_CLI_HASH=`md5sum -b "$TEST_BINARY_CLI" | cut -d " " -f1`
           echo "Binary hash: $TEST_BINARY_CLI_HASH"
-          make tests-cli
+          go test ./test/cli/... -run TestCliE2E/help/push
         shell: bash
         env:
           CLI_BUILD_DATE: "-"

@@ -36,6 +36,11 @@ runs:
           echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
         fi
 
+    - name: Don't create ".out" directories in tests, so tests caching works
+      shell: bash
+      run: |
+        echo "TEST_CREATE_OUT_DIR=false" >> $GITHUB_ENV
+
     # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
     # GOCACHE    - Build and test cache.
     # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
@@ -83,9 +88,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/bin
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v42-tools-${{ hashFiles('scripts/tools.sh') }}
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v49-tools-${{ hashFiles('scripts/tools.sh') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-v42-tools-
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v49-tools-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -108,9 +113,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/modcache
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v42-mod-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v49-mod-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-v42-mod-
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v49-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -121,9 +126,9 @@ runs:
         path: |
           ${{ env.GODIRS }}/cache
           ${{ github.workspace }}/**/.out
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v42-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v49-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-v42-build-${{ inputs.build-type }}-
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v49-build-${{ inputs.build-type }}-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -134,9 +139,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/lintcache
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v42-linter-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-v49-linter-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-v42-linter-
+          ${{ runner.os }}-go-${{ inputs.go-version }}-v49-linter-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -158,7 +163,7 @@ runs:
         echo "Excluded: $excluded"
         
         echo "Dirs:"
-        for dir in "$(go env GOROOT)" "$GITHUB_WORKSPACE"
+        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)" "$GITHUB_WORKSPACE"
         do
           echo "$dir"
           # !!! -L = follow symlinks
@@ -172,6 +177,6 @@ runs:
     # To find problematic dir/file: Run the workflow twice, download tests logs, sort lines and make a diff.
     # https://pkg.go.dev/cmd/go#hdr-Build_and_test_caching
     - name: Enable debugging of the Go test cache
-      if: true # disabled, enable for debugging
+      if: false # disabled, enable for debugging
       shell: bash
       run: echo "GODEBUG=gocachehash=1" >> $GITHUB_ENV

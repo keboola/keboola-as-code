@@ -170,9 +170,9 @@ func (n *nopCloser) Close() error {
 	return nil
 }
 
-// AllowedOutDir returns true if writing of various dump files to ".out" directories is enabled.
-func AllowedOutDir() bool {
-	value := os.Getenv("TEST_ALLOW_OUTPUT")
+// CreateOutDir returns true if writing of various dump files to ".out" directories is enabled.
+func CreateOutDir() bool {
+	value := os.Getenv("TEST_CREATE_OUT_DIR")
 	if value == "" {
 		return true
 	}
