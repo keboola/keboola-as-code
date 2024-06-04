@@ -11,7 +11,7 @@ runs:
   using: "composite"
   steps:
     - name: Assume AWS S3 caching role
-      uses: aws-actions/configure-aws-credentials@v3
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
         role-session-name: ghactionscaching
@@ -76,7 +76,7 @@ runs:
     # Load compiled tools from cache to skip installation
     - name: Load Go tools cache
       id: go-cache-tools
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/bin
@@ -99,7 +99,7 @@ runs:
     # Load dependencies - Go modules to skip download
     - name: Load Go modules cache
       id: go-cache-mod
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/modcache
@@ -109,7 +109,7 @@ runs:
 
     - name: Load Go build and test cache
       id: go-cache-build
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/cache
@@ -121,7 +121,7 @@ runs:
     - name: Load Linter cache
       id: go-cache-linter
       if: inputs.build-type == 'lint'
-      uses: actions/cache@v4
+      uses: runs-on/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/lintcache
@@ -146,7 +146,7 @@ runs:
         do
           echo "$dir"
           # !!! -L = follow symlinks
-          find -L "$dir" -not -path "**/.out*" -print0 | xargs -0 touch -d '1970-01-01T00:00:01'
+          find -L "$dir" -not -path "**/.out*" -or -not -name "projects.json" -print0 | xargs -0 touch -d '1970-01-01T00:00:01'
         done
         echo "Done"
         echo
