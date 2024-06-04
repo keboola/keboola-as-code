@@ -170,10 +170,19 @@ func (n *nopCloser) Close() error {
 	return nil
 }
 
+// TestAllowOutput enables writing of various dump files to ".out" directories.
+func TestAllowOutput() bool {
+	value := os.Getenv("TEST_ALLOW_OUTPUT")
+	if value == "" {
+		return true
+	}
+	return cast.ToBool(value)
+}
+
 func TestIsVerbose() bool {
 	value := os.Getenv("TEST_VERBOSE")
 	if value == "" {
-		value = "false"
+		return false
 	}
 	return cast.ToBool(value)
 }
