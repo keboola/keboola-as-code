@@ -67,11 +67,17 @@ jobs:
             export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
           fi
           
+          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
+          fi
+          
           # Build binary for test without external inputs
           env -i \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
+            GOFLAGS="$GOFLAGS" \
             APPDATA="$APPDATA" \
             BUILD_TARGET_PATH="$TEST_BINARY_CLI" \
             CLI_BUILD_DATE="-" \

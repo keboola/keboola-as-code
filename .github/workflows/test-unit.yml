@@ -65,11 +65,17 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
+          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
+          fi
+          
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
           env -i \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
+            GOFLAGS="$GOFLAGS" \
             APPDATA="$APPDATA" \
             DATADOG_ENABLED="false" \
             UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
