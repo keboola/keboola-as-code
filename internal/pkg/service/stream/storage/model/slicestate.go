@@ -31,14 +31,14 @@ const SliceUploaded SliceState = "uploaded"
 
 // SliceImported
 //
-// Only following transitions are allowed:
-// SliceWriting -> SliceClosing -> SliceUploading -> SliceUploaded
-//
 // The parent File has been successfully imported to the target table.
 // The Slice can be removed from the staging storage, if needed.
 const SliceImported SliceState = "imported"
 
 // SliceState is an enum type for slice states, see also FileState.
+//
+// Only following transitions are allowed:
+// SliceWriting -> SliceClosing -> SliceUploading -> SliceUploaded -> SliceImported.
 type SliceState string
 
 func (s Slice) WithState(at time.Time, to SliceState) (Slice, error) {

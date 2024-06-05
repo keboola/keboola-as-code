@@ -1,0 +1,76 @@
+[
+  {
+    "host": "connection.keboola.com",
+    "project": 9483,
+    "backend": "snowflake",
+    "stagingStorage": "s3",
+    "token": "9483-551978-XVia4eMobjLHup1xKgtROgKUEFJnorg7fmtfocnz",
+    "legacyTransformation": true
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 9484,
+    "backend": "snowflake",
+    "stagingStorage": "s3",
+    "token": "9484-551979-CZaDPNlD2W76i8SPDcYDP6SR7JM3EP7NpLjmlxDJ",
+    "legacyTransformation": true
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 9485,
+    "backend": "snowflake",
+    "stagingStorage": "s3",
+    "token": "9485-551980-S0D8ZyCXEqQhTGNhTRltPEDizWSzpxONUJDc6dbm",
+    "legacyTransformation": true
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 9486,
+    "backend": "snowflake",
+    "stagingStorage": "s3",
+    "token": "9486-551981-AYwUSS7zk0E7Z6nkNaCAkNqFFoaXYRBx4SMNXqFC",
+    "legacyTransformation": true
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 9487,
+    "backend": "snowflake",
+    "stagingStorage": "s3",
+    "token": "9487-551982-W8Axy6u1Uuw39hwbwDl89fTooa92An1DS2ZpdRCo"
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 9488,
+    "backend": "snowflake",
+    "stagingStorage": "s3",
+    "token": "9488-551983-THPtXrBZZ1mm3gyuf5DqApcMCafYhg8EfqVu7GDO"
+  },
+  {
+    "host": "connection.north-europe.azure.keboola.com",
+    "project": 4543,
+    "backend": "snowflake",
+    "stagingStorage": "abs",
+    "token": "4543-19629-8x3bc2L9xHYPCFK186cPDAliMuRIlXXNA2sNr9c3"
+  },
+  {
+    "host": "connection.north-europe.azure.keboola.com",
+    "project": 8115,
+    "backend": "snowflake",
+    "stagingStorage": "abs",
+    "token": "8115-32284-9F9PSHgS1gKLh2r681cNnoLnqHyAU4lrAnlUvuWZ"
+  },
+  {
+    "host": "connection.north-europe.azure.keboola.com",
+    "project": 8114,
+    "backend": "snowflake",
+    "stagingStorage": "abs",
+    "token": "8114-32283-hUCtZxTZbHC7bHLvOH6leiCJ2qjH6D0KM6vrjMXL"
+  },
+  {
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 87,
+    "backend": "bigquery",
+    "stagingStorage": "gcs",
+    "token": "87-329-ItkOE2jdGeXVVJB1ubD2RDwH8XcFOt9sSp3SXltI"
+  }
+]
