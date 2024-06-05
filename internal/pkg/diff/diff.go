@@ -2,14 +2,14 @@ package diff
 
 import (
 	"fmt"
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	"github.com/umisama/go-regexpcache"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -208,7 +208,7 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 			desc, found := branchMetadata[model.ProjectDescriptionMetaKey]
 			// Compile the regular expression
 			// if description contains empty string and spaces, then ignore and delete this metadata
-			ok := regexp.MustCompile(`^\s*$`).MatchString(desc)
+			ok := regexpcache.MustCompile(`^\s*$`).MatchString(desc)
 			if found && ok {
 				delete(branchMetadata, model.ProjectDescriptionMetaKey)
 			}
