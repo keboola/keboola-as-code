@@ -26,11 +26,9 @@ func (r *Repository) Disable(k key.SinkKey, now time.Time, by definition.By, rea
 }
 
 func (r *Repository) disableSinksOnSourceDisable() {
-	r.plugins.Collection().OnSourceSave(func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) error {
-		if updated.IsDisabledAt(now) {
-			reason := "Auto-disabled with the parent source."
-			op.AtomicFromCtx(ctx).AddFrom(r.disableAllFrom(updated.SourceKey, now, by, reason, false))
-		}
+	r.plugins.Collection().OnSourceDisabled(func(ctx context.Context, now time.Time, by definition.By, original, updated *definition.Source) error {
+		reason := "Auto-disabled with the parent source."
+		op.AtomicOpFromCtx(ctx).AddFrom(r.disableAllFrom(updated.SourceKey, now, by, reason, false))
 		return nil
 	})
 }

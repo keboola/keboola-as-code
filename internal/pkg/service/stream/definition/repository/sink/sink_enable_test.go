@@ -61,6 +61,7 @@ func TestSinkRepository_Enable(t *testing.T) {
 
 		sink := test.NewSink(sinkKey)
 		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
+		assert.Equal(t, definition.VersionNumber(1), sink.VersionNumber())
 	}
 
 	// Get - ok
@@ -73,16 +74,20 @@ func TestSinkRepository_Enable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		assert.NoError(t, repo.Disable(sinkKey, now, by, "some reason").Do(ctx).Err())
+		sink, err := repo.Disable(sinkKey, now, by, "some reason").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_001.txt", ignoredEtcdKeys)
+		assert.Equal(t, definition.VersionNumber(2), sink.VersionNumber())
 	}
 
 	// Enable - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, repo.Enable(sinkKey, now, by).Do(ctx).Err())
+		sink, err := repo.Enable(sinkKey, now, by).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_002.txt", ignoredEtcdKeys)
+		assert.Equal(t, definition.VersionNumber(3), sink.VersionNumber())
 	}
 
 	// Get - ok
@@ -92,6 +97,26 @@ func TestSinkRepository_Enable(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, sink.IsEnabled())
 		assert.True(t, sink.IsEnabledAt(now))
+	}
+
+	// Rollback to the disabled state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		now = now.Add(time.Hour)
+		sink, err := repo.RollbackVersion(sinkKey, now, by, 2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink.IsDisabled())
+		assert.Equal(t, definition.VersionNumber(4), sink.VersionNumber())
+	}
+
+	// Rollback to the enabled state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		now = now.Add(time.Hour)
+		sink, err := repo.RollbackVersion(sinkKey, now, by, 3).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink.IsEnabled())
+		assert.Equal(t, definition.VersionNumber(5), sink.VersionNumber())
 	}
 }
 
@@ -229,14 +254,18 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Source().Disable(sourceKey, now, by, "Reason").Do(ctx).Err())
+		source, err := d.DefinitionRepository().Source().Disable(sourceKey, now, by, "Reason").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, definition.VersionNumber(2), source.Version.Number)
 	}
 
 	// Enable Source
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		require.NoError(t, d.DefinitionRepository().Source().Enable(sourceKey, now, by).Do(ctx).Err())
+		source, err := d.DefinitionRepository().Source().Enable(sourceKey, now, by).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, definition.VersionNumber(3), source.Version.Number)
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/sink_enable_snapshot_004.txt", ignoredEtcdKeys)
 	}
 	{
@@ -250,9 +279,35 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 		// Sink2 and Sink2 are enabled
 		sink2, err = repo.Get(sinkKey2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink2.IsDisabled())
+		assert.True(t, sink2.IsEnabled())
 		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.False(t, sink3.IsDisabled())
+		assert.True(t, sink3.IsEnabled())
+	}
+
+	// Rollback Source to the disabled state
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		now = now.Add(time.Hour)
+		source, err := d.DefinitionRepository().Source().RollbackVersion(sourceKey, now, by, 2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, definition.VersionNumber(4), source.Version.Number)
+		assert.True(t, source.IsDisabled())
+	}
+	{
+		var err error
+
+		// Sink1 has been disabled before the Source has been disabled, so it remains disabled.
+		sink1, err = repo.Get(sinkKey1).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink1.IsDisabled())
+
+		// Sink2 and Sink2 are disabled
+		sink2, err = repo.Get(sinkKey2).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink2.IsDisabled())
+		sink3, err = repo.Get(sinkKey3).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, sink3.IsDisabled())
 	}
 }
