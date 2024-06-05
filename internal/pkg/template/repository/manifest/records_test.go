@@ -216,7 +216,6 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 		}, args: args{projectBackends: []string{"teradata", "snowflake", "mysql"}}, want: false},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			v := &TemplateRecord{
@@ -287,7 +286,6 @@ func TestTemplateRecord_HasFeature(t *testing.T) {
 		}, args: args{features: keboola.Features{"feature1", "feature2", "feature3", "feature4"}.ToMap()}, want: false},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			v := &TemplateRecord{
@@ -358,7 +356,6 @@ func TestTemplateRecord_HasComponent(t *testing.T) {
 		}, args: args{components: testapi.MockedComponentsMap()}, want: false},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			v := &TemplateRecord{

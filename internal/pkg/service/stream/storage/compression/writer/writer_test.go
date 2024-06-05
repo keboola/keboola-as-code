@@ -127,7 +127,6 @@ func TestWriter(t *testing.T) {
 
 	// Run test cases in parallel
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
 

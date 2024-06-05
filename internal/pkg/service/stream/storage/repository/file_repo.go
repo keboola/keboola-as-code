@@ -177,7 +177,7 @@ func (r *FileRepository) StateTransition(now time.Time, fileKey model.FileKey, f
 			txn := op.Txn(r.client)
 			errs := errors.NewMultiError()
 			for _, slice := range fileSlices {
-				oldSliceState := slice
+				oldSliceState := slice // nolint: copyloopvar
 				if to == model.FileClosing && slice.State == model.SliceWriting {
 					// Switch slice state on FileClosing
 					if slice, err = slice.WithState(now, model.SliceClosing); err != nil {

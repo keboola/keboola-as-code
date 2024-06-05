@@ -74,7 +74,6 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Write all rows batches
 	rowsCount := 0
 	for i, batch := range tc.Data {
-		batch := batch
 		rowsCount += len(batch.Rows)
 
 		done := make(chan struct{})
@@ -84,7 +83,6 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			// Write rows from the set in parallel
 			wg := &sync.WaitGroup{}
 			for _, row := range batch.Rows {
-				row := row
 				wg.Add(1)
 				go func() {
 					defer wg.Done()

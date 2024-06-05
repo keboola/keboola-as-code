@@ -317,7 +317,6 @@ func TestVolumes_VolumesFor(t *testing.T) {
 
 	// Run test cases
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
 

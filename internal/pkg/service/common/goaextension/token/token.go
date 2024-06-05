@@ -67,14 +67,13 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 	// Iterate over methods
 	for _, m := range service.Methods {
 		// Modify method payload
-		method := m
-		methodFn := method.DSLFunc
-		method.DSLFunc = func() {
+		methodFn := m.DSLFunc
+		m.DSLFunc = func() {
 			// Invoke original definitions
 			methodFn()
 
 			// Use default security from the Service, if no security is set
-			requirements := method.Requirements
+			requirements := m.Requirements
 			if len(requirements) == 0 {
 				requirements = service.Requirements
 			}
@@ -84,28 +83,28 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 				for _, scheme := range requirement.Schemes {
 					if scheme.SchemeName == tokenScheme.SchemeName {
 						// Prepare payload definition
-						if method.Payload == nil {
+						if m.Payload == nil {
 							// No payload defined -> create an empty.
 							Payload(func() {})
 						}
-						if t, ok := method.Payload.Type.(*expr.UserTypeExpr); ok {
+						if t, ok := m.Payload.Type.(*expr.UserTypeExpr); ok {
 							// Payload is a user type.
 							// Convert it to an objects that extend the user type,
 							// so the APIKey can be added there.
 							Payload(func() { Extend(t) })
 						}
-						if method.Payload.Type == expr.Empty {
+						if m.Payload.Type == expr.Empty {
 							// Payload is the empty type -> convert it to an empty object.
-							method.Payload.Type = &expr.Object{}
+							m.Payload.Type = &expr.Object{}
 						}
 						// Add APIKey field
 						eval.Execute(func() {
 							APIKey(scheme.SchemeName, field, String)
 							Required(field)
-						}, method.Payload)
+						}, m.Payload)
 
 						// Add header to the HTTP definition
-						endpoint := expr.Root.API.HTTP.ServiceFor(method.Service).EndpointFor(method.Name, method)
+						endpoint := expr.Root.API.HTTP.ServiceFor(m.Service).EndpointFor(m.Name, m)
 						httpFn := endpoint.DSLFunc
 						endpoint.DSLFunc = func() {
 							// Define the payload field by the header

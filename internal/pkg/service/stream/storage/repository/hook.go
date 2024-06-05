@@ -91,8 +91,6 @@ func (h *hook) NewFileResourcesProvider(rb rollback.Builder) FileResourcesProvid
 		grp, ctx := errgroup.WithContext(ctx)
 		grp.SetLimit(h.config.Staging.ParallelFileCreateLimit)
 		for _, sinkKey := range sinkKeys {
-			sinkKey := sinkKey
-
 			// Create file resource only once, the provider can be reused within op.AtomicOp retries.
 			lock.Lock()
 			_, ok := result[sinkKey]

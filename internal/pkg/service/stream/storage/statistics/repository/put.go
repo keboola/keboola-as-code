@@ -45,7 +45,6 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 	wg := &sync.WaitGroup{}
 	errs := errors.NewMultiError()
 	for _, txn := range allTxn {
-		txn := txn
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

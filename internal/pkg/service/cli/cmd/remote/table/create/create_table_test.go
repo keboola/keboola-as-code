@@ -70,7 +70,6 @@ func TestGetCreateRequest(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equalf(t, tt.want, getOptionCreateRequest(tt.args.columns), "getOptionCreateRequest(%v)", tt.args.columns)

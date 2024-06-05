@@ -83,7 +83,6 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 	errs := errors.NewMultiError()
 	initWg := &sync.WaitGroup{}
 	for _, repo := range defaultRepositories {
-		repo := repo
 		initWg.Add(1)
 		go func() {
 			defer initWg.Done()
@@ -135,14 +134,13 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 	wait := &sync.WaitGroup{}
 	for _, repo := range m.repositories {
 		repoDef := repo.Unwrap().Definition()
-		oldValue := repo
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
 
 			// Update
 			startTime := time.Now()
-			newValue, changed, err := oldValue.update(ctx)
+			newValue, changed, err := repo.update(ctx)
 
 			// Metric
 			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
@@ -169,7 +167,7 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 				m.repositoriesLock.Unlock()
 
 				// Free previous value
-				oldValue.free(ctx)
+				repo.free(ctx)
 			}
 		}()
 	}
@@ -192,7 +190,6 @@ func (m *Manager) Free(ctx context.Context) {
 
 	wg := &sync.WaitGroup{}
 	for _, repo := range m.repositories {
-		repo := repo
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
