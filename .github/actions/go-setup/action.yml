@@ -44,11 +44,6 @@ runs:
           echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
         fi
 
-    - name: Don't create ".out" directories in tests, so tests caching works
-      shell: bash
-      run: |
-        echo "TEST_CREATE_OUT_DIR=false" >> $GITHUB_ENV
-
     # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
     # GOCACHE    - Build and test cache.
     # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
