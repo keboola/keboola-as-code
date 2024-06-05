@@ -990,15 +990,14 @@ var SinkFile = Type("SinkFile", func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Required("state", "openedAt", "statistics")
+	Required("state", "openedAt")
 	Attribute("statistics", SinkFileStatistics)
 })
 
 var SinkFileStatistics = Type("SinkFileStatistics", func() {
 	Attribute("total", Level)
-	Required("total")
 	Attribute("levels", Levels)
-	Required("levels")
+	Required("total", "levels")
 })
 
 var FileState = Type("FileState", String, func() {
@@ -1309,7 +1308,7 @@ var AggregationSink = Type("AggregationSink", func() {
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
 	Attribute("statistics", AggregationStatistics)
-	Required("version", "created", "statistics")
+	Required("version", "created")
 })
 
 var AggregationStatistics = Type("AggregationStatistics", func() {
