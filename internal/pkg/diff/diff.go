@@ -2,15 +2,15 @@ package diff
 
 import (
 	"fmt"
-	"github.com/keboola/go-utils/pkg/deepcopy"
-	"github.com/umisama/go-regexpcache"
 	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

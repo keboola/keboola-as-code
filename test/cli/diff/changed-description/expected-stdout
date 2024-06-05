@@ -1,0 +1,8 @@
+* changed
+- remote state
++ local state
+
+Diff:
+* B main | changed: metadata
+
+Use --details flag to list the changed fields.
