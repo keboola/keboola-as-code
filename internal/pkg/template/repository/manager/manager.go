@@ -83,7 +83,6 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 	errs := errors.NewMultiError()
 	initWg := &sync.WaitGroup{}
 	for _, repo := range defaultRepositories {
-		repo := repo
 		initWg.Add(1)
 		go func() {
 			defer initWg.Done()
@@ -192,7 +191,6 @@ func (m *Manager) Free(ctx context.Context) {
 
 	wg := &sync.WaitGroup{}
 	for _, repo := range m.repositories {
-		repo := repo
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
