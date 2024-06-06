@@ -35,7 +35,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v1.26.5-0.20240604171717-286a5e4daa87
+	github.com/keboola/go-client v1.26.5
 	github.com/keboola/go-utils v1.0.0
 	github.com/klauspost/compress v1.17.8
 	github.com/klauspost/pgzip v1.2.6
