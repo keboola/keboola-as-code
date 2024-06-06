@@ -192,7 +192,7 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		}),
 		// Diff transformation blocks as string
 		cmp.Transformer("block", func(block model.Block) string {
-			return block.String()
+			return strings.TrimRight(block.String(), " \r\n\t")
 		}),
 		// Diff orchestrator phases as string
 		cmp.Transformer("phase", func(phase model.Phase) string {
