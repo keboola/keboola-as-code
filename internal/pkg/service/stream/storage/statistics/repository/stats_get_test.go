@@ -158,10 +158,10 @@ func TestProvider(t *testing.T) {
 		// Disable sink, it triggers closing of the active file
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
 
+		// All slices must be marked as uploaded, to mark the file as imported
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
-
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())

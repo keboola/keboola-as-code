@@ -26,44 +26,44 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 		// Object prefix contains all statistics related to the object
 		objectPfx := r.schema.InLevel(inLevel).InObject(objectKey)
 
-		// Keep statistics about successfully imported data in the parent object prefix, in the sum key
-		if inLevel == level.Target {
-			var objectSum statistics.Value
-			var parentSum statistics.Value
-
-			// sumKey contains the sum of all statistics from the children that were deleted
-			sumKey := r.schema.InLevel(level.Target).InParentOf(objectKey).Sum()
-
-			// Get sum from the parent object
-			ops.Read(func(ctx context.Context) op.Op {
-				return sumKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
-					if result == nil {
-						parentSum = statistics.Value{}
-					} else {
-						parentSum = result.Value
-					}
-				})
-			})
-
-			// Get statistics of the object
-			ops.Read(func(context.Context) op.Op {
-				objectSum = statistics.Value{}
-				return SumStatsOp(objectPfx.GetAll(r.client), &objectSum)
-			})
-
-			// Save update sum
+		// Delete statistics
+		if inLevel != level.Target {
 			ops.Write(func(ctx context.Context) op.Op {
-				if objectSum.RecordsCount > 0 {
-					return sumKey.Put(r.client, parentSum.Add(objectSum))
-				} else {
-					return nil
-				}
+				return objectPfx.DeleteAll(r.client)
 			})
 		}
 
-		// Delete statistics
+		// Keep statistics about successfully imported data in the parent object prefix, in the sum key
+		var objectSum statistics.Value
+		var parentSum statistics.Value
+
+		// sumKey contains the sum of all statistics from the children that were deleted
+		sumKey := r.schema.InLevel(level.Target).InParentOf(objectKey).Sum()
+
+		// Get sum from the parent object
+		ops.Read(func(ctx context.Context) op.Op {
+			return sumKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
+				if result == nil {
+					parentSum = statistics.Value{}
+				} else {
+					parentSum = result.Value
+				}
+			})
+		})
+
+		// Get statistics of the object
+		ops.Read(func(context.Context) op.Op {
+			objectSum = statistics.Value{}
+			return SumStatsOp(objectPfx.GetAll(r.client), &objectSum)
+		})
+
+		// Save update sum
 		ops.Write(func(ctx context.Context) op.Op {
-			return objectPfx.DeleteAll(r.client)
+			if objectSum.RecordsCount > 0 {
+				return sumKey.Put(r.client, parentSum.Add(objectSum))
+			} else {
+				return nil
+			}
 		})
 	}
 
