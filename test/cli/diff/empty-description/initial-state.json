@@ -1,0 +1,16 @@
+{
+  "allBranchesConfigs": [
+    "empty"
+  ],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true,
+        "metadata": {
+          "KBC.projectDescription": "   "
+        }
+      }
+    }
+  ]
+}
