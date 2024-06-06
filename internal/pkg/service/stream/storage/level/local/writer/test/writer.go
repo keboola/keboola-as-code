@@ -183,7 +183,6 @@ func (h *WriterHelper) TriggerSync(tb testing.TB) {
 
 	wg := &sync.WaitGroup{}
 	for _, w := range h.writers {
-		w := w
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
