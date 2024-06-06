@@ -40,7 +40,6 @@ func TestNodesDiscovery(t *testing.T) {
 	// Create nodes
 	wg := &sync.WaitGroup{}
 	for i := 0; i < nodesCount; i++ {
-		i := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

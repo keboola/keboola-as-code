@@ -165,7 +165,6 @@ func (v *Volume) Close(ctx context.Context) error {
 
 	// Close all slice writers
 	for _, w := range v.Writers() {
-		w := w
 		v.wg.Add(1)
 		go func() {
 			defer v.wg.Done()

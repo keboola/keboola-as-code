@@ -32,8 +32,6 @@ func (o orchestrator[T]) start() <-chan error {
 	go func() {
 		defer o.node.wg.Done()
 		defer o.logger.Info(o.node.ctx, "stopped")
-
-		initDone := initDone
 		b := newRetryBackoff()
 
 		for {

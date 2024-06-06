@@ -275,7 +275,6 @@ func TestAtomicOp(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.Name+"_ok", func(t *testing.T) {
 			t.Parallel()
 			tc.RunOk(t)

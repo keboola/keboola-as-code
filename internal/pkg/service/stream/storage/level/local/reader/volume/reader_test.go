@@ -128,7 +128,6 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 
 	// Run test cases for OK/ReadError/CloseError scenarios
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
 			t.Run("Ok", tc.TestOk)

@@ -137,7 +137,6 @@ func TestMutex_ParallelWork(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		name := fmt.Sprintf(`Sessions%02d_UniqueLocks%02d_Parallel%02d_Serial%02d`, tc.Sessions, tc.UniqueLocks, tc.Parallel, tc.Serial)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

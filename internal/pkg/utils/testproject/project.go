@@ -263,7 +263,6 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	// Create branches
 	grp := request.NewWaitGroup(ctx)
 	for _, fixture := range branches {
-		fixture := fixture
 		grp.Send(p.createBranchRequest(fixture, createBranchSem))
 	}
 
