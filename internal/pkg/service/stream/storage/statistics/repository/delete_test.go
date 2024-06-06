@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -42,15 +43,15 @@ func TestRepository_Delete_LevelLocalAndStaging(t *testing.T) {
 		UncompressedSize: 1,
 		CompressedSize:   1,
 	}
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{SliceKey: sliceKey1, Value: value},
 		{SliceKey: sliceKey2, Value: value},
 		{SliceKey: sliceKey3, Value: value},
 	}))
 
 	// Move statistics for slices 2 and 3 to the storage.Staging
-	assert.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
-	assert.NoError(t, repo.Move(sliceKey3, level.Local, level.Staging).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey3, level.Local, level.Staging).Do(ctx).Err())
 
 	// Check initial state
 	etcdhelper.AssertKVsString(t, client, `
@@ -95,7 +96,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Delete slice 2 statistics
-	assert.NoError(t, repo.Delete(sliceKey2).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey2).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
@@ -125,7 +126,7 @@ storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volu
 `)
 
 	// Delete file statistics
-	assert.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
 	etcdhelper.AssertKVsString(t, client, ``)
 }
 
@@ -145,7 +146,7 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
 	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
 		{
 			SliceKey: sliceKey1,
 			Value: statistics.Value{
@@ -182,9 +183,9 @@ func TestRepository_Delete_LevelTarget_Sum(t *testing.T) {
 	}))
 
 	// Move statistics to the target level
-	assert.NoError(t, repo.Move(sliceKey1, level.Local, level.Target).Do(ctx).Err())
-	assert.NoError(t, repo.Move(sliceKey2, level.Local, level.Target).Do(ctx).Err())
-	assert.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey1, level.Local, level.Target).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey2, level.Local, level.Target).Do(ctx).Err())
+	require.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
 
 	// Check initial state
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
@@ -279,7 +280,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete slice 1 statistics
-	assert.NoError(t, repo.Delete(sliceKey1).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey1).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			SlicesCount:      3,
@@ -362,7 +363,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete slice 3 statistics
-	assert.NoError(t, repo.Delete(sliceKey3).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey3).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			SlicesCount:      3,
@@ -432,7 +433,7 @@ storage/stats/target/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volum
 `)
 
 	// Delete file
-	assert.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey1.FileKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			SlicesCount:      3,
@@ -479,7 +480,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 `)
 
 	// Delete export
-	assert.NoError(t, repo.Delete(sliceKey1.SinkKey).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey1.SinkKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			SlicesCount:      3,
@@ -516,7 +517,7 @@ storage/stats/target/123/456/my-source/_sum
 `)
 
 	// Delete receiver
-	assert.NoError(t, repo.Delete(sliceKey1.SourceKey).Do(ctx).Err())
+	require.NoError(t, repo.Delete(sliceKey1.SourceKey).Do(ctx).Err())
 	if stats, err := repo.ProjectStats(ctx, sliceKey1.ProjectID); assert.NoError(t, err) {
 		assert.Equal(t, statistics.Value{
 			SlicesCount:      3,

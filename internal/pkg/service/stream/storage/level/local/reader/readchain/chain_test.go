@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -26,7 +27,7 @@ func TestChain_Empty(t *testing.T) {
 	}
 
 	// Close the chain
-	assert.NoError(t, tc.Chain.Close())
+	require.NoError(t, tc.Chain.Close())
 }
 
 // TestChain_SetupMethods tests all setup methods.
@@ -51,7 +52,7 @@ func TestChain_SetupMethods(t *testing.T) {
 		return &testReadCloser{inner: r, Name: "R2"}, nil
 	})
 	assert.True(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ok, err = tc.Chain.PrependReaderOrErr(func(r io.Reader) (io.Reader, error) {
 		return nil, errors.New("some error")
@@ -65,13 +66,13 @@ func TestChain_SetupMethods(t *testing.T) {
 		return r, nil
 	})
 	assert.False(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ok, err = tc.Chain.PrependReaderOrErr(func(r io.Reader) (io.Reader, error) {
 		return nil, nil
 	})
 	assert.False(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Closers
 	tc.Chain.PrependCloser(&testCloser{Name: "C1"})
@@ -105,10 +106,10 @@ func TestChain_UnwrapFile_Ok(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "file")
-	assert.NoError(t, os.WriteFile(path, []byte("foo bar"), 0o640))
+	require.NoError(t, os.WriteFile(path, []byte("foo bar"), 0o640))
 
 	expectedFile, err := os.OpenFile(path, os.O_RDONLY, 0)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	logger := log.NewDebugLogger()
 	chain := New(logger, expectedFile)
@@ -127,7 +128,7 @@ func TestChain_UnwrapFile_Ok(t *testing.T) {
 	assert.False(t, ok)
 
 	// Close file
-	assert.NoError(t, expectedFile.Close())
+	require.NoError(t, expectedFile.Close())
 }
 
 func TestChain_UnwrapFile_NotOk(t *testing.T) {
@@ -177,7 +178,7 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 	}
 
 	// Close the chain
-	assert.NoError(t, tc.Chain.Close())
+	require.NoError(t, tc.Chain.Close())
 
 	// 1st read is the content, 2nd is EOF error
 	tc.AssertLogs(`

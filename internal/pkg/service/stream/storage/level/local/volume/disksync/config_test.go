@@ -8,6 +8,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -142,7 +143,7 @@ func TestConfig(t *testing.T) {
 	for _, tc := range cases {
 		err := val.Validate(ctx, tc.Config)
 		if tc.ExpectedError == "" {
-			assert.NoError(t, err, tc.Name)
+			require.NoError(t, err, tc.Name)
 		} else if assert.Error(t, err, tc.Name) {
 			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
 		}

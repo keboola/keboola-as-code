@@ -124,7 +124,7 @@ func TestRepository_Token(t *testing.T) {
 	// Delete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, r.Delete(sinkKey2).Do(ctx).Err())
+		require.NoError(t, r.Delete(sinkKey2).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -148,7 +148,7 @@ func TestRepository_Token(t *testing.T) {
 	// DeleteAll
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, r.DeleteAll(projectID).Do(ctx).Err())
+		require.NoError(t, r.DeleteAll(projectID).Do(ctx).Err())
 	}
 	{
 		// Get - not found

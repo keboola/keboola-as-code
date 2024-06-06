@@ -72,10 +72,10 @@ func TestFileRepository_ListRecent(t *testing.T) {
 	{
 		// List - empty
 		files, err := fileRepo.ListRecentIn(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, files)
 		files, err = fileRepo.ListRecentIn(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, files)
 	}
 	{
@@ -137,19 +137,19 @@ func TestFileRepository_ListRecent(t *testing.T) {
 	{
 		// List
 		files, err := fileRepo.ListRecentIn(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 2)
 		files, err = fileRepo.ListRecentIn(branchKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 2)
 		files, err = fileRepo.ListRecentIn(sourceKey).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 2)
 		files, err = fileRepo.ListRecentIn(sinkKey1).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 1)
 		files, err = fileRepo.ListRecentIn(sinkKey2).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, files, 1)
 	}
 	{

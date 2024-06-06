@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -46,7 +47,7 @@ func TestManifestFileNotFound(t *testing.T) {
 	// Load
 	manifest, err := Load(context.Background(), fs)
 	assert.Nil(t, manifest)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/repository.json" not found`, err.Error())
 }
 
@@ -58,12 +59,12 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
+		require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
 		manifestContent, err := loadFile(ctx, fs)
 		assert.NotNil(t, manifestContent)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Assert
 		assert.Equal(t, c.data, manifestContent, c.name)
@@ -77,7 +78,7 @@ func TestSaveManifestFile(t *testing.T) {
 		fs := aferofs.NewMemoryFs()
 
 		// Save
-		assert.NoError(t, saveFile(ctx, fs, c.data))
+		require.NoError(t, saveFile(ctx, fs, c.data))
 
 		// Load file
 		file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
@@ -91,19 +92,19 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 	t.Parallel()
 	c := &file{}
 	err := c.validate(context.Background())
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	expected := "repository manifest is not valid:\n- \"version\" is a required field\n- \"author.name\" is a required field\n- \"author.url\" is a required field"
 	assert.Equal(t, expected, err.Error())
 }
 
 func TestManifestContentValidateMinimal(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, minimalStruct().validate(context.Background()))
+	require.NoError(t, minimalStruct().validate(context.Background()))
 }
 
 func TestManifestContentValidateFull(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, fullStruct().validate(context.Background()))
+	require.NoError(t, fullStruct().validate(context.Background()))
 }
 
 func TestManifestContentValidateBadVersion(t *testing.T) {
@@ -111,7 +112,7 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	manifestContent := minimalStruct()
 	manifestContent.Version = 123
 	err := manifestContent.validate(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	expected := `
 repository manifest is not valid:
 - "version" must be 2 or less
@@ -153,7 +154,7 @@ func TestManifestContentValidateRequiredTemplatePath(t *testing.T) {
 		},
 	}
 	err := manifestContent.validate(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	expected := `
 repository manifest is not valid:
 - "templates[0].path" is a required field
@@ -196,7 +197,7 @@ func TestManifestContentValidateExcludedTemplatePath(t *testing.T) {
 		},
 	}
 	err := manifestContent.validate(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	expected := `
 repository manifest is not valid:
 - "templates[0].path" is not expected for the deprecated template
@@ -234,18 +235,18 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, fileContent)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, fileContent)))
 
 	// Load
 	_, err := loadFile(ctx, fs)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "manifest file \".keboola/repository.json\" is invalid:\n- invalid semantic version \"foo-bar\"", err.Error())
 }
 
 func TestManifest_Records(t *testing.T) {
 	t.Parallel()
 	m := New()
-	assert.Len(t, m.records, 0)
+	assert.Empty(t, m.records)
 
 	// Get - not found
 	v, found := m.GetByID("foo-bar")
@@ -318,17 +319,17 @@ func TestManifest_GetVersion(t *testing.T) {
 
 	// Version found
 	_, v, err := m.GetVersion("foo", "v1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, version("1.2.3"), v.Version)
 
 	// Version not found
 	_, _, err = m.GetVersion("foo", "v2")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `template "foo" found but version "v2" is missing`, err.Error())
 
 	// Template not found
 	_, _, err = m.GetVersion("bar", "v1")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `template "bar" not found`, err.Error())
 }
 

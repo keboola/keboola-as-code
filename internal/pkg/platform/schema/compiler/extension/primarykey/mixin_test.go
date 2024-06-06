@@ -38,7 +38,7 @@ func TestDefinition_Valid_OneField(t *testing.T) {
 	fields := mixin.Fields()
 	assert.Len(t, fields, 2)
 	edges := mixin.Edges()
-	assert.Len(t, edges, 0)
+	assert.Empty(t, edges)
 
 	// ID field
 	assert.Equal(t, "id", fields[0].Descriptor().Name)
@@ -89,7 +89,7 @@ func TestDefinition_Valid_MoreFields(t *testing.T) {
 	fields := mixin.Fields()
 	assert.Len(t, fields, 3)
 	edges := mixin.Edges()
-	assert.Len(t, edges, 0)
+	assert.Empty(t, edges)
 
 	// ID field
 	assert.Equal(t, "id", fields[0].Descriptor().Name)

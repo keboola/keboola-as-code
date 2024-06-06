@@ -103,7 +103,7 @@ func TestApdex(t *testing.T) {
 		countData := metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0]
 		t500Data := metrics[1].Data.(metricdata.Sum[float64]).DataPoints[0]
 		t1000Data := metrics[2].Data.(metricdata.Sum[float64]).DataPoints[0]
-		assert.Equal(t, tc.ExpectedApdexT500, t500Data.Value/float64(countData.Value))
-		assert.Equal(t, tc.ExpectedApdexT1000, t1000Data.Value/float64(countData.Value))
+		assert.Equal(t, tc.ExpectedApdexT500, t500Data.Value/float64(countData.Value))   // nolint: testifylint
+		assert.Equal(t, tc.ExpectedApdexT1000, t1000Data.Value/float64(countData.Value)) // nolint: testifylint
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -25,7 +26,7 @@ func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Values from content are converted to struct
@@ -53,7 +54,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeId(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config "branch:123/component:keboola.shared-code/config:missing":
@@ -86,7 +87,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":

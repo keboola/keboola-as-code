@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -26,7 +27,7 @@ func TestSharedCodeRemoteLoad(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check config
@@ -61,7 +62,7 @@ func TestSharedCodeRemoteLoad_Legacy(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check config
@@ -96,7 +97,7 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInConfig(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Check logs
 	expectedLogs := `
@@ -124,7 +125,7 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInRow(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Check logs
 	expectedLogs := `

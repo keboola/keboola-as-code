@@ -510,7 +510,7 @@ func TestIteratorT(t *testing.T) {
 		// Test All method
 		logs.Reset()
 		actualValues, err := prefix.GetAll(client, ops...).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		var expectedValues []obj
 		for _, v := range tc.expectedResults {
 			expectedValues = append(expectedValues, v.value)
@@ -521,7 +521,7 @@ func TestIteratorT(t *testing.T) {
 		// Test AllKVs method
 		logs.Reset()
 		actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		actual = nil
 		for _, kv := range actualKvs {
 			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
@@ -533,7 +533,7 @@ func TestIteratorT(t *testing.T) {
 		logs.Reset()
 		itr := prefix.GetAll(client, ops...).Do(ctx)
 		actual = nil
-		assert.NoError(t, itr.ForEachKV(func(kv *op.KeyValueT[obj], header *iterator.Header) error {
+		require.NoError(t, itr.ForEachKV(func(kv *op.KeyValueT[obj], header *iterator.Header) error {
 			assert.NotNil(t, header)
 			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 			return nil
@@ -545,7 +545,7 @@ func TestIteratorT(t *testing.T) {
 		logs.Reset()
 		itr = prefix.GetAll(client, ops...).Do(ctx)
 		values := make([]obj, 0)
-		assert.NoError(t, itr.ForEachValue(func(value obj, header *iterator.Header) error {
+		require.NoError(t, itr.ForEachValue(func(value obj, header *iterator.Header) error {
 			assert.NotNil(t, header)
 			values = append(values, value)
 			return nil
@@ -560,7 +560,7 @@ func TestIteratorT(t *testing.T) {
 		// Test CountAll method
 		count, err := prefix.GetAll(client, ops...).CountAll().Do(ctx).ResultOrErr()
 		assert.Equal(t, tc.expectedCountAll, int(count), tc.name)
-		assert.NoError(t, err, tc.name)
+		require.NoError(t, err, tc.name)
 	}
 }
 
@@ -573,22 +573,22 @@ func TestIteratorT_Revision(t *testing.T) {
 	prefix := etcdop.NewTypedPrefix[obj]("some/prefix", serialization)
 
 	// There are 3 keys
-	assert.NoError(t, prefix.Key("foo001").Put(client, obj{Value: "bar001"}).Do(ctx).Err())
-	assert.NoError(t, prefix.Key("foo002").Put(client, obj{Value: "bar002"}).Do(ctx).Err())
-	assert.NoError(t, prefix.Key("foo003").Put(client, obj{Value: "bar003"}).Do(ctx).Err())
+	require.NoError(t, prefix.Key("foo001").Put(client, obj{Value: "bar001"}).Do(ctx).Err())
+	require.NoError(t, prefix.Key("foo002").Put(client, obj{Value: "bar002"}).Do(ctx).Err())
+	require.NoError(t, prefix.Key("foo003").Put(client, obj{Value: "bar003"}).Do(ctx).Err())
 
 	// Get current revision
 	r, err := prefix.Key("foo003").GetKV(client).Do(ctx).ResultOrErr()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	revision := r.Kv.ModRevision
 
 	// Add more keys
-	assert.NoError(t, prefix.Key("foo004").Put(client, obj{Value: "bar004"}).Do(ctx).Err())
-	assert.NoError(t, prefix.Key("foo005").Put(client, obj{Value: "bar005"}).Do(ctx).Err())
+	require.NoError(t, prefix.Key("foo004").Put(client, obj{Value: "bar004"}).Do(ctx).Err())
+	require.NoError(t, prefix.Key("foo005").Put(client, obj{Value: "bar005"}).Do(ctx).Err())
 
 	// Get all WithRev
 	var actual []resultT
-	assert.NoError(
+	require.NoError(
 		t,
 		prefix.
 			GetAll(client, iterator.WithRev(revision)).Do(ctx).
@@ -643,7 +643,7 @@ func TestIteratorT_ForEach(t *testing.T) {
 		})
 
 	// Run op
-	assert.NoError(t, getAllOp.Do(ctx).Err())
+	require.NoError(t, getAllOp.Do(ctx).Err())
 
 	// Clear loaded KVs before assert
 	operations := tracker.Operations()
@@ -823,7 +823,7 @@ func iterateAllT(t *testing.T, ctx context.Context, def iterator.DefinitionT[obj
 		kv := it.Value()
 		actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 	}
-	assert.NoError(t, it.Err())
+	require.NoError(t, it.Err())
 	return actual
 }
 
@@ -831,7 +831,7 @@ func generateKVsT(t *testing.T, count int, ctx context.Context, client *etcd.Cli
 	t.Helper()
 
 	// There are some keys before the prefix
-	assert.NoError(t, etcdop.Key("some/abc").Put(client, "foo").Do(ctx).Err())
+	require.NoError(t, etcdop.Key("some/abc").Put(client, "foo").Do(ctx).Err())
 
 	// Create keys in the iterated prefix
 	serialization := serde.NewJSON(serde.NoValidation)
@@ -839,11 +839,11 @@ func generateKVsT(t *testing.T, count int, ctx context.Context, client *etcd.Cli
 	for i := 1; i <= count; i++ {
 		key := prefix.Key(fmt.Sprintf("foo%03d", i))
 		val := obj{fmt.Sprintf("bar%03d", i)}
-		assert.NoError(t, key.Put(client, val).Do(ctx).Err())
+		require.NoError(t, key.Put(client, val).Do(ctx).Err())
 	}
 
 	// There are some keys after the prefix
-	assert.NoError(t, etcdop.Key("some/xyz").Put(client, "foo").Do(ctx).Err())
+	require.NoError(t, etcdop.Key("some/xyz").Put(client, "foo").Do(ctx).Err())
 
 	return prefix
 }

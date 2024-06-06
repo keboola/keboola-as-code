@@ -9,6 +9,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -25,20 +26,20 @@ func TestMeter(t *testing.T) {
 	// No data
 	n, err := m.Write([]byte{})
 	assert.Equal(t, 0, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, datasize.ByteSize(0), m.Size())
 
 	// Data
 	n, err = m.Write([]byte("foo"))
 	assert.Equal(t, datasize.ByteSize(3), m.Size())
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Data
 	n, err = m.Write([]byte("bar"))
 	assert.Equal(t, datasize.ByteSize(6), m.Size())
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Error
 	out.writeError = errors.New("some error")
@@ -56,7 +57,7 @@ func TestMeterWithBackup(t *testing.T) {
 	out := &testBuffer{}
 	backupPath := filepath.Join(t.TempDir(), "backup")
 	m, err := NewMeterWithBackupFile(out, backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Empty
 	assert.Equal(t, datasize.ByteSize(0), m.Size())
@@ -64,20 +65,20 @@ func TestMeterWithBackup(t *testing.T) {
 	// No data
 	n, err := m.Write([]byte{})
 	assert.Equal(t, 0, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, datasize.ByteSize(0), m.Size())
 
 	// Data
 	n, err = m.Write([]byte("foo"))
 	assert.Equal(t, datasize.ByteSize(3), m.Size())
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Data
 	n, err = m.Write([]byte("bar"))
 	assert.Equal(t, datasize.ByteSize(6), m.Size())
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Error
 	out.writeError = errors.New("some error")
@@ -89,9 +90,9 @@ func TestMeterWithBackup(t *testing.T) {
 	}
 
 	// Flush backup
-	assert.NoError(t, m.Flush())
+	require.NoError(t, m.Flush())
 	content, err := os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "6", string(content))
 
 	// Data
@@ -99,17 +100,17 @@ func TestMeterWithBackup(t *testing.T) {
 	n, err = m.Write([]byte("baz"))
 	assert.Equal(t, datasize.ByteSize(9), m.Size())
 	assert.Equal(t, 3, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close (flush backup)
-	assert.NoError(t, m.Close())
+	require.NoError(t, m.Close())
 	content, err = os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "9", string(content))
 
 	// Reopen - load from backup
 	m, err = NewMeterWithBackupFile(out, backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, datasize.ByteSize(9), m.Size())
 
 	// Data
@@ -117,12 +118,12 @@ func TestMeterWithBackup(t *testing.T) {
 	n, err = m.Write([]byte("123456"))
 	assert.Equal(t, datasize.ByteSize(15), m.Size())
 	assert.Equal(t, 6, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close
-	assert.NoError(t, m.Close())
+	require.NoError(t, m.Close())
 	content, err = os.ReadFile(backupPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "15", string(content))
 }
 
@@ -138,7 +139,7 @@ func TestMeterWithBackup_OpenError_Invalid(t *testing.T) {
 	t.Parallel()
 
 	backupPath := filepath.Join(t.TempDir(), "backup")
-	assert.NoError(t, os.WriteFile(backupPath, []byte("foo"), 0o640))
+	require.NoError(t, os.WriteFile(backupPath, []byte("foo"), 0o640))
 
 	_, err := NewMeterWithBackupFile(&testBuffer{}, backupPath)
 	if assert.Error(t, err) {
@@ -163,7 +164,7 @@ func TestMeterWithBackup_FlushError(t *testing.T) {
 
 	backupBuf := &testBuffer{}
 	m, err := NewMeterWithBackup(&testBuffer{}, backupBuf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Seek error
 	backupBuf.seekError = errors.New("some seek error")
@@ -186,7 +187,7 @@ func TestMeterWithBackup_CloseError(t *testing.T) {
 
 	backupBuf := &testBuffer{}
 	m, err := NewMeterWithBackup(&testBuffer{}, backupBuf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Write error
 	backupBuf.writeError = errors.New("some write error")

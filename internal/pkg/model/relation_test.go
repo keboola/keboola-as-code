@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -16,7 +17,7 @@ func TestRelationsUnmarshalJSON(t *testing.T) {
 	t.Parallel()
 	data := []byte(fmt.Sprintf(`[{"type": "%s"}]`, VariablesForRelType))
 	var relations Relations
-	assert.NoError(t, json.Unmarshal(data, &relations))
+	require.NoError(t, json.Unmarshal(data, &relations))
 	assert.Len(t, relations, 1)
 	assert.IsType(t, &VariablesForRelation{}, relations[0])
 }
@@ -25,7 +26,7 @@ func TestRelationsMarshalJSON(t *testing.T) {
 	t.Parallel()
 	relations := Relations{&VariablesForRelation{}}
 	data, err := json.Marshal(&relations)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(data), fmt.Sprintf(`"type":"%s"`, VariablesForRelType))
 }
 
@@ -93,7 +94,7 @@ func TestVariablesForRelation(t *testing.T) {
 
 	// Check other side key (regular component config, it uses variables)
 	otherSideKey, otherSideRel, err := r.NewOtherSideRelation(definedOn, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, ConfigKey{
 		BranchID:    123, // from source key
 		ComponentID: `foo.bar`,
@@ -105,7 +106,7 @@ func TestVariablesForRelation(t *testing.T) {
 
 	// ParentKey key, same as target, ... variables config is stored within component config
 	parentKey, err := r.ParentKey(definedOn.Key())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, ConfigKey{
 		BranchID:    123, // from source key
 		ComponentID: `foo.bar`,

@@ -44,19 +44,19 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// List - empty
 		branches, err := branchRepo.List(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, branches)
 		branches, err = branchRepo.List(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 	{
 		// ListDeleted - empty
 		branches, err := branchRepo.ListDeleted(projectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, branches)
 		branches, err = branchRepo.ListDeleted(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 	{
@@ -99,25 +99,25 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// List
 		branches, err := branchRepo.List(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, branches, 1)
 		branches, err = branchRepo.List(branchKey2.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, branches, 1)
 	}
 	{
 		// Get
 		result1, err := branchRepo.Get(branchKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, keboola.BranchID(567), result1.BranchID)
 		result2, err := branchRepo.Get(branchKey2).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, keboola.BranchID(789), result2.BranchID)
 	}
 	{
 		// GetDefault
 		result, err := branchRepo.GetDefault(projectID).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, branch1, result)
 	}
 	{
@@ -171,7 +171,7 @@ func TestRepository_Branch(t *testing.T) {
 	// SoftDelete
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err())
+		require.NoError(t, branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err())
 	}
 	{
 		// Get - not found
@@ -183,19 +183,19 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// GetDeleted - found
 		result, err := branchRepo.GetDeleted(branchKey1).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, keboola.BranchID(567), result.BranchID)
 	}
 	{
 		// List - empty
 		branches, err := branchRepo.List(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 	{
 		// ListDeleted
 		branches, err := branchRepo.ListDeleted(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, branches, 1)
 	}
 
@@ -216,7 +216,7 @@ func TestRepository_Branch(t *testing.T) {
 	}
 	{
 		// ExistsOrErr
-		assert.NoError(t, branchRepo.ExistsOrErr(branchKey1).Do(ctx).Err())
+		require.NoError(t, branchRepo.ExistsOrErr(branchKey1).Do(ctx).Err())
 	}
 	{
 		// Get
@@ -235,13 +235,13 @@ func TestRepository_Branch(t *testing.T) {
 	{
 		// List
 		branches, err := branchRepo.List(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, branches, 1)
 	}
 	{
 		// ListDeleted - empty
 		branches, err := branchRepo.ListDeleted(branchKey1.ProjectID).Do(ctx).AllKVs()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, branches)
 	}
 
@@ -256,12 +256,12 @@ func TestRepository_Branch(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// SoftDelete
-		assert.NoError(t, branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err())
+		require.NoError(t, branchRepo.SoftDelete(clk.Now(), branchKey1).Do(ctx).Err())
 	}
 	{
 		//  Re-create
 		branch1 := test.NewBranch(branchKey1)
-		assert.NoError(t, branchRepo.Create(clk.Now(), &branch1).Do(ctx).Err())
+		require.NoError(t, branchRepo.Create(clk.Now(), &branch1).Do(ctx).Err())
 		assert.Equal(t, keboola.BranchID(567), branch1.BranchID)
 		assert.False(t, branch1.Deleted)
 		assert.Nil(t, branch1.DeletedAt)

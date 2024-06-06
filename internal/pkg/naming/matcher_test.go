@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -18,7 +19,7 @@ func TestNamingMatchConfigPathNotMatched(t *testing.T) {
 			"parent/path",
 			"foo",
 		))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, componentID)
 }
 
@@ -31,7 +32,7 @@ func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 			"parent/path",
 			"extractor/keboola.ex-db-mysql/with-rows",
 		))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, keboola.ComponentID(`keboola.ex-db-mysql`), componentID)
 }
 
@@ -44,7 +45,7 @@ func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 			"parent/path",
 			"_shared/keboola.python-transformation-v2",
 		))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, keboola.SharedCodeComponentID, componentID)
 }
 
@@ -57,7 +58,7 @@ func TestNamingMatchConfigPathVariables(t *testing.T) {
 			"parent/path",
 			"variables",
 		))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, keboola.VariablesComponentID, componentID)
 }
 
@@ -70,7 +71,7 @@ func TestNamingMatchSharedCodeVariables(t *testing.T) {
 			"shared/code/path",
 			"variables",
 		))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, keboola.VariablesComponentID, componentID)
 }
 

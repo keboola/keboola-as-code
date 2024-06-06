@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -24,10 +24,10 @@ func TestNoResultOp(t *testing.T) {
 	}
 
 	err := NewNoResultOp(client, factoryFn, mapper).Do(ctx).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = client.Put(ctx, "foo", "test1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, NewNoResultOp(client, factoryFn, mapper).Do(ctx).Err())
+	require.NoError(t, NewNoResultOp(client, factoryFn, mapper).Do(ctx).Err())
 }

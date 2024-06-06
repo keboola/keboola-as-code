@@ -11,6 +11,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	"go.etcd.io/etcd/tests/v3/integration"
 	"google.golang.org/grpc/connectivity"
@@ -36,7 +37,7 @@ func TestPrefix_Watch(t *testing.T) {
 	assertDone(t, func() {
 		resp := <-ch
 		assert.True(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Empty(t, resp.Events)
 	}, "watcher created timeout")
 
@@ -44,7 +45,7 @@ func TestPrefix_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key1").Put(client, "foo").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key1").Put(client, "foo").Do(ctx).Err())
 	}()
 
 	// Wait for CREATE event
@@ -57,7 +58,7 @@ func TestPrefix_Watch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "CREATE timeout")
 
@@ -65,7 +66,7 @@ func TestPrefix_Watch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key1").Put(client, "new").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key1").Put(client, "new").Do(ctx).Err())
 	}()
 
 	// Wait for UPDATE event
@@ -78,7 +79,7 @@ func TestPrefix_Watch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "UPDATE timeout")
 
@@ -87,7 +88,7 @@ func TestPrefix_Watch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, ok)
 	}()
 
@@ -100,7 +101,7 @@ func TestPrefix_Watch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "DELETE timeout")
 
@@ -115,7 +116,7 @@ func TestPrefix_Watch(t *testing.T) {
 		wildcards.Assert(t, "manual restart", resp.RestartReason)
 
 		// Add a new key
-		assert.NoError(t, pfx.Key("key3").Put(client, "new").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key3").Put(client, "new").Do(ctx).Err())
 
 		// Receive the new key
 		resp = <-ch
@@ -144,7 +145,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	pfx := prefixForTest()
 
 	// CREATE key1
-	assert.NoError(t, pfx.Key("key1").Put(client, "foo1").Do(ctx).Err())
+	require.NoError(t, pfx.Key("key1").Put(client, "foo1").Do(ctx).Err())
 
 	// Create watcher
 	stream := pfx.GetAllAndWatch(ctx, client)
@@ -160,7 +161,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "CREATE1 timeout")
 
@@ -168,7 +169,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		resp := <-ch
 		assert.True(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Empty(t, resp.Events)
 	}, "watcher created timeout")
 
@@ -176,7 +177,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key2").Put(client, "foo2").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key2").Put(client, "foo2").Do(ctx).Err())
 	}()
 
 	// Wait for CREATE key1 event
@@ -189,7 +190,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "CREATE2 timeout")
 
@@ -197,7 +198,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, pfx.Key("key2").Put(client, "new").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key2").Put(client, "new").Do(ctx).Err())
 	}()
 
 	// Wait for UPDATE event
@@ -210,7 +211,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "UPDATE timeout")
 
@@ -219,7 +220,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, ok)
 	}()
 
@@ -232,7 +233,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 		resp := <-ch
 		assert.False(t, resp.Created)
-		assert.NoError(t, resp.InitErr)
+		require.NoError(t, resp.InitErr)
 		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
 	}, "DELETE timeout")
 
@@ -253,7 +254,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 
 		// Add a new key
-		assert.NoError(t, pfx.Key("key3").Put(client, "new").Do(ctx).Err())
+		require.NoError(t, pfx.Key("key3").Put(client, "new").Do(ctx).Err())
 
 		// Receive the new key
 		resp = <-ch
@@ -298,8 +299,8 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 		assert.True(t, ok)
 		assert.False(t, resp.Created)
 		assert.False(t, resp.Restarted)
-		assert.NoError(t, resp.InitErr)
-		assert.NoError(t, resp.Err)
+		require.NoError(t, resp.InitErr)
+		require.NoError(t, resp.Err)
 		assert.Len(t, resp.Events, expectedLen)
 		return resp
 	}
@@ -310,7 +311,7 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 
 	// Add some key
 	value := "value"
-	assert.NoError(t, pfx.Key("key01").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key01").Put(testClient, value).Do(ctx).Err())
 
 	// Read key
 	assert.Equal(t, []byte("my/prefix/key01"), receive(1).Events[0].Kv.Key)
@@ -323,21 +324,21 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
-	assert.NoError(t, pfx.Key("key02").Put(testClient, value).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("key03").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key02").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key03").Put(testClient, value).Do(ctx).Err())
 
 	// Compact, during the watcher is disconnected
 	status, err := testClient.Status(ctx, testClient.Endpoints()[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Unblock dialer, watcher will be reconnected
 	watchMember.Bridge().UnpauseConnections()
 
 	// Expect ErrCompacted, all the keys were merged into one revision, it is not possible to load only the missing ones
 	resp = <-ch
-	assert.Error(t, resp.Err)
+	require.Error(t, resp.Err)
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 
 	// Expect "restarted" event
@@ -346,7 +347,7 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 
 	// After the restart, Watch is waiting for new events, put and expected the key
-	assert.NoError(t, pfx.Key("key04").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key04").Put(testClient, value).Do(ctx).Err())
 	assert.Equal(t, []byte("my/prefix/key04"), receive(1).Events[0].Kv.Key)
 
 	// And let's try compact operation again, in the same way
@@ -355,22 +356,22 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
 	}, 5*time.Second, 100*time.Millisecond)
-	assert.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("key06").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key06").Put(testClient, value).Do(ctx).Err())
 	status, err = testClient.Status(ctx, testClient.Endpoints()[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	watchMember.Bridge().UnpauseConnections()
 	resp = <-ch
-	assert.Error(t, resp.Err)
+	require.Error(t, resp.Err)
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)
 	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 
 	// After the restart, Watch is streaming new events, put and receive the key
-	assert.NoError(t, pfx.Key("key07").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key07").Put(testClient, value).Do(ctx).Err())
 	assert.Equal(t, []byte("my/prefix/key07"), receive(1).Events[0].Kv.Key)
 
 	// Channel should be closed by the context
@@ -406,8 +407,8 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 		assert.True(t, ok)
 		assert.False(t, resp.Created)
 		assert.False(t, resp.Restarted)
-		assert.NoError(t, resp.InitErr)
-		assert.NoError(t, resp.Err)
+		require.NoError(t, resp.InitErr)
+		require.NoError(t, resp.Err)
 		assert.Len(t, resp.Events, expectedLen)
 		return resp
 	}
@@ -418,7 +419,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 
 	// Add some key
 	value := "value"
-	assert.NoError(t, pfx.Key("key01").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key01").Put(testClient, value).Do(ctx).Err())
 
 	// Read key
 	assert.Equal(t, []byte("my/prefix/key01"), receive(1).Events[0].Kv.Key)
@@ -431,21 +432,21 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
-	assert.NoError(t, pfx.Key("key02").Put(testClient, value).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("key03").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key02").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key03").Put(testClient, value).Do(ctx).Err())
 
 	// Compact, during the watcher is disconnected
 	status, err := testClient.Status(ctx, testClient.Endpoints()[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Unblock dialer, watcher will be reconnected
 	watchMember.Bridge().UnpauseConnections()
 
 	// Expect ErrCompacted, all the keys were merged into one revision, it is not possible to load only the missing ones
 	resp = <-ch
-	assert.Error(t, resp.Err)
+	require.Error(t, resp.Err)
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 
 	// Expect "restarted" event
@@ -461,7 +462,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, []byte("my/prefix/key03"), resp.Events[2].Kv.Key)
 
 	// Add key
-	assert.NoError(t, pfx.Key("key04").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key04").Put(testClient, value).Do(ctx).Err())
 
 	// Read keys
 	assert.Equal(t, []byte("my/prefix/key04"), receive(1).Events[0].Kv.Key)
@@ -472,15 +473,15 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
 	}, 5*time.Second, 100*time.Millisecond)
-	assert.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("key06").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key06").Put(testClient, value).Do(ctx).Err())
 	status, err = testClient.Status(ctx, testClient.Endpoints()[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	watchMember.Bridge().UnpauseConnections()
 	resp = <-ch
-	assert.Error(t, resp.Err)
+	require.Error(t, resp.Err)
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)

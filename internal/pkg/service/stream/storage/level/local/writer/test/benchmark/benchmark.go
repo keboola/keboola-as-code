@@ -109,7 +109,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	end := time.Now()
 
 	// Close volume
-	assert.NoError(b, vol.Close(ctx))
+	require.NoError(b, vol.Close(ctx))
 
 	// Report extra metrics
 	duration := end.Sub(start)
@@ -127,7 +127,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 		assert.Equal(b, sliceWriter.CompressedSize(), sliceWriter.UncompressedSize())
 	}
 	stat, err := os.Stat(sliceWriter.FilePath())
-	assert.NoError(b, err)
+	require.NoError(b, err)
 	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
 }
 

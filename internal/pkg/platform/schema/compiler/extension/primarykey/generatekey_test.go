@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/entc/gen"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/schema/compiler/extension/primarykey"
 )
@@ -22,19 +23,16 @@ func TestGenerateKeys(t *testing.T) {
 	}
 
 	// Generate
-	if !assert.NoError(t, primarykey.GenerateKeys(config)) {
-		return
-	}
-
+	require.NoError(t, primarykey.GenerateKeys(config))
 	// Read all files
 	files := make(map[string]string)
-	assert.NoError(t, filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
+	require.NoError(t, filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
 			b, err := os.ReadFile(path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			relPath, _ := filepath.Rel(targetDir, path)
 			files[relPath] = string(b)
 		}
@@ -50,13 +48,13 @@ func TestGenerateKeys(t *testing.T) {
 func expectedChildKeyGo(t *testing.T) string {
 	t.Helper()
 	b, err := os.ReadFile("fixture/expectedChildKeyGo.txt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return string(b)
 }
 
 func expectedSubChildKeyGo(t *testing.T) string {
 	t.Helper()
 	b, err := os.ReadFile("fixture/expectedSubChildKeyGo.txt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return string(b)
 }

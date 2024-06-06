@@ -28,11 +28,11 @@ func TestVolume_NewWriterFor_Ok(t *testing.T) {
 	tc := newWriterTestCase(t)
 
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, tc.Volume.writers, 1)
 
-	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Volume.writers, 0)
+	require.NoError(t, w.Close(context.Background()))
+	assert.Empty(t, tc.Volume.writers)
 }
 
 func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
@@ -41,7 +41,7 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 
 	// Create the writer first time - ok
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, tc.Volume.writers, 1)
 
 	// Create writer for the same slice again - error
@@ -51,8 +51,8 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 	}
 	assert.Len(t, tc.Volume.writers, 1)
 
-	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Volume.writers, 0)
+	require.NoError(t, w.Close(context.Background()))
+	assert.Empty(t, tc.Volume.writers)
 }
 
 func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
@@ -61,10 +61,10 @@ func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 
 	_, err = vol.NewWriterFor(test.NewSlice())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
@@ -72,10 +72,10 @@ func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
 	tc := newWriterTestCase(t)
 
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, w.FilePath())
 
-	assert.NoError(t, w.Close(context.Background()))
+	require.NoError(t, w.Close(context.Background()))
 	assert.FileExists(t, w.FilePath())
 }
 
@@ -93,7 +93,7 @@ func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Block creating of the slice directory in the volume directory
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
+	require.NoError(t, os.Chmod(tc.VolumePath, 0o440))
 
 	_, err = tc.NewWriter()
 	if assert.Error(t, err) {
@@ -101,10 +101,10 @@ func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
 	}
 
 	// Revert permission for cleanup
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o750))
+	require.NoError(t, os.Chmod(tc.VolumePath, 0o750))
 
 	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 }
 
 func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
@@ -117,7 +117,7 @@ func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
 	tc := newWriterTestCase(t)
 
 	// Create read only slice directory
-	assert.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
+	require.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
 
 	_, err := tc.NewWriter()
 	if assert.Error(t, err) {
@@ -133,7 +133,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are BLOCKING, each write is waiting for the next sync
 
@@ -142,12 +142,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -158,7 +158,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -169,12 +169,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	}()
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Wait for goroutine
 	wg.Wait()
@@ -237,7 +237,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are BLOCKING, each write is waiting for the next sync
 
@@ -246,12 +246,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -262,7 +262,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -273,12 +273,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+		require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	}()
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 	wg.Wait()
 
 	// Check file content
@@ -330,27 +330,27 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -407,27 +407,27 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -474,25 +474,25 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync = disksync.Config{Mode: disksync.ModeDisabled}
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Writes are NOT BLOCKING, sync is disabled completely
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	tc.ExpectWritesCount(t, 2)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Last write
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	require.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check file content
 	AssertFileContent(t, w.FilePath(), `
@@ -528,11 +528,11 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 	tc.Allocator.Error = errors.New("some space allocation error")
 
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, w.FilePath())
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 	assert.FileExists(t, w.FilePath())
 
 	// Check logs
@@ -554,11 +554,11 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 	tc.Allocator.Ok = false
 
 	w, err := tc.NewWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, w.FilePath())
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 	assert.FileExists(t, w.FilePath())
 
 	// Check logs
@@ -579,7 +579,7 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
 	w, err := tc.NewWriter(WithAllocator(diskalloc.DefaultAllocator{}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check file - no allocation
 	allocated, err := diskalloc.Allocated(w.FilePath())
@@ -587,7 +587,7 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	assert.Less(t, allocated, datasize.KB)
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -629,7 +629,7 @@ func (tc *writerTestCase) NewWriter(opts ...Option) (writer.Writer, error) {
 
 		// Close volume after the test
 		tc.TB.Cleanup(func() {
-			assert.NoError(tc.TB, vol.Close(context.Background()))
+			require.NoError(tc.TB, vol.Close(context.Background()))
 		})
 	}
 
@@ -657,6 +657,6 @@ func (a *testAllocator) Allocate(_ diskalloc.File, _ datasize.ByteSize) (bool, e
 func AssertFileContent(tb testing.TB, path, expected string) {
 	tb.Helper()
 	content, err := os.ReadFile(path)
-	assert.NoError(tb, err)
+	require.NoError(tb, err)
 	assert.Equal(tb, strings.TrimSpace(expected), strings.TrimSpace(string(content)))
 }

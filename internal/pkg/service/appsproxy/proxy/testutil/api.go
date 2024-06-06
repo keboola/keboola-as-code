@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/mitchellh/hashstructure/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -46,7 +46,7 @@ func StartDataAppsAPI(t *testing.T) *DataAppsAPI {
 
 		expectedETag := strings.Trim(req.Header.Get("If-None-Match"), `"`)
 		actualETagInt, err := hashstructure.Hash(app, hashstructure.FormatV2, &hashstructure.HashOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		actualETag := strconv.FormatUint(actualETagInt, 10)
 
 		w.Header().Set("ETag", fmt.Sprintf(`"%s"`, actualETag))
@@ -58,18 +58,18 @@ func StartDataAppsAPI(t *testing.T) *DataAppsAPI {
 
 		w.WriteHeader(http.StatusOK)
 		jsonData, err := json.Encode(app, true)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		_, _ = w.Write(jsonData)
 	})
 	mux.HandleFunc("PATCH /apps/{app}", func(w http.ResponseWriter, req *http.Request) {
 		appID := req.PathValue("app")
 
 		body, err := io.ReadAll(req.Body)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		data := make(map[string]string)
 		err = json.DecodeString(string(body), &data)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		if _, ok := data["lastRequestTimestamp"]; ok {
 			service.Notifications[appID] += 1

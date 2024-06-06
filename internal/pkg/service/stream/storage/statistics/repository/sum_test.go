@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -27,8 +28,8 @@ func TestSumStats(t *testing.T) {
 	pfx := etcdop.NewTypedPrefix[statistics.Value]("test/stats", serde.NewJSON(validator.New().Validate))
 
 	// Put values
-	assert.NoError(t, pfx.Key("0").Put(client, statistics.Value{}).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("1").Put(client, statistics.Value{
+	require.NoError(t, pfx.Key("0").Put(client, statistics.Value{}).Do(ctx).Err())
+	require.NoError(t, pfx.Key("1").Put(client, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
@@ -36,7 +37,7 @@ func TestSumStats(t *testing.T) {
 		UncompressedSize: 2,
 		CompressedSize:   1,
 	}).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("2").Put(client, statistics.Value{
+	require.NoError(t, pfx.Key("2").Put(client, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
@@ -44,7 +45,7 @@ func TestSumStats(t *testing.T) {
 		UncompressedSize: 4,
 		CompressedSize:   2,
 	}).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("3").Put(client, statistics.Value{
+	require.NoError(t, pfx.Key("3").Put(client, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
@@ -56,7 +57,7 @@ func TestSumStats(t *testing.T) {
 
 	// Sum
 	sum, err := repository.SumStats(ctx, pfx.GetAll(client))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statistics.Value{
 		SlicesCount:      3,
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),

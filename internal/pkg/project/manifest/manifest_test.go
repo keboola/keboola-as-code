@@ -63,7 +63,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	// Load
 	manifest, err := Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
@@ -75,12 +75,12 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Write file
 		path := Path()
-		assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
+		require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.json)))
 
 		// Load
 		manifest, err := Load(ctx, log.NewNopLogger(), fs, env.Empty(), false)
 		assert.NotNil(t, manifest)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Assert
 		assert.Equal(t, c.naming, manifest.NamingTemplate(), c.name)
@@ -101,12 +101,12 @@ func TestSaveManifestFile(t *testing.T) {
 		manifest.SetNamingTemplate(c.naming)
 		manifest.SetAllowedBranches(c.filter.AllowedBranches())
 		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
-		assert.NoError(t, manifest.records.SetRecords(c.records))
-		assert.NoError(t, manifest.Save(ctx, fs))
+		require.NoError(t, manifest.records.SetRecords(c.records))
+		require.NoError(t, manifest.Save(ctx, fs))
 
 		// Load file
 		file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, wildcards.EscapeWhitespaces(c.json), wildcards.EscapeWhitespaces(file.Content), c.name)
 	}
 }
@@ -115,7 +115,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 	t.Parallel()
 	content := &file{}
 	err := content.validate(context.Background())
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	expected := `manifest is not valid:
 - "version" is a required field
 - "project" is a required field
@@ -129,14 +129,14 @@ func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
-	assert.NoError(t, content.validate(context.Background()))
+	require.NoError(t, content.validate(context.Background()))
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(fullRecords())
-	assert.NoError(t, content.validate(context.Background()))
+	require.NoError(t, content.validate(context.Background()))
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
@@ -145,7 +145,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	content.setRecords(minimalRecords())
 	content.Version = 123
 	err := content.validate(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	expected := `manifest is not valid: "version" must be 2 or less`
 	assert.Equal(t, expected, err.Error())
 }
@@ -164,7 +164,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 		},
 	})
 	err := content.validate(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	expected := `manifest is not valid: "branches[0].id" is a required field`
 	assert.Equal(t, expected, err.Error())
 }
@@ -176,12 +176,12 @@ func TestManifestCyclicDependency(t *testing.T) {
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, cyclicDependencyJSON())))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, cyclicDependencyJSON())))
 
 	// Load
 	manifest, err := Load(ctx, log.NewNopLogger(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
 }
 
@@ -194,7 +194,7 @@ func TestManifest_AllowTargetENV(t *testing.T) {
 	// Write file
 	fs := aferofs.NewMemoryFs()
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, allowTargetEnvJSON())))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, allowTargetEnvJSON())))
 
 	// Load file
 	logger := log.NewDebugLogger()
@@ -218,7 +218,7 @@ func TestManifest_AllowTargetENV(t *testing.T) {
 
 	// The file content is same
 	updatedFile, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(allowTargetEnvJSON()), strings.TrimSpace(updatedFile.Content))
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -30,11 +31,11 @@ func TestJsonnetMapper_MapBeforeLocalSave(t *testing.T) {
 		AddTag(model.FileTypeMarkdown)
 
 	// Run mapper
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 
 	// Json file is converted to Jsonnet
 	expectedAst, err := jsonnet.ToAst("{\n  \"key\": \"value\"\n}\n", "foo.jsonnet")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expected := model.NewFilesToSave()
 	expected.
 		Add(filesystem.NewJsonnetFile(`foo.jsonnet`, expectedAst, nil)). // <<<<<<<
@@ -46,6 +47,6 @@ func TestJsonnetMapper_MapBeforeLocalSave(t *testing.T) {
 
 	// Jsonnet file content
 	f, err := recipe.Files.GetOneByTag(model.FileTypeJsonnet).ToRawFile()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{\n  key: \"value\",\n}\n", f.Content)
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRule_Match(t *testing.T) {
@@ -131,7 +132,7 @@ func TestRule_Match(t *testing.T) {
 		matched, err := tc.Rule.Match(httptest.NewRequest(http.MethodGet, tc.URL, nil))
 		assert.Equal(t, tc.ExpectedMatch, matched, tc.Description)
 		if tc.ExpectedErr == "" {
-			assert.NoError(t, err, tc.Description)
+			require.NoError(t, err, tc.Description)
 		} else if assert.Error(t, err, tc.Description) {
 			assert.Equal(t, tc.ExpectedErr, err.Error())
 		}

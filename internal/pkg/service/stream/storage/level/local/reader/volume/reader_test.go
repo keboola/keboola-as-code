@@ -35,8 +35,8 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), r.DirPath())
 	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename), r.FilePath())
 
-	assert.NoError(t, r.Close())
-	assert.Len(t, tc.Volume.readers, 0)
+	require.NoError(t, r.Close())
+	assert.Empty(t, tc.Volume.readers)
 
 	// Check logs
 	tc.AssertLogs(`
@@ -65,8 +65,8 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 	}
 	assert.Len(t, tc.Volume.readers, 1)
 
-	assert.NoError(t, w.Close())
-	assert.Len(t, tc.Volume.readers, 0)
+	require.NoError(t, w.Close())
+	assert.Empty(t, tc.Volume.readers)
 }
 
 // TestVolume_NewReaderFor_ClosedVolume tests that a new reader cannot be created on closed volume.
@@ -79,7 +79,7 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close the volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 
 	// Try crate a reader
 	_, err = tc.NewReader()
@@ -185,18 +185,18 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 		decoder, err = compressionReader.New(toStagingReader, tc.StagingCompression)
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, decoder.Close())
+			require.NoError(t, decoder.Close())
 		})
 		toStagingReader = decoder
 	}
 
 	// Read all
 	content, err := io.ReadAll(toStagingReader)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("foo bar"), content)
 
 	// Close
-	assert.NoError(t, r.Close())
+	require.NoError(t, r.Close())
 }
 
 // TestReadError tests propagation of the file read error through read chain.
@@ -244,7 +244,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 		decoder, err = compressionReader.New(toStagingReader, tc.StagingCompression)
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, decoder.Close())
+			require.NoError(t, decoder.Close())
 		})
 		toStagingReader = decoder
 	}
@@ -256,7 +256,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 	}
 
 	// Close
-	assert.NoError(t, r.Close())
+	require.NoError(t, r.Close())
 }
 
 // TestCloseError tests propagation of the file close error through read chain.
@@ -304,14 +304,14 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 		decoder, err = compressionReader.New(toStagingReader, tc.StagingCompression)
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			assert.NoError(t, decoder.Close())
+			require.NoError(t, decoder.Close())
 		})
 		toStagingReader = decoder
 	}
 
 	// Read all
 	_, err = io.ReadAll(toStagingReader)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Close
 	err = r.Close()
@@ -353,7 +353,7 @@ func (tc *readerTestCase) NewReader(opts ...Option) (reader.Reader, error) {
 
 		// Close volume after the test
 		tc.TB.Cleanup(func() {
-			assert.NoError(tc.TB, vol.Close(context.Background()))
+			require.NoError(tc.TB, vol.Close(context.Background()))
 		})
 	}
 
@@ -363,8 +363,8 @@ func (tc *readerTestCase) NewReader(opts ...Option) (reader.Reader, error) {
 
 	// Write slice data
 	path := filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
-	assert.NoError(tc.TB, os.MkdirAll(filepath.Dir(path), 0o750))
-	assert.NoError(tc.TB, os.WriteFile(path, tc.SliceData, 0o640))
+	require.NoError(tc.TB, os.MkdirAll(filepath.Dir(path), 0o750))
+	require.NoError(tc.TB, os.WriteFile(path, tc.SliceData, 0o640))
 
 	r, err := tc.Volume.NewReaderFor(tc.Slice)
 	if err != nil {

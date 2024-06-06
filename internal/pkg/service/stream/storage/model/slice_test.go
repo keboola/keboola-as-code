@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -25,7 +26,7 @@ func TestVolumeKey_Validation(t *testing.T) {
 	val := validator.New()
 
 	// Valid
-	assert.NoError(t, val.Validate(ctx, testFileVolumeKey()))
+	require.NoError(t, val.Validate(ctx, testFileVolumeKey()))
 
 	// Empty
 	err := val.Validate(ctx, FileVolumeKey{})
@@ -64,7 +65,7 @@ func TestSliceID_Validation(t *testing.T) {
 	val := validator.New()
 
 	// Valid
-	assert.NoError(t, val.Validate(ctx, SliceID{
+	require.NoError(t, val.Validate(ctx, SliceID{
 		OpenedAt: utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}))
 
@@ -96,7 +97,7 @@ func TestSliceKey_Validation(t *testing.T) {
 	val := validator.New()
 
 	// Valid
-	assert.NoError(t, val.Validate(ctx, testSliceKey()))
+	require.NoError(t, val.Validate(ctx, testSliceKey()))
 
 	// Empty
 	err := val.Validate(ctx, SliceKey{})
@@ -286,7 +287,7 @@ func TestSlice_Validation(t *testing.T) {
 	for _, tc := range cases {
 		err := val.Validate(ctx, tc.Value)
 		if tc.ExpectedError == "" {
-			assert.NoError(t, err, tc.Name)
+			require.NoError(t, err, tc.Name)
 		} else if assert.Error(t, err, tc.Name) {
 			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
 		}
