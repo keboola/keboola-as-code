@@ -8,16 +8,17 @@ on:
         required: false
       without-cache:
         type: boolean
-        default: false
         required: false
+        default: false
 
 env:
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
 
+# Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: read    # This is required for actions/checkout
+  id-token: write
+  contents: read 
 
 jobs:
   test:
@@ -72,7 +73,7 @@ jobs:
           fi
           
           # Build binary for test without external inputs
-          env -i \
+          env --ignore-environment  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
@@ -89,7 +90,7 @@ jobs:
           echo "Binary hash: $TEST_BINARY_CLI_HASH"
           
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
-          env -i \
+          env --ignore-environment  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \

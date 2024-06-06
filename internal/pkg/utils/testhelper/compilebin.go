@@ -22,8 +22,7 @@ func CompileBinary(t *testing.T, binaryName string, makeCommand string) string {
 
 	// Compilation can be skipped by providing path to the binary.
 	// It is used in CI to cache test results.
-	pathEnv := strings.ToUpper("TEST_BINARY_" + binaryName)
-	pathEnv = strings.ReplaceAll(pathEnv, "-", "_")
+	pathEnv := "TEST_BINARY_" + strings.ToUpper(strings.ReplaceAll(binaryName, "-", "_"))
 	hashEnv := pathEnv + "_HASH"
 	path, ok1 := os.LookupEnv(pathEnv)
 	hash, ok2 := os.LookupEnv(hashEnv) // hash ENV (each ENV) modification invalidates the test cache

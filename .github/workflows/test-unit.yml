@@ -13,9 +13,10 @@ env:
   TEST_PARALLELISM_PKG: 6
   TEST_COVERAGE: ${{ inputs.without-cache == true }}
 
+# Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: read    # This is required for actions/checkout
+  id-token: write
+  contents: read
 
 jobs:
   test:
@@ -70,7 +71,7 @@ jobs:
           fi
           
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
-          env -i \
+          env --ignore-environment  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
