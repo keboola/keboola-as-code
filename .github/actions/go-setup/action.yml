@@ -109,12 +109,11 @@ runs:
       if: inputs.without-cache != 'true'
       uses: runs-on/cache@v4 # replacement for actions/cache@v4
       with:
-        enableCrossOsArchive: true
         path: |
           ${{ env.GODIRS }}/modcache
-        key: All-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          All-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
+          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
