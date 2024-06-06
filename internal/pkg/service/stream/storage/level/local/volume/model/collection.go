@@ -88,7 +88,6 @@ func (v *Collection[V]) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
 	for _, v := range v.byID {
-		v := v
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

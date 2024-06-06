@@ -351,7 +351,6 @@ func TestExportInputsValues(t *testing.T) {
 
 	// Test all cases
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			tc.run(t)
