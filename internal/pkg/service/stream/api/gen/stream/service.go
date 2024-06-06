@@ -66,6 +66,8 @@ type Service interface {
 	SinkStatisticsFiles(context.Context, dependencies.SinkRequestScope, *SinkStatisticsFilesPayload) (res *SinkStatisticsFilesResult, err error)
 	// Get details of a task.
 	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
+	// Details about sources for the UI.
+	AggregateSources(context.Context, dependencies.BranchRequestScope, *AggregateSourcesPayload) (res *AggregatedSourcesResult, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -88,7 +90,76 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [21]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask"}
+var MethodNames = [22]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask", "AggregateSources"}
+
+// AggregateSourcesPayload is the payload type of the stream service
+// AggregateSources method.
+type AggregateSourcesPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	// Request records after the ID.
+	SinceID string
+	// Maximum number of returned records.
+	Limit int
+}
+
+// A mapping from imported data to a destination table.
+type AggregatedSink struct {
+	ProjectID ProjectID
+	BranchID  BranchID
+	SourceID  SourceID
+	SinkID    SinkID
+	Type      SinkType
+	// Human readable name of the sink.
+	Name string
+	// Description of the source.
+	Description string
+	Table       *TableSink
+	Created     *CreatedEntity
+	Version     *Version
+	Deleted     *DeletedEntity
+	Disabled    *DisabledEntity
+	Statistics  *AggregatedStatistics
+}
+
+type AggregatedSinks []*AggregatedSink
+
+// Source of data for further processing, start of the stream, max 100 sources
+// per a branch.
+type AggregatedSource struct {
+	ProjectID ProjectID
+	BranchID  BranchID
+	SourceID  SourceID
+	Type      SourceType
+	// Human readable name of the source.
+	Name string
+	// Description of the source.
+	Description string
+	// HTTP source details for "type" = "http".
+	HTTP     *HTTPSource
+	Created  *CreatedEntity
+	Version  *Version
+	Deleted  *DeletedEntity
+	Disabled *DisabledEntity
+	Sinks    AggregatedSinks
+}
+
+type AggregatedSources []*AggregatedSource
+
+// AggregatedSourcesResult is the result type of the stream service
+// AggregateSources method.
+type AggregatedSourcesResult struct {
+	ProjectID ProjectID
+	BranchID  BranchID
+	Page      *PaginatedResponse
+	Sources   AggregatedSources
+}
+
+type AggregatedStatistics struct {
+	Total  *Level
+	Levels *Levels
+	Files  SinkFiles
+}
 
 // ID of the branch.
 type BranchID = keboola.BranchID
@@ -242,9 +313,12 @@ type HTTPSource struct {
 }
 
 type Level struct {
-	FirstRecordAt    *string
-	LastRecordAt     *string
-	RecordsCount     uint64
+	// Timestamp of the first received record.
+	FirstRecordAt *string
+	// Timestamp of the last received record.
+	LastRecordAt *string
+	RecordsCount uint64
+	// Uncompressed size of data in bytes.
 	UncompressedSize uint64
 }
 

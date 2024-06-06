@@ -40,6 +40,7 @@ type Endpoints struct {
 	SinkStatisticsTotal  goa.Endpoint
 	SinkStatisticsFiles  goa.Endpoint
 	GetTask              goa.Endpoint
+	AggregateSources     goa.Endpoint
 }
 
 // TestSourceRequestData holds both the payload and the HTTP request body
@@ -77,6 +78,7 @@ func NewEndpoints(s Service) *Endpoints {
 		SinkStatisticsTotal:  NewSinkStatisticsTotalEndpoint(s, a.APIKeyAuth),
 		SinkStatisticsFiles:  NewSinkStatisticsFilesEndpoint(s, a.APIKeyAuth),
 		GetTask:              NewGetTaskEndpoint(s, a.APIKeyAuth),
+		AggregateSources:     NewAggregateSourcesEndpoint(s, a.APIKeyAuth),
 	}
 }
 
@@ -103,6 +105,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.SinkStatisticsTotal = m(e.SinkStatisticsTotal)
 	e.SinkStatisticsFiles = m(e.SinkStatisticsFiles)
 	e.GetTask = m(e.GetTask)
+	e.AggregateSources = m(e.AggregateSources)
 }
 
 // NewAPIRootIndexEndpoint returns an endpoint function that calls the method
@@ -489,5 +492,25 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.GetTask(ctx, deps, p)
+	}
+}
+
+// NewAggregateSourcesEndpoint returns an endpoint function that calls the
+// method "AggregateSources" of service "stream".
+func NewAggregateSourcesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*AggregateSourcesPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		return s.AggregateSources(ctx, deps, p)
 	}
 }

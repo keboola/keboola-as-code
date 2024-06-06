@@ -116,3 +116,8 @@ func SinkStatisticsFilesStreamPath(branchID string, sourceID string, sinkID stri
 func GetTaskStreamPath(taskID string) string {
 	return fmt.Sprintf("/v1/tasks/%v", taskID)
 }
+
+// AggregateSourcesStreamPath returns the URL path to the stream service AggregateSources HTTP endpoint.
+func AggregateSourcesStreamPath(branchID string) string {
+	return fmt.Sprintf("/v1/branches/%v/aggregation/sources", branchID)
+}
