@@ -38,10 +38,11 @@ type Client struct {
 	SinkStatisticsTotalEndpoint  goa.Endpoint
 	SinkStatisticsFilesEndpoint  goa.Endpoint
 	GetTaskEndpoint              goa.Endpoint
+	AggregateSourcesEndpoint     goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, getTask goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, getTask, aggregateSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:         aPIRootIndex,
 		APIVersionIndexEndpoint:      aPIVersionIndex,
@@ -64,6 +65,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		SinkStatisticsTotalEndpoint:  sinkStatisticsTotal,
 		SinkStatisticsFilesEndpoint:  sinkStatisticsFiles,
 		GetTaskEndpoint:              getTask,
+		AggregateSourcesEndpoint:     aggregateSources,
 	}
 }
 
@@ -339,4 +341,15 @@ func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err
 		return
 	}
 	return ires.(*Task), nil
+}
+
+// AggregateSources calls the "AggregateSources" endpoint of the "stream"
+// service.
+func (c *Client) AggregateSources(ctx context.Context, p *AggregateSourcesPayload) (res *AggregationSourcesResult, err error) {
+	var ires any
+	ires, err = c.AggregateSourcesEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*AggregationSourcesResult), nil
 }
