@@ -73,7 +73,7 @@ jobs:
           fi
           
           # Build binary for test without external inputs
-          env --ignore-environment  \
+          env -i  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
@@ -90,7 +90,7 @@ jobs:
           echo "Binary hash: $TEST_BINARY_CLI_HASH"
           
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
-          env --ignore-environment  \
+          env -i  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \

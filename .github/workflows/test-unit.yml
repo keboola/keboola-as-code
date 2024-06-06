@@ -71,7 +71,7 @@ jobs:
           fi
           
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
-          env --ignore-environment  \
+          env -i  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
