@@ -48,7 +48,6 @@ jobs:
         uses: ./.github/actions/go-setup
         with:
           build-type: e2e-tests-cli
-          go-version: ${{ vars.GO_VERSION }}
           without-cache: ${{ inputs.without-cache }}
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 

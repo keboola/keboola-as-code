@@ -100,7 +100,6 @@ jobs:
         uses: ./.github/actions/go-setup
         with:
           build-type: cli-release
-          go-version: ${{ vars.GO_VERSION }}
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Import Code-Signing Certificates

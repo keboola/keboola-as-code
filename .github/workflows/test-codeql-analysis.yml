@@ -43,7 +43,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ vars.GO_VERSION }}
+        go-version: ${{ env.GO_VERSION }}
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

@@ -1,9 +1,6 @@
 name: 'Setup Go, tools and caching'
 description: 'Setup Go, tools and caching'
 inputs:
-  go-version:
-    description: Go version
-    required: true
   without-cache:
     description: Disable cache
     default: "false"
@@ -28,10 +25,14 @@ runs:
         role-session-name: ghactionscaching
         aws-region: us-east-1
 
+    - name: Extract GO_VERSION from go.mod file
+      shell: bash
+      run: sed -En 's/^go[[:space:]]+([[:digit:].]+)$/GO_VERSION=\1/p' go.mod >> $GITHUB_ENV
+
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ inputs.go-version }}
+        go-version: ${{ env.GO_VERSION }}
         cache: false
 
     # There is no md5sum command on macOS by default
@@ -84,9 +85,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/bin
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-tools-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -111,9 +112,9 @@ runs:
         enableCrossOsArchive: true
         path: |
           ${{ env.GODIRS }}/modcache
-        key: All-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
+        key: All-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          All-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
+          All-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -124,9 +125,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/cache
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -137,9 +138,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/lintcache
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-linter-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
