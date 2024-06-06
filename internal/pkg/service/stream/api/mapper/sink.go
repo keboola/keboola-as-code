@@ -20,13 +20,21 @@ func (m *Mapper) NewSinkStatisticsTotalResponse(result statistics.Aggregated) *s
 }
 
 func (m *Mapper) NewSinkFile(file model.File) *stream.SinkFile {
-	return &stream.SinkFile{
+	sinkFile := &stream.SinkFile{
 		State:       file.State,
 		OpenedAt:    file.OpenedAt().String(),
 		ClosingAt:   timeToString(file.ClosingAt),
 		ImportingAt: timeToString(file.ImportingAt),
 		ImportedAt:  timeToString(file.ImportedAt),
 	}
+
+	if file.RetryAttempt > 0 {
+		sinkFile.RetryAttempt = ptr.Ptr(file.RetryAttempt)
+		sinkFile.RetryReason = ptr.Ptr(file.RetryReason)
+		sinkFile.RetryAfter = ptr.Ptr(file.RetryAfter.String())
+	}
+
+	return sinkFile
 }
 
 func (m *Mapper) NewSinkFileStatistics(result *statistics.Aggregated) *stream.SinkFileStatistics {
