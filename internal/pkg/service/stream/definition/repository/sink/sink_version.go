@@ -25,7 +25,7 @@ func (r *Repository) ListVersions(k key.SinkKey) iterator.DefinitionT[definition
 // The method can be used also for deleted objects.
 func (r *Repository) Version(k key.SinkKey, version definition.VersionNumber) op.WithResult[definition.Sink] {
 	return r.schema.
-		Versions().Of(k).Version(version).Get(r.client).
+		Versions().Of(k).Version(version).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("sink version", k.SinkID.String()+"/"+version.String(), "source")
 		})
@@ -33,7 +33,7 @@ func (r *Repository) Version(k key.SinkKey, version definition.VersionNumber) op
 
 func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, by definition.By, to definition.VersionNumber) *op.AtomicOp[definition.Sink] {
 	var updated definition.Sink
-	var latestVersion, targetVersion *op.KeyValueT[definition.Sink]
+	var latestVersion, targetVersion *definition.Sink
 	return op.Atomic(r.client, &updated).
 		// Get latest version to calculate next version number
 		Read(func(ctx context.Context) op.Op {
@@ -41,7 +41,7 @@ func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, by definition
 		}).
 		// Get target version
 		Read(func(ctx context.Context) op.Op {
-			return r.schema.Versions().Of(k).Version(to).GetKV(r.client).WithResultTo(&targetVersion)
+			return r.schema.Versions().Of(k).Version(to).GetOrNil(r.client).WithResultTo(&targetVersion)
 		}).
 		Write(func(ctx context.Context) op.Op {
 			// Return the most significant error
@@ -52,11 +52,10 @@ func (r *Repository) RollbackVersion(k key.SinkKey, now time.Time, by definition
 			}
 
 			// Prepare the new value
-			old := latestVersion.Value
-			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Value.Version.Number)
-			updated = deepcopy.Copy(targetVersion.Value).(definition.Sink)
-			updated.Version = latestVersion.Value.Version
+			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Version.Number)
+			updated = deepcopy.Copy(*targetVersion).(definition.Sink)
+			updated.Version = latestVersion.Version
 			updated.IncrementVersion(updated, now, by, versionDescription)
-			return r.save(ctx, now, by, &old, &updated)
+			return r.save(ctx, now, by, latestVersion, &updated)
 		})
 }
