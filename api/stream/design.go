@@ -924,9 +924,8 @@ var GetSinkStatisticsTotalRequest = Type("GetSinkStatisticsTotalRequest", func()
 
 var SinkStatisticsTotalResult = Type("SinkStatisticsTotalResult", func() {
 	Attribute("total", Level)
-	Required("total")
 	Attribute("levels", Levels)
-	Required("levels")
+	Required("levels", "total")
 })
 
 var Levels = Type("Levels", func() {
