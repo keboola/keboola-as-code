@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -17,6 +18,12 @@ import (
 
 func (r *Repository) estimateSliceSizeOnSliceOpen() {
 	r.plugins.Collection().OnSliceOpen(func(ctx context.Context, now time.Time, file model.File, slice *model.Slice) error {
+		// Optional: If Sink is new, we can skip calculation, there is no previous slice/statistics
+		if sink := plugin.SinkFromContext(ctx, file.SinkKey); sink != nil && sink.CreatedAt().Time().Equal(now) {
+			slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.DiskAllocation.ForNextSlice(0)
+			return nil
+		}
+
 		// The operation is performed immediately, outside the atomic operation!
 		// We need to update the value to the Slice entity before saving.
 		if err := r.estimateSliceSize(file, slice).Do(ctx).Err(); err != nil {
