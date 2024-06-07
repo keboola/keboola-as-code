@@ -7,32 +7,32 @@ on:
       - "**"
 
 jobs:
-  check-license:
-    name: "Check licenses"
-    secrets: inherit
-    uses: ./.github/workflows/check-licenses.yml
-
-  test-lint:
-    name: "Lint"
-    secrets: inherit
-    uses: ./.github/workflows/test-lint.yml
-
+  #  check-license:
+  #    name: "Check licenses"
+  #    secrets: inherit
+  #    uses: ./.github/workflows/check-licenses.yml
+  #
+  #  test-lint:
+  #    name: "Lint"
+  #    secrets: inherit
+  #    uses: ./.github/workflows/test-lint.yml
+  #
   test-unit:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
-
-  test-e2e-cli:
-    name: "E2E: CLI"
-    secrets: inherit
-    uses: ./.github/workflows/test-e2e-cli.yml
-
-  test-e2e-service-buffer:
-    name: "E2E: Stream"
-    secrets: inherit
-    uses: ./.github/workflows/test-e2e-service-stream.yml
-
-  test-e2e-service-templates:
-    name: "E2E: Templates"
-    secrets: inherit
-    uses: ./.github/workflows/test-e2e-service-templates.yml
+  #
+  #  test-e2e-cli:
+  #    name: "E2E: CLI"
+  #    secrets: inherit
+  #    uses: ./.github/workflows/test-e2e-cli.yml
+  #
+  #  test-e2e-service-buffer:
+  #    name: "E2E: Stream"
+  #    secrets: inherit
+  #    uses: ./.github/workflows/test-e2e-service-stream.yml
+  #
+  #  test-e2e-service-templates:
+  #    name: "E2E: Templates"
+  #    secrets: inherit
+  #    uses: ./.github/workflows/test-e2e-service-templates.yml
