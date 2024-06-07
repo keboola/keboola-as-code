@@ -140,10 +140,15 @@ func TestTypedPrefix(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, kvs)
 
-	// GetOne - empty
-	kv, err := pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
+	// GetOneKV - empty
+	kv, err := pfx.GetOneKV(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Nil(t, kv)
+
+	// GetOne - empty
+	resultPtr, err := pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
+	assert.NoError(t, err)
+	assert.Nil(t, resultPtr)
 
 	// DeleteAll - empty
 	deleted, err := pfx.DeleteAll(client).Do(ctx).ResultOrErr()
@@ -197,11 +202,16 @@ func TestTypedPrefix(t *testing.T) {
 	assert.Equal(t, fooType("foo"), kvs[0].Value)
 	assert.Equal(t, fooType("bar"), kvs[1].Value)
 
-	// GetOne - 2 exists
-	kv, err = pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
+	// GetOneKV - 2 exists
+	kv, err = pfx.GetOneKV(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
 	assert.NoError(t, err)
 	assert.Equal(t, "my/prefix/key2", kv.Key())
 	assert.Equal(t, fooType("bar"), kv.Value)
+
+	// GetOne - 2 exists
+	resultPtr, err = pfx.GetOne(client, etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx).ResultOrErr()
+	assert.NoError(t, err)
+	assert.Equal(t, fooType("bar"), *resultPtr)
 
 	// DeleteAll - deleted 2
 	deleted, err = pfx.DeleteAll(client).Do(ctx).ResultOrErr()

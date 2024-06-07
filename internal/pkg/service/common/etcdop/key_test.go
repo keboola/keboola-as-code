@@ -116,8 +116,18 @@ func TestTypedKeyOperations(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, kv)
 
-	// Get - not found
-	result, err := k.Get(client).Do(ctx).ResultOrErr()
+	// GetOrNil - not found
+	resultPtr, err := k.GetOrNil(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Nil(t, resultPtr)
+
+	// GetOrEmpty - not found
+	result, err := k.GetOrEmpty(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Empty(t, result)
+
+	// GetOrErr - not found
+	result, err = k.GetOrErr(client).Do(ctx).ResultOrErr()
 	if assert.Error(t, err) {
 		assert.True(t, errors.As(err, &op.EmptyResultError{}))
 		assert.Empty(t, result)
@@ -140,8 +150,18 @@ func TestTypedKeyOperations(t *testing.T) {
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("bar"), kv.Value)
 
-	// Get - found
-	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	// GetOrNil - found
+	resultPtr, err = k.GetOrNil(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Equal(t, fooType("bar"), *resultPtr)
+
+	// GetOrEmpty - found
+	result, err = k.GetOrEmpty(client).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	assert.Equal(t, fooType("bar"), result)
+
+	// GetOrErr - found
+	result, err = k.GetOrErr(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Equal(t, fooType("bar"), result)
 
@@ -167,7 +187,7 @@ func TestTypedKeyOperations(t *testing.T) {
 	assert.Nil(t, kv)
 
 	// Get - not found
-	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	result, err = k.GetOrErr(client).Do(ctx).ResultOrErr()
 	if assert.Error(t, err) {
 		assert.True(t, errors.As(err, &op.EmptyResultError{}))
 		assert.Empty(t, result)
@@ -191,7 +211,7 @@ func TestTypedKeyOperations(t *testing.T) {
 	assert.Equal(t, fooType("value1"), kv.Value)
 
 	// Get - found - value 1
-	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	result, err = k.GetOrErr(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), result)
@@ -208,7 +228,7 @@ func TestTypedKeyOperations(t *testing.T) {
 	assert.Equal(t, fooType("value1"), kv.Value)
 
 	// Get - found - value 1
-	result, err = k.Get(client).Do(ctx).ResultOrErr()
+	result, err = k.GetOrErr(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), result)
