@@ -12,7 +12,7 @@ import (
 
 func (r *Repository) Get(k key.BranchKey) op.WithResult[definition.Branch] {
 	return r.schema.
-		Active().ByKey(k).Get(r.client).
+		Active().ByKey(k).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("branch", k.BranchID.String(), "project")
 		})
@@ -20,7 +20,7 @@ func (r *Repository) Get(k key.BranchKey) op.WithResult[definition.Branch] {
 
 func (r *Repository) GetDeleted(k key.BranchKey) op.WithResult[definition.Branch] {
 	return r.schema.
-		Deleted().ByKey(k).Get(r.client).
+		Deleted().ByKey(k).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("deleted branch", k.BranchID.String(), "project")
 		})

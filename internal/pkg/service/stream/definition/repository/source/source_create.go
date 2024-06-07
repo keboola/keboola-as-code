@@ -18,7 +18,7 @@ import (
 func (r *Repository) Create(input *definition.Source, now time.Time, by definition.By, versionDescription string) *op.AtomicOp[definition.Source] {
 	k := input.SourceKey
 	var created definition.Source
-	var deleted *op.KeyValueT[definition.Source]
+	var deleted *definition.Source
 	return op.Atomic(r.client, &created).
 		// Entity must not exist
 		Read(func(ctx context.Context) op.Op {
@@ -30,16 +30,16 @@ func (r *Repository) Create(input *definition.Source, now time.Time, by definiti
 		}).
 		// Get deleted entity, if any, to undelete it
 		Read(func(ctx context.Context) op.Op {
-			return r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)
+			return r.schema.Deleted().ByKey(k).GetOrNil(r.client).WithResultTo(&deleted)
 		}).
 		// Create
 		Write(func(ctx context.Context) op.Op {
 			// Create or undelete
 			created = deepcopy.Copy(*input).(definition.Source)
 			if deleted != nil {
-				created.Created = deleted.Value.Created
-				created.Version = deleted.Value.Version
-				created.SoftDeletable = deleted.Value.SoftDeletable
+				created.Created = deleted.Created
+				created.Version = deleted.Version
+				created.SoftDeletable = deleted.SoftDeletable
 				created.Undelete(now, by)
 			}
 

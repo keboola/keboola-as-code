@@ -9,7 +9,7 @@ import (
 
 func (r *Repository) Get(k key.SinkKey) op.WithResult[definition.Sink] {
 	return r.schema.
-		Active().ByKey(k).Get(r.client).
+		Active().ByKey(k).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("sink", k.SinkID.String(), "source")
 		})
@@ -17,7 +17,7 @@ func (r *Repository) Get(k key.SinkKey) op.WithResult[definition.Sink] {
 
 func (r *Repository) GetDeleted(k key.SinkKey) op.WithResult[definition.Sink] {
 	return r.schema.
-		Deleted().ByKey(k).Get(r.client).
+		Deleted().ByKey(k).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("deleted sink", k.SinkID.String(), "source")
 		})
