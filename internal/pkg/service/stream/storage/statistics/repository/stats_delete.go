@@ -27,13 +27,16 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 		objectPfx := r.schema.InLevel(inLevel).InObject(objectKey)
 
 		// Delete statistics
+		ops.Write(func(ctx context.Context) op.Op {
+			return objectPfx.DeleteAll(r.client)
+		})
+
+		// Following rollup is only for the target level.
+		// Keep statistics about successfully imported data in the parent object prefix, in the sum key.
 		if inLevel != level.Target {
-			ops.Write(func(ctx context.Context) op.Op {
-				return objectPfx.DeleteAll(r.client)
-			})
+			continue
 		}
 
-		// Keep statistics about successfully imported data in the parent object prefix, in the sum key
 		var objectSum statistics.Value
 		var parentSum statistics.Value
 
@@ -42,13 +45,7 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 
 		// Get sum from the parent object
 		ops.Read(func(ctx context.Context) op.Op {
-			return sumKey.GetKV(r.client).WithOnResult(func(result *op.KeyValueT[statistics.Value]) {
-				if result == nil {
-					parentSum = statistics.Value{}
-				} else {
-					parentSum = result.Value
-				}
-			})
+			return sumKey.GetOrEmpty(r.client).WithResultTo(&parentSum)
 		})
 
 		// Get statistics of the object
