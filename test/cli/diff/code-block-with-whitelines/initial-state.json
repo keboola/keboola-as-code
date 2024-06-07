@@ -1,0 +1,14 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "python-transformation"
+      ]
+    }
+  ]
+}
