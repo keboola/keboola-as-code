@@ -92,7 +92,7 @@ func TestIteratorT(t *testing.T) {
   ➡️  THEN:
   001 ➡️  GET ["some/prefix/", "some/prefix0")
 ✔️  TXN | succeeded: true | rev: %d
-➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2
 `,
 		},
@@ -176,7 +176,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/", "some/prefix0")
 ✔️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 4 | loaded: 3
-➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 1
 `,
 		},
@@ -195,7 +195,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/", "some/prefix0")
 ✔️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | loaded: 3
-➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2
 `,
 		},
@@ -257,7 +257,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/", "some/prefix0")
 ✔️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | loaded: 3
-➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d
+➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | serializable
 ✔️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | count: 2
 `,
 		},
@@ -275,7 +275,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/", "some/prefix0")
 ✔️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | loaded: 2
-➡️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d
+➡️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | serializable
 ✔️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | count: 3 | loaded: 2
 `,
 		},
@@ -293,9 +293,9 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo003", "some/prefix0")
 ✔️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | loaded: 1
-➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1
 `,
 		},
@@ -316,9 +316,9 @@ func TestIteratorT(t *testing.T) {
   ➡️  THEN:
   001 ➡️  GET ["some/prefix/foo003", "some/prefix0")
 ✔️  TXN | succeeded: true | rev: %d
-➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1
 `,
 		},
@@ -335,7 +335,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo003", "some/prefix/foo005")
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d | count: 1
 `,
 		},
@@ -353,7 +353,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo003", "some/prefix0")
 ✔️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | loaded: 2
-➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1
 `,
 		},
@@ -371,9 +371,9 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/", "some/prefix/foo004")
 ✔️  GET ["some/prefix/", "some/prefix/foo004") | rev: %d | count: 3 | loaded: 1
-➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d
+➡️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | serializable
 ✔️  GET ["some/prefix/", "some/prefix/foo003") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/", "some/prefix/foo002") | rev: %d
+➡️  GET ["some/prefix/", "some/prefix/foo002") | rev: %d | serializable
 ✔️  GET ["some/prefix/", "some/prefix/foo002") | rev: %d | count: 1
 `,
 		},
@@ -390,7 +390,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo003", "some/prefix/foo005")
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d
+➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
 `,
 		},
@@ -408,7 +408,7 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo003", "some/prefix0")
 ✔️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | loaded: 2
-➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d
+➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
 `,
 		},
@@ -429,7 +429,7 @@ func TestIteratorT(t *testing.T) {
   ➡️  THEN:
   001 ➡️  GET ["some/prefix/foo003", "some/prefix0")
 ✔️  TXN | succeeded: true | rev: %d
-➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d
+➡️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo004") | rev: %d | count: 1
 `,
 		},
@@ -447,9 +447,9 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo002", "some/prefix/foo005")
 ✔️  GET ["some/prefix/foo002", "some/prefix/foo005") | rev: %d | count: 3 | loaded: 1
-➡️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d
+➡️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo003", "some/prefix/foo005") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d
+➡️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo004", "some/prefix/foo005") | rev: %d | count: 1
 `,
 		},
@@ -467,9 +467,9 @@ func TestIteratorT(t *testing.T) {
 			expectedLogs: `
 ➡️  GET ["some/prefix/foo002", "some/prefix/foo005")
 ✔️  GET ["some/prefix/foo002", "some/prefix/foo005") | rev: %d | count: 3 | loaded: 1
-➡️  GET ["some/prefix/foo002", "some/prefix/foo004") | rev: %d
+➡️  GET ["some/prefix/foo002", "some/prefix/foo004") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo002", "some/prefix/foo004") | rev: %d | count: 2 | loaded: 1
-➡️  GET ["some/prefix/foo002", "some/prefix/foo003") | rev: %d
+➡️  GET ["some/prefix/foo002", "some/prefix/foo003") | rev: %d | serializable
 ✔️  GET ["some/prefix/foo002", "some/prefix/foo003") | rev: %d | count: 1
 `,
 		},
