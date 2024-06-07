@@ -1,0 +1,58 @@
+// READ: the sink to be enabled
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/sink/active/123/456/my-source/my-sink"
+✔️  TXN | succeeded: true
+
+// READ: Load source, to get source specific config patch
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/source/active/123/456/my-source"
+✔️  TXN | succeeded: true
+
+// READ: the Storage API token
+➡️  GET "storage/keboola/secret/token/123/456/my-source/my-sink"
+✔️  GET "storage/keboola/secret/token/123/456/my-source/my-sink" | count: 0
+
+// READ: statistics to calculate pre-allocated space for new slices
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink/", "storage/stats/staging/123/456/my-source/my-sink0")
+  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/", "storage/stats/target/123/456/my-source/my-sink0")
+✔️  TXN | succeeded: true
+
+// WRITE:
+➡️  TXN
+  ➡️  IF:
+  // Objects from the READ phase must be unchanged
+  001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  002 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  003 "definition/sink/active/123/456/my-source/my-sink" MOD GREATER 0
+  004 "definition/sink/active/123/456/my-source/my-sink" MOD LESS %d
+  005 "definition/source/active/123/456/my-source" MOD GREATER 0
+  006 "definition/source/active/123/456/my-source" MOD LESS %d
+  ➡️  THEN:
+  // Save Sink
+  001 ➡️  PUT "definition/sink/active/123/456/my-source/my-sink"
+  002 ➡️  PUT "definition/sink/version/123/456/my-source/my-sink/0000000003"
+  // Save File
+  003 ➡️  PUT "storage/file/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
+  004 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
+  // Save Token
+  005 ➡️  PUT "storage/keboola/secret/token/123/456/my-source/my-sink"
+  // Save file upload credentials
+  006 ➡️  PUT "storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
+  // Save Slice
+  007 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  008 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
+  ➡️  ELSE:
+  // File already exists error message
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+  // File already exists error message
+  002 ➡️  TXN
+  002   ➡️  IF:
+  002   001 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD EQUAL 0
+✔️  TXN | succeeded: true
+
