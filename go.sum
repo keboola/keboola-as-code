@@ -391,8 +391,8 @@ github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6 h1:HcvX1VQkiav
 github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6/go.mod h1:eDjgYHYDJbPLBLsyZ6qRaugP0mX8vePOhZ5id1fdzJw=
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562 h1:EiwSnkbGt2i6XxvjDMrWx6/bGlQjVs+yq1mDJ5b3U1U=
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562/go.mod h1:uPrZkzwsuFyIPP04hIt6TG2KvWujglvkOnUUnQJyIdw=
-github.com/keboola/go-utils v1.0.0 h1:0MSkPVAswLdg4C89/cNES0Qeix3LMRSRrW8hFrqQw4I=
-github.com/keboola/go-utils v1.0.0/go.mod h1:p+AIGpqlL7c0X+MWNOLdkAt2rMM5JXlycWwkOKmlrps=
+github.com/keboola/go-utils v1.0.1 h1:A0dmvruFOq+Y8K4tqwLuT7aeLIPHYjIyUeEWg2s2g9I=
+github.com/keboola/go-utils v1.0.1/go.mod h1:p+AIGpqlL7c0X+MWNOLdkAt2rMM5JXlycWwkOKmlrps=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.17.8 h1:YcnTYrq7MikUT7k0Yb5eceMmALQPYBW/Xltxn0NAMnU=
