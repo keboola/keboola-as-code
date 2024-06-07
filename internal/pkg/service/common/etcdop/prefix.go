@@ -96,8 +96,8 @@ func (v Prefix) Count(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 	)
 }
 
-func (v Prefix) GetOne(client etcd.KV, opts ...etcd.OpOption) op.GetOneOp {
-	return op.NewGetOneOp(
+func (v Prefix) GetOne(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValue] {
+	return op.NewForType(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
@@ -135,8 +135,8 @@ func (v Prefix) DeleteAll(client etcd.KV, opts ...etcd.OpOption) op.CountOp {
 	)
 }
 
-func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValueT[T]] {
-	return op.NewGetOneTOp(
+func (v PrefixT[T]) GetOneKV(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValueT[T]] {
+	return op.NewForType(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
@@ -155,6 +155,33 @@ func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.WithResult[
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, Kv: kv}, nil
+			default:
+				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
+			}
+		},
+	)
+}
+
+func (v PrefixT[T]) GetOne(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*T] {
+	return op.NewForType(
+		client,
+		func(_ context.Context) (etcd.Op, error) {
+			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
+			return etcd.OpGet(v.Prefix(), opts...), nil
+		},
+		func(ctx context.Context, raw *op.RawResponse) (*T, error) {
+			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
+			count := len(raw.Get().Kvs)
+			switch count {
+			case 0:
+				return nil, nil
+			case 1:
+				kv := raw.Get().Kvs[0]
+				target := new(T)
+				if err := v.serde.Decode(ctx, kv, target); err != nil {
+					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))
+				}
+				return target, nil
 			default:
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}

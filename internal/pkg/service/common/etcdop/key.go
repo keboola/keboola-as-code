@@ -56,8 +56,8 @@ func (v Key) Exists(client etcd.KV, opts ...etcd.OpOption) op.BoolOp {
 	)
 }
 
-func (v Key) Get(client etcd.KV, opts ...etcd.OpOption) op.GetOneOp {
-	return op.NewGetOneOp(
+func (v Key) Get(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValue] {
+	return op.NewForType(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
@@ -146,8 +146,10 @@ func (v KeyT[T]) ReplacePrefix(old, repl string) KeyT[T] {
 	return v
 }
 
+// GetKV gets a decoded value of the key wrapped with metadata to op.KeyValueT.
+// If the key is missing, result is nil pointer.
 func (v KeyT[T]) GetKV(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.KeyValueT[T]] {
-	return op.NewGetOneTOp(
+	return op.NewForType(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
@@ -171,7 +173,36 @@ func (v KeyT[T]) GetKV(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*op.
 	)
 }
 
-func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.WithResult[T] {
+// GetOrNil gets a decoded value of the key as pointer.
+// If the key is missing, result is nil pointer.
+func (v KeyT[T]) GetOrNil(client etcd.KV, opts ...etcd.OpOption) op.WithResult[*T] {
+	return op.NewForType(
+		client,
+		func(_ context.Context) (etcd.Op, error) {
+			return etcd.OpGet(v.Key(), opts...), nil
+		},
+		func(ctx context.Context, raw *op.RawResponse) (*T, error) {
+			switch count := raw.Get().Count; count {
+			case 0:
+				// Return nil pointer if the key is missing
+				return nil, nil
+			case 1:
+				target := new(T)
+				kv := raw.Get().Kvs[0]
+				if err := v.serde.Decode(ctx, kv, target); err != nil {
+					return target, errors.Errorf("etcd operation \"get\" failed: %w", invalidValueError(v.Key(), err))
+				}
+				return target, nil
+			default:
+				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
+			}
+		},
+	)
+}
+
+// GetOrErr gets a decoded value of the key.
+// If the key is missing, an error is returned.
+func (v KeyT[T]) GetOrErr(client etcd.KV, opts ...etcd.OpOption) op.WithResult[T] {
 	return op.NewForType(
 		client,
 		func(_ context.Context) (etcd.Op, error) {
@@ -182,6 +213,33 @@ func (v KeyT[T]) Get(client etcd.KV, opts ...etcd.OpOption) op.WithResult[T] {
 			switch count := raw.Get().Count; count {
 			case 0:
 				return target, op.NewEmptyResultError(errors.Errorf(`key "%s" not found`, v.Key()))
+			case 1:
+				kv := raw.Get().Kvs[0]
+				if err := v.serde.Decode(ctx, kv, &target); err != nil {
+					return target, errors.Errorf("etcd operation \"get\" failed: %w", invalidValueError(v.Key(), err))
+				}
+				return target, nil
+			default:
+				return target, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
+			}
+		},
+	)
+}
+
+// GetOrEmpty gets a decoded value of the key.
+// If the key is missing, the empty value is returned.
+func (v KeyT[T]) GetOrEmpty(client etcd.KV, opts ...etcd.OpOption) op.WithResult[T] {
+	return op.NewForType(
+		client,
+		func(_ context.Context) (etcd.Op, error) {
+			return etcd.OpGet(v.Key(), opts...), nil
+		},
+		func(ctx context.Context, raw *op.RawResponse) (T, error) {
+			var target T
+			switch count := raw.Get().Count; count {
+			case 0:
+				// Return empty value without result
+				return target, nil
 			case 1:
 				kv := raw.Get().Kvs[0]
 				if err := v.serde.Decode(ctx, kv, &target); err != nil {
