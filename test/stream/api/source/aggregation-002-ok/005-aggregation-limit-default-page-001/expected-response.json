@@ -187,7 +187,10 @@
             }
           },
           "statistics": {
-            "total": null,
+            "total": {
+              "recordsCount": 0,
+              "uncompressedSize": 0
+            },
             "levels": {},
             "files": [
               {
