@@ -1,0 +1,58 @@
+// READ: get the sink to be disabled
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/sink/active/123/456/my-source/my-sink"
+✔️  TXN | succeeded: true
+
+// READ: files from the sink and the Storage API token
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/file/level/local/123/456/my-source/my-sink/", "storage/file/level/local/123/456/my-source/my-sink0")
+  002 ➡️  GET "storage/keboola/secret/token/123/456/my-source/my-sink"
+✔️  TXN | succeeded: true
+
+// READ: slices
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET ["storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
+✔️  TXN | succeeded: true
+
+// WRITE
+➡️  TXN
+  ➡️  IF:
+  // Objects from the READ phase must be unchanged
+  001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  002 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  003 "definition/sink/active/123/456/my-source/my-sink" MOD GREATER 0
+  004 "definition/sink/active/123/456/my-source/my-sink" MOD LESS %d
+  005 ["storage/file/level/local/123/456/my-source/my-sink/", "storage/file/level/local/123/456/my-source/my-sink0") MOD GREATER 0
+  006 ["storage/file/level/local/123/456/my-source/my-sink/", "storage/file/level/local/123/456/my-source/my-sink0") MOD LESS %d
+  007 "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  008 "storage/keboola/secret/token/123/456/my-source/my-sink" MOD GREATER 0
+  009 "storage/keboola/secret/token/123/456/my-source/my-sink" MOD LESS %d
+  010 ["storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD GREATER 0
+  011 ["storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD LESS %d
+  012 "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
+  ➡️  THEN:
+  // Save sink
+  001 ➡️  PUT "definition/sink/active/123/456/my-source/my-sink"
+  002 ➡️  PUT "definition/sink/version/123/456/my-source/my-sink/0000000002"
+  // Save file
+  003 ➡️  PUT "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  004 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  // Delete token
+  005 ➡️  DEL "storage/keboola/secret/token/123/456/my-source/my-sink"
+  // Save slice
+  006 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  007 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  ➡️  ELSE:
+  // File doesn't exist error message
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+  // Slice doesn't exist error message
+  002 ➡️  TXN
+  002   ➡️  IF:
+  002   001 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD NOT_EQUAL 0
+✔️  TXN | succeeded: true
+
