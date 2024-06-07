@@ -8,7 +8,7 @@ import (
 
 // Get file entity.
 func (r *Repository) Get(k model.FileKey) op.WithResult[model.File] {
-	return r.schema.AllLevels().ByKey(k).Get(r.client).WithEmptyResultAsError(func() error {
+	return r.schema.AllLevels().ByKey(k).GetOrErr(r.client).WithEmptyResultAsError(func() error {
 		return serviceError.NewResourceNotFoundError("file", k.String(), "sink")
 	})
 }

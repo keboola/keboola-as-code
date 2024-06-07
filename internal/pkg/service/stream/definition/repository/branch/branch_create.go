@@ -18,7 +18,7 @@ import (
 func (r *Repository) Create(input *definition.Branch, now time.Time, by definition.By) *op.AtomicOp[definition.Branch] {
 	k := input.BranchKey
 	var created definition.Branch
-	var deleted *op.KeyValueT[definition.Branch]
+	var deleted *definition.Branch
 	return op.Atomic(r.client, &created).
 		// Check prerequisites
 		Read(func(ctx context.Context) op.Op {
@@ -26,21 +26,21 @@ func (r *Repository) Create(input *definition.Branch, now time.Time, by definiti
 		}).
 		// Entity must not exist
 		Read(func(ctx context.Context) op.Op {
-			return r.schema.Active().ByKey(k).Get(r.client).WithNotEmptyResultAsError(func() error {
+			return r.schema.Active().ByKey(k).GetOrErr(r.client).WithNotEmptyResultAsError(func() error {
 				return serviceError.NewResourceAlreadyExistsError("branch", k.BranchID.String(), "project")
 			})
 		}).
 		// Get deleted entity, if any, to undelete it
 		Read(func(ctx context.Context) op.Op {
-			return r.schema.Deleted().ByKey(k).GetKV(r.client).WithResultTo(&deleted)
+			return r.schema.Deleted().ByKey(k).GetOrNil(r.client).WithResultTo(&deleted)
 		}).
 		// Create
 		Write(func(ctx context.Context) op.Op {
 			// Create or undelete
 			created = deepcopy.Copy(*input).(definition.Branch)
 			if deleted != nil {
-				created.Created = deleted.Value.Created
-				created.SoftDeletable = deleted.Value.SoftDeletable
+				created.Created = deleted.Created
+				created.SoftDeletable = deleted.SoftDeletable
 				created.Undelete(now, by)
 			}
 

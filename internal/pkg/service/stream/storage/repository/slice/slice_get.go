@@ -8,7 +8,7 @@ import (
 
 // Get slice entity.
 func (r *Repository) Get(k model.SliceKey) op.WithResult[model.Slice] {
-	return r.schema.AllLevels().ByKey(k).Get(r.client).WithEmptyResultAsError(func() error {
+	return r.schema.AllLevels().ByKey(k).GetOrErr(r.client).WithEmptyResultAsError(func() error {
 		return serviceError.NewResourceNotFoundError("slice", k.String(), "file")
 	})
 }

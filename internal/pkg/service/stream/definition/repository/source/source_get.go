@@ -9,7 +9,7 @@ import (
 
 func (r *Repository) Get(k key.SourceKey) op.WithResult[definition.Source] {
 	return r.schema.
-		Active().ByKey(k).Get(r.client).
+		Active().ByKey(k).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("source", k.SourceID.String(), "branch")
 		})
@@ -17,7 +17,7 @@ func (r *Repository) Get(k key.SourceKey) op.WithResult[definition.Source] {
 
 func (r *Repository) GetDeleted(k key.SourceKey) op.WithResult[definition.Source] {
 	return r.schema.
-		Deleted().ByKey(k).Get(r.client).
+		Deleted().ByKey(k).GetOrErr(r.client).
 		WithEmptyResultAsError(func() error {
 			return serviceError.NewResourceNotFoundError("deleted source", k.SourceID.String(), "branch")
 		})
