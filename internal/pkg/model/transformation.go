@@ -122,7 +122,7 @@ func (v Scripts) Slice() []any {
 func (v Scripts) String(componentID keboola.ComponentID) string {
 	var items []string
 	for _, script := range v {
-		items = append(items, script.Content())
+		items = append(items, strings.TrimRight(script.Content(), " \r\n\t"))
 	}
 
 	switch componentID.String() {

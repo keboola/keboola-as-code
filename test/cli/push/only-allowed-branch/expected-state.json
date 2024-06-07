@@ -35,13 +35,13 @@
                     {
                       "name": "Code X",
                       "script": [
-                        "print(100)"
+                        "print(100)\n"
                       ]
                     },
                     {
                       "name": "Code Y",
                       "script": [
-                        "print(200)"
+                        "print(200)\n\t"
                       ]
                     }
                   ],
