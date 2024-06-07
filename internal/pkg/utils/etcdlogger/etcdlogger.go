@@ -169,6 +169,15 @@ func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
 				out.WriteString(strconv.FormatInt(op.Rev(), 10))
 			}
 		}
+		if op.IsCountOnly() {
+			out.WriteString(" | count only")
+		}
+		if op.IsKeysOnly() {
+			out.WriteString(" | keys only")
+		}
+		if op.IsSerializable() {
+			out.WriteString(" | serializable")
+		}
 		if value != "" && v.config.PutValue {
 			out.WriteString(" | value:")
 			out.WriteString("\n")
