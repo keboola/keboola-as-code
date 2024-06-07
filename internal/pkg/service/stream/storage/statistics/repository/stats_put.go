@@ -25,14 +25,11 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 	}
 
 	// Merge multiple put operations into one transaction
-	i := 0
-	for _, v := range stats {
-		if i == 0 || i >= putMaxStatsPerTxn {
-			i = 0
+	for i, v := range stats {
+		if i%putMaxStatsPerTxn == 0 {
 			addTxn()
 		}
 		currentTxn.Then(r.schema.InLevel(level.Local).InSlice(v.SliceKey).Put(r.client, v.Value))
-		i++
 	}
 
 	// Trace records and transactions count
