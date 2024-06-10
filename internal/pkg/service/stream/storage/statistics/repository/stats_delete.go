@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
@@ -19,10 +18,10 @@ func (r *Repository) rollupStatisticsOnFileDelete() {
 }
 
 // deleteOrRollup returns an etcd operation to delete all statistics associated with the object key.
-// Statistics for the level.Target are not deleted but are rolled up to the parent object.
+// Statistics for the level.LevelTarget are not deleted but are rolled up to the parent object.
 func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult] {
 	ops := op.Atomic(r.client, &op.NoResult{})
-	for _, inLevel := range level.AllLevels() {
+	for _, inLevel := range model.AllLevels() {
 		// Object prefix contains all statistics related to the object
 		objectPfx := r.schema.InLevel(inLevel).InObject(objectKey)
 
@@ -33,7 +32,7 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 
 		// Following rollup is only for the target level.
 		// Keep statistics about successfully imported data in the parent object prefix, in the sum key.
-		if inLevel != level.Target {
+		if inLevel != model.LevelTarget {
 			continue
 		}
 
@@ -41,7 +40,7 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 		var parentSum statistics.Value
 
 		// sumKey contains the sum of all statistics from the children that were deleted
-		sumKey := r.schema.InLevel(level.Target).InParentOf(objectKey).Sum()
+		sumKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Sum()
 
 		// Get sum from the parent object
 		ops.Read(func(ctx context.Context) op.Op {

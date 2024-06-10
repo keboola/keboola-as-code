@@ -6,7 +6,6 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -23,7 +22,7 @@ func (r *Repository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.F
 }
 
 // ListInLevel lists files in the specified storage level.
-func (r *Repository) ListInLevel(parentKey fmt.Stringer, level level.Level) iterator.DefinitionT[model.File] {
+func (r *Repository) ListInLevel(parentKey fmt.Stringer, level model.Level) iterator.DefinitionT[model.File] {
 	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
 }
 

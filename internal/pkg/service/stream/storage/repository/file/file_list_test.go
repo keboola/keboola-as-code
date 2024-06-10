@@ -18,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
@@ -118,7 +117,7 @@ func TestFileRepository_List(t *testing.T) {
 	// ListInLevel files
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		files, err := fileRepo.ListInLevel(sinkKey, level.Local).Do(ctx).All()
+		files, err := fileRepo.ListInLevel(sinkKey, model.LevelLocal).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, files, 2)
 		require.NotEmpty(t, files[0])
@@ -126,11 +125,11 @@ func TestFileRepository_List(t *testing.T) {
 		assert.Equal(t, model.FileClosing, files[0].State)
 		assert.Equal(t, model.FileWriting, files[1].State)
 
-		files, err = fileRepo.ListInLevel(sinkKey, level.Staging).Do(ctx).All()
+		files, err = fileRepo.ListInLevel(sinkKey, model.LevelStaging).Do(ctx).All()
 		require.NoError(t, err)
 		assert.Empty(t, files)
 
-		files, err = fileRepo.ListInLevel(sinkKey, level.Target).Do(ctx).All()
+		files, err = fileRepo.ListInLevel(sinkKey, model.LevelTarget).Do(ctx).All()
 		require.NoError(t, err)
 		assert.Empty(t, files)
 	}

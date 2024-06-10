@@ -1,12 +1,12 @@
 package aggregate
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
@@ -15,8 +15,8 @@ func TestAggregate(t *testing.T) {
 
 	result := statistics.Aggregated{}
 
-	// Level Local 1
-	Aggregate(level.Local, statistics.Value{
+	// Level LevelLocal 1
+	Aggregate(model.LevelLocal, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
@@ -43,8 +43,8 @@ func TestAggregate(t *testing.T) {
 		},
 	}, &result)
 
-	// Level Local 2
-	Aggregate(level.Local, statistics.Value{
+	// Level LevelLocal 2
+	Aggregate(model.LevelLocal, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
@@ -71,8 +71,8 @@ func TestAggregate(t *testing.T) {
 		},
 	}, &result)
 
-	// Level Staging 1
-	Aggregate(level.Staging, statistics.Value{
+	// Level LevelStaging 1
+	Aggregate(model.LevelStaging, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-16T00:00:00.000Z"),
@@ -110,8 +110,8 @@ func TestAggregate(t *testing.T) {
 		},
 	}, &result)
 
-	// Level Staging 2
-	Aggregate(level.Staging, statistics.Value{
+	// Level LevelStaging 2
+	Aggregate(model.LevelStaging, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-14T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"),
@@ -149,8 +149,8 @@ func TestAggregate(t *testing.T) {
 		},
 	}, &result)
 
-	// Level Target 1
-	Aggregate(level.Target, statistics.Value{
+	// Level LevelTarget 1
+	Aggregate(model.LevelTarget, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-18T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-19T00:00:00.000Z"),
@@ -197,8 +197,8 @@ func TestAggregate(t *testing.T) {
 		},
 	}, &result)
 
-	// Level Target 2
-	Aggregate(level.Target, statistics.Value{
+	// Level LevelTarget 2
+	Aggregate(model.LevelTarget, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-09T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-23T00:00:00.000Z"),
