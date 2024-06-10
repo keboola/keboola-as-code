@@ -2,20 +2,12 @@ name: "E2E: Templates"
 
 on:
   workflow_call:
-    inputs:
-      without-cache:
-        type: boolean
-        default: false
-        required: false
 
 env:
+  GO_VERSION: 1.22.2
   TEST_PARALLELISM: 16
   TEST_PARALLELISM_PKG: 1
-
-# Required for aws-actions/configure-aws-credentials using OIDC, assume role
-permissions:
-  id-token: write
-  contents: read 
+  TEST_COVERAGE: false
 
 jobs:
   test:
@@ -31,20 +23,27 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Go, tools and caching
-        uses: ./.github/actions/go-setup
-        with:
-          build-type: e2e-tests-templates
-          without-cache: ${{ inputs.without-cache }}
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
         with:
           secrets: ${{ toJSON(secrets) }}
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Load Go build cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: build
+
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
 
       - name: Start etcd database
         run: |
@@ -52,48 +51,17 @@ jobs:
           docker compose run -d --rm --publish 2379:2379 etcd
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
-      - name: Run E2E tests
+      - name: Run tests
+        run: make tests-templates-api
         shell: bash
-        run: |
-          set -eo pipefail
-          
-          # Build binary for test without external inputs
-          env -i  \
-            TERM="$TERM" \
-            HOME="$HOME" \
-            PATH="$PATH" \
-            BUILD_TARGET_PATH="$TEST_BINARY_TEMPLATES_API" \
-          make build-templates-api
-          touch -d '1970-01-01T00:00:01' "$TEST_BINARY_TEMPLATES_API"
-          
-          # Calculate binary hash, it invalidates tests cache
-          export TEST_BINARY_TEMPLATES_API_HASH=`cat "$TEST_BINARY_TEMPLATES_API" | $MD5_COMMAND | cut -d " " -f1`
-          echo "Binary hash: $TEST_BINARY_TEMPLATES_API_HASH"
-          
-          # ENVs can affect test caching, make sure to only run tests with expected ENVs
-          env -i  \
-            TERM="$TERM" \
-            HOME="$HOME" \
-            PATH="$PATH" \
-            DATADOG_ENABLED="false" \
-            TEMPLATES_ETCD_ENDPOINT="etcd:2379" \
-            TEMPLATES_ETCD_USERNAME="root" \
-            TEMPLATES_ETCD_PASSWORD="toor" \
-            TEST_BINARY_TEMPLATES_API="$TEST_BINARY_TEMPLATES_API" \
-            TEST_BINARY_TEMPLATES_API_HASH="$TEST_BINARY_TEMPLATES_API_HASH" \
-            TEST_PARALLELISM="$TEST_PARALLELISM" \
-            TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
-            TEST_COVERAGE="false" \
-            TEST_CREATE_OUT_DIR="false" \
-            TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
-            TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
-            TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-templates-api
         env:
-          TEST_BINARY_TEMPLATES_API: "${{ runner.temp }}/test-build-templates-api"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+          TEMPLATES_ETCD_ENDPOINT: etcd:2379
+          TEMPLATES_ETCD_USERNAME: root
+          TEMPLATES_ETCD_PASSWORD: toor
+          TEMPLATES_ETCD_NAMESPACE: templates-api
 
       - name: Validate OpenAPI3 definition
         uses: char0n/swagger-editor-validate@b642f037ac53c392f9c8d781c369ce129684e93e

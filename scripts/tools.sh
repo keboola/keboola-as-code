@@ -9,10 +9,6 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
-# GOBIN defaults to GOPATH/bin, if it is not set
-GOBIN="$(go env GOBIN)"
-GOBIN="${GOBIN:=$(go env GOPATH)/bin}"
-
 # go-licenses
 if ! command -v go-licenses &> /dev/null
 then
@@ -22,19 +18,19 @@ fi
 # gotestsum
 if ! command -v gotestsum &> /dev/null
 then
-  ./install-gotestsum.sh -b "$GOBIN"
+  ./install-gotestsum.sh -b $(go env GOPATH)/bin
 fi
 
 # goreleaser
 if ! command -v goreleaser &> /dev/null
 then
-  ./install-goreleaser.sh -b "$GOBIN" v1.22.1
+  ./install-goreleaser.sh -b $(go env GOPATH)/bin v1.22.1
 fi
 
 # golangci-lint
 if ! command -v golangci-lint &> /dev/null
 then
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.57.2
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.2
 fi
 
 # gci

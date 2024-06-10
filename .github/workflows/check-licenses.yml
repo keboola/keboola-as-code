@@ -3,24 +3,25 @@ name: "Check licenses"
 on:
   workflow_call:
 
-# Required for aws-actions/configure-aws-credentials using OIDC, assume role
-permissions:
-  id-token: write
-  contents: read
+env:
+  GO_VERSION: 1.22.2
 
 jobs:
   check:
     name: check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Go, tools and caching
-        uses: ./.github/actions/go-setup
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
-          build-type: check-licenses
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
 
       #####################
       ### License Types ###

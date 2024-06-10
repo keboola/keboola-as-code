@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,21 +18,6 @@ import (
 // CompileBinary compiles a binary used in the test by running a make command.
 func CompileBinary(t *testing.T, binaryName string, makeCommand string) string {
 	t.Helper()
-
-	// Compilation can be skipped by providing path to the binary.
-	// It is used in CI to cache test results.
-	pathEnv := "TEST_BINARY_" + strings.ToUpper(strings.ReplaceAll(binaryName, "-", "_"))
-	hashEnv := pathEnv + "_HASH"
-	path, ok1 := os.LookupEnv(pathEnv)
-	hash, ok2 := os.LookupEnv(hashEnv) // hash ENV (each ENV) modification invalidates the test cache
-	if ok1 && ok2 && path != "" && hash != "" {
-		t.Logf(`"%s" = "%s" (%s)`, pathEnv, path, hash)
-		_, err := os.Stat(path) //nolint:forbidigo
-		require.NoError(t, err)
-		return path
-	} else {
-		t.Logf(`no "%s" / "%s" envs found`, pathEnv, hashEnv)
-	}
 
 	// Get project dir, to run "make ..."
 	_, thisFile, _, _ := runtime.Caller(0)                       //nolint:dogsled

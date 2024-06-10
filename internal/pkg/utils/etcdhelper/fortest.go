@@ -52,7 +52,7 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Config 
 	cfg.Password = envs.Get(envPrefix + "PASSWORD")
 
 	if cfg.Endpoint == "" {
-		t.Fatalf(`etcd endpoint env "%s" is not set`, envPrefix+"ENDPOINT")
+		t.Fatalf(`etcd endpoint is not set`)
 	}
 
 	t.Cleanup(func() {

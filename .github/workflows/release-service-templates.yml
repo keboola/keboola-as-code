@@ -33,14 +33,10 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
-    with:
-      without-cache: true
   test-e2e-service-templates:
     name: "E2E: Templates"
     secrets: inherit
     uses: ./.github/workflows/test-e2e-service-templates.yml
-    with:
-      without-cache: true
   test-k8s-service-templates:
     name: "K8S: Templates"
     secrets: inherit

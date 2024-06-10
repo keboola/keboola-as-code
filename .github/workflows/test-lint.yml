@@ -3,24 +3,16 @@ name: "Lint Code"
 on:
   workflow_call:
 
-# Required for aws-actions/configure-aws-credentials using OIDC, assume role
-permissions:
-  id-token: write
-  contents: read 
+env:
+  GO_VERSION: 1.22.2
 
 jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Go, tools and caching
-        uses: ./.github/actions/go-setup
-        with:
-          build-type: lint
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Check links in Markdown files
         uses: lycheeverse/lychee-action@v1.8.0
@@ -35,6 +27,15 @@ jobs:
             --exclude '^https://app.datadoghq.eu/.*'
             --exclude '^https://community.chocolatey.org/.*'
             --exclude '^https://packages.debian.org/$'
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Load Go tools cache
+        uses: ./.github/actions/go-tools-cache
 
       - name: Run code linters
         run: make lint

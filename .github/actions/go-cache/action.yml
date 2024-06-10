@@ -1,0 +1,26 @@
+name: 'Load Go cache'
+description: 'Load Go build cache'
+inputs:
+  key:
+    description: Cache key
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Use GNU tar instead BSD tar
+      if: runner.os == 'Windows'
+      shell: bash
+      run: echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
+
+    - name: Load Go cache
+      id: load-go-cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/Library/Caches/go-build
+          ~\AppData\Local\go-build
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-${{ inputs.key }}-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v6-

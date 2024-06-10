@@ -11,8 +11,8 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildVersion={{ if index .Env "VERSION" }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
-      - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildDate={{ if index .Env "CLI_BUILD_DATE" }}{{ .Env.CLI_BUILD_DATE }}{{ else }}{{.Date}}{{ end }}
-      - -X github.com/keboola/keboola-as-code/internal/pkg/build.GitCommit={{ if index .Env "CLI_BUILD_GIT_COMMIT" }}{{ .Env.CLI_BUILD_GIT_COMMIT }}{{ else }}{{.Commit}}{{ end }}
+      - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildDate={{.Date}}
+      - -X github.com/keboola/keboola-as-code/internal/pkg/build.GitCommit={{.Commit}}
     hooks:
       post:
         # Copy binary to BUILD_TARGET_PATH if set

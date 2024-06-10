@@ -43,14 +43,10 @@ jobs:
     name: "Unit Tests"
     secrets: inherit
     uses: ./.github/workflows/test-unit.yml
-    with:
-      without-cache: true
   test-e2e-service-buffer:
     name: "E2E: Buffer"
     secrets: inherit
     uses: ./.github/workflows/test-e2e-service-buffer.yml
-    with:
-      without-cache: true
   test-k8s-service-buffer:
     name: "K8S: Buffer"
     secrets: inherit

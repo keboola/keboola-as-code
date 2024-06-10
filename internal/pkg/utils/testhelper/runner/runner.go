@@ -25,47 +25,33 @@ import (
 const testTimeout = 5 * time.Minute
 
 type Runner struct {
-	t        *testing.T
-	testsDir string
+	t          *testing.T
+	testsDir   string
+	workingDir string
 }
 
 func NewRunner(t *testing.T) *Runner {
 	t.Helper()
 
 	_, callerFile, _, _ := runtime.Caller(1) //nolint:dogsled
-	testsDir := filepath.Dir(callerFile)     // nolint:forbidigo
+	callerDir := filepath.Dir(callerFile)    // nolint:forbidigo
 
-	// Delete debug files from the previous run
-	if testhelper.CreateOutDir() {
-		require.NoError(t, os.RemoveAll(filesystem.Join(testsDir, ".out")))
-	}
+	workingDir := filesystem.Join(callerDir, ".out")
+	assert.NoError(t, os.RemoveAll(workingDir))
+	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	return &Runner{t: t, testsDir: testsDir}
+	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir}
 }
 
 func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.CancelFunc) {
 	t.Helper()
 
 	testDir := filepath.Join(r.testsDir, testDirName)
+	workingDir := filepath.Join(r.workingDir, testDirName)
 
-	// Create temporary working dir
-	workingDir := t.TempDir()
-	require.NoError(t, os.Chdir(workingDir))
-
-	// Chdir after the test, without it, the deletion of the temp dir is not possible on Windows
-	t.Cleanup(func() {
-		require.NoError(t, os.Chdir(testDir))
-	})
-
-	// Keep working dir for debugging
-	t.Cleanup(func() {
-		if testhelper.CreateOutDir() {
-			outDir := filesystem.Join(r.testsDir, ".out", testDirName)
-			require.NoError(t, os.RemoveAll(outDir))
-			require.NoError(t, os.MkdirAll(outDir, 0o755))
-			require.NoError(t, aferofs.CopyFs2Fs(nil, workingDir, nil, outDir))
-		}
-	})
+	assert.NoError(t, os.RemoveAll(workingDir))
+	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
+	assert.NoError(t, os.Chdir(workingDir))
 
 	testDirFS, err := aferofs.NewLocalFs(testDir)
 	assert.NoError(t, err)
