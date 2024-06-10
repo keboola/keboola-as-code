@@ -2,12 +2,12 @@ package repository
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -24,71 +24,71 @@ func TestSchema(t *testing.T) {
 			"storage/stats/",
 		},
 		{
-			s.InLevel(level.Local).Prefix(),
+			s.InLevel(model.LevelLocal).Prefix(),
 			"storage/stats/local/",
 		},
 		{
-			s.InLevel(level.Staging).Prefix(),
+			s.InLevel(model.LevelStaging).Prefix(),
 			"storage/stats/staging/",
 		},
 		{
-			s.InLevel(level.Target).Prefix(),
+			s.InLevel(model.LevelTarget).Prefix(),
 			"storage/stats/target/",
 		},
 		{
-			s.InLevel(level.Local).InObject(sliceKey.ProjectID).Prefix(),
+			s.InLevel(model.LevelLocal).InObject(sliceKey.ProjectID).Prefix(),
 			"storage/stats/local/123/",
 		},
 		{
-			s.InLevel(level.Local).InProject(sliceKey.ProjectID).Prefix(),
+			s.InLevel(model.LevelLocal).InProject(sliceKey.ProjectID).Prefix(),
 			"storage/stats/local/123/",
 		},
 		{
-			s.InLevel(level.Local).InBranch(sliceKey.BranchKey).Prefix(),
+			s.InLevel(model.LevelLocal).InBranch(sliceKey.BranchKey).Prefix(),
 			"storage/stats/local/123/456/",
 		},
 		{
-			s.InLevel(level.Local).InSource(sliceKey.SourceKey).Prefix(),
+			s.InLevel(model.LevelLocal).InSource(sliceKey.SourceKey).Prefix(),
 			"storage/stats/local/123/456/my-source/",
 		},
 		{
-			s.InLevel(level.Local).InSource(sliceKey.SourceKey).Sum().Key(),
+			s.InLevel(model.LevelLocal).InSource(sliceKey.SourceKey).Sum().Key(),
 			"storage/stats/local/123/456/my-source/_sum",
 		},
 		{
-			s.InLevel(level.Local).InSink(sliceKey.SinkKey).Prefix(),
+			s.InLevel(model.LevelLocal).InSink(sliceKey.SinkKey).Prefix(),
 			"storage/stats/local/123/456/my-source/my-sink/",
 		},
 		{
-			s.InLevel(level.Local).InSink(sliceKey.SinkKey).Sum().Key(),
+			s.InLevel(model.LevelLocal).InSink(sliceKey.SinkKey).Sum().Key(),
 			"storage/stats/local/123/456/my-source/my-sink/_sum",
 		},
 		{
-			s.InLevel(level.Local).InFile(sliceKey.FileKey).Prefix(),
+			s.InLevel(model.LevelLocal).InFile(sliceKey.FileKey).Prefix(),
 			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},
 		{
-			s.InLevel(level.Local).InSlice(sliceKey).Key(),
+			s.InLevel(model.LevelLocal).InSlice(sliceKey).Key(),
 			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/value",
 		},
 		{
-			s.InLevel(level.Local).InParentOf(sliceKey.BranchKey).Prefix(),
+			s.InLevel(model.LevelLocal).InParentOf(sliceKey.BranchKey).Prefix(),
 			"storage/stats/local/123/",
 		},
 		{
-			s.InLevel(level.Local).InParentOf(sliceKey.SourceKey).Prefix(),
+			s.InLevel(model.LevelLocal).InParentOf(sliceKey.SourceKey).Prefix(),
 			"storage/stats/local/123/456/",
 		},
 		{
-			s.InLevel(level.Local).InParentOf(sliceKey.SinkKey).Prefix(),
+			s.InLevel(model.LevelLocal).InParentOf(sliceKey.SinkKey).Prefix(),
 			"storage/stats/local/123/456/my-source/",
 		},
 		{
-			s.InLevel(level.Local).InParentOf(sliceKey.FileKey).Prefix(),
+			s.InLevel(model.LevelLocal).InParentOf(sliceKey.FileKey).Prefix(),
 			"storage/stats/local/123/456/my-source/my-sink/",
 		},
 		{
-			s.InLevel(level.Local).InParentOf(sliceKey).Prefix(),
+			s.InLevel(model.LevelLocal).InParentOf(sliceKey).Prefix(),
 			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},
 	}
@@ -100,7 +100,7 @@ func TestSchema(t *testing.T) {
 	// Panics
 	assert.Panics(t, func() {
 		// Project is the top level
-		s.InLevel(level.Local).InParentOf(sliceKey.ProjectID)
+		s.InLevel(model.LevelLocal).InParentOf(sliceKey.ProjectID)
 	})
 	assert.Panics(t, func() {
 		s.InLevel("foo")

@@ -11,7 +11,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 )
 
 func TestSlice_StateTransition(t *testing.T) {
@@ -83,11 +82,11 @@ func TestSlice_StateTransition(t *testing.T) {
 
 func TestSliceState_ToLevel(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, level.Local, SliceWriting.Level())
-	assert.Equal(t, level.Local, SliceClosing.Level())
-	assert.Equal(t, level.Local, SliceUploading.Level())
-	assert.Equal(t, level.Staging, SliceUploaded.Level())
-	assert.Equal(t, level.Target, SliceImported.Level())
+	assert.Equal(t, LevelLocal, SliceWriting.Level())
+	assert.Equal(t, LevelLocal, SliceClosing.Level())
+	assert.Equal(t, LevelLocal, SliceUploading.Level())
+	assert.Equal(t, LevelStaging, SliceUploaded.Level())
+	assert.Equal(t, LevelTarget, SliceImported.Level())
 	assert.PanicsWithError(t, `unexpected slice state "foo"`, func() {
 		SliceState("foo").Level()
 	})

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -14,7 +13,7 @@ func (r *Repository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.S
 }
 
 // ListInLevel lists slices in the specified storage level.
-func (r *Repository) ListInLevel(parentKey fmt.Stringer, level level.Level) iterator.DefinitionT[model.Slice] {
+func (r *Repository) ListInLevel(parentKey fmt.Stringer, level model.Level) iterator.DefinitionT[model.Slice] {
 	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
 }
 

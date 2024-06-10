@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
@@ -45,12 +44,12 @@ func (r *Repository) estimateSliceSize(file model.File, slice *model.Slice) *op.
 }
 
 // maxUsedDiskSizeBySliceIn scans the statistics in the parentKey, scanned are:
-//   - The last <limit> slices in level.Staging (uploaded slices).
-//   - The last <limit> slices in level.Target  (imported slices).
+//   - The last <limit> slices in level.LevelStaging (uploaded slices).
+//   - The last <limit> slices in level.LevelTarget  (imported slices).
 func (r *Repository) maxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int) *op.TxnOp[datasize.ByteSize] {
 	var maxSize datasize.ByteSize
 	txn := op.TxnWithResult(r.client, &maxSize)
-	for _, l := range []level.Level{level.Staging, level.Target} {
+	for _, l := range []model.Level{model.LevelStaging, model.LevelTarget} {
 		// Get maximum
 		txn.Then(
 			r.schema.

@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/aggregate"
@@ -68,7 +67,7 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 	var result statistics.Aggregated
 	txn := op.TxnWithResult(r.client, &result)
 
-	for _, l := range level.AllLevels() {
+	for _, l := range model.AllLevels() {
 		// Get stats prefix for the slice state
 		pfx := r.schema.InLevel(l).InObject(objectKey)
 

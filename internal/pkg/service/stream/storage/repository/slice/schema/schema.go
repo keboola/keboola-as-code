@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -32,9 +31,9 @@ func (s Slice) AllLevels() SliceInLevel {
 	return SliceInLevel{PrefixT: s.PrefixT.Add("all")}
 }
 
-func (s Slice) InLevel(l level.Level) SliceInLevel {
+func (s Slice) InLevel(l model.Level) SliceInLevel {
 	switch l {
-	case level.Local, level.Staging, level.Target:
+	case model.LevelLocal, model.LevelStaging, model.LevelTarget:
 		return SliceInLevel{PrefixT: s.PrefixT.Add("level").Add(l.String())}
 	default:
 		panic(errors.Errorf(`unexpected storage level "%v"`, l))
