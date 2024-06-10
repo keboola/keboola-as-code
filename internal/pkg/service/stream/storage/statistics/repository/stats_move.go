@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -23,7 +22,7 @@ func (r *Repository) moveStatisticsOnSliceUpdate() {
 		if fromLevel != toLevel {
 			op.AtomicOpFromCtx(ctx).AddFrom(r.moveAll(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
 				// There is actually no additional compression, when uploading slice to the staging storage
-				if toLevel == level.Staging {
+				if toLevel == model.LevelStaging {
 					value.StagingSize = value.CompressedSize
 				}
 			}))
@@ -34,7 +33,7 @@ func (r *Repository) moveStatisticsOnSliceUpdate() {
 
 // moveAll moves all statistics in the parentKey to a different storage level.
 // Returned value is sum of all slices statistics.
-func (r *Repository) moveAll(parentKey fmt.Stringer, from, to level.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
+func (r *Repository) moveAll(parentKey fmt.Stringer, from, to model.Level, transform ...TransformFn) *op.AtomicOp[statistics.Value] {
 	if from == to {
 		panic(errors.Errorf(`"from" and "to" storage levels are same and equal to "%s"`, to))
 	}

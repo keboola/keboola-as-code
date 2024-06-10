@@ -8,7 +8,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -31,9 +30,9 @@ func newSchema(s *serde.Serde) schema {
 	return schema{PrefixT: NewTypedPrefix[statistics.Value]("storage/stats", s)}
 }
 
-func (s schema) InLevel(l level.Level) schemaInLevel {
+func (s schema) InLevel(l Level) schemaInLevel {
 	switch l {
-	case level.Local, level.Staging, level.Target:
+	case LevelLocal, LevelStaging, LevelTarget:
 		return schemaInLevel{PrefixT: s.PrefixT.Add(l.String())}
 	default:
 		panic(errors.Errorf(`unexpected storage level "%v"`, l))

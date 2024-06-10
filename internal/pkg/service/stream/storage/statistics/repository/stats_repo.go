@@ -28,13 +28,13 @@ package repository
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -87,6 +87,6 @@ func New(d dependencies) *Repository {
 
 // ObjectPrefix returns string prefix of the object statistics in the database.
 // The method is used by the cache.L1 which has in-memory mirror of the database.
-func (r *Repository) ObjectPrefix(level level.Level, objectKey fmt.Stringer) string {
+func (r *Repository) ObjectPrefix(level model.Level, objectKey fmt.Stringer) string {
 	return r.schema.InLevel(level).InObject(objectKey).Prefix()
 }
