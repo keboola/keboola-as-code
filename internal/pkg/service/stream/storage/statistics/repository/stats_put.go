@@ -2,17 +2,17 @@ package repository
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Put creates or updates slices statistics records in the level.Local.
+// Put creates or updates slices statistics records in the level.LevelLocal.
 func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err error) {
 	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.storage.statistics.Repository.Put")
 	defer span.End(&err)
@@ -31,7 +31,7 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 			i = 0
 			addTxn()
 		}
-		currentTxn.Then(r.schema.InLevel(level.Local).InSlice(v.SliceKey).Put(r.client, v.Value))
+		currentTxn.Then(r.schema.InLevel(model.LevelLocal).InSlice(v.SliceKey).Put(r.client, v.Value))
 		i++
 	}
 

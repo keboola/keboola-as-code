@@ -5,7 +5,6 @@ import (
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -75,14 +74,14 @@ func (f File) WithState(at time.Time, to FileState) (File, error) {
 }
 
 // Level gets the lowest storage.Level at which at least one file slice is present.
-func (s FileState) Level() level.Level {
+func (s FileState) Level() Level {
 	switch s {
 	case FileWriting, FileClosing:
-		return level.Local
+		return LevelLocal
 	case FileImporting:
-		return level.Staging
+		return LevelStaging
 	case FileImported:
-		return level.Target
+		return LevelTarget
 	default:
 		panic(errors.Errorf(`unexpected file state "%v"`, s))
 	}

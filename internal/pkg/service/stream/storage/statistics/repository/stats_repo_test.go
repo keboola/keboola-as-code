@@ -1,12 +1,12 @@
 package repository_test
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -17,6 +17,6 @@ func TestRepository_ObjectPrefix(t *testing.T) {
 	repo := d.StatisticsRepository()
 
 	expected := "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/"
-	actual := repo.ObjectPrefix(level.Staging, test.NewSliceKey())
+	actual := repo.ObjectPrefix(model.LevelStaging, test.NewSliceKey())
 	assert.Equal(t, expected, actual)
 }
